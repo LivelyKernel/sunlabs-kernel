@@ -319,7 +319,7 @@ this.Node.addMethods({
 	r.x = p.x;
 	r.y = p.y;
 	r.width = r.height = 0;
-	return this.canvas().checkIntersection(this.rawNode, rect);
+	return this.canvas().checkIntersection(this.rawNode, r);
     },
 
     setVisible: function(flag) {
@@ -777,23 +777,120 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 
 });
 
+Wrapper.subclass('lively.scene.PathElement', {
+    isAbsolute: true,
+    attributeFormat: function() {
+	// FIXME not a good base element
+	return this.charCode + this.x + "," + this.y;
+    }
+
+});
+
+
+this.PathElement.subclass('lively.scene.MoveTo', {
+    charCode: 'M',
+
+    initialize: function(x, y) {
+	this.x = x;
+	this.y = y;
+    },
+
+    allocateRawNode: function(rawPathNode) {
+	this.rawNode = rawPathNode.createSVGPathSegMovetoAbs(this.x, this.y);
+	return this.rawNode;
+    },
+
+    controlPoints: function() {
+	return [pt(this.x, this.y)];
+    },
+
+
+});
+
+this.PathElement.subclass('lively.scene.LineTo', {
+    charCode: 'L',
+    initialize: function(x, y) {
+	this.x = x;
+	this.y = y;
+    },
+
+    allocateRawNode: function(rawPathNode) {
+	this.rawNode = rawPathNode.createSVGPathSegLinetoAbs(this.x, this.y);
+	return this.rawNode;
+    },
+
+    controlPoints: function() {
+	return [pt(this.x, this.y)];
+    }
+
+
+});
+
+
+this.PathElement.subclass('lively.scene.CurveTo', {
+
+    charCode: 'T',
+
+    initialize: function(x, y) {
+	this.x = x;
+	this.y = y;
+    },
+
+    allocateRawNode: function(rawPathNode) {
+	this.rawNode = rawPathNode.createSVGPathSegCurvetoQuadraticSmoothAbs(this.x, this.y);
+	return this.rawNode;
+    },
+
+    controlPoints: function() {
+	return [pt(this.x, this.y)];
+    }
+
+
+});
+
+
+this.PathElement.subclass('lively.scene.ClosePath', {
+
+    charCode: 'Z',
+
+    initialize: function() {
+    },
+
+    allocateRawNode: function(rawPathNode) {
+	this.rawNode = rawPathNode.createSVGPathSegClosePath();
+	return this.rawNode;
+    },
+
+    controlPoints: function() {
+	return [];
+    }
+
+
+});
+
+
+
 this.Shape.subclass('lively.scene.Path', {
     documentation: "Generic Path with arbitrary Bezier curves",
 
     hasElbowProtrusions: true,
 
-    initialize: function($super, vertlistOrRect, color, borderWidth, borderColor) {
+    initialize: function($super, elements) {
 	this.rawNode = NodeFactory.create("path");
-	$super(color, borderWidth, borderColor);
-	if (vertlistOrRect instanceof Rectangle) {
-	    var r = vertlistOrRect;
-	    this.moveTo(r.x, r.y);
-	    this.lineTo(r.x + r.width, r.y); 
-	    this.lineTo(r.x + r.width, r.y + r.height);
-	    this.lineTo(r.x, r.y + r.height);
-	    this.close(); 
-	} else this.setVertices(vertlistOrRect || []);
+	this.setElements(elements || []);
 	return this;
+    },
+
+    setElements: function(elts) {
+	this.cachedVertices = null;
+	this.elements = elts;
+	var attr = "";
+	for (var i = 0; i < elts.length; i++) {
+	    var seg = elts[i].allocateRawNode(this.rawNode);
+	    // this.rawNode.pathSegList.appendItem(seg);
+	    attr += elts[i].attributeFormat() + " ";
+	}
+	this.rawNode.setAttributeNS(null, "d", attr);
     },
 
     setVertices: function(vertlist) {
@@ -823,59 +920,31 @@ this.Shape.subclass('lively.scene.Path', {
 	    this.rawNode.setAttributeNS(null, "d", d);
     },
     
-    verticesFromSVG: function() {
-        var d = this.rawNode.getAttribute('d');
-        var pointSpecs = $A(d).inject([], function(all, ea) {
-            if (ea === 'M' || ea === 'T') { // FIXME support other vertice types and use them for points
-                all.push({type: ea, x: ''});
-            } else if (ea === ',') {
-                all.last().y = '';
-            } else {
-                all.last().y === undefined ? all.last().x += ea : all.last().y += ea;
-            };
-            return all;
-        });
-        var points = pointSpecs.map(function(ea) {
-            return pt(Number(ea.x), Number(ea.y));
-        });
-        return points;
-    },
 
     vertices: function() {
-        return this.verticesFromSVG();
-    },
-
-    moveTo: function(x, y) {
-	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegMovetoAbs(x, y));
-    },
-
-    arcTo: function(x, y, r) {
-	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegArcAbs(x, y, r));
-    },
-
-    lineTo: function(x, y) {
-	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegLinetoAbs(x, y));
-    },
-
-    close: function() {
-	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegClosePath());
+	var verts = this.cachedVertices;
+	if (verts == null) {
+	    verts = [];
+	    this.elements.forEach(function(el) {
+		verts = verts.concat(el.controlPoints());
+	    });
+	    this.cachedVertices = verts;
+	}
+	return verts;
+        //return this.verticesFromSVG();
     },
     
     containsPoint: function(p) {
-	if (UserAgent.webKitVersion >= 525)
-	    return Rectangle.unionPts(this.vertices()).containsPoint(p);
-	else return this.nativeContainsWorldPoint(p);
+	var verts = this.vertices();
+	//if (UserAgent.webKitVersion >= 525)
+	return Rectangle.unionPts(verts).containsPoint(p);
+	//else return this.nativeContainsWorldPoint(p);
     },
 
     bounds: function() {
-	try {
-	    var r = this.rawNode.getBBox();
-	    // check the coordinates!
-	    return new Rectangle(r.x, r.y, r.width, r.height);
-	} catch (er) {
-	    var u = Rectangle.unionPts(this.vertices());
-	    return u;
-	}
+	var u = Rectangle.unionPts(this.vertices());
+	// FIXME this is not correct (extruding arcs) but it's an approximation
+	return u;
     },
 
     setBounds: function(bounds) { 

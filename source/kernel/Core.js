@@ -3915,16 +3915,23 @@ PasteUpMorph.subclass("WorldMorph", {
             	widget.setPosition(evt.point());
                 world.addMorph(widget)}],
             ["Heart", function(evt) { 
-                var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
-		var widget = new Morph(new lively.scene.Path(shape1));
+		var g = lively.scene;
+		var shape = new g.Path([
+		    new g.MoveTo(0, 0),
+		    new g.CurveTo(48.25,-5.77),
+		    new g.CurveTo(85.89,15.05),
+		    new g.CurveTo(61.36,32.78),
+		    new g.CurveTo(53.22,46.00),
+		    new g.CurveTo(25.02,68.58),
+		    new g.CurveTo(1.03, 40.34),
+		    new g.CurveTo(0, 0)
+		]);
+		
+		var widget = new Morph(shape);
 		widget.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
 		widget.setPosition(evt.point());
 		widget.rotateBy(3.9);
-		var pathAttr = ["M0,0", "T48.25,-5.77", "T85.89,15.05", "T61.36,32.78",
-		    "T53.22,46.00", "T25.02,68.58", "T1.032,40.34", "T0,0"].join("");
-		widget.shape.rawNode.setAttributeNS(null, 'd', pathAttr);
                 world.addMorph(widget);
-		
 
             }],
         ];

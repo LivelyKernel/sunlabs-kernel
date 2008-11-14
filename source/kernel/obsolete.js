@@ -1139,3 +1139,42 @@ Morph.addMethods({
 	this.shape.setFill(attr);
     }
 });
+
+
+lively.scene.Path.addMethods({
+    verticesFromSVG: function() {
+        var d = this.rawNode.getAttribute('d');
+        var pointSpecs = $A(d).inject([], function(all, ea) {
+            if (ea === 'M' || ea === 'T') { // FIXME support other vertice types and use them for points
+                all.push({type: ea, x: ''});
+            } else if (ea === ',') {
+                all.last().y = '';
+            } else {
+                all.last().y === undefined ? all.last().x += ea : all.last().y += ea;
+            };
+            return all;
+        });
+        var points = pointSpecs.map(function(ea) {
+            return pt(Number(ea.x), Number(ea.y));
+        });
+        return points;
+    },
+
+    moveTo: function(x, y) {
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegMovetoAbs(x, y));
+    },
+
+    arcTo: function(x, y, r) {
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegArcAbs(x, y, r));
+    },
+
+    lineTo: function(x, y) {
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegLinetoAbs(x, y));
+    },
+
+    close: function() {
+	this.rawNode.pathSegList.appendItem(this.rawNode.createSVGPathSegClosePath());
+    },
+
+
+});
