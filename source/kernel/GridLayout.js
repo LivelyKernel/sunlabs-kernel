@@ -37,7 +37,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	// set constraints and layout handler
 
     addMorph: function($super, morph, cst) {
-	if (morph instanceof HandleMorph) {
+	if (morph.isEpimorph) {
 	    console.log("Ignore handle morph");
 	    return $super(morph);
 	}
@@ -580,7 +580,7 @@ BoxMorph.subclass("GridLineMorph", {
     initialize: function($super, pos) {
 	this.pos = pos;
 	this.npos = new Rectangle(pos.x-1, pos.y-1, pos.width+2, pos.height+2);
-	this.transientBounds = true;
+	this.isEpimorph = true;
 	this.openForDragAndDrop=false;
 	this.suppressHandles=true;
 	this.focusHaloBorderWidth=0;

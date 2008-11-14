@@ -1068,7 +1068,7 @@ lively.data.Wrapper.subclass('Morph', {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
     noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds', 'clipPath'],
-    transientBounds: false,
+    isEpimorph: false, // temporary additional morph that goes away quickly, not included in bounds
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
@@ -1991,7 +1991,7 @@ Morph.addMethods({
 	if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
 	// DI: I don't think this can affect owner.  It may increase fullbounds
 	//     due to stickouts, but not the bounds for layout...
-	if (this.owner /* && this.owner !== this.world() */ && !this.transientBounds) this.owner.layoutChanged(); 
+	if (this.owner /* && this.owner !== this.world() */ && !this.isEpimorph) this.owner.layoutChanged(); 
 	this.changed();
 	return this; 
     },
@@ -2319,7 +2319,7 @@ Morph.addMethods({
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
 	this.focusHalo = Morph.makeRectangle(this.localBorderBounds().expandBy(this.focusHaloInset));
-	this.focusHalo.transientBounds = true;  // Do this before adding the halo
+	this.focusHalo.isEpimorph = true;  // Do this before adding the halo
 	this.addMorph(this.focusHalo);
 	this.focusHalo.applyStyle(this.focusStyle);
 	this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
@@ -2768,7 +2768,7 @@ Morph.addMethods({
 	var subBounds = null;
 	for (var i = 0; i < this.submorphs.length; i++) {
 	    var m = this.submorphs[i];
-	    if ((ignoreTransients && m.transientBounds))
+	    if ((ignoreTransients && m.isEpimorph))
 		continue;
 	    if (!m.isVisible()) {
 		continue;
@@ -2871,7 +2871,7 @@ Morph.addMethods({
 	this.transformChanged(); // DI: why is this here?
 	
 	this.fullBounds = null;
-	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.transientBounds) {     // May affect owner as well...
+	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
 	    this.owner.layoutChanged();
 	}
     },

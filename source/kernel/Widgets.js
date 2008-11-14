@@ -297,7 +297,7 @@ Morph.subclass('HandleMorph', {
         "Shift+drag to change width ",
     maxHelpCount: 20,
     helpCount: 0,
-    transientBounds: true,
+    isEpimorph: true,
     
     initialize: function($super, location, shapeType, hand, targetMorph, partName) {
         $super(new shapeType(location.asRectangle().expandBy(5)));

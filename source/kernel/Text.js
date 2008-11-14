@@ -820,7 +820,7 @@ Morph.subclass('TextSelectionMorph', {
 
     documentation: "Visual representation of the text selection",
     style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
-    transientBounds: true,
+    isEpimorph: true,
     
     initialize: function($super) {
 	$super(new lively.scene.Group());

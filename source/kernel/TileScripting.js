@@ -315,7 +315,7 @@ thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
         $super(bounds);
         
         this.text = this.addMorph(new TextMorph(this.shape.bounds().insetBy(5)));
-        this.text.autoAccept
+        this.text.autoAccept // KP: what does this do?
         this.text.setTextString(sourceString);
         
         this.closeAllToDnD();

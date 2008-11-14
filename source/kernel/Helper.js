@@ -153,7 +153,7 @@ Object.subclass('Layout', {
         // this.baseMorph.layoutChanged = Morph.prototype.layoutChanged.bind(this.baseMorph);
         
         this.baseMorph.submorphs
-            .reject(function(ea) { return ea instanceof HandleMorph})
+            .reject(function(ea) { return ea.isEpimorph})
             .inject(pt(0,0), function(pos, ea) {
                 ea.setPosition(pos);
                 return this.newPosition(ea);
