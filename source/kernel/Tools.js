@@ -942,14 +942,15 @@ Widget.subclass('StylePanel', {
 	
         if (this.fillType == 'simple')  this.targetMorph.setFill(this.color1);
     
+	var gfx = lively.paint;
         if (this.fillType == 'linear gradient') {
             if (this.fillDir == null) this.fillDir = 'NorthSouth';
-            this.targetMorph.setFill(new lively.paint.LinearGradient([this.color1, 1, this.color2], 
-								     lively.paint.LinearGradient[this.fillDir]));
+            this.targetMorph.setFill(new gfx.LinearGradient([new gfx.Stop(0, this.color1), new gfx.Stop(1, this.color2)], 
+							    gfx.LinearGradient[this.fillDir]));
         }
 	
         if (this.fillType == 'radial gradient')
-            this.targetMorph.setFill(new lively.paint.RadialGradient([this.color1, 1, this.color2]));
+            this.targetMorph.setFill(new gfx.RadialGradient([new gfx.Stop(0, this.color1), new gfx.Stop(1, this.color2)]));
     },
     
     

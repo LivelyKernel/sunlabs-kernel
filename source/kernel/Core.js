@@ -3484,7 +3484,9 @@ PasteUpMorph.subclass("WorldMorph", {
     fill: Color.primary.blue,
     defaultExtent: pt(1280, 1024),
     // Default themes for the theme manager    
-    displayThemes: {
+    displayThemes: using(lively.paint).run(function(gfx) {
+	return {
+	
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
             styleName:   'primitive',
             titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
@@ -3497,7 +3499,8 @@ PasteUpMorph.subclass("WorldMorph", {
             widgetPanel: { borderColor: Color.red, borderWidth: 2, borderRadius: 0,
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new lively.paint.RadialGradient([Color.yellow.lighter(2), 1, Color.yellow]) },
+                           fill: new lively.paint.RadialGradient([new lively.paint.Stop(0, Color.yellow.lighter(2)), 
+								  new lively.paint.Stop(1, Color.yellow)]) },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
@@ -3507,44 +3510,60 @@ PasteUpMorph.subclass("WorldMorph", {
         lively: { // This is to be the style we like to show for our personality
             styleName: 'lively',
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new lively.paint.LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(2)], 
-						    lively.paint.LinearGradient.SouthNorth)},
+                           fill: new gfx.LinearGradient([ 
+			       new gfx.Stop(0, Color.primary.blue.lighter()),
+			       new gfx.Stop(0.5, Color.primary.blue),
+			       new gfx.Stop(1, Color.primary.blue.lighter(2)) 
+			   ], gfx.LinearGradient.SouthNorth)
+			 },
             slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new lively.paint.LinearGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue])},
+			   fill: new gfx.LinearGradient([ new gfx.Stop(0, Color.primary.blue.lighter(2)),
+							  new gfx.Stop(1, Color.primary.blue)])
+			 },
             button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
-                           fill: new lively.paint.LinearGradient([Color.darkGray, 1, Color.darkGray.lighter(2)], lively.paint.LinearGradient.SouthNorth) },
+                           fill: new gfx.LinearGradient([ new gfx.Stop(0, Color.darkGray), 
+							  new gfx.Stop(1, Color.darkGray.lighter(2))], 
+							gfx.LinearGradient.SouthNorth) },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new lively.paint.RadialGradient([Color.primary.blue.lighter(2), 1, Color.primary.blue.lighter()]) },
+                           fill: new gfx.RadialGradient([new gfx.Stop(0, Color.primary.blue.lighter(2)), 
+						       new gfx.Stop(1, Color.primary.blue.lighter())]) 
+			 },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
-        // fabrik:      { borderColor: Color.gray.lighter(), borderWidth: 2, borderRadius: 3,
-        //                     fill: Color.gray, opacity: 1}
-        fabrik:      { borderColor: Color.blue, borderWidth: 1.5 , borderRadius: 3,
-                            fill: Color.blue.lighter(), opacity: 0.8}
+            // fabrik:      { borderColor: Color.gray.lighter(), borderWidth: 2, borderRadius: 3,
+            //                     fill: Color.gray, opacity: 1}
+            fabrik:      { borderColor: Color.blue, borderWidth: 1.5 , borderRadius: 3,
+                           fill: Color.blue.lighter(), opacity: 0.8}
         },
 
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
             styleName: 'turquoise',
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new lively.paint.LinearGradient([Color.turquoise, 1, Color.turquoise.lighter(3)])},
+                           fill: new gfx.LinearGradient([new gfx.Stop(0, Color.turquoise), 
+							 new gfx.Stop(1, Color.turquoise.lighter(3))])},
             slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new lively.paint.LinearGradient([Color.turquoise.lighter(2), 1, Color.turquoise])},
+			   fill: new gfx.LinearGradient([new gfx.Stop(0, Color.turquoise.lighter(2)),
+							 new gfx.Stop(1, Color.turquoise)])},
             button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
-                           fill: new lively.paint.RadialGradient([Color.turquoise.lighter(), 1, Color.turquoise]) },
+                           fill: new gfx.RadialGradient([new gfx.Stop(0, Color.turquoise.lighter()),
+							 new gfx.Stop(1, Color.turquoise)]) },
             widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
                            fill: Color.turquoise.lighter(3), borderRadius: 16},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new lively.paint.RadialGradient([Color.turquoise.lighter(2), 1, Color.turquoise]) },
+                           fill: new gfx.RadialGradient([new gfx.Stop(0, Color.turquoise.lighter(2)), 
+							 new gfx.Stop(1, Color.turquoise)]) },
 	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
 	    fabrik:      { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-                               fill: Color.turquoise.lighter(3), borderRadius: 16}
+                           fill: Color.turquoise.lighter(3), borderRadius: 16}
         }
-    },
+    }
+    }),
+	
 
     initialize: function($super, canvas, backgroundImageId) {
         var bounds = Rectangle.fromElement(canvas);
@@ -3566,11 +3585,15 @@ PasteUpMorph.subclass("WorldMorph", {
         }
         $super(new lively.scene.Rectangle(bounds));
 
-	var gradient = new lively.paint.LinearGradient([Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter(), 1, Color.primary.blue, 1, Color.primary.blue.lighter()]);
-	gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");
+	var gfx =lively.paint;
+	var gradient = new gfx.LinearGradient(
+	    [new gfx.Stop(0, Color.primary.blue.lighter()),
+	     new gfx.Stop(0.25, Color.primary.blue),
+	     new gfx.Stop(0.50, Color.primary.blue.lighter()),
+	     new gfx.Stop(0.75, Color.primary.blue),
+	     new gfx.Stop(1, Color.primary.blue.lighter())]);
+	//gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");
         this.setFill(gradient);
-	
-	
 	this.enterCount = 0;
     },
 
@@ -4699,7 +4722,11 @@ Morph.subclass('LinkMorph', {
         "onto me to transport objects between worlds.",
     openForDragAndDrop: false,
     suppressHandles: true,
-    style: {borderColor: Color.black, fill: new lively.paint.RadialGradient([Color.blue.lighter(), 1, Color.blue, 1, Color.blue.darker()], pt(0.4, 0.2))},
+    style: {borderColor: Color.black, 
+	    fill: lively.lang.let(lively.paint, function(g) { 
+		return new g.RadialGradient([new g.Stop(0, Color.blue.lighter()) , new g.Stop(0.5, Color.blue), 
+					     new g.Stop(1, Color.blue.darker())], pt(0.4, 0.2))})
+	   },
     
     initialize: function($super, otherWorld, initialPosition) {
         // In a scripter, type: world.addMorph(new LinkMorph(null))
@@ -4734,8 +4761,14 @@ Morph.subclass('LinkMorph', {
     
     addPathBack: function() {
 	var pathBack = new LinkMorph(WorldMorph.current(), this.bounds().center());
-        pathBack.setFill(new lively.paint.RadialGradient([Color.orange, 1, Color.red, 1, Color.red.darker(2)], 
-							 pt(0.4, 0.2)));
+	
+        pathBack.setFill(lively.lang.let(lively.paint, function(gfx) {
+	    return new gfx.RadialGradient([new gfx.Stop(0, Color.orange), 
+					   new gfx.Stop(0.5, Color.red), 
+					   new gfx.Stop(1, Color.red.darker(2))],
+					  pt(0.4, 0.2));
+	}));
+	
         this.myWorld.addMorph(pathBack);
 	return pathBack;
     },
@@ -4850,7 +4883,8 @@ LinkMorph.subclass('ExternalLinkMorph', {
 
     documentation: "A link to a different web page, presumably containing another LK",
 
-    style: {borderColor: Color.black, fill: new lively.paint.RadialGradient([Color.green, 1, Color.yellow])},
+    style: {borderColor: Color.black, fill: new lively.paint.RadialGradient([new lively.paint.Stop(0, Color.green), 
+									     new lively.paint.Stop(1, Color.yellow)])},
     
     initialize: function($super, url, position) {
 	$super(null, position || pt(0, 0));

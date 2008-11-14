@@ -420,7 +420,10 @@ PanelMorph.subclass('SquiggleMorph', {
         this.savedHandColor = null;
 	this.contentMorph = this.addMorph(new ClipMorph(ext.extentAsRectangle().insetBy(this.getBorderWidth()/2)));
 	this.contentMorph.ignoreEvents();
-	this.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue.lighter()], lively.paint.LinearGradient.NorthSouth));
+	var gfx = lively.paint;
+	this.setFill(new gfx.LinearGradient([new gfx.Stop(0, Color.white),
+					     new gfx.Stop(1, Color.primary.blue.lighter())], 
+					    gfx.LinearGradient.NorthSouth));
     },
     
     onMouseDown: function(evt) {
@@ -2270,9 +2273,12 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
         var panel = new PanelMorph(extent).linkToStyles(["panel"]);
 	var model = this.getModel();
 	panel.relayToModel(model, {});
-	
+	var gfx = lively.paint;
 	panel.applyStyle({borderWidth: 2, 
-			  fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], lively.paint.LinearGradient.NorthSouth)});
+			  fill: new gfx.LinearGradient([new gfx.Stop(0, Color.white),
+							new gfx.Stop(1, Color.primary.blue)], 
+						       gfx.LinearGradient.NorthSouth)
+			 });
         //panel.setBorderColor(Color.blue);
         // TODO: add rounding to all the elements (panel, window & titlebar)
         // or make the titlebar round depending on the window
@@ -2428,9 +2434,12 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent).linkToStyles(['panel']);
-	panel.applyStyle({fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue.lighter()], lively.paint.LinearGradient.NorthSouth)});
+	var gfx = lively.paint;
+	panel.applyStyle({fill: new gfx.LinearGradient([new gfx.Stop(0, Color.white), 
+							new gfx.Stop(1, Color.primary.blue.lighter())],
+						       gfx.LinearGradient.NorthSouth)});
 	panel.connectModel({model: model});
-
+	
         // Marketwatch/Bigcharts logo
         var m = panel.addMorph(new ImageMorph(new Rectangle(20, 10, 135, 68), 
 	    "http://b.mktw.net/images/logo/frontpage.gif" ));
@@ -4144,8 +4153,12 @@ Morph.subclass("EngineMorph", {
 
     documentation: "The Radial Engine demo",
     angleStep: Math.PI/8,
-    style: {  fill: new lively.paint.LinearGradient([Color.gray, 1, Color.darkGray], lively.paint.LinearGradient.NorthSouth),
-	      borderColor: Color.black, borderWidth: 1},
+    style: using(lively.paint).run(function(gfx) {
+	return {  fill: new gfx.LinearGradient([new gfx.Stop(0, Color.gray), 
+						new gfx.Stop(1, Color.darkGray)], gfx.LinearGradient.NorthSouth),
+		  borderColor: Color.black, 
+		  borderWidth: 1};
+    }),
     
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
@@ -4465,14 +4478,16 @@ Morph.subclass("AnimMorph", {
  * PlayerMorph is the end-user interface for showing the animation
  */ 
 
-Morph.subclass("PlayerMorph",  {
+BoxMorph.subclass("PlayerMorph",  {
 
     initialize: function($super) {
         var rect = new Rectangle(0, 0, 330, 260);
-        $super(new lively.scene.Rectangle(rect));
-        this.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
-						     lively.paint.LinearGradient.NorthSouth));
-
+        $super(rect);
+        this.setFill(using(lively.paint).run(function(gfx) {
+	    return new gfx.LinearGradient([new gfx.Stop(0, Color.white), new gfx.Stop(1, Color.primary.blue)], 
+					  gfx.LinearGradient.NorthSouth);
+	}));
+					     
         this.animation = new AnimMorph(rect);
         this.animation.startup("Resources/Anim/Frame", 469, ".jpg"); 
 

@@ -20,9 +20,7 @@ function dbgOn(cond, optMessage) {
 function using() {
     var args = arguments; // FIXME: enable using('lively.Text')
     return {run: function module(inner) { 
-	var exports = inner.apply(args[0], args); 
-	if (exports) Object.extend(args[0], exports);
-	return exports;
+	return inner.apply(args[0], args); 
     }};
 }
 
@@ -716,6 +714,10 @@ lively.lang.Execution = { // will be extended later
     installStackTracers: Functions.Null,
 };
 
+
+lively.lang.let = function(/** **/) {
+    return arguments[arguments.length - 1].apply(this, arguments);
+}
 
 /*
  * Stack Viewer when Dans StackTracer is not available

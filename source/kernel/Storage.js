@@ -18,7 +18,12 @@ using(lively.storage).run(function(module) {
 
 BoxMorph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
-    style: { borderWidth: 3, borderColor: Color.black},
+    style: { borderWidth: 3, borderColor: Color.black,
+	     fill: new lively.paint.RadialGradient([new lively.paint.Stop(0, Color.primary.orange), 
+						    new lively.paint.Stop(0.3, Color.primary.orange.lighter()),
+						    new lively.paint.Stop(1, Color.primary.orange)]), 
+	     borderRadius: 6
+	   },
     openForDragAndDrop: false,
     suppressHandles: true,
     size: 40,
@@ -36,7 +41,6 @@ BoxMorph.subclass('PackageMorph', {
 	var delta = this.getBorderWidth()/2;
 	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
 	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
-	this.applyStyle({ fill: new lively.paint.RadialGradient([Color.primary.orange, 1, Color.primary.orange.lighter(), 2, Color.primary.orange]), borderRadius: 6});
     },
 
     getHelpText: function() {

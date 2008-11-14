@@ -1316,7 +1316,16 @@ using(namespace('lively.paint'), lively.data.Wrapper).run(function(unused, Wrapp
 
 Wrapper.subclass('lively.paint.Stop', {
     initialize: function(offset, color) {
+	dbgOn(isNaN(offset));
 	this.rawNode = NodeFactory.create("stop", { offset: offset, "stop-color": color});
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+    },
+
+    copyFrom: function(copier, other) {
+	if (other.rawNode) this.rawNode = other.rawNode.cloneNode(true);
     },
 
     color: function() {
@@ -1371,6 +1380,15 @@ Wrapper.subclass("lively.paint.Gradient", {
 	this.rawNode.appendChild(stop.rawNode);
 	return this;
     },
+
+    setStops: function(list) {
+	if (this.stops && this.stops.length > 0) throw new Error('stops already initialized to ' + this.stops);
+	list.forEach(function(stop) {
+	    this.stops.push(stop);
+	    this.rawNode.appendChild(stop.rawNode);
+	}, this);
+    },
+    
 
     processSpec: function(stopSpec) {
 	// spec is an array of the form [color_1, delta_1, color_2, delta_2 .... color_n],
@@ -1430,7 +1448,7 @@ this.Gradient.subclass("lively.paint.LinearGradient", {
 	$super(NodeFactory.create("linearGradient",
 				  {x1: vector.x, y1: vector.y, 
 				   x2: vector.maxX(), y2: vector.maxY()})); 
-	this.processSpec(stopSpec);
+	this.setStops(stopSpec);
 	return this;
     },
 
@@ -1457,11 +1475,11 @@ this.Gradient.subclass('lively.paint.RadialGradient', {
 
     initialize: function($super, stopSpec, optF) {
 	$super(NodeFactory.create("radialGradient"));
+	this.setStops(stopSpec);
 	if (optF) {
-	    this.rawNode.setAttributeNS(null, "fx", optF.x);
-	    this.rawNode.setAttributeNS(null, "fy", optF.y);
+	    this.setTrait("fx", optF.x);
+	    this.setTrait("fy", optF.y);
 	}
-	this.processSpec(stopSpec);
     }
 });
 

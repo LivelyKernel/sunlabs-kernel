@@ -82,13 +82,16 @@ BoxMorph.subclass('ButtonMorph', {
     
     changeAppearanceFor: function(value) {
         var delta = value ? 1 : 0;
-        if (this.baseFill instanceof lively.paint.LinearGradient) {
+	var gfx = lively.paint;
+        if (this.baseFill instanceof gfx.LinearGradient) {
             var base = this.baseFill.stops[0].color().lighter(delta);
-	    var gradient = new lively.paint.LinearGradient([base, 1, base.lighter()], lively.paint.LinearGradient.SouthNorth);
+	    var gradient = 
+		new gfx.LinearGradient([new gfx.Stop(0, base), new gfx.Stop(1, base.lighter())],
+				       gfx.LinearGradient.SouthNorth);
 	    this.setFill(gradient);
-        } else if (this.baseFill instanceof lively.paint.RadialGradient) {
+        } else if (this.baseFill instanceof gfx.RadialGradient) {
             var base = this.baseFill.stops[0].color().lighter(delta);
-            this.setFill(new lively.paint.RadialGradient([base.lighter(), 1, base]));
+            this.setFill(new gfx.RadialGradient([new gfx.Stop(0, base.lighter()), new gfx.Stop(1, base)]));
         } else if (this.baseFill instanceof Color) {
             this.setFill(this.baseFill.lighter(delta)); 
         } else throw new Error('unsupported fill type ' + this.baseFill);
@@ -1539,7 +1542,8 @@ Morph.subclass("MenuMorph", {
             var label = TextMorph.makeLabel(captionIfAny, this.labelStyle);
             label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
             this.label = this.addMorph(label);
-	    this.label.setFill(new lively.paint.LinearGradient([Color.white, 1, Color.gray]));
+	    this.label.setFill(new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
+								new lively.paint.Stop(1, Color.gray)]));
         }
 
 
@@ -1727,12 +1731,16 @@ BoxMorph.subclass("SliderMorph", {
 	
 	
 	var fill = this.slider.getFill();
+	var gfx = lively.paint;
         if (fill instanceof lively.paint.LinearGradient) {
-            var direction = this.vertical() ? lively.paint.LinearGradient.EastWest : lively.paint.LinearGradient.NorthSouth;
+            var direction = this.vertical() ? gfx.LinearGradient.EastWest : gfx.LinearGradient.NorthSouth;
             var baseColor = fill.stops[0].color();
-	    this.setFill(new lively.paint.LinearGradient([baseColor, 1, baseColor.lighter(2), 1, baseColor], direction));
+	    this.setFill(new gfx.LinearGradient([new gfx.Stop(0, baseColor, 1), 
+						 new gfx.Stop(0.5, baseColor.lighter(2)),
+						 new gfx.Stop(1, baseColor)], direction));
 	    // FIXME: just flip the gradient
-            this.slider.setFill(new lively.paint.LinearGradient([baseColor, 1, fill.stops[1].color()], direction));
+            this.slider.setFill(new gfx.LinearGradient([ new gfx.Stop(0, baseColor),
+							 new gfx.Stop(1, fill.stops[1].color())], direction));
 	    this.setBorderWidth(this.slider.getBorderWidth());
         } else {
             this.setFill(fill.lighter());
@@ -2531,8 +2539,11 @@ BoxMorph.subclass("TitleBarMorph", {
     barHeight: 22,
     shortBarHeight: 15,
     style: {borderWidth: 0, fill: null},
-    labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), fill: new lively.paint.LinearGradient([Color.white, 1, Color.gray]) },
-
+    labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), 
+		  fill: lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
+						     new lively.paint.Stop(1, Color.gray)])
+		},
+    
     initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
 	if (optSuppressControls)  this.barHeight = this.shortBarHeight; // for dialog boxes
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
@@ -2593,7 +2604,9 @@ BoxMorph.subclass("TitleBarMorph", {
     },
 
     highlight: function(trueForLight) {
-	this.label.setFill(trueForLight ? new lively.paint.LinearGradient([Color.white, 1, Color.lightGray]) : null);
+	var gfx = lively.paint;
+	this.label.setFill(trueForLight ? new gfx.LinearGradient([new gfx.Stop(0, Color.white), 
+								  new gfx.Stop(1, Color.lightGray)]) : null);
     },
 
     okToBeGrabbedBy: function(evt) {
@@ -2698,7 +2711,10 @@ Morph.subclass("WindowControlMorph", {
     
     initialize: function($super, rect, inset, color) {
         $super(new lively.scene.Ellipse(rect.insetBy(inset)));
-        this.setFill(new lively.paint.RadialGradient([color.lighter(2), 1, color, 1, color.darker()], this.focus));
+	var gfx = lively.paint;
+        this.setFill(new gfx.RadialGradient([new gfx.Stop(0, color.lighter(2)),
+					     new gfx.Stop(0.5, color),
+					     new gfx.Stop(1, color.darker())], this.focus));
         return this;
     },
 
@@ -2712,13 +2728,19 @@ Morph.subclass("WindowControlMorph", {
 
     onMouseOver: function($super, evt) {
         var prevColor = this.getFill().stops[1].color();
-        this.setFill(new lively.paint.RadialGradient([Color.white, 1, prevColor, 1, prevColor.darker()], this.focus));
+	var gfx = lively.paint;
+        this.setFill(new gfx.RadialGradient([new gfx.Stop(0, Color.white), 
+					     new gfx.Stop(0.5, prevColor),
+					     new gfx.Stop(1, prevColor.darker())], this.focus));
         $super(evt);
     },
     
     onMouseOut: function($super, evt) {
         var prevColor = this.getFill().stops[1].color();
-        this.setFill(new lively.paint.RadialGradient([prevColor.lighter(2), 1, prevColor, 1, prevColor.darker()], this.focus));
+	var gfx = lively.paint;
+        this.setFill(new gfx.RadialGradient([new gfx.Stop(0, prevColor.lighter(2)),
+					     new gfx.Stop(0.5, prevColor),
+					     new gfx.Stop(1, prevColor.darker())], this.focus));
         $super(evt);
     },
     

@@ -2750,7 +2750,8 @@ Widget.subclass('ComponentBox', {
         this.panel = panel;
         
         panel.applyStyle({borderWidth: 2,
-			  fill: new lively.paint.LinearGradient([Color.white, 1, Color.primary.blue], 
+			  fill: new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white), 
+								 new lively.paint.Stop(1, Color.primary.blue)], 
 								lively.paint.LinearGradient.NorthSouth)});
 	
 
