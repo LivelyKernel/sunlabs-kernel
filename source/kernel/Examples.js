@@ -410,7 +410,16 @@ PanelMorph.subclass('SquiggleMorph', {
     documentation: "An even simpler drawing program",
     drawingColor: Color.red,
     drawingHandColor: Color.yellow,
-    style: { borderWidth: 2 },
+    style: { 
+	borderWidth: 2, 
+	fill: new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
+					       new lively.paint.Stop(1, Color.primary.blue.lighter())], 
+					      lively.paint.LinearGradient.NorthSouth)
+    },
+
+    penStyle: {
+	borderWidth: 2, borderColor: this.drawingColor, fill: null
+    },
     
     initialize: function($super, ext) {
         $super(ext);
@@ -420,17 +429,13 @@ PanelMorph.subclass('SquiggleMorph', {
         this.savedHandColor = null;
 	this.contentMorph = this.addMorph(new ClipMorph(ext.extentAsRectangle().insetBy(this.getBorderWidth()/2)));
 	this.contentMorph.ignoreEvents();
-	var gfx = lively.paint;
-	this.setFill(new gfx.LinearGradient([new gfx.Stop(0, Color.white),
-					     new gfx.Stop(1, Color.primary.blue.lighter())], 
-					    gfx.LinearGradient.NorthSouth));
     },
     
     onMouseDown: function(evt) {
         if (!this.currentMorph) {
-            this.start = this.localize(evt.mousePoint);
-            this.currentMorph = this.contentMorph.addMorph(new Morph(new lively.scene.Polyline([pt(0,0)])));
-	    this.currentMorph.applyStyle({borderWidth: 2, borderColor: this.drawingColor});
+            this.start = this.localize(evt.point());
+            this.currentMorph = this.contentMorph.addMorph(new Morph(new lively.scene.Polyline([this.start])));
+	    this.currentMorph.applyStyle(this.penStyle);
             // TODO: relaying events stops from moving morphs after drawing them..
             // this.currentMorph.relayMouseEvents(this, {onMouseMove: "onMouseMove"});
 
@@ -450,12 +455,12 @@ PanelMorph.subclass('SquiggleMorph', {
 
     onMouseMove: function(evt) {
         if (this.currentMorph) {
-	    if (!this.containsWorldPoint(evt.mousePoint)) {
+	    if (!this.containsWorldPoint(evt.point())) {
 		this.onMouseUp(evt);
 		return;
 	    } 
 	    var verts = this.currentMorph.shape.vertices();
-	    var pt = this.localize(evt.mousePoint.subPt(this.start));
+	    var pt = this.localize(evt.point());//.subPt(this.start));
 	    if (verts.length > 0 && !verts[verts.length - 1].eqPt(pt)) {
                 verts.push(pt);
                 this.currentMorph.shape.setVertices(verts);
@@ -864,8 +869,8 @@ PanelMorph.subclass('lively.Examples.Sun3DMorph', {
 
     onMouseMove: function(evt) {
 
-        var angleY = -evt.mousePoint.x;
-        var angleX = -evt.mousePoint.y;
+        var angleY = -evt.point().x;
+        var angleX = -evt.point().y;
         if (this.wireObject) {
             this.wireObject.paint(this.morphArray, angleX, angleY, 0);
         }
