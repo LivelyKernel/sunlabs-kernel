@@ -15,13 +15,61 @@ console.log("Hello");
  */
 
 console.log("start gridlayout.js");
+module('lively.GridLayout').requires().toRun(function(thisModule) {
+
+LayoutManager.subclass('GridLayoutManager', {
+    setExtent: function(target, newExtent) {
+	// one of our morphs wants to change size
+	// It should call layoutChanged() so we can pick up the change and do a layout
+	console.log('extent on ' + target);
+	if (target.requestExtent && target.requestExtent.eqPt(newExtent)) {
+	    return;
+	}
+	if (!target.iMeanIt) {
+	    target.requestExtent = newExtent;
+	    target.owner && (target.owner.needLayout = true);
+	    target.layoutChanged();
+	}
+
+    },
+    
+    setPosition: function($super, target, newPosition) {
+	if (target.iMeanIt) {
+	    // console.log(this.myName + ": setPosition " + this.bounds() +"->"+ newPosition);
+	    $super(target, newPosition);
+	    // this.translateBy(newPosition.subPt(this.getPosition()));
+	} else {
+	    console.log("Deny: " + target.bounds() + "->" + newPosition);
+	}
+    },
+    
+    setBounds: function($super, target, newBounds) {
+	$super(target, newBounds);
+	target.setExtent(newBounds.extent());
+    },
+
+    layoutChanged: function(target) {
+	    // console.log(this.myName + " layout changed");
+	if (!target.realExtent || !target.realExtent.eqPt(target.bounds(true).extent())) {
+	    // XXX BOGUS for texts
+	    target instanceof GridLayoutMorph ||target.setExtent(target.bounds(true).extent());
+	    // console.log(this.myName + " Changed size with out calling setExtent");
+	}
+    }
+
+ });
+
 
 
 BoxMorph.subclass('GridLayoutMorph', {
     
     gridLineSpec: {
-	borderWidth: 0, borderColor: Color.black, fill: Color.red, fillOpacity: 0.4, strokeOpacity: 0
+	borderWidth: 0, borderColor: Color.black, fill: Color.red, fillOpacity: 0.4, strokeOpacity: 0,
     },
+    
+    style: { fill: Color.grey, borderWidth: 1, borderColor: Color.black },
+    
+    layoutManager: new GridLayoutManager(),
 
     initialize: function($super, position) {
 	console.log("GridLayout started");
@@ -34,7 +82,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	$super(position.extent(pt(20, 20)));
     },
 
-	// set constraints and layout handler
+    // set constraints and layout handler
 
     addMorph: function($super, morph, cst) {
 	if (morph.isEpimorph) {
@@ -58,34 +106,6 @@ BoxMorph.subclass('GridLayoutMorph', {
 	morph.cst = this.validateConstraints(cst);
 	console.log(this.myName +" adding: " + morph + " ("+morph.cst.row+","+morph.cst.col+" " +morph.cst.cols+"x"+morph.cst.rows+")");
 	
-	// override to usurp the std behavior
-	
-	morph.realSetPosition = morph.setPosition;
-	morph.setPosition=function(newPosition) {
-	    if (this.iMeanIt) {
-		// console.log(this.myName + ": setPosition " + this.bounds() +"->"+ newPosition);
-		this.realSetPosition(newPosition);
-		// this.translateBy(newPosition.subPt(this.getPosition()));
-	    } else {
-		console.log("Deny: " + this.bounds() + "->" + newPosition);
-	    }
-	};
-	
-	// one of our morphs wants to change size
-	// It should call layoutChanged() so we can pick up the change and do a layout
-	
-	morph.realSetExtent = morph.Extent;
-	morph.setExtent = function(newExtent) {
-	    if (this.requestExtent && this.requestExtent.eqPt(newExtent)) {
-		return;
-	    }
-	    if (!this.iMeanIt) {
-		this.requestExtent = newExtent;
-		this.owner && (this.owner.needLayout = true);
-		this.layoutChanged();
-	    }
-	};
-	
 	// add alignment options, depending on where the click was ?
 	
     	morph.realMorphMenu=morph.morphMenu;
@@ -97,25 +117,10 @@ BoxMorph.subclass('GridLayoutMorph', {
 	    menu.addItem(["toggle " + cp, morph.owner.toggleAlign.curry(morph, cp)]);
 	    return menu;
 	};
+	morph.layoutManager = this.layoutManager;
+	console.log('extended ' + morph + ' with ' + this + ' layoutManager');
 	
 	// no-one should call setBounds directly, but just in case
-	
-	morph.realSetBounds = morph.setBounds;
-	morph.setBounds=function(newBounds) {
-	    this.realSetBounds(newBounds);
-	    this.setExtent(newBounds.extent());
-	};
-	
-	morph.realLayoutChanged = morph.layoutChanged;
-	morph.layoutChanged = function() {
-	    // console.log(this.myName + " layout changed");
-	    this.realLayoutChanged();
-	    if (!this.realExtent || !this.realExtent.eqPt(this.bounds(true).extent())) {
-		// XXX BOGUS for texts
-		this instanceof GridLayoutMorph ||this.setExtent(this.bounds(true).extent());
-		// console.log(this.myName + " Changed size with out calling setExtent");
-	    }
-	};
 	
         $super(morph);
 	this.needLayout=true;
@@ -130,7 +135,6 @@ BoxMorph.subclass('GridLayoutMorph', {
     }, 
     
     // remove all the cruft we added to this morph
-    
     removeMorph: function($super, m) {
 	console.log("removing morph: " + m);
 	if ($super(m)) {
@@ -139,28 +143,13 @@ BoxMorph.subclass('GridLayoutMorph', {
 		this.needLayout=true;
 		this.layoutChanged();
 	    }
-	    if (m.realLayoutChanged) {
-		m.layoutChanged = m.realLayoutChanged;
-		delete m.realLayoutChanged;
-	    }
-	    if (m.realSetPosition) {
-		m.setPosition = m.realSetPosition;
-		delete m.realSetPosition;
-	    }
-	    if (m.realSetBounds) {
-		m.setBounds = m.realSetBounds;
-		delete m.setBounds;
-	    }
-	    if (m.realSetExtent) {
-		m.setExtent = m.realSetExtent;
-		delete m.setExtent;
-	    }
 	    if (m.realMorphMenu) {
 		m.morphMenu = m.realMorphMenu;
 		delete m.setExtent;
 	    }
 	    delete m.requestExtent;
 	    delete m.iMeanIt;
+	    delete m.layoutManager; // use the default inherited from prototype
 	    // delete m.morphMenu;
 	}
     },
@@ -455,12 +444,14 @@ BoxMorph.subclass('GridLayoutMorph', {
 	this.colLine = new Array();
 	for(var i=0; i<this.rows.length; i++) {
 	    var w = new GridLineMorph(new Rectangle(0,this.rows[i]-1,ext.x,2));
+	    w.applyStyle(this.gridLineSpec);
 	    w.row = i;
 	    this.rowLine[i] = w;
 	    this.addMorphFrontOrBack(w, true);
 	}
-	for(var i=0; i<this.cols.length; i++) {
+	for (var i=0; i<this.cols.length; i++) {
 	    var w = new GridLineMorph(new Rectangle(this.cols[i]-1,0,2,ext.y));
+	    w.applyStyle(this.gridLineSpec);
 	    w.col = i;
 	    this.colLine[i] = w;
 	    this.addMorphFrontOrBack(w, true);
@@ -625,9 +616,10 @@ BoxMorph.subclass("GridLineMorph", {
 console.log("end gridlayout.js");
 	
 GridLayoutMorph.demo = function(world, position) {
+    console.log("sample GridLayout");
     world = world || WorldMorph.current();
     position = position || world.bounds().center();
-    console.log("sample GridLayout");
+    
     HandMorph.logDnD=true;
     var l1 = new TextMorph(new Rectangle(0,0,100,20), "Grid Demo");
     var l2 = new TextMorph(new Rectangle(0,0,100,20), "a random label");
@@ -682,9 +674,10 @@ GridLayoutMorph.demo = function(world, position) {
     g2.gridLineSpec.fill=Color.black;
     
     // uncomment this to play with alignments
-    // r.startStepping(700, "nextAlign");
+   // r.startStepping(700, "nextAlign");
 
     return grid;
 }
     
 console.log("end griddemo");
+});

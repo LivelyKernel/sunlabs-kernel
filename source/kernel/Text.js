@@ -933,11 +933,6 @@ BoxMorph.subclass("TextMorph", {
         return this;
     },
 
-    layoutChanged: function($super) {
-	this.verbose && console.log("changed on " + this.textString.truncate());
-	$super();
-    },
-
     bounds: function($super, ignoreTransients) {
         if (this.fullBounds != null) return this.fullBounds;
         this.resetRendering();

@@ -954,7 +954,7 @@ Morph.addMethods({
         if (this.owner) 
             this.setBounds(bounds);
 	else
-            this.internalSetBounds(bounds);
+            this.layoutManager.setBounds(this, bounds);
     }
     
 });

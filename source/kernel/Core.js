@@ -1639,7 +1639,11 @@ Morph.addMethods({
 	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
-    internalSetBounds: function(newRect) {
+});
+
+Object.subclass('LayoutManager', {
+
+    setBounds: function(target, newRect) {
 	// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
 	// This is so that layout management can move things around without triggering redundant or
 	// recursive calls on adjustForNewBounds(q.v.)
@@ -1656,30 +1660,51 @@ Morph.addMethods({
 
 	// DI:  Note that there is an inconsistency here, in that we are reading and comparing
 	// the full bounds, yet if we set extent, it only affects the shape (ie, innerBounds)
-
-	var priorBounds = this.bounds();
+	
+	var priorBounds = target.bounds();
 
 	if (!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
-		this.setPosition(newRect.topLeft());
+	    target.setPosition(newRect.topLeft());
 	}
 	if (!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
 	    // FIXME some shapes don't support setFromRect
-	    this.shape.setBounds(newRect.extent().extentAsRectangle());
- 	    this.adjustForNewBounds();
+	    target.shape.setBounds(newRect.extent().extentAsRectangle());
+ 	    target.adjustForNewBounds();
 	}
-	if (this.clipPath) {
+	if (target.clipPath) {
 	    // console.log('clipped to new shape ' + this.shape);
-            this.clipToShape();
+            target.clipToShape();
 	}
     },
 
+    setExtent: function(target, newExtent) {
+	target.setBounds(target.getPosition().extent(newExtent));
+    },
+
+    setPosition: function(target, newPosition) {
+	var delta = newPosition.subPt(target.getPosition());
+	target.translateBy(delta);
+	return delta;
+    },
+
+    layoutChanged: function(target) {
+	
+    }
+
+
+});
+
+Morph.addMethods({
+    
+    layoutManager: new LayoutManager(), // singleton
+
     setBounds: function(newRect) {
  	//this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
-	this.internalSetBounds(newRect);
+	this.layoutManager.setBounds(this, newRect);
     }.wrap(Morph.onLayoutChange('shape')),
-
+    
     setExtent: function(newExtent) {
-	this.setBounds(this.getPosition().extent(newExtent));
+	this.layoutManager.setExtent(this, newExtent);
     },
 
     getExtent: function(newRect) { return this.shape.bounds().extent() },
@@ -2313,7 +2338,7 @@ Morph.addMethods({
     },
     
     adjustFocusHalo: function() {
-	this.focusHalo.internalSetBounds(this.localBorderBounds().expandBy(this.focusHaloInset));
+	this.focusHalo.setBounds(this.localBorderBounds().expandBy(this.focusHaloInset));
     },
 
     addFocusHalo: function() {
@@ -2874,6 +2899,7 @@ Morph.addMethods({
 	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
 	    this.owner.layoutChanged();
 	}
+	this.layoutManager.layoutChanged(this);
     },
 
     adjustForNewBounds: function() {
@@ -2900,8 +2926,7 @@ Morph.addMethods({
     },
 
     setPosition: function(newPosition) {
-	var delta = newPosition.subPt(this.getPosition());
-	this.translateBy(delta); 
+	this.layoutManager.setPosition(this, newPosition);
     }
 
 });
@@ -3953,6 +3978,7 @@ PasteUpMorph.subclass("WorldMorph", {
              }],
             ["Layout Demo", function(evt) {
                 module('Main.js').requires('GridLayout.js').toRun(function() {
+		    alert('demo!!');
 		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
 		});
 	    }]
