@@ -129,9 +129,10 @@ Morph.subclass("ClockMorph", {
 	    this.addMorph(TextMorph.makeLabel(items[i],{fontSize: 8}).centerAt(labelPosition));
         }
 	
-        this.hours   = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.50)], 4, Color.blue));
-        this.minutes = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.70)], 3, Color.blue));
-        this.seconds = this.addMorph(Morph.makeLine([pt(0,0), pt(0, -radius*0.75)], 2, Color.red));
+        this.hours = this.addMorph(Morph.makePolygon([pt(-2.5, 0), pt(0, -radius*0.50), pt(2.5, 0)], 0, null, Color.blue));
+        this.minutes = this.addMorph(Morph.makePolygon([pt(-2, 0), pt(0, -radius*0.70), pt(2, 0)], 0, null, Color.blue));
+        this.seconds = this.addMorph(Morph.makePolygon([pt(-1.5, radius*0.25), pt(0, -radius*0.85), pt(1.5, radius*0.25)], 0, null, Color.red));
+        this.dot = this.addMorph(Morph.makeCircle(pt(0, 0), 3, 0, null, Color.red));
     
         this.setHands();
         this.changed(); 
