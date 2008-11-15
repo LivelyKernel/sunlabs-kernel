@@ -252,20 +252,24 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
     testParseClassAndMethods: function() {
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
+                  'formals: ["Pane1Content",\n\t\t"Pane1Selection", "Pane1Choicer"],\n' +
                   '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
                   '})';
         this.sut.source = src;
         var descriptor = this.sut.parseClass();
         this.assert(descriptor, 'no descriptor');
         
-        Global.mDscr = descriptor.methodDescrs;
-        this.assertEqual(mDscr.length, 2);
-        this.assertEqual(mDscr[0].name, 'setUp');
-        this.assertIdentity(mDscr[0].startIndex, src.indexOf('setUp'));
-        this.assertIdentity(mDscr[0].stopIndex, src.indexOf('},\n\ttearDown'));
-        this.assertEqual(mDscr[1].name, 'tearDown');
-        this.assertIdentity(mDscr[1].startIndex, src.indexOf('tearDown'));
-        this.assertIdentity(mDscr[1].stopIndex, src.indexOf('}\n})'));
+        Global.dscr = descriptor.classElemDescr;
+        this.assertEqual(dscr.length, 3);
+        this.assertEqual(dscr[0].name, 'setUp');
+        this.assertIdentity(dscr[0].startIndex, src.indexOf('setUp'));
+        this.assertIdentity(dscr[0].stopIndex, src.indexOf('},\nformals'));
+        this.assertEqual(dscr[1].name, 'formals');
+        this.assertIdentity(dscr[1].startIndex, src.indexOf('formals:'));
+        this.assertIdentity(dscr[1].stopIndex, src.indexOf(',\n\ttearDown'));
+        this.assertEqual(dscr[2].name, 'tearDown');
+        this.assertIdentity(dscr[2].startIndex, src.indexOf('tearDown'));
+        this.assertIdentity(dscr[2].stopIndex, src.indexOf('}\n})'));
     },
     
     testParseMethod: function() {
@@ -276,6 +280,16 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.name, 'testMethod_8');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
+    },
+    
+    testParseProperty01: function() {
+        var src = 'initialViewExtent: pt(400,250),';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('propertyDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'initialViewExtent');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(','));
     }
     
 });

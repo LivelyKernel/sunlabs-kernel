@@ -13,7 +13,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-module('lively.Tools').requires('lively.Text' /*,'lively.Ometa'*/).toRun(function(module, text) {
+module('lively.Tools').requires('lively.Text' ,'lively.Ometa').toRun(function(module, text) {
 
 // Modules: "+Modules" --> setModule in model
 // Modules: "-Modules" --> getModule in model
@@ -1916,29 +1916,29 @@ Object.subclass('FileParser', {
 // Another File Parser - to see how fast OMeta is
 // ===========================================================================
 
-// Object.subclass('AnotherFileParser', {
-//     
-//     grammarFile: 'LKFileParser.txt',
-//     
-//     initialize: function(source) {
-//         this.source = source;
-//         this.grammar = AnotherFileParser.grammar || OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
-//         AnotherFileParser.grammar = this.grammar;
-//         this.grammar.parser = this;
-//     },
-//     
-//     parse: function(rule) {
-//         return OMetaSupport.matchAllWithGrammar(this.grammar, rule, this.source);
-//     },
-//     
-//     parseClass: function() {
-//         var ms = new Date().getTime();
-//         var result = this.parse("klassDef");
-//         ms = new Date().getTime() - ms;
-//         console.log('parsed class ' + result.name + ' in ' + ms + ' ms');
-//         return result;
-//     }
-// });
+Object.subclass('AnotherFileParser', {
+    
+    grammarFile: 'LKFileParser.txt',
+    
+    initialize: function(source) {
+        this.source = source;
+        this.grammarProto = AnotherFileParser.grammarProto || OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
+        AnotherFileParser.grammarProto = this.grammarProto;
+    },
+    
+    parse: function(rule) {
+        var grammar = Object.delegated(this.grammarProto,{_parser: this});
+        var ms = new Date().getTime();
+        var result = OMetaSupport.matchAllWithGrammar(grammar, rule, this.source);
+        ms = new Date().getTime() - ms;
+        console.log('parsed ' + result.type + ' named ' + result.name + ' in ' + ms + ' ms');
+        return result;
+    },
+    
+    parseClass: function() {
+        return this.parse("klassDef");
+    }
+});
 
 // ===========================================================================
 // ChangeList
