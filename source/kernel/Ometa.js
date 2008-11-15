@@ -17,14 +17,34 @@ OMetaSupport = {
     },
     
     translateToJs: function(src) {
-        var ometaSrc = BSOMetaJSParser.matchAll(src, "topLevel");
-        var jsSrc = BSOMetaJSTranslator.match(ometaSrc, "trans");
+        var ometaSrc = OMetaSupport.matchAllWithGrammar(BSOMetaJSParser, "topLevel", src);
+        var jsSrc = OMetaSupport.matchWithGrammar(BSOMetaJSTranslator, "trans", ometaSrc);
         return jsSrc;
     },
     
     ometaEval: function(src) {
         var jsSrc = OMetaSupport.translateToJs(src);
         return eval(jsSrc);
+    },
+    
+    matchAllWithGrammar: function(grammar, rule, src) {
+        return grammar.matchAll(src, rule, null, OMetaSupport.handleError.curry(src));
+    },
+    
+    matchWithGrammar: function(grammar, rule, src) {
+        return grammar.match(src, rule, null, OMetaSupport.handleError.curry(src));
+    },
+    
+    handleError: function(src, grammarInstance, errorIndex) {
+        var charsBefore = 500;
+        var charsAfter = 250;
+        console.log('OMeta Error');
+        var startIndex = Math.max(0, errorIndex - charsBefore);
+        var stopIndex = Math.min(src.length, errorIndex + charsAfter);
+        
+        console.log(src.substring(startIndex, errorIndex) + '<--Error-->' + src.substring(errorIndex, stopIndex));
+        console.log('Rules: ' + grammarInstance._ruleStack);
+        Global.x = grammarInstance;
     },
     
     fileContent: function(fileName) {

@@ -1,0 +1,52 @@
+ometa LKFileParser <: Parser {
+    isLKParser      = ''                                                    -> true,
+  
+    /* helper productions */
+    fromTo :x :y    = seq(x) (~seq(y) char)*:cs seq(y)                  -> cs,
+	num :x                                                                              -> { $elf.numOnStack(x) },
+	open :x             = add(x)	                                                    -> { console.log('opening ' + x);  x},
+	close :x :y         = add(y) remove(y) remove(x)	                                -> { console.log('closing ' + x); x},
+	add :x              = exactly(x)		                                            -> { $elf.stack.push(x) },
+	remove :x           -> { if ($elf.stack.pop() !== x) { console.log('Unmatched ' + x); throw new Error('Unmatched ' + x) }; true},
+	everythingBut :x :y = ~exactly(x) ~exactly(y) anything:a                            -> a,
+	fromToRec :x :y     = open(x) ( fromToRec(x,y) | everythingBut(x,y))*:a close(x, y) -> { x+ a.join('') + y },
+	fromToRecP :x :y :p = open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y },
+	
+	/* basic string processing */
+    nl              = '\n' | '\r'                                       -> '\n',
+	spacesNoNl      = (~nl space)*:spcs									-> spcs,
+	nameFirst       = letter | '$' | '_',
+  	nameRest        = nameFirst | digit,
+  	iName           = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
+  	isKeyword :x    = ?BSJSParser._isKeyword(x),
+  	name            = iName:n ~isKeyword(n)								-> n,
+  	namespaceId     = ~"subclass" (name:n '.' namespaceId:r             -> { n + '.' + r }
+											| name:n)					-> { n },
+  	keyword         = iName:k isKeyword(k)								-> k,
+ 
+    /* generic things for source code descriptors */
+    logPos              -> { console.log($elf.pos()); true },
+    createSourceDescr   -> { {startIndex: $elf.pos()} },
+    
+	/* methods */
+    methodBody      = fromToRec('{', '}'),
+    methodDef       = createSourceDescr:descr name:mName ':' spaces "function" fromToRec('(', ')') spaces methodBody (',' | spaces)
+                    -> { Object.extend(descr, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); descr },
+                    
+    methodDefWithSpcs = spaces methodDef spaces,
+	methodDefs      = open('{')	(methodDefWithSpcs)*:a close('{', '}')	-> a,
+	
+	traitMethodDefsOrNothing    = ',' klassName:trait					-> trait
+								| ',' spaces methodDefs:mDescriptors	-> mDescriptors
+								| spacesNoNl							-> null,
+
+    /* class stuff*/
+	klass 	        = namespaceId:n,
+	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
+    klassDef        = createSourceDescr:descr klass:sName '.' "subclass" '(' klassName:kName traitMethodDefsOrNothing:defs ')'
+                    -> { Object.extend(descr, {type: 'classDef', name: kName, superclassName: sName, stopIndex: $elf.pos()-1}); descr }
+};
+
+LKFileParser.stack = [];
+LKFileParser.numOnStack = function(char) { return LKFileParser.stack.select(function(ea) { return ea === char}).length };
+LKFileParser;
