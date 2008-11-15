@@ -4162,7 +4162,16 @@ Morph.subclass("EngineMorph", {
 	return {  fill: new gfx.LinearGradient([new gfx.Stop(0, Color.gray), 
 						new gfx.Stop(1, Color.darkGray)], gfx.LinearGradient.NorthSouth),
 		  borderColor: Color.black, 
-		  borderWidth: 1};
+		  borderWidth: 1}
+    }),
+    pistonStyle: using(lively.paint).run(function(gfx) {
+	return {  fill: new gfx.LinearGradient(
+				[new gfx.Stop(0, Color.darkGray), 
+				new gfx.Stop(0.4, Color.lightGray),
+				new gfx.Stop(1, Color. darkGray)],
+			gfx.LinearGradient.EastWest),
+		  borderColor: Color.black, 
+		  borderWidth: 2}
     }),
     
     initialize: function($super, fullRect) {
@@ -4252,10 +4261,10 @@ Morph.subclass("EngineMorph", {
         var cylinder = Morph.makePolygon(cylVerts, 4, Color.black, Color.gray);
         cylinder.setLineJoin(lively.scene.LineJoins.Round);
         cylinder.setPosition(cr.topLeft().addXY(0, -dHead));
-        var pistonBW = 2;
+        var pistonBW = this.pistonStyle.borderWidth;
         var pistonDx = (cylinder.getBorderWidth() + pistonBW) / 2 - 1;
         var piston = Morph.makeRectangle(cr.insetByPt(pt(pistonDx, (cr.height-this.stroke)/2)));
-	piston.applyStyle({fill: Color.darkGray, borderWidth: pistonBW});
+	piston.applyStyle(this.pistonStyle);
         cylinder.addMorph(piston);
         var wristPin = Morph.makeCircle(piston.innerBounds().center(), cr.width*0.1, 0, null, Color.black);
         piston.addMorph(wristPin);
