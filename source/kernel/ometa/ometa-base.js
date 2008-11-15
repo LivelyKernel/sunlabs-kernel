@@ -82,14 +82,17 @@ Global.OMInputStream = function OMInputStream(hd, tl) {
 OMInputStream.prototype.head = function() { return this.hd }
 OMInputStream.prototype.tail = function() { return this.tl }
 
-Global.OMInputStreamEnd = function OMInputStreamEnd() { this.memo = { } }
+Global.OMInputStreamEnd = function OMInputStreamEnd(idx) {
+    this.memo = { }
+    this.idx  = idx
+}
 OMInputStreamEnd.prototype.head = function() { throw fail }
 OMInputStreamEnd.prototype.tail = function() { throw fail }
 
 Array.prototype.toOMInputStream  = function() { return makeArrayOMInputStream(this, 0) }
 String.prototype.toOMInputStream = Array.prototype.toOMInputStream
 
-Global.makeArrayOMInputStream = function makeArrayOMInputStream(arr, idx) { return idx < arr.length ? new ArrayOMInputStream(arr, idx) : new OMInputStreamEnd() }
+Global.makeArrayOMInputStream = function makeArrayOMInputStream(arr, idx) { return idx < arr.length ? new ArrayOMInputStream(arr, idx) : new OMInputStreamEnd(idx) }
 
 Global.ArrayOMInputStream = function ArrayOMInputStream(arr, idx) {
   this.memo = { }
@@ -161,9 +164,12 @@ Global.OMeta = {
     return this._applyRule(rule);
   },
   _applyRule: function(rule, optTarget) {
+      if (this.prototype && this._ruleStack && this.prototype.hasOwnProperty(rule)) this._ruleStack.push(rule);
       if (!this[rule]) throw new Error('Grammer has no rule ' + rule);
       var target = optTarget || this;
-      return this[rule].apply(target);
+      var result = this[rule].apply(target);
+      if (this.prototype && this._ruleStack && this.prototype.hasOwnProperty(rule)) this._ruleStack.pop();
+      return result;
   },
   _superApplyWithArgs: function($elf, rule) {
     for (var idx = arguments.length - 1; idx > 1; idx--)
@@ -355,7 +361,7 @@ Global.OMeta = {
     var realArgs = [rule]
     for (var idx = 0; idx < args.length; idx++)
       realArgs.push(args[idx])
-    var m = this.delegated({input: input})
+    var m = this.delegated({input: input, _ruleStack: []});
     m.initialize()
     try { return realArgs.length == 1 ? m._apply.call(m, realArgs[0]) : m._applyWithArgs.apply(m, realArgs) }
     catch (f) {
