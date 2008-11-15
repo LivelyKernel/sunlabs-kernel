@@ -1922,7 +1922,8 @@ Object.subclass('AnotherFileParser', {
     
     initialize: function(source) {
         this.source = source;
-        this.grammar = OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
+        this.grammar = AnotherFileParser.grammar || OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
+        AnotherFileParser.grammar = this.grammar;
         this.grammar.parser = this;
     },
     

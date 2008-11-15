@@ -30,21 +30,21 @@ ometa LKFileParser <: Parser {
     
 	/* methods */
     methodBody      = fromToRec('{', '}'),
-    methodDef       = createSourceDescr:descr name:mName ':' spaces "function" fromToRec('(', ')') spaces methodBody (',' | spaces)
+    methodDef       = createSourceDescr:descr name:mName ':' spaces "function" fromToRec('(', ')') spaces methodBody
                     -> { Object.extend(descr, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); descr },
                     
-    methodDefWithSpcs = spaces methodDef spaces,
+    methodDefWithSpcs = spaces methodDef:mD (',' | spaces)                      -> mD,
 	methodDefs      = open('{')	(methodDefWithSpcs)*:a close('{', '}')	-> a,
 	
 	traitMethodDefsOrNothing    = ',' klassName:trait					-> trait
 								| ',' spaces methodDefs:mDescriptors	-> mDescriptors
 								| spacesNoNl							-> null,
 
-    /* class stuff*/
+    /* class stuff */
 	klass 	        = namespaceId:n,
 	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
-    klassDef        = createSourceDescr:descr klass:sName '.' "subclass" '(' klassName:kName traitMethodDefsOrNothing:defs ')'
-                    -> { Object.extend(descr, {type: 'classDef', name: kName, superclassName: sName, stopIndex: $elf.pos()-1}); descr }
+    klassDef        = createSourceDescr:descr klass:sName '.' "subclass" '(' klassName:kName traitMethodDefsOrNothing:descrs ')'
+                    -> { Object.extend(descr, {type: 'classDef', name: kName, superclassName: sName, methodDescrs: descrs, stopIndex: $elf.pos()-1}); descr }
 };
 
 LKFileParser.stack = [];

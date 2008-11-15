@@ -235,7 +235,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.sut.verbose = true;
     },
     
-    testParseClass01: function() {
+    testParseClass: function() {
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
                   '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
@@ -247,6 +247,25 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.superclassName, 'Object');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
+    },
+    
+    testParseClassAndMethods: function() {
+        var src = 'Object.subclass(\'Dummy\', {\n' +
+                  '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
+                  '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
+                  '})';
+        this.sut.source = src;
+        var descriptor = this.sut.parseClass();
+        this.assert(descriptor, 'no descriptor');
+        
+        Global.mDscr = descriptor.methodDescrs;
+        this.assertEqual(mDscr.length, 2);
+        this.assertEqual(mDscr[0].name, 'setUp');
+        this.assertIdentity(mDscr[0].startIndex, src.indexOf('setUp'));
+        this.assertIdentity(mDscr[0].stopIndex, src.indexOf('},\n\ttearDown'));
+        this.assertEqual(mDscr[1].name, 'tearDown');
+        this.assertIdentity(mDscr[1].startIndex, src.indexOf('tearDown'));
+        this.assertIdentity(mDscr[1].stopIndex, src.indexOf('}\n})'));
     },
     
     testParseMethod: function() {
