@@ -109,10 +109,11 @@ Morph.subclass("ClockMorph", {
     style: {borderWidth: 2},
     openForDragAndDrop: false,
 
-    initialize: function($super, position, radius) {
+    initialize: function($super, position, radius, timeZoneOffset) {
         $super(new lively.scene.Ellipse(position, radius));
         this.linkToStyles(['clock']);
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
+        this.timeZoneOffset = timeZoneOffset;
         return this;
     },
 
@@ -146,9 +147,14 @@ Morph.subclass("ClockMorph", {
 
     setHands: function() {
         var currentDate = new Date();
-        var second = currentDate.getSeconds();
-        var minute = currentDate.getMinutes() + second/60;
-        var hour = currentDate.getHours() + minute/60;
+        var offset;
+        if (this.timeZoneOffset === undefined)
+            offset = -1 * currentDate.getTimezoneOffset() / 60;
+        else
+            offset = this.timeZoneOffset;
+        var second = currentDate.getUTCSeconds();
+        var minute = currentDate.getUTCMinutes() + second/60;
+        var hour = currentDate.getUTCHours() + offset + minute/60;
         this.hours.setRotation(hour/12*2*Math.PI);
         this.minutes.setRotation(minute/60*2*Math.PI);
         this.seconds.setRotation(second/60*2*Math.PI); 
