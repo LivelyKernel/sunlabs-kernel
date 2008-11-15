@@ -75,7 +75,7 @@ ometa BSOMetaTranslator {
   Rule  :name locals:ls trans:body    -> ['"', name, '":function(){', ls, 'return ', body, '}']         .join(''),
   Grammar :name :sName
           !(self.sName = sName)
-          trans*:rules                -> [name, '=', sName, '.delegated({', rules.join(','), '})']      .join(''),
+          trans*:rules                -> [name, '=Object.delegated(',sName,',{', rules.join(','), '})']      .join(''),
   locals  = [string+:vs]              -> ['var ', vs.join(','), ';']                                    .join('')
           | []                        -> '',
   transFn = trans:x                   -> ['(function(){return ', x, '})']                               .join('')

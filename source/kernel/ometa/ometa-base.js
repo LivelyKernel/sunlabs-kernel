@@ -43,7 +43,7 @@
 // }
 
 try {
-  M = OMeta.delegated({
+  M = Object.delegated(OMeta,{
     number: function() {
       var $elf = this
       return $elf._or(
@@ -108,7 +108,7 @@ ArrayOMInputStream.prototype.tail = function() {
 }
 
 Global.makeOMInputStreamProxy = function makeOMInputStreamProxy(target) {
-  return target.delegated({
+  return Object.delegated(target,{
     memo:   { },
     target: target,
     tail:   function() { return makeOMInputStreamProxy(target.tail()) }
@@ -256,7 +256,7 @@ Global.OMeta = {
   foreign: function() {
     var g   = this._apply("anything"),
         r   = this._apply("anything"),
-        gi  = g.delegated({input: makeOMInputStreamProxy(this.input)})
+        gi  = Object.delegated(g,{input: makeOMInputStreamProxy(this.input)})
     var ans = gi._apply(r)
     this.input = gi.input.target
     return ans
@@ -361,7 +361,7 @@ Global.OMeta = {
     var realArgs = [rule]
     for (var idx = 0; idx < args.length; idx++)
       realArgs.push(args[idx])
-    var m = this.delegated({input: input, _ruleStack: []});
+    var m = Object.delegated(this,{input: input, _ruleStack: []});
     m.initialize()
     try { return realArgs.length == 1 ? m._apply.call(m, realArgs[0]) : m._applyWithArgs.apply(m, realArgs) }
     catch (f) {

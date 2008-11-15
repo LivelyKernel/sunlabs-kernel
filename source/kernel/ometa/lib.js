@@ -69,11 +69,11 @@ Global.printOn = function printOn(objOrArray, ws) {
 
 // delegation
 
-Object.prototype.delegated = function(props) {
+Object.delegated = function(from, props) {
   var f = function() { }
-  f.prototype = this // rk what's the reason for that?
+  f.prototype = from // rk what's the reason for that?
   var r = new f()
-  r.prototype = this // rk this makes sense .... 
+  r.prototype = from // rk this makes sense .... 
   for (var p in props)
     if (props.hasOwnProperty(p))
       r[p] = props[p]
