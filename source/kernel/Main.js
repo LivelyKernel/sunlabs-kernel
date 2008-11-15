@@ -285,24 +285,39 @@ function populateWorldWithExamples(world) {
 	    
             // Add sample curve stuff
             if (Config.showCurveExample) {
+                var g = lively.scene;
                 // bezier blob
-                var shape1 = [pt(0,0), pt(50,0), pt(50,50), pt(0,50), pt(0,0)];
-                //var widget = new Morph(pt(100,100).asRectangle(),"rect");
-                var widget = new Morph(new lively.scene.Path(shape1, Color.red, 3, Color.black));
+                var shape = new g.Path([
+        		    new g.MoveTo(0, 0),
+        		    new g.CurveTo(50,0),
+        		    new g.CurveTo(50,50),
+        		    new g.CurveTo(0,50),
+        		    new g.CurveTo(0,0)
+        		]);
+                var widget = widget = new Morph(shape);
+        		widget.applyStyle({fill: Color.red, borderWidth: 3, borderColor: Color.black});
                 this.addMorph(widget);
-                widget = Morph.makeRectangle(pt(250,50).asRectangle());
 		
                 // rectangle with rounded corners
-                var shape2 = [pt(10,0), pt(60,0), pt(70,10), pt(70,40),
-                    pt(60,50), pt(10,50), pt(0,40), pt(0, 10), pt(10,0)];
+                var shape = new g.Path([
+        		    new g.MoveTo(10, 0),
+        		    new g.CurveTo(60,0),
+        		    new g.CurveTo(70,10),
+        		    new g.CurveTo(70,40),
+        		    new g.CurveTo(60,50),
+        		    new g.CurveTo(10,50),
+        		    new g.CurveTo(0,40),
+        		    new g.CurveTo(0,10),
+        		    new g.CurveTo(10,0),
+        		]);
 		
-                for (var i = 2; i<=8; i+=2) {
-                    // this will work too
-                    // shape2[i].radius = pt(10,10); shape2[i].type = "arc";
-                    shape2[i].radius = 10; shape2[i].type = "arc";
-                }
-		
-                widget.setShape(new lively.scene.Path(shape2, Color.green, 2, Color.red));
+                // for (var i = 2; i<=8; i+=2) {
+                //     // this will work too
+                //     // shape2[i].radius = pt(10,10); shape2[i].type = "arc";
+                //     shape2[i].radius = 10; shape2[i].type = "arc";
+                // }
+		        widget = new Morph(shape);
+        		widget.applyStyle({fill: Color.green, borderWidth: 2, borderColor: Color.red});
                 this.addMorph(widget);
             } 
             if (Config.showBitmap) { 
