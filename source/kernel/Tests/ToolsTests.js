@@ -242,11 +242,21 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
                   '})';
         this.sut.source = src;
         var descriptor = this.sut.parseClass();
-        this.assert(descriptor);
+        this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'Dummy');
         this.assertEqual(descriptor.superclassName, 'Object');
-        this.assertEqual(descriptor.startIndex, 0);
-        this.assertEqual(descriptor.stopIndex, src.length-1);
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.length - 1);
+    },
+    
+    testParseMethod: function() {
+        var src = 'testMethod_8: function($super,a,b) { function abc(a) {\n\t1+2;\n}; }';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('methodDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'testMethod_8');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.length - 1);
     }
     
 });
