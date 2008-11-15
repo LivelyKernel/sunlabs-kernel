@@ -278,7 +278,7 @@ TestCase.subclass('LayoutTests', {
     
     testHLayoutTwoMorphsHorizontalAndResize: function() {
         var sut = new HLayout(this.baseMorph, {noResize: false});
-        var morph1 = Morph.makeRectangle0,0,20,30),
+        var morph1 = Morph.makeRectangle(0,0,20,30),
             morph2 = Morph.makeRectangle(0,0,30,40);
         this.baseMorph.addMorph(morph1);
         this.baseMorph.addMorph(morph2);
