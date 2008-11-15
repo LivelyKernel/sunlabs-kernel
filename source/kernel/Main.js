@@ -487,7 +487,7 @@ function main() {
     }
     var importer = new Importer();
     if (documentHasSerializedMorphs(document)) {
-        module("worldLoading").requires(Config.modulesOnWorldLoad).toRun(function() {
+        require(Config.modulesOnWorldLoad).toRun(function() {
             var world = importer.loadWorldContents(document);    
             world.displayOnCanvas(canvas);
             console.log("world is " + world);
