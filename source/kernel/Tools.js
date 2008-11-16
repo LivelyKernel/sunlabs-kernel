@@ -1931,7 +1931,7 @@ Object.subclass('AnotherFileParser', {
         var ms = new Date().getTime();
         var result = OMetaSupport.matchAllWithGrammar(grammar, rule, this.source);
         ms = new Date().getTime() - ms;
-        console.log('parsed ' + result.type + ' named ' + result.name + ' in ' + ms + ' ms');
+        console.log('parsed ' + /*result.type + ' named ' + result.name + */' in ' + ms + ' ms');
         return result;
     },
     

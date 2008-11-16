@@ -17,6 +17,8 @@ ometa LKFileParser <: Parser {
 	                    | open(x) ( chunk(x,y) | everythingBut(x,y))*:a close(x, y)     -> { x+ a.join('') + y },
 	
 	chunkWith :x :y :p  = open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y },
+	somethingRelated    = (~'\n' ~'\r' ~';' anything)*,
+	somethingBigRelated = ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | ~',' ~';' anything)*,
 	defEnd              = ";" | "",
 	classElemDefEnd     = "," | "",
 	
@@ -28,62 +30,91 @@ ometa LKFileParser <: Parser {
   	iName           = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
   	isKeyword :x    = ?BSJSParser._isKeyword(x),
   	name            = iName:n ~isKeyword(n)								-> n,
-  	namespaceId     = ~"subclass" (name:n '.' namespaceId:r             -> { n + '.' + r }
-											| name:n)					-> { n },
   	keyword         = iName:k isKeyword(k)								-> k,
+	namespaceIdSplitted = name:n '.' namespaceIdSplitted:r              -> { [n].concat(r) }
+	                    | name:n                                        -> { [n] },
+	namespaceId         = namespaceIdSplitted:nArr                          -> nArr.join('.'),
+	nsFollowedBy :x     = namespaceIdSplitted:nArr ?(nArr.last() === x) -> nArr.slice(0,nArr.length-1).join('.'),
+	nsWith :x     = namespaceIdSplitted:nArr ?nArr.include(x) -> { var i = nArr.indexOf(x); {before: nArr.slice(0,i).join('.'), after: nArr.slice(i+1,nArr.length).join('.')} },
+  	
  
     /* generic things for source code descriptors */
     logPos              -> { console.log($elf.pos()); true },
-    createSourceDescr   -> { {startIndex: $elf.pos()} },
+    descriptor   -> { {startIndex: $elf.pos()} },
+    
+    /* functions */
+    basicFunction       = "function" spaces (name:n | "") chunk('(', ')') spaces chunk('{', '}')  -> n,
+    func                = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction          -> fn,
+    functionDef         = descriptor:d func:fn defEnd
+                        -> { Object.extend(d, {type: 'functionDef', name: fn, stopIndex: $elf.pos()-1}); d },
+    executedFuncDef     = descriptor:d open('(') basicFunction:fn close('(', ')') somethingRelated defEnd
+                        -> { Object.extend(d, {type: 'executedFuncDef', name: fn, stopIndex: $elf.pos()-1}); d },
+    staticFuncDef       = descriptor:d namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' spaces basicFunction defEnd
+                        -> { Object.extend(d, {type: 'staticFuncDef', name: nsArr.last(), klassName: nsArr.slice(0,nsArr.length-1).join('.'), stopIndex: $elf.pos()-1}); d },
     
 	/* methods */
-    methodBody          = chunk('{', '}'),
-    methodDef           = createSourceDescr:descr name:mName ':' spaces "function" spaces (name | "") chunk('(', ')') spaces methodBody
-                        -> { Object.extend(descr, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); descr },
     methodDefWithSpcs   = spaces methodDef:mD classElemDefEnd                      -> mD,
+    methodDef           = descriptor:d name:mName ':' spaces basicFunction
+                        -> { Object.extend(d, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); d },
+    methodModificationDef   = descriptor:d nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
+                            -> { Object.extend(d, {type: 'methodModificationDef', name: spec.after, klassName: spec.before, stopIndex: $elf.pos()-1}); d },
     
     /* properties */
-    propertyDef         = stackSize:s createSourceDescr:descr name:pName ':' spaces ~"function" ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | ~',' anything)* ',' /*argh, cannot use classElemDefEnd, prop has to end with ','*/
+    propertyDefWithSpcs = spaces propertyDef:pD spaces                          -> pD,
+    propertyDef         = stackSize:s descriptor:d name:pName ':' spaces ~"function" somethingBigRelated ',' /*argh, cannot use classElemDefEnd, prop has to end with ','*/
                         -> { if ($elf.stack.length !== s) {
                                 throw new Error('sth wrong wiht the stack: ' + $elf.stack)
                              };
-                             Object.extend(descr, {
+                             Object.extend(d, {
                                 type: 'propertyDef',
                                 name: pName,
                                 stopIndex: $elf.pos()-1});
-                            descr },
-    propertyDefWithSpcs = spaces propertyDef:pD spaces                          -> pD,
+                            d },
                                     
-    
-	classElems      = open('{')	spaces ( propertyDefWithSpcs | methodDefWithSpcs )*:a spaces log('now want to close class') close('{', '}')	-> a,
-	
+    /* class stuff */
+	classElems      = open('{')	spaces ( propertyDefWithSpcs | methodDefWithSpcs )*:a spaces close('{', '}')	-> a,
 	restKlassDef    = ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 	                | ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
 	                | ',' klassName:trait					                        -> { {trait: trait} }
 					| spacesNoNl							                        -> null,
-
-    /* class stuff */
-	klass 	        = namespaceId:n,
+	klass 	        = namespaceId,
 	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
-    klassDef        = createSourceDescr:descr klass:sName '.' "subclass" '(' klassName:kName restKlassDef:spec ')' defEnd
-                    -> { Object.extend(descr, {
-                            type: 'classDef',
+    klassDef        = descriptor:d nsFollowedBy("subclass"):sName   '(' klassName:kName restKlassDef:spec ')' defEnd
+                    -> { Object.extend(d, {
+                            type: 'klassDef',
                             name: kName,
                             trait: spec.trait,
                             superclassName: sName,
                             subElements: spec.classElems,
                             stopIndex: $elf.pos()-1
-                        }); descr },
+                        }); d },
+    basicKlassExt :d    = "Object.extend" '(' klass:n restKlassDef:spec ')' -> { Object.extend(d, {name: n, trait: spec.trait,subElements: spec.classElems }) }
+                        | (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
+                        -> { Object.extend(d, {name: n, subElements: clElems }) },
+    klassExtensionDef   = descriptor:d basicKlassExt(d) defEnd
+                        -> { Object.extend(d, { type: 'klassExtensionDef', stopIndex: $elf.pos()-1 }); d },
     
     /* 'object' stuff */
-    restObjDef      = log('looking for classElems') classElems:propsAndMethodDescrs log('looking for spaces') spaces -> propsAndMethodDescrs,
-    objectDef       = createSourceDescr:descr ( namespaceId:o | "var" spaces namespaceId:o ) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
-                    -> { Object.extend(descr, {
+    restObjDef      = classElems:propsAndMethodDescrs spaces -> propsAndMethodDescrs,
+    objectDef       = descriptor:d ( namespaceId:o | "var" spaces namespaceId:o ) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
+                    -> { Object.extend(d, {
                             type: 'objectDef',
                             name: o,
                             subElements: propsAndMethodDescrs,
                             stopIndex: $elf.pos()-1
-                        }); descr }
+                        }); d },
+    
+    /* otherStuff */
+    comment     = descriptor:d spacesNoNl (fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl   -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
+    newline     = descriptor:d ('\n' | '\r' )                                 -> { d.stopIndex = $elf.pos()-1; d.type = 'newline'; d },
+    unknown     = descriptor:d somethingBigRelated defEnd                         -> { d.stopIndex = $elf.pos()-1; d.type = 'unknown'; d },
+    
+    fileContent =   (comment | newline | klassDef | unknown)*:a                    -> a
+                    
+/*    fileContent =   (newline | comment | spaces |
+                    | log('1') klassDef | klassExtensionDef | objectDef
+                    | log('2') methodDef | propertyDef | methodModificationDef
+                    | log('3') functionDef | executedFuncDef | staticFuncDef | unknown)*:a                    -> a*/
 };
 
 LKFileParser.stack = [];

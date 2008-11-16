@@ -587,7 +587,7 @@ var Event = (function() {
 })();
 
 
-(function() {
+(function prepareEventSystem() {
     var disabler = {    
 	handleEvent: function(evt) { 	
 	    evt.preventDefault(); 

@@ -235,7 +235,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.sut.verbose = true;
     },
     
-    testParseClass: function() {
+    testParseClass: function() {    // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
                   '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
@@ -249,22 +249,22 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
     },
     
-    testParseClassWithTrait: function() {
-        var src = 'BasicCodeMarkupParser.subclass(\'CodeMarkupParser\', ViewTrait, {\n' +
+    testParseClassWithTrait: function() {   // Object.subclass
+        var src = 'lively.xyz.ABC.TheClass.subclass(\'CodeMarkupParser\', ViewTrait, {\n' +
             'formals: ["CodeDocument", "CodeText", "URL"],\n\n' +
             'initialize: function(url) {\n\n}\n\n});'
         this.sut.source = src;
         var descriptor = this.sut.parseClass();
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'CodeMarkupParser');
-        this.assertEqual(descriptor.superclassName, 'BasicCodeMarkupParser');
+        this.assertEqual(descriptor.superclassName, 'lively.xyz.ABC.TheClass');
         this.assertEqual(descriptor.trait, 'ViewTrait');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
         this.assertEqual(descriptor.subElements.length, 2);
     },
     
-    testParseClassAndMethods: function() {
+    testParseClassAndMethods: function() {  // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
                   'formals: ["Pane1Content",\n\t\t"Pane1Selection", "Pane1Choicer"],\n' +
@@ -287,7 +287,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(dscr[2].stopIndex, src.indexOf('}\n})'));
     },
     
-    testParseMethod: function() {
+    testParseMethod: function() {   // xxx: function()...,
         var src = 'testMethod_8: function($super,a,b) { function abc(a) {\n\t1+2;\n}; }';
         this.sut.source = src;
         var descriptor = this.sut.parse('methodDef');
@@ -297,7 +297,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
     },
     
-    testParseProperty: function() {
+    testParseProperty: function() { // xxx: yyy,
         var src = 'initialViewExtent: pt(400,250),';
         this.sut.source = src;
         var descriptor = this.sut.parse('propertyDef');
@@ -307,7 +307,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(','));
     },
 
-    testParseObject: function() {
+    testParseObject: function() {   // var object = {...};
         var src = 'var Converter = {\n'+
             '\tdocumentation: "singleton used to parse DOM attribute values into JS values",\n\n\n\n' +
             'toBoolean: function toBoolean(string) {\n' +
@@ -319,7 +319,100 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
         this.assertEqual(descriptor.subElements.length, 2);
+    },
+    
+    testParseFunction1: function() {    // function abc() {...};
+        var src = 'function equals(leftObj, rightObj) {\n\t\treturn cmp(leftObj, rightObj);\n\t};'
+        this.sut.source = src;
+        var descriptor = this.sut.parse('functionDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'equals');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+    },
+    
+    testParseFunction2: function() {    // var abc = function() {...};
+        var src = 'var equals = function(leftObj, rightObj) {\n\t\treturn cmp(leftObj, rightObj);\n\t};'
+        this.sut.source = src;
+        var descriptor = this.sut.parse('functionDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'equals');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+    },
+    
+    testParseExecutedFunction: function() { // (function() {...});
+        var src = '(function testModuleLoad() {\n\t\tvar modules = Global.subNamespaces(true);\n\t}).delay(5);';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('executedFuncDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'testModuleLoad');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+    },
+    
+    testParseStaticFunctions: function() {  // Klass.method = function() {...};
+        var src = 'thisModule.ScriptEnvironment.open = function() {};'
+        this.sut.source = src;
+        var descriptor = this.sut.parse('staticFuncDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'open');
+        this.assertEqual(descriptor.klassName, 'thisModule.ScriptEnvironment');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+    },
+    
+    testParseMethodModification: function() {   // Klass.protoype.method = function() {...};
+        var src = 'Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt) {  });';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('methodModificationDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'morphMenu');
+        this.assertEqual(descriptor.klassName, 'Morph');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+    },
+    
+    testParseClassExtension01: function() { // Object.extend(...);
+        var src = 'Object.extend(thisModule.ScriptEnvironment, { \nopen: function() {\n\t\t1+2\n\t}});';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('klassExtensionDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'thisModule.ScriptEnvironment');
+        this.assertEqual(descriptor.subElements.length, 1);
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+    },
+    
+    testParseClassExtension02: function() { // Klass.addMethods(...); || Klass.addProperties(...);
+        var src = 'Morph.addMethods({\n\ngetStyleClass: function() {\n\treturn this.styleClass;\n},});';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('klassExtensionDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'Morph');
+        this.assertEqual(descriptor.subElements.length, 1);
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+    },
+    
+    testParseComment: function() { // /* ... */ || // ...
+        var src = '   /*\n * bla bla bla\n *\n */';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('comment');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.type, 'comment');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf('/'));
+    },
+    
+    testFileContent: function() {
+        //var src = '// Bla\n// ===\n\nnamespace(\'lively.data\');\n\nObject.subclass(\'lively.data.Wrapper\', { });\n\n';
+        var src = '// Bla\n// ===\nnamespace(\'lively.data\');\nObject.subclass(\'lively.data.Wrapper\', { });';
+        this.sut.source = src;
+        var all = this.sut.parse('fileContent');
+        this.assertEqual(all.length, 6);
     }
+    
     
 });
 
