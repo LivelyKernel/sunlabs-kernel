@@ -249,6 +249,21 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
     },
     
+    testParseClassWithTrait: function() {
+        var src = 'BasicCodeMarkupParser.subclass(\'CodeMarkupParser\', ViewTrait, {\n' +
+            'formals: ["CodeDocument", "CodeText", "URL"],\n\n' +
+            'initialize: function(url) {\n\n}\n\n});'
+        this.sut.source = src;
+        var descriptor = this.sut.parseClass();
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'CodeMarkupParser');
+        this.assertEqual(descriptor.superclassName, 'BasicCodeMarkupParser');
+        this.assertEqual(descriptor.trait, 'ViewTrait');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.length - 1);
+        this.assertEqual(descriptor.subElements.length, 2);
+    },
+    
     testParseClassAndMethods: function() {
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
@@ -259,7 +274,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         var descriptor = this.sut.parseClass();
         this.assert(descriptor, 'no descriptor');
         
-        Global.dscr = descriptor.classElemDescr;
+        var dscr = descriptor.subElements;
         this.assertEqual(dscr.length, 3);
         this.assertEqual(dscr[0].name, 'setUp');
         this.assertIdentity(dscr[0].startIndex, src.indexOf('setUp'));
@@ -282,7 +297,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
     },
     
-    testParseProperty01: function() {
+    testParseProperty: function() {
         var src = 'initialViewExtent: pt(400,250),';
         this.sut.source = src;
         var descriptor = this.sut.parse('propertyDef');
@@ -290,6 +305,20 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.name, 'initialViewExtent');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(','));
+    },
+
+    testParseObject: function() {
+        var src = 'var Converter = {\n'+
+            '\tdocumentation: "singleton used to parse DOM attribute values into JS values",\n\n\n\n' +
+            'toBoolean: function toBoolean(string) {\n' +
+        	'return string && string == \'true\';\n}\n\n};';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('objectDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'Converter');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+        this.assertEqual(descriptor.subElements.length, 2);
     }
     
 });

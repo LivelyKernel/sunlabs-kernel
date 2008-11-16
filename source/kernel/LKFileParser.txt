@@ -2,16 +2,23 @@ ometa LKFileParser <: Parser {
     isLKParser      = ''                                                    -> true,
   
     /* helper productions */
+    log :msg        -> { console.log(msg); true },
     fromTo :x :y    = seq(x) (~seq(y) char)*:cs seq(y)                  -> cs,
     stackSize                                                                           -> { $elf.stack.length },
 	num :x                                                                              -> { $elf.numOnStack(x) },
 	open :x             = add(x)	                                                    -> { console.log('opening ' + x);  x},
-	close :x :y         = add(y) remove(y) remove(x)	                                -> { console.log('closing ' + x); x},
+	close :x :y         = add(y) remove(y) remove(x)	    -> { console.log('closing ' + x + ' with ' + y + ' stack: ' + $elf.stack); y},
 	add :x              = exactly(x)		                                            -> { $elf.stack.push(x) },
-	remove :x           -> { if ($elf.stack.pop() !== x) { console.log('Unmatched ' + x); throw new Error('Unmatched ' + x) }; true},
+	remove :x           -> { if ($elf.stack.pop() !== x)
+	                            throw new Error('Unmatched ' + x + 'at: ' + $elf.pos() + '; stack: ' + $elf.stack);
+	                        true},
 	everythingBut :x :y = ~exactly(x) ~exactly(y) anything:a                            -> a,
-	fromToRec :x :y     = open(x) ( fromToRec(x,y) | everythingBut(x,y))*:a close(x, y) -> { x+ a.join('') + y },
-	fromToRecP :x :y :p = open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y },
+	chunk :x :y         = open(x) everythingBut(x,y)*:a close(x, y)                     -> { x+ a.join('') + y }
+	                    | open(x) ( chunk(x,y) | everythingBut(x,y))*:a close(x, y)     -> { x+ a.join('') + y },
+	
+	chunkWith :x :y :p  = open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y },
+	defEnd              = ";" | "",
+	classElemDefEnd     = "," | "",
 	
 	/* basic string processing */
     nl              = '\n' | '\r'                                       -> '\n',
@@ -30,28 +37,53 @@ ometa LKFileParser <: Parser {
     createSourceDescr   -> { {startIndex: $elf.pos()} },
     
 	/* methods */
-    methodBody          = fromToRec('{', '}'),
-    methodDef           = createSourceDescr:descr name:mName ':' spaces "function" fromToRec('(', ')') spaces methodBody
+    methodBody          = chunk('{', '}'),
+    methodDef           = createSourceDescr:descr name:mName ':' spaces "function" spaces (name | "") chunk('(', ')') spaces methodBody
                         -> { Object.extend(descr, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); descr },
-    methodDefWithSpcs   = spaces methodDef:mD (',' | spaces)                      -> mD,
+    methodDefWithSpcs   = spaces methodDef:mD classElemDefEnd                      -> mD,
     
     /* properties */
-    propertyDef         = createSourceDescr:descr name:pName ':' spaces ~"function" stackSize:s (fromToRec('(', ')') |  fromToRec('{', '}') | fromToRec('[', ']') | fromToRec('\'', '\'') | fromToRec('"', '"') | ~',' anything)* ',' /* argh, properties have to end with , */
-                        -> { Object.extend(descr, {type: 'propertyDef', name: pName, stopIndex: $elf.pos()-1}); descr },
+    propertyDef         = stackSize:s createSourceDescr:descr name:pName ':' spaces ~"function" ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | ~',' anything)* ',' /*argh, cannot use classElemDefEnd, prop has to end with ','*/
+                        -> { if ($elf.stack.length !== s) {
+                                throw new Error('sth wrong wiht the stack: ' + $elf.stack)
+                             };
+                             Object.extend(descr, {
+                                type: 'propertyDef',
+                                name: pName,
+                                stopIndex: $elf.pos()-1});
+                            descr },
     propertyDefWithSpcs = spaces propertyDef:pD spaces                          -> pD,
                                     
     
-	classElems      = open('{')	(propertyDefWithSpcs | methodDefWithSpcs)*:a close('{', '}')	-> a,
+	classElems      = open('{')	spaces ( propertyDefWithSpcs | methodDefWithSpcs )*:a spaces log('now want to close class') close('{', '}')	-> a,
 	
-	restKlassDef    = ',' klassName:trait					-> trait
-					| ',' spaces classElems:descriptors	    -> descriptors
-					| spacesNoNl							-> null,
+	restKlassDef    = ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
+	                | ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
+	                | ',' klassName:trait					                        -> { {trait: trait} }
+					| spacesNoNl							                        -> null,
 
     /* class stuff */
 	klass 	        = namespaceId:n,
 	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
-    klassDef        = createSourceDescr:descr klass:sName '.' "subclass" '(' klassName:kName restKlassDef:descrs ')'
-                    -> { Object.extend(descr, {type: 'classDef', name: kName, superclassName: sName, classElemDescr: descrs, stopIndex: $elf.pos()-1}); descr }
+    klassDef        = createSourceDescr:descr klass:sName '.' "subclass" '(' klassName:kName restKlassDef:spec ')' defEnd
+                    -> { Object.extend(descr, {
+                            type: 'classDef',
+                            name: kName,
+                            trait: spec.trait,
+                            superclassName: sName,
+                            subElements: spec.classElems,
+                            stopIndex: $elf.pos()-1
+                        }); descr },
+    
+    /* 'object' stuff */
+    restObjDef      = log('looking for classElems') classElems:propsAndMethodDescrs log('looking for spaces') spaces -> propsAndMethodDescrs,
+    objectDef       = createSourceDescr:descr ( namespaceId:o | "var" spaces namespaceId:o ) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
+                    -> { Object.extend(descr, {
+                            type: 'objectDef',
+                            name: o,
+                            subElements: propsAndMethodDescrs,
+                            stopIndex: $elf.pos()-1
+                        }); descr }
 };
 
 LKFileParser.stack = [];
