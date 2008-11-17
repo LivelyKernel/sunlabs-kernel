@@ -1920,23 +1920,107 @@ Object.subclass('AnotherFileParser', {
     
     grammarFile: 'LKFileParser.txt',
     
-    initialize: function(source) {
-        this.source = source;
-        this.grammarProto = AnotherFileParser.grammarProto || OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
-        AnotherFileParser.grammarProto = this.grammarProto;
+    initialize: function(flag) {
+        if (flag) return;
+        var prototype = AnotherFileParser.parser || OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
+        AnotherFileParser.parser = prototype;
+        this.parser = Object.delegated(prototype, {_parser: this});
+        this.parser.stack = [];
     },
     
-    parse: function(rule) {
-        var grammar = Object.delegated(this.grammarProto,{_parser: this});
+    parse: function(rule, src) {
+        src = src || this.source;
         var ms = new Date().getTime();
-        var result = OMetaSupport.matchAllWithGrammar(grammar, rule, this.source);
+        var hideErrors = true;
+        var result = OMetaSupport.matchAllWithGrammar(this.parser, rule, src, hideErrors);
         ms = new Date().getTime() - ms;
-        console.log('parsed ' + /*result.type + ' named ' + result.name + */' in ' + ms + ' ms');
+        // var msg = result ?
+        //     'parsed ' + result.type + ' named ' + result.name + ' in ' + ms + ' ms' :
+        //     'rule ' + rule + ' failed in ' + ms + ' ms';
+        // console.log(msg);
         return result;
     },
     
     parseClass: function() {
         return this.parse("klassDef");
+    },
+    
+    sourceFromUrl: function(url) {
+        if (!module.SourceControl) module.SourceControl = new SourceDatabase();
+        return module.SourceControl.getCachedText(url.filename());        
+    },
+    
+    reallyParseFile: function(url) {
+        return this.parse("fileContent");
+    },
+    
+    parseFileFromUrl: function(url) {
+        var src = this.sourceFromUrl(url);
+        return this.parseSource(src);
+    },
+    
+    fixIndices: function(descr, startPos, src) {
+        descr.startIndex += startPos;
+        descr.stopIndex += startPos;
+        descr.showSource = function() { var theSrc = src; return theSrc.substring(this.startIndex, this.stopIndex+1) }.bind(descr);
+        if (descr.subElements)
+            descr.subElements.forEach(function(ea) { this.fixIndices(ea, startPos, src) }, this);
+    },
+    
+    parseSource: function(src) {
+        var lines = src.split(/[\n\r]/);
+        var ptr = 0;
+        var changeList = [];
+        var msStart = new Date().getTime();
+        
+        var rules = ['comment', 'blankLine',
+                    'klassDef', 'objectDef', 'klassExtensionDef',
+                    'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
+                    'unknown'];
+        
+        while (ptr < src.length) {
+            var msParseStart = new Date().getTime();
+            var descr;
+            
+            rules.detect(function(rule) {
+                var tmp = this.parse(rule, src.substring(ptr, src.length));
+                descr = tmp;
+                return tmp;
+            }, this);
+            if (descr === undefined)
+                throw dbgOn(new Error('Could not parse src at ' + ptr));
+            if (descr.stopIndex === undefined)
+                throw dbgOn(new Error('Parse result has an error ' + JSON.serialize(descr) + 'ptr:' + ptr));
+                
+            changeList.push(descr);
+            var tmpPtr = ptr;
+            ptr += descr.stopIndex + 1;
+            this.fixIndices(descr, tmpPtr, src);
+            
+            var msNow = new Date().getTime();
+            console.log('Parsed line '
+                        + this.findLineNo(src, tmpPtr) + ' to ' + this.findLineNo(src, ptr) + ' (' + descr.type + ':' + descr.name
+                        + ') after ' + (msNow-msStart)/1000 + 's (' + (msNow-msParseStart) + 'ms)');
+        }
+        
+        return changeList;
+    },
+    
+    findLineNo: function(str, ptr) {
+        // what a mess, i want ordinary non local returns!
+        var lines = str.split(/[\n\r]/);
+        ptr += 1;
+        try {
+        lines.inject(0, function(charsUntilNow, line, i) {
+            charsUntilNow += line.length + 1;
+            if (ptr <= charsUntilNow) throw {_theLineNo: i+1};
+            return charsUntilNow;
+        });
+        } catch(e) {
+            if (e._theLineNo !== undefined) return e._theLineNo;
+            throw e
+        }
+        return null
     }
 });
 
