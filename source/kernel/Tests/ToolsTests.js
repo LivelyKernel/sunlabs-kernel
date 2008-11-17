@@ -229,11 +229,34 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
-    
     setUp: function() {
         this.sut = new AnotherFileParser();
-        this.sut.verbose = true;
     },
+    
+    assertSubDescriptorsAreValid: function(descr) {
+        for (var i = 0; i < descr.length; i++) {
+            if (descr[i].subElements) this.assertSubDescriptorsAreValid(descr[i].subElements);
+            if (!descr[i+1]) continue;
+            console.log(descr[i].name + ':' + descr[i].startIndex + '-' + descr[i].stopIndex + '<->' + descr[i+1].name + ':' + descr[i+1].startIndex + '-' + descr[i+1].stopIndex);
+            this.assert(descr[i].stopIndex < descr[i+1].startIndex,
+                'descrs conflict: ' + descr[i].type + ' ' + descr[i].name + ' <----> ' + descr[i+1].type + ' ' + descr[i+1].name);
+            
+        }        
+    },
+    
+    assertDescriptorsAreValid: function(descr) {
+        for (var i = 0; i < descr.length; i++) {
+            if (descr[i].subElements) this.assertSubDescriptorsAreValid(descr[i].subElements);
+            if (!descr[i+1]) continue;
+            console.log(descr[i].name + ':' + descr[i].startIndex + '-' + descr[i].stopIndex + '<->' + descr[i+1].name + ':' + descr[i+1].startIndex + '-' + descr[i+1].stopIndex);
+            this.assertEqual(descr[i].stopIndex, descr[i+1].startIndex - 1,
+                'descrs conflict: ' + descr[i].type + ' ' + descr[i].name + ' <----> ' + descr[i+1].type + ' ' + descr[i+1].name);
+            
+        }
+    }
+});
+
+thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest1', {
     
     testParseClass: function() {    // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
@@ -247,6 +270,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.superclassName, 'Object');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseClassWithTrait: function() {   // Object.subclass
@@ -262,6 +286,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
         this.assertEqual(descriptor.subElements.length, 2);
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseClassAndMethods: function() {  // Object.subclass
@@ -285,6 +310,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(dscr[2].name, 'tearDown');
         this.assertIdentity(dscr[2].startIndex, src.indexOf('tearDown'));
         this.assertIdentity(dscr[2].stopIndex, src.indexOf('}\n})'));
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseMethod: function() {   // xxx: function()...,
@@ -319,6 +345,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
         this.assertEqual(descriptor.subElements.length, 2);
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseFunction1: function() {    // function abc() {...};
@@ -360,6 +387,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.klassName, 'thisModule.ScriptEnvironment');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseMethodModification: function() {   // Klass.protoype.method = function() {...};
@@ -371,6 +399,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.klassName, 'Morph');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseClassExtension01: function() { // Object.extend(...);
@@ -382,6 +411,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.subElements.length, 1);
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseClassExtension02: function() { // Klass.addMethods(...); || Klass.addProperties(...);
@@ -393,6 +423,7 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.subElements.length, 1);
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
     testParseComment: function() { // /* ... */ || // ...
@@ -403,17 +434,130 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         this.assertEqual(descriptor.type, 'comment');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf('/'));
+        this.assertDescriptorsAreValid([descriptor]);
     },
     
-    testFileContent: function() {
-        //var src = '// Bla\n// ===\n\nnamespace(\'lively.data\');\n\nObject.subclass(\'lively.data.Wrapper\', { });\n\n';
-        var src = '// Bla\n// ===\nnamespace(\'lively.data\');\nObject.subclass(\'lively.data.Wrapper\', { });';
+    xtestFileContent: function() {
+        var src = '// Bla\n// ===\n\nnamespace(\'lively.data\');\n\nObject.subclass(\'lively.data.Wrapper\', { });\n\n';
         this.sut.source = src;
         var all = this.sut.parse('fileContent');
         this.assertEqual(all.length, 6);
     }
+        
+});
+
+thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserSpecialTest', {
     
+    xtestParseCore: function() {    // Object.subclass
+        var url = URL.source.withFilename('Core.js');
+        var result = this.sut.reallyParseFile(url);
+        debugger;
+    },
+        
+    testParseCoreAlternativ: function() {    // Object.subclass
+        var url = URL.source.withFilename('Core.js');
+        var result = this.sut.parseFileFromUrl(url);
+        y = result;
+        this.assertDescriptorsAreValid(result);
+    },
     
+    xtestParseMorph: function() {    // Object.subclass
+        var db = new SourceDatabase();
+        var src = db.getCachedText('Core.js');
+        src = src.slice(src.indexOf('lively.data.Wrapper.subclass(\'Morph\', {'), src.indexOf('});\n\nMorph.addMethods')+3);
+        this.sut.source = src;
+        var descriptor = this.sut.parseClass();
+        debugger;
+    },
+});
+
+thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest2', {
+        
+    testFindLinNo: function() {
+        var str = 'abc\ndef123\n\n\nxyz\n';
+        this.assertEqual(this.sut.findLineNo(str, 0), 1);
+        this.assertEqual(this.sut.findLineNo(str, 2), 1);
+        this.assertEqual(this.sut.findLineNo(str, 3), 1);
+        this.assertEqual(this.sut.findLineNo(str, 4), 2);
+        this.assertEqual(this.sut.findLineNo(str, 10), 2);
+        this.assertEqual(this.sut.findLineNo(str, 11), 3);
+        this.assertEqual(this.sut.findLineNo(str, 14), 5);
+        this.assertEqual(this.sut.findLineNo(str, 16), 5);
+    },
+    
+    testParseCompleteSource: function() {
+        var src = '// Bla\n// ===\n\nnamespace(\'lively.data\');\n\nObject.subclass(\'lively.data.Wrapper\', { });\n\n';
+        var result = this.sut.parseSource(src);
+        this.assertEqual(result.length, 5);
+    },
+    
+    testOverlappingIndices: function() {
+        var src =   
+                    '/*' + '\n' +
+                    ' * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.' + '\n' +
+                    ' * All rights reserved.  Use is subject to license terms.' + '\n' +
+                    ' * This distribution may include materials developed by third parties.' + '\n' +
+                    ' *  ' + '\n' +
+                    ' * Sun, Sun Microsystems, the Sun logo, Java and JavaScript are trademarks' + '\n' +
+                    ' * or registered trademarks of Sun Microsystems, Inc. in the U.S. and' + '\n' +
+                    ' * other countries.' + '\n' +
+                    ' */ ' + '\n' +
+                    '\n' +
+                    '/**' + '\n' +
+                    '* Core.js.  This file contains the core system definition' + '\n' +
+                    '* as well as the core Morphic graphics framework. ' + '\n' +
+                    '*/' + '\n' + '\n' + '\n' +
+                    '/* Code loader. Appends file to DOM. */' + '\n' +
+                    'var Loader = {' + '\n' +
+                    '\n' +
+                    '     loadJs: function(url, onLoadCb, embedSerializable) {' + '\n' +
+                    '\n' +
+                    '         if (document.getElementById(url)) return;' + '\n' +
+                    '\n' +
+                    '         var script = document.createElement(\'script\');' + '\n' +
+                    '         script.id = url;' + '\n' +
+                    '         script.type = \'text/javascript\';' + '\n' +
+                    '         script.src = url;' + '\n' +
+                    '         var node = document.getElementsByTagName(embedSerializable ? "defs" : "script")[0];' + '\n' +
+                    '         if (onLoadCb) script.onload = onLoadCb;' + '\n' +
+                    '         node.appendChild(script);' + '\n' +
+                    '     },' + '\n' +
+                    '\n' +
+                    '     scriptInDOM: function(url) {' + '\n' +
+                    '         if (document.getElementById(url)) return true;' + '\n' +
+                    '         var preloaded = document.getElementsByTagName(\'defs\')[0].childNodes;' + '\n' +
+                    '         for (var i = 0; i < preloaded.length; i++)' + '\n' +
+                    '             if (preloaded[i].getAttribute &&' + '\n' +
+                    '                     preloaded[i].getAttribute(\'xlink:href\') &&' + '\n' +
+                    '                         url.endsWith(preloaded[i].getAttribute(\'xlink:href\')))' + '\n' +
+                    '                             return true' + '\n' +
+                    '         return false;' + '\n' +
+                    '     }' + '\n' +
+                    '};';
+
+        var result = this.sut.parseSource(src);
+        y = result;
+        this.assertDescriptorsAreValid(result);
+    },
+    
+    testFailingKlassExtension: function() { // Core 1899 and before
+        var src = '\n// Morph bindings to its parent, world, canvas, etc.' + '\n' +
+        'Morph.addMethods({' + '\n' + '\n' +
+            '   world: function() {' + '\n' +
+        	'   return this.owner ? this.owner.world() : null;' + '\n' +
+            '},' + '\n' + '\n' +
+            '// Morph coordinate transformation functions' + '\n' + '\n' +
+            '// SVG has transform so renamed to getTransform()' + '\n' +
+            'getTransform: function() {' + '\n' +
+        	'    if (this.pvtCachedTransform) return this.pvtCachedTransform;\n}' + '\n' + '\n' +
+        	'});';
+        var result = this.sut.parseSource(src);
+        this.assertEqual(result.length, 2);
+        this.assertEqual(result[1].type, 'klassExtensionDef');
+        y = result;
+        this.assertDescriptorsAreValid(result);
+    }
+
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {

@@ -3,26 +3,49 @@ ometa LKFileParser <: Parser {
   
     /* helper productions */
     log :msg        -> { console.log(msg); true },
+    whereAreYou            -> { var charsBefore = 120; var charsAfter = 120; var src = $elf._originalInput;
+                             var startIndex = Math.max(0, $elf.pos() - charsBefore);
+                             var stopIndex = Math.min(src.length, $elf.pos() + charsAfter);
+                             console.log(src.substring(startIndex, $elf.pos()) + '<--I am here-->' + src.substring($elf.pos(), stopIndex));
+                             console.log('Rules: ' + $elf._ruleStack);
+                             console.log('Stack: ' + $elf.stack);
+                             true
+                            },
     fromTo :x :y    = seq(x) (~seq(y) char)*:cs seq(y)                  -> cs,
     stackSize                                                                           -> { $elf.stack.length },
 	num :x                                                                              -> { $elf.numOnStack(x) },
-	open :x             = add(x)	                                                    -> { console.log('opening ' + x);  x},
-	close :x :y         = add(y) remove(y) remove(x)	    -> { console.log('closing ' + x + ' with ' + y + ' stack: ' + $elf.stack); y},
+	getStack            -> { $elf.stack.clone() },
+	assignStack :s      -> { $elf.stack = s },
+	open :x             = add(x)	                                                    -> { /*console.log('opening ' + x);*/  x},
+	close :x :y         = add(y) remove(y) remove(x) -> { /*console.log('closing ' + x + ' with ' + y + ' stack: ' + $elf.stack);*/ y},
 	add :x              = exactly(x)		                                            -> { $elf.stack.push(x) },
-	remove :x           -> { if ($elf.stack.pop() !== x)
-	                            throw new Error('Unmatched ' + x + 'at: ' + $elf.pos() + '; stack: ' + $elf.stack);
-	                        true},
+	remove :x           -> { if ($elf.stack.length == 0) {
+	                            $elf.whereAreYou();
+	                            throw new Error('Stack is empty, cannot remove ' + x);
+	                         };
+	                         var rem = $elf.stack.pop();
+	                         if (rem !== x) {
+	                            $elf.whereAreYou();
+	                            throw new Error('Unmatched ' + x + 'at: ' + $elf.pos() + ' instead found ' + rem + '; stack: ' + $elf.stack);
+	                         };
+	                         true
+	                        },
 	everythingBut :x :y = ~exactly(x) ~exactly(y) anything:a                            -> a,
-	chunk :x :y         = open(x) everythingBut(x,y)*:a close(x, y)                     -> { x+ a.join('') + y }
-	                    | open(x) ( chunk(x,y) | everythingBut(x,y))*:a close(x, y)     -> { x+ a.join('') + y },
+	nonRecursive :x :y  = getStack:s open(x) everythingBut(x,y)*:a close(x, y)                     -> { x+ a.join('') + y }
+	                    | assignStack(s)            -> { $elf._manualFail() },
+	recursive :x :y     = getStack:s open(x) (  everythingBut(x,y) | recursive(x,y) )*:a close(x, y)    -> { x+ a.join('') + y }
+	                    | assignStack(s)                         -> { $elf._manualFail() },
+	chunk :x :y         = ~~exactly(x) (nonRecursive(x,y) | recursive(x,y)):a -> a,
 	
-	chunkWith :x :y :p  = open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y },
-	somethingRelated    = (~'\n' ~'\r' ~';' anything)*,
-	somethingBigRelated = ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | ~',' ~';' anything)*,
-	defEnd              = ";" | "",
+/*	chunkWith :x :y :p  = ~~exactly(x) ( open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y }
+	                    | remove(x) ),*/
+	somethingRelated    = ~end (~'\n' ~'\r' ~';' anything)*,
+	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | ~',' ~';' anything)*,
+	defEnd              = ';' '\n' | ';' | "",
 	classElemDefEnd     = "," | "",
 	
 	/* basic string processing */
+	space        = super(#space) | fromTo('//', '\n') | fromTo('/*', '*/'),
     nl              = '\n' | '\r'                                       -> '\n',
 	spacesNoNl      = (~nl space)*:spcs									-> spcs,
 	nameFirst       = letter | '$' | '_',
@@ -47,7 +70,7 @@ ometa LKFileParser <: Parser {
     func                = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction          -> fn,
     functionDef         = descriptor:d func:fn defEnd
                         -> { Object.extend(d, {type: 'functionDef', name: fn, stopIndex: $elf.pos()-1}); d },
-    executedFuncDef     = descriptor:d open('(') basicFunction:fn close('(', ')') somethingRelated defEnd
+    executedFuncDef     = stackSize:s descriptor:d '(' basicFunction:fn ')' somethingRelated defEnd ?(s == $elf.stack.length)
                         -> { Object.extend(d, {type: 'executedFuncDef', name: fn, stopIndex: $elf.pos()-1}); d },
     staticFuncDef       = descriptor:d namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' spaces basicFunction defEnd
                         -> { Object.extend(d, {type: 'staticFuncDef', name: nsArr.last(), klassName: nsArr.slice(0,nsArr.length-1).join('.'), stopIndex: $elf.pos()-1}); d },
@@ -63,7 +86,7 @@ ometa LKFileParser <: Parser {
     propertyDefWithSpcs = spaces propertyDef:pD spaces                          -> pD,
     propertyDef         = stackSize:s descriptor:d name:pName ':' spaces ~"function" somethingBigRelated ',' /*argh, cannot use classElemDefEnd, prop has to end with ','*/
                         -> { if ($elf.stack.length !== s) {
-                                throw new Error('sth wrong wiht the stack: ' + $elf.stack)
+                                throw new Error('sth wrong wiht the stack: ' + $elf.stack + ' expected length: ' + s + ' actual length: ' + $elf.stack.length);
                              };
                              Object.extend(d, {
                                 type: 'propertyDef',
@@ -72,7 +95,7 @@ ometa LKFileParser <: Parser {
                             d },
                                     
     /* class stuff */
-	classElems      = open('{')	spaces ( propertyDefWithSpcs | methodDefWithSpcs )*:a spaces close('{', '}')	-> a,
+	classElems      = '{' spaces ( propertyDefWithSpcs | methodDefWithSpcs )*:a spaces '}'	-> a,
 	restKlassDef    = ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 	                | ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
 	                | ',' klassName:trait					                        -> { {trait: trait} }
@@ -105,18 +128,30 @@ ometa LKFileParser <: Parser {
                         }); d },
     
     /* otherStuff */
-    comment     = descriptor:d spacesNoNl (fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl   -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
+    // comment     = descriptor:d spacesNoNl /*(fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl*/   -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
+    comment     = descriptor:d space+    -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
     newline     = descriptor:d ('\n' | '\r' )                                 -> { d.stopIndex = $elf.pos()-1; d.type = 'newline'; d },
+    blankLine   = descriptor:d (nl | (char:c ?(c.charCodeAt(0) === 32))* nl)                             -> { d.stopIndex = $elf.pos()-1; d.type = 'blankLine'; d },
     unknown     = descriptor:d somethingBigRelated defEnd                         -> { d.stopIndex = $elf.pos()-1; d.type = 'unknown'; d },
     
-    fileContent =   (comment | newline | klassDef | unknown)*:a                    -> a
+    fileContent =   ( ?($elf.stack.length == 0)
+                      (log('comment?')              comment                 log('read comment') whereAreYou
+                    | log('newline?')               newline                 log('read newline') whereAreYou
+                    | log('klassdef?')              klassDef                log('read klassDef') whereAreYou
+                    | log('klassExtensionDef?')     klassExtensionDef       log('read klassDef') whereAreYou
+                    | log('objectDef?')             objectDef               log('read objectDef') whereAreYou
+                    | log('methodDef?')             methodDef               log('read methodDef') whereAreYou
+                    | log('propertyDef?')           propertyDef             log('read propertyDef') whereAreYou
+                    | log('methodModificationDef?') methodModificationDef   log('read methodModificationDef') whereAreYou
+                    | log('functionDef?')           functionDef             log('read functionDef') whereAreYou
+                    | log('executedFuncDef?')       executedFuncDef         log('read executedFuncDef') whereAreYou
+                    | log('staticFuncDef?')         staticFuncDef           log('read staticFuncDef') whereAreYou
+                    | log('unknown?')               unknown                 log('read unknown') whereAreYou)
+                    )*:a                    -> a
                     
-/*    fileContent =   (newline | comment | spaces |
-                    | log('1') klassDef | klassExtensionDef | objectDef
-                    | log('2') methodDef | propertyDef | methodModificationDef
-                    | log('3') functionDef | executedFuncDef | staticFuncDef | unknown)*:a                    -> a*/
 };
 
 LKFileParser.stack = [];
 LKFileParser.numOnStack = function(char) { return LKFileParser.stack.select(function(ea) { return ea === char}).length };
+LKFileParser._manualFail = function() { throw Global.fail };
 LKFileParser;
