@@ -335,6 +335,15 @@ var PaintModule = {
 	else return null;
     },
 
+    guessBBExtent: function(element) {
+	if (element.tagName == "ellipse") {
+	    return pt(element.rx.baseVal.value*2, element.ry.baseVal.value*2);
+	} else if (element.width) {
+	    return pt(element.width.baseVal.value, element.height.baseVal.value);
+	} else return null;
+    },
+
+
     parsePaint: function(paintString, target) {
 	var name = String(paintString);
 	var color = this.parseColor(name);
@@ -349,11 +358,14 @@ var PaintModule = {
 		var y1 = node.y1.baseVal.value;
 		var x2 = node.x2.baseVal.value;
 		var y2 = node.y2.baseVal.value;
-		if (target && target.width) {
-		    x1 *= target.width.baseVal.value;
-		    y1 *= target.height.baseVal.value;
-		    x2 *= target.width.baseVal.value;
-		    y2 *= target.height.baseVal.value;
+		if (target) {
+		    var ext = this.guessBBExtent(target);
+		    if (ext) {
+			x1 *= ext.x;
+			y1 *= ext.y;
+			x2 *= ext.x;
+			y2 *= ext.y;
+		    }
 		}
 		var start = new fx.Point(x1, y1);
 		var end = new fx.Point(x2, y2);
@@ -368,11 +380,12 @@ var PaintModule = {
 	    } else if (node && node.tagName == 'radialGradient') {
 		//var center = new fx.Point(node.fx.baseVal.value, node.fy.baseVal.value);
 		var center = new fx.Point(0,0);
-		var r = node.r.baseVal.value*20;
-		if (target && target.rx) { // FIXME hack, should we take the bounding box?
-		    r = target.rx.baseVal.value;
+		var r = node.r.baseVal.value;
+		if (target) { 
+		    var ext = this.guessBBExtent(target);
+		    r = ext.x/2; //FIXME?
 		}
-		var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
+		//var stops = node.getElementsByTagNameNS(Namespace.SVG, "stop");
 		var stops = Object.extend(node.getElementsByTagNameNS(Namespace.SVG, "stop"), Enumerable);
 		var colors = stops.map(function(stop) {
 		    return this.parsePaint(stop.getAttributeNS(null, "stop-color"));
@@ -427,9 +440,12 @@ var PaintModule = {
 
     renderStroke: function(element, shape, value, alpha) {
 	var fxPaint = PaintModule.parsePaint(value, element);
-	if (alpha && fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
-	    // FIXME what if fill is not a color?
-	    fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
+	if (fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
+	    if (alpha) {
+		// FIXME what if fill is not a color?
+		fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
+	    }  
+	} else {
 	}
 	shape.setDrawPaint(fxPaint);
 	return fxPaint;
