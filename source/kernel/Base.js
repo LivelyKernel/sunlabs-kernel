@@ -19,9 +19,11 @@ function dbgOn(cond, optMessage) {
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 function using() {
     var args = arguments; // FIXME: enable using('lively.Text')
-    return {run: function module(inner) { 
-	return inner.apply(args[0], args); 
-    }};
+    return {
+	run: function module(inner) { return inner.apply(args[0], args); },
+	resolve: function resolve(literal) { 
+	    return new lively.data.Resolver().resolve(literal, false, $A(args)); }
+    };
 }
 
 function namespace(spec, context) {
@@ -716,6 +718,7 @@ lively.lang.Execution = { // will be extended later
 
 
 lively.lang.let = function(/** **/) {
+    // lively.lang.let(y, function(x) { body }) is equivalent to { let y = x; body; }
     return arguments[arguments.length - 1].apply(this, arguments);
 }
 
@@ -2121,14 +2124,13 @@ Record.subclass('lively.data.StyleRecord', {
 
 
 Object.subclass('lively.data.Resolver', {
-    description: "resolves literals to full brown objects",
-    storedClassKey: '$', // type info, normally missing
+    description: "resolves literals to full-blown objects",
+    storedClassKey: '$', // type info, missing in 
     defaultSearchPath: [Global],
     
     resolve: function(literal, optStrict, optSearchPath) {
 	var initializer = {};
 	var constr;
-	
 	var type = literal[this.storedClassKey];
 	if (type) {
 	    var path = optSearchPath || this.defaultSearchPath;
@@ -2137,7 +2139,9 @@ Object.subclass('lively.data.Resolver', {
 		if (constr) 
 		    break;
 	    }
+	    console.log('was looking for ' + type + ' in ' +  path + ' and found ' + constr);
 	} 
+	
 
 	for (var name in literal) {
 	    if (name === this.storedClassKey) continue;
@@ -2172,7 +2176,7 @@ Object.subclass('lively.data.Resolver', {
 
 	var reified;
 	if (constr) reified = constr.fromLiteral(initializer);
-	if (optStrict && reified === undefined) throw new Error('not strict?');
+	if (optStrict && reified === undefined) throw new Error('not strict? ' +  constr);
 	reified = reified || literal;  // maybe it's not a literal? works well for things like pt() or rect()
 	return reified;
     }
