@@ -327,7 +327,8 @@ window.setInterval = function(action, delay) {
 var PaintModule = {
     
     parseColor: function(color) {
-	if (color == "none") return new fx.Color(0,0,0,0); // FIXME not strictly the same thing as no color
+	if (color == "none") return  new fx.Color(0,0,0, 0); // FIXME not strictly the same thing as no color
+	if (color == "") return new fx.Color(1,1,1);
 	var rgb = Color.parse(color);
 	if (rgb) return new fx.Color(rgb[0], rgb[1], rgb[2]);
 	else if (Color[color]) return fx.Color[color]; // if LK defines a constant, then FX should have it too

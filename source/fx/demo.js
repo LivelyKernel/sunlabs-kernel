@@ -27,7 +27,7 @@ Loader.loadJs = function(url, onLoadAction, embedSerializable) {
 Loader.scriptInDOM = function(url) {
     var preLoaded = ['Text.js', 'Core.js', 'scene.js', 'Widgets.js', 'Network.js',
                      'Data.js','Tools.js', 'Examples.js', 'TileScripting.js', 'Helper.js' ];
-    if (preLoaded.any(function(ea) { return url.include(ea) })) return true;
+    if (preLoaded.some(function(ea) { return url.include(ea) })) return true;
     return Loader.loadedFiles.include(url);
 }
 
