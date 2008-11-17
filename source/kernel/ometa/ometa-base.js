@@ -361,7 +361,7 @@ Global.OMeta = {
     var realArgs = [rule]
     for (var idx = 0; idx < args.length; idx++)
       realArgs.push(args[idx])
-    var m = Object.delegated(this,{input: input, _ruleStack: []});
+    var m = Object.delegated(this,{input: input, _ruleStack: [], _originalInput: input.arr});
     m.initialize()
     try { return realArgs.length == 1 ? m._apply.call(m, realArgs[0]) : m._applyWithArgs.apply(m, realArgs) }
     catch (f) {
