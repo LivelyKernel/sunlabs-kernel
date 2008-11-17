@@ -1484,7 +1484,9 @@ Object.extend(this.LinearGradient, {
     NorthSouth: rect(pt(0, 0), pt(0, 1)),
     SouthNorth: rect(pt(0, 1), pt(0, 0)),
     EastWest:   rect(pt(0, 0), pt(1, 0)),
-    WestEast:   rect(pt(1, 0), pt(0, 0))
+    WestEast:   rect(pt(1, 0), pt(0, 0)),
+    SouthWest:  rect(pt(1, 0), pt(0, 1)),  // Down and to the left
+    SouthEast:  rect(pt(0, 0), pt(1, 1))   // Down and to the right -- default lighting direction
 });
 
 

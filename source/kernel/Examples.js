@@ -106,7 +106,11 @@ Widget.subclass('TestWidget', {
 
 Morph.subclass("ClockMorph", {
 
-    style: {borderWidth: 2},
+    style: {borderWidth: 3},
+    borderStyle: using(lively.paint).run(function(gfx) {
+	return new gfx.LinearGradient([new gfx.Stop(0, Color.lightGray), 
+					new gfx.Stop(1, Color.VeryDarkGray)],
+				gfx.LinearGradient.SouthEast); }),
     openForDragAndDrop: false,
 
     initialize: function($super, position, radius, timeZoneOffset) {
@@ -114,6 +118,8 @@ Morph.subclass("ClockMorph", {
         this.linkToStyles(['clock']);
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
         this.timeZoneOffset = timeZoneOffset;
+	this.setBorderWidth(3);  //FIXME DI: need to integrate these with themed clock style
+	this.shape.setStroke(this.borderStyle);
         return this;
     },
 
@@ -4172,11 +4178,9 @@ Morph.subclass("EngineMorph", {
 		  borderWidth: 1}
     }),
     pistonStyle: using(lively.paint).run(function(gfx) {
-	return {  fill: new gfx.LinearGradient(
-				[new gfx.Stop(0, Color.darkGray), 
-				new gfx.Stop(0.4, Color.lightGray),
-				new gfx.Stop(1, Color. darkGray)],
-			gfx.LinearGradient.EastWest),
+	return {  fill: new gfx.LinearGradient( [new gfx.Stop(0, Color.darkGray), 
+						new gfx.Stop(0.4, Color.lightGray),
+						new gfx.Stop(1, Color. darkGray)], gfx.LinearGradient.EastWest),
 		  borderColor: Color.black, 
 		  borderWidth: 2}
     }),
@@ -4217,6 +4221,7 @@ Morph.subclass("EngineMorph", {
         this.addMorph(this.crank);
         this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 0, null, Color.black);
         this.crank.addMorph(this.crankPin);
+//	this.crankPinCap = this.crankPin.copy();
         this.alternate = alternating;
         this.makeCylinders(nCylinders);
 
@@ -4297,9 +4302,11 @@ Morph.subclass("EngineMorph", {
             this.connectingRods[i] = cyl.addMorph(Morph.makeLine(
                 [pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
                 cr.width*0.15, Color.gray.darker(2) ));
-	    cyl.addMorph(cyl.piston);  // brings it on top of connecting rod (looks better)
+            //this.connectingRods[i].shape.setStroke(this.pistonStyle.fill);  //Experimental stroke style
+            cyl.addMorph(cyl.piston);  // brings it on top of connecting rod (looks better)
             this.movePiston(cyl);
         };
+//	this.addMorph(this.crankPinCap);
 	this.doStep(); // makes connecting rods
     },
 
@@ -4345,6 +4352,7 @@ Morph.subclass("EngineMorph", {
                 this.connectingRods[i].localizePointFrom(this.crankPin.bounds().center(), this.crank)]
             );
         }, this);
+//	this.crankPinCap.setPosition(this.crankPin.localizePointFrom(this.crankPin.bounds().center(), this.crank));
     },
 
     setAlternateTiming: function(trueOrFalse) {
