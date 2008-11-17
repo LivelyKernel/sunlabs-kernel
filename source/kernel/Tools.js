@@ -13,7 +13,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-module('lively.Tools').requires('lively.Text' /*,'lively.Ometa'*/).toRun(function(module, text) {
+module('lively.Tools').requires('lively.Text' ,'lively.Ometa').toRun(function(module, text) {
 
 // Modules: "+Modules" --> setModule in model
 // Modules: "-Modules" --> getModule in model
@@ -1956,13 +1956,29 @@ Object.subclass('AnotherFileParser', {
     
     parseFileFromUrl: function(url) {
         var src = this.sourceFromUrl(url);
-        return this.parseSource(src);
+        var result = this.parseSource(src);
+        result = result.inject([], function(flattened, ea) {
+            flattened.push(ea);
+            if (ea.subElements) flattened = flattened.concat(ea.subElements);
+            return flattened
+        });
+        
+        result.forEach(function(ea) {
+            ea.fileName = url.filename();
+        });
+        y=result;
+        return result;
     },
     
     fixIndices: function(descr, startPos, src) {
         descr.startIndex += startPos;
         descr.stopIndex += startPos;
-        descr.showSource = function() { var theSrc = src; return theSrc.substring(this.startIndex, this.stopIndex+1) }.bind(descr);
+        
+        descr.lineNo = this.findLineNo(src, descr.startIndex);
+        descr.getSourceCode = function() { var theSrc = src.substring(descr.startIndex, descr.stopIndex+1); return theSrc };
+        descr.getDescrName = function() { return descr.name };
+        descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
+        descr.newChangeList = function() { return ['huch'] };
         if (descr.subElements)
             descr.subElements.forEach(function(ea) { this.fixIndices(ea, startPos, src) }, this);
     },
@@ -1991,7 +2007,7 @@ Object.subclass('AnotherFileParser', {
                 throw dbgOn(new Error('Could not parse src at ' + ptr));
             if (descr.stopIndex === undefined)
                 throw dbgOn(new Error('Parse result has an error ' + JSON.serialize(descr) + 'ptr:' + ptr));
-                
+            
             changeList.push(descr);
             var tmpPtr = ptr;
             ptr += descr.stopIndex + 1;
@@ -2023,6 +2039,12 @@ Object.subclass('AnotherFileParser', {
         return null
     }
 });
+
+AnotherFileParser.parseAndShowFileNamed = function(fileName) {
+    var chgList = new AnotherFileParser().parseFileFromUrl(URL.source.withFilename(fileName));
+    new ChangeList(fileName, null, chgList).openIn(WorldMorph.current()); 
+}
+
 
 // ===========================================================================
 // ChangeList
