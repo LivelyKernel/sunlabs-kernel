@@ -109,7 +109,7 @@ Morph.subclass("ClockMorph", {
     style: {borderWidth: 3},
     borderStyle: using(lively.paint).run(function(gfx) {
 	return new gfx.LinearGradient([new gfx.Stop(0, Color.lightGray), 
-					new gfx.Stop(1, Color.VeryDarkGray)],
+				       new gfx.Stop(1, Color.darkGray.darker(3))],
 				gfx.LinearGradient.SouthEast); }),
     openForDragAndDrop: false,
 
