@@ -286,7 +286,6 @@ this.Node.addProperties({
     FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
     StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
-    Stroke: { name: "stroke", byDefault: "none"}, // FIXME byDefault should be in JS not DOM type
     LineJoin: {name: "stroke-linejoin"},
     LineCap: {name: "stroke-linecap"},
     StrokeDashArray: {name: "stroke-dasharray"},
@@ -347,10 +346,10 @@ this.Node.addMethods({
     },
 
     setFill: function(paint) {
-	if ((this.fill !== paint) && (this.fill instanceof lively.paint.Gradient)) {
-	    this.fill.dereference();
+	if ((this._fill !== paint) && (this._fill instanceof lively.paint.Gradient)) {
+	    this._fill.dereference();
 	}
-	this.fill = paint;
+	this._fill = paint;
 	if (paint === undefined) {
 	    this.rawNode.removeAttributeNS(null, "fill");
 	} else if (paint === null) {
@@ -363,11 +362,30 @@ this.Node.addMethods({
 	} else throw dbgOn(new TypeError('cannot deal with paint ' + paint));
     },
 
-
     getFill: function() {
-	return this.fill;
-    }
+	return this._fill;
+    },
 
+    setStroke: function(paint) {
+	if ((this._stroke !== paint) && (this._stroke instanceof lively.paint.Gradient)) {
+	    this._stroke.dereference();
+	}
+	this._stroke = paint;
+	if (paint === undefined) {
+	    this.rawNode.removeAttributeNS(null, "stroke");
+	} else if (paint === null) {
+	    this.rawNode.setAttributeNS(null, "stroke", "none");
+	} else if (paint instanceof Color) {
+	    this.rawNode.setAttributeNS(null, "stroke", String(paint));
+	} else if (paint instanceof lively.paint.Gradient) {
+	    paint.reference();
+	    this.rawNode.setAttributeNS(null, "stroke", paint.uri());
+	} else throw dbgOn(new TypeError('cannot deal with paint ' + paint));
+    },
+
+    getStroke: function() {
+	return this._stroke;
+    }
 
 });
 
@@ -1346,6 +1364,13 @@ Wrapper.subclass('lively.paint.Stop', {
 
 });
 
+Object.extend(this.Stop, {
+    fromLiteral: function(literal) {
+	return new lively.paint.Stop(literal.offset, literal.color);
+    }
+});
+
+
 // note that Colors and Gradients are similar but Colors don't need an SVG node
 Wrapper.subclass("lively.paint.Gradient", {
     
@@ -1390,23 +1415,6 @@ Wrapper.subclass("lively.paint.Gradient", {
     },
     
 
-    processSpec: function(stopSpec) {
-	// spec is an array of the form [color_1, delta_1, color_2, delta_2 .... color_n],
-	// deltas are converted into stop-offsets by normalizing to the sum of all deltas,
-	// e.g [c1, 1, c2, 3, c3] results three stops at 0, 25% and 100%.
-	
-	if (stopSpec.length %2 == 0) throw new Error("invalid spec");
-	var sum = 0; // [a, 1, b]
-	for (var i = 1; i < stopSpec.length; i += 2)
-	    sum += stopSpec[i];
-	var offset = 0; 
-	for (var i = 1; i <= stopSpec.length; i += 2) {
-	    this.addStop(offset, stopSpec[i - 1]);
-	    if (i != stopSpec.length)
-		offset += stopSpec[i]/sum;
-	}
-    },
-
     toString: function() {
 	return "#<" + this.getType() + this.toMarkupString() + ">";
     },
@@ -1440,7 +1448,6 @@ Wrapper.subclass("lively.paint.Gradient", {
 });
 
 
-
 this.Gradient.subclass("lively.paint.LinearGradient", {
 
     initialize: function($super, stopSpec, vector) {
@@ -1462,6 +1469,16 @@ this.Gradient.subclass("lively.paint.LinearGradient", {
     }
 
 });
+
+
+Object.extend(this.LinearGradient, {
+    fromLiteral: function(literal) {
+	console.log('resolving ' + literal);
+	return new lively.paint.LinearGradient(literal.stops);
+    }
+
+});
+
 
 Object.extend(this.LinearGradient, {
     NorthSouth: rect(pt(0, 0), pt(0, 1)),
