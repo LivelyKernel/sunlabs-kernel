@@ -2991,7 +2991,7 @@ Object.extend(Morph, {
 	var morph = new Morph(shape);
 	morph.setBorderWidth(lineWidth);
 	morph.setBorderColor(lineColor);
-
+	morph.setFill(null);
 	return morph;
     },
 
@@ -3671,8 +3671,8 @@ PasteUpMorph.subclass("WorldMorph", {
         menu.addItems(this.subMenuItems(evt));
         menu.addLine();
 	menu.addItems([
-		["New subworld (LinkMorph)", function(evt) { world.addMorph(new LinkMorph(null, evt.point()));}],  
-		["External link", function(evt) { world.addMorph(new ExternalLinkMorph(URL.source, evt.point()));}],
+	    ["New subworld (LinkMorph)", function(evt) { evt.hand.world().addMorph(new LinkMorph(null, evt.point()));}],  
+	    ["External link", function(evt) { evt.hand.world().addMorph(new ExternalLinkMorph(URL.source, evt.point()));}],
         	["authenticate for write access", function() { new NetRequest().put(URL.source.withFilename('auth'));
 			// sometimes the wikiBtn seems to break after an authenticate
 			if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
