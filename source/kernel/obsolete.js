@@ -1178,3 +1178,26 @@ lively.scene.Path.addMethods({
 
 
 });
+
+
+    lively.paint.Gradient.addMethods({
+    processSpec: function(stopSpec) {
+	// spec is an array of the form [color_1, delta_1, color_2, delta_2 .... color_n],
+	// deltas are converted into stop-offsets by normalizing to the sum of all deltas,
+	// e.g [c1, 1, c2, 3, c3] results three stops at 0, 25% and 100%.
+	
+	if (stopSpec.length %2 == 0) throw new Error("invalid spec");
+	var sum = 0; // [a, 1, b]
+	for (var i = 1; i < stopSpec.length; i += 2)
+	    sum += stopSpec[i];
+	var offset = 0; 
+	for (var i = 1; i <= stopSpec.length; i += 2) {
+	    this.addStop(offset, stopSpec[i - 1]);
+	    if (i != stopSpec.length)
+		offset += stopSpec[i]/sum;
+	}
+    },
+
+	
+
+    });
