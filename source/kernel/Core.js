@@ -2585,6 +2585,19 @@ Morph.addMethods({
 	// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
 
+    shadowCopy: function(hand) {
+	var copy = this.copy(new Copier());
+//	Note: this is a potentially costly deep copy.  Also text color needs to be made black.
+	copy.withAllSubmorphsDo( function() {
+		if (this.getFill() || true) this.setFill(Color.black);
+		if (this.getBorderColor()) this.setBorderColor(Color.black);
+		this.setFillOpacity(0.3);
+		this.setStrokeOpacity(0.3);
+	});
+	copy.owner = null; // so later addMorph will just leave the tfm alone
+	return copy;
+    },
+
     morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
 	return this.morphToGrabOrReceive(evt, droppingMorph, true);
     },
@@ -4038,7 +4051,9 @@ PasteUpMorph.subclass("WorldMorph", {
         	["choose display theme...", this.chooseDisplayTheme],
         	[(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
                       this.toggleBalloonHelp],
-        	[(HandMorph.prototype.applyDropShadowFilter ? "disable " : "enable ") + "drop shadow (if supported)",
+        	[(HandMorph.prototype.useShadowMorphs ? "don't " : "") + "show drop shadows",
+		      function () { HandMorph.prototype.useShadowMorphs = !HandMorph.prototype.useShadowMorphs}],
+        	[(HandMorph.prototype.applyDropShadowFilter ? "don't " : "") + "use filter shadows (if supported)",
 		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
         	[(Config.useDebugBackground ? "use normal background" : "use debug background"),
                       this.toggleDebugBackground]
@@ -4486,6 +4501,11 @@ Morph.subclass("HandMorph", {
 	    
 	    this.updateGrabHalo();
 	}
+        if (this.useShadowMorphs) {
+		var shadow = grabbedMorph.shadowCopy();
+		this.addMorph(shadow);
+		shadow.moveBy(pt(8, 8));
+	}
     },
 
     showAsUngrabbed: function(grabbedMorph) {
@@ -4553,10 +4573,14 @@ Morph.subclass("HandMorph", {
     dropMorphsOn: function(receiver) {
         if (receiver !== this.world()) this.unbundleCarriedSelection();
 	if (this.logDnD) console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
-        while (this.hasSubmorphs()) { // drop in same z-order as in hand
+        var nToDrop = this.useShadowMorphs ? this.submorphs.length/2 : this.submorphs.length;
+	for (var i=1; i<=nToDrop; i++) { // drop in same z-order as in hand
             var m = this.submorphs.first();
             m.dropMeOnMorph(receiver);
 	    this.showAsUngrabbed(m);
+	}
+        while (this.hasSubmorphs()) { // remove any shadow morphs
+            this.submorphs.first().remove();
         }
     },
 
