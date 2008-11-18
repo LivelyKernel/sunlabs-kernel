@@ -39,8 +39,16 @@ BoxMorph.subclass('PackageMorph', {
 	exporter.removeHelperNodes(helpers);
 	this.helpText = "Packaged " + targetMorph.getType() + ".\nSelect unpackage from menu to deserialize contents.";
 	var delta = this.getBorderWidth()/2;
-	this.addMorph(Morph.makeLine([pt(delta, size/2), pt(size - delta, size/2)], 3, Color.black)).ignoreEvents();
-	this.addMorph(Morph.makeLine([pt(size/2, delta), pt(size/2, size - delta)], 3, Color.black)).ignoreEvents();
+	var lines = [ 
+	    [pt(delta, size/2), pt(size - delta, size/2)],
+	    [pt(size/2, delta), pt(size/2, size - delta)] 
+	];
+	lines.forEach(function(vertices) {
+	    var m = new Morph(new lively.scene.Polyline(vertices));
+	    m.applyStyle({borderWidth: 3, borderColor: Color.black});
+	    m.ignoreEvents();
+	    this.addMorph(m);
+	}, this);
     },
 
     getHelpText: function() {
