@@ -40,7 +40,7 @@ ometa LKFileParser <: Parser {
 /*	chunkWith :x :y :p  = ~~exactly(x) ( open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y }
 	                    | remove(x) ),*/
 	somethingRelated    = ~end (~'\n' ~'\r' ~';' anything)*,
-	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | ~',' ~';' anything)*,
+	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | ~',' ~';' ~nl anything)*,
 	defEnd              = ';' '\n' | ';' | "",
 	classElemDefEnd     = "," | "",
 	
@@ -76,15 +76,16 @@ ometa LKFileParser <: Parser {
                         -> { Object.extend(d, {type: 'staticFuncDef', name: nsArr.last(), klassName: nsArr.slice(0,nsArr.length-1).join('.'), stopIndex: $elf.pos()-1}); d },
     
 	/* methods */
+	wrapEnd             = ".wrap" chunk('(', ')'),
     methodDefWithSpcs   = spaces methodDef:mD classElemDefEnd                      -> mD,
-    methodDef           = descriptor:d name:mName ':' spaces basicFunction
+    methodDef           = descriptor:d name:mName ':' spaces ( basicFunction somethingBigRelated | basicFunction ) classElemDefEnd
                         -> { Object.extend(d, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); d },
     methodModificationDef   = descriptor:d nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
                             -> { Object.extend(d, {type: 'methodModificationDef', name: spec.after, klassName: spec.before, stopIndex: $elf.pos()-1}); d },
     
     /* properties */
     propertyDefWithSpcs = spaces propertyDef:pD spaces                          -> pD,
-    propertyDef         = stackSize:s descriptor:d name:pName ':' spaces ~"function" somethingBigRelated ',' /*argh, cannot use classElemDefEnd, prop has to end with ','*/
+    propertyDef         = stackSize:s descriptor:d name:pName ':' spaces ~"function" somethingBigRelated classElemDefEnd /*argh, cannot use classElemDefEnd, prop has to end with ','*/
                         -> { if ($elf.stack.length !== s) {
                                 throw new Error('sth wrong wiht the stack: ' + $elf.stack + ' expected length: ' + s + ' actual length: ' + $elf.stack.length);
                              };

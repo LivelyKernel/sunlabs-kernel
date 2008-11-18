@@ -28,19 +28,19 @@ OMetaSupport = {
     },
     
     matchAllWithGrammar: function(grammar, rule, src, hideErrors) {
-        var errorCb = hideErrors ? OMetaSupport.handleError : OMetaSupport.handleErrorDebug.curry(src);
+        var errorCb = hideErrors ? OMetaSupport.handleError : OMetaSupport.handleErrorDebug.curry(src, rule);
         return grammar.matchAll(src, rule, null, errorCb);
     },
     
     matchWithGrammar: function(grammar, rule, src, hideErrors) {
-        var errorCb = hideErrors ? OMetaSupport.handleError : OMetaSupport.handleErrorDebug.curry(src);
+        var errorCb = hideErrors ? OMetaSupport.handleError : OMetaSupport.handleErrorDebug.curry(src, rule);
         return grammar.match(src, rule, null, errorCb);
     },
     
-    handleErrorDebug: function(src, grammarInstance, errorIndex) {
+    handleErrorDebug: function(src, rule, grammarInstance, errorIndex) {
         var charsBefore = 500;
         var charsAfter = 250;
-        console.log('OMeta Error');
+        console.log('OMeta Error -- ' + rule);
         var startIndex = Math.max(0, errorIndex - charsBefore);
         var stopIndex = Math.min(src.length, errorIndex + charsAfter);
         

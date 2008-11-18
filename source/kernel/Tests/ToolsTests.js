@@ -303,22 +303,42 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.assertEqual(dscr.length, 3);
         this.assertEqual(dscr[0].name, 'setUp');
         this.assertIdentity(dscr[0].startIndex, src.indexOf('setUp'));
-        this.assertIdentity(dscr[0].stopIndex, src.indexOf('},\nformals'));
+        this.assertIdentity(dscr[0].stopIndex, src.indexOf(',\nformals'));
         this.assertEqual(dscr[1].name, 'formals');
         this.assertIdentity(dscr[1].startIndex, src.indexOf('formals:'));
         this.assertIdentity(dscr[1].stopIndex, src.indexOf(',\n\ttearDown'));
         this.assertEqual(dscr[2].name, 'tearDown');
         this.assertIdentity(dscr[2].startIndex, src.indexOf('tearDown'));
-        this.assertIdentity(dscr[2].stopIndex, src.indexOf('}\n})'));
+        this.assertIdentity(dscr[2].stopIndex, src.lastIndexOf('\n})'));
         this.assertDescriptorsAreValid([descriptor]);
     },
     
-    testParseMethod: function() {   // xxx: function()...,
+    testParseMethod1: function() {   // xxx: function()...,
         var src = 'testMethod_8: function($super,a,b) { function abc(a) {\n\t1+2;\n}; }';
         this.sut.source = src;
         var descriptor = this.sut.parse('methodDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'testMethod_8');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.length - 1);
+    },
+    
+    testParseMethod2: function() {   // xxx: function()...,
+        var src = 'onEnter: function() {},';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('methodDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'onEnter');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.length - 1);
+    },
+    
+    testParseMethod3: function() {   // xxx: function()...,
+        var src = 'setShape: function(newShape) {\n\tthis.internalSetShape(newShape);\n}.wrap(Morph.onLayoutChange(\'shape\')),';
+        this.sut.source = src;
+        var descriptor = this.sut.parse('methodDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'setShape');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
     },
@@ -403,7 +423,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     },
     
     testParseClassExtension01: function() { // Object.extend(...);
-        var src = 'Object.extend(thisModule.ScriptEnvironment, { \nopen: function() {\n\t\t1+2\n\t}});';
+        var src = 'Object.extend(thisModule.ScriptEnvironment, { \nopen: function() {\n\t\t1+2\n\t}\n});';
         this.sut.source = src;
         var descriptor = this.sut.parse('klassExtensionDef');
         this.assert(descriptor, 'no descriptor');
@@ -448,26 +468,19 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserSpecialTest', {
     
-    xtestParseCore: function() {    // Object.subclass
+    xtestParseCore: function() {
         var url = URL.source.withFilename('Core.js');
         var result = this.sut.reallyParseFile(url);
         debugger;
     },
         
-    testParseCoreAlternativ: function() {    // Object.subclass
-        var url = URL.source.withFilename('Core.js');
-        var result = this.sut.parseFileFromUrl(url);
-        y = result;
-        this.assertDescriptorsAreValid(result);
-    },
-    
-    xtestParseMorph: function() {    // Object.subclass
+    testParseCoreAlternativ: function() {
+        // var url = URL.source.withFilename('Core.js');
+        // var result = this.sut.parseFileFromUrl(url);
         var db = new SourceDatabase();
         var src = db.getCachedText('Core.js');
-        src = src.slice(src.indexOf('lively.data.Wrapper.subclass(\'Morph\', {'), src.indexOf('});\n\nMorph.addMethods')+3);
-        this.sut.source = src;
-        var descriptor = this.sut.parseClass();
-        debugger;
+        var result = this.sut.parseSource(src);
+        // this.assertDescriptorsAreValid(result);
     },
 });
 
@@ -475,14 +488,15 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         
     testFindLinNo: function() {
         var str = 'abc\ndef123\n\n\nxyz\n';
-        this.assertEqual(this.sut.findLineNo(str, 0), 1);
-        this.assertEqual(this.sut.findLineNo(str, 2), 1);
-        this.assertEqual(this.sut.findLineNo(str, 3), 1);
-        this.assertEqual(this.sut.findLineNo(str, 4), 2);
-        this.assertEqual(this.sut.findLineNo(str, 10), 2);
-        this.assertEqual(this.sut.findLineNo(str, 11), 3);
-        this.assertEqual(this.sut.findLineNo(str, 14), 5);
-        this.assertEqual(this.sut.findLineNo(str, 16), 5);
+        var lines = str.split(/[\n\r]/);
+        this.assertEqual(this.sut.findLineNo(lines, 0), 1);
+        this.assertEqual(this.sut.findLineNo(lines, 2), 1);
+        this.assertEqual(this.sut.findLineNo(lines, 3), 1);
+        this.assertEqual(this.sut.findLineNo(lines, 4), 2);
+        this.assertEqual(this.sut.findLineNo(lines, 10), 2);
+        this.assertEqual(this.sut.findLineNo(lines, 11), 3);
+        this.assertEqual(this.sut.findLineNo(lines, 14), 5);
+        this.assertEqual(this.sut.findLineNo(lines, 16), 5);
     },
     
     testParseCompleteSource: function() {
@@ -540,7 +554,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.assertDescriptorsAreValid(result);
     },
     
-    testFailingKlassExtension: function() { // Core 1899 and before
+    testFailingKlassExtension1: function() { // Core 1899 and before
         var src = '\n// Morph bindings to its parent, world, canvas, etc.' + '\n' +
         'Morph.addMethods({' + '\n' + '\n' +
             '   world: function() {' + '\n' +
@@ -556,10 +570,82 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.assertEqual(result[1].type, 'klassExtensionDef');
         y = result;
         this.assertDescriptorsAreValid(result);
+    },
+    
+    testFailingKlassExtension2: function() { // Base 1945
+        var src = 'Object.extend(Color, {' + '\n' +
+        '    darkGray: Color.gray.darker(),' + '\n' +
+        '    lightGray: Color.gray.lighter(),' + '\n' +
+        '    veryLightGray: Color.gray.lighter().lighter(),' + '\n' +
+        '    turquoise: Color.rgb(0, 240, 255),' + '\n' +
+        '    //    brown: Color.rgb(182, 67, 0),' + '\n' +
+        '    //    red: Color.rgb(255, 0, 0),' + '\n' +
+        '    orange: Color.rgb(255, 153, 0),' + '\n' +
+        '    //    yellow: Color.rgb(204, 255, 0),' + '\n' +
+        '    //    limeGreen: Color.rgb(51, 255, 0),' + '\n' +
+        '    //    green: Color.rgb(0, 255, 102),' + '\n' +
+        '    //    cyan: Color.rgb(0, 255, 255),' + '\n' +
+        '    //    blue: Color.rgb(0, 102, 255),' + '\n' +
+        '    //    purple: Color.rgb(131, 0, 201),' + '\n' +
+        '    //    magenta: Color.rgb(204, 0, 255),' + '\n' +
+        '    //    pink: Color.rgb(255, 30, 153),' + '\n' +
+        '    primary: {' + '\n' +
+        '	// Sun palette' + '\n' +
+        '	blue: Color.rgb(0x53, 0x82, 0xA1),' + '\n' +
+        '	orange: Color.rgb(0xef, 0x6f, 0x00),' + '\n' +
+        '	green: Color.rgb(0xb2, 0xbc, 00),' + '\n' +
+        '	yellow: Color.rgb(0xff, 0xc7, 0x26)' + '\n' +
+        '    },' + '\n' +
+        '' + '\n' +
+        '    secondary: {' + '\n' +
+        '	blue: Color.rgb(0x35, 0x55, 0x6b),' + '\n' +
+        '	orange: Color.rgb(0xc0, 0x66, 0x00),' + '\n' +
+        '	green: Color.rgb(0x7f, 0x79, 0x00),' + '\n' +
+        '	yellow: Color.rgb(0xc6, 0x92, 0x00)' + '\n' +
+        '    },' + '\n' +
+        '' + '\n' +
+        '    neutral: {' + '\n' +
+        '	lightGray: Color.rgb(0xbd, 0xbe, 0xc0),' + '\n' +
+        '	gray: Color.rgb(0x80, 0x72, 0x77)' + '\n' +
+        '    }' + '\n});';
+        var result = this.sut.parse('klassExtensionDef', src);
+        this.assertEqual(result.type, 'klassExtensionDef');
+    },
+    
+    testFailingPropertyDef: function() {
+        var src = 'neutral: {'  + '\n' +
+    	'lightGray: Color.rgb(0xbd, 0xbe, 0xc0),'  + '\n' +
+    	'gray: Color.rgb(0x80, 0x72, 0x77)' + '\n' + '},';
+    	var result = this.sut.parse('propertyDef', src);
+        this.assertEqual(result.type, 'propertyDef');
     }
 
 });
 
+thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest3', {
+    
+    setUp: function($super) {
+        $super();
+        var db = new SourceDatabase();
+        this.src = db.getCachedText('Core.js');
+    },
+    
+    xtestParseMorph: function() {    // Object.subclass        
+        var src = this.src;
+        src = src.slice(src.indexOf('lively.data.Wrapper.subclass(\'Morph\', {'), src.indexOf('});\n\nMorph.addMethods')+3);
+        this.sut.source = src;
+        var descriptor = this.sut.parseClass();
+        this.assertEqual(descriptor.type, 'klassDef');
+    },
+    
+    testParseWorldMorph: function() {    // Object.subclass
+        var src = this.src;
+        src = src.slice(src.indexOf('PasteUpMorph.subclass("WorldMorph", {'), src.indexOf('});\n\nObject.extend(WorldMorph, {')+3);
+        var descriptor = this.sut.parse('klassDef', src);
+        this.assertEqual(descriptor.type, 'klassDef');
+    },
+    
+});
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     
     shouldRun: false,

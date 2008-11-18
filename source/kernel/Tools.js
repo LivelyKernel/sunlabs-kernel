@@ -1970,61 +1970,26 @@ Object.subclass('AnotherFileParser', {
         return result;
     },
     
-    fixIndices: function(descr, startPos, src) {
+    fixIndicesAndMore: function(descr, startPos, src, lines) {
+        // var ms = new Date().getTime();
+        // ----------
         descr.startIndex += startPos;
         descr.stopIndex += startPos;
         
-        descr.lineNo = this.findLineNo(src, descr.startIndex);
+        descr.lineNo = this.findLineNo(lines, descr.startIndex);
         descr.getSourceCode = function() { var theSrc = src.substring(descr.startIndex, descr.stopIndex+1); return theSrc };
         descr.getDescrName = function() { return descr.name };
         descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
         descr.newChangeList = function() { return ['huch'] };
         if (descr.subElements)
-            descr.subElements.forEach(function(ea) { this.fixIndices(ea, startPos, src) }, this);
+            descr.subElements.forEach(function(ea) { this.fixIndicesAndMore(ea, startPos, src, lines); ea.name = '\t' + ea.name; }, this);
+        // ----------------
+        // this.overheadTime += new Date().getTime() - ms;
     },
     
-    parseSource: function(src) {
-        var lines = src.split(/[\n\r]/);
-        var ptr = 0;
-        var changeList = [];
-        var msStart = new Date().getTime();
-        
-        var rules = ['comment', 'blankLine',
-                    'klassDef', 'objectDef', 'klassExtensionDef',
-                    'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
-                    'unknown'];
-        
-        while (ptr < src.length) {
-            var msParseStart = new Date().getTime();
-            var descr;
-            
-            rules.detect(function(rule) {
-                var tmp = this.parse(rule, src.substring(ptr, src.length));
-                descr = tmp;
-                return tmp;
-            }, this);
-            if (descr === undefined)
-                throw dbgOn(new Error('Could not parse src at ' + ptr));
-            if (descr.stopIndex === undefined)
-                throw dbgOn(new Error('Parse result has an error ' + JSON.serialize(descr) + 'ptr:' + ptr));
-            
-            changeList.push(descr);
-            var tmpPtr = ptr;
-            ptr += descr.stopIndex + 1;
-            this.fixIndices(descr, tmpPtr, src);
-            
-            var msNow = new Date().getTime();
-            console.log('Parsed line '
-                        + this.findLineNo(src, tmpPtr) + ' to ' + this.findLineNo(src, ptr) + ' (' + descr.type + ':' + descr.name
-                        + ') after ' + (msNow-msStart)/1000 + 's (' + (msNow-msParseStart) + 'ms)');
-        }
-        
-        return changeList;
-    },
-    
-    findLineNo: function(str, ptr) {
+    findLineNo: function(lines, ptr) {
+                // var ms = new Date().getTime();
         // what a mess, i want ordinary non local returns!
-        var lines = str.split(/[\n\r]/);
         ptr += 1;
         try {
         lines.inject(0, function(charsUntilNow, line, i) {
@@ -2033,11 +1998,95 @@ Object.subclass('AnotherFileParser', {
             return charsUntilNow;
         });
         } catch(e) {
+            // this.overheadTime += new Date().getTime() - ms;
+            
             if (e._theLineNo !== undefined) return e._theLineNo;
             throw e
         }
+        
+        // this.overheadTime += new Date().getTime() - ms;
+        
         return null
-    }
+    },
+    
+    ometaRules: ['comment', 'blankLine',
+                'klassDef', 'objectDef', 'klassExtensionDef',
+                'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
+                'unknown'],
+                
+    parseSource: function(src) {
+        this.overheadTime = 0;
+        
+        var lines = src.split(/[\n\r]/);
+        var ptr = 0;
+        var changeList = [];
+        var msStart = new Date().getTime();
+        
+        var usingDscr;
+        
+        while (ptr < src.length) {
+            var msParseStart = new Date().getTime();
+            var descr;
+            var partToParse = src.substring(ptr, src.length);
+
+
+            // try yourself
+            var match;
+            var currentLine = lines[this.findLineNo(lines,ptr)];
+
+            // find begin of using
+            match = currentLine.match(/^\s*using\((.*)\)\.run\(.*\{\s*$/);
+            if (match) {
+                usingDscr = {type: 'usingDef', name: match[1], startIndex: ptr, lineNo: this.findLineNo(lines,ptr)}
+                descr = usingDscr;
+                ptr += match[0].length + 1
+            }
+            
+            // find end of using
+            if (!match && usingDscr) {
+                match = currentLine.match(/^\s*\}\);?\s*$/);
+                if (match) {
+                    usingDscr.stopIndex = ptr + match[0].length;
+                    ptr = usingDscr.stopIndex + 1;
+                    usingDscr = null;
+                    debugger;
+                    continue;
+                }
+            }
+            
+            if (!descr) {
+                // try with ometa
+                this.ometaRules.detect(function(rule) {
+                    return descr = this.parse(rule, partToParse);
+                }, this);
+                if (descr === undefined)
+                    throw dbgOn(new Error('Could not parse src at ' + ptr));
+                if (descr.stopIndex === undefined)
+                    throw dbgOn(new Error('Parse result has an error ' + JSON.serialize(descr) + 'ptr:' + ptr));
+                    
+                var tmpPtr = ptr;
+                ptr += descr.stopIndex + 1;
+                this.fixIndicesAndMore(descr, tmpPtr, src, lines);
+            }
+            
+            
+            
+            changeList.push(descr);
+            
+            // if (descr.getSourceCode() == '\n// Morph bindings to its parent, world, canvas, etc.\n')
+            //     debugger;
+            
+            var msNow = new Date().getTime();
+            console.log('Parsed line ' +
+                        this.findLineNo(lines, descr.startIndex) + ' to ' + this.findLineNo(lines, descr.stopIndex) +
+                        ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + (msNow-msParseStart) + 'ms)');
+            descr = null;
+        }
+        
+        console.log('Oberhead:................................' + this.overheadTime/1000 + 's');
+        y = changeList;
+        return changeList;
+    },
 });
 
 AnotherFileParser.parseAndShowFileNamed = function(fileName) {
