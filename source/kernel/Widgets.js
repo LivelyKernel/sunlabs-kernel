@@ -616,13 +616,10 @@ BoxMorph.subclass("SelectionMorph", {
         }
     },
     
-    shadowCopy: function($super, hand) {
-	console.log("SelectionMophshadowCopy()");
-	var copy = $super(hand);  // Don't show selection's shadow in the hand
+    shadowCopy: function(hand) {
+	var copy = Morph.makeRectangle(this.bounds())  // Don't show selection's shadow in the hand
 	copy.setFill(null);
 	copy.setBorderWidth(0);
-	copy.setFillOpacity(0.1);
-	copy.setStrokeOpacity(0.1);
 	return copy;
     },
 

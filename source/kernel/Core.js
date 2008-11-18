@@ -2586,11 +2586,14 @@ Morph.addMethods({
     },
 
     shadowCopy: function(hand) {
-	var copy = this.copy(new Copier());
-//	Note: this is a potentially costly deep copy
-//	Also text color needs to be made (entirely) black, but hey...
+	// This is currently an expensive and error-prone deep copy
+	// Better would be a shallow copy unless there are submorphs outside bounds
+	var copy;
+	try { copy = this.copy(new Copier()); }
+		catch (e) { copy = Morph.makeRectangle(this.bounds()); }
 	copy.withAllSubmorphsDo( function() {
-		if (this.getFill() || true) this.setFill(Color.black);
+		if (this.fill || this.getFill()) this.setFill(Color.black);
+			else this.setFill(null);
 		if (this.getBorderColor()) this.setBorderColor(Color.black);
 		this.setFillOpacity(0.3);
 		this.setStrokeOpacity(0.3);
@@ -4394,7 +4397,7 @@ Morph.subclass("HandMorph", {
             this.setPosition(evt.mousePoint);
             
             if(evt.isShiftDown())
-                this.alignToGrid(this.topSubmorph());
+                this.alignToGrid();
             
 	    this.updateGrabHalo();
             
@@ -4474,7 +4477,7 @@ Morph.subclass("HandMorph", {
 	try {
 	    $super();
 	    if (this.layoutChangedCount == 1) {
-		this.grabHaloMorph && this.updateGrabHalo();
+		Config.showGrabHalo && this.updateGrabHalo();
 	    }
 	} finally {
 	    this.layoutChangedCount --;
@@ -4491,29 +4494,30 @@ Morph.subclass("HandMorph", {
 	//  3. useShadowMorphs will cause a shadowCopy of each grabbed morph to be put
 	//	at the end of the hand's submorph list
 	// So, if everything is working right, the hand's submorph list looks like:
-	//	front -> Ma, Mb, Mc, Ha, Hb, Hc, Sa, Sb, Sc <- back [note front is last ;-]
+	//	front -> Mc, Mb, Ma, Ha, Sa, Hb, Sb, Hc, Sc <- back [note front is last ;-]
 	// Where M's are grabbed morphs, H's are halos if any, and S's are shadows if any
 
         if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
 
 	if (Config.showGrabHalo) {
 	    var bounds = grabbedMorph.bounds(true);
-	    this.grabHaloMorph = this.addMorphBack(Morph.makeRectangle(bounds).applyStyle({fill: null, borderWidth: 0.5 }));
-	    this.grabHaloMorph.shape.setStrokeDashArray(String([3,2]));
-	    this.grabHaloMorph.setLineJoin(lively.scene.LineJoins.Round);
-	    this.grabHaloMorph.ignoreEvents();
+	    var halo = this.addMorphBack(Morph.makeRectangle(bounds).applyStyle({fill: null, borderWidth: 0.5 }));
+	    halo.morphTrackedByHalo = grabbedMorph;
+	    halo.shape.setStrokeDashArray(String([3,2]));
+	    halo.setLineJoin(lively.scene.LineJoins.Round);
+	    halo.ignoreEvents();
 
 	    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
 	    idLabel.applyStyle(this.grabHaloLabelStyle);
-	    this.grabHaloMorph.addMorph(idLabel);
-	    idLabel.align(idLabel.bounds().bottomLeft(), this.grabHaloMorph.innerBounds().topRight());
+	    halo.addMorph(idLabel);
+	    idLabel.align(idLabel.bounds().bottomLeft(), halo.innerBounds().topRight());
 	    
 	    var pos = grabbedMorph.getPosition();
 	    var posLabel = new TextMorph(pt(20, 10).extentAsRectangle(), "").beLabel();
 	    posLabel.applyStyle(this.grabHaloLabelStyle);
-	    this.grabHaloMorph.positionLabel = this.grabHaloMorph.addMorph(posLabel);
-	    
-	    this.updateGrabHalo();
+	    halo.positionLabel = halo.addMorph(posLabel);
+
+	this.updateGrabHalo();
 	}
         if (this.useShadowMorphs) {
 		var shadow = grabbedMorph.shadowCopy();
@@ -4524,30 +4528,37 @@ Morph.subclass("HandMorph", {
 
     showAsUngrabbed: function(grabbedMorph) {
 	if (this.applyDropShadowFilter) grabbedMorph.applyFilter(null);
-	if (this.grabHaloMorph) this.grabHaloMorph = null;
     },
     
-    alignToGrid: function(draggedMorph) {
-        if(!this.grabHaloMorph) return;
+    alignToGrid: function() {
+        if(!Config.showGrabHalo) return;
         var grid = function(a) {
             return a - (a % (Config.alignToGridSpace || 5))};
-        if (!this.grabHaloMorph.orgSubmorphPosition)
-            this.grabHaloMorph.orgSubmorphPosition = draggedMorph.getPosition();
-        var oldPos = this.worldPoint(this.grabHaloMorph.orgSubmorphPosition);
-        var gridPos = pt(grid(oldPos.x), grid(oldPos.y));
-        draggedMorph.setPosition(this.localize(gridPos));
+	this.submorphs.forEach(function(halo) {
+	    if (halo.morphTrackedByHalo) { // this is a tracking halo
+        	if (!halo.orgSubmorphPosition)
+		    halo.orgSubmorphPosition = halo.morphTrackedByHalo.getPosition();
+		var oldPos = this.worldPoint(halo.orgSubmorphPosition);
+		var gridPos = pt(grid(oldPos.x), grid(oldPos.y));
+		halo.morphTrackedByHalo.setPosition(this.localize(gridPos));
+	    }
+	}.bind(this));
     },
 
     updateGrabHalo: function Morph$updateGrabHalo() {
-	if (this.grabHaloMorph) {
-	    this.grabHaloMorph.setBounds( this.topSubmorph().bounds(true).expandBy(3));
-	    if (this.grabHaloMorph.positionLabel) {
-		var pos = this.worldPoint(this.topSubmorph().getPosition());
-		var posLabel  = this.grabHaloMorph.positionLabel;
-		posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
-		posLabel.align(posLabel.bounds().bottomCenter(), this.grabHaloMorph.innerBounds().topLeft());
+	// Note there may be several grabHalos, and drop shadows as well
+	// See the comment in showAsGrabbed 
+	this.submorphs.forEach(function(halo) {
+	    if (halo.morphTrackedByHalo) { // this is a tracking halo
+		halo.setBounds(halo.morphTrackedByHalo.bounds(true).expandBy(3));
+		if (halo.positionLabel) {
+		    var pos = this.worldPoint(halo.morphTrackedByHalo.getPosition());
+		    var posLabel = halo.positionLabel;
+		    posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
+		    posLabel.align(posLabel.bounds().bottomCenter(), halo.innerBounds().topLeft());
+		}
 	    }
-	}
+	}.bind(this));
     },
 
     
@@ -4586,20 +4597,24 @@ Morph.subclass("HandMorph", {
     },
     
     dropMorphsOn: function(receiver) {
-        //console.log("drop this.submorphs.length = " + this.submorphs.length)
+        console.log("drop this.submorphs.length = " + this.submorphs.length)
 	if (receiver !== this.world()) this.unbundleCarriedSelection();
 	if (this.logDnD) console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
-        var nToDrop = this.submorphs.length;
-        if (this.useShadowMorphs || Config.showGrabHalo) nToDrop = this.submorphs.length/2;
-        if (this.useShadowMorphs && Config.showGrabHalo) nToDrop = this.submorphs.length/3;
-        //console.log("drop nToDrop = " + nToDrop)
-	for (var i=1; i<=nToDrop; i++) { // drop in same z-order as in hand
+        var nToDrop = this.nRealMorphs();
+        for (var i=1; i<=nToDrop; i++) { // drop in same z-order as in hand
             var m = this.topSubmorph();
             m.dropMeOnMorph(receiver);
 	    this.showAsUngrabbed(m);
 	}
-        //console.log("after drop this.submorphs.length = " + this.submorphs.length)
         this.removeAllMorphs() // remove any shadows or halos
+    },
+
+    nRealMorphs: function(receiver) {
+        // See the comment in showAsGrabbed regarding what's in the submorphs list
+        var nReal = this.submorphs.length;
+        if (this.useShadowMorphs || Config.showGrabHalo) nReal = this.submorphs.length/2;
+        if (this.useShadowMorphs && Config.showGrabHalo) nReal = this.submorphs.length/3;
+	return nReal
     },
 
     unbundleCarriedSelection: function() {
