@@ -1915,7 +1915,8 @@ Object.extend(Color, {
     },
 
     fromString: function(str) {
-	return Color.fromTuple(Color.parse(str));
+	var tuple = Color.parse(str);
+	return tuple && Color.fromTuple(tuple);
     },
 
     parse: function(str) { 

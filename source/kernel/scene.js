@@ -233,7 +233,7 @@ Object.extend(lively.data.Wrapper, {
 
 Object.extend(Object.subclass('lively.data.FragmentURI'), {
     parse: function(string) {
-	var match = string.match("url\\(#(.*)\\)");
+	var match = string && string.match("url\\(#(.*)\\)");
 	return match && match[1];
 	// 'ur(#fragmentURI)'
 	//return string.substring(5, string.length - 1);
@@ -314,6 +314,27 @@ this.Node.addMethods({
 	this._stroke = other._stroke;
 	if (this._stroke instanceof lively.paint.Gradient) {
 	    this._stroke.reference();
+	}
+    },
+
+    deserialize: function($super, importer, rawNode) {
+	$super(importer, rawNode);
+	var attr = rawNode.getAttributeNS(null, "fill");
+	var url = lively.data.FragmentURI.parse(attr);
+	if (url) {
+	    // FIXME
+	    //this._fill = lively.data.FragmentURI.getElement(fillAttr);
+	} else {
+	    this._fill = Color.fromString(attr);
+	}
+
+	attr = rawNode.getAttributeNS(null, "stroke");
+	var url = lively.data.FragmentURI.parse(attr);
+	if (url) {
+	    // FIXME
+	    //this._stroke = lively.data.FragmentURI.getElement(fillAttr);
+	} else {
+	    this._stroke = Color.fromString(attr);
 	}
     },
 
