@@ -4,6 +4,8 @@
  * @class PhoneMorph
  */
 
+module('phone.js').requires().toRun(function() {
+
 console.log("start phone.js");
 Morph.subclass('PhoneMorph', {
 	initialize: function($super, position, radius) {
@@ -338,3 +340,5 @@ Global.phoneDemo = function(world, origin, size) {
 	sl.req.get(sl.url);
         return pm;
 }
+
+}); // end of module

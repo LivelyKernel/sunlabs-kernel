@@ -410,14 +410,11 @@ function populateWorldWithExamples(world) {
             browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(160, 150));
         }
 
-		if (Config.showGridDemo) {
-			if (this.enterCount > 0) return;
-			var importer = new NetImporter();
-			importer.onCodeLoad = function(error) {
-				error || GridLayoutMorph.demo(devWorld.myWorld, pt(90,450));
-			};
-			importer.loadCode(URL.source.withFilename('GridLayout.js'));
-		}
+		if (Config.showGridDemo)
+            require('GridLayout.js').toRun(function() {
+                alert('demo!!');
+                GridLayoutMorph.demo(devWorld.myWorld, pt(90,450));
+            });
 		
         if (Config.showTesterRunner) {
             // require('TestFramework.js').toRun(function(currentModule) {
@@ -430,20 +427,13 @@ function populateWorldWithExamples(world) {
         }
     }
 
-    if (Config.showPhoneWorld) {
-        var phoneWorld = new LinkMorph(null, pt(60, 320));
-        world.addMorph(phoneWorld);
-	addLinkLabel(phoneWorld, "Telephone Demo");
-        
-	phoneWorld.myWorld.onEnter = function() {
-	    if (this.enterCount > 0) return;
-	    var importer = new NetImporter();
-	    importer.onCodeLoad = function(error) {
-		error || Global.phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
-	    };
-	    importer.loadCode(URL.source.withFilename('phone.js'));
-        }
-    }
+    if (Config.showPhoneWorld)
+        require('phone.js').toRun(function() {
+            var phoneWorld = new LinkMorph(null, pt(60, 320));
+            world.addMorph(phoneWorld);
+        	addLinkLabel(phoneWorld, "Telephone Demo");
+            Global.phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
+        })
 
     if (Config.showLivelyConsole  && window.console.consumers) {
         new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));

@@ -4014,7 +4014,7 @@ PasteUpMorph.subclass("WorldMorph", {
                     world.addMorph(m)})
              }],
             ["Layout Demo", function(evt) {
-                module('Main.js').requires('GridLayout.js').toRun(function() {
+                require('GridLayout.js').toRun(function() {
 		    alert('demo!!');
 		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
 		});
