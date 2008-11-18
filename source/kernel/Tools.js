@@ -2049,7 +2049,7 @@ Object.subclass('AnotherFileParser', {
                     usingDscr.stopIndex = ptr + match[0].length;
                     ptr = usingDscr.stopIndex + 1;
                     usingDscr = null;
-                    debugger;
+                    dbgOn(true);
                     continue;
                 }
             }

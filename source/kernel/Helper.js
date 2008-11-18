@@ -51,7 +51,7 @@ Global.logStackFor = function(obj, methodName) {
     obj[methodName] = obj[methodName].wrap(function(proceed) {
         var args = $A(arguments); args.shift(); 
         MyLogDepth++;
-        debugger;
+        dbgOn(true);
         var result = proceed.apply(this, args);
         
         logStack();
