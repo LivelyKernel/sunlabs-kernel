@@ -304,6 +304,19 @@ this.Node.addMethods({
 	throw new Error('setBounds unsupported on type ' + this.getType());
     },
 
+    copyFrom: function($super, copier, other) {
+	$super(copier, other);
+	this._fill = other._fill;
+
+	if (this._fill instanceof lively.paint.Gradient) {
+	    this._fill.reference();
+	}
+	this._stroke = other._stroke;
+	if (this._stroke instanceof lively.paint.Gradient) {
+	    this._stroke.reference();
+	}
+    },
+
     canvas: function() {
 	if (!UserAgent.usableOwnerSVGElement) {
 	    // so much for multiple worlds on one page
@@ -556,7 +569,6 @@ this.Shape.subclass('lively.scene.Ellipse', {
 
     origin: function() {
 	return this.center();
-	//return this.bounds().topLeft();
     },
     
     // For ellipses, test if x*x + y*y < r*r
@@ -1430,6 +1442,7 @@ Wrapper.subclass("lively.paint.Gradient", {
     },
 
     dereference: function() {
+	// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
 	this.refcount --;
 	if (this.refcount == 0) {
 	    if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
