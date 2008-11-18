@@ -1023,6 +1023,11 @@ this.Node.subclass('lively.scene.Group', {
 	// FIXME deep copy?
     },
 
+    deserialize: function($super, copier, rawNode) {
+	$super(copier, rawNode);
+	this.content = [];
+    },
+
     add: function(node) {
 	this.rawNode.appendChild(node.rawNode);
 	this.content.push(node);
@@ -1064,7 +1069,6 @@ this.Node.subclass('lively.scene.Image', {
     
     initialize: function(url, width, height) {
 	if (!url) return;
-	var node;
 	if (url.startsWith('#'))
 	    this.loadUse(url);
 	else

@@ -1303,7 +1303,8 @@ lively.data.Wrapper.subclass('Morph', {
 	    case "defs": 
 		throw new Error();
 	    case "g":
-		this.restoreFromSubnode(importer, node);
+		this.shape = new lively.scene.Group(importer, node);
+		//this.restoreFromSubnode(importer, node);
 		break;
 		// nodes from the Lively namespace
 	    case "field": {
@@ -2828,6 +2829,7 @@ Morph.addMethods({
     localBorderBounds: function(optTfm) {
 	// defined by the external edge of the border
 	// if optTfm is defined, transform the vertices first, then take the union
+	dbgOn(!this.shape);
 	var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
 	
 	// double border margin for polylines to account for elbow protrusions
