@@ -4173,14 +4173,16 @@ Morph.subclass("EngineMorph", {
     angleStep: Math.PI/8,
     style: using(lively.paint).run(function(gfx) {
 	return {  fill: new gfx.LinearGradient([new gfx.Stop(0, Color.gray), 
-						new gfx.Stop(1, Color.darkGray)], gfx.LinearGradient.NorthSouth),
+						new gfx.Stop(1, Color.darkGray)],
+					gfx.LinearGradient.NorthSouth),
 		  borderColor: Color.black, 
 		  borderWidth: 1}
     }),
     pistonStyle: using(lively.paint).run(function(gfx) {
 	return {  fill: new gfx.LinearGradient( [new gfx.Stop(0, Color.darkGray), 
 						new gfx.Stop(0.4, Color.lightGray),
-						new gfx.Stop(1, Color. darkGray)], gfx.LinearGradient.EastWest),
+						new gfx.Stop(1, Color. darkGray)],
+					gfx.LinearGradient.EastWest),
 		  borderColor: Color.black, 
 		  borderWidth: 2}
     }),
@@ -4207,7 +4209,7 @@ Morph.subclass("EngineMorph", {
         //    Engine
         //        Crank
         //            CrankPin
-        //        ConnectingRod
+        //        ConnectingRod (with highlight)
         //        Cylinder (may be many)
         //            Piston
         //                WristPin
@@ -4219,9 +4221,9 @@ Morph.subclass("EngineMorph", {
         this.normalSpeed = 100;
         this.crank = Morph.makeCircle(center, this.stroke*0.8, 4, Color.black, Color.gray);
         this.addMorph(this.crank);
-        this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 0, null, Color.black);
+        this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 1, Color.black, Color.gray.darker(2));
         this.crank.addMorph(this.crankPin);
-//	this.crankPinCap = this.crankPin.copy();
+	this.crankPinCap = this.crankPin.copy();
         this.alternate = alternating;
         this.makeCylinders(nCylinders);
 
@@ -4298,15 +4300,16 @@ Morph.subclass("EngineMorph", {
 	    cyl.piston.topPos = cyl.innerBounds().topLeft().addPt(this.topPosDisplacement);
             cyl.wristPin = cyl.piston.topSubmorph();
             this.cylinders.push(cyl);
-            // Note: cyl.connectingRod points to a morph that is not a submorph
+            // Note: cyl.connectingRod points to a morph that is not a submorph yet
+            // Real endpoints get set later in doStep
             this.connectingRods[i] = cyl.addMorph(Morph.makeLine(
-                [pt(10, 10), pt(10, 10)],  // Real endpoints get set in 
-                cr.width*0.15, Color.gray.darker(2) ));
-            //this.connectingRods[i].shape.setStroke(this.pistonStyle.fill);  //Experimental stroke style
+                [pt(10, 10), pt(10, 10)], cr.width*0.15, Color.gray.darker(2) ));
+            this.connectingRods[i].addMorph(Morph.makeLine( // extra morph for highlight on rod
+                [pt(10, 10), pt(10, 10)], cr.width*0.05, Color.darkGray ));
             cyl.addMorph(cyl.piston);  // brings it on top of connecting rod (looks better)
             this.movePiston(cyl);
         };
-//	this.addMorph(this.crankPinCap);
+	this.connectingRods[nCylinders-1].addMorph(this.crankPinCap);
 	this.doStep(); // makes connecting rods
     },
 
@@ -4342,17 +4345,24 @@ Morph.subclass("EngineMorph", {
     },
 
     doStep: function() {
-	this.crankAngle += this.angleStep; 
+	var crPt;
+        this.crankAngle += this.angleStep; 
         if (this.crankAngle > Math.PI*4) this.crankAngle -= Math.PI*4;
         this.crank.setRotation(this.crankAngle);  // Rotate the crankshaft
         this.cylinders.forEach(function(cyl, i) {
             this.movePiston(cyl);  // Move the pistons
-            this.connectingRods[i].setVertices(  // Relocate the connecting rods
-                [this.connectingRods[i].localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston),
-                this.connectingRods[i].localizePointFrom(this.crankPin.bounds().center(), this.crank)]
+            var cr = this.connectingRods[i];
+            cr.setVertices(  // Relocate the connecting rods
+                [cr.localizePointFrom(this.crankPin.bounds().center(), this.crank),
+                cr.localizePointFrom(cyl.wristPin.bounds().center(), cyl.piston)]
             );
+            cr.submorphs[0].setVertices(  // also the highlight stripes
+                [cr.shape.vertices()[0],
+                cr.shape.vertices()[1]]
+            );
+            crPt = cr.shape.vertices()[0];
         }, this);
-//	this.crankPinCap.setPosition(this.crankPin.localizePointFrom(this.crankPin.bounds().center(), this.crank));
+	this.crankPinCap.setPosition(crPt.subPt(this.crankPinCap.getExtent().scaleBy(0.5)));
     },
 
     setAlternateTiming: function(trueOrFalse) {
