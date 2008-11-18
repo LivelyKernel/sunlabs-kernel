@@ -4186,7 +4186,14 @@ Morph.subclass("EngineMorph", {
 		  borderColor: Color.black, 
 		  borderWidth: 2}
     }),
-    
+
+    crankPinStyle: using(lively.paint).run(function(gfx) {
+	return {  fill: new gfx.RadialGradient([new gfx.Stop(0, Color.darkGray),
+						new gfx.Stop(1, Color.gray.darker(2))]),
+		  borderColor: Color.black, 
+		  borderWidth: 1}
+    }),
+   
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(new lively.scene.Rectangle(fullRect));
@@ -4209,6 +4216,7 @@ Morph.subclass("EngineMorph", {
         //    Engine
         //        Crank
         //            CrankPin
+        //        CrankPinCap - follows the crank pin, but appears over connecting rods
         //        ConnectingRod (with highlight)
         //        Cylinder (may be many)
         //            Piston
@@ -4224,6 +4232,7 @@ Morph.subclass("EngineMorph", {
         this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 1, Color.black, Color.gray.darker(2));
         this.crank.addMorph(this.crankPin);
 	this.crankPinCap = this.crankPin.copy();
+	this.crankPinCap.applyStyle(this.crankPinStyle);
         this.alternate = alternating;
         this.makeCylinders(nCylinders);
 
