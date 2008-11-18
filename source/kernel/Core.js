@@ -2587,7 +2587,8 @@ Morph.addMethods({
 
     shadowCopy: function(hand) {
 	var copy = this.copy(new Copier());
-//	Note: this is a potentially costly deep copy.  Also text color needs to be made black.
+//	Note: this is a potentially costly deep copy
+//	Also text color needs to be made (entirely) black, but hey...
 	copy.withAllSubmorphsDo( function() {
 		if (this.getFill() || true) this.setFill(Color.black);
 		if (this.getBorderColor()) this.setBorderColor(Color.black);
@@ -4053,7 +4054,9 @@ PasteUpMorph.subclass("WorldMorph", {
                       this.toggleBalloonHelp],
         	[(HandMorph.prototype.useShadowMorphs ? "don't " : "") + "show drop shadows",
 		      function () { HandMorph.prototype.useShadowMorphs = !HandMorph.prototype.useShadowMorphs}],
-        	[(HandMorph.prototype.applyDropShadowFilter ? "don't " : "") + "use filter shadows (if supported)",
+        	[(Config.showGrabHalo ? "don't " : "") + "show bounds halos",
+		      function () { Config.showGrabHalo = !Config.showGrabHalo}],
+        	[HandMorph.prototype.applyDropShadowFilter ? "don't use filter shadows" : "use filter shadows (if supported)",
 		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
         	[(Config.useDebugBackground ? "use normal background" : "use debug background"),
                       this.toggleDebugBackground]
@@ -4480,6 +4483,17 @@ Morph.subclass("HandMorph", {
 
 
     showAsGrabbed: function(grabbedMorph) {
+	// At this time, there are three separate hand-effects:
+	//  1. applyDropShadowFilter, if it works, will cause the graphics engine to put a nice
+	//	gaussian blurred drop-shadow on morphs that are grabbed by the hand
+	//  2. showGrabHalo will cause a halo object to be put at the end of the hand's
+	//	submorph list for every grabbed morph
+	//  3. useShadowMorphs will cause a shadowCopy of each grabbed morph to be put
+	//	at the end of the hand's submorph list
+	// So, if everything is working right, the hand's submorph list looks like:
+	//	front -> Ma, Mb, Mc, Ha, Hb, Hc, Sa, Sb, Sc <- back [note front is last ;-]
+	// Where M's are grabbed morphs, H's are halos if any, and S's are shadows if any
+
         if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
 
 	if (Config.showGrabHalo) {
@@ -4503,17 +4517,14 @@ Morph.subclass("HandMorph", {
 	}
         if (this.useShadowMorphs) {
 		var shadow = grabbedMorph.shadowCopy();
-		this.addMorph(shadow);
+		this.addMorphBack(shadow);
 		shadow.moveBy(pt(8, 8));
 	}
     },
 
     showAsUngrabbed: function(grabbedMorph) {
 	if (this.applyDropShadowFilter) grabbedMorph.applyFilter(null);
-	if (this.grabHaloMorph) {
-	    this.grabHaloMorph.remove();
-	    this.grabHaloMorph = null;
-	}
+	if (this.grabHaloMorph) this.grabHaloMorph = null;
     },
     
     alignToGrid: function(draggedMorph) {
@@ -4564,24 +4575,31 @@ Morph.subclass("HandMorph", {
         // But for now we simply drop on world, so this isn't needed
         this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
         if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
-        this.addMorph(grabbedMorph);
-	this.showAsGrabbed(grabbedMorph);
+        this.addMorphWithHalos(grabbedMorph);
         // grabbedMorph.updateOwner(); 
         this.changed(); //for drop shadow
     },
     
+    addMorphWithHalos: function(grabbedMorph) { 
+        this.addMorph(grabbedMorph);
+	this.showAsGrabbed(grabbedMorph);
+    },
+    
     dropMorphsOn: function(receiver) {
-        if (receiver !== this.world()) this.unbundleCarriedSelection();
+        //console.log("drop this.submorphs.length = " + this.submorphs.length)
+	if (receiver !== this.world()) this.unbundleCarriedSelection();
 	if (this.logDnD) console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
-        var nToDrop = this.useShadowMorphs ? this.submorphs.length/2 : this.submorphs.length;
+        var nToDrop = this.submorphs.length;
+        if (this.useShadowMorphs || Config.showGrabHalo) nToDrop = this.submorphs.length/2;
+        if (this.useShadowMorphs && Config.showGrabHalo) nToDrop = this.submorphs.length/3;
+        //console.log("drop nToDrop = " + nToDrop)
 	for (var i=1; i<=nToDrop; i++) { // drop in same z-order as in hand
-            var m = this.submorphs.first();
+            var m = this.topSubmorph();
             m.dropMeOnMorph(receiver);
 	    this.showAsUngrabbed(m);
 	}
-        while (this.hasSubmorphs()) { // remove any shadow morphs
-            this.submorphs.first().remove();
-        }
+        //console.log("after drop this.submorphs.length = " + this.submorphs.length)
+        this.removeAllMorphs() // remove any shadows or halos
     },
 
     unbundleCarriedSelection: function() {
