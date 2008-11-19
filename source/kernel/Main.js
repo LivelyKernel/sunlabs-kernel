@@ -498,7 +498,7 @@ function main() {
         console.log("created empty world");
     }
 
-    if(Config.testPieMenus) PieMenuMorph.test();  // For Dan; remove after tested
+    if(Config.useShadowMorphs) HandMorph.prototype.useShadowMorphs = true;
     // Populate the world with sample objects, widgets and applications
     if (Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
     else populateWorldWithExamples(world);

@@ -2558,8 +2558,7 @@ Morph.addMethods({
     pickMeUp: function(evt) {
 	var offset = evt.hand.getPosition().subPt(evt.point());
 	this.moveBy(offset);
-	evt.hand.addMorph(this);
-	evt.hand.showAsGrabbed(this);
+	evt.hand.addMorphAsGrabbed(this);
     },
 
     notify: function(msg, loc) {
@@ -4499,9 +4498,9 @@ Morph.subclass("HandMorph", {
 	//  1. applyDropShadowFilter, if it works, will cause the graphics engine to put a nice
 	//	gaussian blurred drop-shadow on morphs that are grabbed by the hand
 	//  2. showGrabHalo will cause a halo object to be put at the end of the hand's
-	//	submorph list for every grabbed morph
+	//	submorph list for every grabbed morph (has property 'morphTrackedByHalo')
 	//  3. useShadowMorphs will cause a shadowCopy of each grabbed morph to be put
-	//	at the end of the hand's submorph list
+	//	at the end of the hand's submorph list (has property 'isHandMorphShadow')
 	// So, if everything is working right, the hand's submorph list looks like:
 	//	front -> Mc, Mb, Ma, Ha, Sa, Hb, Sb, Hc, Sc <- back [note front is last ;-]
 	// Where M's are grabbed morphs, H's are halos if any, and S's are shadows if any
@@ -4530,6 +4529,7 @@ Morph.subclass("HandMorph", {
 	}
         if (this.useShadowMorphs) {
 		var shadow = grabbedMorph.shadowCopy();
+		shadow.isHandMorphShadow = true;
 		this.addMorphBack(shadow);
 		shadow.moveBy(pt(8, 8));
 	}
@@ -4570,7 +4570,6 @@ Morph.subclass("HandMorph", {
 	}.bind(this));
     },
 
-    
     grabMorph: function(grabbedMorph, evt) { 
         if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.copySubmorphsOnGrab == true)) {
             if (!grabbedMorph.okToDuplicate()) return;
@@ -4595,35 +4594,32 @@ Morph.subclass("HandMorph", {
         // But for now we simply drop on world, so this isn't needed
         this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
         if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
-        this.addMorphWithHalos(grabbedMorph);
+        this.addMorphAsGrabbed(grabbedMorph);
         // grabbedMorph.updateOwner(); 
         this.changed(); //for drop shadow
     },
     
-    addMorphWithHalos: function(grabbedMorph) { 
+    addMorphAsGrabbed: function(grabbedMorph) { 
         this.addMorph(grabbedMorph);
 	this.showAsGrabbed(grabbedMorph);
     },
     
     dropMorphsOn: function(receiver) {
-        console.log("drop this.submorphs.length = " + this.submorphs.length)
 	if (receiver !== this.world()) this.unbundleCarriedSelection();
 	if (this.logDnD) console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
-        var nToDrop = this.nRealMorphs();
-        for (var i=1; i<=nToDrop; i++) { // drop in same z-order as in hand
-            var m = this.topSubmorph();
+	this.carriedMorphsDo( function(m) {
             m.dropMeOnMorph(receiver);
 	    this.showAsUngrabbed(m);
-	}
+	});
         this.removeAllMorphs() // remove any shadows or halos
     },
 
-    nRealMorphs: function(receiver) {
-        // See the comment in showAsGrabbed regarding what's in the submorphs list
-        var nReal = this.submorphs.length;
-        if (this.useShadowMorphs || Config.showGrabHalo) nReal = this.submorphs.length/2;
-        if (this.useShadowMorphs && Config.showGrabHalo) nReal = this.submorphs.length/3;
-	return nReal
+    carriedMorphsDo: function(func) {
+	// Evaluate func for only those morphs that are being carried,
+	// as opposed to, eg, halos or shadows
+	this.submorphs.clone().reverse().forEach(function(m) {
+	    if (!m.morphTrackedByHalo && !m.isHandMorphShadow) func.call(this, m);
+	}.bind(this));
     },
 
     unbundleCarriedSelection: function() {
@@ -4865,13 +4861,12 @@ Morph.subclass('LinkMorph', {
         carriedMorphs = [];
         // Save, and suspend stepping of, any carried morphs
         evt.hand.unbundleCarriedSelection();
-        while (evt.hand.hasSubmorphs()) {
-            var m = evt.hand.topSubmorph();
+        evt.hand.carriedMorphsDo( function (m) {
             m.suspendAllActiveScripts();
             carriedMorphs.splice(0, 0, m);
 	    evt.hand.showAsUngrabbed(m);
-            m.remove();
-        }
+            });
+	evt.hand.removeAllMorphs();
         this.hideHelp();
         this.myWorld.changed();
         var oldWorld = WorldMorph.current();
@@ -4905,9 +4900,8 @@ Morph.subclass('LinkMorph', {
 
         carriedMorphs.forEach(function(m) {
 	    var hand = newWorld.firstHand();
-	    hand.addMorph(m);
-	    hand.showAsGrabbed(m);
             m.resumeAllSuspendedScripts();
+	    hand.addMorphAsGrabbed(m);
         });
 
         if (Config.showThumbnail) {
