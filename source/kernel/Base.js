@@ -2140,7 +2140,7 @@ Object.subclass('lively.data.Resolver', {
 		if (constr) 
 		    break;
 	    }
-	    console.log('was looking for ' + type + ' in ' +  path + ' and found ' + constr);
+	    //console.log('was looking for ' + type + ' in ' +  path + ' and found ' + constr);
 	} 
 	
 
