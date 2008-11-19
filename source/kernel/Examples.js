@@ -106,20 +106,13 @@ Widget.subclass('TestWidget', {
 
 Morph.subclass("ClockMorph", {
 
-    style: {borderWidth: 3},
-    borderStyle: using(lively.paint).run(function(gfx) {
-	return new gfx.LinearGradient([new gfx.Stop(0, Color.lightGray), 
-				       new gfx.Stop(1, Color.darkGray.darker(3))],
-				gfx.LinearGradient.SouthEast); }),
     openForDragAndDrop: false,
 
     initialize: function($super, position, radius, timeZoneOffset) {
         $super(new lively.scene.Ellipse(position, radius));
-        this.linkToStyles(['clock']);
+        this.linkToStyles(['clock', 'raisedBorder']);
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
         this.timeZoneOffset = timeZoneOffset;
-	this.setBorderWidth(3);  //FIXME DI: need to integrate these with themed clock style
-	this.shape.setStroke(this.borderStyle);
         return this;
     },
 
@@ -2456,6 +2449,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	panel.applyStyle({fill: new gfx.LinearGradient([new gfx.Stop(0, Color.white), 
 							new gfx.Stop(1, Color.primary.blue.lighter())],
 						       gfx.LinearGradient.NorthSouth)});
+	panel.linkToStyles(['raisedBorder']);
 	panel.connectModel({model: model});
 	
         // Marketwatch/Bigcharts logo
@@ -4197,6 +4191,7 @@ Morph.subclass("EngineMorph", {
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(new lively.scene.Rectangle(fullRect));
+	this.linkToStyles(['raisedBorder']);
         this.makeLayout(1, false);
         this.setRunning(true);
     },

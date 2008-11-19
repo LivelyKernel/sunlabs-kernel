@@ -3498,6 +3498,7 @@ PasteUpMorph.subclass("WorldMorph", {
     fill: Color.primary.blue,
     defaultExtent: pt(1280, 1024),
     // Default themes for the theme manager    
+
     displayThemes: using(lively.paint).run(function(gfx) {
 	return {
 	
@@ -3523,6 +3524,14 @@ PasteUpMorph.subclass("WorldMorph", {
 
         lively: { // This is to be the style we like to show for our personality
             styleName: 'lively',
+	    
+	    raisedBorder: { // conenience grouping
+		borderWidth: 2,
+		borderColor: new gfx.LinearGradient([new gfx.Stop(0, Color.lightGray), 
+						     new gfx.Stop(1, Color.darkGray.darker(3))],
+						    gfx.LinearGradient.SouthEast)
+	    },
+
             titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
                            fill: new gfx.LinearGradient([ 
 			       new gfx.Stop(0, Color.primary.blue.lighter()),
@@ -3577,6 +3586,8 @@ PasteUpMorph.subclass("WorldMorph", {
         }
     }
     }),
+
+
 	
 
     initialize: function($super, canvas, backgroundImageId) {
