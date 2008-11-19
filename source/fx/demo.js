@@ -132,7 +132,7 @@ function morphicMain() {
     world.addMorph(widget);
      
      // Create a sample ellipse
-    //widget = Morph.makeCircle(loc.addPt(dx), widgetExtent);
+
     widget = new Morph(new lively.scene.Ellipse(loc.addPt(dx).extent(widgetExtent)));
     
     widget.applyStyle({fill:colors[1], borderWidth: 1, borderColor:Color.black});
@@ -141,8 +141,10 @@ function morphicMain() {
 
      // Create a sample line
      loc = loc.addPt(dy);
-     widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
+     widget = Morph.makeLine([pt(0,15), pt(70,15)], 2, Color.black);
+    widget.setPosition(loc);
      world.addMorph(widget);
+
      
      // Create a sample polygon
      widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
