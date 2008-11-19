@@ -2953,16 +2953,11 @@ Morph.addMethods({
 // Morph clipping functions
 Morph.addMethods({
 
-    clipToPath: function(shape) {
-	if (this.clipPath) this.clipPath.removeRawNode();
-	var clip = new lively.scene.Clip(shape).setDerivedId(this);
-	this.addWrapperToDefs(clip);
-	this.rawNode.setAttributeNS(null, "clip-path", clip.uri());
-	this.clipPath = clip;
-    },
-
     clipToShape: function() {
-	this.clipToPath(this.shape);
+	if (this.clipPath) this.clipPath.removeRawNode();
+	this.clipPath = new lively.scene.Clip(this.shape).setDerivedId(this);
+	this.addWrapperToDefs(this.clipPath);
+	this.rawNode.setAttributeNS(null, "clip-path", this.clipPath.uri());
     }
 
 });
