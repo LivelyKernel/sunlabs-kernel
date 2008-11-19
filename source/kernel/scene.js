@@ -1511,10 +1511,8 @@ this.Gradient.subclass("lively.paint.LinearGradient", {
 
 Object.extend(this.LinearGradient, {
     fromLiteral: function(literal) {
-	console.log('resolving ' + literal);
 	return new lively.paint.LinearGradient(literal.stops);
     }
-
 });
 
 
@@ -1540,7 +1538,11 @@ this.Gradient.subclass('lively.paint.RadialGradient', {
     }
 });
 
-//    return { Gradient: this.Gradient, RadialGradient: this.RadialGradient, LinearGradient: this.LinearGradient};
 
-
+Object.extend(this.RadialGradient, {
+    fromLiteral: function(literal) {
+	return new lively.paint.RadialGradient(literal.stops, literal.focus);
+    }
+});
+    
 });// lively.paint

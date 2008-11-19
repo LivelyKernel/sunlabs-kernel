@@ -20,9 +20,12 @@ function dbgOn(cond, optMessage) {
 function using() {
     var args = arguments; // FIXME: enable using('lively.Text')
     return {
-	run: function module(inner) { return inner.apply(args[0], args); },
+	run: function module(inner) { 
+	    return inner.apply(args[0], args); 
+	},
 	link: function link(literal) { 
-	    return new lively.data.Resolver().link(literal, false, $A(args)); }
+	    return new lively.data.Resolver().link(literal, $A(args)); 
+	}
     };
 }
 
@@ -2129,7 +2132,7 @@ Object.subclass('lively.data.Resolver', {
     storedClassKey: '$', // type info, missing in 
     defaultSearchPath: [Global],
     
-    link: function(literal, optStrict, optSearchPath) {
+    link: function(literal, optSearchPath) {
 	var initializer = {};
 	var constr;
 	var type = literal[this.storedClassKey];
@@ -2162,10 +2165,10 @@ Object.subclass('lively.data.Resolver', {
 		if (value instanceof Array) {
 		    var array = initializer[name] = [];
 		    for (var i = 0; i < value.length; i++)  {
-			array.push((this.link(value[i], optStrict, optSearchPath)));
+			array.push((this.link(value[i], optSearchPath)));
 		    }
 		} else {
-		    initializer[name] = this.link(value, optStrict, optSearchPath);
+		    initializer[name] = this.link(value, optSearchPath);
 		}
 		break;
 	    }
@@ -2173,12 +2176,15 @@ Object.subclass('lively.data.Resolver', {
 		throw new TypeError('unexpeced type of value ' + value);
 	    }
 	}
-
-
+	
 	var reified;
-	if (constr) reified = constr.fromLiteral(initializer);
-	if (optStrict && reified === undefined) throw new Error('not strict? ' +  constr);
-	reified = reified || literal;  // maybe it's not a literal? works well for things like pt() or rect()
+	if (type) {
+	    if (!constr) throw new Error('no class named ' + type);
+	    reified = constr.fromLiteral(initializer);
+	} else {
+	    //console.log('reified is ' + (initializer && initializer.constructor) + " vs  " + literal);
+	    reified = literal;
+	}
 	return reified;
     }
 });
