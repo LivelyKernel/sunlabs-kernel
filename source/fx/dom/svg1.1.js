@@ -69,10 +69,12 @@ Object.extend(SVGLength.prototype, {
     return value + SVGLength.unitTypeToString[this._unitType];
   },
   set valueAsString(value) {
-    var match = String(value).match(/(\d*\.?\d*)(%|\w*)/);
+      // KP: note that lengths can be negative in SVG
+      var match = String(value).match(/((-)?\d*\.?\d*)(%|\w*)/);
     this.value = match && match[1];
+    
     this._unitType = SVGLength.unitTypeToString.
-      lastIndexOf(match && match[2] || '');
+      lastIndexOf(match && match[3] || '');
     // TODO must normalize other unit types, too
     if (this._unitType == SVGLength.SVG_LENGTHTYPE_PERCENTAGE)
       this._value /= 100;
