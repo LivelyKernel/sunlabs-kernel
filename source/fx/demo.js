@@ -193,7 +193,7 @@ function morphicMain() {
 	module('Main.js').requires('Examples.js').toRun(function() {
         var m = new PianoKeyboard(pt(100, 650));
         m.scaleBy(1.5);  
-	m.rotateBy(-0.2);
+	//m.rotateBy(-0.2);
     	world.addMorph(m);
     }); }
     //return;
@@ -214,9 +214,9 @@ function morphicMain() {
             world.topSubmorph().moveBy(pt(1050, 80));
         });
     }
+
+    if(Config.useShadowMorphs) HandMorph.prototype.useShadowMorphs = true;
     
-
-
 }
 
 
