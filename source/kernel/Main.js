@@ -243,6 +243,7 @@ function populateWorldWithExamples(world) {
 	var label = new TextMorph(pt(110, 25).extentAsRectangle(), text).applyStyle({borderRadius: 10});
 	link.addMorph(label);
 	label.align(label.bounds().leftCenter(), link.shape.bounds().rightCenter().addXY(5, 0));
+	label.linkToStyles(['raisedBorder']);
 	return label;
     }
 
