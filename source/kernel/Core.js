@@ -3525,7 +3525,7 @@ PasteUpMorph.subclass("WorldMorph", {
             styleName: 'lively',
 	    
 	    raisedBorder: { // conenience grouping
-		borderWidth: 2,
+//		borderWidth: 2,
 		borderColor: new gfx.LinearGradient([new gfx.Stop(0, Color.lightGray), 
 						     new gfx.Stop(1, Color.darkGray.darker(3))],
 						    gfx.LinearGradient.SouthEast)
@@ -3548,7 +3548,7 @@ PasteUpMorph.subclass("WorldMorph", {
 							gfx.LinearGradient.SouthNorth) },
             widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
-            clock:       { borderColor: Color.black, borderWidth: 1,
+            clock:       { borderColor: Color.black, borderWidth: 4,
                            fill: new gfx.RadialGradient([new gfx.Stop(0, Color.primary.blue.lighter(2)), 
 						       new gfx.Stop(1, Color.primary.blue.lighter())]) 
 			 },

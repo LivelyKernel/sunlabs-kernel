@@ -240,7 +240,7 @@ function populateWorldWithExamples(world) {
         
     // add to Link?
     function addLinkLabel(link, text) {
-	var label = new TextMorph(pt(110, 25).extentAsRectangle(), text).applyStyle({borderRadius: 10});
+	var label = new TextMorph(pt(110, 25).extentAsRectangle(), text).applyStyle({borderRadius: 10, borderWidth: 2});
 	link.addMorph(label);
 	label.align(label.bounds().leftCenter(), link.shape.bounds().rightCenter().addXY(5, 0));
 	label.linkToStyles(['raisedBorder']);
