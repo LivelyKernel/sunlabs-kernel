@@ -3610,15 +3610,16 @@ PasteUpMorph.subclass("WorldMorph", {
         }
         $super(new lively.scene.Rectangle(bounds));
 
-	var gfx =lively.paint;
-	var gradient = new gfx.LinearGradient(
-	    [new gfx.Stop(0, Color.primary.blue.lighter()),
-	     new gfx.Stop(0.25, Color.primary.blue),
-	     new gfx.Stop(0.50, Color.primary.blue.lighter()),
-	     new gfx.Stop(0.75, Color.primary.blue),
-	     new gfx.Stop(1, Color.primary.blue.lighter())]);
-	//gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");
-        this.setFill(gradient);
+	var colors = [Color.primary.blue.lighter(), Color.primary.blue];
+	this.setFill(using(lively.paint).link({
+	    $:"LinearGradient", 
+	    stops: [ {$:"Stop", offset: 0.00, color: colors[0]},
+		     {$:"Stop", offset: 0.25, color: colors[1]},
+		     {$:"Stop", offset: 0.50, color: colors[0]},
+		     {$:"Stop", offset: 0.75, color: colors[1]},
+		     {$:"Stop", offset: 1.00, color: colors[1]} ]
+	}));
+	//gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");		     
 	this.enterCount = 0;
     },
 

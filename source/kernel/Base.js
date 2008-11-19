@@ -21,8 +21,8 @@ function using() {
     var args = arguments; // FIXME: enable using('lively.Text')
     return {
 	run: function module(inner) { return inner.apply(args[0], args); },
-	resolve: function resolve(literal) { 
-	    return new lively.data.Resolver().resolve(literal, false, $A(args)); }
+	link: function link(literal) { 
+	    return new lively.data.Resolver().link(literal, false, $A(args)); }
     };
 }
 
@@ -2129,7 +2129,7 @@ Object.subclass('lively.data.Resolver', {
     storedClassKey: '$', // type info, missing in 
     defaultSearchPath: [Global],
     
-    resolve: function(literal, optStrict, optSearchPath) {
+    link: function(literal, optStrict, optSearchPath) {
 	var initializer = {};
 	var constr;
 	var type = literal[this.storedClassKey];
@@ -2162,10 +2162,10 @@ Object.subclass('lively.data.Resolver', {
 		if (value instanceof Array) {
 		    var array = initializer[name] = [];
 		    for (var i = 0; i < value.length; i++)  {
-			array.push((this.resolve(value[i], optStrict, optSearchPath)));
+			array.push((this.link(value[i], optStrict, optSearchPath)));
 		    }
 		} else {
-		    initializer[name] = this.resolve(value, optStrict, optSearchPath);
+		    initializer[name] = this.link(value, optStrict, optSearchPath);
 		}
 		break;
 	    }
