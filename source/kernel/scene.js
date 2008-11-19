@@ -1511,7 +1511,8 @@ this.Gradient.subclass("lively.paint.LinearGradient", {
 
 Object.extend(this.LinearGradient, {
     fromLiteral: function(literal) {
-	return new lively.paint.LinearGradient(literal.stops);
+	return new lively.paint.LinearGradient(literal.stops, 
+					       literal.vector || lively.paint.LinearGradient.NorthSouth);
     }
 });
 

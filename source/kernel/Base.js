@@ -2133,7 +2133,6 @@ Object.subclass('lively.data.Resolver', {
     defaultSearchPath: [Global],
     
     link: function(literal, optSearchPath) {
-	var initializer = {};
 	var constr;
 	var type = literal[this.storedClassKey];
 	if (type) {
@@ -2144,9 +2143,12 @@ Object.subclass('lively.data.Resolver', {
 		    break;
 	    }
 	    //console.log('was looking for ' + type + ' in ' +  path + ' and found ' + constr);
-	} 
+	} else if (literal.constructor !== Object) { 
+	    // not of the form {foo: 1, bar: "baz"},  return it as is
+	    return literal; 
+	}
 	
-
+	var initializer = {}; 
 	for (var name in literal) {
 	    if (name === this.storedClassKey) continue;
 	    if (!literal.hasOwnProperty(name)) continue;
@@ -2183,7 +2185,7 @@ Object.subclass('lively.data.Resolver', {
 	    reified = constr.fromLiteral(initializer);
 	} else {
 	    //console.log('reified is ' + (initializer && initializer.constructor) + " vs  " + literal);
-	    reified = literal;
+	    reified = initializer;
 	}
 	return reified;
     }

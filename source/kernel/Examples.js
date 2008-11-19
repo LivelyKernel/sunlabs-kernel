@@ -4165,28 +4165,26 @@ Morph.subclass("EngineMorph", {
 
     documentation: "The Radial Engine demo",
     angleStep: Math.PI/8,
-    style: using(lively.paint).run(function(gfx) {
-	return {  fill: new gfx.LinearGradient([new gfx.Stop(0, Color.gray), 
-						new gfx.Stop(1, Color.darkGray)],
-					gfx.LinearGradient.NorthSouth),
-		  borderColor: Color.black, 
-		  borderWidth: 1}
-    }),
-    pistonStyle: using(lively.paint).run(function(gfx) {
-	return {  fill: new gfx.LinearGradient( [new gfx.Stop(0, Color.darkGray), 
-						new gfx.Stop(0.4, Color.lightGray),
-						new gfx.Stop(1, Color. darkGray)],
-					gfx.LinearGradient.EastWest),
-		  borderColor: Color.black, 
-		  borderWidth: 2}
-    }),
+    style: using(lively.paint).link({
+	fill: {$:"LinearGradient", stops: [{$:"Stop", offset: 0, color: Color.gray},
+					   {$:"Stop", offset: 1, color: Color.darkGray}],
+	       vector: lively.paint.LinearGradient.NorthSouth},
+	borderColor: Color.black, 
+	borderWidth: 1}),
 
-    crankPinStyle: using(lively.paint).run(function(gfx) {
-	return {  fill: new gfx.RadialGradient([new gfx.Stop(0, Color.darkGray),
-						new gfx.Stop(1, Color.gray.darker(2))]),
-		  borderColor: Color.black, 
-		  borderWidth: 1}
-    }),
+    pistonStyle: using(lively.paint).link({
+	fill: {$:"LinearGradient", stops: [{$:"Stop", offset: 0.0, color: Color.darkGray},
+					   {$:"Stop", offset: 0.4, color: Color.lightGray},
+					   {$:"Stop", offset: 1.0, color: Color.darkGray}],
+	       vector: lively.paint.LinearGradient.EastWest},
+	borderColor: Color.black, 
+	borderWidth: 2}),
+    
+    crankPinStyle: using(lively.paint).link({
+	fill: {$:"RadialGradient", stops: [{$:"Stop", offset:0, color: Color.darkGray},
+					   {$:"Stop", offset:1, color: Color.gray.darker(2)}]},
+	borderColor: Color.black, 
+	borderWidth: 1}),
    
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
