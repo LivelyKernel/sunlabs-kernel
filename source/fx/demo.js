@@ -132,10 +132,13 @@ function morphicMain() {
     world.addMorph(widget);
      
      // Create a sample ellipse
-    widget = new Morph(new lively.scene.Ellipse(loc.addPt(dx), widgetExtent));
-     widget.setFill(colors[1]);
-     world.addMorph(widget);
-     
+    //widget = Morph.makeCircle(loc.addPt(dx), widgetExtent);
+    widget = new Morph(new lively.scene.Ellipse(loc.addPt(dx).extent(widgetExtent)));
+    
+    widget.applyStyle({fill:colors[1], borderWidth: 1, borderColor:Color.black});
+
+    world.addMorph(widget);
+
      // Create a sample line
      loc = loc.addPt(dy);
      widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);

@@ -490,7 +490,7 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
 }
 
 
-fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
+fx.dom.renderers[SVGEllipseElement.tagName] = function(element, attr) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
     var cx = element.cx.baseVal.value;
     var cy = element.cy.baseVal.value;
@@ -499,7 +499,7 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element) {
     var shape = fx.util.antiAlias(new fx.Shape());
 
     shape.setShape(new fx.Ellipse(cx - rx, cy - ry, rx*2, ry*2));
-
+    
     element._fxBegin.setChild(shape);
 
     PaintModule.render(element);
@@ -688,7 +688,7 @@ SVGForeignObjectElement.prototype._fxSetComponent = function(component) {
 
 fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
-    console.log('render foreign object ' + element + " on " + attribute);
+    //console.log('render foreign object ' + element + " on " + attribute);
     // update size here, if necessary
     if (element._fxComponent) 
 	element._fxBegin.setChild(element._fxComponent);
