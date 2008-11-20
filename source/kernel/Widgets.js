@@ -2820,11 +2820,9 @@ Morph.subclass('WindowMorph', {
 
     shadowCopy: function(hand) {
 	// For now just make a rectangle, later add top rounding
-	var copy;
-	copy = Morph.makeRectangle(this.bounds());
-		copy.setFill(Color.black);
-		copy.setFillOpacity(0.3);
-		copy.setStrokeOpacity(0.3);
+	var copy = Morph.makeRectangle(this.getPosition().extent(this.getExtent()));
+	copy.applyStyle({fill: Color.black, fillOpacity: 0.3, strokeOpacity: 0.3, borderRadius: 8});
+	copy.pvtSetTransform(this.getTransform());
 	return copy;
     },
 
