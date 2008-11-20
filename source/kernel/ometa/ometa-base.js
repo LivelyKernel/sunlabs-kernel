@@ -124,6 +124,7 @@ Failer.prototype.used = false
 
 Global.OMeta = {
   _apply: function(rule) {
+    dbgOn(this.shouldHalt);
     var memoRec = this.input.memo[rule]
     if (memoRec == undefined) {
       var origInput = this.input,
@@ -352,7 +353,27 @@ Global.OMeta = {
     this._lookahead(function() { return $elf._apply(rule) })
     return r
   },
-
+  basicChunk: function() {
+    var chunkStart = this._apply("anything"),
+        chunkEnd   = this._apply("anything"),
+        r          = [],
+        counter    = 0,
+        next       = null;
+    r.push(this._applyWithArgs('exactly', chunkStart));
+    while (true) {
+      var next = this._apply("anything");
+      r.push(next);
+      if (next === chunkEnd && counter === 0)
+        return r;
+      if (next === chunkEnd) {
+        counter--;
+        continue;
+      }
+      if (next === chunkStart)
+        counter++;
+    }
+  },
+  
   initialize: function() { },
   // match and matchAll are a grammar's "public interface"
   _genericMatch: function(input, rule, args, matchFailed) {
