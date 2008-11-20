@@ -4030,7 +4030,7 @@ PasteUpMorph.subclass("WorldMorph", {
                     m.startSteppingScripts(); });
 	    }],
             ["Piano Keyboard", function(evt) {
-                module('Main.js').requires('Examples.js').toRun(function() {
+                require('Examples.js').toRun(function() {
                     var m = new PianoKeyboard(evt.point());
                     m.scaleBy(1.5);  m.rotateBy(-0.2);
                     world.addMorph(m)})
