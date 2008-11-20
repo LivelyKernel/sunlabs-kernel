@@ -624,7 +624,7 @@ BoxMorph.subclass("SelectionMorph", {
     },
 
     okToBeGrabbedBy: function(evt) {
-        this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); });
+        this.selectedMorphs.forEach( function(m) { evt.hand.addMorphAsGrabbed(m); });
         return this;
     }
     
