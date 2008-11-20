@@ -2818,6 +2818,16 @@ Morph.subclass('WindowMorph', {
         return this;
     },
 
+    shadowCopy: function(hand) {
+	// For now just make a rectangle, later add top rounding
+	var copy;
+	copy = Morph.makeRectangle(this.bounds());
+		copy.setFill(Color.black);
+		copy.setFillOpacity(0.3);
+		copy.setStrokeOpacity(0.3);
+	return copy;
+    },
+
     toString: function($super) {
         var label = this.titleBar && this.titleBar.label;
         return $super() + (label ? ": " + label.textString : ""); 
