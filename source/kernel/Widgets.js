@@ -2872,6 +2872,7 @@ Morph.subclass('WindowMorph', {
 	    this.setExtent(this.expandedExtent);
 	    this.shape.setBounds(this.expandedExtent.extentAsRectangle());
 	}
+	this.world().addMorphFront(this);  // Bring this window forward if it wasn't already
 	this.layoutChanged();
         this.takeHighlight();
     },
