@@ -10,7 +10,7 @@ module('Ometa.js').requires('ometa/ometa-base.js', 'ometa/parser.js', 'ometa/bs-
 
 OMetaSupport = {
     
-    loadOmetaGrammarFromFile: function(fileName) {
+    fromFile: function(fileName) {
         var src = OMetaSupport.fileContent(fileName);
         var grammar = OMetaSupport.ometaEval(src);
         return grammar;

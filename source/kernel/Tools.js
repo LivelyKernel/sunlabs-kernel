@@ -38,7 +38,6 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     
     initialize: function($super) { 
         $super();
-        Global.y = this;
         
         this.onPane1ContentUpdate = Functions.Null;
         this.onPane2ContentUpdate = Functions.Null;
@@ -1918,73 +1917,160 @@ Object.subclass('FileParser', {
 
 Object.subclass('AnotherFileParser', {
     
-    grammarFile: 'LKFileParser.txt',
+    documentation: 'Extended FileParser. Scans source code and extracts SourceCodeDescriptors for ' +
+                   'classes, objects, functions, methods. Uses OMeta.',
     
-    initialize: function(flag) {
-        if (flag) return;
-        var prototype = AnotherFileParser.parser || OMetaSupport.loadOmetaGrammarFromFile(this.grammarFile);
-        AnotherFileParser.parser = prototype;
-        this.parser = Object.delegated(prototype, {_parser: this});
-        this.parser.stack = [];
+   ometaRules: [/*'blankLine',*/ 'comment',
+               'klassDef', 'objectDef', 'klassExtensionDef',
+               'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
+               'unknown'],
+
+    initialize: function(ometaParser) {
+        this.ometaParser = ometaParser;
     },
     
-    parse: function(rule, src) {
-        src = src || this.source;
-        var ms = new Date().getTime();
-        var hideErrors = true;
-        var result = OMetaSupport.matchAllWithGrammar(this.parser, rule, src, hideErrors);
-        ms = new Date().getTime() - ms;
-        // var msg = result ?
-        //     'parsed ' + result.type + ' named ' + result.name + ' in ' + ms + ' ms' :
-        //     'rule ' + rule + ' failed in ' + ms + ' ms';
-        // console.log(msg);
-        return result;
+    callOMeta: function(rule, src) {
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, true/*hideErrors?*/);
     },
     
     parseClass: function() {
-        return this.parse("klassDef");
+        return this.callOMeta("klassDef");
     },
     
-    sourceFromUrl: function(url) {
-        if (!module.SourceControl) module.SourceControl = new SourceDatabase();
-        return module.SourceControl.getCachedText(url.filename());        
+    /* parsing */
+    prepareParsing: function(src) {
+        this.ptr = 0;
+        this.src = src;
+        this.lines = src.split(/[\n\r]/);
+        this.changeList = [];
     },
     
-    reallyParseFile: function(url) {
-        return this.parse("fileContent");
+    parseBlankLine: function() {
+        var match = this.currentLine.match(/^\s+[\n\r]$/);
+        if (!match) return false;
+        this.changeList.push({type: 'blankLine', startIndex: this.ptr, stopIndex: this.ptr + match[0].length - 1, lineNo: this.currentLineNo()});
+        this.ptr += match[0].length + 1;
+        return true;
     },
-    
-    parseFileFromUrl: function(url) {
-        var src = this.sourceFromUrl(url);
-        var result = this.parseSource(src);
-        result = result.inject([], function(flattened, ea) {
-            flattened.push(ea);
-            if (ea.subElements) flattened = flattened.concat(ea.subElements);
-            return flattened
-        });
         
-        result.forEach(function(ea) {
-            ea.fileName = url.filename();
-        });
-        y=result;
-        return result;
+    parseUsingBegin: function() {
+        var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*\{\s*$/);
+        if (!match) return false;
+        this.changeList.push({type: 'usingDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo()});
+        this.ptr += match[0].length + 1;
+        return true;
     },
     
-    fixIndicesAndMore: function(descr, startPos, src, lines) {
+    parseUsingEnd: function(specialDescr) {
+        if (!specialDescr) return false;
+        var match = this.currentLine.match(/^\s*\}.*\);?\s*$/);
+        if (!match) return false;
+        specialDescr.stopIndex = this.ptr + match[0].length - 1;
+        this.ptr = specialDescr.stopIndex + 1;
+        return true;
+    },
+    
+    parseWithOMeta: function(hint) {
+        var partToParse = this.src.substring(this.ptr, this.src.length);
+        var descr;
+        if (hint) descr = this.callOMeta(hint, partToParse);
+        // if (descr) console.log('hint helped!!!!');
+        if (!descr)
+            this.ometaRules.detect(function(rule) { return descr = this.callOMeta(rule, partToParse) }, this);
+
+        if (descr === undefined)
+            throw dbgOn(new Error('Could not parse src at ' + this.ptr));
+        if (descr.stopIndex === undefined)
+            throw dbgOn(new Error('Parse result has an error ' + JSON.serialize(descr) + 'ptr:' + this.ptr));
+            
+        var tmpPtr = this.ptr;
+        this.ptr += descr.stopIndex + 1;
+        this.fixIndicesAndMore(descr, tmpPtr);
+        this.changeList.push(descr);
+        return true;
+    },
+    
+    giveHint: function() {
+        if (/^[\s]*([\w\.]+)\.subclass\([\'\"]([\w\.]+)[\'\"]/.test(this.currentLine))
+            return 'klassDef';
+        // if (/^[\s]*([\w]+)\:[\s]+function/.test(this.currentLine))
+        //     return 'methodDef';
+        // if (/^[\s]*([\w]+)\:/.test(this.currentLine))
+        //     return 'propertyDef';
+        // if (/^[\s]*function[\s]+([\w]+)[\s]*\(.*\)[\s]*\{.*/.test(this.currentLine)
+        //         || /^[\s]*var[\s]+([\w]+)[\s]*\=[\s]*function\(.*\)[\s]*\{.*/.test(this.currentLine))
+        //             return 'functionDef';
+        if (/^[\s]*Object\.extend.*$/.test(this.currentLine) || /^.*\.addMethods\(.*$/.test(this.currentLine))
+                return 'klassExtensionDef';
+        // if (/^[\s]*\(function.*/.test(this.currentLine))
+        //         return 'executedFuncDef';
+        return null;
+    },
+    
+    parseSource: function(src) {
+        var msParseStart;
+        var msStart = new Date().getTime();
+        this.overheadTime = 0;
+        
+        this.prepareParsing(src);
+        var specialDescr;
+        var descr;
+        
+        while (this.ptr < this.src.length) {
+            msParseStart = new Date().getTime();
+            
+            this.currentLine = this.lines[this.currentLineNo()-1];
+
+            var tmpPtr = this.ptr;
+            /*******/
+            if (this.parseUsingBegin()) {
+                specialDescr = this.changeList.last();
+                continue;
+            }
+            if (this.parseUsingEnd(specialDescr)) {
+                specialDescr = null;
+                continue;
+            }
+            if (!this.parseWithOMeta(this.giveHint())) {
+                throw new Error('Could not parse')
+            }
+            /*******/
+            console.assert(this.ptr > tmpPtr, 'Could not go forward');
+            
+            var msNow = new Date().getTime();
+            var duration = msNow-msParseStart;
+            descr = this.changeList.last();
+            console.log('Parsed line ' +
+                        this.findLineNo(this.lines, descr.startIndex) + ' to ' + this.findLineNo(this.lines, descr.stopIndex) +
+                        ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
+                        (duration > 100 ? '!!!!!!!!!!' : ''));
+        }
+        console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
+        console.log('Oberhead:................................' + this.overheadTime/1000 + 's');
+
+        return this.changeList;
+    },
+    
+    /* helper */
+    fixIndicesAndMore: function(descr, startPos) {
         // var ms = new Date().getTime();
         // ----------
         descr.startIndex += startPos;
         descr.stopIndex += startPos;
         
-        descr.lineNo = this.findLineNo(lines, descr.startIndex);
-        descr.getSourceCode = function() { var theSrc = src.substring(descr.startIndex, descr.stopIndex+1); return theSrc };
+        descr.lineNo = this.findLineNo(this.lines, descr.startIndex);
+        descr.getSourceCode = function() { var theSrc = this.src.substring(descr.startIndex, descr.stopIndex+1); return theSrc };
         descr.getDescrName = function() { return descr.name };
         descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
         descr.newChangeList = function() { return ['huch'] };
         if (descr.subElements)
-            descr.subElements.forEach(function(ea) { this.fixIndicesAndMore(ea, startPos, src, lines); ea.name = '\t' + ea.name; }, this);
+            descr.subElements.forEach(function(ea) { this.fixIndicesAndMore(ea, startPos); ea.name = '\t' + ea.name; }, this);
         // ----------------
         // this.overheadTime += new Date().getTime() - ms;
+    },
+    
+    currentLineNo: function() {
+        return this.findLineNo(this.lines, this.ptr);
     },
     
     findLineNo: function(lines, ptr) {
@@ -2009,95 +2095,49 @@ Object.subclass('AnotherFileParser', {
         return null
     },
     
-    ometaRules: ['comment', 'blankLine',
-                'klassDef', 'objectDef', 'klassExtensionDef',
-                'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
-                'unknown'],
-                
-    parseSource: function(src) {
-        this.overheadTime = 0;
-        
-        var lines = src.split(/[\n\r]/);
-        var ptr = 0;
-        var changeList = [];
-        var msStart = new Date().getTime();
-        
-        var usingDscr;
-        
-        while (ptr < src.length) {
-            var msParseStart = new Date().getTime();
-            var descr;
-            var partToParse = src.substring(ptr, src.length);
-
-
-            // try yourself
-            var match;
-            var currentLine = lines[this.findLineNo(lines,ptr)];
-
-            // find begin of using
-            match = currentLine.match(/^\s*using\((.*)\)\.run\(.*\{\s*$/);
-            if (match) {
-                usingDscr = {type: 'usingDef', name: match[1], startIndex: ptr, lineNo: this.findLineNo(lines,ptr)}
-                descr = usingDscr;
-                ptr += match[0].length + 1
-            }
-            
-            // find end of using
-            if (!match && usingDscr) {
-                match = currentLine.match(/^\s*\}\);?\s*$/);
-                if (match) {
-                    usingDscr.stopIndex = ptr + match[0].length;
-                    ptr = usingDscr.stopIndex + 1;
-                    usingDscr = null;
-                    dbgOn(true);
-                    continue;
-                }
-            }
-            
-            if (!descr) {
-                // try with ometa
-                this.ometaRules.detect(function(rule) {
-                    return descr = this.parse(rule, partToParse);
-                }, this);
-                if (descr === undefined)
-                    throw dbgOn(new Error('Could not parse src at ' + ptr));
-                if (descr.stopIndex === undefined)
-                    throw dbgOn(new Error('Parse result has an error ' + JSON.serialize(descr) + 'ptr:' + ptr));
-                    
-                var tmpPtr = ptr;
-                ptr += descr.stopIndex + 1;
-                this.fixIndicesAndMore(descr, tmpPtr, src, lines);
-            }
-            
-            
-            
-            changeList.push(descr);
-            
-            // if (descr.getSourceCode() == '\n// Morph bindings to its parent, world, canvas, etc.\n')
-            //     debugger;
-            
-            var msNow = new Date().getTime();
-            var duration = msNow-msParseStart;
-            
-            if (duration <= 200) {descr = null; continue;};
-            
-            console.log('Parsed line ' +
-                        this.findLineNo(lines, descr.startIndex) + ' to ' + this.findLineNo(lines, descr.stopIndex) +
-                        ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
-                        (duration > 100 ? '!!!!!!!!!!' : ''));
-            descr = null;
-        }
-        console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
-        console.log('Oberhead:................................' + this.overheadTime/1000 + 's');
-        y = changeList;
-        return changeList;
+    /* loading */
+    sourceFromUrl: function(url) {
+        if (!module.SourceControl) module.SourceControl = new SourceDatabase();
+        return module.SourceControl.getCachedText(url.filename());        
     },
+    
+    //FIXME cleanup
+    parseFileFromUrl: function(url) {
+        var src = this.sourceFromUrl(url);
+        var result = this.parseSource(src);
+        result = result.inject([], function(flattened, ea) {
+            flattened.push(ea);
+            if (ea.subElements) flattened = flattened.concat(ea.subElements);
+            return flattened
+        });
+        
+        result.forEach(function(ea) {
+            ea.fileName = url.filename();
+        });
+
+        return result;
+    },
+    
 });
 
-AnotherFileParser.parseAndShowFileNamed = function(fileName) {
-    var chgList = new AnotherFileParser().parseFileFromUrl(URL.source.withFilename(fileName));
-    new ChangeList(fileName, null, chgList).openIn(WorldMorph.current()); 
-}
+Object.extend(AnotherFileParser, {
+    
+    grammarFile: 'LKFileParser.txt',    
+    ometaParser: null,
+    
+    withOMetaParser: function() {
+        var prototype = AnotherFileParser.ometaParser|| OMetaSupport.fromFile(AnotherFileParser.grammarFile);
+        AnotherFileParser.ometaParser = prototype;
+        var parser = Object.delegated(prototype, {_parser: this});
+        return new AnotherFileParser(parser);
+    },
+    
+    parseAndShowFileNamed: function(fileName) {
+        var chgList = AnotherFileParser.withOMetaParser().parseFileFromUrl(URL.source.withFilename(fileName));
+        new ChangeList(fileName, null, chgList).openIn(WorldMorph.current()); 
+    }
+    
+});
 
 
 // ===========================================================================
