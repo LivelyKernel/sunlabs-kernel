@@ -1933,7 +1933,7 @@ Morph.addMethods({
 	} else {
 	    // parse the attribute: by Dan Amelang
 	    var s = this.rawNode.getAttributeNS(null, "transform");
-	    console.log('recalculating transform from ' + s);
+	    //console.log('recalculating transform from ' + s);
 	    var matrix = null;
 	    var match = s && s.match(/(\w+)\s*\((.*)\)/);
 	    if (match) {
