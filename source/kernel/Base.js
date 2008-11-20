@@ -704,14 +704,13 @@ Namespace.addMethods({ // module specific, should be a subclass?
     
 });
 
-// namespace('lively.lang');
-lively = new Namespace(Global, 'lively');
-lively.lang = new Namespace(lively, 'lang');
-lively.lang.Namespace = Namespace;
-delete Namespace;
-
-
-
+(function moveNamespaceClassToLivelyLang() {
+    // namespace('lively.lang');
+    lively = new Namespace(Global, 'lively');
+    lively.lang = new Namespace(lively, 'lang');
+    lively.lang.Namespace = Namespace;
+    delete Namespace;
+})();
 
 lively.lang.Execution = { // will be extended later
     showStack: Functions.Null,
