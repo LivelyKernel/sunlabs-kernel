@@ -3485,12 +3485,6 @@ Morph.subclass("PasteUpMorph", {
 
 namespace('lively.Text');
 
-using(lively.Text).run(function(text) {
-
-/**
- * @class WorldMorph
- */ 
-
 PasteUpMorph.subclass("WorldMorph", {
     
     documentation: "A Morphic world (a visual container of other morphs)",
@@ -3498,9 +3492,7 @@ PasteUpMorph.subclass("WorldMorph", {
     defaultExtent: pt(1280, 1024),
     // Default themes for the theme manager    
 
-    displayThemes: using(lively.paint).run(function(gfx) {
-	return {
-	
+    displayThemes: using(lively.paint).link({
         primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
             styleName:   'primitive',
             titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
@@ -3513,8 +3505,9 @@ PasteUpMorph.subclass("WorldMorph", {
             widgetPanel: { borderColor: Color.red, borderWidth: 2, borderRadius: 0,
                            fill: Color.blue.lighter()},
             clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new lively.paint.RadialGradient([new lively.paint.Stop(0, Color.yellow.lighter(2)), 
-								  new lively.paint.Stop(1, Color.yellow)]) },
+                           fill: {$:"RadialGradient", stops: [{$:"Stop", offset: 0, color: Color.yellow.lighter(2)}, 
+							      {$:"Stop", offset: 1, color: Color.yellow}]}
+			 },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
@@ -3525,33 +3518,44 @@ PasteUpMorph.subclass("WorldMorph", {
             styleName: 'lively',
 	    
 	    raisedBorder: { // conenience grouping
-//		borderWidth: 2,
-		borderColor: new gfx.LinearGradient([new gfx.Stop(0, Color.lightGray), 
-						     new gfx.Stop(1, Color.darkGray.darker(3))],
-						    gfx.LinearGradient.SouthEast)
+		//		borderWidth: 2,
+		borderColor: {$:"LinearGradient", 
+			      stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
+				      {$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
+			      vector: lively.paint.LinearGradient.SouthEast
+			     }
 	    },
-
-            titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new gfx.LinearGradient([ 
-			       new gfx.Stop(0, Color.primary.blue.lighter()),
-			       new gfx.Stop(0.5, Color.primary.blue),
-			       new gfx.Stop(1, Color.primary.blue.lighter(2)) 
-			   ], gfx.LinearGradient.SouthNorth)
-			 },
-            slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new gfx.LinearGradient([ new gfx.Stop(0, Color.primary.blue.lighter(2)),
-							  new gfx.Stop(1, Color.primary.blue)])
-			 },
-            button:      { borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
-                           fill: new gfx.LinearGradient([ new gfx.Stop(0, Color.darkGray), 
-							  new gfx.Stop(1, Color.darkGray.lighter(2))], 
-							gfx.LinearGradient.SouthNorth) },
-            widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
+	    
+            titleBar: { 
+		borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
+                fill: {$:"LinearGradient", 
+		       stops:[ {$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
+			       {$:"Stop", offset: 0.5, color: Color.primary.blue},
+			       {$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
+		       vector: lively.paint.LinearGradient.SouthNorth }
+	    },
+	    
+            slider: { 
+		borderColor: Color.black, borderWidth: 1, 
+		fill: {$: "LinearGradient", 
+		       stops: [ {$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
+				{$:"Stop", offset: 1, color: Color.primary.blue}] }
+	    },
+            button: { 
+		borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
+                fill: {$:"LinearGradient", 
+		       stops: [ {$:"Stop", offset:0, color:Color.darkGray}, 
+				{$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
+		       vector: lively.paint.LinearGradient.SouthNorth }
+	    },
+	    widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
                            fill: Color.blue.lighter(), opacity: 0.4},
-            clock:       { borderColor: Color.black, borderWidth: 4,
-                           fill: new gfx.RadialGradient([new gfx.Stop(0, Color.primary.blue.lighter(2)), 
-						       new gfx.Stop(1, Color.primary.blue.lighter())]) 
-			 },
+            clock: { 
+		borderColor: Color.black, borderWidth: 4,
+                fill: {$:"RadialGradient", 
+		       stops: [ {$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
+			        {$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
+	    },
 	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
@@ -3560,33 +3564,40 @@ PasteUpMorph.subclass("WorldMorph", {
             fabrik:      { borderColor: Color.blue, borderWidth: 1.5 , borderRadius: 3,
                            fill: Color.blue.lighter(), opacity: 0.8}
         },
-
+	
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
             styleName: 'turquoise',
-            titleBar:    { borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                           fill: new gfx.LinearGradient([new gfx.Stop(0, Color.turquoise), 
-							 new gfx.Stop(1, Color.turquoise.lighter(3))])},
-            slider:      { borderColor: Color.black, borderWidth: 1, 
-			   fill: new gfx.LinearGradient([new gfx.Stop(0, Color.turquoise.lighter(2)),
-							 new gfx.Stop(1, Color.turquoise)])},
-            button:      { borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
-                           fill: new gfx.RadialGradient([new gfx.Stop(0, Color.turquoise.lighter()),
-							 new gfx.Stop(1, Color.turquoise)]) },
-            widgetPanel: { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-                           fill: Color.turquoise.lighter(3), borderRadius: 16},
-            clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: new gfx.RadialGradient([new gfx.Stop(0, Color.turquoise.lighter(2)), 
-							 new gfx.Stop(1, Color.turquoise)]) },
+            titleBar:    { 
+		borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
+                fill: {$:"LinearGradient", stops: [{$:"Stop", offset: 0, color: Color.turquoise},
+						   {$:"Stop", offset: 1, color: Color.turquoise.lighter(3)}] }
+	    },
+	    slider:      { 
+		borderColor: Color.black, borderWidth: 1, 
+		fill: {$:"LinearGradient", stops: [{$:"Stop", offset:0, color: Color.turquoise.lighter(2)},
+						   {$:"Stop", offset:1, color: Color.turquoise}]}
+	    },
+            button:      { 
+		borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
+                fill: {$:"RadialGradient", stops:[{$:"Stop", offset: 0, color: Color.turquoise.lighter()},
+						  {$:"Stop", offset: 1, color: Color.turquoise}]}
+	    },
+            widgetPanel: { 
+		borderColor: Color.neutral.gray.darker(), borderWidth: 4,
+                fill: Color.turquoise.lighter(3), borderRadius: 16
+	    },
+            clock: { 
+		borderColor: Color.black, borderWidth: 1,
+                fill: {$:"RadialGradient", stops:[{$:"Stop", offset: 0, color: Color.turquoise.lighter(2)},
+						  {$:"Stop", offset: 1, color: Color.turquoise}]}
+	    },
 	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
 	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
 	    fabrik:      { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
                            fill: Color.turquoise.lighter(3), borderRadius: 16}
         }
-    }
-    }),
-
-
+	}),
 	
 
     initialize: function($super, canvas, backgroundImageId) {
@@ -4122,7 +4133,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
 	var caption = Strings.formatFromArray($A(arguments));
         menu.openIn(this, this.viewport().center(), true, caption); 
-	menu.label.wrapStyle = text.WrapStyle.Normal;
+	menu.label.wrapStyle = lively.Text.WrapStyle.Normal;
 	if (false) {
 	    // FIXME: how to center?
 	    var txt = new Text(menu.label.textString, menu.label.textStyle);
@@ -4239,7 +4250,6 @@ Object.extend(WorldMorph, {
     
 });
 
-}); // using(lively.Text)
 
 
 /**
