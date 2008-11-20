@@ -2422,7 +2422,7 @@ Morph.addMethods({
 	    [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 	    ["show Lively markup", this.addSvgInspector.curry(this)],
 	    ["package", function(evt) {  // FIXME insert package morph in exactly the same position?
-		new PackageMorph(this).openIn(this.world(), this.bounds().center()); this.remove(); } ],
+		new PackageMorph(this).openIn(this.world(), evt.point()); this.remove(); } ],
 	    ["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
 	];
 	if (this.okToDuplicate())
