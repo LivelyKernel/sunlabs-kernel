@@ -16,6 +16,8 @@ ometa LKFileParser <: Parser {
 	num :x                                                                              -> { $elf.numOnStack(x) },
 	getStack            -> { $elf.stack.clone() },
 	assignStack :s      -> { $elf.stack = s },
+	startTime           -> { /*console.log('start measuring time'); new Date().getTime()*/},
+	stopTime :t         -> { /*console.log('time: ' + (new Date().getTime()-t) + ' ms');*/ true},
 	open :x             = add(x)	                                                    -> { /*console.log('opening ' + x);*/  x},
 	close :x :y         = add(y) remove(y) remove(x) -> { /*console.log('closing ' + x + ' with ' + y + ' stack: ' + $elf.stack);*/ y},
 	add :x              = exactly(x)		                                            -> { $elf.stack.push(x) },
@@ -35,7 +37,7 @@ ometa LKFileParser <: Parser {
 	                    | assignStack(s)            -> { $elf._manualFail() },
 	recursive :x :y     = getStack:s open(x) (  everythingBut(x,y) | recursive(x,y) )*:a close(x, y)    -> { x+ a.join('') + y }
 	                    | assignStack(s)                         -> { $elf._manualFail() },
-	chunk :x :y         = ~~exactly(x) (nonRecursive(x,y) | recursive(x,y)):a -> a,
+	chunk :x :y         = basicChunk(x,y):a /*~~exactly(x) (nonRecursive(x,y) | recursive(x,y)):a*/ -> a,
 	
 /*	chunkWith :x :y :p  = ~~exactly(x) ( open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y }
 	                    | remove(x) ),*/
@@ -78,7 +80,7 @@ ometa LKFileParser <: Parser {
 	/* methods */
 	wrapEnd             = ".wrap" chunk('(', ')'),
     methodDefWithSpcs   = spaces methodDef:mD classElemDefEnd                      -> mD,
-    methodDef           = descriptor:d name:mName ':' spaces ( basicFunction somethingBigRelated | basicFunction ) classElemDefEnd
+    methodDef           = descriptor:d name:mName ':' startTime:t spaces basicFunction (somethingBigRelated | "" ) classElemDefEnd stopTime(t)
                         -> { Object.extend(d, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); d },
     methodModificationDef   = descriptor:d nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
                             -> { Object.extend(d, {type: 'methodModificationDef', name: spec.after, klassName: spec.before, stopIndex: $elf.pos()-1}); d },
@@ -96,14 +98,14 @@ ometa LKFileParser <: Parser {
                             d },
                                     
     /* class stuff */
-	classElems      = '{' spaces ( propertyDefWithSpcs | methodDefWithSpcs )*:a spaces '}'	-> a,
-	restKlassDef    = ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
-	                | ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
+	classElems      = '{' spaces ( methodDefWithSpcs | propertyDefWithSpcs  )*:a spaces '}'	-> a,
+	restKlassDef    = ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
+	                | ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 	                | ',' klassName:trait					                        -> { {trait: trait} }
 					| spacesNoNl							                        -> null,
 	klass 	        = namespaceId,
 	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
-    klassDef        = descriptor:d nsFollowedBy("subclass"):sName   '(' klassName:kName restKlassDef:spec ')' defEnd
+    klassDef        = descriptor:d nsFollowedBy("subclass"):sName   '(' klassName:kName /*log(kName + ' ---')*/ startTime:t restKlassDef:spec stopTime(t) ')' defEnd
                     -> { Object.extend(d, {
                             type: 'klassDef',
                             name: kName,

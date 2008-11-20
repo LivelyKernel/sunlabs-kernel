@@ -2077,12 +2077,17 @@ Object.subclass('AnotherFileParser', {
             //     debugger;
             
             var msNow = new Date().getTime();
+            var duration = msNow-msParseStart;
+            
+            if (duration <= 200) {descr = null; continue;};
+            
             console.log('Parsed line ' +
                         this.findLineNo(lines, descr.startIndex) + ' to ' + this.findLineNo(lines, descr.stopIndex) +
-                        ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + (msNow-msParseStart) + 'ms)');
+                        ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
+                        (duration > 100 ? '!!!!!!!!!!' : ''));
             descr = null;
         }
-        
+        console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
         console.log('Oberhead:................................' + this.overheadTime/1000 + 's');
         y = changeList;
         return changeList;
