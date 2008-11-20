@@ -1839,13 +1839,16 @@ Object.subclass("Color", {
 	return [this.r, this.g, this.b];
     },
     
-    deserialize: function(importer, str) {
-	if (!str) return null;
-	dbgOn(!str.match);
-	var tuple = Color.fromTuple(str);
-	this.r = tuple[0];
-	this.g = tuple[1];
-	this.b = tuple[2];
+    deserialize: function(importer, colorStringOrTuple) {
+	if (!colorStringOrTuple) return null;
+    // dbgOn(!str.match);
+    var color;
+    if (colorStringOrTuple instanceof Color) color = colorStringOrTuple;
+    else if (colorStringOrTuple instanceof String) color = Color.fromString(colorStringOrTuple)
+    else color = Color.fromTuple(colorStringOrTuple);
+	this.r = color.r;
+	this.g = color.g;
+	this.b = color.b;
     }
 
 });
