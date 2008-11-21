@@ -1930,7 +1930,7 @@ Object.subclass('AnotherFileParser', {
     },
     
     callOMeta: function(rule, src) {
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, true/*hideErrors?*/);
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, false/*hideErrors?*/);
     },
     
     parseClass: function() {
@@ -2024,7 +2024,7 @@ Object.subclass('AnotherFileParser', {
 
             /*******/
            if (descr = this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
-               console.assert(!specialDescr, 'already found a module or using block...');
+               if (specialDescr) throw dbgOn(new Error('already found a module or using block...'));
                this.changeList.push(descr);
                specialDescr = descr;
             } else if (this.parseModuleOrUsingEnd(specialDescr)) {
@@ -2037,7 +2037,7 @@ Object.subclass('AnotherFileParser', {
                 throw new Error('Could not parse ' + this.currentLine + ' ...');
             }
             /*******/
-            console.assert(this.ptr > tmpPtr, 'Could not go forward');
+            if (this.ptr <= tmpPtr) throw dbgOn(new Error('Could not go forward: ' + tmpPtr));
             
             var msNow = new Date().getTime();
             var duration = msNow-msParseStart;
@@ -2052,7 +2052,7 @@ Object.subclass('AnotherFileParser', {
         //     throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.type));
         
         console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
-        console.log('Oberhead:................................' + this.overheadTime/1000 + 's');
+        // console.log('Overhead:................................' + this.overheadTime/1000 + 's');
 
         return this.changeList;
     },
@@ -2599,6 +2599,39 @@ Object.subclass('SourceCodeDescriptor', {
         return this.sourceControl.changeListForFileNamed(this.fileName);
     }
 
+});
+
+SourceDatabase.subclass('AnotherSourceDatabase', {
+    
+    initialize: function($super) {
+        this.cachedFullText = {};
+        this.editHistory = {};
+    },
+    
+    scanLKFiles: function($super, beSync) {
+        this.interestingLKFileNames().each(function(fileName) {
+            var action = function(fileString) {
+            //     new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
+                // console.log('Parsing ' + fileName);
+                AnotherFileParser.withOMetaParser().parseSource(fileString);
+            }.bind(this);
+            this.getCachedTextAsync(fileName, action, beSync);
+        }, this);
+    },
+    
+    interestingLKFileNames: function($super) {
+        // var kernelFileNames = new FileDirectory(URL.source).filenames();
+        // var testFileNames = []/*new FileDirectory(URL.source.withFilename('Tests/')).filenames()*/;
+        // var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
+        // jsFiles = jsFiles.uniq();
+        // // FIXME remove
+        // var rejects = ["Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
+        //                "Serialization.js", "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
+        //                "workspace.js"]
+        // return jsFiles.reject(function(ea) { return rejects.include(ea) });
+        // new AnotherSourceDatabase().scanLKFiles()
+        return ['Core.js', 'Base.js', 'Widgets.js', "scene.js", /*"Text.js", "Network.js", "Tools.js", "Data.js", "Storage.js", "Examples.js", "Main.js"*/];
+    },
 });
     
 Object.subclass('BasicCodeMarkupParser', {

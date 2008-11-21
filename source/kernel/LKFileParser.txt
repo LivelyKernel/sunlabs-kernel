@@ -54,7 +54,7 @@ ometa LKFileParser <: Parser {
   	nameRest        = nameFirst | digit,
   	iName           = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
   	isKeyword :x    = ?BSJSParser._isKeyword(x),
-  	name            = iName:n ~isKeyword(n)								-> n,
+  	name            = iName:n /*~isKeyword(n)*/								-> n,
   	keyword         = iName:k isKeyword(k)								-> k,
 	namespaceIdSplitted = name:n '.' namespaceIdSplitted:r              -> { [n].concat(r) }
 	                    | name:n                                        -> { [n] },
@@ -101,8 +101,8 @@ ometa LKFileParser <: Parser {
 	classElems      = '{' spaces ( methodDefWithSpcs | propertyDefWithSpcs  )*:a spaces '}'	-> a,
 	restKlassDef    = ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
 	                | ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
-	                | ',' klassName:trait					                        -> { {trait: trait} }
-					| spacesNoNl							                        -> null,
+	                | ',' klassName:trait					                        -> { {trait: trait, classElems: []} }
+					| spacesNoNl							                        -> { {classElems: []} },
 	klass 	        = namespaceId,
 	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
     klassDef        = descriptor:d nsFollowedBy("subclass"):sName   '(' klassName:kName /*log(kName + ' ---')*/ startTime:t restKlassDef:spec stopTime(t) ')' defEnd

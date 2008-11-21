@@ -290,6 +290,18 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.assertDescriptorsAreValid([descriptor]);
     },
     
+    testParseSimpleSubclassing: function() {
+        var src = 'Wrapper.subclass(\'lively.scene.Node\');';
+        this.sut.src = src;
+        var descriptor = this.sut.parseClass();
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'lively.scene.Node');
+        this.assertEqual(descriptor.superclassName, 'Wrapper');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.length - 1);
+        this.assertEqual(descriptor.subElements.length, 0);
+    },
+    
     testParseClassAndMethods: function() {  // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
@@ -545,6 +557,26 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
                     '};';
 
         var result = this.sut.parseSource(src);
+        this.assertDescriptorsAreValid(result);
+    },
+    
+    testFailingKlass: function() { // scene.js 841
+        var src = 'this.PathElement.subclass(\'lively.scene.MoveTo\', {\n\
+    charCode: \'M\',\n\n\
+    initialize: function(x, y) {\n\
+    this.x = x;\n\
+    this.y = y;\n\
+    },\n\n\
+    allocateRawNode: function(rawPathNode) {\n\
+    this.rawNode = rawPathNode.createSVGPathSegMovetoAbs(this.x, this.y);\n\
+    return this.rawNode;\n\
+    },\n\n\
+    controlPoints: function() {\n\
+    return [pt(this.x, this.y)];\n\
+    },\n\n\n\n});';
+        var result = this.sut.parseSource(src);
+        this.assert(result.length = 1); // FIXME
+        this.assertEqual(result.last().type, 'klassDef');
         this.assertDescriptorsAreValid(result);
     },
     
