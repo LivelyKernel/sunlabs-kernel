@@ -2869,35 +2869,45 @@ Morph.subclass('WindowMorph', {
         if (this.isCollapsed()) return;
         this.expandedTransform = this.getTransform();
 	this.expandedExtent = this.getExtent();
+	this.expandedPosition = this.position();
 	this.ignoreEventsOnExpand = this.targetMorph.areEventsIgnored();
 	this.targetMorph.ignoreEvents(); // unconditionally
 	this.targetMorph.setVisible(false);
-	this.setTransform(this.collapsedTransform  || this.expandedTransform);
-
-        this.state = WindowState.Collapsed;  // Set it now so setExtent works right
-        if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
-	this.shape.setBounds(this.titleBar.bounds());
-	this.layoutChanged();
-        this.titleBar.highlight(false);
+	var finCollapse = function () {
+		this.setTransform(this.collapsedTransform  || this.expandedTransform);
+        	this.state = WindowState.Collapsed;  // Set it now so setExtent works right
+        	if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
+		this.shape.setBounds(this.titleBar.bounds());
+		this.layoutChanged();
+        	this.titleBar.highlight(false);
+	}.bind(this);
+	if(this.collapsedPosition && this.collapsedPosition.dist(this.position()) > 100)
+			this.animatedInterpolateTo(this.collapsedPosition, 5, 50, finCollapse);
+		else finCollapse();
     },
     
     expand: function() {
         if (!this.isCollapsed()) return;
         this.collapsedTransform = this.getTransform();
         this.collapsedExtent = this.innerBounds().extent();
-        this.setTransform(this.expandedTransform); 
-	this.targetMorph.setVisible(true);
-	// enable events if they weren't disabled in expanded form
-	if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
-
-        this.state = WindowState.Expanded;  // Set it now so setExtent works right
-	if (this.expandedExtent) {
-	    this.setExtent(this.expandedExtent);
-	    this.shape.setBounds(this.expandedExtent.extentAsRectangle());
-	}
-	this.world().addMorphFront(this);  // Bring this window forward if it wasn't already
-	this.layoutChanged();
-        this.takeHighlight();
+	this.collapsedPosition = this.position();
+        var finExpand = function () {	
+		this.setTransform(this.expandedTransform); 
+		this.targetMorph.setVisible(true);
+		// enable events if they weren't disabled in expanded form
+		if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
+        	this.state = WindowState.Expanded;  // Set it now so setExtent works right
+		if (this.expandedExtent) {
+			this.setExtent(this.expandedExtent);
+			this.shape.setBounds(this.expandedExtent.extentAsRectangle());
+		}
+		this.world().addMorphFront(this);  // Bring this window forward if it wasn't already
+		this.layoutChanged();
+        	this.takeHighlight();
+	}.bind(this);
+	if(this.expandedPosition && this.expandedPosition.dist(this.position()) > 100)
+			this.animatedInterpolateTo(this.expandedPosition, 5, 50, finExpand);
+		else finExpand();
     },
 
     isCollapsed: function() { return this.state === WindowState.Collapsed; },

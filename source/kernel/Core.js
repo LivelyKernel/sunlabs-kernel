@@ -1996,6 +1996,29 @@ Morph.addMethods({
 	return this.align(this.bounds().center(), p); 
     },
 
+    // Animated moves for, eg, window collapse/expand
+    animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn) {
+	if (nSteps <= 0) return;
+	var loc = this.position();
+	var delta = destination.subPt(loc).scaleBy(1/nSteps);
+	var path = [];
+	for (var i = 1; i<=nSteps; i++) { loc = loc.addPt(delta); path.unshift(loc); }
+	this.animatedFollowPath(path, msPer, callBackFn);
+    },
+
+    animatedFollowPath: function(path, msPer, callBackFn) {
+	var spec = {path: path.clone(), callBack: callBackFn};
+	spec.action = this.startStepping(msPer, 'animatedPathStep', spec);
+	
+    },
+
+    animatedPathStep: function(spec) {
+	if (spec.path.length >= 1) this.setPosition(spec.path.pop());
+	if (spec.path.length >= 1) return;
+	spec.action.stop(this.world());
+	spec.callBack.call(this);
+    },
+
     // toggle fisheye effect on/off
     toggleFisheye: function() {
 	// if fisheye is true, we need to scale the morph to original size
