@@ -1,4 +1,4 @@
-module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.LKFileParser').toRun(function(thisModule, testModule, toolsModule) {
+module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'lively.LKFileParser').toRun(function(thisModule, testModule, toolsModule, ideModule, parserModule) {
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');
@@ -26,8 +26,8 @@ TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
     
     setUp: function() {
         thisModule.createDummyNamespace();
-        var browser = new toolsModule.SystemBrowser();
-        browser.rootNode = function() { return new toolsModule.EnvironmentNode(thisModule.testNS, browser) };
+        var browser = new ideModule.SystemBrowser();
+        browser.rootNode = function() { return new ideModule.EnvironmentNode(thisModule.testNS, browser) };
         browser.start();
         this.sut = browser;
     },
@@ -46,7 +46,7 @@ TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
     
     testGetNodeSiblings: function() {
         var node = this.sut.nodesInPane('Pane1').first()
-        this.assert(node instanceof toolsModule.NamespaceNode, 'no nsNode');
+        this.assert(node instanceof ideModule.NamespaceNode, 'no nsNode');
         var result = this.sut.siblingsFor(node);
         this.assert(result, 'siblingsFor returned nothing useful');
         var allNodesButOne = Array.prototype.without.apply(this.sut.nodesInPane('Pane1'), result);
@@ -76,7 +76,7 @@ TestCase.subclass('lively.Tests.ToolsTests.NodeTest', {
 thisModule.NodeTest.subclass('lively.Tests.ToolsTests.EnvironmentNodeTest', {
     
     testEnvironmentNodeReturnsNS: function() {
-        var sut = new toolsModule.EnvironmentNode(thisModule.testNS);
+        var sut = new ideModule.EnvironmentNode(thisModule.testNS);
         this.assertIdentity(sut.target, thisModule.testNS);
         var result = sut.childNodes().collect(function(ea) { return ea.target });
         this.assertEqual(result.length, 5);
@@ -89,7 +89,7 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.NamespaceNodeTest', {
 
     setUp: function($super) {
         $super();
-        this.sut = new toolsModule.NamespaceNode(thisModule.testNS);
+        this.sut = new ideModule.NamespaceNode(thisModule.testNS);
     },
     
     testChildNodes: function() {
@@ -108,7 +108,7 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.NamespaceNodeTest', {
         this.assertEqual(result[1].label, 'functions');
         this.assert(result[1].action instanceof Function);
         // test the button action
-        var sibling = new toolsModule.NamespaceNode(thisModule.testNS.one);
+        var sibling = new ideModule.NamespaceNode(thisModule.testNS.one);
         sibling.mode = 'classes';
         this.sut.siblingNodes = function() { return [sibling] };
         this.assertEqual(this.sut.mode, 'classes');
@@ -122,7 +122,7 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.ClassNodeTest', {
     
     setUp: function($super) {
         $super();
-        this.sut = new toolsModule.ClassNode(thisModule.testNS.Dummy); 
+        this.sut = new ideModule.ClassNode(thisModule.testNS.Dummy); 
     },
     
     testChildNodes: function() {
@@ -145,7 +145,7 @@ thisModule.NodeTest.subclass('lively.Tests.ToolsTests.MethodNodeTest', {
     setUp: function($super) {
         $super();
         var theClass = thisModule.testNS.Dummy;
-        this.sut = new toolsModule.MethodNode(theClass.prototype.method1, null, theClass); 
+        this.sut = new ideModule.MethodNode(theClass.prototype.method1, null, theClass); 
     },
         
     testSource: function() {
@@ -715,7 +715,8 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     testParseOldFileParser: function() {
         var db = new SourceDatabase();
         var src = db.getCachedText('Tools.js');
-        src = src.slice(src.indexOf('Object.subclass(\'FileParser\', {'), src.search(/\}\)\;\n\n\/\/ =+\n\/\/ Another File Parser \- to see how fast OMeta is/)+3);
+        this.assert(src, 'no source!');
+        src = src.slice(src.indexOf('Object.subclass(\'FileParser\', {'), src.search(/\}\)\;\n\n\n\/\/ =+\n\/\/ ChangeList/)+3);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     }
