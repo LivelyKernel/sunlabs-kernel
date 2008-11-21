@@ -712,6 +712,14 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.assertEqual(descriptor.type, 'klassDef');
     },
     
+    testParseOldFileParser: function() {
+        var db = new SourceDatabase();
+        var src = db.getCachedText('Tools.js');
+        src = src.slice(src.indexOf('Object.subclass(\'FileParser\', {'), src.search(/\}\)\;\n\n\/\/ =+\n\/\/ Another File Parser \- to see how fast OMeta is/)+3);
+        var descriptor = this.sut.callOMeta('klassDef', src);
+        this.assertEqual(descriptor.type, 'klassDef');
+    }
+    
 });
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     

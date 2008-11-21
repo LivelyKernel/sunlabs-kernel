@@ -105,7 +105,7 @@ ometa LKFileParser <: Parser {
 					| spacesNoNl							                        -> { {classElems: []} },
 	klass 	        = namespaceId,
 	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
-    klassDef        = descriptor:d nsFollowedBy("subclass"):sName   '(' klassName:kName /*log(kName + ' ---')*/ startTime:t restKlassDef:spec stopTime(t) ')' defEnd
+    klassDef        = descriptor:d nsFollowedBy("subclass"):sName   '(' klassName:kName restKlassDef:spec ')' defEnd
                     -> { Object.extend(d, {
                             type: 'klassDef',
                             name: kName,

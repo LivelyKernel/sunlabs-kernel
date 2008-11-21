@@ -363,9 +363,13 @@ Global.OMeta = {
     while (true) {
       var next = this._apply("anything");
       r.push(next);
-      if (next === chunkEnd && counter === 0)
+      if (next === '\\') { // escaped char, ignore next input
+        r.push(this._apply("anything"));
+        continue;
+      }
+      if (next === chunkEnd && counter === 0) // end
         return r;
-      if (next === chunkEnd) {
+      if (next === chunkEnd) { // end of another chunk
         counter--;
         continue;
       }

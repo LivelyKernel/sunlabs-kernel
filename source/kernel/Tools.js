@@ -1205,7 +1205,8 @@ using().run(function() { // begin scoping function
 	// in lively.lang.Execution.testTrace()).  As in normal stack tracing, the value of currentContext is
 	// the node associated with the currently running method.
 
-    var rootContext, currentContext;
+    var rootContext;
+    var currentContext;
 
 	Global.getCurrentContext = function() {
 		return currentContext;
@@ -1908,7 +1909,7 @@ Object.subclass('FileParser', {
         this.lineNo++;
         return this.currentLine;
     }
-    
+
 });
 
 // ===========================================================================
@@ -1930,7 +1931,7 @@ Object.subclass('AnotherFileParser', {
     },
     
     callOMeta: function(rule, src) {
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, false/*hideErrors?*/);
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, true/*hideErrors?*/);
     },
     
     parseClass: function() {
