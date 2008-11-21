@@ -118,7 +118,7 @@ ometa LKFileParser <: Parser {
                         | (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
                         -> { Object.extend(d, {name: n, subElements: clElems }) },
     klassExtensionDef   = descriptor:d basicKlassExt(d) defEnd
-                        -> { Object.extend(d, { type: 'klassExtensionDef', stopIndex: $elf.pos()-1 }); d },
+                        -> { Object.extend(d, { type: 'klassExtensionDef', stopIndex: $elf.pos()-1 }); d.name += ' (extension)'; d },
     
     /* 'object' stuff */
     restObjDef      = classElems:propsAndMethodDescrs spaces -> propsAndMethodDescrs,

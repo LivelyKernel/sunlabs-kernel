@@ -16,6 +16,15 @@ OMetaSupport = {
         return grammar;
     },
     
+    translateAndWrite: function(sourceFileName, destFileName) {
+        var url = URL.source.getDirectory();
+        var str = 'module(\'' + destFileName + '\').requires(\'ometa/parser.js\').toRun(function() {\n';
+        str += OMetaSupport.translateToJs(OMetaSupport.fileContent(sourceFileName));
+        str += '\n});';
+        var dir = new FileDirectory(url);
+        dir.writeFileNamed(destFileName, str);
+    },
+    
     ometaEval: function(src) {
         var jsSrc = OMetaSupport.translateToJs(src);
         return eval(jsSrc);
