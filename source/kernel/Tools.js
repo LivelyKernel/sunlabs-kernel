@@ -1945,14 +1945,14 @@ Object.subclass('AnotherFileParser', {
         this.changeList = [];
     },
     
-    parseBlankLine: function() {
-        var match = this.currentLine.match(/^\s+[\n\r]$/);
+    parseModuleBegin: function() {
+        var match = this.currentLine.match(/^\s*module\([\'\"](.*)[\'\"]\)\.requires\(.*toRun\(.*$/);
         if (!match) return false;
-        this.changeList.push({type: 'blankLine', startIndex: this.ptr, stopIndex: this.ptr + match[0].length - 1, lineNo: this.currentLineNo()});
+        this.changeList.push({type: 'moduleDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo()});
         this.ptr += match[0].length + 1;
         return true;
     },
-        
+    
     parseUsingBegin: function() {
         var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*\{\s*$/);
         if (!match) return false;
@@ -1961,9 +1961,9 @@ Object.subclass('AnotherFileParser', {
         return true;
     },
     
-    parseUsingEnd: function(specialDescr) {
+    parseModuleOrUsingEnd: function(specialDescr) {
         if (!specialDescr) return false;
-        var match = this.currentLine.match(/^\s*\}.*\);?\s*$/);
+        var match = this.currentLine.match(/^\s*\}.*\);?.*$/);
         if (!match) return false;
         specialDescr.stopIndex = this.ptr + match[0].length - 1;
         this.ptr = specialDescr.stopIndex + 1;
@@ -2020,18 +2020,15 @@ Object.subclass('AnotherFileParser', {
             msParseStart = new Date().getTime();
             
             this.currentLine = this.lines[this.currentLineNo()-1];
-
             var tmpPtr = this.ptr;
+
             /*******/
-            if (this.parseUsingBegin()) {
+           if (this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
                 specialDescr = this.changeList.last();
-                continue;
-            }
-            if (this.parseUsingEnd(specialDescr)) {
+            } else if (this.parseModuleOrUsingEnd(specialDescr)) {
                 specialDescr = null;
                 continue;
-            }
-            if (!this.parseWithOMeta(this.giveHint())) {
+            } else if (!this.parseWithOMeta(this.giveHint())) {
                 throw new Error('Could not parse')
             }
             /*******/
@@ -2045,6 +2042,10 @@ Object.subclass('AnotherFileParser', {
                         ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
                         (duration > 100 ? '!!!!!!!!!!' : ''));
         }
+        
+        // if (specialDescr)
+        //     throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.type));
+        
         console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
         console.log('Oberhead:................................' + this.overheadTime/1000 + 's');
 
@@ -2059,7 +2060,7 @@ Object.subclass('AnotherFileParser', {
         descr.stopIndex += startPos;
         
         descr.lineNo = this.findLineNo(this.lines, descr.startIndex);
-        descr.getSourceCode = function() { var theSrc = this.src.substring(descr.startIndex, descr.stopIndex+1); return theSrc };
+        descr.getSourceCode = function() { var theSrc = this.src.substring(descr.startIndex, descr.stopIndex+1); return theSrc }.bind(this);
         descr.getDescrName = function() { return descr.name };
         descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
         descr.newChangeList = function() { return ['huch'] };
@@ -2114,7 +2115,7 @@ Object.subclass('AnotherFileParser', {
         result.forEach(function(ea) {
             ea.fileName = url.filename();
         });
-
+        
         return result;
     },
     
@@ -2582,7 +2583,7 @@ Object.subclass('SourceCodeDescriptor', {
     }
 
 });
-
+    
 Object.subclass('BasicCodeMarkupParser', {
     documentation: "Evaluates code in the lkml code format",
     // this is the first attempt, format subject to change
