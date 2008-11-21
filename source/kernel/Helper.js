@@ -338,11 +338,20 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
     items: function() {
         return [
             {label: 'SystemBrowser', action: function(evt) {
-                var browserMorph = new lively.Tools.SystemBrowser().openIn(WorldMorph.current(), evt.point());
+                var browserMorph = new lively.Tools.SystemBrowser().openIn(evt.hand.world(), evt.point());
                 evt.hand.grabMorph(browserMorph, evt) }},
             {label: 'TextMorph', action: function(evt) {
                 var textMorph = new TextMorph(pt(400,50).extentAsRectangle());
-                evt.hand.grabMorph(textMorph, evt) }}
+                evt.hand.grabMorph(textMorph, evt) }},
+            {label: 'OMeta Workspace', action: function(evt) {
+                require('lively.Ometa').toRun(function() {
+                    var wrkspc = new OmetaWorkspace().openIn(evt.hand.world(), evt.point());
+                    evt.hand.grabMorph(wrkspc, evt);
+                })}},
+            {label: 'Start source control', action: function(evt) {
+                require('lively.Tools').toRun(function(unused, toolsModule) {
+                    toolsModule.startSourceControl();
+                })}},
         ]
     }
 });
