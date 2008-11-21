@@ -1954,7 +1954,7 @@ Object.subclass('AnotherFileParser', {
     },
     
     parseUsingBegin: function() {
-        var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*\{\s*$/);
+        var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*$/);
         if (!match) return null;
         var descr = {type: 'usingDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo(), subElements: []};
         this.ptr += match[0].length + 1;
@@ -1962,13 +1962,19 @@ Object.subclass('AnotherFileParser', {
     },
     
     parseModuleOrUsingEnd: function(specialDescr) {
-        if (!specialDescr) return null;
-        var match = this.currentLine.match(/^\s*\}.*\);?.*$/);
+        if (specialDescr.length === 0) return null;
+        var match = this.currentLine.match(/^\s*\}.*?\)[\;]?.*$/);
         if (!match) return null;
-        specialDescr.stopIndex = this.ptr + match[0].length - 1;
-        this.addDecsriptorMethods(specialDescr);
-        this.ptr = specialDescr.stopIndex + 1;
-        return specialDescr;
+        dbgOn(true);
+        specialDescr.last().stopIndex = this.ptr + match[0].length - 1;
+        this.addDecsriptorMethods(specialDescr.last());
+        this.ptr = specialDescr.last().stopIndex + 1;
+        // FIXME hack
+        if (this.src[this.ptr] == '\n') {
+            specialDescr.last().stopIndex += 1;
+            this.ptr += 1;
+        }
+        return specialDescr.last();
     },
     
     parseWithOMeta: function(hint) {
@@ -2013,7 +2019,7 @@ Object.subclass('AnotherFileParser', {
         this.overheadTime = 0;
         
         this.prepareParsing(src);
-        var specialDescr;
+        var specialDescr = [];
         var descr;
         
         while (this.ptr < this.src.length) {
@@ -2024,14 +2030,14 @@ Object.subclass('AnotherFileParser', {
 
             /*******/
            if (descr = this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
-               if (specialDescr) throw dbgOn(new Error('already found a module or using block...'));
-               this.changeList.push(descr);
-               specialDescr = descr;
+               if (specialDescr.length > 0) specialDescr.last().subElements.push(descr);
+               else this.changeList.push(descr);
+               specialDescr.push(descr);
             } else if (this.parseModuleOrUsingEnd(specialDescr)) {
-                specialDescr = null;
+                specialDescr.pop();
                 continue;
             } else if (descr = this.parseWithOMeta(this.giveHint())) {
-                if (specialDescr) specialDescr.subElements.push(descr);
+                if (specialDescr.length > 0) specialDescr.last().subElements.push(descr);
                 else this.changeList.push(descr);
             } else {
                 throw new Error('Could not parse ' + this.currentLine + ' ...');
@@ -2048,8 +2054,8 @@ Object.subclass('AnotherFileParser', {
             descr = null;
         }
         
-        // if (specialDescr)
-        //     throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.type));
+        if (specialDescr.length > 0)
+            throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.last().type));
         
         console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
         // console.log('Overhead:................................' + this.overheadTime/1000 + 's');
@@ -2630,7 +2636,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         //                "workspace.js"]
         // return jsFiles.reject(function(ea) { return rejects.include(ea) });
         // new AnotherSourceDatabase().scanLKFiles()
-        return ['Core.js', 'Base.js', 'Widgets.js', "scene.js", /*"Text.js", "Network.js", "Tools.js", "Data.js", "Storage.js", "Examples.js", "Main.js"*/];
+        return ['Core.js', 'Base.js', 'Widgets.js', "scene.js", "Text.js", "Network.js", "Tools.js", "Data.js", "Storage.js", "Examples.js", "Main.js"];
     },
 });
     

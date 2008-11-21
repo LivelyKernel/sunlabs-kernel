@@ -122,7 +122,7 @@ ometa LKFileParser <: Parser {
     
     /* 'object' stuff */
     restObjDef      = classElems:propsAndMethodDescrs spaces -> propsAndMethodDescrs,
-    objectDef       = descriptor:d ( namespaceId:o | "var" spaces namespaceId:o ) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
+    objectDef       = descriptor:d ( "var" spaces namespaceId:o | namespaceId:o) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
                     -> { Object.extend(d, {
                             type: 'objectDef',
                             name: o,

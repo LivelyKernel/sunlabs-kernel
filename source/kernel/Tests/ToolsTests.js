@@ -469,7 +469,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf('/'));
         this.assertDescriptorsAreValid([descriptor]);
     },
-        
+            
     xtestFileContent: function() {
         var src = '// Bla\n// ===\n\nnamespace(\'lively.data\');\n\nObject.subclass(\'lively.data.Wrapper\', { });\n\n';
         this.sut.src = src;
@@ -670,13 +670,22 @@ main.logCompletion("main").delay(Config.mainDelay);\n\
         var src = 'module(\'lively.TileScripting\').requires(\'Helper.js\').toRun(function(thisModule) {\n\nMorph.addMethods({})\n});';
         var result = this.sut.parseSource(src);
 
-        this.assert(result.length <= 3);
+        this.assertEqual(result.length, 1);
         this.assertEqual(result[0].type, 'moduleDef');
         this.assertEqual(result[0].name, 'lively.TileScripting');
         this.assertEqual(result[0].startIndex, 0);
         this.assertEqual(result[0].stopIndex, src.length-1);
     },
     
+    testParseModuleAndUsingDef: function() { // /* ... */ || // ...
+        var src = 'module(\'lively.TileScripting\').requires(\'Helper.js\').toRun(function(thisModule) {\n\
+using().run(function() {\nMorph.addMethods({})\n})\n});';
+        var result = this.sut.parseSource(src);
+        this.assertEqual(result.length, 1);
+        this.assertEqual(result[0].type, 'moduleDef');
+        this.assertEqual(result[0].subElements.length, 1);
+        this.assertEqual(result[0].subElements[0].type, 'usingDef');
+    },
 
 });
 
