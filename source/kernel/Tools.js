@@ -2249,7 +2249,7 @@ Object.subclass('AnotherFileParser', {
             module.SourceControl.putSourceCodeRange(descr.fileName, descr.versionNo, descr.startIndex, descr.stopIndex, newString);
             descr.versionNo++;
             descr.getSourceCode = function() { return newString };
-        },
+        }
     },
     
     currentLineNo: function() {

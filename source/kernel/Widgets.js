@@ -2578,7 +2578,6 @@ BoxMorph.subclass("TitleBarMorph", {
 	var contentMorph = Morph.makeRectangle(bounds);
 	this.addMorph(new ClipMorph(bounds)).addMorph(contentMorph);
 	contentMorph.linkToStyles(["titleBar"]);
-	
 	this.ignoreEvents();
 	contentMorph.ignoreEvents();
 	contentMorph.owner.ignoreEvents();

@@ -1626,6 +1626,27 @@ Object.subclass('LayoutManager', {
 
     layoutChanged: function(target) {
 	
+    },
+
+    addMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
+	if (submorph.owner) {
+	    var tfm = submorph.transformForNewOwner(supermorph);
+	    submorph.owner.removeMorph(submorph); // KP: note not m.remove(), we don't want to stop stepping behavior
+	    submorph.setTransform(tfm); 
+	    // FIXME transform is out of date
+	    // morph.setTransform(tfm); 
+	    // m.layoutChanged(); 
+	} 
+	supermorph.insertMorph(submorph, isFront);
+	submorph.changed();
+	submorph.layoutChanged();
+	supermorph.layoutChanged();
+	return submorph;
+    },
+
+    removeMorph: function(target, submorph) {
+
+
     }
 
 
@@ -1703,20 +1724,7 @@ Morph.addMethods({
 
     addMorphFrontOrBack: function(m, front) {
 	console.assert(m instanceof Morph, "not an instance");
-
-	if (m.owner) {
-	    var tfm = m.transformForNewOwner(this);
-	    m.owner.removeMorph(m); // KP: note not m.remove(), we don't want to stop stepping behavior
-	    m.setTransform(tfm); 
-	    // FIXME transform is out of date
-	    // morph.setTransform(tfm); 
-	    // m.layoutChanged(); 
-	} 
-	this.insertMorph(m, front);
-	m.changed();
-	m.layoutChanged();
-	this.layoutChanged();
-	return m;
+	return this.layoutManager.addMorph(this, m, front);
     },
 
     setSubmorphs: function(morphs) {
@@ -1739,7 +1747,7 @@ Morph.addMethods({
     },
 
 
-    insertMorph: function(m, isFront) { // low level
+    insertMorph: function(m, isFront) { // low level, more like Node.insertBefore?
 	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode.nextSibling :
 	    isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
 	// the last one, so drawn last, so front
@@ -1753,7 +1761,8 @@ Morph.addMethods({
 	return m;
     },
 
-    removeMorph: function(m) {
+
+    removeMorph: function(m) {// FIXME? replaceMorph() with remove as a special case
 	var index = this.submorphs.indexOf(m);
 	if (index < 0) {
 	    m.owner !== this && console.log("%s has owner %s that is not %s?", m, m.owner, this);
@@ -1766,8 +1775,11 @@ Morph.addMethods({
 	if (m !== spliced) {
 	    console.log("invariant violated removing %s, spliced %s", m, spliced);
 	}
+	
+	// cleanup, move to re
 	m.owner = null;
 	m.setHasKeyboardFocus(false);
+	
 	return m;
     },
 
