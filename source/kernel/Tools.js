@@ -52,17 +52,13 @@ Widget.subclass('lively.Tools.SystemBrowser', {
     
     rootNode: function() {
         if (!this._rootNode)
-            this._rootNode = new module.EnvironmentNode(Global, this);
+            this._rootNode = new module.SourceControlNode(module.SourceControl, this);
+            // this._rootNode = new module.EnvironmentNode(Global, this);
         return this._rootNode;
     },
     
     start: function() {
         // FIXME this doesn't belong here
-        
-        if (!module.SourceControl) {
-            module.SourceControl = new SourceDatabase();
-            module.SourceControl.scanLKFiles();
-        }
         
         this.setPane1Content(this.rootNode().childNodesAsListItems());
     },
@@ -73,7 +69,7 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         
         var panel = PanelMorph.makePanedPanel(extent, [
             ['Pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.40)],
-            ['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.40)],
+            ['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)], //['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
             ['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
             ['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.5)],
             ['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
@@ -209,7 +205,7 @@ Widget.subclass('lively.Tools.SystemBrowser', {
         return siblings.without(node);
     }
 });
-
+    
 Object.subclass('lively.Tools.BrowserNode', {
     
     documentation: 'Abstract node, defining the node interface',
@@ -243,10 +239,9 @@ Object.subclass('lively.Tools.BrowserNode', {
     },
     
     newSource: function(newSource) {
-        throw dbgOn(new Error("Shouldn't try to eval and save things now..."));
+        // throw dbgOn(new Error("Shouldn't try to eval and save things now..."));
         if (!this.evalSource(newSource)) {
             console.log('couldn\'t eval');
-            return
         }
         if (!this.saveSource(newSource, module.SourceControl))
             console.log('couldn\'t save');
@@ -504,6 +499,161 @@ module.BrowserNode.subclass('lively.Tools.FunctionNode', {
     
     asString: function() {
         return this.nameInOwner || this.target.name || 'anonymous function';
+    },
+});
+
+// Nodes for using just source code from files, for AnotherSourceDatabase
+module.BrowserNode.subclass('lively.Tools.SourceControlNode', {
+    childNodes: function() {
+        return this.target.modules.collect(function(ea) { return new module.CompleteFileDefNode(ea, this.browser) }.bind(this));
+    }
+});
+
+module.NamespaceNode.subclass('lively.Tools.CompleteFileDefNode', {
+    
+    initialize: function($super, target, browser) {
+        $super(target, browser);
+        this.getDefsFromModuleAndUsingDefs();
+    },
+    
+    getDefsFromModuleAndUsingDefs: function() {
+        var l = this.target.subElements.length;
+        for (var i = 0; i < l; i++) {
+            var type = this.target.subElements[i].type;
+            if (type === 'moduleDef' || type == 'usingDef')
+                this.target.subElements = this.target.subElements.concat(this.target.subElements[i].subElements)
+        }            
+    },
+    
+    childNodes: function() {
+        var browser = this.browser;
+        var completeFileDef = this.target;
+        switch (this.mode) {
+           case "classes":
+            return this.target.subElements
+                .select(function(ea) { return ea.type === 'klassDef' || ea.type === 'klassExtensionDef'})
+                .sort(function(a,b) { return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
+                .collect(function(ea) { return new module.ClassDefNode(ea, browser) });
+           case "functions":
+            return this.target.subElements
+                .select(function(ea) { return ea.type === 'staticFuncDef' || ea.type === 'executedFuncDef' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
+                .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
+                .collect(function(ea) { return new module.FunctionDefNode(ea, browser) });
+           case "objects":
+            return this.target.subElements
+               .select(function(ea) { return ea.type === 'objectDef' || ea.type === 'unknown' || ea.type === 'moduleDef' || ea.type === 'usingDef'})
+               .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
+               .collect(function(ea) { return new module.ObjectDefNode(ea, browser) });
+           default: return ['Huh']
+        }
+    },
+    
+    asString: function() {
+        return this.target.name;
+    },
+    
+    buttonSpecs: function($super) {
+        return $super().concat([{label: 'doits',action: function() {}}]);
+    },
+    
+    sourceString: function() {
+        return this.target.getSourceCode();
+    },
+    
+});
+
+module.BrowserNode.subclass('lively.Tools.ClassDefNode', {
+            
+    childNodes: function() {
+        var classDef = this.target;
+        var browser = this.browser;
+        return classDef.subElements
+            .select(function(ea) { return ea.type === 'propertyDef' || ea.type === 'methodDef' })
+            .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
+            .collect(function(ea) { return new module.ClassElemDefNode(ea, browser) });
+    },
+    
+    asString: function() {
+        return this.target.name || 'has no name!'
+    },
+        
+    sourceString: function() {
+        return this.target.getSourceCode();
+    },
+    
+    saveSource: function(newSource, sourceControl) {
+        this.target.putSourceCode(newSource);
+    }
+});
+
+module.BrowserNode.subclass('lively.Tools.ObjectDefNode', {
+                
+    childNodes: function() {
+        if (!this.target.subElements) return [];
+        // FIXME duplication with ClassDefNode
+        var obj = this.target;
+        var browser = this.browser;
+        return obj.subElements
+            .select(function(ea) { return ea.type === 'propertyDef' || ea.type === 'methodDef' })
+            .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
+            .collect(function(ea) { return new module.ClassElemDefNode(ea, browser) });
+    },
+    
+    asString: function() {
+        return this.target.name || 'has no name!'
+    },
+    
+    sourceString: function() {
+        return this.target.getSourceCode();
+    },
+    
+    saveSource: function(newSource, sourceControl) {
+        this.target.putSourceCode(newSource);
+    }
+})
+
+module.BrowserNode.subclass('lively.Tools.ClassElemDefNode', {
+    
+    methodName: function() {
+        return this.target.name || 'no name!';
+    },
+    
+    sourceString: function() {
+        return this.target.getSourceCode();
+    },
+    
+    asString: function() {
+        return this.methodName();
+    },
+    
+    evalSource: function(newSource) {
+        // var methodName = this.target.methodName;
+        // if (!methodName) throw dbgOn(new Error('No method name!'));
+        // var methodDef = this.theClass.type + ".prototype." + methodName + " = " + newSource;
+        // try {
+        //     eval(methodDef);
+        //     console.log('redefined ' + methodName);
+        // } catch (er) {
+        //     WorldMorph.current().alert("error evaluating method " + methodDef);
+        //     return false;
+        // }
+        // // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
+        // return true;
+    },
+    
+    saveSource: function(newSource, sourceControl) {
+        this.target.putSourceCode(newSource);
+    }
+});
+
+module.BrowserNode.subclass('lively.Tools.FunctionDefNode', {
+        
+    asString: function() {
+        return this.target.name
+    },
+        
+    sourceString: function() {
+        return this.target.getSourceCode();
     },
 });
 
@@ -1966,7 +2116,6 @@ Object.subclass('AnotherFileParser', {
         if (specialDescr.length === 0) return null;
         var match = this.currentLine.match(/^\s*\}.*?\)[\;]?.*$/);
         if (!match) return null;
-        dbgOn(true);
         specialDescr.last().stopIndex = this.ptr + match[0].length - 1;
         this.addDecsriptorMethods(specialDescr.last());
         this.ptr = specialDescr.last().stopIndex + 1;
@@ -2014,7 +2163,8 @@ Object.subclass('AnotherFileParser', {
         return null;
     },
     
-    parseSource: function(src) {
+    parseSource: function(src, optFilename /* FIXME */) {
+        this.fileName = optFilename; // for writing
         var msParseStart;
         var msStart = new Date().getTime();
         this.overheadTime = 0;
@@ -2024,7 +2174,7 @@ Object.subclass('AnotherFileParser', {
         var descr;
         
         while (this.ptr < this.src.length) {
-            msParseStart = new Date().getTime();
+            // msParseStart = new Date().getTime();
             
             this.currentLine = this.lines[this.currentLineNo()-1];
             var tmpPtr = this.ptr;
@@ -2046,12 +2196,12 @@ Object.subclass('AnotherFileParser', {
             /*******/
             if (this.ptr <= tmpPtr) throw dbgOn(new Error('Could not go forward: ' + tmpPtr));
             
-            var msNow = new Date().getTime();
-            var duration = msNow-msParseStart;
-            console.log('Parsed line ' +
-                        this.findLineNo(this.lines, descr.startIndex) + ' to ' + this.findLineNo(this.lines, descr.stopIndex) +
-                        ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
-                        (duration > 100 ? '!!!!!!!!!!' : ''));
+            // var msNow = new Date().getTime();
+            // var duration = msNow-msParseStart;
+            // console.log('Parsed line ' +
+            //             this.findLineNo(this.lines, descr.startIndex) + ' to ' + this.findLineNo(this.lines, descr.stopIndex) +
+            //             ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
+            //             (duration > 100 ? '!!!!!!!!!!' : ''));
             descr = null;
         }
         
@@ -2092,6 +2242,14 @@ Object.subclass('AnotherFileParser', {
         descr.getDescrName = function() { return descr.name };
         descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
         descr.newChangeList = function() { return ['huch'] };
+        descr.versionNo = 0;
+        descr.fileName = this.fileName;
+        descr.putSourceCode = function(newString) {
+            if (!descr.fileName) throw dbgOn(new Error('No filename for descriptor ' + descr.name));
+            module.SourceControl.putSourceCodeRange(descr.fileName, descr.versionNo, descr.startIndex, descr.stopIndex, newString);
+            descr.versionNo++;
+            descr.getSourceCode = function() { return newString };
+        },
     },
     
     currentLineNo: function() {
@@ -2148,12 +2306,14 @@ Object.subclass('AnotherFileParser', {
 Object.extend(AnotherFileParser, {
     
     grammarFile: 'LKFileParser.txt',    
-    ometaParser: null,
     
-    withOMetaParser: function() {
-        var prototype = AnotherFileParser.ometaParser|| OMetaSupport.fromFile(AnotherFileParser.grammarFile);
-        AnotherFileParser.ometaParser = prototype;
-        var parser = Object.delegated(prototype, {_parser: this});
+    withOMetaParser: function(force) {
+        var prototype;
+        if (force)
+            prototype = OMetaSupport.fromFile(AnotherFileParser.grammarFile);
+        else
+            prototype = LKFileParser || OMetaSupport.fromFile(AnotherFileParser.grammarFile);
+        var parser = Object.delegated(prototype, {_owner: this});
         return new AnotherFileParser(parser);
     },
     
@@ -2222,7 +2382,8 @@ WidgetModel.subclass('ChangeList', {
         if (firstLine.indexOf("\r") >= 0) firstLine = firstLine.replace(/\r/g, "");
         end = firstLine.indexOf(":");
         if (end >= 0) firstLine = firstLine.substring(0,end+1);
-        return item.fileName.concat(":", lineStr, ": ", firstLine);
+        var type = item.type ? item.type + ':' : '';
+        return item.fileName.concat(":", lineStr, ": ", type, firstLine);
     },
 
     getChangeItemText: function() {
@@ -2613,17 +2774,26 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     initialize: function($super) {
         this.cachedFullText = {};
         this.editHistory = {};
+        this.modules = [];
     },
     
     scanLKFiles: function($super, beSync) {
+        // new AnotherSourceDatabase()
+        var ms = new Date().getTime();
         this.interestingLKFileNames().each(function(fileName) {
             var action = function(fileString) {
-            //     new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
-                // console.log('Parsing ' + fileName);
-                AnotherFileParser.withOMetaParser().parseSource(fileString);
-            }.bind(this);
+                this.modules.push({
+                    name: fileName,
+                    type: 'completeFileDef',
+                    startIndex: 0,
+                    stopIndex: fileString.length-1,
+                    subElements: AnotherFileParser.withOMetaParser().parseSource(fileString, fileName),
+                    getSourceCode: function() { return fileString }
+                });
+            };
             this.getCachedTextAsync(fileName, action, beSync);
         }, this);
+        console.log('Altogether: ' + (new Date().getTime()-ms)/1000 + ' s');
     },
     
     interestingLKFileNames: function($super) {
@@ -2637,10 +2807,18 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         //                "workspace.js"]
         // return jsFiles.reject(function(ea) { return rejects.include(ea) });
         // new AnotherSourceDatabase().scanLKFiles()
-        return ['Core.js', 'Base.js', 'Widgets.js', "scene.js", "Text.js", "Network.js", "Tools.js", "Data.js", "Storage.js", "Examples.js", "Main.js"];
+        // return ['Core.js', 'Base.js', "Tools.js", /*'Widgets.js', "scene.js", "Text.js", "Network.js", "Data.js", "Storage.js", "Examples.js", "Main.js"*/];
+        // return ["miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
+        return ["test.js"];
     },
 });
-    
+
+module.startSourceControl = function() {
+    if (module.SourceControl) return;
+    module.SourceControl = new AnotherSourceDatabase();
+    module.SourceControl.scanLKFiles(true);
+};
+
 Object.subclass('BasicCodeMarkupParser', {
     documentation: "Evaluates code in the lkml code format",
     // this is the first attempt, format subject to change

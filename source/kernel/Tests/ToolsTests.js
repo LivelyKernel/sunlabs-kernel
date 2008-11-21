@@ -1,4 +1,4 @@
-module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools').toRun(function(thisModule, testModule, toolsModule) {
+module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.LKFileParser').toRun(function(thisModule, testModule, toolsModule) {
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');
@@ -440,7 +440,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.sut.src = src;
         var descriptor = this.sut.callOMeta('klassExtensionDef');
         this.assert(descriptor, 'no descriptor');
-        this.assertEqual(descriptor.name, 'thisModule.ScriptEnvironment');
+        this.assert(descriptor.name.startsWith('thisModule.ScriptEnvironment'));
         this.assertEqual(descriptor.subElements.length, 1);
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
@@ -452,7 +452,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.sut.src = src;
         var descriptor = this.sut.callOMeta('klassExtensionDef');
         this.assert(descriptor, 'no descriptor');
-        this.assertEqual(descriptor.name, 'Morph');
+        this.assert(descriptor.name.startsWith('Morph'));
         this.assertEqual(descriptor.subElements.length, 1);
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
