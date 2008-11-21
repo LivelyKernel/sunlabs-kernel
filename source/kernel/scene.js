@@ -163,7 +163,7 @@ Object.subclass('lively.data.Wrapper', {
 	} else if (lively.data.Wrapper.isInstance(propValue)) { 
 	    if (prop === 'owner') 
 		return; // we'll deal manually
-	    if (propValue instanceof lively.paint.Gradient || propValue instanceof lively.scene.Clip || propValue instanceof lively.scene.Image) 
+	    if (propValue instanceof lively.paint.Gradient || propValue  instanceof lively.scene.Image) 
 		return; // these should sit in defs and be handled by restoreDefs()
 
 	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
@@ -463,6 +463,36 @@ this.Node.subclass('lively.scene.Shape', {
     }
 
 });
+
+
+ Object.extend(this.Shape, {
+     // merge with Import.importWrapperFromNode?
+     importFromNode: function(importer, node) {
+	 switch (node.localName) {
+	 case "ellipse":
+	     return new lively.scene.Ellipse(importer, node);
+	     break;
+	 case "rect":
+	     return new lively.scene.Rectangle(importer, node);
+	     break;
+	 case "polyline":
+	     return new lively.scene.Polyline(importer, node);
+	     break;
+	 case "polygon":
+	     return new lively.scene.Polygon(importer, node);
+	     break;
+         case "path":
+	     return new lively.scene.Path(importer, node);
+	     break;
+	 case "g":
+	     return new lively.scene.Group(importer, node);
+	     break;
+	 default:
+	     return null;
+	 }
+     }
+     
+ });
     
 
 Object.extend(this,  { 
@@ -471,6 +501,9 @@ Object.extend(this,  {
     LineCaps:  Class.makeEnum(["Butt",  "Round", "Square"])  // likewise
     
 });
+
+
+
 
 
 this.Shape.subclass('lively.scene.Rectangle', {
@@ -1161,11 +1194,31 @@ this.Node.subclass('lively.scene.Image', {
 });
 
 
-Wrapper.subclass('lively.scene.Clip', {
-    initialize: function(shape) {
+this.Node.subclass('lively.scene.Clip', {
+    documentation: "currently wrapper around SVG clipPath",
+    initialize: function(target) {
 	this.rawNode = NodeFactory.create('clipPath');
-	// FIXME cleanup the unused attributes (stroke width and such).
-	this.rawNode.appendChild(shape.rawNode.cloneNode(false));
+	this.setDerivedId(target);
+	this.setClipShape(target);
+    },
+
+    deserialize: function(importer, rawNode) {
+	this.rawNode = rawNode;
+	//FIXME remap the id?
+	var node = rawNode.firstChild; // really firstElement, allow for whitespace
+	if (!node) return; // empty clipPath?
+	this.shape = lively.scene.Shape.importFromNode(importer, node);
+
+    },
+
+    setClipShape: function(target) {
+	this.shape = target.shape.copy(); // FIXME: target.outline() ?
+	this.replaceRawNodeChildren(this.shape.rawNode);
+	this.applyTo(target);
+    },
+
+    applyTo: function(target) {
+	target.setTrait("clip-path", this.uri());	
     }
 
 });

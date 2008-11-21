@@ -1062,12 +1062,11 @@ lively.data.Wrapper.subclass('Morph', {
     fisheyeGrowth: 1.0,    // up to fisheyeGrowth size bigger (1.0 = double size)
     fisheyeProximity: 0.5, // where to react wrt/ size (how close we need to be)
 
-    clipPath: null, // KP: should every morph should have one of those?
     keyboardHandler: null, //a KeyboardHandler for keyboard repsonse, etc
     layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
-    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds', 'clipPath'],
+    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
     isEpimorph: false, // temporary additional morph that goes away quickly, not included in bounds
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
@@ -1156,12 +1155,8 @@ lively.data.Wrapper.subclass('Morph', {
 	    this.pvtCachedTransform = other.pvtCachedTransform.copy();
 	} 
 	
-	if (other.defs) {
-	    this.restoreDefs(copier, other.defs, true);
-	}
-
 	this.initializeTransientState();
-	
+
 	if (other.activeScripts != null) { 
 	    for (var i = 0; i < other.activeScripts.length; i++) {
 		var a = other.activeScripts[i];
@@ -1210,44 +1205,6 @@ lively.data.Wrapper.subclass('Morph', {
 	return; // override in subclasses
     },
 
-    restoreDefs: function(importer, originalDefs, isOnClone) {
-	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
-	    if (isOnClone) def = def.cloneNode(true);
-	    switch (def.tagName) {
-	    case "clipPath":
-		if (!this.getTrait('clip-path'))
-		    console.log('myClip is undefined on %s', this); 
-		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
-		this.clipPath = new lively.scene.Clip(Importer.marker, def).setDerivedId(this);
-		this.setTrait('clip-path', this.clipPath.uri());
-		this.addWrapperToDefs(this.clipPath);
-		break;
-	    case "linearGradient":
-		var gradient = new lively.paint.LinearGradient(importer, def);
-		gradient.debug = true;
-		this.shape.setFill(gradient);
-		console.warn('applied legacy gradient  ' + gradient + ", " + (gradient.id() == null));
-		break;
-	    case "radialGradient": 
-		var gradient = new lively.paint.RadialGradient(importer, def);
-		this.shape.setFill(gradient);
-		console.warn('applied legacy gradient  ' + gradient + ", " + (gradient.id() == null));
-		break;
-	    case "code":
-		if (!Config.skipChanges) { // Can be blocked by URL param 
-		    this.changes = new ChangeSet(this);
-		    // this.changes.evaluateAll(); 
-		    // FIXME probably wrong order, should be at the end of deserialization
-		    new BasicCodeMarkupParser().parseDocumentElement(def, true);
-		    console.log("Successfully evalled " + this.changes);
-		}
-		break;
-	    default:
-		console.warn('unknown def %s', Exporter.stringify(def));
-	    }
-	}
-    },
-
     restoreFromSubnode: function(importer, node) {
 	// Override me
     },
@@ -1256,16 +1213,14 @@ lively.data.Wrapper.subclass('Morph', {
 	//  wade through the children
 	var children = [];
 	var helperNodes = [];
-	var origDefs;
+	var codeNodes = [];
+	
 	for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
 	    if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE) {
-		if (desc.textContent == "\n") helperNodes.push(desc); // remove newlines, which will be reinserted for formatting
+		if (desc.textContent == "\n") 
+		    helperNodes.push(desc); // remove newlines, which will be reinserted for formatting
 		continue; // ignore whitespace and maybe other things
 	    }
-	    if (desc.localName == "defs") {
-		origDefs = desc;
-		continue;
-	    } 
 	    var type = lively.data.Wrapper.getEncodedType(desc);
 	    // depth first traversal
 	    if (type) {
@@ -1279,33 +1234,14 @@ lively.data.Wrapper.subclass('Morph', {
 	    }
 	}
 
-	if (origDefs) origDefs.parentNode.removeChild(origDefs);
-
 	for (var i = 0; i < children.length; i++) {
 	    var node = children[i];
-            // debugger;
+	    var shape = lively.scene.Shape.importFromNode(importer, node);
+	    if (shape) {
+		this.shape = shape;
+		continue;
+	    }
 	    switch (node.localName) {
-	    case "ellipse":
-		this.shape = new lively.scene.Ellipse(importer, node);
-		break;
-	    case "rect":
-		this.shape = new lively.scene.Rectangle(importer, node);
-		break;
-	    case "polyline":
-		this.shape = new lively.scene.Polyline(importer, node);
-		break;
-	    case "polygon":
-		this.shape = new lively.scene.Polygon(importer, node);
-		break;
-            case "path":
-		this.shape = new lively.scene.Path(importer, node);
-		break;
-	    case "defs": 
-		throw new Error();
-	    case "g":
-		this.shape = new lively.scene.Group(importer, node);
-		//this.restoreFromSubnode(importer, node);
-		break;
 		// nodes from the Lively namespace
 	    case "field": {
 		// console.log("found field " + Exporter.stringify(node));
@@ -1398,25 +1334,42 @@ lively.data.Wrapper.subclass('Morph', {
 		}
 		break;
 	    }
+		
+	    case "defs": { // the only one handled here "code"
+		if (!Config.skipChanges) { // Can be blocked by URL param 
+		    var codes = node.getElementsByTagName("code");
+		    for (var j = 0; j < codes.length; j++) {
+			codeNodes.push(codes.item(j));
+		    }
+		}
+		break;
+	    }
 	    default: {
 		if (node.nodeType === Node.TEXT_NODE) {
 		    console.log('text tag name %s', node.tagName);
 		    // whitespace, ignore
 		} else if (!this.restoreFromSubnode(importer, node)) {
-		    console.warn('cannot handle node %s, %s', node.tagName || node.nodeType, node.textContent);
+		    console.warn('not handling %s, %s', node.tagName || node.nodeType, node.textContent);
 		}
 	    }
 	    }
 	} // end for
 
-	if (origDefs) { 
-	    this.restoreDefs(importer, origDefs);
-	}
-
 	for (var i = 0; i < helperNodes.length; i++) {
 	    var n = helperNodes[i];
 	    n.parentNode.removeChild(n);
 	}
+
+	codeNodes.forEach(function(code) {
+	    // we clearly don't handle more than one change yet
+	    this.changes = new ChangeSet(this);
+	    // this.changes.evaluateAll(); 
+	    var result = new BasicCodeMarkupParser().parseDocumentElement(code, true);
+	    // FIXME something doesn't work here
+	    console.log("Successfully evalled "  + result.length);
+
+	}, this);
+	    
     }
     
 });
@@ -1594,10 +1547,6 @@ Morph.addMethods({
 	var args = $A(arguments);
 	var func = args.shift();
 	func.apply(this.shape, args);
-	if (this.clipPath) {
-	    // console.log('clipped to new shape ' + this.shape);
-	    this.clipToShape();
-	}
 	this.adjustForNewBounds();
     }.wrap(Morph.onLayoutChange('shape')),
 
@@ -1609,11 +1558,6 @@ Morph.addMethods({
 	
 	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
 	this.shape = newShape;
-	//this.layoutChanged(); 
-	if (this.clipPath) {
-	    // console.log('clipped to new shape ' + this.shape);
-	    this.clipToShape();
-	}
 	this.adjustForNewBounds();
     },
 
@@ -1626,10 +1570,6 @@ Morph.addMethods({
 	    return this.shape.reshape(partName,newPoint,lastCall); 
 	} finally {
 	    // FIXME: consider converting polyline to polygon when vertices merge.
-	    if (this.clipPath) {
-		// console.log('clipped to new shape ' + this.shape);
-		this.clipToShape();
-	    }
 	    this.adjustForNewBounds();
 	}
     }.wrap(Morph.onLayoutChange('shape')),
@@ -1671,10 +1611,6 @@ Object.subclass('LayoutManager', {
 	    // FIXME some shapes don't support setFromRect
 	    target.shape.setBounds(newRect.extent().extentAsRectangle());
  	    target.adjustForNewBounds();
-	}
-	if (target.clipPath) {
-	    // console.log('clipped to new shape ' + this.shape);
-            target.clipToShape();
 	}
     },
 
@@ -1747,15 +1683,6 @@ Morph.addMethods({
 	    return this.addMorph(pseudomorph);
 	} else throw new Error(pseudomorph + " is not a PseudoMorph");
     },
-
-    addWrapperToDefs: function(wrapper) {
-	if (!this.defs) {
-	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
-	} 
-	if (wrapper)
-	    this.defs.appendChild(wrapper.rawNode);
-	return wrapper;
-    }
 
 });
 
@@ -2945,18 +2872,6 @@ Morph.addMethods({
 
     setPosition: function(newPosition) {
 	this.layoutManager.setPosition(this, newPosition);
-    }
-
-});
-
-// Morph clipping functions
-Morph.addMethods({
-
-    clipToShape: function() {
-	if (this.clipPath) this.clipPath.removeRawNode();
-	this.clipPath = new lively.scene.Clip(this.shape).setDerivedId(this);
-	this.addWrapperToDefs(this.clipPath);
-	this.rawNode.setAttributeNS(null, "clip-path", this.clipPath.uri());
     }
 
 });

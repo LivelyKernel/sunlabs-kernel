@@ -2659,9 +2659,10 @@ Object.subclass('BasicCodeMarkupParser', {
 	if (isHack) {
 	    var xpe = new XPathEvaluator();
 	    function resolver(arg) {
+		//return "http://www.w3.org/2000/svg";
 		return Namespace.SVG;
 	    }
-	    var result = xpe.evaluate("/hack:code/hack:class", element, resolver, XPathResult.ANY_TYPE, null);
+	    var result = xpe.evaluate("/lively:code/lively:class", element, resolver, XPathResult.ANY_TYPE, null);
 	    var res = null;
 	    classes = [];
 	    while (res = result.iterateNext()) classes.push(res);
@@ -2791,8 +2792,7 @@ Object.subclass('ChangeSet', {
 	// Keep track of an ordered list of changes for this world
         this.changes = [];
 	this.changesNode = LivelyNS.create("code");
-	world.addWrapperToDefs(undefined); // just ensure that defs exists
-	world.defs.appendChild(this.changesNode);
+	world.rawNode.appendChild(NodeFactory.create("defs")).appendChild(this.changesNode);
     },
     logChange: function(item) {
 	this.changes.push(item);

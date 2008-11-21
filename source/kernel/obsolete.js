@@ -1201,3 +1201,70 @@ lively.scene.Path.addMethods({
 	
 
     });
+
+
+
+
+
+
+// not obsolete but the future
+this.clipCounter  = 0;
+
+
+Morph.addMethods({
+
+
+    addWrapperToDefs: function(wrapper) {
+	if (!this.defs) {
+	    this.defs = this.rawNode.insertBefore(NodeFactory.create("defs"), this.rawNode.firstChild);
+	} 
+	if (wrapper)
+	    this.defs.appendChild(wrapper.rawNode);
+	return wrapper;
+    },
+    
+    restoreDefs: function(importer, originalDefs, isOnClone) {
+	for (var def = originalDefs.firstChild; def != null; def = def.nextSibling) {
+	    if (isOnClone) def = def.cloneNode(true);
+	    switch (def.tagName) {
+	    case "clipPath":
+		console.warn('legacy clipPath');
+		/*
+		if (!this.getTrait('clip-path'))
+		    console.log('myClip is undefined on %s', this); 
+		if (this.clipPath) throw new Error("how come clipPath is set to " + this.clipPath);
+		this.clipPath = new lively.scene.Clip(Importer.marker, def).setDerivedId(this);
+		this.setTrait('clip-path', this.clipPath.uri());
+		this.addWrapperToDefs(this.clipPath);
+                */
+		break;
+	    case "linearGradient":
+		var gradient = new lively.paint.LinearGradient(importer, def);
+		gradient.debug = true;
+		this.shape.setFill(gradient);
+		console.warn('applied legacy gradient  ' + gradient + ", " + (gradient.id() == null));
+		break;
+	    case "radialGradient": 
+		var gradient = new lively.paint.RadialGradient(importer, def);
+		this.shape.setFill(gradient);
+		console.warn('applied legacy gradient  ' + gradient + ", " + (gradient.id() == null));
+		break;
+	    case "code":
+		if (!Config.skipChanges) { // Can be blocked by URL param 
+		    this.changes = new ChangeSet(this);
+		    // this.changes.evaluateAll(); 
+		    // FIXME probably wrong order, should be at the end of deserialization
+		    new BasicCodeMarkupParser().parseDocumentElement(def, true);
+		    console.log("Successfully evalled " + this.changes);
+		}
+		break;
+	    default:
+		console.warn('unknown def %s', Exporter.stringify(def));
+	    }
+	}
+    },
+
+
+    
+});
+

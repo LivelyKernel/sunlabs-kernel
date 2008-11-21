@@ -2295,7 +2295,7 @@ BoxMorph.subclass('LabeledTextMorph', {
         text.composeAfterEdits = text.composeAfterEdits.wrap(function(proceed) {
             proceed();
             if (this.textHeight() < this.maxExtent().y) this.setToTextHeight(); // grow with the textMorph
-            else this.clipToShape();
+            //else this.clipToShape();
         }.bind(this));
         
         

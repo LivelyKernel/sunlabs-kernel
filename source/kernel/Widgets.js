@@ -238,7 +238,6 @@ ButtonMorph.subclass("ImageButtonMorph", {
     
 });
 
-
 BoxMorph.subclass("ClipMorph", {
 
     documentation: "A clipping window/view",
@@ -252,11 +251,26 @@ BoxMorph.subclass("ClipMorph", {
     
     initialize: function($super, initialBounds) {
 	$super(initialBounds);
+	var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
+	this.clip = new lively.scene.Clip(this);
+	defs.appendChild(this.clip.rawNode);
     },
 
-    initializeTransientState: function($super) {
-	$super();
-	this.clipToShape();
+    restoreFromSubnode: function($super, importer, node) {
+	$super(importer, node);
+	if (node.localName == 'defs') {
+	    var clips = node.getElementsByTagName('clipPath');
+	    if (clips.length > 0) {
+		this.clip = new lively.scene.Clip(importer, clips.item(0));
+		this.clip.applyTo(this);
+	    }
+	    return true;
+	} else return false;
+    },
+
+    setBounds: function($super, bnds) { // this reshapes
+	$super(bnds);
+	this.clip.setClipShape(this);
     },
 
     bounds: function(ignoreTransients) {
