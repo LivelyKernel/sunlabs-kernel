@@ -1957,11 +1957,12 @@ BoxMorph.subclass("ScrollPane", {
         // Make it look like 4 tiny lines of text (doesn't work yet...)
         var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
         for (var i = 1; i <= 4; i++) {
-            var line = Morph.makeLine([pt(0, i*2), pt([6, 2, 4, 6][i-1], i*2)], 1, Color.black);
-            line.translateBy(p0);
-            this.menuButton.addMorph(line);
-            line.ignoreEvents();
+	    var line = new lively.scene.Polyline([p0.addXY(0, i*2), p0.addXY([6, 2, 4, 6][i-1], i*2)]);
+	    line.setStroke(Color.black);
+	    line.setStrokeWidth(1);
+            this.menuButton.addMorph(new Morph(line)).ignoreEvents();
         }
+	
         if (this.scrollBar) {
             this.menuButton.setPosition(this.scrollBar.getPosition());
             this.menuButton.setFill(this.scrollBar.getFill());
