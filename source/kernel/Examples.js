@@ -414,17 +414,18 @@ Widget.subclass('FeedWidget', {
 PanelMorph.subclass('SquiggleMorph', {
 
     documentation: "An even simpler drawing program",
-    drawingColor: Color.red,
     drawingHandColor: Color.yellow,
     style: { 
 	borderWidth: 2, 
-	fill: new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
-					       new lively.paint.Stop(1, Color.primary.blue.lighter())], 
-					      lively.paint.LinearGradient.NorthSouth)
+	fill: using(lively.paint).link({$:"LinearGradient", 
+					stops: [{$:"Stop", offset: 0, color: Color.white},
+						{$:"Stop", offset: 1, color: Color.primary.blue.lighter()}], 
+					vector: lively.paint.LinearGradient.NorthSouth
+				       })
     },
-
+    
     penStyle: {
-	borderWidth: 2, borderColor: this.drawingColor, fill: null
+	borderWidth: 2, borderColor: Color.red, fill: null
     },
     
     initialize: function($super, ext) {
