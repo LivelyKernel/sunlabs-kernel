@@ -1947,27 +1947,28 @@ Object.subclass('AnotherFileParser', {
     
     parseModuleBegin: function() {
         var match = this.currentLine.match(/^\s*module\([\'\"](.*)[\'\"]\)\.requires\(.*toRun\(.*$/);
-        if (!match) return false;
-        this.changeList.push({type: 'moduleDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo()});
+        if (!match) return null;
+        var descr = {type: 'moduleDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo(), subElements: []};
         this.ptr += match[0].length + 1;
-        return true;
+        return descr;
     },
     
     parseUsingBegin: function() {
         var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*\{\s*$/);
-        if (!match) return false;
-        this.changeList.push({type: 'usingDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo()});
+        if (!match) return null;
+        var descr = {type: 'usingDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo(), subElements: []};
         this.ptr += match[0].length + 1;
-        return true;
+        return descr;
     },
     
     parseModuleOrUsingEnd: function(specialDescr) {
-        if (!specialDescr) return false;
+        if (!specialDescr) return null;
         var match = this.currentLine.match(/^\s*\}.*\);?.*$/);
-        if (!match) return false;
+        if (!match) return null;
         specialDescr.stopIndex = this.ptr + match[0].length - 1;
+        this.addDecsriptorMethods(specialDescr);
         this.ptr = specialDescr.stopIndex + 1;
-        return true;
+        return specialDescr;
     },
     
     parseWithOMeta: function(hint) {
@@ -1986,8 +1987,7 @@ Object.subclass('AnotherFileParser', {
         var tmpPtr = this.ptr;
         this.ptr += descr.stopIndex + 1;
         this.fixIndicesAndMore(descr, tmpPtr);
-        this.changeList.push(descr);
-        return true;
+        return descr;
     },
     
     giveHint: function() {
@@ -2023,24 +2023,29 @@ Object.subclass('AnotherFileParser', {
             var tmpPtr = this.ptr;
 
             /*******/
-           if (this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
-                specialDescr = this.changeList.last();
+           if (descr = this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
+               console.assert(!specialDescr, 'already found a module or using block...');
+               this.changeList.push(descr);
+               specialDescr = descr;
             } else if (this.parseModuleOrUsingEnd(specialDescr)) {
                 specialDescr = null;
                 continue;
-            } else if (!this.parseWithOMeta(this.giveHint())) {
-                throw new Error('Could not parse')
+            } else if (descr = this.parseWithOMeta(this.giveHint())) {
+                if (specialDescr) specialDescr.subElements.push(descr);
+                else this.changeList.push(descr);
+            } else {
+                throw new Error('Could not parse ' + this.currentLine + ' ...');
             }
             /*******/
             console.assert(this.ptr > tmpPtr, 'Could not go forward');
             
             var msNow = new Date().getTime();
             var duration = msNow-msParseStart;
-            descr = this.changeList.last();
             console.log('Parsed line ' +
                         this.findLineNo(this.lines, descr.startIndex) + ' to ' + this.findLineNo(this.lines, descr.stopIndex) +
                         ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
                         (duration > 100 ? '!!!!!!!!!!' : ''));
+            descr = null;
         }
         
         // if (specialDescr)
@@ -2053,21 +2058,33 @@ Object.subclass('AnotherFileParser', {
     },
     
     /* helper */
+    doForAllDescriptors: function(descr, action) {
+        action.call(this, descr);
+        if (!descr.subElements) return;
+        descr.subElements.forEach(function(ea) { this.doForAllDescriptors(ea, action) }, this);
+    },
+    
     fixIndicesAndMore: function(descr, startPos) {
         // var ms = new Date().getTime();
         // ----------
-        descr.startIndex += startPos;
-        descr.stopIndex += startPos;
-        
-        descr.lineNo = this.findLineNo(this.lines, descr.startIndex);
-        descr.getSourceCode = function() { var theSrc = this.src.substring(descr.startIndex, descr.stopIndex+1); return theSrc }.bind(this);
+        this.doForAllDescriptors(descr, function(d) {
+            d.startIndex += startPos;
+            d.stopIndex += startPos;
+            d.lineNo = this.findLineNo(this.lines, d.startIndex);
+            this.addDecsriptorMethods(d);
+        });
+        // ----------------
+        // this.overheadTime += new Date().getTime() - ms;
+    },
+
+    addDecsriptorMethods: function(descr) {
+        descr.getSourceCode = function() {
+            var src = this.src.substring(descr.startIndex, descr.stopIndex+1);
+            return src;
+        }.bind(this);
         descr.getDescrName = function() { return descr.name };
         descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
         descr.newChangeList = function() { return ['huch'] };
-        if (descr.subElements)
-            descr.subElements.forEach(function(ea) { this.fixIndicesAndMore(ea, startPos); ea.name = '\t' + ea.name; }, this);
-        // ----------------
-        // this.overheadTime += new Date().getTime() - ms;
     },
     
     currentLineNo: function() {
@@ -2106,17 +2123,17 @@ Object.subclass('AnotherFileParser', {
     parseFileFromUrl: function(url) {
         var src = this.sourceFromUrl(url);
         var result = this.parseSource(src);
-        result = result.inject([], function(flattened, ea) {
-            flattened.push(ea);
-            if (ea.subElements) flattened = flattened.concat(ea.subElements);
-            return flattened
-        });
         
+        var flattened = [];
         result.forEach(function(ea) {
+            this.doForAllDescriptors(ea, function(d) { flattened.push(d) });
+        }, this);
+        
+        flattened.forEach(function(ea) {
             ea.fileName = url.filename();
         });
         
-        return result;
+        return flattened;
     },
     
 });

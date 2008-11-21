@@ -628,9 +628,10 @@ main.logCompletion("main").delay(Config.mainDelay);\n\
 }.logCompletion("Main.js"));';
         var result = this.sut.parseSource(src);
 
-        this.assertEqual(result.length, 3);
+        this.assertEqual(result.length, 2);
         this.assertEqual(result[1].type, 'usingDef');
         this.assertEqual(result[1].stopIndex, src.length-1);
+        this.assertEqual(result[1].subElements.length, 1);
     },
     
     testParseModuledef: function() {
