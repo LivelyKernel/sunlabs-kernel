@@ -722,6 +722,59 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     }
     
 });
+
+thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
+    
+    setUp: function() {
+        var src = '01234\nabcde\n56789'
+        var srcCtrl = {};
+        this.beforeFrag     = new ideModule.FileFragment('before', 'testFrag', src.indexOf('0')/*0*/, src.indexOf('4')+1/*5*/, 1, null/*no file*/, srcCtrl);
+        this.afterFrag      = new ideModule.FileFragment('after', 'testFrag', src.indexOf('5')/*12*/, src.indexOf('9')/*16*/, 3, null/*no file*/, srcCtrl);
+        this.inbetweenFrag  = new ideModule.FileFragment('inbetween', 'testFrag', src.indexOf('b')/*7*/, src.indexOf('d')/*9*/, 2, null/*no file*/, srcCtrl);
+        this.sut            = new ideModule.FileFragment('test', 'testFrag', src.indexOf('a')/*6*/, src.indexOf('e')+1/*11*/, 2, null/*no file*/, srcCtrl);
+        this.sut.subElements.push(this.inbetweenFrag);
+        this.root           = new ideModule.FileFragment('root', 'testFrag', 0, src.length-1, 1, null/*no file*/, srcCtrl);
+        this.root.subElements = [this.beforeFrag, this.sut, this.afterFrag];
+        
+        Object.extend(srcCtrl, {
+            getCachedText: function() { return src },
+            rootFragmentForModule: function() { return this.root }.bind(this)
+        });
+        
+        // Quick check if srcCtrl mock is still up to date
+        if (!Object.keys(srcCtrl).all(function(ea) { return AnotherSourceDatabase.prototype[ea] !== undefined }))
+            throw new Error('Code rot!');
+        
+    },
+    
+    testFragmentsOfOwnFile: function() {
+        this.assertEqual(this.sut.fragmentsOfOwnFile().length, 4);
+        this.assert([this.root, this.beforeFrag, this.inbetweenFrag, this.afterFrag].all(function(ea) {
+            return this.sut.fragmentsOfOwnFile().include(ea)
+        }, this));
+        // this.assertEqualState(this.sut.fragmentsOfOwnFile(), [this.root, this.beforeFrag, this.inbetweenFrag, this.afterFrag]);
+    },
+    
+    testUpdateOwnIndex: function() {
+        var newSrc = 'xabcde\n\n'
+        this.sut.updateIndices(newSrc);
+        this.assertEqual(this.sut.startIndex, 6);
+        this.assertEqual(this.sut.stopIndex, 11 + 2);
+    },
+    
+    testUpdateOtherIndices: function() {
+        var newSrc = 'xabcde\n\n'
+        this.sut.updateIndices(newSrc);
+        this.assertEqual(this.beforeFrag.startIndex, 0, 'beforeFrag 1');
+        this.assertEqual(this.beforeFrag.stopIndex, 5, 'beforeFrag 2');
+        this.assertEqual(this.afterFrag.startIndex, this.sut.stopIndex + 1, 'afterFrag 1');
+        this.assertEqual(this.afterFrag.stopIndex, 16 + 2, 'afterFrag 2');
+        this.assertEqual(this.inbetweenFrag.startIndex, this.sut.startIndex + 1, 'inbetweenFrag 1');
+        this.assertEqual(this.inbetweenFrag.stopIndex, 9+1, 'inbetweenFrag 2');
+        this.assertEqual(this.root.stopIndex, 16+2, 'inbetweenFrag 2');
+    }
+})
+    
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     
     shouldRun: false,

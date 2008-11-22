@@ -1,4 +1,4 @@
-module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js').toRun(function(module, tools, ometa) {
+module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js').toRun(function(ide, tools, ometa) {
     
     // Modules: "+Modules" --> setModule in model
     // Modules: "-Modules" --> getModule in model
@@ -197,7 +197,7 @@ Object.subclass('lively.ide.BrowserNode', {
     },
 
     siblingNodes: function() {
-        if (!(this.browser instanceof module.SystemBrowser)) throw dbgOn(new Error('No browser when tried siblingNodes'));
+        if (!(this.browser instanceof ide.SystemBrowser)) throw dbgOn(new Error('No browser when tried siblingNodes'));
         return this.browser.siblingsFor(this);
     },
 
@@ -249,14 +249,14 @@ Object.subclass('lively.ide.BrowserNode', {
 /*
  *  Nodes for viewing classes, functions, objects (from within the system, no parsed source)
  */
-module.BrowserNode.subclass('lively.ide.EnvironmentNode', {
+ide.BrowserNode.subclass('lively.ide.EnvironmentNode', {
 
     childNodes: function() {
-        return this.target.subNamespaces(true).concat([this.target]).collect(function(ea) { return new module.NamespaceNode(ea, this.browser) }.bind(this));
+        return this.target.subNamespaces(true).concat([this.target]).collect(function(ea) { return new ide.NamespaceNode(ea, this.browser) }.bind(this));
     }
 });
 
-module.BrowserNode.subclass('lively.ide.NamespaceNode', { // rename to ModuleNode
+ide.BrowserNode.subclass('lively.ide.NamespaceNode', { // rename to ModuleNode
 
     initialize: function($super, target, browser) {
         $super(target, browser);
@@ -272,17 +272,17 @@ module.BrowserNode.subclass('lively.ide.NamespaceNode', { // rename to ModuleNod
            case "classes":
             return this.target.classes()
                 .sort()
-                .collect(function(ea) { return new module.ClassNode(ea, browser) });
+                .collect(function(ea) { return new ide.ClassNode(ea, browser) });
            case "functions":
             return Object.keys(this.target)
                 .select(function(ea) { return ns[ea] && ns.hasOwnProperty(ea) && !Class.isClass(ns[ea]) && Object.isFunction(ns[ea]) && !ns[ea].declaredClass})
                 .sort()
-                .collect(function(ea) { return new module.FunctionNode(ns[ea], browser, ea) });
+                .collect(function(ea) { return new ide.FunctionNode(ns[ea], browser, ea) });
            case "objects":
             return Object.keys(ns)
                 .reject(function(ea) { return Object.isFunction(ns[ea]) })
                 .sort()
-                .collect(function(ea) { return new module.ObjectNode(ns[ea], browser, ea) });
+                .collect(function(ea) { return new ide.ObjectNode(ns[ea], browser, ea) });
            default: return []
         }
     },
@@ -307,7 +307,7 @@ module.BrowserNode.subclass('lively.ide.NamespaceNode', { // rename to ModuleNod
     }
 });
 
-module.BrowserNode.subclass('lively.ide.ClassNode', {
+ide.BrowserNode.subclass('lively.ide.ClassNode', {
     initialize: function($super, target, browser) {
         $super(target, browser);
         // again: get rid of modes
@@ -323,12 +323,12 @@ module.BrowserNode.subclass('lively.ide.ClassNode', {
                 return theClass.functionNames()
                     .sort()
                     .select(function(ea) { return theClass.prototype.hasOwnProperty(ea) })
-                    .collect(function(ea) { return new module.MethodNode(theClass.prototype[ea], browser, theClass) });
+                    .collect(function(ea) { return new ide.MethodNode(theClass.prototype[ea], browser, theClass) });
             case "class":
                 return Object.keys(theClass)
                     .sort()
                     .select(function(ea) { return theClass.hasOwnProperty(ea) && Object.isFunction(theClass[ea]) && !Class.isClass(theClass[ea])})
-                    .collect(function(ea) { return new module.ClassMethodNode(theClass[ea], browser, theClass, ea) });
+                    .collect(function(ea) { return new ide.ClassMethodNode(theClass[ea], browser, theClass, ea) });
             default: return []
         }
     },
@@ -364,7 +364,7 @@ module.BrowserNode.subclass('lively.ide.ClassNode', {
     },
 });
 
-module.BrowserNode.subclass('lively.ide.ObjectNode', {
+ide.BrowserNode.subclass('lively.ide.ObjectNode', {
 
     initialize: function($super, target, browser, nameInOwner) {
         $super(target, browser);
@@ -378,7 +378,7 @@ module.BrowserNode.subclass('lively.ide.ObjectNode', {
         return Object.keys(obj)
             .select(function(ea) { return obj[ea] && obj.hasOwnProperty(ea) && !Class.isClass(obj[ea]) && Object.isFunction(obj[ea]) && !obj[ea].declaredClass})
             .sort()
-            .collect(function(ea) { return new module.FunctionNode(obj[ea], browser, ea) });
+            .collect(function(ea) { return new ide.FunctionNode(obj[ea], browser, ea) });
     },
 
     asString: function() {
@@ -397,7 +397,7 @@ module.BrowserNode.subclass('lively.ide.ObjectNode', {
     },
 })
 
-module.BrowserNode.subclass('lively.ide.MethodNode', {
+ide.BrowserNode.subclass('lively.ide.MethodNode', {
 
     initialize: function($super, target, browser, theClass) {
         $super(target, browser);
@@ -458,7 +458,7 @@ module.BrowserNode.subclass('lively.ide.MethodNode', {
     }
 });
 
-module.MethodNode.subclass('lively.ide.ClassMethodNode', {
+ide.MethodNode.subclass('lively.ide.ClassMethodNode', {
 
     initialize: function($super, target, browser, theClass, nameInOwner) {
         $super(target, browser, theClass);
@@ -470,7 +470,7 @@ module.MethodNode.subclass('lively.ide.ClassMethodNode', {
     },
 
 });
-module.BrowserNode.subclass('lively.ide.FunctionNode', {
+ide.BrowserNode.subclass('lively.ide.FunctionNode', {
 
     initialize: function($super, target, browser, nameInOwner) {
         $super(target, browser);
@@ -490,7 +490,7 @@ module.BrowserNode.subclass('lively.ide.FunctionNode', {
 /*
  *  SystemBrowser implementation for browsing parsed sources
  */
-module.BasicBrowser.subclass('lively.ide.SystemBrowser', {
+ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 
     documentation: 'Browser for source code parsed from js files',
     viewTitle: "Enhanced Javascript Code Browser",
@@ -498,8 +498,8 @@ module.BasicBrowser.subclass('lively.ide.SystemBrowser', {
     rootNode: function() {
         if (!tools.SourceControl) throw new Error('No source control!');
         if (!this._rootNode)
-            this._rootNode = new module.SourceControlNode(tools.SourceControl, this);
-            // this._rootNode = new module.EnvironmentNode(Global, this);
+            this._rootNode = new ide.SourceControlNode(tools.SourceControl, this);
+            // this._rootNode = new ide.EnvironmentNode(Global, this);
         return this._rootNode;
     },
 
@@ -509,13 +509,15 @@ module.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 
 });
 
-module.BrowserNode.subclass('lively.ide.SourceControlNode', {
+ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
     childNodes: function() {
-        return this.target.modules.collect(function(ea) { return new module.CompleteFileDefNode(ea, this.browser) }.bind(this));
+        return Object.keys(this.target.modules).collect(function(ea) {
+            return new ide.CompleteFileDefNode(this.target.rootFragmentForModule(ea), this.browser);
+        }.bind(this));
     }
 });
 
-module.NamespaceNode.subclass('lively.ide.CompleteFileDefNode', {
+ide.NamespaceNode.subclass('lively.ide.CompleteFileDefNode', {
 
     initialize: function($super, target, browser) {
         $super(target, browser);
@@ -539,17 +541,17 @@ module.NamespaceNode.subclass('lively.ide.CompleteFileDefNode', {
             return this.target.subElements
                 .select(function(ea) { return ea.type === 'klassDef' || ea.type === 'klassExtensionDef'})
                 .sort(function(a,b) { return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-                .collect(function(ea) { return new module.ClassDefNode(ea, browser) });
+                .collect(function(ea) { return new ide.ClassDefNode(ea, browser) });
            case "functions":
             return this.target.subElements
                 .select(function(ea) { return ea.type === 'staticFuncDef' || ea.type === 'executedFuncDef' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
                 .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-                .collect(function(ea) { return new module.FunctionDefNode(ea, browser) });
+                .collect(function(ea) { return new ide.FunctionDefNode(ea, browser) });
            case "objects":
             return this.target.subElements
                .select(function(ea) { return ea.type === 'objectDef' || ea.type === 'unknown' || ea.type === 'moduleDef' || ea.type === 'usingDef'})
                .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-               .collect(function(ea) { return new module.ObjectDefNode(ea, browser) });
+               .collect(function(ea) { return new ide.ObjectDefNode(ea, browser) });
            default: return ['Huh']
         }
     },
@@ -568,7 +570,7 @@ module.NamespaceNode.subclass('lively.ide.CompleteFileDefNode', {
 
 });
 
-module.BrowserNode.subclass('lively.ide.ClassDefNode', {
+ide.BrowserNode.subclass('lively.ide.ClassDefNode', {
 
     childNodes: function() {
         var classDef = this.target;
@@ -576,7 +578,7 @@ module.BrowserNode.subclass('lively.ide.ClassDefNode', {
         return classDef.subElements
             .select(function(ea) { return ea.type === 'propertyDef' || ea.type === 'methodDef' })
             .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-            .collect(function(ea) { return new module.ClassElemDefNode(ea, browser) });
+            .collect(function(ea) { return new ide.ClassElemDefNode(ea, browser) });
     },
 
     asString: function() {
@@ -592,7 +594,7 @@ module.BrowserNode.subclass('lively.ide.ClassDefNode', {
     }
 });
 
-module.BrowserNode.subclass('lively.ide.ObjectDefNode', {
+ide.BrowserNode.subclass('lively.ide.ObjectDefNode', {
 
     childNodes: function() {
         if (!this.target.subElements) return [];
@@ -602,7 +604,7 @@ module.BrowserNode.subclass('lively.ide.ObjectDefNode', {
         return obj.subElements
             .select(function(ea) { return ea.type === 'propertyDef' || ea.type === 'methodDef' })
             .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-            .collect(function(ea) { return new module.ClassElemDefNode(ea, browser) });
+            .collect(function(ea) { return new ide.ClassElemDefNode(ea, browser) });
     },
 
     asString: function() {
@@ -618,7 +620,7 @@ module.BrowserNode.subclass('lively.ide.ObjectDefNode', {
     }
 })
 
-module.BrowserNode.subclass('lively.ide.ClassElemDefNode', {
+ide.BrowserNode.subclass('lively.ide.ClassElemDefNode', {
 
     methodName: function() {
         return this.target.name || 'no name!';
@@ -642,7 +644,7 @@ module.BrowserNode.subclass('lively.ide.ClassElemDefNode', {
     }
 });
 
-module.BrowserNode.subclass('lively.ide.FunctionDefNode', {
+ide.BrowserNode.subclass('lively.ide.FunctionDefNode', {
 
     asString: function() {
         return this.target.name
@@ -672,6 +674,7 @@ Object.subclass('AnotherFileParser', {
     },
     
     callOMeta: function(rule, src) {
+        if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing files sources!'))
         return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, true/*hideErrors?*/);
     },
     
@@ -690,7 +693,7 @@ Object.subclass('AnotherFileParser', {
     parseModuleBegin: function() {
         var match = this.currentLine.match(/^\s*module\([\'\"](.*)[\'\"]\)\.requires\(.*toRun\(.*$/);
         if (!match) return null;
-        var descr = {type: 'moduleDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo(), subElements: []};
+        var descr = new ide.FileFragment(match[1], 'moduleDef', this.ptr, null, this.currentLineNo(), this.fileName);
         this.ptr += match[0].length + 1;
         return descr;
     },
@@ -698,7 +701,7 @@ Object.subclass('AnotherFileParser', {
     parseUsingBegin: function() {
         var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*$/);
         if (!match) return null;
-        var descr = {type: 'usingDef', name: match[1], startIndex: this.ptr, lineNo: this.currentLineNo(), subElements: []};
+        var descr = new ide.FileFragment(match[1], 'usingDef', this.ptr, null, this.currentLineNo(), this.fileName);
         this.ptr += match[0].length + 1;
         return descr;
     },
@@ -830,7 +833,6 @@ Object.subclass('AnotherFileParser', {
             var src = this.src.substring(descr.startIndex, descr.stopIndex+1);
             return src;
         }.bind(this);
-        descr.getDescrName = function() { return descr.name };
         descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
         descr.newChangeList = function() { return ['huch'] };
         descr.versionNo = 0;
@@ -924,7 +926,26 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     initialize: function($super) {
         this.cachedFullText = {};
         this.editHistory = {};
-        this.modules = [];
+        this.modules = {};
+    },
+    
+    rootFragmentForModule: function(moduleOrModuleName) {
+        if (!Object.isString(moduleOrModuleName) || !moduleOrModuleName.endsWith('.js'))
+            throw dbgOn(new Error('I do not support modules yet... ' + moduleOrModuleName + 'isn\'t valid, sorry!'));
+        return this.modules[moduleOrModuleName];
+    },
+    
+    putSourceCodeFor: function(fileFragment, newString) {
+        var fileString = fileFragment.getFileString();
+        var beforeString = fileString.substring(0, fileFragment.startIndex);
+        var afterString = fileString.substring(fileFragment.stopIndex);
+        var newFileString = beforeString.concat(newString, afterString);
+        newFileString = newFileString.replace(/\r/gi, '\n');  // change all CRs to LFs
+        console.log("Saving " + fileName + "...");
+        new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
+                ).put(URL.source.withFilename(fileName), newFileString);
+        this.cachedFullText[fileName] = newFileString;
+        console.log("... " + newFileString.length + " bytes saved.");
     },
     
     scanLKFiles: function($super, beSync) {
@@ -932,14 +953,9 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         var ms = new Date().getTime();
         this.interestingLKFileNames().each(function(fileName) {
             var action = function(fileString) {
-                this.modules.push({
-                    name: fileName,
-                    type: 'completeFileDef',
-                    startIndex: 0,
-                    stopIndex: fileString.length-1,
-                    subElements: AnotherFileParser.withOMetaParser().parseSource(fileString, fileName),
-                    getSourceCode: function() { return fileString }
-                });
+                var root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, null, fileName, this);
+                root.subElements = AnotherFileParser.withOMetaParser().parseSource(fileString, fileName);
+                this.modules[fileName] = root;
             };
             this.getCachedTextAsync(fileName, action, beSync);
         }, this);
@@ -958,16 +974,74 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         // return jsFiles.reject(function(ea) { return rejects.include(ea) });
         // new AnotherSourceDatabase().scanLKFiles()
         // return ['Core.js', 'Base.js', "Tools.js", /*'Widgets.js', "scene.js", "Text.js", "Network.js", "Data.js", "Storage.js", "Examples.js", "Main.js"*/];
-        // return ["miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
-        return ["test.js"];
+        return ["miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
+        // return ["test.js"];
     },
 });
 
 // see also lively.Tools.startSourceControl
-module.startSourceControl = function() {
+ide.startSourceControl = function() {
     if (tools.SourceControl instanceof AnotherSourceDatabase) return;
     tools.SourceControl = new AnotherSourceDatabase();
     tools.SourceControl.scanLKFiles(true);
 };
+
+// another SourceCodeDescriptor
+Object.subclass('lively.ide.FileFragment', {
+
+    initialize: function(name, type, startIndex, stopIndex, lineNo, fileName, srcCtrl) {
+        this.name = name;
+        this.type = type;
+        this.startIndex = startIndex;
+        this.stopIndex = stopIndex;
+        this.lineNo = lineNo;
+        this.fileName = fileName;
+        this.sourceControl = srcCtrl;
+        this.subElements = [];
+    },
+    
+    fragmentsOfOwnFile: function() {
+        return this.sourceControl.rootFragmentForModule(this.fileName).flattened().without(this);
+    },
+    
+    flattened: function() {
+        return this.subElements.inject([this], function(all, ea) {
+            return all.concat(ea.flattened());
+        });
+    },
+
+    updateIndices: function(newSource, oldSource) {
+        var prevStop = this.stopIndex;
+        var newStop = this.startIndex + newSource.length - 1;
+        var delta = newStop - prevStop;
+        // update fragments which follow after this
+        this.fragmentsOfOwnFile()
+            .select(function(ea) { return ea.startIndex > prevStop })
+            .forEach(function(ea) { ea.startIndex += delta; ea.stopIndex += delta; });
+        // parse this again
+            
+        this.stopIndex = newStop;    // self
+        
+    },
+    
+    getSourceCode: function() {
+        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + descr.name));
+        return this.getFileString().substring(this.startIndex, this.stopIndex+1);
+    },
+
+    putSourceCode: function(newString) {
+        if (!descr.fileName) throw dbgOn(new Error('No filename for descriptor ' + descr.name));
+        this.sourceControl.putSourceCodeFor(this.fileName, 0, this.startIndex, this.stopIndex, newString);
+        this.updateIndices(newString);
+    },
+        
+    getFileString: function() {
+        return this.sourceControl.getCachedText(this.fileName);
+    },
+    
+    newChangeList: function() {
+        throw dbgOn(new Error('Not yet!'));
+    }
+})
 
 });
