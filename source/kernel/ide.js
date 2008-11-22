@@ -1,4 +1,4 @@
-module('lively.ide').requires('lively.Text', 'lively.Tools', 'lively.Ometa', 'LKFileParser.js').toRun(function(module, text, tools, ometa) {
+module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js').toRun(function(module, tools, ometa) {
     
     // Modules: "+Modules" --> setModule in model
     // Modules: "-Modules" --> getModule in model
@@ -13,10 +13,9 @@ module('lively.ide').requires('lively.Text', 'lively.Tools', 'lively.Ometa', 'LK
 // ===========================================================================
 // Browser Framework
 // ===========================================================================
-Widget.subclass('lively.ide.SystemBrowser', {
+Widget.subclass('lively.ide.BasicBrowser', {
 
-    documentation: 'Widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
-    viewTitle: "Enhanced Javascript Code Browser",
+    documentation: 'Abstract widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
     initialViewExtent: pt(620, 450),
     formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer",
               "Pane2Content", "Pane2Selection", "Pane2Choicer",
@@ -38,16 +37,10 @@ Widget.subclass('lively.ide.SystemBrowser', {
     },
 
     rootNode: function() {
-        if (!tools.SourceControl) throw new Error('No source control!');
-        if (!this._rootNode)
-            this._rootNode = new module.SourceControlNode(tools.SourceControl, this);
-            // this._rootNode = new module.EnvironmentNode(Global, this);
-        return this._rootNode;
+        throw dbgOn(new Error('To be implemented from subclass'));
     },
 
     start: function() {
-        // FIXME this doesn't belong here
-
         this.setPane1Content(this.rootNode().childNodesAsListItems());
     },
 
@@ -253,6 +246,9 @@ Object.subclass('lively.ide.BrowserNode', {
 
 });
 
+/*
+ *  Nodes for viewing classes, functions, objects (from within the system, no parsed source)
+ */
 module.BrowserNode.subclass('lively.ide.EnvironmentNode', {
 
     childNodes: function() {
@@ -490,7 +486,29 @@ module.BrowserNode.subclass('lively.ide.FunctionNode', {
     },
 });
 
-// Nodes for using just source code from files, for AnotherSourceDatabase
+
+/*
+ *  SystemBrowser implementation for browsing parsed sources
+ */
+module.BasicBrowser.subclass('lively.ide.SystemBrowser', {
+
+    documentation: 'Browser for source code parsed from js files',
+    viewTitle: "Enhanced Javascript Code Browser",
+
+    rootNode: function() {
+        if (!tools.SourceControl) throw new Error('No source control!');
+        if (!this._rootNode)
+            this._rootNode = new module.SourceControlNode(tools.SourceControl, this);
+            // this._rootNode = new module.EnvironmentNode(Global, this);
+        return this._rootNode;
+    },
+
+    start: function($super) {
+        $super();
+    }
+
+});
+
 module.BrowserNode.subclass('lively.ide.SourceControlNode', {
     childNodes: function() {
         return this.target.modules.collect(function(ea) { return new module.CompleteFileDefNode(ea, this.browser) }.bind(this));
@@ -615,22 +633,12 @@ module.BrowserNode.subclass('lively.ide.ClassElemDefNode', {
     },
 
     evalSource: function(newSource) {
-        // var methodName = this.target.methodName;
-        // if (!methodName) throw dbgOn(new Error('No method name!'));
-        // var methodDef = this.theClass.type + ".prototype." + methodName + " = " + newSource;
-        // try {
-        //     eval(methodDef);
-        //     console.log('redefined ' + methodName);
-        // } catch (er) {
-        //     WorldMorph.current().alert("error evaluating method " + methodDef);
-        //     return false;
-        // }
-        // // ChangeSet.current().logChange({type: 'method', className: className, methodName: methodName, methodString: methodString});
-        // return true;
+        return false;
     },
 
     saveSource: function(newSource, sourceControl) {
         this.target.putSourceCode(newSource);
+        return true;
     }
 });
 
@@ -647,9 +655,8 @@ module.BrowserNode.subclass('lively.ide.FunctionDefNode', {
 
 
 // ===========================================================================
-// Another File Parser - to see how fast OMeta is
+// Another File Parser - uses mostly OMeta for parsing LK sources
 // ===========================================================================
-
 Object.subclass('AnotherFileParser', {
     
     documentation: 'Extended FileParser. Scans source code and extracts SourceCodeDescriptors for ' +
@@ -908,6 +915,10 @@ Object.extend(AnotherFileParser, {
     
 });
 
+
+// ===========================================================================
+// Keeps track of parsed sources
+// ===========================================================================
 SourceDatabase.subclass('AnotherSourceDatabase', {
     
     initialize: function($super) {

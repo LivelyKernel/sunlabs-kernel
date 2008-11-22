@@ -1,4 +1,4 @@
-module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'lively.LKFileParser').toRun(function(thisModule, testModule, toolsModule, ideModule, parserModule) {
+module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide').toRun(function(thisModule, testModule, toolsModule, ideModule) {
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');

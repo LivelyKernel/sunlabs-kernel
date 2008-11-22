@@ -209,7 +209,7 @@ Layout.subclass('HLayout', {
     
 });
 
-// Some Mokeypatching :-)
+// Some Monkeypatching for layouts :-)
 // TODO: Merge
 
 Morph.addMethods({
@@ -338,8 +338,10 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
     items: function() {
         return [
             {label: 'SystemBrowser', action: function(evt) {
-                var browserMorph = new lively.Tools.SystemBrowser().openIn(evt.hand.world(), evt.point());
-                evt.hand.grabMorph(browserMorph, evt) }},
+                require('lively.ide').toRun(function(unused, ide) {
+                    var browserMorph = new ide.SystemBrowser().openIn(evt.hand.world(), evt.point());
+                    evt.hand.grabMorph(browserMorph, evt)
+                })}},
             {label: 'TextMorph', action: function(evt) {
                 var textMorph = new TextMorph(pt(400,50).extentAsRectangle());
                 evt.hand.grabMorph(textMorph, evt) }},
@@ -349,8 +351,8 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
                     evt.hand.grabMorph(wrkspc, evt);
                 })}},
             {label: 'Start source control', action: function(evt) {
-                require('lively.Tools').toRun(function(unused, toolsModule) {
-                    toolsModule.startSourceControl();
+                require('lively.ide').toRun(function(unused, ide) {
+                    ide.startSourceControl();
                 })}},
         ]
     }
