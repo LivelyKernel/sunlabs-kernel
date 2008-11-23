@@ -2,8 +2,9 @@ ometa LKFileParser <: Parser {
     isLKParser      = ''                                                    -> true,
   
     /* helper productions */
-    log :msg        -> { console.log(msg); true },
-    whereAreYou            -> { var charsBefore = 120; var charsAfter = 120; var src = $elf._originalInput;
+    log :msg            -> { console.log(msg); true },
+    logPos              -> { console.log($elf.pos()); true },
+    whereAreYou         -> { var charsBefore = 120; var charsAfter = 120; var src = $elf._originalInput;
                              var startIndex = Math.max(0, $elf.pos() - charsBefore);
                              var stopIndex = Math.min(src.length, $elf.pos() + charsAfter);
                              console.log(src.substring(startIndex, $elf.pos()) + '<--I am here-->' + src.substring($elf.pos(), stopIndex));
@@ -11,9 +12,9 @@ ometa LKFileParser <: Parser {
                              console.log('Stack: ' + $elf.stack);
                              true
                             },
-    fromTo :x :y    = seq(x) (~seq(y) char)*:cs seq(y)                  -> cs,
-    stackSize                                                                           -> { $elf.stack.length },
-	num :x                                                                              -> { $elf.numOnStack(x) },
+    fromTo :x :y        = seq(x) (~seq(y) char)*:cs seq(y)                              -> cs,
+    stackSize           -> { $elf.stack.length },
+	num :x              -> { $elf.stack.select(function(ea) { return ea === x }).length },
 	getStack            -> { $elf.stack.clone() },
 	assignStack :s      -> { $elf.stack = s },
 	startTime           -> { /*console.log('start measuring time'); new Date().getTime()*/},
@@ -47,114 +48,85 @@ ometa LKFileParser <: Parser {
 	classElemDefEnd     = "," | "",
 	
 	/* basic string processing */
-	space        = super(#space) | fromTo('//', '\n') | fromTo('/*', '*/'),
-    nl              = '\n' | '\r'                                       -> '\n',
-	spacesNoNl      = (~nl space)*:spcs									-> spcs,
-	nameFirst       = letter | '$' | '_',
-  	nameRest        = nameFirst | digit,
-  	iName           = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
-  	isKeyword :x    = ?BSJSParser._isKeyword(x),
-  	name            = iName:n /*~isKeyword(n)*/								-> n,
-  	keyword         = iName:k isKeyword(k)								-> k,
+	space               = super(#space) | fromTo('//', '\n') | fromTo('/*', '*/'),
+    nl                  = '\n' | '\r'                                       -> '\n',
+	spacesNoNl          = (~nl space)*:spcs									-> spcs,
+	nameFirst           = letter | '$' | '_',
+  	nameRest            = nameFirst | digit,
+  	iName               = firstAndRest(#nameFirst, #nameRest):r		        -> r.join(''),
+  	isKeyword :x        = ?BSJSParser._isKeyword(x),
+  	name                = iName:n /*~isKeyword(n)*/								-> n,
+  	keyword             = iName:k isKeyword(k)								-> k,
 	namespaceIdSplitted = name:n '.' namespaceIdSplitted:r              -> { [n].concat(r) }
 	                    | name:n                                        -> { [n] },
 	namespaceId         = namespaceIdSplitted:nArr                          -> nArr.join('.'),
 	nsFollowedBy :x     = namespaceIdSplitted:nArr ?(nArr.last() === x) -> nArr.slice(0,nArr.length-1).join('.'),
-	nsWith :x     = namespaceIdSplitted:nArr ?nArr.include(x) -> { var i = nArr.indexOf(x); {before: nArr.slice(0,i).join('.'), after: nArr.slice(i+1,nArr.length).join('.')} },
-  	
- 
-    /* generic things for source code descriptors */
-    logPos              -> { console.log($elf.pos()); true },
-    descriptor   -> { {startIndex: $elf.pos()} },
+	nsWith :x           = namespaceIdSplitted:nArr ?nArr.include(x)
+	                    -> { var i = nArr.indexOf(x); {before: nArr.slice(0,i).join('.'), after: nArr.slice(i+1,nArr.length).join('.')} },
     
     /* functions */
     basicFunction       = "function" spaces (name:n | "") chunk('(', ')') spaces chunk('{', '}')  -> n,
     func                = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction          -> fn,
-    functionDef         = descriptor:d func:fn defEnd
-                        -> { Object.extend(d, {type: 'functionDef', name: fn, stopIndex: $elf.pos()-1}); d },
-    executedFuncDef     = stackSize:s descriptor:d '(' basicFunction:fn ')' somethingRelated defEnd ?(s == $elf.stack.length)
-                        -> { Object.extend(d, {type: 'executedFuncDef', name: fn, stopIndex: $elf.pos()-1}); d },
-    staticFuncDef       = descriptor:d namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' spaces basicFunction defEnd
-                        -> { Object.extend(d, {type: 'staticFuncDef', name: nsArr.last(), klassName: nsArr.slice(0,nsArr.length-1).join('.'), stopIndex: $elf.pos()-1}); d },
+    functionDef         = pos:p func:fn defEnd
+                        -> { $elf._fragment(fn, 'functionDef', p, $elf.pos()-1) },
+    executedFuncDef     = stackSize:s pos:p '(' basicFunction:fn ')' somethingRelated defEnd ?(s == $elf.stack.length)
+                        -> { $elf._fragment(fn, 'executedFuncDef', p, $elf.pos()-1) },
+    staticFuncDef       = pos:p namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' spaces basicFunction defEnd
+                        -> { $elf._fragment(nsArr.last(), 'staticFuncDef', p, $elf.pos()-1, null, {klassName: nsArr.slice(0,nsArr.length-1).join('.')}) },
     
 	/* methods */
 	wrapEnd             = ".wrap" chunk('(', ')'),
     methodDefWithSpcs   = spaces methodDef:mD classElemDefEnd                      -> mD,
-    methodDef           = descriptor:d name:mName ':' startTime:t spaces basicFunction (somethingBigRelated | "" ) classElemDefEnd stopTime(t)
-                        -> { Object.extend(d, {type: 'methodDef', name: mName, stopIndex: $elf.pos()-1}); d },
-    methodModificationDef   = descriptor:d nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
-                            -> { Object.extend(d, {type: 'methodModificationDef', name: spec.after, klassName: spec.before, stopIndex: $elf.pos()-1}); d },
+    methodDef           = pos:p name:mName ':' startTime:t spaces basicFunction (somethingBigRelated | "" ) classElemDefEnd stopTime(t)
+                        -> { $elf._fragment(mName, 'methodDef', p, $elf.pos()-1) },
+    methodModificationDef   = pos:p nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
+                            -> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {klassName: spec.before}) },
     
     /* properties */
     propertyDefWithSpcs = spaces propertyDef:pD spaces                          -> pD,
-    propertyDef         = stackSize:s descriptor:d name:pName ':' spaces ~"function" somethingBigRelated classElemDefEnd /*argh, cannot use classElemDefEnd, prop has to end with ','*/
+    propertyDef         = stackSize:s pos:p name:pName ':' spaces ~"function" somethingBigRelated classElemDefEnd
                         -> { if ($elf.stack.length !== s) {
-                                throw new Error('sth wrong wiht the stack: ' + $elf.stack + ' expected length: ' + s + ' actual length: ' + $elf.stack.length);
+                                throw new Error('sth wrong with the stack: ' + $elf.stack + ' expected length: ' + s + ' actual length: ' + $elf.stack.length);
                              };
-                             Object.extend(d, {
-                                type: 'propertyDef',
-                                name: pName,
-                                stopIndex: $elf.pos()-1});
-                            d },
+                             $elf._fragment(pName, 'propertyDef', p, $elf.pos()-1) },
                                     
     /* class stuff */
-	classElems      = '{' spaces ( methodDefWithSpcs | propertyDefWithSpcs  )*:a spaces '}'	-> a,
-	restKlassDef    = ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
-	                | ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
-	                | ',' klassName:trait					                        -> { {trait: trait, classElems: []} }
-					| spacesNoNl							                        -> { {classElems: []} },
-	klass 	        = namespaceId,
-	klassName       = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
-    klassDef        = descriptor:d nsFollowedBy("subclass"):sName   '(' klassName:kName restKlassDef:spec ')' defEnd
-                    -> { Object.extend(d, {
-                            type: 'klassDef',
-                            name: kName,
-                            trait: spec.trait,
-                            superclassName: sName,
-                            subElements: spec.classElems,
-                            stopIndex: $elf.pos()-1
-                        }); d },
-    basicKlassExt :d    = "Object.extend" '(' klass:n restKlassDef:spec ')' -> { Object.extend(d, {name: n, trait: spec.trait,subElements: spec.classElems }) }
+	classElems          = '{' spaces ( methodDefWithSpcs | propertyDefWithSpcs  )*:a spaces '}'	-> a,
+	restKlassDef        = ',' spaces classElems:descriptors	                            -> { {classElems: descriptors} }
+	                    | ',' spaces klass:trait ',' spaces classElems:descriptors	    -> { {trait: trait, classElems: descriptors} }
+	                    | ',' klassName:trait					                        -> { {trait: trait, classElems: []} }
+					    | spacesNoNl							                        -> { {classElems: []} },
+	klass 	            = namespaceId,
+	klassName           = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
+    klassDef            = pos:p nsFollowedBy("subclass"):sName   '(' klassName:kName restKlassDef:spec ')' defEnd
+                        -> { $elf._fragment(kName, 'klassDef', p, $elf.pos()-1, spec.classElems, {trait: spec.trait, superclassName: sName}) },
+    basicKlassExt       = "Object.extend" '(' klass:n restKlassDef:spec ')' -> { {name: n, trait: spec.trait, subElements: spec.classElems } }
                         | (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
-                        -> { Object.extend(d, {name: n, subElements: clElems }) },
-    klassExtensionDef   = descriptor:d basicKlassExt(d) defEnd
-                        -> { Object.extend(d, { type: 'klassExtensionDef', stopIndex: $elf.pos()-1 }); d.name += ' (extension)'; d },
+                        -> { {name: n, subElements: clElems } },
+    klassExtensionDef   = pos:p basicKlassExt:spec defEnd
+                        -> { $elf._fragment(spec.name + ' (extension)', 'klassExtensionDef', p, $elf.pos()-1, spec.subElements, {trait: spec.trait}) },
     
     /* 'object' stuff */
-    restObjDef      = classElems:propsAndMethodDescrs spaces -> propsAndMethodDescrs,
-    objectDef       = descriptor:d ( "var" spaces namespaceId:o | namespaceId:o) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
-                    -> { Object.extend(d, {
-                            type: 'objectDef',
-                            name: o,
-                            subElements: propsAndMethodDescrs,
-                            stopIndex: $elf.pos()-1
-                        }); d },
-    
+    restObjDef          = classElems:propsAndMethodDescrs spaces -> propsAndMethodDescrs,
+    objectDef           = pos:p ( "var" spaces namespaceId:o | namespaceId:o) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
+                        -> { $elf._fragment(o, 'objectDef', p, $elf.pos()-1, propsAndMethodDescrs) },
+
     /* otherStuff */
     // comment     = descriptor:d spacesNoNl /*(fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl*/   -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
-    comment     = descriptor:d space+    -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
-    newline     = descriptor:d ('\n' | '\r' )                                 -> { d.stopIndex = $elf.pos()-1; d.type = 'newline'; d },
-    blankLine   = descriptor:d (nl | (char:c ?(c.charCodeAt(0) === 32))* nl)                             -> { d.stopIndex = $elf.pos()-1; d.type = 'blankLine'; d },
-    unknown     = descriptor:d somethingBigRelated defEnd                         -> { d.stopIndex = $elf.pos()-1; d.type = 'unknown'; d },
-    
-    fileContent =   ( ?($elf.stack.length == 0)
-                      (log('comment?')              comment                 log('read comment') whereAreYou
-                    | log('newline?')               newline                 log('read newline') whereAreYou
-                    | log('klassdef?')              klassDef                log('read klassDef') whereAreYou
-                    | log('klassExtensionDef?')     klassExtensionDef       log('read klassDef') whereAreYou
-                    | log('objectDef?')             objectDef               log('read objectDef') whereAreYou
-                    | log('methodDef?')             methodDef               log('read methodDef') whereAreYou
-                    | log('propertyDef?')           propertyDef             log('read propertyDef') whereAreYou
-                    | log('methodModificationDef?') methodModificationDef   log('read methodModificationDef') whereAreYou
-                    | log('functionDef?')           functionDef             log('read functionDef') whereAreYou
-                    | log('executedFuncDef?')       executedFuncDef         log('read executedFuncDef') whereAreYou
-                    | log('staticFuncDef?')         staticFuncDef           log('read staticFuncDef') whereAreYou
-                    | log('unknown?')               unknown                 log('read unknown') whereAreYou)
-                    )*:a                    -> a
-                    
+    comment     = pos:p space+                                          -> { $elf._fragment(null, 'comment', p, $elf.pos()-1) },
+    newline     = pos:p ('\n' | '\r' )                                  -> { $elf._fragment(null, 'newline', p, $elf.pos()-1) },
+    blankLine   = pos:p (nl | (char:c ?(c.charCodeAt(0) === 32))* nl)   -> { $elf._fragment(null, 'blankLine', p, $elf.pos()-1) },
+    unknown     = pos:p somethingBigRelated defEnd                      -> { $elf._fragment(null, 'unknown', p, $elf.pos()-1) }
+                        
 };
 
 LKFileParser.stack = [];
-LKFileParser.numOnStack = function(char) { return LKFileParser.stack.select(function(ea) { return ea === char}).length };
 LKFileParser._manualFail = function() { throw Global.fail };
+LKFileParser._fragment = function(name, type, startIndex, stopIndex, subElems, custom) {
+    var klass = lively.ide.FileFragment; // to convince ometa, fix needed here
+    var f = new klass(name, type, startIndex, stopIndex, null, null, subElems);
+    if (!custom) return f;
+    Object.extend(f, custom);
+    return f;
+};
 LKFileParser;

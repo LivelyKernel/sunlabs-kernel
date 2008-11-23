@@ -521,7 +521,7 @@ ide.NamespaceNode.subclass('lively.ide.CompleteFileDefNode', {
 
     initialize: function($super, target, browser) {
         $super(target, browser);
-        this.getDefsFromModuleAndUsingDefs();
+        // this.getDefsFromModuleAndUsingDefs();
     },
 
     getDefsFromModuleAndUsingDefs: function() {
@@ -538,17 +538,17 @@ ide.NamespaceNode.subclass('lively.ide.CompleteFileDefNode', {
         var completeFileDef = this.target;
         switch (this.mode) {
            case "classes":
-            return this.target.subElements
+            return this.target.flattened()
                 .select(function(ea) { return ea.type === 'klassDef' || ea.type === 'klassExtensionDef'})
                 .sort(function(a,b) { return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
                 .collect(function(ea) { return new ide.ClassDefNode(ea, browser) });
            case "functions":
-            return this.target.subElements
+            return this.target.flattened()
                 .select(function(ea) { return ea.type === 'staticFuncDef' || ea.type === 'executedFuncDef' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
                 .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
                 .collect(function(ea) { return new ide.FunctionDefNode(ea, browser) });
            case "objects":
-            return this.target.subElements
+            return this.target.flattened()
                .select(function(ea) { return ea.type === 'objectDef' || ea.type === 'unknown' || ea.type === 'moduleDef' || ea.type === 'usingDef'})
                .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
                .collect(function(ea) { return new ide.ObjectDefNode(ea, browser) });
@@ -711,7 +711,6 @@ Object.subclass('AnotherFileParser', {
         var match = this.currentLine.match(/^\s*\}.*?\)[\;]?.*$/);
         if (!match) return null;
         specialDescr.last().stopIndex = this.ptr + match[0].length - 1;
-        this.addDecsriptorMethods(specialDescr.last());
         this.ptr = specialDescr.last().stopIndex + 1;
         // FIXME hack
         if (this.src[this.ptr] == '\n') {
@@ -822,27 +821,10 @@ Object.subclass('AnotherFileParser', {
             d.startIndex += startPos;
             d.stopIndex += startPos;
             d.lineNo = this.findLineNo(this.lines, d.startIndex);
-            this.addDecsriptorMethods(d);
+            d.fileName = this.fileName;
         });
         // ----------------
         // this.overheadTime += new Date().getTime() - ms;
-    },
-
-    addDecsriptorMethods: function(descr) {
-        descr.getSourceCode = function() {
-            var src = this.src.substring(descr.startIndex, descr.stopIndex+1);
-            return src;
-        }.bind(this);
-        descr.putSourceCode = function(newString) { throw new Error('Not yet!') };
-        descr.newChangeList = function() { return ['huch'] };
-        descr.versionNo = 0;
-        descr.fileName = this.fileName;
-        descr.putSourceCode = function(newString) {
-            if (!descr.fileName) throw dbgOn(new Error('No filename for descriptor ' + descr.name));
-            tools.SourceControl.putSourceCodeRange(descr.fileName, descr.versionNo, descr.startIndex, descr.stopIndex, newString);
-            descr.versionNo++;
-            descr.getSourceCode = function() { return newString };
-        },
     },
     
     currentLineNo: function() {
@@ -953,8 +935,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         var ms = new Date().getTime();
         this.interestingLKFileNames().each(function(fileName) {
             var action = function(fileString) {
-                var root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, null, fileName, this);
-                root.subElements = AnotherFileParser.withOMetaParser().parseSource(fileString, fileName);
+                var fileFragments = AnotherFileParser.withOMetaParser().parseSource(fileString, fileName);
+                var root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, null, fileName, fileFragments, this);                
                 this.modules[fileName] = root;
             };
             this.getCachedTextAsync(fileName, action, beSync);
@@ -974,8 +956,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         // return jsFiles.reject(function(ea) { return rejects.include(ea) });
         // new AnotherSourceDatabase().scanLKFiles()
         // return ['Core.js', 'Base.js', "Tools.js", /*'Widgets.js', "scene.js", "Text.js", "Network.js", "Data.js", "Storage.js", "Examples.js", "Main.js"*/];
-        return ["miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
-        // return ["test.js"];
+        // return ["miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
+        return ["test.js"];
     },
 });
 
@@ -989,19 +971,19 @@ ide.startSourceControl = function() {
 // another SourceCodeDescriptor
 Object.subclass('lively.ide.FileFragment', {
 
-    initialize: function(name, type, startIndex, stopIndex, lineNo, fileName, srcCtrl) {
+    initialize: function(name, type, startIndex, stopIndex, lineNo, fileName, subElems, srcCtrl) {
         this.name = name;
         this.type = type;
         this.startIndex = startIndex;
         this.stopIndex = stopIndex;
-        this.lineNo = lineNo;
+        this.lineNo = lineNo;   // FIXME make virtual
         this.fileName = fileName;
+        this.subElements = subElems || [];
         this.sourceControl = srcCtrl;
-        this.subElements = [];
     },
     
     fragmentsOfOwnFile: function() {
-        return this.sourceControl.rootFragmentForModule(this.fileName).flattened().without(this);
+        return this.getSourceControl().rootFragmentForModule(this.fileName).flattened().without(this);
     },
     
     flattened: function() {
@@ -1031,12 +1013,19 @@ Object.subclass('lively.ide.FileFragment', {
 
     putSourceCode: function(newString) {
         if (!descr.fileName) throw dbgOn(new Error('No filename for descriptor ' + descr.name));
-        this.sourceControl.putSourceCodeFor(this.fileName, 0, this.startIndex, this.stopIndex, newString);
+        this.getSourceControl().putSourceCodeFor(this.fileName, 0, this.startIndex, this.stopIndex, newString);
         this.updateIndices(newString);
     },
-        
+    
+    getSourceControl: function() {
+        var ctrl = this.sourceControl || tools.SourceControl;
+        if (!ctrl) throw dbgOn(new Error('No sourcecontrol !! '));
+        if (!(ctrl instanceof AnotherSourceDatabase)) console.warn('Using old source control, could lead to errors...');
+        return ctrl;
+    },
+    
     getFileString: function() {
-        return this.sourceControl.getCachedText(this.fileName);
+        return this.getSourceControl().getCachedText(this.fileName);
     },
     
     newChangeList: function() {

@@ -728,13 +728,11 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
     setUp: function() {
         var src = '01234\nabcde\n56789'
         var srcCtrl = {};
-        this.beforeFrag     = new ideModule.FileFragment('before', 'testFrag', src.indexOf('0')/*0*/, src.indexOf('4')+1/*5*/, 1, null/*no file*/, srcCtrl);
-        this.afterFrag      = new ideModule.FileFragment('after', 'testFrag', src.indexOf('5')/*12*/, src.indexOf('9')/*16*/, 3, null/*no file*/, srcCtrl);
-        this.inbetweenFrag  = new ideModule.FileFragment('inbetween', 'testFrag', src.indexOf('b')/*7*/, src.indexOf('d')/*9*/, 2, null/*no file*/, srcCtrl);
-        this.sut            = new ideModule.FileFragment('test', 'testFrag', src.indexOf('a')/*6*/, src.indexOf('e')+1/*11*/, 2, null/*no file*/, srcCtrl);
-        this.sut.subElements.push(this.inbetweenFrag);
-        this.root           = new ideModule.FileFragment('root', 'testFrag', 0, src.length-1, 1, null/*no file*/, srcCtrl);
-        this.root.subElements = [this.beforeFrag, this.sut, this.afterFrag];
+        this.beforeFrag     = new ideModule.FileFragment('before', 'testFrag', src.indexOf('0')/*0*/, src.indexOf('4')+1/*5*/, 1, null/*no file*/, null, srcCtrl);
+        this.afterFrag      = new ideModule.FileFragment('after', 'testFrag', src.indexOf('5')/*12*/, src.indexOf('9')/*16*/, 3, null/*no file*/, null, srcCtrl);
+        this.inbetweenFrag  = new ideModule.FileFragment('inbetween', 'testFrag', src.indexOf('b')/*7*/, src.indexOf('d')/*9*/, 2, null/*no file*/, null, srcCtrl);
+        this.sut            = new ideModule.FileFragment('test', 'testFrag', src.indexOf('a')/*6*/, src.indexOf('e')+1/*11*/, 2, null/*no file*/, [this.inbetweenFrag], srcCtrl);
+        this.root           = new ideModule.FileFragment('root', 'testFrag', 0, src.length-1, 1, null/*no file*/, [this.beforeFrag, this.sut, this.afterFrag], srcCtrl);
         
         Object.extend(srcCtrl, {
             getCachedText: function() { return src },
