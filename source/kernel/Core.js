@@ -2462,7 +2462,7 @@ Morph.addMethods({
     showPieMenu: function(evt) {
     	var menu, targetMorph = this;
 	var items = [
-		['as tile ([])', function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)],
+		['make tile ([])', function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)],
 		['duplicate (o-->o)', function(evt) {
 			evt.hand.setPosition(menu.mouseDownPoint);
 			menu.targetMorph.copyToHand(evt.hand);

@@ -158,6 +158,37 @@ BoxMorph.subclass('ButtonMorph', {
 });
 
 
+BoxMorph.subclass('ButtonBehaviorMorph', {
+    
+    documentation: "***under construction***",
+    focusHaloBorderWidth: 3, // override the default
+    normalBorderFill: null,
+    mouseOverFill: Color.blue,
+    mousePressedFill: Color.orange,
+    mouseDownAction: function (evt) {},
+    mouseUpAction: function (evt) {}, 
+
+    initialize: function($super, initialBounds) {
+    // A ButtonBehaviorMorph can be put over any morph or part of a morph
+    // It can show a halo on rollover, and can act on mouseDown and mouseUp
+    // At some point we'll unify this with ButtonMorph as a simplification
+    // It should be possible to say
+    //	<anyMorph>.addButtonBehavior({onMouseDown: function...})
+    //	<anyMorph>.addButtonBehavior({onMouseUp: function...})
+    // And it should be possible to say to either the morph or its behaviorMorph
+    //	<eitherOne>.disableButtonBehavior()
+    //	<eitherOne>.ebableButtonBehavior()
+
+        $super(initialBounds);
+
+        // Styling
+        // this.linkToStyles(['buttonBehavior']);
+    },
+
+    last: function () {}
+});
+
+
 BoxMorph.subclass("ImageMorph", {
 
     documentation: "Image container",

@@ -11,7 +11,7 @@ Morph.addMethods({
 });
 Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt) {
     var menu = proceed(evt);
-    menu.addItem(["as tile", function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)], 3);
+    menu.addItem(["make tile", function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)], 3);
     return menu;
 });
 
