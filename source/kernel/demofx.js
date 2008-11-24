@@ -205,6 +205,7 @@ module('lively.demofx').requires().toRun(function() {
     const canvasHeight = 333 + 40;
     
     lively.demofx.SceneMorph.subclass('lively.demofx.Canvas', {
+	formals: ["Image", "CanvasX", "CanvasY"],
 	content: {
 	    $:"Group", 
             clip: {$:"Rectangle", /*smooth: false,*/ width: canvasWidth, height: canvasHeight + 1 },
@@ -238,6 +239,13 @@ module('lively.demofx').requires().toRun(function() {
 		 fill: Color.rgb(240, 240, 240)
 		}
             ]
+	},
+
+	onImageUpdate: function(imageMorph) {
+	    var newX = (canvasWidth - imageMorph.image.getWidth())/2;
+	    this.setCanvasX(newX);
+	    var newY = canvasHeight/2 - imageMorph.image.getHeight()/2;
+	    this.setCanvasY(newY);
 	}
 	
     });
@@ -257,17 +265,8 @@ module('lively.demofx').requires().toRun(function() {
     });
     
 
-
     var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, CanvasX: 0, CanvasY: 0, KnobValue: 0});
     canvasModel.addObserver({
-	onImageUpdate: function(imageMorph) {
-	    var newX = (canvasWidth - imageMorph.image.getWidth())/2;
-	    canvasModel.setCanvasX(newX);
-	    var newY = canvasHeight/2 - imageMorph.image.getHeight()/2;
-	    canvasModel.setCanvasY(newY);
-	    //canvasMorph.setSubmorphs([imageMorph]);
-	},
-	
 	onImageRotationUpdate: function(value) {
 	    canvasModel.setKnobValue(0 - value);
 	}
@@ -275,6 +274,7 @@ module('lively.demofx').requires().toRun(function() {
     
     canvasModel.setImage(img);
     
+
     
 
     var container = new BoxMorph(new Rectangle(230, 100, canvasWidth, canvasHeight + 100));
@@ -293,6 +293,9 @@ module('lively.demofx').requires().toRun(function() {
 
     var canvasMorph = new lively.demofx.Canvas(canvasModel);
     container.addMorph(canvasMorph);
+
+    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", CanvasX: "+CanvasX", CanvasY: "+CanvasY"}), true);
+    
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
     
     //WorldMorph.current().addMorph(canvasMorph);
