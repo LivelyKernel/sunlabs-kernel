@@ -199,45 +199,14 @@ module('lively.demofx').requires().toRun(function() {
 	
     });
 
-    var sliderModel = Record.newPlainInstance({Value: 0, Width: 150, AdjValue: 0, ThumbValue: 0});
     
-    var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
-	URL.source.withFilename('Resources/images/flower.jpg').toString());
-    var effect = new lively.scene.GaussianBlur(0.001, "myfilter");
-
-    effect.applyTo(img);
-
-    sliderModel.addObserver({
-	onAdjValueUpdate: function(value) {
-	    effect.setRadius(value*10);
-	}
-    });
-    
-
-    const width = 600;//(6 * (82 + 10)) + 20;
+    const width = 600;//(6 * (82 + 10)) + 20;    
     const canvasWidth = width-10;
     const canvasHeight = 333 + 40;
-
-    var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, CanvasX: 0, CanvasY: 0, KnobValue: 0});
-    canvasModel.addObserver({
-	onImageUpdate: function(imageMorph) {
-	    var newX = (canvasWidth - imageMorph.image.getWidth())/2;
-	    canvasModel.setCanvasX(newX);
-	    var newY = canvasHeight/2 - imageMorph.image.getHeight()/2;
-	    canvasModel.setCanvasY(newY);
-	    //canvasMorph.setSubmorphs([imageMorph]);
-	},
-	
-	onImageRotationUpdate: function(value) {
-	    canvasModel.setKnobValue(0 - value);
-	}
-    });
-    
-    canvasModel.setImage(img);
     
     lively.demofx.SceneMorph.subclass('lively.demofx.Canvas', {
 	content: {
-            $:"Group", 
+	    $:"Group", 
             clip: {$:"Rectangle", /*smooth: false,*/ width: canvasWidth, height: canvasHeight + 1 },
             content: [
 		{$:"Rectangle",
@@ -272,6 +241,39 @@ module('lively.demofx').requires().toRun(function() {
 	}
 	
     });
+		
+    var sliderModel = Record.newPlainInstance({Value: 0, Width: 150, AdjValue: 0, ThumbValue: 0});
+    
+    var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
+	URL.source.withFilename('Resources/images/flower.jpg').toString());
+    var effect = new lively.scene.GaussianBlur(0.001, "myfilter");
+
+    effect.applyTo(img);
+
+    sliderModel.addObserver({
+	onAdjValueUpdate: function(value) {
+	    effect.setRadius(value*10);
+	}
+    });
+    
+
+
+    var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, CanvasX: 0, CanvasY: 0, KnobValue: 0});
+    canvasModel.addObserver({
+	onImageUpdate: function(imageMorph) {
+	    var newX = (canvasWidth - imageMorph.image.getWidth())/2;
+	    canvasModel.setCanvasX(newX);
+	    var newY = canvasHeight/2 - imageMorph.image.getHeight()/2;
+	    canvasModel.setCanvasY(newY);
+	    //canvasMorph.setSubmorphs([imageMorph]);
+	},
+	
+	onImageRotationUpdate: function(value) {
+	    canvasModel.setKnobValue(0 - value);
+	}
+    });
+    
+    canvasModel.setImage(img);
     
     
 
