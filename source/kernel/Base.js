@@ -23,9 +23,17 @@ function using() {
 	run: function module(inner) { 
 	    return inner.apply(args[0], args); 
 	},
+	model: function model(model) {
+	    this.model = model;
+	    return this;
+	},
 	link: function link(literal) { 
-	    return new lively.data.Resolver().link(literal, $A(args)); 
+	    return new lively.data.Resolver().link(literal, [], undefined, $A(args), this.model); 
+	},
+	extend: function extend(base, extLiteral) {
+	    return this.link(Object.extend(Object.clone(base), extLiteral));
 	}
+	
     };
 }
 
@@ -951,6 +959,7 @@ Object.extend(Number.prototype, {
     }
 
 });
+
 
 /**
   * Extensions to class String
@@ -2127,6 +2136,43 @@ Record.subclass('lively.data.StyleRecord', {
 });
 
 
+Object.subclass('lively.data.Bind', {
+    // unify with the record mechanism
+    initialize: function(varName) {
+	this.varName = varName;
+	this["on" + varName + "Update"] = function(value) {
+	    var method = this.target["set" + this.key];
+	    if (!method) alert('no method for ' + this.key);
+	    method.call(this.target, value);
+	}
+
+	this.key = null;
+    },
+
+    get: function(model) {
+	if (!model) return undefined;
+	var method = model["get" + this.varName];
+	dbgOn(!method);
+	return method.call(model);
+    },
+
+    toString: function() {
+	return "{Bind to: " + this.varName + "}";
+    },
+
+    hookup: function(target, model) {
+	this.target = target;
+	model.addObserver(this);
+    }
+    
+});
+
+Object.extend(lively.data.Bind, {
+    fromLiteral: function(literal) {
+	return new lively.data.Bind(literal.to);
+    }	
+});
+
 
 
 Object.subclass('lively.data.Resolver', {
@@ -2134,7 +2180,7 @@ Object.subclass('lively.data.Resolver', {
     storedClassKey: '$', // type info, missing in 
     defaultSearchPath: [Global],
     
-    link: function(literal, optSearchPath) {
+    link: function(literal, binders, key, optSearchPath, optModel) {
 	var constr;
 	var type = literal[this.storedClassKey];
 	if (type) {
@@ -2151,6 +2197,7 @@ Object.subclass('lively.data.Resolver', {
 	}
 	
 	var initializer = {}; 
+	var subBinders = [];
 	for (var name in literal) {
 	    if (name === this.storedClassKey) continue;
 	    if (!literal.hasOwnProperty(name)) continue;
@@ -2169,10 +2216,10 @@ Object.subclass('lively.data.Resolver', {
 		if (value instanceof Array) {
 		    var array = initializer[name] = [];
 		    for (var i = 0; i < value.length; i++)  {
-			array.push((this.link(value[i], optSearchPath)));
+			array.push((this.link(value[i], subBinders, i, optSearchPath, optModel)));
 		    }
 		} else {
-		    initializer[name] = this.link(value, optSearchPath);
+		    initializer[name] = this.link(value, subBinders, name, optSearchPath, optModel);
 		}
 		break;
 	    }
@@ -2184,7 +2231,17 @@ Object.subclass('lively.data.Resolver', {
 	var reified;
 	if (type) {
 	    if (!constr) throw new Error('no class named ' + type);
-	    reified = constr.fromLiteral(initializer);
+	    reified = constr.fromLiteral(initializer, optModel);
+	    if (reified instanceof lively.data.Bind) {
+		reified.key = key;
+		binders.push(reified);
+		reified = reified.get(optModel);
+	    } else {
+		subBinders.forEach(function(binder) {
+		    binder.hookup(reified, optModel);
+		});
+	    }
+
 	} else {
 	    //console.log('reified is ' + (initializer && initializer.constructor) + " vs  " + literal);
 	    reified = initializer;

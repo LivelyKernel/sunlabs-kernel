@@ -215,7 +215,37 @@ Object.subclass('lively.data.Wrapper', {
 	    var node = Converter.encodeProperty(prop, propValue);
 	    node && appendNode(node);
 	}
+    },
+
+    reference: function() {
+	if (!this.refcount) {
+	    if (!this.id()) {
+		this.setId(this.newId());
+	    }
+	    this.dictionary().appendChild(this.rawNode);
+	    this.refcount = 0; // in case it was undefined
+	}
+	this.refcount ++;
+    },
+
+    dereference: function() {
+	// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
+	if (this.refcount === undefined) throw new Error('sorry, undefined');
+	this.refcount --;
+	if (this.refcount == 0) {
+	    if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
+	}
+    },
+
+    dictionary: function() {
+	if (lively.data.Wrapper.dictionary == null) {
+	    var canvas = Global.document.getElementById("canvas");
+	    var dictNode = lively.data.Wrapper.dictionary = canvas.appendChild(NodeFactory.create("defs"));
+	    lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary"); // for debugging
+	}
+	return lively.data.Wrapper.dictionary;
     }
+
 });
 
 Object.extend(lively.data.Wrapper, {
@@ -369,6 +399,7 @@ this.Node.addMethods({
     },
 
     applyFilter: function(filterUri) {
+	// deprecated
 	if (filterUri) 
 	    this.rawNode.setAttributeNS(null, "filter", filterUri);
 	else
@@ -419,9 +450,37 @@ this.Node.addMethods({
 
     getStroke: function() {
 	return this._stroke;
+    },
+
+    getTransforms: function() {
+	if (!this.cachedTransforms) {
+	    var list = this.rawNode.transform.baseVal;
+	    var tfms = this.cachedTransforms = [];
+	    for (var i = 0; i < list.numberOfItems; i++) {
+		tfms.push(new lively.scene.Transform(list.getItem(i)));
+	    }
+	}
+	return this.cachedTransforms;
+    },
+
+    setTransforms: function(array) {
+	var list = this.rawNode.transform.baseVal;
+	list.clear();
+	delete this.cachedTransforms;
+	for (var i = 0; i < array.length; i++) {
+	    list.appendItem(array[i].rawNode);
+	}
+	if (!Config.useTransformAPI) {
+	    var attr = array.invoke('toString').join(' ');
+	    this.rawNode.setAttributeNS(null, "transform", attr);
+	    console.log('set attr ' + attr);
+	}
     }
 
 });
+
+
+
 
 
 // ===========================================================================
@@ -461,6 +520,7 @@ this.Node.subclass('lively.scene.Shape', {
     origin: function() {
 	return this.bounds().topLeft();
     }
+
 
 });
 
@@ -531,6 +591,7 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	return new lively.scene.Path(this.bounds());
     },
 
+
     bounds: function() {
 	var x = this.rawNode.x.baseVal.value;
 	var y = this.rawNode.y.baseVal.value;
@@ -538,7 +599,6 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	var height = this.rawNode.height.baseVal.value;
 	return new Rectangle(x, y, width, height);
     },
-
 
     translateBy: function(displacement) {
 	this.setLengthTrait("x", this.getLengthTrait("x") + displacement.x);
@@ -578,6 +638,7 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	return this.getLengthTrait("rx") || 0;
     },
 
+    // consider arcWidth and arcHeight instead
     roundEdgesBy: function(r) {
 	if (r) {
 	    this.setLengthTrait("rx", r);
@@ -589,6 +650,26 @@ this.Shape.subclass('lively.scene.Rectangle', {
 
 
 });
+
+
+Object.extend(this.Rectangle, {
+    fromLiteral: function(literal) {
+	var x = literal.x || 0.0;
+	var y = literal.y || 0.0;
+	var width = literal.width || 0.0;
+	var height = literal.height || 0.0;
+
+	var node = new lively.scene.Rectangle(new Rectangle(x, y, width, height));
+	literal.stroke && node.setStroke(literal.stroke);
+	if (literal.strokeWidth !== undefined)
+	    node.setStrokeWidth(literal.strokeWidth);
+	else node.setStrokeWidth(1);
+	literal.fill && node.setFill(literal.fill);
+	if (literal.arcWidth !== undefined) node.roundEdgesBy(literal.arcWidth/2);
+	return node;
+    }
+});
+
 
 this.Shape.subclass('lively.scene.Ellipse', {
 
@@ -635,6 +716,7 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	return (dx*dx + dy*dy) <= (w*w/4) ; 
     },
 
+
     bounds: function() {
 	//console.log("rawNode " + this.rawNode);
 	var w = this.rawNode.rx.baseVal.value * 2;
@@ -643,7 +725,7 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	var y = this.rawNode.cy.baseVal.value - this.rawNode.ry.baseVal.value;
 	return new Rectangle(x, y, w, h);
     }, 
-    
+
     translateBy: function(displacement) {
 	this.setLengthTrait("cx", this.getLengthTrait("cx") + displacement.x);
 	this.setLengthTrait("cy", this.getLengthTrait("cy") + displacement.y);
@@ -669,6 +751,19 @@ this.Shape.subclass('lively.scene.Ellipse', {
     partPosition: this.Rectangle.prototype.partPosition
 
 });
+
+Object.extend(this.Ellipse, {
+    fromLiteral: function(literal) {
+	var node = new lively.scene.Ellipse(pt(literal.centerX || 0.0, literal.centerY || 0.0), literal.radius);
+	literal.stroke && node.setStroke(literal.stroke);
+	literal.strokeWidth && node.setStrokeWidth(literal.strokeWidth);
+	literal.fill && node.setFill(literal.fill);
+
+	return node;
+    }
+});
+
+
 
 this.Shape.subclass('lively.scene.Polygon', {
     documentation: "polygon",
@@ -826,6 +921,21 @@ this.Shape.subclass('lively.scene.Polygon', {
 
 });
 
+
+
+Object.extend(this.Polygon, {
+    fromLiteral: function(literal) {
+	var node = new lively.scene.Polygon(literal.points);
+	literal.stroke && node.setStroke(literal.stroke);
+	if (literal.strokeWidth !== undefined)
+	    node.setStrokeWidth(literal.strokeWidth);
+	else node.setStrokeWidth(1);
+	literal.fill && node.setFill(literal.fill);
+	if (literal.transforms !== undefined) node.setTransforms(literal.transforms); // empty array would be valid
+	return node;
+    }
+});
+
 lively.scene.Shape.subclass('lively.scene.Polyline', {
     documentation: "Like polygon but not necessarily closed and does not include the interior",
     
@@ -861,6 +971,23 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 
 });
 
+
+Object.extend(this.Polyline, {
+    fromLiteral: function(literal) {
+	var node = new lively.scene.Polyline(literal.points);
+	literal.stroke && node.setStroke(literal.stroke);
+	if (literal.strokeWidth !== undefined)
+	    node.setStrokeWidth(literal.strokeWidth);
+	else node.setStrokeWidth(1);
+	literal.fill && node.setFill(literal.fill);
+	if (literal.transforms !== undefined) node.setTransforms(literal.transforms);
+	
+	return node;
+    }
+});
+
+
+
 Wrapper.subclass('lively.scene.PathElement', {
     isAbsolute: true,
     attributeFormat: function() {
@@ -869,7 +996,6 @@ Wrapper.subclass('lively.scene.PathElement', {
     }
 
 });
-
 
 this.PathElement.subclass('lively.scene.MoveTo', {
     charCode: 'M',
@@ -906,14 +1032,20 @@ this.PathElement.subclass('lively.scene.LineTo', {
     controlPoints: function() {
 	return [pt(this.x, this.y)];
     }
-
-
 });
+
+Object.extend(this.LineTo, {
+    fromLiteral: function(literal) {
+	return new lively.scene.LineTo(literal.x || 0.0, literal.y || 0.0);
+    }
+
+}); 
+    
 
 
 this.PathElement.subclass('lively.scene.CurveTo', {
 
-    charCode: 'T',
+    charCode: 'T', // shouldn't it be the S type anyway?
 
     initialize: function(x, y) {
 	this.x = x;
@@ -931,6 +1063,39 @@ this.PathElement.subclass('lively.scene.CurveTo', {
 
 
 });
+
+
+this.PathElement.subclass('lively.scene.QuadCurveTo', {
+
+    charCode: 'Q',
+
+    initialize: function(x, y, controlX, controlY) {
+	this.x = x;
+	this.y = y;
+	this.controlX = controlX;
+	this.controlY = controlY;
+    },
+
+    allocateRawNode: function(rawPathNode) {
+	this.rawNode = rawPathNode.createSVGPathSegCurvetoQuadraticAbs(this.x, this.y, this.controlX, this.controlY);
+	return this.rawNode;
+    },
+
+    controlPoints: function() {
+	return [pt(this.x, this.y), pt(this.controlX, this.controlY)];
+    }
+
+
+});
+
+Object.extend(this.QuadCurveTo, {
+    fromLiteral: function(literal) {
+	return new lively.scene.QuadCurveTo(literal.x || 0.0, literal.y || 0.0, 
+					    literal.controlX || 0.0, literal.controlY || 0.0);
+    }
+}); 
+
+
 
 
 this.PathElement.subclass('lively.scene.ClosePath', {
@@ -1042,7 +1207,7 @@ this.Shape.subclass('lively.scene.Path', {
 
 });
 
-this.Node.subclass('lively.scene.Group', {
+this.Shape.subclass('lively.scene.Group', {
     documentation: 'Grouping of scene objects',
     
     initialize: function() {
@@ -1053,6 +1218,13 @@ this.Node.subclass('lively.scene.Group', {
     copyFrom: function($super, copier, other) {
 	$super(copier, other);
 	this.content = other.content.clone();
+	/* firefox doesn't need this
+	var tx = other.pvtGetTranslate();
+
+	if (tx) { 
+	    console.log('translate ' + tx + ' on ' + this);
+	    this.translateBy(tx);
+	} */
 	// FIXME deep copy?
     },
 
@@ -1066,16 +1238,25 @@ this.Node.subclass('lively.scene.Group', {
 	this.content.push(node);
     },
 
+    setContent: function(nodes) {
+	nodes.forEach(function(node) { this.add(node) }, this);
+    },
+
     bounds: function() {
 	// this creates duplication between morphs and scene graphs, division of labor?
+	// move Morph logic here
 	var subBounds = null;
+	var disp = this.pvtGetTranslate() || pt(0, 0);
+
 	for (var i = 0; i < this.content.length; i++) {
 	    var item = this.content[i];
 	    if (!item.isVisible()) 
 		continue;
-	    subBounds = subBounds == null ? item.bounds() : subBounds.union(item.bounds());
+	    var itemBounds = item.bounds().translatedBy(disp);
+	    subBounds = subBounds == null ? itemBounds : subBounds.union(itemBounds);
 	}
-	return subBounds || new Rectangle(0, 0, 0, 0);
+	var result =  subBounds || new Rectangle(0, 0, 0, 0);
+	return result;
     },
 
     setBounds: function(bnds) {
@@ -1083,6 +1264,9 @@ this.Node.subclass('lively.scene.Group', {
     },
 
     containsPoint: function(p) {
+	// FIXME this should mimic relativize in Morph
+	var disp = this.pvtGetTranslate() || pt(0, 0);
+	p = p.subPt(disp);
 	return this.content.any(function(item) { return item.containsPoint(p); });
     },
 
@@ -1090,9 +1274,46 @@ this.Node.subclass('lively.scene.Group', {
 	return this.bounds().topLeft();
     },
 
+    pvtGetTranslate: function() {
+	var tfms = this.getTransforms();
+	if (tfms.length == 1 && tfms[0].type() == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+	    return tfms[0].getTranslate();
+	} else return null;
+    },
+
+    translateBy: function(displacement) {
+	var tfms = this.getTransforms();
+	if (tfms.length == 1 && tfms[0].type() == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+	    var tr = tfms[0].getTranslate();
+	    tfms[0].setTranslate(tr.x + displacement.x, tr.y + displacement.y);
+	} if (tfms.length == 0) {
+	    this.setTransforms([new lively.scene.Translate(displacement.x, displacement.y)]);
+	    
+	} else console.warn('no translate for you ' + displacement + ' length ' + tfms.length + " type " + tfms[0].type());
+    },
+    reshape: Functions.Empty,
+
     partNameNear: this.Rectangle.prototype.partNameNear,
     partPosition: this.Rectangle.prototype.partPosition,
     vertices: this.Rectangle.prototype.vertices
+});
+
+
+Object.extend(this.Group, {
+    fromLiteral: function(literal) {
+	var group = new lively.scene.Group();
+	literal.content && group.setContent(literal.content);
+	if (literal.transforms) {
+	    group.setTransforms(literal.transforms);
+	}
+	if (literal.clip) {
+	    var clip = new lively.scene.Clip(literal.clip);
+	    var defs = group.rawNode.appendChild(NodeFactory.create('defs'));
+	    defs.appendChild(clip.rawNode);
+	    clip.applyTo(group);
+	}
+	return group;
+    }
 });
 
 
@@ -1123,6 +1344,14 @@ this.Node.subclass('lively.scene.Image', {
 	} else {
 	    $super(importer, rawNode);
 	}
+    },
+
+    bounds: function() {
+	return new Rectangle(0, 0, this.getWidth(), this.getHeight());
+    },
+
+    containsPoint: function(p) {
+	return this.bounds().containsPoint(p);
     },
 
     getWidth: function(optArg) {
@@ -1196,10 +1425,10 @@ this.Node.subclass('lively.scene.Image', {
 
 this.Node.subclass('lively.scene.Clip', {
     documentation: "currently wrapper around SVG clipPath",
-    initialize: function(target) {
+    initialize: function(shape) {
 	this.rawNode = NodeFactory.create('clipPath');
-	this.setDerivedId(target);
-	this.setClipShape(target);
+	this.setId(String(this.constructor.clipCounter ++));
+	this.setClipShape(shape);
     },
 
     deserialize: function(importer, rawNode) {
@@ -1211,10 +1440,9 @@ this.Node.subclass('lively.scene.Clip', {
 
     },
 
-    setClipShape: function(target) {
-	this.shape = target.shape.copy(); // FIXME: target.outline() ?
+    setClipShape: function(shape) {
+	this.shape = shape.copy(); // FIXME: target.outline() ?
 	this.replaceRawNodeChildren(this.shape.rawNode);
-	this.applyTo(target);
     },
 
     applyTo: function(target) {
@@ -1223,30 +1451,49 @@ this.Node.subclass('lively.scene.Clip', {
 
 });
 
+Object.extend(this.Clip, {
+    clipCounter: 0,
+});
+
 
 Object.subclass('lively.scene.Similitude', {
-
+    // could be made SVG indepenent
     documentation: "Support for object rotation, scaling, etc.",
-    translation: null, // may be set by instances to a component SVGTransform
-    rotation: null, // may be set by instances to a component SVGTransform
-    scaling: null, // may be set by instances to a component SVGTransform
+
+    //translation: null, // may be set by instances to a component SVGTransform
+    //rotation: null, // may be set by instances to a component SVGTransform
+    //scaling: null, // may be set by instances to a component SVGTransform
     eps: 0.0001, // precision
 
     /**
-      * createSimilitude: a similitude is a combination of translation rotation and scale.
+      * create a similitude is a combination of translation rotation and scale.
       * @param [Point] delta
       * @param [float] angleInRadians
       * @param [float] scale
       */
-    initialize: function(delta, angleInRadians, scale) {
-	if (angleInRadians === undefined) angleInRadians = 0.0;
-	if (scale === undefined) scale = 1.0;
-	this.a = this.ensureNumber(scale * Math.cos(angleInRadians));
-	this.b = this.ensureNumber(scale * Math.sin(angleInRadians));
-	this.c = this.ensureNumber(scale * - Math.sin(angleInRadians));
-	this.d = this.ensureNumber(scale * Math.cos(angleInRadians));
-	this.e = this.ensureNumber(delta.x);
-	this.f = this.ensureNumber(delta.y);
+
+    initialize: function(duck) { 
+	// matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
+	// alternatively, its a combination of translation rotation and scale
+	if (duck) {
+	    if (duck instanceof Point) {
+		var delta = duck;
+		var angleInRadians = arguments[1] || 0.0;
+		var scale = arguments[2];
+		if (scale === undefined) scale = 1.0;
+		this.a = this.ensureNumber(scale * Math.cos(angleInRadians));
+		this.b = this.ensureNumber(scale * Math.sin(angleInRadians));
+		this.c = this.ensureNumber(scale * - Math.sin(angleInRadians));
+		this.d = this.ensureNumber(scale * Math.cos(angleInRadians));
+		this.e = this.ensureNumber(delta.x);
+		this.f = this.ensureNumber(delta.y);
+	    } else {
+		this.fromMatrix(duck);
+	    }
+	} else {
+	    this.a = this.d = 1.0;
+	    this.b = this.c = this.e = this.f = 0.0;
+	}
 	this.matrix_ = this.toMatrix();
     },
 
@@ -1290,20 +1537,20 @@ Object.subclass('lively.scene.Similitude', {
 	if (Config.useTransformAPI) {
 	    var list = rawNode.transform.baseVal;
 	    var canvas = locateCanvas();
-
-	    if (!this.translation) this.translation = canvas.createSVGTransform();
-	    this.translation.setTranslate(this.e, this.f);
-	    list.initialize(this.translation);
+	    
+	    var translation = canvas.createSVGTransform();
+	    translation.setTranslate(this.e, this.f);
+	    list.initialize(translation);
 	    if (this.b || this.c) {
-		if (!this.rotation) this.rotation = canvas.createSVGTransform();
-		this.rotation.setRotate(this.getRotation(), 0, 0);
-		list.appendItem(this.rotation);
+		var rotation = canvas.createSVGTransform();
+		rotation.setRotate(this.getRotation(), 0, 0);
+		list.appendItem(rotation);
 	    }
 	    if (this.a != 1.0 || this.d != 1.0) {
-		if (!this.scaling) this.scaling = canvas.createSVGTransform();
+		var scaling = canvas.createSVGTransform();
 		var scale = this.getScale();
-		this.scaling.setScale(scale, scale);
-		list.appendItem(this.scaling);
+		scaling.setScale(scale, scale);
+		list.appendItem(scaling);
 	    }
 	} else {
 	    rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
@@ -1339,7 +1586,7 @@ Object.subclass('lively.scene.Similitude', {
     },
 
     copy: function() {
-	return new lively.scene.Transform(this);
+	return new lively.scene.Similitude(this);
     },
 
     toMatrix: function() {
@@ -1371,7 +1618,6 @@ Object.subclass('lively.scene.Similitude', {
 	this.d = this.ensureNumber(mx.d);
 	this.e = this.ensureNumber(mx.e);
 	this.f = this.ensureNumber(mx.f);
-	this.matrix_ = this.toMatrix();
     },
     
     preConcatenate: function(t) {
@@ -1387,29 +1633,167 @@ Object.subclass('lively.scene.Similitude', {
     },
 
     createInverse: function() {
-	return new lively.scene.Transform(this.matrix_.inverse());
+	return new lively.scene.Similitude(this.matrix_.inverse());
     }
 
 });
 
-/**
-  * @class Transform (NOTE: PORTING-SENSITIVE CODE)
-  * This code is dependent on SVG transformation matrices.
-  * See: http://www.w3.org/TR/2003/REC-SVG11-20030114/coords.html#InterfaceSVGMatrix 
-  */
 
-lively.scene.Similitude.subclass('lively.scene.Transform', {
 
-    initialize: function(duck) { // matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
-	// note: doesn't call $super
-	if (duck) {
-	    this.fromMatrix(duck);
-	} else {
-	    this.a = this.d = 1.0;
-	    this.b = this.c = this.e = this.f = 0.0;
-	    this.matrix_ = this.toMatrix();
+Wrapper.subclass('lively.scene.Transform', {
+    // a more direct wrapper for SVGTransform
+    initialize: function(rawNode) {
+	this.rawNode = rawNode || locateCanvas().createSVGTransform();
+    },
+
+    getTranslate: function() {
+	if (this.rawNode.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+	    var mx = this.rawNode.matrix;
+	    return pt(mx.e, mx.f);
+	} else throw new TypeError('not a translate ' + this + ' type ' + this.type());
+    },
+
+    setTranslate: function(x, y) {
+	// note this overrides all the values
+	this.rawNode.setTranslate(x, y);
+	return this;
+    },
+
+    setRotate: function(angleInDegrees, anchorX, anchorY) {
+	// note this overrides all the values
+	this.rawNode.setRotate(angleInDegrees, anchorX || 0.0, anchorY || 0.0);
+	return this;
+    },
+
+    setTranslateX: function(x) {
+	if (this.rawNode.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+	    var tr = this.getTranslate();
+	    this.rawNode.setTranslate(x, tr.y);
+	} else throw new TypeError('not a translate ' + this);
+    },
+    
+    setTranslateY: function(y) {
+	if (this.rawNode.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
+	    var tr = this.getTranslate();
+	    this.rawNode.setTranslate(tr.x, y);
+	} else throw new TypeError('not a translate ' + this);
+    },
+
+    type: function() {
+	return this.rawNode.type;
+    },
+
+    getAngle: function() {
+	/*
+	var r =  Math.atan2(this.matrix.b, this.matrix.a).toDegrees();
+	return Math.abs(r) < this.eps ? 0 : r; // don't bother with values very close to 0
+        */
+	return this.rawNode.angle;
+    },
+
+    getScale: function() {
+	if (this.rawNode.type == SVGTransform.SVG_TRANSFORM_SCALE) {
+	    var mx = this.rawNode.matrix;
+	    var a = mx.a;
+	    var b = mx.b;
+	    return Math.sqrt(a * a + b * b);
+	} else throw new TypeError('not a scale ' + this.rawNode);
+    },
+    
+    toString: function() {
+	switch (this.rawNode.type) {
+	case SVGTransform.SVG_TRANSFORM_TRANSLATE:
+	    var delta = this.getTranslate();
+	    return "translate(" + delta.x + "," + delta.y +")";
+	case SVGTransform.SVG_TRANSFORM_ROTATE:
+	    // FIXME how about the rotation ancor?
+	    return "rotate(" + this.getAngle()  +")"; // in degrees
+	case SVGTransform.SVG_TRANSFORM_SCALE:
+	    return "scale(" + this.getScale() + ")";
+	default:
+	    var mx = this.rawNode.matrix;
+	    return "matrix(" + [mx.a, mx.b, mx.c, mx.d, mx.e, mx.f].join(', ') + ")"; // FIXME
 	}
     }
+});
+
+lively.scene.Transform.subclass('lively.scene.Translate', {
+    initialize: function($super, x, y) {
+	$super();
+	this.setTranslate(x, y);
+    },
+
+    setX: function(x) {
+	return this.setTranslateX(x);
+    },
+
+    setY: function(y) {
+	return this.setTranslateY(y);
+    }
+
+});
+
+Object.extend(lively.scene.Translate, {
+    fromLiteral: function(literal) {
+	return new lively.scene.Translate(literal.X || 0.0, literal.Y || 0.0);
+    }
+});
+
+
+lively.scene.Transform.subclass('lively.scene.Rotate', {
+    initialize: function($super, angle, anchorX, anchorY) {
+	$super();
+	this.anchor = pt(anchorX|| 0.0, anchorY || 0.0);
+	this.setRotate(angle, this.anchor.x, this.anchor.y);
+
+    },
+
+    setAngle: function(angle) {
+	//console.log('setting angle to ' + angle);
+	this.setRotate(angle, this.anchor.x, this.anchor.y);
+    }
+});
+
+Object.extend(lively.scene.Rotate, {
+    fromLiteral: function(literal) {
+	return new lively.scene.Rotate(literal.Angle, literal.X, literal.Y);
+    }
+
+});
+
+
+
+Wrapper.subclass('lively.scene.Effect', {
+    initialize: function() {
+	this.rawNode = NodeFactory.create("filter");
+    }
+});
+
+this.Effect.subclass('lively.scene.GaussianBlur', {
+    initialize: function($super, radius, id) { // FIXME generate IDs automatically
+	$super();
+	var blur = this.gaussianBlur = NodeFactory.create("feGaussianBlur");
+	this.rawNode.appendChild(blur);
+	this.rawNode.setAttribute("id", id);
+	blur['in'] = "SourceGraphics"; // FIXME more general
+	this.setRadius(radius);
+    },
+
+    setRadius: function(radius) {
+	var blur = this.gaussianBlur;
+	if (blur.setStdDeviation)
+	    blur.setStdDeviation(radius, radius);
+	else  // Safari doesn't define the method
+	    blur.setAttributeNS(null, "stdDeviation", String(radius));
+    },
+
+    applyTo: function(target) {
+	this.reference();
+	target.setTrait("filter", this.uri());
+
+    }
+
+
 });
 
 
@@ -1508,33 +1892,6 @@ Wrapper.subclass("lively.paint.Gradient", {
     toString: function() {
 	return "#<" + this.getType() + this.toMarkupString() + ">";
     },
-
-    reference: function() {
-	if (this.refcount == 0) {
-	    if (!this.id()) {
-		this.setId(this.newId());
-	    }
-	    this.dictionary().appendChild(this.rawNode);
-	}
-	this.refcount ++;
-    },
-
-    dereference: function() {
-	// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
-	this.refcount --;
-	if (this.refcount == 0) {
-	    if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
-	}
-    },
-
-    dictionary: function() {
-	if (this.dictionaryNode == null) {
-	    var canvas = Global.document.getElementById("canvas");
-	    this.constructor.prototype.dictionaryNode = canvas.appendChild(NodeFactory.create("defs"));
-	    this.dictionaryNode.setAttribute("id", "GradientDictionary"); // for debugging
-	}
-	return this.dictionaryNode;
-    }
 
 });
 

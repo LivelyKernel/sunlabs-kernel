@@ -1268,3 +1268,68 @@ Morph.addMethods({
     
 });
 
+
+TextListMorph.addMethods({
+    alignAll: function(optMargin) {
+        this.leftAlignSubmorphs(this.itemMargin, optMargin || pt(0, 0));
+    }
+}
+
+Morph.addMethods({
+    
+    leftAlignSubmorphs: function(pad, inset) { 
+
+        var ownExtent = inset;
+        var topLeft = pt(ownExtent.x + pad.left(), ownExtent.y + pad.top());
+	
+        for (var i = 0; i < this.submorphs.length; i++) {
+            var morph = this.submorphs[i];
+            morph.setPosition(topLeft);
+            var ext = morph.getExtent();
+            ownExtent = pt(Math.max(ownExtent.x, pad.left()  + ext.x + pad.right()),  
+			   topLeft.y + pad.top() + ext.y + pad.bottom());
+            topLeft = topLeft.withY(ownExtent.y);
+        }
+	ownExtent = ownExtent.withY(ownExtent.y + inset.y);
+	
+	var bounds = this.getPosition().extent(ownExtent);
+	
+        if (this.owner) 
+            this.setBounds(bounds);
+	else
+            this.layoutManager.setBounds(this, bounds);
+    }
+    
+});
+
+
+
+
+lively.scene.Similitude.addMethods({
+    applyTo: function(rawNode) {
+	if (Config.useTransformAPI) {
+	    var list = rawNode.transform.baseVal;
+	    var canvas = locateCanvas();
+	    
+	    if (!this.translation) this.translation = canvas.createSVGTransform();
+	    this.translation.setTranslate(this.e, this.f);
+	    list.initialize(this.translation);
+	    if (this.b || this.c) {
+		if (!this.rotation) this.rotation = canvas.createSVGTransform();
+		this.rotation.setRotate(this.getRotation(), 0, 0);
+		list.appendItem(this.rotation);
+	    }
+	    if (this.a != 1.0 || this.d != 1.0) {
+		if (!this.scaling) this.scaling = canvas.createSVGTransform();
+		var scale = this.getScale();
+		this.scaling.setScale(scale, scale);
+		list.appendItem(this.scaling);
+	    }
+	} else {
+	    rawNode.setAttributeNS(null, "transform", this.toAttributeValue());
+	}
+    },
+
+
+
+});

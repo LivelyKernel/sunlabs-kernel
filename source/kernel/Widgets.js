@@ -252,8 +252,9 @@ BoxMorph.subclass("ClipMorph", {
     initialize: function($super, initialBounds) {
 	$super(initialBounds);
 	var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
-	this.clip = new lively.scene.Clip(this);
+	this.clip = new lively.scene.Clip(this.shape);
 	defs.appendChild(this.clip.rawNode);
+	this.clip.applyTo(this);
     },
 
     restoreFromSubnode: function($super, importer, node) {
@@ -262,7 +263,7 @@ BoxMorph.subclass("ClipMorph", {
 	    var clips = node.getElementsByTagName('clipPath');
 	    if (clips.length > 0) {
 		this.clip = new lively.scene.Clip(importer, clips.item(0));
-		this.clip.applyTo(this);
+ 		this.clip.applyTo(this);
 	    }
 	    return true;
 	} else return false;
@@ -270,7 +271,7 @@ BoxMorph.subclass("ClipMorph", {
 
     setBounds: function($super, bnds) { // this reshapes
 	$super(bnds);
-	this.clip.setClipShape(this);
+	this.clip.setClipShape(this.shape);
     },
 
     bounds: function(ignoreTransients) {

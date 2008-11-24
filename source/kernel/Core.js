@@ -1629,28 +1629,77 @@ Object.subclass('LayoutManager', {
     },
 
     addMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
-	if (submorph.owner) {
-	    var tfm = submorph.transformForNewOwner(supermorph);
-	    submorph.owner.removeMorph(submorph); // KP: note not m.remove(), we don't want to stop stepping behavior
-	    submorph.setTransform(tfm); 
-	    // FIXME transform is out of date
-	    // morph.setTransform(tfm); 
-	    // m.layoutChanged(); 
-	} 
-	supermorph.insertMorph(submorph, isFront);
 	submorph.changed();
 	submorph.layoutChanged();
 	supermorph.layoutChanged();
 	return submorph;
     },
 
-    removeMorph: function(target, submorph) {
-
+    removeMorph: function(supermorph, submorph) {
+	// new behavior:
+	submorph.layoutChanged();
 
     }
-
-
+    
 });
+
+
+LayoutManager.subclass('VerticalLayout', {
+
+    initialize: function(target) {
+	this.reset(target);
+	//this.debugPositions = [];
+    },
+    
+    reset: function(target) {
+	var pad = this.getPadding(target);
+        this.extent = pt(0,0);//pad.topLeft();
+
+	this.nextTopLeft = pt(pad.left(), pad.top());
+	// target.setBounds(target.getPosition().extent(pt(pad.left() + pad.right(), pad.top() + pad.bottom())));
+    },
+
+    getPadding: function(target) {
+	return target.padding || new Rectangle(0, 0, 0, 0); // memoise?
+    },
+    
+    addMorph: function($super, supermorph, submorph, isFront) {
+	if (!isFront) throw new Error('cannot layout yet');
+	$super(supermorph, submorph, isFront);
+	var margin = submorph.margin || rect(pt(0,0), pt(0,0));
+	this.nextTopLeft = this.nextTopLeft.addXY(0, margin.top());
+
+        submorph.setPosition(this.nextTopLeft);
+	//this.debugPositions.push(new pt(this.nextTopLeft.x, this.nextTopLeft.y));
+
+	
+        var ext = submorph.getExtent();
+        this.extent = pt(Math.max(this.extent.x, margin.left()  + ext.x + margin.right()),  
+			    this.nextTopLeft.y + ext.y + margin.bottom());
+        
+	this.nextTopLeft = this.nextTopLeft.withY(this.extent.y);
+	
+	//var extent = extent.withY(extent.y + inset.y);
+	
+	var newBounds = supermorph.getPosition().extent(this.extent);
+	var pad = this.getPadding(supermorph);
+	//newBounds.width += pad.right();
+	newBounds.height += pad.bottom()/2;  // FIXME: don't get it
+	supermorph.setBounds(newBounds);
+	
+	// supermorph visually contains submorphs
+
+    },
+    
+    removeMorph: function(supermorph, submorph) {
+	console.warn('cant handle removal yet');
+	// assume remove all
+	this.reset(supermorph); 
+    }
+});
+
+
+
 
 Morph.addMethods({
     
@@ -1722,9 +1771,19 @@ Morph.addMethods({
 
     addMorphBack: function(morph) { return this.addMorphFrontOrBack(morph, false) },
 
-    addMorphFrontOrBack: function(m, front) {
+    addMorphFrontOrBack: function(m, isFront) {
 	console.assert(m instanceof Morph, "not an instance");
-	return this.layoutManager.addMorph(this, m, front);
+	if (m.owner) {
+	    var tfm = m.transformForNewOwner(this);
+	    m.owner.removeMorph(m); // KP: note not m.remove(), we don't want to stop stepping behavior
+	    m.setTransform(tfm); 
+	    // FIXME transform is out of date
+	    // morph.setTransform(tfm); 
+	    // m.layoutChanged(); 
+	} 
+	this.insertMorph(m, isFront);
+	
+	return this.layoutManager.addMorph(this, m, isFront);
     },
 
     setSubmorphs: function(morphs) {
@@ -1763,6 +1822,7 @@ Morph.addMethods({
 
 
     removeMorph: function(m) {// FIXME? replaceMorph() with remove as a special case
+
 	var index = this.submorphs.indexOf(m);
 	if (index < 0) {
 	    m.owner !== this && console.log("%s has owner %s that is not %s?", m, m.owner, this);
@@ -1776,10 +1836,11 @@ Morph.addMethods({
 	    console.log("invariant violated removing %s, spliced %s", m, spliced);
 	}
 	
-	// cleanup, move to re
+	// cleanup, move to ?
 	m.owner = null;
 	m.setHasKeyboardFocus(false);
-	
+
+	this.layoutManager.removeMorph(this, m);
 	return m;
     },
 
@@ -1868,7 +1929,7 @@ Morph.addMethods({
 	
 	if (Config.useTransformAPI) {
 	    var impl = this.rawNode.transform.baseVal.consolidate();
-	    this.pvtCachedTransform = new lively.scene.Transform(impl ? impl.matrix : null); // identity if no transform specified
+	    this.pvtCachedTransform = new lively.scene.Similitude(impl ? impl.matrix : null); // identity if no transform specified
 	} else {
 	    // parse the attribute: by Dan Amelang
 	    var s = this.rawNode.getAttributeNS(null, "transform");
@@ -1904,7 +1965,7 @@ Morph.addMethods({
 		    break;
 		}
 	    }
-	    this.pvtCachedTransform = new lively.scene.Transform(matrix);
+	    this.pvtCachedTransform = new lively.scene.Similitude(matrix);
 	}
 	return this.pvtCachedTransform;
     },
@@ -1936,7 +1997,7 @@ Morph.addMethods({
     },
 
     getGlobalTransform: function() {
-	var globalTransform = new lively.scene.Transform();
+	var globalTransform = new lively.scene.Similitude();
 	var world = this.world();
 	// var trace = [];
 	for (var morph = this; morph != world; morph = morph.owner) {
@@ -2171,7 +2232,6 @@ Morph.addMethods({
 		this.setFisheyeScale(1.0);
 	    }
 	}
-
 	if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
 	if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
@@ -2849,7 +2909,7 @@ Morph.addMethods({
     },
 
     transformForNewOwner: function(newOwner) {
-	return new lively.scene.Transform(this.transformToMorph(newOwner));
+	return new lively.scene.Similitude(this.transformToMorph(newOwner));
     },
 
     changed: function() {
@@ -3987,9 +4047,11 @@ PasteUpMorph.subclass("WorldMorph", {
              }],
             ["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
-		    alert('demo!!');
 		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
 		});
+	    }],
+	    ["Effects demo (FF only)", function(evt) {
+		require('demofx.js').toRun(Functions.Empty);
 	    }]
         ];
         var toolMenuItems = [
