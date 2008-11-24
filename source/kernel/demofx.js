@@ -1,7 +1,16 @@
 module('lively.demofx').requires().toRun(function() {	
+    
+    Morph.subclass('lively.demofx.SceneMorph', {
+	content: {},
+	initialize: function($super, model) {
+	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
+	}
+	
+    });
 
 
-    Morph.subclass('lively.demofx.Label', { // FIXME: Unfinished
+
+    lively.demofx.SceneMorph.subclass('lively.demofx.Label', { // FIXME: Unfinished
 	formals: ["Text", "FormattedValue", "FormattedPosition"],
 	content: {
 	    $:"Group",
@@ -16,16 +25,12 @@ module('lively.demofx').requires().toRun(function() {
 		 fill: Color.rgb(40, 40, 40),
 		}
 	    ]
-	},
-
-	initialize: function($super, model) {
-	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
 	}
-
     });
     
     const closeSize = 12;
-    Morph.subclass('lively.demofx.CloseButton', {
+    lively.demofx.SceneMorph.subclass('lively.demofx.CloseButton', {
+
 	formals: ["Color"],
 
 	content: {
@@ -66,7 +71,7 @@ module('lively.demofx').requires().toRun(function() {
     var thumbWidth = 20;
     var thumbHeight = 12;
 
-    Morph.subclass('lively.demofx.SliderThumb', {
+    lively.demofx.SceneMorph.subclass('lively.demofx.SliderThumb', {
 	formals: ["ThumbValue", "AdjValue", "Width", "Value"],
 	
 	content: {
@@ -105,7 +110,7 @@ module('lively.demofx').requires().toRun(function() {
 	    ]},
 	
 	initialize: function($super, model) {
-	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
+	    $super(model);
 	    this.connectModel(model);
 	    model.addObserver(this);
 	},
@@ -284,46 +289,51 @@ module('lively.demofx').requires().toRun(function() {
     sliderMorph.align(sliderMorph.bounds().topLeft(), canvasMorph.bounds().bottomLeft());
     
     const knobWidth = 25;
-    var knobShape = using(lively.scene, lively.paint, lively.data).model(canvasModel).link(
-	{$:"Group", 
-	 content: [
-	     {$:"Ellipse", 
-	      radius: knobWidth,  // Bind width
-	      fill: {$:"LinearGradient", 
-		     stops: [
-                         {$:"Stop", offset: 0.0, color: Color.rgb(172, 172, 172) },
-                         {$:"Stop", offset: 0.5, color: Color.rgb(115, 115, 115) },
-                         {$:"Stop", offset: 1.0, color: Color.rgb(130, 130, 130) },
-		     ] },
-	      stroke: {$:"LinearGradient",
-		       stops: [
-                           {$:"Stop",  offset: 0.0, color: Color.rgb( 69,  69,  69) },
-                           {$:"Stop",  offset: 1.0, color: Color.rgb(224, 224, 224) },
-		       ] },
-	      strokeWidth: 2
-	     },
-	     
-             {$:"Ellipse", centerX: 0.5, centerY: 0.5, radius: 5 },
-	     
-	     {$:"Polyline", points: [pt(0, 0), pt(knobWidth/2 + 2, 0)],
-	      transforms: [{$:"Rotate", Angle: {$:"Bind", to: "KnobValue"}}],
-	      stroke: Color.white,
-	      strokeWidth: 2.5
-	     },
-	     
-	     {$:"Polyline", points: [pt(0,0), pt(knobWidth/2 + 2, 0)],
-	      transforms: [{$:"Rotate", Angle: {$:"Bind", to: "KnobValue"}}],
-	      stroke: {$:"LinearGradient",
-		       stops: [{$:"Stop", offset: 0.0, color: Color.rgb( 40,  40,  40)},
-			       {$:"Stop", offset: 1.0, color: Color.rgb(102, 102, 102)}]
-		      }
-	     }
-	 ]
-	 
+    lively.demofx.SceneMorph.subclass('lively.demofx.KnobMorph',  {
+	formals: ["KnobValue"],
+	content: {
+	    $:"Group", 
+	    content: [
+		{$:"Ellipse", 
+		 radius: knobWidth,  // Bind width
+		 fill: {$:"LinearGradient", 
+			stops: [
+			    {$:"Stop", offset: 0.0, color: Color.rgb(172, 172, 172) },
+			    {$:"Stop", offset: 0.5, color: Color.rgb(115, 115, 115) },
+			    {$:"Stop", offset: 1.0, color: Color.rgb(130, 130, 130) },
+			] },
+		 stroke: {$:"LinearGradient",
+			  stops: [
+			      {$:"Stop",  offset: 0.0, color: Color.rgb( 69,  69,  69) },
+			      {$:"Stop",  offset: 1.0, color: Color.rgb(224, 224, 224) },
+			  ] },
+		 strokeWidth: 2
+		},
+		
+		{$:"Ellipse", centerX: 0.5, centerY: 0.5, radius: 5 },
+		
+		{$:"Polyline", points: [pt(0, 0), pt(knobWidth/2 + 2, 0)],
+		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "KnobValue"}}],
+		 stroke: Color.white,
+		 strokeWidth: 2.5
+		},
+		
+		{$:"Polyline", points: [pt(0,0), pt(knobWidth/2 + 2, 0)],
+		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "KnobValue"}}],
+		 stroke: {$:"LinearGradient",
+			  stops: [{$:"Stop", offset: 0.0, color: Color.rgb( 40,  40,  40)},
+				  {$:"Stop", offset: 1.0, color: Color.rgb(102, 102, 102)}]
+			 }
+		}
+	    ]
 	}
-    );
+
+    });
+
     
-    var knobMorph = WorldMorph.current().addMorph(new Morph(knobShape));
+    var knobMorph = WorldMorph.current().addMorph(new lively.demofx.KnobMorph(canvasModel));
+    knobMorph.connectModel(canvasModel, false);
+
     knobMorph.align(knobMorph.bounds().topLeft(), sliderMorph.bounds().topRight());
     
     Object.extend(knobMorph, {
@@ -371,4 +381,6 @@ module('lively.demofx').requires().toRun(function() {
 	canvasMorph.remove();
 	closeMorph.remove();
     }
+
+
 });
