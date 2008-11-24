@@ -1,14 +1,11 @@
 module('lively.demofx').requires().toRun(function() {	
-    
+
     Morph.subclass('lively.demofx.SceneMorph', {
 	content: {},
 	initialize: function($super, model) {
 	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
 	}
-	
     });
-
-
 
     lively.demofx.SceneMorph.subclass('lively.demofx.Label', { // FIXME: Unfinished
 	formals: ["Text", "FormattedValue", "FormattedPosition"],
@@ -61,8 +58,6 @@ module('lively.demofx').requires().toRun(function() {
 	}
 	
     });
-
-
 
     var thumbWidth = 20;
     var thumbHeight = 12;
@@ -149,7 +144,6 @@ module('lively.demofx').requires().toRun(function() {
 	    this.setAdjValue(adjValue);
 	},
 
-	
 	onAdjValueUpdate: function(adjValue) {
 	    var thumbValue = adjValue * this.getWidth() - thumbWidth/2;
 	    this.setThumbValue(thumbValue);
@@ -205,8 +199,6 @@ module('lively.demofx').requires().toRun(function() {
 	
     });
 
-
-
     var sliderModel = Record.newPlainInstance({Value: 0, Width: 150, AdjValue: 0, ThumbValue: 0});
     
     var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
@@ -243,40 +235,44 @@ module('lively.demofx').requires().toRun(function() {
     
     canvasModel.setImage(img);
     
-    var canvasBox = using(lively.scene, lively.paint, lively.data).model(canvasModel).link({
-        $:"Group", 
-        clip: {$:"Rectangle", /*smooth: false,*/ width: canvasWidth, height: canvasHeight + 1 },
-        content: [
-	    {$:"Rectangle",
-	     width: canvasWidth,
-	     height: canvasHeight,
-	     fill: {$:"LinearGradient", startX: 0, startY: 0, endX: 0, endY: 1,
-		    stops: [ {$:"Stop", offset: 0.1, color: Color.black },
-			     {$:"Stop", offset: 1.0, color: Color.rgb(193, 193, 193) } ]}
-	    },
-	    
-	    {$:"Group",
-	     //cache: true,
-	     transforms: [{$:"Translate", X: {$:"Bind", to: "CanvasX"}, Y: {$:"Bind", to: "CanvasY"}},
-			  {$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}, X: canvasWidth/2, Y: canvasHeight/2}],
-	     // very dirty, mixing scene graph with morphs, parent doesnt know that it has a submorph
-	     content: [{$:"Bind",  to: "Image"} ] 
-	     
-	    },
-	    
-	    {$:"Rectangle", 
-	     width: canvasWidth,
-	     height: 2,
-	     fill: Color.rgb(103, 103, 103)
-	    },
-	    {$:"Rectangle",
-	     y: canvasHeight,
-	     width: canvasWidth,
-	     height: 1,
-	     fill: Color.rgb(240, 240, 240)
-	    }
-        ]
+    lively.demofx.SceneMorph.subclass('lively.demofx.Canvas', {
+	content: {
+            $:"Group", 
+            clip: {$:"Rectangle", /*smooth: false,*/ width: canvasWidth, height: canvasHeight + 1 },
+            content: [
+		{$:"Rectangle",
+		 width: canvasWidth,
+		 height: canvasHeight,
+		 fill: {$:"LinearGradient", startX: 0, startY: 0, endX: 0, endY: 1,
+			stops: [ {$:"Stop", offset: 0.1, color: Color.black },
+				 {$:"Stop", offset: 1.0, color: Color.rgb(193, 193, 193) } ]}
+		},
+		
+		{$:"Group",
+		 //cache: true,
+		 transforms: [{$:"Translate", X: {$:"Bind", to: "CanvasX"}, Y: {$:"Bind", to: "CanvasY"}},
+			      {$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}, X: canvasWidth/2, Y: canvasHeight/2}],
+		 // very dirty, mixing scene graph with morphs, parent doesnt know that it has a submorph
+		 content: [{$:"Bind",  to: "Image"} ] 
+		 
+		},
+		
+		{$:"Rectangle", 
+		 width: canvasWidth,
+		 height: 2,
+		 fill: Color.rgb(103, 103, 103)
+		},
+		{$:"Rectangle",
+		 y: canvasHeight,
+		 width: canvasWidth,
+		 height: 1,
+		 fill: Color.rgb(240, 240, 240)
+		}
+            ]
+	}
+	
     });
+    
     
 
     var container = new BoxMorph(new Rectangle(230, 100, canvasWidth, canvasHeight + 100));
@@ -293,10 +289,9 @@ module('lively.demofx').requires().toRun(function() {
 	container.remove();
     }
 
-    var canvasMorph = new Morph(canvasBox);
+    var canvasMorph = new lively.demofx.Canvas(canvasModel);
     container.addMorph(canvasMorph);
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
-    
     
     //WorldMorph.current().addMorph(canvasMorph);
     //canvasMorph.setPosition(WorldMorph.current().bounds().center().subPt(pt(400, 200)));
