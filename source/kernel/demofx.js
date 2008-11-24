@@ -58,10 +58,6 @@ module('lively.demofx').requires().toRun(function() {
 		  ]
 		}
 	    ]
-	},
-
-	initialize: function($super, model) {
-	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
 	}
 	
     });
@@ -164,7 +160,7 @@ module('lively.demofx').requires().toRun(function() {
 	},
 
 	onThumbValueUpdate: function(value) {
-	    console.log('thumb value ' + value);
+	    //console.log('thumb value ' + value);
 	}
     });
 
@@ -225,10 +221,11 @@ module('lively.demofx').requires().toRun(function() {
 	}
     });
     
+
     const width = 600;//(6 * (82 + 10)) + 20;
     const canvasWidth = width-10;
     const canvasHeight = 333 + 40;
-    var canvasMorph;
+
     var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, CanvasX: 0, CanvasY: 0, KnobValue: 0});
     canvasModel.addObserver({
 	onImageUpdate: function(imageMorph) {
@@ -280,13 +277,35 @@ module('lively.demofx').requires().toRun(function() {
 	    }
         ]
     });
+    
+
+    var container = new BoxMorph(new Rectangle(230, 100, canvasWidth, canvasHeight + 100));
+    WorldMorph.current().addMorph(container);
+    var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
+    var closeMorph = new lively.demofx.CloseButton(closeModel);
+    container.addMorph(closeMorph);
+    
+    closeMorph.align(closeMorph.bounds().topRight(), container.shape.bounds().topRight());
+    
+    closeMorph.suppressHandles = true;
+    closeMorph.handlesMouseDown = Functions.True;
+    closeMorph.onMouseDown = function() {
+	container.remove();
+    }
+
     var canvasMorph = new Morph(canvasBox);
-    WorldMorph.current().addMorph(canvasMorph);
-    canvasMorph.setPosition(WorldMorph.current().bounds().center().subPt(pt(200, 200)));
+    container.addMorph(canvasMorph);
+    canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
+    
+    
+    //WorldMorph.current().addMorph(canvasMorph);
+    //canvasMorph.setPosition(WorldMorph.current().bounds().center().subPt(pt(400, 200)));
     
     var sliderMorph = new lively.demofx.Slider(sliderModel);
-    WorldMorph.current().addMorph(sliderMorph);
-    sliderMorph.align(sliderMorph.bounds().topLeft(), canvasMorph.bounds().bottomLeft());
+    container.addMorph(sliderMorph);
+
+    sliderMorph.align(sliderMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
+    sliderMorph.translateBy(pt(0, 5));
     
     const knobWidth = 25;
     lively.demofx.SceneMorph.subclass('lively.demofx.KnobMorph',  {
@@ -326,23 +345,9 @@ module('lively.demofx').requires().toRun(function() {
 			 }
 		}
 	    ]
-	}
-
-    });
-
-    
-    var knobMorph = WorldMorph.current().addMorph(new lively.demofx.KnobMorph(canvasModel));
-    knobMorph.connectModel(canvasModel, false);
-
-    knobMorph.align(knobMorph.bounds().topLeft(), sliderMorph.bounds().topRight());
-    
-    Object.extend(knobMorph, {
-	handlesMouseDown: Functions.True,
-	
-	onMouseMove: function(evt) {
-	    if (evt.mouseButtonPressed) return;
-	    return Morph.prototype.onMouseMove.call(this, evt);
 	},
+
+	handlesMouseDown: Functions.True,
 	
 	onMouseDown: function(evt) {
 	    this.origValue = canvasModel.getImageRotation();
@@ -369,18 +374,15 @@ module('lively.demofx').requires().toRun(function() {
 	    // will update the thumb position (thumb being rendered as a Group) but the parent won't notice
 	}
     });
-    
-    var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
-    var closeMorph = new lively.demofx.CloseButton(closeModel);
-    WorldMorph.current().addMorph(closeMorph);
-    closeMorph.align(closeMorph.bounds().bottomRight(), canvasMorph.bounds().topRight());
-    
-    closeMorph.suppressHandles = true;
-    closeMorph.handlesMouseDown = Functions.True;
-    closeMorph.onMouseDown = function() {
-	canvasMorph.remove();
-	closeMorph.remove();
-    }
 
-
+    
+    var knobMorph = new lively.demofx.KnobMorph(canvasModel);
+    knobMorph.connectModel(canvasModel, false);
+    container.addMorph(knobMorph);
+		       
+    knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
+    knobMorph.translateBy(pt(0, 5));
+    
+    //WorldMorph.current().addMorph(container);
+    
 });
