@@ -2417,8 +2417,6 @@ Morph.addMethods({
 
     showMorphMenu: function(evt) { 
 	var menu = this.morphMenu(evt);
-	// if (evt.mouseButtonPressed) evt.hand.setMouseFocus(menu);
-	// evt.hand.setMouseFocus(menu);
 	menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
     },
 
@@ -2430,7 +2428,7 @@ Morph.addMethods({
 					      browser.openIn(this.world(), evt.point());
 					      browser.getModel().setClassName(this.getType());
 					    }],
-	    ["style", function() { new StylePanel(this).open()}],
+	    ["edit style", function() { new StylePanel(this).open()}],
 	    ["drill", this.showOwnerChain.curry(evt)],
 	    ["grab", this.pickMeUp.curry(evt)],
 	    ["reset rotation", this.setRotation.curry(0)],
@@ -2464,10 +2462,7 @@ Morph.addMethods({
     showPieMenu: function(evt) {
     	var menu, targetMorph = this;
 	var items = [
-		['border width ([])', function(evt) {
-			var oldWidth = targetMorph.getBorderWidth();
-			PieMenuMorph.setUndo(function() { targetMorph.setBorderWidth(oldWidth); });
-			menu.addHandleTo(targetMorph, evt, 'borderWidth'); }],
+		['as tile ([])', function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)],
 		['duplicate (o-->o)', function(evt) {
 			evt.hand.setPosition(menu.mouseDownPoint);
 			menu.targetMorph.copyToHand(evt.hand);
@@ -2498,12 +2493,7 @@ Morph.addMethods({
 			targetMorph.remove();
 			}],
 		['undo (~)', function(evt) { PieMenuMorph.doUndo(); }],
-		['fill color (<>)', function(evt) {
-			var oldFill = targetMorph.getFill();
-			PieMenuMorph.setUndo(function() { targetMorph.setFill(oldFill); });
-			var picker = new ColorPickerMorph(evt.mousePoint.extent(pt(50, 30)), targetMorph, "setFill", true);
-			targetMorph.world().addMorph(picker);
-			evt.hand.setMouseFocus(picker); }]
+		['edit style (<>)', function() { new StylePanel(this).open()}]
 	];
 	menu = new PieMenuMorph(items, this, 0.5);
 	menu.open(evt);
