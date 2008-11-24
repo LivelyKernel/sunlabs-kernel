@@ -724,54 +724,61 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
-    
-    setUp: function() {
-        var src = '01234\nabcde\n56789'
-        var srcCtrl = {};
-        this.beforeFrag     = new ideModule.FileFragment('before', 'testFrag', src.indexOf('0')/*0*/, src.indexOf('4')+1/*5*/, 1, null/*no file*/, null, srcCtrl);
-        this.afterFrag      = new ideModule.FileFragment('after', 'testFrag', src.indexOf('5')/*12*/, src.indexOf('9')/*16*/, 3, null/*no file*/, null, srcCtrl);
-        this.inbetweenFrag  = new ideModule.FileFragment('inbetween', 'testFrag', src.indexOf('b')/*7*/, src.indexOf('d')/*9*/, 2, null/*no file*/, null, srcCtrl);
-        this.sut            = new ideModule.FileFragment('test', 'testFrag', src.indexOf('a')/*6*/, src.indexOf('e')+1/*11*/, 2, null/*no file*/, [this.inbetweenFrag], srcCtrl);
-        this.root           = new ideModule.FileFragment('root', 'testFrag', 0, src.length-1, 1, null/*no file*/, [this.beforeFrag, this.sut, this.afterFrag], srcCtrl);
-        
-        Object.extend(srcCtrl, {
-            getCachedText: function() { return src },
-            rootFragmentForModule: function() { return this.root }.bind(this)
-        });
-        
-        // Quick check if srcCtrl mock is still up to date
-        if (!Object.keys(srcCtrl).all(function(ea) { return AnotherSourceDatabase.prototype[ea] !== undefined }))
-            throw new Error('Code rot!');
-        
-    },
-    
-    testFragmentsOfOwnFile: function() {
-        this.assertEqual(this.sut.fragmentsOfOwnFile().length, 4);
-        this.assert([this.root, this.beforeFrag, this.inbetweenFrag, this.afterFrag].all(function(ea) {
-            return this.sut.fragmentsOfOwnFile().include(ea)
-        }, this));
-        // this.assertEqualState(this.sut.fragmentsOfOwnFile(), [this.root, this.beforeFrag, this.inbetweenFrag, this.afterFrag]);
-    },
-    
-    testUpdateOwnIndex: function() {
-        var newSrc = 'xabcde\n\n'
-        this.sut.updateIndices(newSrc);
-        this.assertEqual(this.sut.startIndex, 6);
-        this.assertEqual(this.sut.stopIndex, 11 + 2);
-    },
-    
-    testUpdateOtherIndices: function() {
-        var newSrc = 'xabcde\n\n'
-        this.sut.updateIndices(newSrc);
-        this.assertEqual(this.beforeFrag.startIndex, 0, 'beforeFrag 1');
-        this.assertEqual(this.beforeFrag.stopIndex, 5, 'beforeFrag 2');
-        this.assertEqual(this.afterFrag.startIndex, this.sut.stopIndex + 1, 'afterFrag 1');
-        this.assertEqual(this.afterFrag.stopIndex, 16 + 2, 'afterFrag 2');
-        this.assertEqual(this.inbetweenFrag.startIndex, this.sut.startIndex + 1, 'inbetweenFrag 1');
-        this.assertEqual(this.inbetweenFrag.stopIndex, 9+1, 'inbetweenFrag 2');
-        this.assertEqual(this.root.stopIndex, 16+2, 'inbetweenFrag 2');
-    }
-})
+   
+   setUp: function() {
+       /* creates:
+           completeFileDef: foo.js (0-254 in foo.js,   starting at line null, 1 subElements)
+           moduleDef:  foo.js      (0-254 in foo.js,   starting at line 1,  4 subElements)
+           klassDef: ClassA        (55-123 in foo.js,  starting at line 2,  1 subElements)
+           methodDef: m1           (84-119 in foo.js,  starting at line 3,  0 subElements)
+           staticFuncDef: m3       (124-155 in foo.js, starting at line 8,  0 subElements)
+           functionDef: abc        (156-179 in foo.js, starting at line 9,  0 subElements)
+           klassDef: ClassB        (180-234 in foo.js, starting at line 10, 1 subElements)
+           methodDef: m2           (209-230 in foo.js, starting at line 11, 0 subElements)
+        */
+        var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
+               'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n' +
+               'ClassA.m3 = function() { 123 };\n' +
+               'function abc() { 1+2 };\n' +
+               'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 }\n});\n' +
+               '}); // end of module';
+        var db = new AnotherSourceDatabase();
+        db.cachedFullText['foo.js'] = src;
+        db.putSourceCodeFor = function(fileFragment, newString) {
+            var beforeString = src.substring(0, fileFragment.startIndex);
+            var afterString = src.substring(fileFragment.stopIndex);
+            var newFileString = beforeString.concat(newString, afterString);
+            db.cachedFullText['foo.js'] = newFileString;
+        };
+        this.root = db.addModule('foo.js', src);
+        Global.y = this.root;
+   },
+   
+   testCorrectNumberOfFragments: function() {
+      this.assertEqual(this.root.flattened().length, 8);
+   },
+   
+   testFragmentsOfOwnFile: function() {
+       var classFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassA' });
+       this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
+   },
+   
+   testPutNewSource: function() {
+       var classFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassA' });
+       classFragment.putSourceCode('Object.subclass(\'ClassA\', { //thisHas17Chars\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
+       this.assertEqual(classFragment.startIndex, 55);
+       this.assertEqual(classFragment.stopIndex, 123+17);
+       this.assertEqual(classFragment.subElements.length, 1);
+       this.assertEqual(classFragment.subElements[0].startIndex, 84+17);
+       this.assertEqual(classFragment.subElements[0].stopIndex, 119+17);
+       var otherClassFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassB' });
+       this.assertEqual(otherClassFragment.startIndex, 180+17);
+       this.assertEqual(otherClassFragment.stopIndex, 234+17);
+       this.assertEqual(this.root.stopIndex, 254+17);
+       this.assertEqual(this.root.subElements[0].stopIndex, 254+17);
+   }
+   
+});
     
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     

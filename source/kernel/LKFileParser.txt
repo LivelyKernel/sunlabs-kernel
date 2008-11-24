@@ -1,5 +1,5 @@
 ometa LKFileParser <: Parser {
-    isLKParser      = ''                                                    -> true,
+    isLKParser          -> true,
   
     /* helper productions */
     log :msg            -> { console.log(msg); true },

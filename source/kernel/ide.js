@@ -616,6 +616,7 @@ ide.BrowserNode.subclass('lively.ide.ObjectDefNode', {
     },
 
     saveSource: function(newSource, sourceControl) {
+        // dbgOn(true);
         this.target.putSourceCode(newSource);
     }
 })
@@ -674,8 +675,8 @@ Object.subclass('AnotherFileParser', {
     },
     
     callOMeta: function(rule, src) {
-        if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing files sources!'))
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, true/*hideErrors?*/);
+        if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'))
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, false/*hideErrors?*/);
     },
     
     parseClass: function() {
@@ -917,16 +918,35 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         return this.modules[moduleOrModuleName];
     },
     
+    reparse: function(fragment) {
+        // this does not belong here ... 
+        if (!(fragment instanceof lively.ide.FileFragment)) throw dbgOn(new Error('Strange fragment'));
+        var parser = AnotherFileParser.withOMetaParser();
+        parser.ptr = fragment.startIndex;
+        parser.src = fragment.getFileString();
+        parser.lines = parser.src.split(/[\n\r]/);
+        return parser.parseWithOMeta(fragment.type);
+    },
+    
+    addModule: function(fileName, fileString) {
+        var fileFragments = AnotherFileParser.withOMetaParser().parseSource(fileString, fileName);
+        var root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, null, fileName, fileFragments, this);
+        root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
+        this.modules[fileName] = root;
+        return root;
+    },
+    
     putSourceCodeFor: function(fileFragment, newString) {
+        if (!(fileFragment instanceof lively.ide.FileFragment)) throw dbgOn(new Error('Strange fragment'));
         var fileString = fileFragment.getFileString();
         var beforeString = fileString.substring(0, fileFragment.startIndex);
-        var afterString = fileString.substring(fileFragment.stopIndex);
+        var afterString = fileString.substring(fileFragment.stopIndex+1);
         var newFileString = beforeString.concat(newString, afterString);
         newFileString = newFileString.replace(/\r/gi, '\n');  // change all CRs to LFs
-        console.log("Saving " + fileName + "...");
+        console.log("Saving " + fileFragment.fileName + "...");
         new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
-                ).put(URL.source.withFilename(fileName), newFileString);
-        this.cachedFullText[fileName] = newFileString;
+                ).put(URL.source.withFilename(fileFragment.fileName), newFileString);
+        this.cachedFullText[fileFragment.fileName] = newFileString;
         console.log("... " + newFileString.length + " bytes saved.");
     },
     
@@ -934,11 +954,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         // new AnotherSourceDatabase()
         var ms = new Date().getTime();
         this.interestingLKFileNames().each(function(fileName) {
-            var action = function(fileString) {
-                var fileFragments = AnotherFileParser.withOMetaParser().parseSource(fileString, fileName);
-                var root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, null, fileName, fileFragments, this);                
-                this.modules[fileName] = root;
-            };
+            var action = function(fileString) { this.addModule(fileName, fileString) };
             this.getCachedTextAsync(fileName, action, beSync);
         }, this);
         console.log('Altogether: ' + (new Date().getTime()-ms)/1000 + ' s');
@@ -992,28 +1008,48 @@ Object.subclass('lively.ide.FileFragment', {
         });
     },
 
-    updateIndices: function(newSource, oldSource) {
+    checkConsistency: function() {
+        this.fragmentsOfOwnFile().any(function(ea) { // Just a quick check if fragments are ok...
+            if (this.subElements.include(ea)) return;
+            if ((this.startIndex < ea.startIndex && ea.startIndex < this.stopIndex)
+                    || (this.startIndex < ea.stopIndex && ea.stopIndex < this.stopIndex))
+                throw new Error('Malformed fragment: ' + ea.name + ' ' + ea.type);
+        }, this);
+    },
+    
+    updateIndices: function(newSource) {
+        this.checkConsistency();
+        
         var prevStop = this.stopIndex;
         var newStop = this.startIndex + newSource.length - 1;
         var delta = newStop - prevStop;
-        // update fragments which follow after this
-        this.fragmentsOfOwnFile()
-            .select(function(ea) { return ea.startIndex > prevStop })
-            .forEach(function(ea) { ea.startIndex += delta; ea.stopIndex += delta; });
-        // parse this again
-            
+        
         this.stopIndex = newStop;    // self
         
+        // update fragments which follow after this or where this is a part of
+        this.fragmentsOfOwnFile().each(function(ea) {
+            if (ea.stopIndex < prevStop) return;
+            ea.stopIndex += delta;
+            if (ea.startIndex <= prevStop) return;
+            ea.startIndex += delta;
+        });
+
+        // re parse this for updating the subelements
+        var newMe = this.getSourceControl().reparse(this);
+        dbgOn(!newMe);
+        if (newMe.name !== this.name || newMe.type !== this.type || this.startIndex !== newMe.startIndex || this.stopIndex !== newMe.stopIndex)
+            throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
+        this.subElements = newMe.subElements;
     },
     
     getSourceCode: function() {
-        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + descr.name));
+        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
         return this.getFileString().substring(this.startIndex, this.stopIndex+1);
     },
 
     putSourceCode: function(newString) {
-        if (!descr.fileName) throw dbgOn(new Error('No filename for descriptor ' + descr.name));
-        this.getSourceControl().putSourceCodeFor(this.fileName, 0, this.startIndex, this.stopIndex, newString);
+        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
+        this.getSourceControl().putSourceCodeFor(this, newString);
         this.updateIndices(newString);
     },
     
@@ -1025,12 +1061,23 @@ Object.subclass('lively.ide.FileFragment', {
     },
     
     getFileString: function() {
+        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
         return this.getSourceControl().getCachedText(this.fileName);
     },
     
     newChangeList: function() {
         throw dbgOn(new Error('Not yet!'));
-    }
+    },
+    
+    toString: function() {
+        return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
+            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.lineNo, this.subElements.length);
+    },
+
+    inspect: function() {
+    	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
+	}
+    
 })
 
 });
