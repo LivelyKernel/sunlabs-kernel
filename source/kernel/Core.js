@@ -3712,7 +3712,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-        menu.keepOnlyItemsNamed(["inspect", "style"]);
+        menu.keepOnlyItemsNamed(["inspect", "edit style"]);
         menu.addLine();
         menu.addItems(this.subMenuItems(evt));
         menu.addLine();
