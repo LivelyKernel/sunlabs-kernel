@@ -75,6 +75,8 @@ var Config = {
     
     // Additional demo configuration options 
     showThumbnail: false,
+    suppressBalloonHelp: false,
+    usePieMenus: false,
     
     // Enables/disables network-dependent demos
     showNetworkExamples: UserAgent.usableXmlHttpRequest,
