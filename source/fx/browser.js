@@ -100,7 +100,7 @@ Object.extend(fx.util, {
 	var point = evt.getPoint();
 	var source = evt.getSource();
 	//var loc = source.getLocation();
-	if (type == 'mousedown') console.log('origin is ' + pt(point.getX(), point.getY()) + " source " + source);
+	//if (type == 'mousedown') console.log('origin is ' + pt(point.getX(), point.getY()) + " source " + source);
 					     
 	event._clientX = point.getX();
 	event._clientY = point.getY();
@@ -416,7 +416,7 @@ var PaintModule = {
 	if (fillOpacityAttr) fillOpacity = parseFloat(fillOpacityAttr.value);
 	
 	var fillAttr = attrs.getNamedItem('fill');
-	if (fillAttr && fillAttr.value) fxFill = this.renderFill(element, shape, fillAttr.value, fillOpacity);
+	if (fillAttr && fillAttr.value) this.renderFill(element, shape, fillAttr.value, fillOpacity);
 
 	var strokeOpacityAttr = attrs.getNamedItem('stroke-opacity');
 	if (strokeOpacityAttr) strokeOpacity = parseFloat(strokeOpacityAttr.value);
@@ -426,6 +426,7 @@ var PaintModule = {
 
 	var strokeWidthAttr = attrs.getNamedItem('stroke-width');
 	if (strokeWidthAttr && strokeWidthAttr.value) this.renderStrokeWidth(element, shape, strokeWidthAttr.value);
+
     },
 
     renderFill: function(element, shape, value, alpha) {
@@ -598,6 +599,14 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element, attr) {
     });
 });
 
+var FilterModule = {
+    applyFilter: function(filterUri, element) {
+	// the implementation goes here:
+	console.log('found filter ' + lively.data.FragmentURI.getElement(filterUri).firstChild);
+    }
+};
+
+
 fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =
 fx.dom.renderers[SVGSVGElement.tagName] =
@@ -621,6 +630,10 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
     else 
 	element._fxBegin.setVisible(true);
 
+
+    // note, we only support filters on <g> elements
+    var effect = element.getAttributeNS(null, "filter");
+    if (effect) FilterModule.applyFilter(effect, element);
 
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
@@ -693,6 +706,14 @@ fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute)
     if (element._fxComponent) 
 	element._fxBegin.setChild(element._fxComponent);
 };
+
+
+fx.dom.renderers[SVGImageElement.tagName] = function(element) {
+    if (!element._fxBegin) element._fxBegin = new fx.Parent();
+    console.log('rendering? ' + element.getAttributeNS(Namespace.XLINK, "href"));
+    return element._fxBegin;
+}
+
 
 // end of SVG impl
 

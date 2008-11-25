@@ -276,7 +276,8 @@ Object.extend(SVGTransform.prototype, {
   },
 
   setRotate: function(angle, cx, cy) {
-    cx && TODO(); // We don't handle the optional cx cy yet
+      cx && console.log('ignoring anchor ' + [cx, cy]);
+      //cx && TODO(); // We don't handle the optional cx cy yet
     this._type = SVGTransform.SVG_TRANSFORM_ROTATE;
     this._angle = angle;
     this._matrix = (new SVGMatrix).rotate(angle);
@@ -677,3 +678,15 @@ var SVGTextElement = SVGElement.defineElement('text',
 // SVGTSpanElement
 
 var SVGTSpanElement = SVGElement.defineElement('tspan', [SVGTextPositioningElement]);
+
+
+var SVGFilterElement = SVGElement.defineElement('filter',  [SVGStylable], // SVGURIReference, 
+    {});
+
+var SVGImageElement =  SVGElement.defineElement('image', [SVGLocatable, SVGStylable],
+    {name:'x', type:SVGAnimatedLength, defaultValue:  '0'},
+    {name:'y', type:SVGAnimatedLength, defaultValue:  '0'},
+    {name:'width', type:SVGAnimatedLength, defaultValue: '0'},
+    {name:'height', type:SVGAnimatedLength, defaultValue:  '0'}
+);
+
