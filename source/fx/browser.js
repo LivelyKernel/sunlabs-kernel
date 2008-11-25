@@ -41,7 +41,8 @@ Object.extend(fx, {
     Component: Packages.com.sun.scenario.scenegraph.SGComponent,
     Shape: Packages.com.sun.scenario.scenegraph.SGShape,
     Transform: Packages.com.sun.scenario.scenegraph.SGTransform,
-    Clip: Packages.com.sun.scenario.scenegraph.SGClip,
+    Clip:  Packages.com.sun.scenario.scenegraph.SGClip,
+    Image: Packages.com.sun.scenario.scenegraph.SGImage,
     ShapeMode: Packages.com.sun.scenario.scenegraph.SGAbstractShape$Mode,
     Ellipse: Packages.java.awt.geom.Ellipse2D.Double,
     Point: Packages.java.awt.geom.Point2D.Double,
@@ -709,8 +710,23 @@ fx.dom.renderers[SVGForeignObjectElement.tagName] = function(element, attribute)
 
 
 fx.dom.renderers[SVGImageElement.tagName] = function(element) {
-    if (!element._fxBegin) element._fxBegin = new fx.Parent();
-    console.log('rendering? ' + element.getAttributeNS(Namespace.XLINK, "href"));
+    if (!element._fxBegin) { 
+	element._fxBegin = new fx.Parent();
+	var img = new fx.Image();
+	element._fxBegin.setChild(img);
+	var width = parseFloat(element.getAttribute("width")) || 0.0;
+	var height = parseFloat(element.getAttribute("height")) || 0.0;
+	var path = element.getAttributeNS(Namespace.XLINK, "href");
+	console.log('image size ' + [width, height] + ' path ' + path);	
+	if (path) {
+	    var relativePath = path.match("^http://localhost/(.*)$");
+	    console.log('relative path ' + relativePath[1]);
+	    // FIXME: the following image translation is of course
+	    // bogus, but it matches the rest of the FX port for now
+	    var file = new Packages.java.io.File("../kernel/" + relativePath[1]); 
+	    img.setImage(Packages.javax.imageio.ImageIO.read(file));
+	}
+    }
     return element._fxBegin;
 }
 
