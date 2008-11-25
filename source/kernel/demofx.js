@@ -59,6 +59,7 @@ module('lively.demofx').requires().toRun(function() {
 	
     });
 
+    using().run(function() { // scoping 
     var thumbWidth = 20;
     var thumbHeight = 12;
 
@@ -157,6 +158,7 @@ module('lively.demofx').requires().toRun(function() {
 	    //console.log('thumb value ' + value);
 	}
     });
+    });
 
     Morph.subclass('lively.demofx.Slider', {
 	formals: ["Width"],
@@ -193,7 +195,6 @@ module('lively.demofx').requires().toRun(function() {
 	    ]},
 	initialize: function($super, model) {
 	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
-	    this.connectModel(model);
 	    this.addMorph(new lively.demofx.SliderThumb(model));
 	}
 	
@@ -242,10 +243,8 @@ module('lively.demofx').requires().toRun(function() {
 	},
 
 	onImageUpdate: function(imageMorph) {
-	    var newX = (canvasWidth - imageMorph.image.getWidth())/2;
-	    this.setCanvasX(newX);
-	    var newY = canvasHeight/2 - imageMorph.image.getHeight()/2;
-	    this.setCanvasY(newY);
+	    this.setCanvasX((canvasWidth - imageMorph.image.getWidth())/2);
+	    this.setCanvasY(canvasHeight/2 - imageMorph.image.getHeight()/2);
 	}
 	
     });
@@ -307,6 +306,7 @@ module('lively.demofx').requires().toRun(function() {
     sliderMorph.align(sliderMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
     sliderMorph.translateBy(pt(0, 5));
     
+
     const knobWidth = 25;
     lively.demofx.SceneMorph.subclass('lively.demofx.KnobMorph',  {
 	formals: ["KnobValue"],
