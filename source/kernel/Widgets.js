@@ -1337,7 +1337,7 @@ TextListMorph.subclass("ListMorph", {
             if (selectionContent.isListItem) selectionContent = selectionContent.value;
             this.scrollItemIntoView(item);
         }
-        shouldUpdateModel && this.setSelection(selectionContent);
+        shouldUpdateModel && this.setSelection(selectionContent, true);
     },
     
     updateList: function($super, newList) {
