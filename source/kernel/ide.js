@@ -222,6 +222,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
         }
     },
  
+	textChanged: function(node) {
+		 this.setSourceString(node.sourceString());
+	},
+
 	inPaneSelectNodeNamed: function(paneName,  nodeName) {
 			var nodes = this['get' + paneName + 'Content']();
 			var wanted = nodes.detect(function(ea) { return ea.string.include(nodeName) });
@@ -295,6 +299,10 @@ Object.subclass('lively.ide.BrowserNode', {
     
     signalChange: function() {
         this.browser.nodeChanged(this);
+    },
+
+	signalTextChange: function() {
+        this.browser.textChanged(this);
     }
  
 });
@@ -607,10 +615,13 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
  
 ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should be module node
  
+	maxStringLength: 10000,
+
     initialize: function($super, target, browser, moduleName) {
         $super(target, browser);
         this.mode = 'classes';
         this.moduleName = moduleName;
+		this.showAll = false;
     },
  
     childNodes: function() {
@@ -653,16 +664,25 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
     
     menuSpec: function() {
-        if (this.target) return [];
+		var node = this;
+		var specs = [];
+		if (this.target) {
+			return [['toggle showAll', function() {
+				node.showAll = !node.showAll;
+				node.signalTextChange();
+        	}]];
+		}
         return [['load module', function() {
-            this.target = tools.SourceControl.addModule(this.moduleName);
-            this.signalChange();
-        }.bind(this)]];
+			node.target = tools.SourceControl.addModule(node.moduleName);
+            node.signalChange();
+        }]];
     },
     
     sourceString: function() {
         if (!this.target) return '';
-        return this.target.getSourceCode();
+		var src = this.target.getSourceCode();
+		if (src.length > this.maxStringLength && !this.showAll) return '';
+        return src;
     },
     
     asString: function() {
@@ -1049,7 +1069,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     },
     
     preLoadFileNames: function($super) {
-	return ['ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
+	return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
     },
 });
  
