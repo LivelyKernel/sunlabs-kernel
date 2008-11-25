@@ -25,6 +25,8 @@ module('lively.demofx').requires().toRun(function() {
 	}
     });
     
+
+    using().run(function() {
     const closeSize = 12;
     lively.demofx.SceneMorph.subclass('lively.demofx.CloseButton', {
 
@@ -57,6 +59,7 @@ module('lively.demofx').requires().toRun(function() {
 	    ]
 	}
 	
+    });
     });
 
     using().run(function() { // scoping 
