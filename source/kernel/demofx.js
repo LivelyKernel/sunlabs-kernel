@@ -248,68 +248,11 @@ module('lively.demofx').requires().toRun(function() {
 	}
 	
     });
-		
-    var sliderModel = Record.newPlainInstance({Value: 0, Width: 150, AdjValue: 0, ThumbValue: 0});
-    
-    var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
-	URL.source.withFilename('Resources/images/flower.jpg').toString());
-    var effect = new lively.scene.GaussianBlur(0.001, "myfilter");
 
-    effect.applyTo(img);
-
-    sliderModel.addObserver({
-	onAdjValueUpdate: function(value) {
-	    effect.setRadius(value*10);
-	}
-    });
-    
-
-    var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, CanvasX: 0, CanvasY: 0, KnobValue: 0});
-    canvasModel.addObserver({
-	onImageRotationUpdate: function(value) {
-	    canvasModel.setKnobValue(0 - value);
-	}
-    });
-    
-    canvasModel.setImage(img);
-    
-
-    
-
-    var container = new BoxMorph(new Rectangle(230, 100, canvasWidth, canvasHeight + 100));
-    WorldMorph.current().addMorph(container);
-    var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
-    var closeMorph = new lively.demofx.CloseButton(closeModel);
-    container.addMorph(closeMorph);
-    
-    closeMorph.align(closeMorph.bounds().topRight(), container.shape.bounds().topRight());
-    
-    closeMorph.suppressHandles = true;
-    closeMorph.handlesMouseDown = Functions.True;
-    closeMorph.onMouseDown = function() {
-	container.remove();
-    }
-
-    var canvasMorph = new lively.demofx.Canvas(canvasModel);
-    container.addMorph(canvasMorph);
-
-    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", CanvasX: "+CanvasX", CanvasY: "+CanvasY"}), true);
-    
-    canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
-    
-    //WorldMorph.current().addMorph(canvasMorph);
-    //canvasMorph.setPosition(WorldMorph.current().bounds().center().subPt(pt(400, 200)));
-    
-    var sliderMorph = new lively.demofx.Slider(sliderModel);
-    container.addMorph(sliderMorph);
-
-    sliderMorph.align(sliderMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
-    sliderMorph.translateBy(pt(0, 5));
-    
-
+    using().run(function() {
     const knobWidth = 25;
     lively.demofx.SceneMorph.subclass('lively.demofx.KnobMorph',  {
-	formals: ["KnobValue"],
+	formals: ["KnobValue", "ImageRotation"],
 	content: {
 	    $:"Group", 
 	    content: [
@@ -350,7 +293,7 @@ module('lively.demofx').requires().toRun(function() {
 	handlesMouseDown: Functions.True,
 	
 	onMouseDown: function(evt) {
-	    this.origValue = canvasModel.getImageRotation();
+	    this.origValue = this.getImageRotation();
 	    this.hitPoint = this.localize(evt.point());
 	},
 	
@@ -369,20 +312,64 @@ module('lively.demofx').requires().toRun(function() {
 	    
 	    // FIXME reference to minimum/maximum
 	    var newValue = (minimum + (v * (maximum-minimum)))*180;
-	    canvasModel.setImageRotation(newValue % 360);
+	    this.setImageRotation(newValue % 360);
 	    this.layoutChanged(); // FIXME this should happen elsewhere, reflects the fact that setting Value
 	    // will update the thumb position (thumb being rendered as a Group) but the parent won't notice
+	},
+
+	onImageRotationUpdate: function(value) {
+	    this.setKnobValue(0 - value);
+	}
+
+    });
+    });
+		
+    var sliderModel = Record.newPlainInstance({Value: 0, Width: 150, AdjValue: 0, ThumbValue: 0});
+    
+    var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
+	URL.source.withFilename('Resources/images/flower.jpg').toString());
+    var effect = new lively.scene.GaussianBlur(0.001, "myfilter");
+
+    effect.applyTo(img);
+
+    sliderModel.addObserver({
+	onAdjValueUpdate: function(value) {
+	    effect.setRadius(value*10);
 	}
     });
-
     
-    var knobMorph = new lively.demofx.KnobMorph(canvasModel);
-    knobMorph.connectModel(canvasModel, false);
-    container.addMorph(knobMorph);
-		       
+    var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, CanvasX: 0, CanvasY: 0, KnobValue: 0});
+    
+    canvasModel.setImage(img);
+
+    var container = new BoxMorph(new Rectangle(230, 100, canvasWidth, canvasHeight + 100));
+
+
+    var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
+    var closeMorph = container.addMorph(new lively.demofx.CloseButton(closeModel));
+    closeMorph.align(closeMorph.bounds().topRight(), container.shape.bounds().topRight());
+    closeMorph.suppressHandles = true;
+    closeMorph.handlesMouseDown = Functions.True;
+    closeMorph.onMouseDown = function() {
+	container.remove();
+    }
+
+    var canvasMorph = container.addMorph(new lively.demofx.Canvas(canvasModel));
+    canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
+    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", CanvasX: "+CanvasX", CanvasY: "+CanvasY"}), true);
+    
+    
+    var sliderMorph = container.addMorph(new lively.demofx.Slider(sliderModel));
+    sliderMorph.align(sliderMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
+    sliderMorph.translateBy(pt(0, 5));
+
+
+    var knobMorph = container.addMorph(new lively.demofx.KnobMorph(canvasModel));
     knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
     knobMorph.translateBy(pt(0, 5));
+    knobMorph.connectModel(canvasModel.newRelay({KnobValue: "+KnobValue", ImageRotation: "ImageRotation"}));
     
-    //WorldMorph.current().addMorph(container);
-    
+   
+    WorldMorph.current().addMorph(container);
+ 
 });
