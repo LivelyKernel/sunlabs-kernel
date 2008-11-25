@@ -77,7 +77,7 @@ ometa LKFileParser <: Parser {
 	/* methods */
 	wrapEnd             = ".wrap" chunk('(', ')'),
     methodDefWithSpcs   = spaces methodDef:mD classElemDefEnd                      -> mD,
-    methodDef           = pos:p name:mName ':' startTime:t spaces basicFunction (somethingBigRelated | "" ) classElemDefEnd stopTime(t)
+    methodDef           = pos:p name:mName ':' spaces basicFunction (somethingBigRelated | "" ) classElemDefEnd
                         -> { $elf._fragment(mName, 'methodDef', p, $elf.pos()-1) },
     methodModificationDef   = pos:p nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
                             -> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {klassName: spec.before}) },
