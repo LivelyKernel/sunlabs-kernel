@@ -336,7 +336,8 @@ module('lively.demofx').requires().toRun(function() {
     });
     });
 		
-    var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0});
+    var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0, 
+	LabelValue: "radius 0.00"});
     
     var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
 	URL.source.withFilename('Resources/images/flower.jpg').toString());
@@ -346,7 +347,9 @@ module('lively.demofx').requires().toRun(function() {
 
     sliderModel.addObserver({
 	onAdjValueUpdate: function(value) {
-	    effect.setRadius(value*10);
+	    var radius = value*10;
+	    effect.setRadius(radius);
+	    sliderModel.setLabelValue("radius " + radius.toFixed(2));
 	}
     });
     
@@ -375,6 +378,12 @@ module('lively.demofx').requires().toRun(function() {
     sliderMorph.align(sliderMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
     sliderMorph.translateBy(pt(0, 5));
 
+    var label = container.addMorph(new TextMorph(new Rectangle(0,0,0,0)).beLabel());
+    label.setTextColor(Color.white);
+
+    label.connectModel(sliderModel.newRelay({Text: "LabelValue"}), true);
+    label.align(label.bounds().leftCenter(), sliderMorph.bounds().rightCenter());
+    label.translateBy(pt(10, 0));
 
     var knobMorph = container.addMorph(new lively.demofx.KnobMorph(canvasModel));
     knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
