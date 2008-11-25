@@ -261,6 +261,9 @@ module('lively.demofx').requires().toRun(function() {
 
     using().run(function() {
     const knobWidth = 25;
+    const minimum = 0.0;
+    const maximum = 1.0;
+
     lively.demofx.SceneMorph.subclass('lively.demofx.KnobMorph',  {
 	formals: ["_KnobValue",  // private to morph
 		  "ImageRotation" // public
@@ -319,8 +322,6 @@ module('lively.demofx').requires().toRun(function() {
 		} else if (v > 1) {
 		    v = 1;
 		}*/
-	    const minimum = 0.0;
-	    const maximum = 1.0;
 	    
 	    // FIXME reference to minimum/maximum
 	    var newValue = (minimum + (v * (maximum-minimum)))*180;
@@ -335,7 +336,13 @@ module('lively.demofx').requires().toRun(function() {
 
     });
     });
-		
+
+
+    /*********************************************/
+    // application code
+
+
+
     var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0, 
 	LabelValue: "radius 0.00"});
     
