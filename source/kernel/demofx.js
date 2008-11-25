@@ -62,9 +62,15 @@ module('lively.demofx').requires().toRun(function() {
     using().run(function() { // scoping 
     var thumbWidth = 20;
     var thumbHeight = 12;
+    const minimum = 0.0;
+    const maximum = 1.0;
 
     lively.demofx.SceneMorph.subclass('lively.demofx.SliderThumb', {
-	formals: ["ThumbValue", "AdjValue", "Width", "Value"],
+	formals: ["ThumbValue", 
+		  "AdjValue", 
+		  "Width", 
+		  "Value"
+		 ],
 	
 	content: {
 	    $:"Group", 
@@ -120,9 +126,6 @@ module('lively.demofx').requires().toRun(function() {
 	},
 	
 	onMouseMove: function(evt) {
-	    const minimum = 0.0;
-	    const maximum = 1.0;
-	    
 	    if (!evt.mouseButtonPressed) return;
 	    var drag = this.localize(evt.point()).subPt(this.hitPoint);
 	    var v = this.origValue + (drag.x / this.getWidth());
@@ -206,7 +209,11 @@ module('lively.demofx').requires().toRun(function() {
     const canvasHeight = 333 + 40;
     
     lively.demofx.SceneMorph.subclass('lively.demofx.Canvas', {
-	formals: ["Image", "CanvasX", "CanvasY"],
+	formals: ["Image",  // public
+		  "_CanvasX", // private to class
+		  "_CanvasY",   // private to class
+		  "ImageRotation" // external, not strictly necessary?
+		 ],
 	content: {
 	    $:"Group", 
             clip: {$:"Rectangle", /*smooth: false,*/ width: canvasWidth, height: canvasHeight + 1 },
@@ -221,7 +228,7 @@ module('lively.demofx').requires().toRun(function() {
 		
 		{$:"Group",
 		 //cache: true,
-		 transforms: [{$:"Translate", X: {$:"Bind", to: "CanvasX"}, Y: {$:"Bind", to: "CanvasY"}},
+		 transforms: [{$:"Translate", X: {$:"Bind", to: "_CanvasX"}, Y: {$:"Bind", to: "_CanvasY"}},
 			      {$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}, X: canvasWidth/2, Y: canvasHeight/2}],
 		 // very dirty, mixing scene graph with morphs, parent doesnt know that it has a submorph
 		 content: [{$:"Bind",  to: "Image"} ] 
@@ -243,8 +250,8 @@ module('lively.demofx').requires().toRun(function() {
 	},
 
 	onImageUpdate: function(imageMorph) {
-	    this.setCanvasX((canvasWidth - imageMorph.image.getWidth())/2);
-	    this.setCanvasY(canvasHeight/2 - imageMorph.image.getHeight()/2);
+	    this.set_CanvasX((canvasWidth - imageMorph.image.getWidth())/2);
+	    this.set_CanvasY(canvasHeight/2 - imageMorph.image.getHeight()/2);
 	}
 	
     });
@@ -252,7 +259,9 @@ module('lively.demofx').requires().toRun(function() {
     using().run(function() {
     const knobWidth = 25;
     lively.demofx.SceneMorph.subclass('lively.demofx.KnobMorph',  {
-	formals: ["KnobValue", "ImageRotation"],
+	formals: ["_KnobValue",  // private to morph
+		  "ImageRotation" // public
+		 ],
 	content: {
 	    $:"Group", 
 	    content: [
@@ -275,13 +284,13 @@ module('lively.demofx').requires().toRun(function() {
 		{$:"Ellipse", centerX: 0.5, centerY: 0.5, radius: 5 },
 		
 		{$:"Polyline", points: [pt(0, 0), pt(knobWidth/2 + 2, 0)],
-		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "KnobValue"}}],
+		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "_KnobValue"}}],
 		 stroke: Color.white,
 		 strokeWidth: 2.5
 		},
 		
 		{$:"Polyline", points: [pt(0,0), pt(knobWidth/2 + 2, 0)],
-		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "KnobValue"}}],
+		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "_KnobValue"}}],
 		 stroke: {$:"LinearGradient",
 			  stops: [{$:"Stop", offset: 0.0, color: Color.rgb( 40,  40,  40)},
 				  {$:"Stop", offset: 1.0, color: Color.rgb(102, 102, 102)}]
@@ -318,7 +327,7 @@ module('lively.demofx').requires().toRun(function() {
 	},
 
 	onImageRotationUpdate: function(value) {
-	    this.setKnobValue(0 - value);
+	    this.set_KnobValue(0 - value);
 	}
 
     });
@@ -338,7 +347,7 @@ module('lively.demofx').requires().toRun(function() {
 	}
     });
     
-    var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, CanvasX: 0, CanvasY: 0, KnobValue: 0});
+    var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0});
     
     canvasModel.setImage(img);
 
@@ -356,7 +365,7 @@ module('lively.demofx').requires().toRun(function() {
 
     var canvasMorph = container.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
-    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", CanvasX: "+CanvasX", CanvasY: "+CanvasY"}), true);
+    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), true);
     
     
     var sliderMorph = container.addMorph(new lively.demofx.Slider(sliderModel));
@@ -367,7 +376,7 @@ module('lively.demofx').requires().toRun(function() {
     var knobMorph = container.addMorph(new lively.demofx.KnobMorph(canvasModel));
     knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
     knobMorph.translateBy(pt(0, 5));
-    knobMorph.connectModel(canvasModel.newRelay({KnobValue: "+KnobValue", ImageRotation: "ImageRotation"}));
+    knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", ImageRotation: "ImageRotation"}));
     
    
     WorldMorph.current().addMorph(container);
