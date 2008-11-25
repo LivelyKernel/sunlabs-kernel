@@ -1049,9 +1049,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     },
     
     preLoadFileNames: function($super) {
-        // return [/*'Core.js', 'Base.js', "Tools.js",*/ "test.js", 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js',/*'Widgets.js', "scene.js", "Text.js", "Network.js", "Data.js", "Storage.js", "Examples.js", "Main.js"*/];
-        // return ["miniprototype.js", "defaultconfig.js", "localconfig.js", "Base.js", "scene.js", "Core.js", "Text.js", "Widgets.js", "Network.js", "Data.js", "Storage.js", "Tools.js", "Examples.js", "Main.js"];
-        return ["test.js"];
+	return ['ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
     },
 });
  
