@@ -473,7 +473,7 @@ this.Node.addMethods({
 	if (!Config.useTransformAPI) {
 	    var attr = array.invoke('toString').join(' ');
 	    this.rawNode.setAttributeNS(null, "transform", attr);
-	    console.log('set attr ' + attr);
+	    //console.log('set attr ' + attr);
 	}
     }
 
@@ -1239,7 +1239,13 @@ this.Shape.subclass('lively.scene.Group', {
     },
 
     setContent: function(nodes) {
-	nodes.forEach(function(node) { this.add(node) }, this);
+	nodes.forEach(function(node) { 
+	    this.add(node); 
+	    if (node instanceof Morph) {
+		Global.FIXME_lastMorph = node;
+	    }
+
+	}, this);
     },
 
     bounds: function() {
@@ -1393,7 +1399,7 @@ this.Node.subclass('lively.scene.Image', {
 	    XLinkNS.setHref(this.rawNode, href);
 	    return null;
 	} else {
-	    var useDesperateSerializationHack = true;
+	    var useDesperateSerializationHack = !Config.suppressImageElementSerializationHack;
 	    if (useDesperateSerializationHack) {
 		width = width || this.getWidth();
 		height = height || this.getHeight();

@@ -409,6 +409,11 @@ using().module('lively.demofx').run(function() {
     }
 
     var canvasMorph = container.addMorph(new lively.demofx.Canvas(canvasModel));
+    if (Global.FIXME_lastMorph) {
+	//canvasMorph.addMorph(Global.FIXME_lastMorph);
+    }
+    //    alert('its ' + Global.FIXME_lastMorph);
+    
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
     canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), true);
 
@@ -431,7 +436,6 @@ using().module('lively.demofx').run(function() {
     knobMorph.translateBy(pt(0, 5));
     knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", ImageRotation: "ImageRotation"}));
     
-   
     WorldMorph.current().addMorph(container);
  
-});
+}.logErrors());
