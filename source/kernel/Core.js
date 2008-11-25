@@ -4046,7 +4046,7 @@ PasteUpMorph.subclass("WorldMorph", {
         ];
         var toolMenuItems = [
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
-            ["Enhanced Class Browser", function(evt) { new lively.Tools.SystemBrowser().openIn(world, evt.point()) }],
+            ["SystemBrowser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
             ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
             ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
