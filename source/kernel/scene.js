@@ -1761,8 +1761,6 @@ Object.extend(lively.scene.Rotate, {
 
 });
 
-
-
 Wrapper.subclass('lively.scene.Effect', {
     initialize: function() {
 	this.rawNode = NodeFactory.create("filter");
@@ -1792,9 +1790,25 @@ this.Effect.subclass('lively.scene.GaussianBlur', {
 	target.setTrait("filter", this.uri());
 
     }
-
-
 });
+
+lively.scene.Node.subclass('lively.scene.Text', {
+    documentation: "wrapper around SVG Text elements",
+    initialize: function() {
+	this.rawNode = NodeFactory.create("text", { "kerning": 0 });
+    },
+
+    getFontSize: function() {
+	return this.getLengthTrait("font-size");
+    },
+
+    getFontFamily: function() {
+	return this.getTrait("font-family");
+    }
+    
+});
+
+
 
 
 }); // end using lively.scene

@@ -841,13 +841,6 @@ Morph.subclass('TextSelectionMorph', {
 });
 
 
-lively.scene.Node.subclass('lively.Text.TextContent', {
-    documentation: "wrapper around SVG Text elements",
-    initialize: function() {
-	this.rawNode = NodeFactory.create("text", { "kerning": 0 });
-    }
-});
-
 BoxMorph.subclass("TextMorph", {
     
     documentation: "Container for Text",
@@ -890,7 +883,7 @@ BoxMorph.subclass("TextMorph", {
 
     initializePersistentState: function($super, shape) {
         $super(shape);
-        this.textContent = this.addWrapper(new lively.Text.TextContent());
+        this.textContent = this.addWrapper(new lively.scene.Text());
         this.resetRendering();
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
@@ -900,11 +893,11 @@ BoxMorph.subclass("TextMorph", {
     restoreFromSubnode: function($super, importer, rawNode) {
 	if ($super(importer, rawNode)) return true;
 	if (rawNode.localName == "text") {
-            this.textContent = new lively.Text.TextContent(importer, rawNode);   
-            this.fontFamily = this.textContent.getTrait("font-family");
-            this.fontSize = this.textContent.getLengthTrait("font-size");
+            this.textContent = new lively.scene.Text(importer, rawNode);   
+            this.fontFamily = this.textContent.getFontFamily();
+            this.fontSize = this.textContent.getFontSize();
             this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
-            this.textColor = new Color(Importer.marker, this.textContent.getTrait("fill"));
+            this.textColor = new Color(Importer.marker, this.textContent.getFill());
 	    return true;
 	} 
 	return false;
