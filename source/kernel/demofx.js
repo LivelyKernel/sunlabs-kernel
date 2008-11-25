@@ -1,4 +1,4 @@
-module('lively.demofx').requires().toRun(function() {	
+using().module('lively.demofx').run(function() {	
 
     Morph.subclass('lively.demofx.SceneMorph', {
 	content: {},
@@ -6,6 +6,7 @@ module('lively.demofx').requires().toRun(function() {
 	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
 	}
     });
+
 
     lively.demofx.SceneMorph.subclass('lively.demofx.Label', { // FIXME: Unfinished
 	formals: ["Text", "FormattedValue", "FormattedPosition"],
@@ -199,14 +200,27 @@ module('lively.demofx').requires().toRun(function() {
 			 }
 		}
 	    ]},
-	initialize: function($super, model) {
-	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
+	initialize: function($super, model, optExtension) {
+	    //$super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
+	    $super(using(lively.scene, lively.paint, lively.data).model(model).extend(this.content, optExtension || {}));
 	    this.addMorph(new lively.demofx.SliderThumb(model));
 	}
 	
     });
 
+    Object.extend(lively.demofx.Slider, {
+	fromLiteral: function(literal, model) {
+	    var morph = new lively.demofx.Slider(model);
+	    if (literal.transforms) { 
+		morph.setTransforms(literal.transforms);
+	    }
+	    return morph;
+	}
+    });
+
     
+
+
     const width = 600;//(6 * (82 + 10)) + 20;    
     const canvasWidth = width-10;
     const canvasHeight = 333 + 40;
@@ -235,7 +249,6 @@ module('lively.demofx').requires().toRun(function() {
 			      {$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}, X: canvasWidth/2, Y: canvasHeight/2}],
 		 // very dirty, mixing scene graph with morphs, parent doesnt know that it has a submorph
 		 content: [{$:"Bind",  to: "Image"} ] 
-		 
 		},
 		
 		{$:"Rectangle", 
@@ -336,7 +349,28 @@ module('lively.demofx').requires().toRun(function() {
 
     });
     });
+ 
 
+
+    false && using().test(function() {
+	// more structural experiments
+	var LabeledSliderBlueprint = {
+	    $:"Morph",
+	    shape: {$:"Rectangle", width: {$:"Bind", to: "Width"}, height: 20},
+	    formals: ["Padding", "Width"],
+	    submorphs: [
+		{$:"TextMorph", textColor: Color.white, content: "Hello", label: true},
+		{$:"Slider", 
+		 transforms: [{$:"Translate", X: {$:"Bind", to:"Padding"}, Y: 0}],
+		 width: {$:"Bind", to: "Width"}
+		}
+	    ]
+	};
+	
+	var testModel = Record.newPlainInstance({Padding: 100, Width: 300, _ThumbValue: 0, _Value: 0, AdjValue: 0, "Text": "Foo"});
+	var m = WorldMorph.current().addMorph(using(lively.scene, lively.paint, lively.data, lively.demofx, Global).model(testModel).link(LabeledSliderBlueprint));
+	m.setPosition(WorldMorph.current().bounds().center());
+    });
 
     /*********************************************/
     // application code
@@ -346,11 +380,11 @@ module('lively.demofx').requires().toRun(function() {
     var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0, 
 	LabelValue: "radius 0.00"});
     
-    var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
+    var targetImage = new ImageMorph(new Rectangle(100, 100, 500, 333), 
 	URL.source.withFilename('Resources/images/flower.jpg').toString());
     var effect = new lively.scene.GaussianBlur(0.001, "myfilter");
 
-    effect.applyTo(img);
+    effect.applyTo(targetImage);
 
     sliderModel.addObserver({
 	onAdjValueUpdate: function(value) {
@@ -360,9 +394,7 @@ module('lively.demofx').requires().toRun(function() {
 	}
     });
     
-    var canvasModel = Record.newPlainInstance({Image: null, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0});
-    
-    canvasModel.setImage(img);
+    var canvasModel = Record.newPlainInstance({Image: targetImage, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0});
 
     var container = new BoxMorph(new Rectangle(230, 100, canvasWidth, canvasHeight + 100));
 
@@ -379,6 +411,8 @@ module('lively.demofx').requires().toRun(function() {
     var canvasMorph = container.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
     canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), true);
+
+
     
     
     var sliderMorph = container.addMorph(new lively.demofx.Slider(sliderModel));
@@ -387,10 +421,10 @@ module('lively.demofx').requires().toRun(function() {
 
     var label = container.addMorph(new TextMorph(new Rectangle(0,0,0,0)).beLabel());
     label.setTextColor(Color.white);
-
     label.connectModel(sliderModel.newRelay({Text: "LabelValue"}), true);
     label.align(label.bounds().leftCenter(), sliderMorph.bounds().rightCenter());
     label.translateBy(pt(10, 0));
+
 
     var knobMorph = container.addMorph(new lively.demofx.KnobMorph(canvasModel));
     knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());

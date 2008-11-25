@@ -1438,6 +1438,9 @@ Object.extend(Morph, {
 		morph.setSubmorphs(literal.submorphs);
 	    else throw new TypeError();
 	}
+	if (literal.transforms) {
+	    morph.setTransforms(literal.transforms);
+	}
 	return morph;
     }
 
@@ -1976,6 +1979,13 @@ Morph.addMethods({
 	this.scale = tfm.getScale();
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
 	this.scale = this.scale/this.fisheyeScale;
+	this.transformChanged();
+    },
+
+    setTransforms: function(array) {
+	// FIXME update origin/rotation/scale etc?
+	// collapse the transforms and apply the result?
+	lively.scene.Node.prototype.setTransforms.call(this, array);
 	this.transformChanged();
     },
 

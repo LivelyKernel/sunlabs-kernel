@@ -18,11 +18,21 @@ function dbgOn(cond, optMessage) {
 // namespace logic adapted from
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 function using() {
-    var args = arguments; // FIXME: enable using('lively.Text')
+    var args = arguments; 
     return {
-	run: function module(inner) { 
-	    return inner.apply(args[0], args); 
+	run: function run(inner) { 
+	    if (this.moduleName) { 
+		// little convenience, 
+		if (args.length > 0) console.log('using().module(): ignoring args ' + args);
+		return module(this.moduleName).requires().toRun(inner);
+	    } else return inner.apply(args[0], args); 
 	},
+
+	module: function(moduleName) {
+	    this.moduleName = moduleName;
+	    return this;
+	},
+
 	model: function model(model) {
 	    this.model = model;
 	    return this;
@@ -32,6 +42,15 @@ function using() {
 	},
 	extend: function extend(base, extLiteral) {
 	    return this.link(Object.extend(Object.clone(base), extLiteral));
+	},
+
+	test: function(inner) {
+	    try {
+		return this.run(inner);
+	    } catch (er) {
+		alert('test failed: ' + er);
+		return undefined;
+	    }
 	}
 	
     };
@@ -2231,6 +2250,7 @@ Object.subclass('lively.data.Resolver', {
 	var reified;
 	if (type) {
 	    if (!constr) throw new Error('no class named ' + type);
+	    if (!constr.fromLiteral) throw new Error('class ' + constr.name + ' does not support fromLiteral');
 	    reified = constr.fromLiteral(initializer, optModel);
 	    if (reified instanceof lively.data.Bind) {
 		reified.key = key;

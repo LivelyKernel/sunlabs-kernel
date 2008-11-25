@@ -1990,6 +1990,19 @@ BoxMorph.subclass("TextMorph", {
     },
 });
     
+Object.extend(TextMorph, {
+    
+    fromLiteral: function(literal) {
+	var morph = new TextMorph(new Rectangle(0,0,0,0), literal.content || "");
+	literal.textColor && morph.setTextColor(literal.textColor);
+	literal.label && morph.beLabel();
+	return morph;
+    }
+
+
+});
+    
+
 // TextMorph accessor functions
 TextMorph.addMethods({
 
