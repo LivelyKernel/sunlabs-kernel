@@ -66,15 +66,15 @@ module('lively.demofx').requires().toRun(function() {
     const maximum = 1.0;
 
     lively.demofx.SceneMorph.subclass('lively.demofx.SliderThumb', {
-	formals: ["ThumbValue", 
+	formals: ["_ThumbValue",  // private
 		  "AdjValue", 
 		  "Width", 
-		  "Value"
+		  "_Value"
 		 ],
 	
 	content: {
 	    $:"Group", 
-	    transforms: [{$:"Translate", X: {$:"Bind", to: "ThumbValue" }, Y: -2}],
+	    transforms: [{$:"Translate", X: {$:"Bind", to: "_ThumbValue" }, Y: -2}],
 	    content:[
 		{$:"Rectangle",
 		 width: thumbWidth,
@@ -135,13 +135,13 @@ module('lively.demofx').requires().toRun(function() {
 		v = 1;
 	    }
 	    // FIXME reference to minimum/maximum
-	    this.setValue(minimum + (v * (maximum-minimum)));
+	    this.set_Value(minimum + (v * (maximum-minimum)));
 
 	    this.layoutChanged(); // FIXME this should happen elsewhere, reflects the fact that setting Value
 	    // will update the thumb position (thumb being rendered as a Group) but the parent won't notice
 	},
 
-	onValueUpdate: function(value) {
+	on_ValueUpdate: function(value) {
 	    var minimum = 0.0;
 	    var maximum = 1.0;
 	    var adjValue = (value - minimum)/(maximum - minimum);
@@ -150,14 +150,14 @@ module('lively.demofx').requires().toRun(function() {
 
 	onAdjValueUpdate: function(adjValue) {
 	    var thumbValue = adjValue * this.getWidth() - thumbWidth/2;
-	    this.setThumbValue(thumbValue);
+	    this.set_ThumbValue(thumbValue);
 	},
 	
 	onWidthUpdate: function(width) {
-	    this.setThumbValue(this.getAdjValue() * width - thumbWidth/2);
+	    this.set_ThumbValue(this.getAdjValue() * width - thumbWidth/2);
 	},
 
-	onThumbValueUpdate: function(value) {
+	on_ThumbValueUpdate: function(value) {
 	    //console.log('thumb value ' + value);
 	}
     });
@@ -333,7 +333,7 @@ module('lively.demofx').requires().toRun(function() {
     });
     });
 		
-    var sliderModel = Record.newPlainInstance({Value: 0, Width: 150, AdjValue: 0, ThumbValue: 0});
+    var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0});
     
     var img = new ImageMorph(new Rectangle(100, 100, 500, 333), 
 	URL.source.withFilename('Resources/images/flower.jpg').toString());
