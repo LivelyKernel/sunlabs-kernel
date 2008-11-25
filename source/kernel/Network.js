@@ -380,6 +380,10 @@ View.subclass('NetRequest', {
 	return this.request("PUT", URL.makeProxied(url), content);
     },
 
+    post: function(url, content) {
+	return this.request("POST", URL.makeProxied(url), content);
+    },
+
     propfind: function(url, depth, content) {
 	this.setContentType("text/xml"); // complain if it's set to something else?
 	if (depth != 0 && depth != 1)
