@@ -1432,7 +1432,7 @@ WidgetModel.subclass('ChangeList', {
     // during a development session should (;-) be completely well-formed in this regard.
     // Saving a change in a ChangeList browser will only edit the file;  no evaluation is implied
     
-    initialViewExtent: pt(400,250),
+    initialViewExtent: pt(420,450),
     openTriggerVariable: 'getChangeBanners',
 
     initialize: function($super, title, ignored, changes) {

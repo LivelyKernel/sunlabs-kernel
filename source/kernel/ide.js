@@ -697,7 +697,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
     
     asString: function() {
-        return this.moduleName + (this.target ? '' : '(not loaded)');
+        return this.moduleName + (this.target ? '' : ' (not loaded)');
     },
 
 	loadModule: function() {
