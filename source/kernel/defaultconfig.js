@@ -39,7 +39,7 @@ var UserAgent = (function() {
         usableOwnerSVGElement: !isRhino && !isMozilla,
 
         // WebKit XMLSerializer seems to do weird things with namespaces
-        usableNamespacesInSerializer: webKitVersion <= 0,
+        usableNamespacesInSerializer: false, //webKitVersion <= 0,
 
         usableXmlHttpRequest: !isRhino,
 
