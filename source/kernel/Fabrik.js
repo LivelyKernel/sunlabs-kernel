@@ -2269,9 +2269,9 @@ Component.subclass('FabrikComponent', {
         this.panel.fabrik = this;
         this.panel.setComponent(this);
      
-        var pseudo = new PseudoMorph();
-        WorldMorph.current().addMorphBack(pseudo);
-        pseudo.addNonMorph(this.rawNode); // fabrik hangs the all compontens implicit into this tree position
+        //var pseudo = new PseudoMorph();
+        //WorldMorph.current().addMorphBack(pseudo);
+        //pseudo.addNonMorph(this.rawNode); // fabrik hangs the all compontens implicit into this tree position
      
      
         this.morph.setupForFabrik(this);

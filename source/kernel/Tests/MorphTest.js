@@ -401,29 +401,38 @@ Morph.subclass('DummyMorph', {
 
 Widget.subclass('DummyWidget', {
 
+    description: "Dummy Widget for serialization",
+    viewTitle: "Dummy Widget",
+    initialViewExtent: pt(250, 260),
+
+
     initialize: function($super) { 
         $super();
-        this.model = 
-    	    Record.newPlainInstance({MyText: "tada"});
+        this.model = Record.newNodeInstance({MyText: "tada"});
+        this.relayToModel(this.model, {MyText: "+MyText"});
+    	this.ownModel(this.model);
     },
     
     sayHello: function() {
-        this.model.setMyText("Hello World");
+        this.setMyText("Hello World");
     },
     
     buildView: function(extent) {
         this.panel = new Morph(new lively.scene.Rectangle(rect(pt(20,20), pt(150,150))));
-        
+        this.panel.setFill(Color.green);    
         this.morph =  new TextMorph(rect(pt(10,10), pt(100,30)));
         this.morph2 =  new TextMorph(rect(pt(10,40), pt(100,60)));
         this.morph.widget = this;
         this.morph.connectModel(this.model.newRelay({Text: "MyText"}));
         this.morph2.connectModel(this.model.newRelay({Text: "MyText"}));
-        
         this.panel.addMorph(this.morph);
-        this.panel.addMorph(this.morph2);
-        
+        this.panel.addMorph(this.morph2);        
         return  this.panel;
+    },
+    
+    open: function(){
+        this.buildView();
+        WorldMorph.current().addMorph(this.panel);
     }
 
 });

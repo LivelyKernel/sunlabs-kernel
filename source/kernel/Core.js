@@ -969,7 +969,7 @@ Copier.subclass('Importer', {
 	    if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
 	} else {
 	    // no world, create one and add all the serialized morphs to it.
-	    var canvas = document.getElementById("canvas");
+	    var canvas = this.canvas(doc);
 	    world = new WorldMorph(canvas);
 	    // this adds a the WorldMorph's <g> at the end of the list
 	    canvas.appendChild(world.rawNode);
@@ -1180,6 +1180,13 @@ lively.data.Wrapper.subclass('Morph', {
 	
 	this.restoreFromSubnodes(importer);
 	this.restorePersistentState(importer);    
+	
+	if (!this.shape) { 
+	   console.log("Error in Morph.deserialize(): I have no shape! Fall back to Rectangle!");
+	   var shape = new lively.scene.Rectangle(new Rectangle(0, 0, 100, 100));
+	   this.initializePersistentState(shape);
+	   this.applyStyle({fill: Color.red});
+	};
 	
 	this.initializeTransientState();
 	importer.verbose && console.log("deserialized " + this);
