@@ -7,26 +7,6 @@ using().module('lively.demofx').run(function() {
 	}
     });
 
-
-    lively.demofx.SceneMorph.subclass('lively.demofx.Label', { // FIXME: Unfinished
-	formals: ["Text", "FormattedValue", "FormattedPosition"],
-	content: {
-	    $:"Group",
-	    content: [
-		{$:"Text", content: {$:"Bind", to: "Text"},
-		 fontSize: 10,
-		 fill: Color.white
-		},
-		{$:"Text", content: {$:"Bind", to: "FormattedValue"},
-		 transforms: [{$:"Translate", X: {$:"Bind", to: "FormattedPosition"}}],  
-		 fontSize: 10,
-		 fill: Color.rgb(40, 40, 40),
-		}
-	    ]
-	}
-    });
-    
-
     using().run(function() {
     const closeSize = 12;
     lively.demofx.SceneMorph.subclass('lively.demofx.CloseButton', {
@@ -219,8 +199,6 @@ using().module('lively.demofx').run(function() {
     });
 
     
-
-
     const width = 600;//(6 * (82 + 10)) + 20;    
     const canvasWidth = width-10;
     const canvasHeight = 333 + 40;
