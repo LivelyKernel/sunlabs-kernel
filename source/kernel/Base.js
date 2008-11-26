@@ -33,7 +33,9 @@ function using() {
 	    return this;
 	},
 
-	model: function model(model) {
+	model: function(model) {
+	    // KP: interestingly, declaring the above as "model: function model(model)" 
+	    // seems to bind model to to the function, not the formal parameter, at least in rhino!
 	    this.model = model;
 	    return this;
 	},

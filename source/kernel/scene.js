@@ -455,27 +455,44 @@ this.Node.addMethods({
     getTransforms: function() {
 	if (!this.cachedTransforms) {
 	    var list = this.rawNode.transform.baseVal;
-	    var tfms = this.cachedTransforms = [];
+	    var array = this.cachedTransforms = new Array(list.numberOfItems);
 	    for (var i = 0; i < list.numberOfItems; i++) {
-		tfms.push(new lively.scene.Transform(list.getItem(i)));
+		// FIXME: create specialized classes (Rotate/Translate etc)
+		array[i] = new lively.scene.Transform(list.getItem(i), this);
 	    }
 	}
 	return this.cachedTransforms;
     },
-
+    
     setTransforms: function(array) {
-	var list = this.rawNode.transform.baseVal;
-	list.clear();
-	delete this.cachedTransforms;
-	for (var i = 0; i < array.length; i++) {
-	    list.appendItem(array[i].rawNode);
+	var useDOM = Config.useTransformAPI;
+	if (useDOM) {
+	    var list = this.rawNode.transform.baseVal;
+	    list.clear();
 	}
+	this.cachedTransforms = array;
+	for (var i = 0; i < array.length; i++) {
+	    var existingTargetNode = array[i].targetNode;
+	    if (existingTargetNode && existingTargetNode !== this) 
+		console.warn('reusing transforms? not good');
+	    array[i].targetNode = this;
+	    useDOM && list.appendItem(array[i].rawNode);
+	}
+	useDOM || this.rawNode.setAttributeNS(null, "transform" , array.invoke('toString').join(' '));
+	
+    },
+    
+    transformListItemChanged: function(tfm) {  // note that Morph has transformChanged (singular)
 	if (!Config.useTransformAPI) {
-	    var attr = array.invoke('toString').join(' ');
-	    this.rawNode.setAttributeNS(null, "transform", attr);
-	    //console.log('set attr ' + attr);
+	    //console.log('changed ' + tfm + ' on ' + this);
+	    var array = this.cachedTransforms;
+	    if (array) {
+		//(array.indexOf(tfm) < 0) && console.warn('cached transforms not set? passing ' + tfm);
+		this.rawNode.setAttributeNS(null, "transform" , array.invoke('toString').join(' '));
+	    } 
 	}
     }
+    
 
 });
 
@@ -1293,7 +1310,9 @@ this.Shape.subclass('lively.scene.Group', {
 	    var tr = tfms[0].getTranslate();
 	    tfms[0].setTranslate(tr.x + displacement.x, tr.y + displacement.y);
 	} if (tfms.length == 0) {
-	    this.setTransforms([new lively.scene.Translate(displacement.x, displacement.y)]);
+	    var tfm = new lively.scene.Transform(null, this);
+	    tfm.setTranslate(displacement.x, displacement.y);
+	    this.setTransforms([tfm]);
 	    
 	} else console.warn('no translate for you ' + displacement + ' length ' + tfms.length + " type " + tfms[0].type());
     },
@@ -1648,8 +1667,11 @@ Object.subclass('lively.scene.Similitude', {
 
 Wrapper.subclass('lively.scene.Transform', {
     // a more direct wrapper for SVGTransform
-    initialize: function(rawNode) {
-	this.rawNode = rawNode || locateCanvas().createSVGTransform();
+    initialize: function(rawNode, targetNode) {
+	if (!rawNode) rawNode = locateCanvas().createSVGTransform();
+	this.rawNode = rawNode;
+	// we remember the target node so that we can inform it that we changed
+	this.targetNode = targetNode; 
     },
 
     getTranslate: function() {
@@ -1662,12 +1684,14 @@ Wrapper.subclass('lively.scene.Transform', {
     setTranslate: function(x, y) {
 	// note this overrides all the values
 	this.rawNode.setTranslate(x, y);
+	this.targetNode.transformListItemChanged(this);
 	return this;
     },
 
     setRotate: function(angleInDegrees, anchorX, anchorY) {
 	// note this overrides all the values
 	this.rawNode.setRotate(angleInDegrees, anchorX || 0.0, anchorY || 0.0);
+	this.targetNode.transformListItemChanged(this);
 	return this;
     },
 
@@ -1675,15 +1699,27 @@ Wrapper.subclass('lively.scene.Transform', {
 	if (this.rawNode.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
 	    var tr = this.getTranslate();
 	    this.rawNode.setTranslate(x, tr.y);
+	    this.targetNode.transformListItemChanged(this);
+	    
 	} else throw new TypeError('not a translate ' + this);
+    },
+
+    setX: function(x) {
+	return this.setTranslateX(x);
     },
     
     setTranslateY: function(y) {
 	if (this.rawNode.type == SVGTransform.SVG_TRANSFORM_TRANSLATE) {
 	    var tr = this.getTranslate();
 	    this.rawNode.setTranslate(tr.x, y);
+	    this.targetNode.transformListItemChanged(this);
 	} else throw new TypeError('not a translate ' + this);
     },
+
+    setY: function(y) {
+	return this.setTranslateY(y);
+    },
+
 
     type: function() {
 	return this.rawNode.type;
@@ -1713,7 +1749,12 @@ Wrapper.subclass('lively.scene.Transform', {
 	    return "translate(" + delta.x + "," + delta.y +")";
 	case SVGTransform.SVG_TRANSFORM_ROTATE:
 	    // FIXME how about the rotation ancor?
-	    return "rotate(" + this.getAngle()  +")"; // in degrees
+	    var mx = this.rawNode.matrix;
+	    if (mx.e || mx.f) {
+		var str = "rotate(" + this.getAngle().toFixed(2) + " " + (mx.e||0).toFixed(2)  + " " + (mx.f||0).toFixed(2) + ")";
+		console.log('format ' + str);
+		return str;
+	    } else return "rotate(" + this.getAngle()  +")"; // in degrees
 	case SVGTransform.SVG_TRANSFORM_SCALE:
 	    return "scale(" + this.getScale() + ")";
 	default:
@@ -1723,35 +1764,23 @@ Wrapper.subclass('lively.scene.Transform', {
     }
 });
 
-lively.scene.Transform.subclass('lively.scene.Translate', {
-    initialize: function($super, x, y) {
-	$super();
-	this.setTranslate(x, y);
-    },
-
-    setX: function(x) {
-	return this.setTranslateX(x);
-    },
-
-    setY: function(y) {
-	return this.setTranslateY(y);
-    }
-
-});
-
-Object.extend(lively.scene.Translate, {
+lively.scene.Translate = {
     fromLiteral: function(literal) {
-	return new lively.scene.Translate(literal.X || 0.0, literal.Y || 0.0);
+	var tfm = new lively.scene.Transform();
+	tfm.rawNode.setTranslate(literal.X || 0.0, literal.Y || 0.0);
+	// tfm.targetNode should be set from setTransforms, already on the call stack
+	return tfm;
     }
-});
+};
 
 
 lively.scene.Transform.subclass('lively.scene.Rotate', {
-    initialize: function($super, angle, anchorX, anchorY) {
-	$super();
+    // FIXME: fold into Transform
+    initialize: function($super, degrees, anchorX, anchorY) {
+	$super(null, null);
+	// doesn't know its target node yet
 	this.anchor = pt(anchorX|| 0.0, anchorY || 0.0);
-	this.setRotate(angle, this.anchor.x, this.anchor.y);
-
+	this.rawNode.setRotate(degrees, anchorX || 0.0, anchorY || 0.0);
     },
 
     setAngle: function(angle) {
@@ -1764,7 +1793,6 @@ Object.extend(lively.scene.Rotate, {
     fromLiteral: function(literal) {
 	return new lively.scene.Rotate(literal.Angle, literal.X, literal.Y);
     }
-
 });
 
 Wrapper.subclass('lively.scene.Effect', {

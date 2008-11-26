@@ -32,14 +32,14 @@ var UserAgent = (function() {
     // Determines User Agent capabilities
     return {
         // Newer versions of WebKit implement proper SVGTransform API,
-        // with potentially better performance
-        usableTransformAPI: webKitVersion >= 525,
+        // with potentially better performance. Scratch that, let's make it more predictable:
+        usableTransformAPI: (webKitVersion <= 0), //webKitVersion >= 525,
         usableDropShadow: webKitVersion >= 525,
         canExtendBrowserObjects: !isRhino, // Error, document
         usableOwnerSVGElement: !isRhino && !isMozilla,
 
         // WebKit XMLSerializer seems to do weird things with namespaces
-        usableNamespacesInSerializer: webKitVersion < 0,
+        usableNamespacesInSerializer: webKitVersion <= 0,
 
         usableXmlHttpRequest: !isRhino,
 
