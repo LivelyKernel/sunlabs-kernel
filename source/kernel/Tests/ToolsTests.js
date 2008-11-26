@@ -677,6 +677,15 @@ main.logCompletion("main").delay(Config.mainDelay);\n\
         this.assertEqual(result[0].stopIndex, src.length-1);
     },
     
+	testParseModuleAndClass: function() {
+        var src = 'module(\'lively.xyz\').requires(\'abc.js\').toRun(function(thisModule) {\n\Object.subclass(\'Abcdef\', {\n}); // this is a comment\n});';
+        var result = this.sut.parseSource(src);
+
+        this.assertEqual(result.length, 1);
+        this.assertEqual(result[0].type, 'moduleDef');
+        this.assertEqual(result[0].stopIndex, src.length-1);
+    },
+
     testParseModuleAndUsingDef: function() { // /* ... */ || // ...
         var src = 'module(\'lively.TileScripting\').requires(\'Helper.js\').toRun(function(thisModule) {\n\
 using().run(function() {\nMorph.addMethods({})\n})\n});';
@@ -691,6 +700,7 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
 		var src = 'documentation: \'Extended FileParser\' +\n\t\t\t\'bla\','
 		var result = this.sut.callOMeta('propertyDef', src);
         this.assertEqual(result.type, 'propertyDef');
+		this.assertEqual(result.stopIndex, src.length-1);
     },
 
 });

@@ -757,7 +757,7 @@ Object.subclass('AnotherFileParser', {
     
     callOMeta: function(rule, src) {
         if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'))
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, !this.debugMode/*hideErrors?*/);
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, /*!this.debugMode*/true/*hideErrors?*/);
     },
     
     parseClass: function() {
@@ -777,6 +777,8 @@ Object.subclass('AnotherFileParser', {
     parseModuleBegin: function() {
         var match = this.currentLine.match(/^\s*module\([\'\"](.*)[\'\"]\)\.requires\(.*toRun\(.*$/);
         if (!match) return null;
+		if (this.debugMode)
+			console.log('Found module start in line ' +  this.currentLineNo());
         var descr = new ide.FileFragment(match[1], 'moduleDef', this.ptr, null, this.currentLineNo(), this.fileName);
         this.ptr += match[0].length + 1;
         return descr;
@@ -785,6 +787,8 @@ Object.subclass('AnotherFileParser', {
     parseUsingBegin: function() {
         var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*$/);
         if (!match) return null;
+		if (this.debugMode)
+			console.log('Found using start in line ' +  this.currentLineNo());
         var descr = new ide.FileFragment(match[1], 'usingDef', this.ptr, null, this.currentLineNo(), this.fileName);
         this.ptr += match[0].length + 1;
         return descr;
@@ -794,6 +798,12 @@ Object.subclass('AnotherFileParser', {
         if (specialDescr.length === 0) return null;
         var match = this.currentLine.match(/^\s*\}.*?\)[\;]?.*$/);
         if (!match) return null;
+		if (this.debugMode) {
+			if (specialDescr.last().type === 'moduleDef')
+				console.log('Found module end in line ' +  this.currentLineNo());
+			if (specialDescr.last().type === 'usingDef')
+				console.log('Found using end in line ' +  this.currentLineNo());
+		}
         specialDescr.last().stopIndex = this.ptr + match[0].length - 1;
         this.ptr = specialDescr.last().stopIndex + 1;
         // FIXME hack
