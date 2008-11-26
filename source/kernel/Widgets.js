@@ -2100,7 +2100,8 @@ Global.newRealListPane = function(initialBounds, suppressSelectionOnUpdate) {
 };
 
 Global.newTextPane = function(initialBounds, defaultText) {
-    return new ScrollPane(new TextMorph(initialBounds, defaultText), initialBounds); 
+	var useChangeClue = true;
+    return new ScrollPane(new TextMorph(initialBounds, defaultText, useChangeClue), initialBounds); 
 };
 
 Global.newPrintPane = function(initialBounds, defaultText) {

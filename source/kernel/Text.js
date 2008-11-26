@@ -912,17 +912,18 @@ BoxMorph.subclass("TextMorph", {
 	}
     },
 
-    initialize: function($super, rect, textString) {
+    initialize: function($super, rect, textString, useChangeClue) {
         this.textString = textString || "";
         $super(rect);
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
         if (this.textString instanceof thisModule.Text) {
-	    this.textStyle = this.textString.style;
-	    this.textString = this.textString.string || "";
-	} 
-	if (this.textString === undefined) alert('initialize: ' + this);
-	this.layoutChanged();
+	    	this.textStyle = this.textString.style;
+	    	this.textString = this.textString.string || "";
+		}
+		if (this.textString === undefined) alert('initialize: ' + this);
+		this.addChangeClue(useChangeClue);
+		this.layoutChanged();
         return this;
     },
 
@@ -1575,6 +1576,8 @@ BoxMorph.subclass("TextMorph", {
 	var selectionIndex = this.selectionRange[0] + replacement.length;
 	if (delayComposition) this.selectionRange = [selectionIndex, selectionIndex-1];
 	else this.setNullSelectionAt(selectionIndex); // this displays it as well
+
+		this.showChangeClue();		
     },
 
     setNullSelectionAt: function(charIx) { 
@@ -1877,6 +1880,7 @@ BoxMorph.subclass("TextMorph", {
     },
     doSave: function() {
         this.saveContents(this.textString); 
+		this.hideChangeClue();
     },
     tryBoundEval: function (str) {
 	var result;
@@ -2002,6 +2006,25 @@ Object.extend(TextMorph, {
 
 });
     
+TextMorph.addMethods({ // change clue additions
+
+	addChangeClue: function(useChangeClue) {
+		if (!useChangeClue) return;
+		this.changeClue = Morph.makeRectangle(0,0,5,5);
+		this.changeClue.setFill(Color.red);
+		this.changeClue.ignoreEvents();
+	},
+
+	showChangeClue: function() {
+		if (!this.changeClue) return;
+		this.addMorph(this.changeClue);
+	},
+
+	hideChangeClue: function() {
+		if (!this.changeClue) return;
+		this.changeClue.remove();
+	}
+});
 
 // TextMorph accessor functions
 TextMorph.addMethods({
@@ -2148,6 +2171,7 @@ TextMorph.addMethods({
     onTextUpdate: function(string) {
 	this.updateTextString(string);
 	this.textBeforeChanges = string;
+	this.hideChangeClue();
     },
 
     onSelectionUpdate: function(string) {

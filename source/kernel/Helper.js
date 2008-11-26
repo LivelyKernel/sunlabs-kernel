@@ -343,7 +343,7 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
                     evt.hand.grabMorph(browserMorph, evt)
                 })}},
             {label: 'TextMorph', action: function(evt) {
-                var textMorph = new TextMorph(pt(400,50).extentAsRectangle());
+                var textMorph = new TextMorph(pt(400,50).extentAsRectangle(), '', true /*show changeClue*/);
                 evt.hand.grabMorph(textMorph, evt) }},
             {label: 'OMeta Workspace', action: function(evt) {
                 require('lively.Ometa').toRun(function() {
