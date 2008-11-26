@@ -1078,8 +1078,9 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 	searchFor: function(str) {
 		var allFragments = Object.values(tools.SourceControl.modules)
 			.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
-
-		return allFragments.select(function(ea) { return ea.getSourceCode().include(str) });
+		return allFragments.select(function(ea) {
+			return ea.getSourceCodeWithoutSubElements().include(str)
+		});
 },
 
     scanLKFiles: function($super, beSync) {
@@ -1101,7 +1102,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     
     preLoadFileNames: function($super) {
 		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
-		return []
+		return [ ]
     },
 });
  
@@ -1177,6 +1178,16 @@ Object.subclass('lively.ide.FileFragment', {
         return this.getFileString().substring(this.startIndex, this.stopIndex+1);
     },
  
+	getSourceCodeWithoutSubElements: function() {
+		var completeSrc = this.getSourceCode();
+		return this.subElements.inject(completeSrc, function(src, ea) {
+			var elemSrc = ea.getSourceCode();
+			var start = src.indexOf(elemSrc);
+			var end = elemSrc.length-1 + start;
+			return src.substring(0,start) + src.substring(end+1);
+		});
+    },
+
     putSourceCode: function(newString) {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
         this.getSourceControl().putSourceCodeFor(this, newString);

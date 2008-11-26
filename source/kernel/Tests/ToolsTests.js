@@ -761,20 +761,20 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
    
    setUp: function() {
        /* creates:
-           completeFileDef: foo.js (0-254 in foo.js,   starting at line null, 1 subElements)
-           moduleDef:  foo.js      (0-254 in foo.js,   starting at line 1,  4 subElements)
-           klassDef: ClassA        (55-123 in foo.js,  starting at line 2,  1 subElements)
-           methodDef: m1           (84-119 in foo.js,  starting at line 3,  0 subElements)
-           staticFuncDef: m3       (124-155 in foo.js, starting at line 8,  0 subElements)
-           functionDef: abc        (156-179 in foo.js, starting at line 9,  0 subElements)
-           klassDef: ClassB        (180-234 in foo.js, starting at line 10, 1 subElements)
-           methodDef: m2           (209-230 in foo.js, starting at line 11, 0 subElements)
+           moduleDef: foo.js (0-277 in foo.js, starting at line 1, 4 subElements)
+			klassDef: ClassA (55-123 in foo.js, starting at line 2, 1 subElements)
+			methodDef: m1 (84-119 in foo.js, starting at line 3, 0 subElements)
+			staticFuncDef: m3 (124-155 in foo.js, starting at line 8, 0 subElements)
+			functionDef: abc (156-179 in foo.js, starting at line 9, 0 subElements)
+			klassDef: ClassB (180-257 in foo.js, starting at line 10, 2 subElements)
+			methodDef: m2 (209-230 in foo.js, starting at line 11, 0 subElements)
+			methodDef: m3 (232-253 in foo.js, starting at line 12, 0 subElements)
         */
         var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
                'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n' +
                'ClassA.m3 = function() { 123 };\n' +
                'function abc() { 1+2 };\n' +
-               'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 }\n});\n' +
+               'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
                '}); // end of module';
         var db = new AnotherSourceDatabase();
         db.cachedFullText['foo.js'] = src;
@@ -785,17 +785,16 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
             db.cachedFullText['foo.js'] = newFileString;
         };
         this.root = db.addModule('foo.js', src);
-        Global.y = this.root;
    },
    
    testCorrectNumberOfFragments: function() {
        this.assertEqual(this.root.type, 'moduleDef');
-       this.assertEqual(this.root.flattened().length, 7);
+       this.assertEqual(this.root.flattened().length, 8);
    },
    
    testFragmentsOfOwnFile: function() {
        var classFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassA' });
-       this.assertEqual(classFragment.fragmentsOfOwnFile().length, 7-1);
+       this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
    },
    
    testPutNewSource: function() {
@@ -808,10 +807,17 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
        this.assertEqual(classFragment.subElements[0].stopIndex, 119+17, 'method1 stop');
        var otherClassFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassB' });
        this.assertEqual(otherClassFragment.startIndex, 180+17, 'classFrag2 start');
-       this.assertEqual(otherClassFragment.stopIndex, 234+17, 'classFrag2 stop');
-       this.assertEqual(this.root.stopIndex, 254+17, 'root stop');
-       // this.assertEqual(this.root.subElements[0].stopIndex, 254+17);
-   }
+       this.assertEqual(otherClassFragment.stopIndex, 257+17, 'classFrag2 stop');
+       this.assertEqual(this.root.stopIndex, 277+17, 'root stop');
+       // this.assertEqual(this.root.subElements[0].stopIndex, 277+17);
+   },
+
+	testGetSourceCodeWithoutSubElements: function() {
+		var fragment = this.root.flattened().detect(function(ea) { return ea.name === 'ClassB' });
+		this.assert(fragment, 'no fragment found');
+		var expected =  'ClassA.subclass(\'ClassB\', {\n\t\n});\n';
+		this.assertEqual(fragment.getSourceCodeWithoutSubElements(), expected);
+	}
    
 });
     
