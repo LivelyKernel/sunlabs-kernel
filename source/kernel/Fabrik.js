@@ -1392,20 +1392,6 @@ BoxMorph.subclass('ComponentMorph', {
         return rect(topLeft, bottomRight);
     },
     
-    addVisualChangeClue: function(textMorph) {
-        var changeClue = Morph.makeRectangle(0,0,5,5);
-        changeClue.setFill(Color.red);
-        changeClue.ignoreEvents(); 
-        textMorph.replaceSelectionWith = textMorph.replaceSelectionWith.wrap(function(proceed, replacement, delayComposition, justMoreTyping){      
-            proceed(replacement, delayComposition, justMoreTyping);
-            this.addMorph(changeClue)
-        })
-        textMorph.doSave = textMorph.doSave.wrap(function(proceed, str) {
-            proceed();
-            this.removeMorph(changeClue)
-        });
-    },
-    
     // CLEANUp!!!!!!!!!!!!!!!
     addTextPane: function() {
         var minHeight = 70;
@@ -1430,8 +1416,6 @@ BoxMorph.subclass('ComponentMorph', {
         morph.innerMorph().okToBeGrabbedBy = this.okToBeGrabbedBy;
         
         morph.relayMouseEvents(morph.innerMorph(), {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-    
-        this.addVisualChangeClue(morph.innerMorph());
         
         return this.addMorph(morph, 'text');
     },
