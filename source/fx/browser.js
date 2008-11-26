@@ -619,12 +619,9 @@ var FilterModule = {
 	var effect = lively.data.FragmentURI.getElement(filterUri).firstChild;
 	console.log('found filter ' + effect);
 	if (effect.localName == 'feGaussianBlur') {
-	    // the spec usess stdDeviationX and stdDeviationY
-	    var deviation = Math.floor(parseFloat(effect.getAttributeNS(null, "stdDeviation"))*10.0) + 1; // ?
-	    console.log('deviation ' + deviation + " cheating anyway and setting deviation to " + 10);
-	    var blur = new Packages.com.sun.scenario.effect.GaussianBlur(10); // FIXME: ok so we're cheating here
+	    fx.dom.render(effect);
 	    var fxNode = new Packages.com.sun.scenario.scenegraph.SGEffect();
-	    fxNode.setEffect(blur);
+	    fxNode.setEffect(effect._fxFilter);
 	    return fxNode;
 	} else return null;
     }
@@ -768,6 +765,15 @@ fx.dom.renderers[SVGImageElement.tagName] = function(element) {
     return element._fxBegin;
 }
 
+fx.dom.renderers[SVGFEGaussianBlurElement.tagName] = function(element) {
+    if (!element._fxFilter) {
+	element._fxFilter = new Packages.com.sun.scenario.effect.GaussianBlur(); 
+    }
+    var radius = parseFloat(element.getAttributeNS(null, "stdDeviation"));
+    if (radius < 1) radius = 1;
+    element._fxFilter.setRadius(parseFloat(radius));
+    //console.log('upated feGaussianBlur to ' + radius);
+}
 
 // end of SVG impl
 

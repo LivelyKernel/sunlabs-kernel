@@ -693,7 +693,7 @@ var SVGImageElement =  SVGElement.defineElement('image', [SVGLocatable, SVGStyla
 
 var SVGFEGaussianBlurElement = SVGElement.defineElement('feGaussianBlur', null,
     {name: "in1", readonly: true, type:SVGAnimatedString},
-    {name: "stdDeviationX", readonly: true, type:SVGAnimatedNumber},
-    {name: "stdDeviationY", readonly: true, type:SVGAnimatedNumber}
+    {name: "stdDeviation", readonly: true, type:SVGAnimatedNumber}
+//    {name: "stdDeviationY", readonly: true, type:SVGAnimatedNumber} // verify the spec about XY vs a single deviation
 );
 						       
