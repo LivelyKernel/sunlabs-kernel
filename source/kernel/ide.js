@@ -614,7 +614,7 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
     }
     
 });
- 
+
 ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should be module node
  
 	maxStringLength: 10000,
@@ -666,26 +666,28 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
     
     menuSpec: function() {
-		var node = this;
-		var specs = [];
-		if (this.target) {
-			return [
-				['toggle showAll', function() {
-					node.showAll = !node.showAll;
-					node.signalTextChange()}],
-				['open ChangeList viewer', function() {
-					new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}]
-			];
-		}
-        return [['load module', function() {
-			node.target = tools.SourceControl.addModule(node.moduleName);
-            node.signalChange();
-        }]];
-    },
+    		var node = this;
+    		if (!this.target) return [];
+    		return [
+    			['toggle showAll', function() {
+    				node.showAll = !node.showAll;
+    				node.signalTextChange()}],
+    			['open ChangeList viewer', function() {
+    				new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}],
+    			['load all modules', function() {
+    				node.siblingNodes().forEach(function(ea) { ea.loadModule() });
+    				node.signalChange()}],
+    		];
+
+            /*return [['load module', function() {
+    			node.loadModule();
+                node.signalChange();
+            }]];*/
+        },
     
     sourceString: function() {
 		if (!this.target) {
-			this.target = tools.SourceControl.addModule(this.moduleName);
+			this.loadModule();
 			this.signalChange();
 		}
         //if (!this.target) return '';
@@ -697,9 +699,14 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     asString: function() {
         return this.moduleName + (this.target ? '' : '(not loaded)');
     },
+
+	loadModule: function() {
+		this.target = tools.SourceControl.addModule(this.moduleName);
+	}
     
 });
- 
+
+
 ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
  
     childNodes: function() {

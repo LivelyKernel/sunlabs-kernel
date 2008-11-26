@@ -1825,7 +1825,7 @@ ChangeList.subclass('SourceDatabase', {
         // FIXME remove
         var rejects = ["Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
                        "Serialization.js", "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
-                       "workspace.js"]
+                       "workspace.js", 'JSON.js']
         return jsFiles.reject(function(ea) { return rejects.include(ea) });
     },
 
