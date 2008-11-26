@@ -687,6 +687,12 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
         this.assertEqual(result[0].subElements[0].type, 'usingDef');
     },
 
+	testFailingProperty: function() { // multiline properties
+		var src = 'documentation: \'Extended FileParser\' +\n\t\t\t\'bla\','
+		var result = this.sut.callOMeta('propertyDef', src);
+        this.assertEqual(result.type, 'propertyDef');
+    },
+
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest3', {

@@ -1566,7 +1566,7 @@ WidgetModel.subclass('ChangeList', {
         return panel;
     }
 
-});  // ({ balance
+});  // balance
 
 
 // ===========================================================================

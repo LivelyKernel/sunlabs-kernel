@@ -667,10 +667,13 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		var node = this;
 		var specs = [];
 		if (this.target) {
-			return [['toggle showAll', function() {
-				node.showAll = !node.showAll;
-				node.signalTextChange();
-        	}]];
+			return [
+				['toggle showAll', function() {
+					node.showAll = !node.showAll;
+					node.signalTextChange()}],
+				['open ChangeList viewer', function() {
+					new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}]
+			];
 		}
         return [['load module', function() {
 			node.target = tools.SourceControl.addModule(node.moduleName);
@@ -679,14 +682,19 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
     
     sourceString: function() {
-        if (!this.target) return '';
+		if (!this.target) {
+			this.target = tools.SourceControl.addModule(this.moduleName);
+			this.signalChange();
+		}
+        //if (!this.target) return '';
 		var src = this.target.getSourceCode();
 		if (src.length > this.maxStringLength && !this.showAll) return '';
         return src;
     },
     
     asString: function() {
-        return this.moduleName + (this.target ? '' : '(not loaded)');
+        //return this.moduleName + (this.target ? '' : '(not loaded)');
+		return this.moduleName;
     },
     
 });
@@ -733,10 +741,12 @@ ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 // ===========================================================================
 Object.subclass('AnotherFileParser', {
     
+    debugMode: false,
+    
     documentation: 'Extended FileParser. Scans source code and extracts SourceCodeDescriptors for ' +
                    'classes, objects, functions, methods. Uses OMeta.',
     
-   ometaRules: [/*'blankLine',*/ 'comment',
+    ometaRules: [/*'blankLine',*/ 'comment',
                'klassDef', 'objectDef', 'klassExtensionDef',
                'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
                'unknown'],
@@ -747,7 +757,7 @@ Object.subclass('AnotherFileParser', {
     
     callOMeta: function(rule, src) {
         if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'))
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, true/*hideErrors?*/);
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, !this.debugMode/*hideErrors?*/);
     },
     
     parseClass: function() {
@@ -840,7 +850,7 @@ Object.subclass('AnotherFileParser', {
         var descr;
         
         while (this.ptr < this.src.length) {
-            // msParseStart = new Date().getTime();
+            if (this.debugMode) msParseStart = new Date().getTime();
             
             this.currentLine = this.lines[this.currentLineNo()-1];
             var tmpPtr = this.ptr;
@@ -861,13 +871,16 @@ Object.subclass('AnotherFileParser', {
             }
             /*******/
             if (this.ptr <= tmpPtr) throw dbgOn(new Error('Could not go forward: ' + tmpPtr));
-            
-            // var msNow = new Date().getTime();
-            // var duration = msNow-msParseStart;
-            // console.log('Parsed line ' +
-            //             this.findLineNo(this.lines, descr.startIndex) + ' to ' + this.findLineNo(this.lines, descr.stopIndex) +
-            //             ' (' + descr.type + ':' + descr.name + ') after ' + (msNow-msStart)/1000 + 's (' + duration + 'ms)' +
-            //             (duration > 100 ? '!!!!!!!!!!' : ''));
+
+            if (this.debugMode) {
+                var msNow = new Date().getTime();
+                var duration = msNow-msParseStart;
+                console.log(Strings.format('Parsed line %s to %s (%s:%s) after %ss (%sms)%s',
+                    this.findLineNo(this.lines, descr.startIndex),
+                    this.findLineNo(this.lines, descr.stopIndex),
+                    descr.type, descr.name,
+                    (msNow-msStart)/1000, duration, (duration > 100 ? '!!!!!!!!!!' : '')));
+            }
             descr = null;
         }
         
@@ -1069,7 +1082,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     },
     
     preLoadFileNames: function($super) {
-	return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
+		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
+		return []
     },
 });
  
