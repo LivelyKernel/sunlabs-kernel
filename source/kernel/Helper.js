@@ -84,13 +84,13 @@ Global.logCall = function(args, from, shift) {
     console.log(s)
 };
 
-// function logCallHelper(from, methodName, args, indent) {
-//     return Strings.format('%s%s>>%s(%s)',
-//         indentForDepth(indent),
-//         from.toString(),
-//         methodName,
-//         args.collect(function(ea) { return ea.toString() }).join(', '));
-// };
+function logCallHelper(from, methodName, args, indent) {
+    return Strings.format('%s%s>>%s(%s)',
+        indentForDepth(indent),
+        from.toString(),
+        methodName,
+        args.collect(function(ea) { return ea.toString() }).join(', '));
+};
 
 
 Global.logMethod = function(obj, methodName) {
