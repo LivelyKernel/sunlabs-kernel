@@ -589,11 +589,13 @@ Object.extend(lively.ide.SystemBrowser, {
 ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
     
     childNodes: function() {
-        return this.target.interestingLKFileNames().concat(this.target.preLoadFileNames()).uniq().collect(function(ea) {
-            return new ide.CompleteFileFragmentNode(this.target.rootFragmentForModule(ea), this.browser, ea);
-        }.bind(this));
+        return this.target.interestingLKFileNames()
+			.concat(this.target.preLoadFileNames())
+			.uniq()
+			.collect(function(ea) {
+            	return new ide.CompleteFileFragmentNode(this.target.rootFragmentForModule(ea), this.browser, ea);
+        	}.bind(this));
     }
-        
 });
  
 ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
@@ -603,7 +605,7 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
     },
     
     asString: function() {
-        return this.target.name || this.type + ' has no name!';
+        return this.target.name || this.sourceString().truncate(22).replace('\n', '') + '(' + this.type + ')'
     },
     
     saveSource: function(newSource, sourceControl) {
@@ -693,8 +695,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
     
     asString: function() {
-        //return this.moduleName + (this.target ? '' : '(not loaded)');
-		return this.moduleName;
+        return this.moduleName + (this.target ? '' : '(not loaded)');
     },
     
 });
@@ -1074,6 +1075,13 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         console.log("... " + newFileString.length + " bytes saved.");
     },
     
+	searchFor: function(str) {
+		var allFragments = Object.values(tools.SourceControl.modules)
+			.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
+
+		return allFragments.select(function(ea) { return ea.getSourceCode().include(str) });
+},
+
     scanLKFiles: function($super, beSync) {
         // new AnotherSourceDatabase()
         var ms = new Date().getTime();
