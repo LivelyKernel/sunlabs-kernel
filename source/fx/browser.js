@@ -72,7 +72,7 @@ Object.extend(fx.util, {
     },
     
     addMouseListener: function(node, eventName, handler) {
-	    var adapter  = new fx.util.MouseAdapter();
+	var adapter  = new fx.util.MouseAdapter();
 	adapter[eventName] = function(awtEvent, sgNode) {
 	    handler.call(this, awtEvent, sgNode);
 	}
@@ -567,17 +567,27 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element, attr) {
 
 	}
     }
+
+    var fillAttr = element.getAttributeNS(null, "fill");
+    var textColor = null;
+    if (fillAttr) {
+	textColor = PaintModule.parseColor(fillAttr);
+    }
 //    console.log('changing on ' + attr + " content  " + element.textContent);
 
     var newFont = new fx.Font(fontFamily, fx.Font.PLAIN, fontSize);
     element.getElementsByTagNameNS(Namespace.SVG, 'tspan').each(function(node) {
 	var text = fx.util.antiAliasText(new fx.Text());
+	textColor && text.setFillPaint(textColor);
 	text.setFont(newFont);
 	// use this for tspans?
 	text.setVerticalAlignment(Packages.com.sun.scenario.scenegraph.SGText$VAlign.BASELINE);
 	var origin = new fx.Point(node.getAttributeNS(null, "x") || 0, node.getAttributeNS(null, "y") || 0);
 	text.setLocation(origin);
 	text.setText(node.firstChild.nodeValue); 
+	
+
+
 	element._fxEnd.add(text);
     });
 
