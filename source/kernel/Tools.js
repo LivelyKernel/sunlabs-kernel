@@ -1473,13 +1473,14 @@ WidgetModel.subclass('ChangeList', {
     },
 
     bannerOfItem: function(item) {
-        var lineStr = item.lineNo.toString();
+        var lineStr = item.lineNo ? item.lineNo.toString() : '?';
         var firstLine = item.getSourceCode().truncate(40);  // a bit wastefull
         if (firstLine.indexOf("\r") >= 0) firstLine = firstLine.replace(/\r/g, "");
         end = firstLine.indexOf(":");
         if (end >= 0) firstLine = firstLine.substring(0,end+1);
         var type = item.type ? item.type + ':' : '';
-        return item.fileName.concat(":", lineStr, ": ", type, firstLine);
+        var klass = item.className ? item.className + '>>' : '';
+        return item.fileName.concat(":", lineStr, ": ", type, klass, firstLine);
     },
 
     getChangeItemText: function() {
