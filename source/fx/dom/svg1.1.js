@@ -690,3 +690,10 @@ var SVGImageElement =  SVGElement.defineElement('image', [SVGLocatable, SVGStyla
     {name:'height', type:SVGAnimatedLength, defaultValue:  '0'}
 );
 
+
+var SVGFEGaussianBlurElement = SVGElement.defineElement('feGaussianBlur', null,
+    {name: "in1", readonly: true, type:SVGAnimatedString},
+    {name: "stdDeviationX", readonly: true, type:SVGAnimatedNumber},
+    {name: "stdDeviationY", readonly: true, type:SVGAnimatedNumber}
+);
+						       

@@ -601,9 +601,19 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element, attr) {
 });
 
 var FilterModule = {
-    applyFilter: function(filterUri, element) {
+    newEffect: function(filterUri, element) {
 	// the implementation goes here:
-	console.log('found filter ' + lively.data.FragmentURI.getElement(filterUri).firstChild);
+	var effect = lively.data.FragmentURI.getElement(filterUri).firstChild;
+	console.log('found filter ' + effect);
+	if (effect.localName == 'feGaussianBlur') {
+	    // the spec usess stdDeviationX and stdDeviationY
+	    var deviation = Math.floor(parseFloat(effect.getAttributeNS(null, "stdDeviation"))*10.0) + 1; // ?
+	    console.log('deviation ' + deviation + " cheating anyway and setting deviation to " + 10);
+	    var blur = new Packages.com.sun.scenario.effect.GaussianBlur(10); // FIXME: ok so we're cheating here
+	    var fxNode = new Packages.com.sun.scenario.scenegraph.SGEffect();
+	    fxNode.setEffect(blur);
+	    return fxNode;
+	} else return null;
     }
 };
 
@@ -633,8 +643,14 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
 
 
     // note, we only support filters on <g> elements
-    var effect = element.getAttributeNS(null, "filter");
-    if (effect) FilterModule.applyFilter(effect, element);
+    var effectElement = element.getAttributeNS(null, "filter");
+    if (effectElement) { 
+	var save = fxObj;
+	fxObj = FilterModule.newEffect(effectElement, element);
+	if (fxObj !== save) {
+	    fxObj.setChild(save);
+	}
+    }
 
     var clip = element.getAttributeNS(null, "clip-path");
     if (clip) {
