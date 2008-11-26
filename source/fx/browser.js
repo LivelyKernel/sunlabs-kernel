@@ -71,10 +71,6 @@ Object.extend(fx.util, {
 	return shape;
     },
     
-    getShape: function(element) { // FIXME what about transforms
-	return element._fxBegin.getChildren().get(0);
-    },
-    
     addMouseListener: function(node, eventName, handler) {
 	    var adapter  = new fx.util.MouseAdapter();
 	adapter[eventName] = function(awtEvent, sgNode) {
@@ -408,7 +404,7 @@ var PaintModule = {
 
     render: function(element) {
 	var attrs = element.attributes;
-	var shape = fx.util.getShape(element);
+	var shape = element._fxShape;
 	var fillOpacity = NaN;
 	var strokeOpacity = NaN;
 	    
@@ -473,6 +469,7 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
 
     var shape = fx.util.antiAlias(new fx.Shape());
+    element._fxShape = shape;
 
     // TODO optimize - use rounding if necessary
     shape.setShape(new fx.RoundedRectangle(element.x.baseVal.value,
@@ -499,6 +496,7 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element, attr) {
     var rx = element.rx.baseVal.value;
     var ry = element.ry.baseVal.value;
     var shape = fx.util.antiAlias(new fx.Shape());
+    element._fxShape = shape;
 
     shape.setShape(new fx.Ellipse(cx - rx, cy - ry, rx*2, ry*2));
     
@@ -514,12 +512,11 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element, attr) {
 
 fx.dom.renderers[SVGPolylineElement.tagName] =    
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
-    if (!element._fxBegin)
-	element._fxBegin = new fx.Parent();
-    var shape = fx.util.antiAlias(new fx.Shape());
+    if (!element._fxBegin) element._fxBegin = new fx.Parent();
+    var fxObj = fx.util.antiAlias(new fx.Shape());
+    element._fxShape = fxObj;
     var path = new fx.Path();
-    element._fxBegin.setChild(shape);
-    shape.setShape(path);
+    fxObj.setShape(path);
 
     PaintModule.render(element);
     var attr = element.attributes.getNamedItem("points");
@@ -535,6 +532,12 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
 	if (element.tagName === "polygon")
 	    path.closePath();
     }
+    if (element.transform) { 
+	fxObj = TransformsModule.newTransform(element.transform, fxObj);
+    } 
+
+    element._fxBegin.setChild(fxObj);
+
     //console.log('rendering ' + element);
     return  element._fxBegin;
 };
@@ -617,6 +620,31 @@ var FilterModule = {
     }
 };
 
+ var TransformsModule = {
+     newTransform: function(transform, fxObj) {
+	 var list = transform.baseVal;
+	 for (var i = list.numberOfItems - 1; i >= 0; i--) {
+	     var transform = list.getItem(i);
+	     switch (transform.type) {
+	     case SVGTransform.SVG_TRANSFORM_TRANSLATE:
+		 fxObj = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, fxObj);
+		 break;
+	     case SVGTransform.SVG_TRANSFORM_SCALE:
+		 fxObj = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, fxObj);
+		 break;
+	     case SVGTransform.SVG_TRANSFORM_ROTATE:
+		 fxObj = new fx.Transform.createRotation(transform.angle.toRadians(), fxObj);
+		 break;
+	     default:
+		 console.log('unhandled transform ' + transform);
+	     }
+	 }
+	 return fxObj;
+     }
+
+
+ };
+
 
 fx.dom.renderers[HTMLHtmlElement.tagName] =
 fx.dom.renderers[HTMLBodyElement.tagName] =
@@ -674,23 +702,7 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
     }
 
     if (element.transform) { 
-	var list = element.transform.baseVal;
-	for (var i = list.numberOfItems - 1; i >= 0; i--) {
-	    var transform = list.getItem(i);
-	    switch (transform.type) {
-	    case SVGTransform.SVG_TRANSFORM_TRANSLATE:
-		fxObj = new fx.Transform.createTranslation(transform.matrix.e, transform.matrix.f, fxObj);
-		break;
-	    case SVGTransform.SVG_TRANSFORM_SCALE:
-		fxObj = new fx.Transform.createScale(transform.matrix.a, transform.matrix.d, fxObj);
-		break;
-	    case SVGTransform.SVG_TRANSFORM_ROTATE:
-		fxObj = new fx.Transform.createRotation(transform.angle.toRadians(), fxObj);
-		break;
-	    default:
-		console.log('unhandled transform ' + transform);
-	    }
-	}
+	fxObj = TransformsModule.newTransform(element.transform, fxObj);
     } 
 
     element._fxBegin.setChild(fxObj);
