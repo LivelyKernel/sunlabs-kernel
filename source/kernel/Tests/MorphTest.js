@@ -410,7 +410,7 @@ Widget.subclass('DummyWidget', {
         $super();
         this.model = Record.newNodeInstance({MyText: "tada"});
         this.relayToModel(this.model, {MyText: "+MyText"});
-    	this.ownModel(this.model);
+        this.ownModel(this.model);
     },
     
     sayHello: function() {
