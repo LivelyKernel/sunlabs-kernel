@@ -99,7 +99,8 @@ ometa LKFileParser <: Parser {
 	klass 	            = namespaceId,
 	klassName           = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
     klassDef            = pos:p nsFollowedBy("subclass"):sName   '(' klassName:kName restKlassDef:spec ')' defEnd
-                        -> { $elf._fragment(kName, 'klassDef', p, $elf.pos()-1, spec.classElems, {trait: spec.trait, superclassName: sName}) },
+                        -> { spec.classElems.forEach(function(ea) { ea.className = kName });
+                             $elf._fragment(kName, 'klassDef', p, $elf.pos()-1, spec.classElems, {trait: spec.trait, superclassName: sName}) },
     basicKlassExt       = "Object.extend" '(' klass:n restKlassDef:spec ')' -> { {name: n, trait: spec.trait, subElements: spec.classElems } }
                         | (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
                         -> { {name: n, subElements: clElems } },
