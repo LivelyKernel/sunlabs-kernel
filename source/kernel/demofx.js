@@ -502,7 +502,8 @@ using().module('lively.demofx').run(function() {
 	    URL.source.withFilename('Resources/images/flower.jpg').toString());
 	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, _BorderColor: topColor});
 	var previewMorph = new lively.demofx.Preview(previewModel);
-	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", _BorderColor: "+_BorderColor"}), true);
+	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", _BorderColor: "+_BorderColor"}), 
+				  true);
 	effect.applyTo(previewModel.getThumbImage());
 	return previewMorph;
     }
@@ -512,22 +513,21 @@ using().module('lively.demofx').run(function() {
 
     WorldMorph.current().addMorph(gaussian);
     gaussian.align(gaussian.bounds().topLeft(), container.bounds().bottomLeft());
-    gaussian.translateBy(pt(-3, 7)); // dunno why -3 to get the right alignment
+    gaussian.translateBy(pt(0, 8)); 
     //gaussian.setPosition(WorldMorph.current().bounds().center().addXY(200, -100));
 
-
-
-
-    var preview2 = makePreview(new lively.scene.BlendEffect("previewBlend", 
-	URL.source.withFilename('Resources/images/water.jpg').toString()));
-
-    
-    //var preview2 = makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
-    //var preview2 = makePreview(new lively.scene.SaturateEffect("preview2", 0.4));
-    preview2.align(preview2.bounds().topLeft(), gaussian.bounds().topRight());
-    WorldMorph.current().addMorph(preview2);
-    preview2.translateBy(pt(3, 0));
-
+    var previous = gaussian;
+    var margin = 14;
+    for (var i = 1; i < 6; i++) {					     
+	var preview =  makePreview(new lively.scene.BlendEffect("previewBlend" + i,  
+	    URL.source.withFilename('Resources/images/water.jpg').toString()));  
+	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
+	//var preview2 = mak  ePreview(new lively.scene.SaturateEffect("preview2", 0.4));
+	preview.align(preview.bounds().topLeft(), previous.bounds().topRight());
+	WorldMorph.current().addMorph(preview);
+	preview.translateBy(pt(margin, 0));
+	previous = preview;
+    }
 
 
 
