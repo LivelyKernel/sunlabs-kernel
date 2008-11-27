@@ -1080,7 +1080,12 @@ this.PathElement.subclass('lively.scene.MoveTo', {
     controlPoints: function() {
 	return [pt(this.x, this.y)];
     },
+});
 
+Object.extend(this.MoveTo, {
+    fromLiteral: function(literal) {
+	return new lively.scene.MoveTo(literal.x || 0.0, literal.y || 0.0);
+    }
 
 });
 
@@ -1107,6 +1112,13 @@ Object.extend(this.LineTo, {
     }
 
 }); 
+
+Object.extend(this.LineTo, {
+    fromLiteral: function(literal) {
+	return new lively.scene.LineTo(literal.x || 0.0, literal.y || 0.0);
+    }
+
+});
     
 
 
@@ -1141,6 +1153,7 @@ this.PathElement.subclass('lively.scene.QuadCurveTo', {
 	this.y = y;
 	this.controlX = controlX;
 	this.controlY = controlY;
+	console.log('created QuadCurveTo ' + [x, y, controlX, controlY]);
     },
 
     allocateRawNode: function(rawPathNode) {
@@ -1150,7 +1163,13 @@ this.PathElement.subclass('lively.scene.QuadCurveTo', {
 
     controlPoints: function() {
 	return [pt(this.x, this.y), pt(this.controlX, this.controlY)];
+    },
+
+    attributeFormat: function() {
+	// FIXME not a good base element
+	return this.charCode + this.x + "," + this.y + "," + this.controlX + "," + this.controlY;
     }
+    
 
 
 });
@@ -1183,7 +1202,6 @@ this.PathElement.subclass('lively.scene.ClosePath', {
 
 
 });
-
 
 
 this.Shape.subclass('lively.scene.Path', {
@@ -1271,6 +1289,13 @@ this.Shape.subclass('lively.scene.Path', {
     partNameNear: this.Polygon.prototype.partNameNear,
     partPosition: this.Polygon.prototype.partPosition,
     reshape: this.Polygon.prototype.reshape,
+
+});
+
+Object.extend(this.Path, {
+    fromLiteral: function(literal) {
+	return new lively.scene.Path(literal.elements);
+    }
 
 });
 

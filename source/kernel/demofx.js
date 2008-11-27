@@ -684,10 +684,35 @@ using().module('lively.demofx').run(function() {
 						 KnobWidth: "-KnobWidth",
 						 ImageRotation: "ImageRotation"}));
 
+
+    lively.demofx.SceneMorph.subclass('lively.demofx.Footer', {
+	content: {$:"Group",
+		  content: [
+		      {$:"Path", 
+		       elements: [
+                           {$:"MoveTo", x: 0, y: 0 },
+                           {$:"LineTo", x: width, y: 0 },
+                           {$:"LineTo", x: width, y: 27 },
+                           {$:"QuadCurveTo", x: width - 3, y: 33, controlX: width, controlY: 33 },
+			   {$:"QuadCurveTo", x: 3, y: 33, controlX: width / 2, controlY: 100 },
+                           {$:"QuadCurveTo", x: 0, y: 30, controlX: 0, controlY: 33 }
+		       ]
+		      }
+		  ]
+		 }
+    });
+
+    var footer = WorldMorph.current().addMorph(new lively.demofx.Footer(buttonModel));
+    footer.align(footer.bounds().topLeft(), container.bounds().bottomLeft());
+
+
+
+
     var buttonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
     var button = new lively.demofx.Button(buttonModel, "Open Image 1");
     button.connectModel(buttonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
-    WorldMorph.current().addMorph(button);
-    button.align(button.bounds().topLeft(), container.bounds().bottomLeft());
+    footer.addMorph(button);
+    button.align(button.bounds().topLeft(), footer.shape.bounds().topLeft());
+    button.translateBy(pt(20, 3));
  
 }.logErrors());
