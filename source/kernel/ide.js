@@ -256,7 +256,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
         var btns = cmds.forEach(function(cmd, i) {
             var btn = new ButtonMorph(new Rectangle(i*width, y, width, height));
 			btn.setLabel(cmd.asString());
-			btn.connectModel({model: {action: function(val) { if (!val) cmd.trigger() }}, setValue: 'action'});
+			var btnModel = {action: function(val) { if (!val) cmd.trigger(); btn.setLabel(cmd.asString()); }};
+			btn.connectModel({model: btnModel, setValue: 'action'});
 			morph.addMorph(btn);
         })
 	},
@@ -724,10 +725,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     				node.showAll = !node.showAll;
     				node.signalTextChange()}],
     			['open ChangeList viewer', function() {
-    				new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}],
-    			['load all modules', function() {
-    				node.siblingNodes().forEach(function(ea) { ea.loadModule() });
-    				node.signalChange()}],
+    				new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}]
     		];
 
             /*return [['load module', function() {
@@ -737,10 +735,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
         },
     
     sourceString: function() {
-		if (!this.target) {
-			this.loadModule();
-			this.signalChange();
-		}
+		this.loadModule();
         //if (!this.target) return '';
 		var src = this.target.getSourceCode();
 		if (src.length > this.maxStringLength && !this.showAll) return '';
@@ -752,7 +747,9 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
 
 	loadModule: function() {
+		if (this.target) return;
 		this.target = tools.SourceControl.addModule(this.moduleName);
+		this.signalChange();
 	}
     
 });
@@ -793,6 +790,26 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
  
 });
+
+ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
+
+	wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		return 'load all modules'
+	},
+
+	trigger: function() {
+		var srcCtrl = tools.SourceControl;
+		srcCtrl.interestingLKFileNames()
+			.concat(srcCtrl.preLoadFileNames())
+			.forEach(function(ea) { srcCtrl.addModule(ea) });
+		this.browser.allChanged();
+	}
+
+});
  
 ide.BrowserCommand.subclass('lively.ide.AlphabetizeCommand', {
 
@@ -811,6 +828,7 @@ ide.BrowserCommand.subclass('lively.ide.AlphabetizeCommand', {
 	}
 
 });
+
 
 // ===========================================================================
 // Another File Parser - uses mostly OMeta for parsing LK sources
