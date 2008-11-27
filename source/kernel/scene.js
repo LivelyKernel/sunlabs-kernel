@@ -223,7 +223,8 @@ Object.subclass('lively.data.Wrapper', {
 		this.setId(this.newId());
 	    }
 	    this.dictionary().appendChild(this.rawNode);
-	    this.refcount = 0; // in case it was undefined
+	    this.refcount = 1; 
+	    return;
 	}
 	this.refcount ++;
     },
@@ -1794,33 +1795,70 @@ Object.extend(lively.scene.Rotate, {
 });
 
 Wrapper.subclass('lively.scene.Effect', {
-    initialize: function() {
+    
+    initialize: function(id) {
 	this.rawNode = NodeFactory.create("filter");
-    }
-});
-
-this.Effect.subclass('lively.scene.GaussianBlur', {
-    initialize: function($super, radius, id) { // FIXME generate IDs automatically
-	$super();
-	var blur = this.gaussianBlur = NodeFactory.create("feGaussianBlur");
-	this.rawNode.appendChild(blur);
+	this.effectNode = this.rawNode.appendChild(NodeFactory.create(this.nodeName));
 	this.rawNode.setAttribute("id", id);
-	blur['in'] = "SourceGraphics"; // FIXME more general
-	this.setRadius(radius);
-    },
-
-    setRadius: function(radius) {
-	var blur = this.gaussianBlur;
-	if (blur.setStdDeviation)
-	    blur.setStdDeviation(radius, radius);
-	else  // Safari doesn't define the method
-	    blur.setAttributeNS(null, "stdDeviation", String(radius));
     },
 
     applyTo: function(target) {
 	this.reference();
 	target.setTrait("filter", this.uri());
+    }
 
+});
+
+this.Effect.subclass('lively.scene.GaussianBlurEffect', {
+    nodeName: "feGaussianBlur",
+    initialize: function($super, radius, id) { // FIXME generate IDs automatically
+	$super(id);
+	this.effectNode['in'] = "SourceGraphics"; // FIXME more general
+	this.setRadius(radius);
+    },
+
+    setRadius: function(radius) {
+	var blur = this.effectNode;
+	if (blur.setStdDeviation)
+	    blur.setStdDeviation(radius, radius);
+	else  // Safari doesn't define the method
+	    blur.setAttributeNS(null, "stdDeviation", String(radius));
+    },
+});
+
+
+this.Effect.subclass('lively.scene.BlendEffect', {
+    nodeName: "feBlend",
+    initialize: function($super, id) { // FIXME generate IDs automatically
+	$super(id);
+	this.effectNode.setAttributeNS(null, "mode", "Multiply");
+	this.effectNode.setAttributeNS(null, "in", "SourceGraphic"); // FIXME more general
+
+	this.effectNode.setAttributeNS(null, "in2", "BackgroundImage"); // FIXME more general
+    }
+});
+
+this.Effect.subclass('lively.scene.ColorAdjustEffect', {
+    nodeName: "feColorMatrix",
+    initialize: function($super, id) { // FIXME generate IDs automatically
+	$super(id);
+	this.effectNode.setAttributeNS(null, "type", "matrix");
+	this.effectNode.setAttributeNS(null, "in", "SourceGraphic"); // FIXME more general
+	// FIXME: obviously random numbers
+	this.effectNode.setAttributeNS(null, "values", [2/3, 2/3, 2/3, 0, 0,
+							2/3, 2/3, 2/3, 0, 0,
+							2/3, 2/3, 2/3, 0, 0,
+							2/3, 2/3, 3/3, 0, 0].join(' '))
+    }
+});
+
+this.Effect.subclass('lively.scene.SaturateEffect', {
+    nodeName: "feColorMatrix",
+    initialize: function($super, id, value) { // FIXME generate IDs automatically
+	$super(id);
+	this.effectNode.setAttributeNS(null, "type", "saturate");
+	this.effectNode.setAttributeNS(null, "in", "SourceGraphic"); // FIXME more general
+	this.effectNode.setAttributeNS(null, "values", String(value));
     }
 });
 

@@ -444,8 +444,7 @@ using().module('lively.demofx').run(function() {
     
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
 	URL.source.withFilename('Resources/images/flower.jpg').toString());
-    var effect = new lively.scene.GaussianBlur(0.001, "myfilter");
-
+    var effect = new lively.scene.GaussianBlurEffect(0.001, "myfilter");
     effect.applyTo(targetImage);
 
     sliderModel.addObserver({
@@ -506,7 +505,7 @@ using().module('lively.demofx').run(function() {
     }
 
 
-    var gaussian = makePreview(new lively.scene.GaussianBlur(1, "previewBlur"));
+    var gaussian = makePreview(new lively.scene.GaussianBlurEffect(1, "previewBlur"));
 
     WorldMorph.current().addMorph(gaussian);
     gaussian.align(gaussian.bounds().topLeft(), container.bounds().bottomLeft());
@@ -514,9 +513,15 @@ using().module('lively.demofx').run(function() {
     //gaussian.setPosition(WorldMorph.current().bounds().center().addXY(200, -100));
 
 
-    var preview2 = makePreview(new lively.scene.GaussianBlur(4, "previewBlur2"));
+//    var preview2 = makePreview(new lively.scene.BlendEffect("previewBlend"));
+    //var preview2 = makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
+    var preview2 = makePreview(new lively.scene.SaturateEffect("preview2", 0.4));
     preview2.align(preview2.bounds().topLeft(), gaussian.bounds().topRight());
     WorldMorph.current().addMorph(preview2);
     preview2.translateBy(pt(3, 0));
+
+
+
+
  
 }.logErrors());
