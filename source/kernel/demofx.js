@@ -469,7 +469,7 @@ using().module('lively.demofx').run(function() {
 	LabelValue: "radius 0.00"});
     
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
-	URL.source.withFilename('Resources/images/flower.jpg').toString());
+	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
     var effect = new lively.scene.GaussianBlurEffect(0.001, "myfilter");
     effect.applyTo(targetImage);
 
@@ -526,7 +526,7 @@ using().module('lively.demofx').run(function() {
     function makePreview(effect, name, shortName) {
 	var factor = 0.17;
 	var thumbImage = new ImageMorph(new Rectangle(0, 0, 500*factor, 333*factor),
-	    URL.source.withFilename('Resources/images/' + shortName).toString());
+	    URL.source.withFilename('Resources/demofx/' + shortName).toString());
 	thumbImage.setFillOpacity(0);
 	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, _BorderColor: topColor});
 	var previewMorph = new lively.demofx.Preview(previewModel, name);
@@ -582,7 +582,7 @@ using().module('lively.demofx').run(function() {
 
 	var effect = null;
 	if (i == 1) effect = new lively.scene.GaussianBlurEffect(i, "effect" + i);
-	//URL.source.withFilename('Resources/images/water.jpg').toString())
+	//URL.source.withFilename('Resources/demofx/water.jpg').toString())
 	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
 	//var preview2 = mak  ePreview(new lively.scene.SaturateEffect("preview2", 0.4));
