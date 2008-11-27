@@ -360,7 +360,7 @@ this.Node.addMethods({
 	}
 
 	attr = rawNode.getAttributeNS(null, "stroke");
-	var url = lively.data.FragmentURI.parse(attr);
+	url = lively.data.FragmentURI.parse(attr);
 	if (url) {
 	    // FIXME
 	    //this._stroke = lively.data.FragmentURI.getElement(fillAttr);
@@ -1873,12 +1873,19 @@ this.Effect.subclass('lively.scene.GaussianBlurEffect', {
 
 this.Effect.subclass('lively.scene.BlendEffect', {
     nodeName: "feBlend",
-    initialize: function($super, id) { // FIXME generate IDs automatically
+    initialize: function($super, id, optSourceURL) { // FIXME generate IDs automatically
 	$super(id);
-	this.effectNode.setAttributeNS(null, "mode", "Multiply");
+	this.effectNode.setAttributeNS(null, "mode", "normal");
 	this.effectNode.setAttributeNS(null, "in", "SourceGraphic"); // FIXME more general
-
-	this.effectNode.setAttributeNS(null, "in2", "BackgroundImage"); // FIXME more general
+	
+	if (optSourceURL) {
+	    var feImage = this.rawNode.insertBefore(NodeFactory.create("feImage"), this.effectNode);
+	    feImage.setAttributeNS(null, "result", "image");
+	    feImage.setAttributeNS(Namespace.XLINK, "href", optSourceURL);
+	    this.effectNode.setAttributeNS(null, "in2", "image");
+	} else {
+	    this.effectNode.setAttributeNS(null, "in2", optSourceURL);
+	}
     }
 });
 

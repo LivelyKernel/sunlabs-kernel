@@ -4281,7 +4281,7 @@ Morph.subclass("HandMorph", {
     documentation: "Defines a visual representation for the user's cursor.",
     applyDropShadowFilter: !!Config.useDropShadow,
     dropShadowFilter: "url(#DropShadowFilter)",
-    
+    useShadowMorphs: Config.useShadowMorphs,
 
     shadowOffset: pt(5,5),
     handleOnCapture: true,

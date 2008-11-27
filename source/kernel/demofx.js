@@ -20,7 +20,7 @@ using().module('lively.demofx').run(function() {
                  x: 0, //{$:"Bind", eval: "ex.layoutBounds.minX"},
                  y: 0, //{$:"Bind", eval:  "ex.layoutBounds.minY"},
                  width: closeSize, //{$:"Bind", eval: "ex.layoutBounds.width"},
-                 height: closeSize, //{$:"Bind", eval " ex.layoutBounds.height"},
+                 height: closeSize //{$:"Bind", eval " ex.layoutBounds.height"},
                  //fill: null
                 },
 		{ $:"Group",
@@ -98,12 +98,7 @@ using().module('lively.demofx').run(function() {
 	},
 	
 	handlesMouseDown: Functions.True,
-	
-	onMouseMove: function(evt) {
-	    if (evt.mouseButtonPressed) return;
-	    return Morph.prototype.onMouseMove.call(this, evt);
-	},
-	
+		
 	onMouseDown: function(evt) {
 	    this.origValue = this.getAdjValue(); 
 	    this.hitPoint = this.localize(evt.point());
@@ -382,14 +377,14 @@ using().module('lively.demofx').run(function() {
 		 width: twidth,
 		 height: theight,
 		 fill: null,
-                 stroke: {$:"Bind", to: "_BorderColor"},
+                 stroke: {$:"Bind", to: "_BorderColor"}
                 },
 
                 {$:"Polygon",
                  visible: {$:"Bind", to: "Selected"},
 		 transforms: [{$:"Translate", X:twidth / 2, Y: -7}],
                  points: [pt(0, 0), pt(5, 5), pt(-5, 5)],
-                 fill: Color.rgb(190, 190, 190),
+                fill: Color.rgb(190, 190, 190)
                 },
                 {$:"Polygon",
                  visible: {$:"Bind", to: "Selected"},
@@ -410,8 +405,8 @@ using().module('lively.demofx').run(function() {
 	},
 
 	onMouseOut: function(evt) {
-	    this.set_BorderColor(topColor);
-	},
+    	this.set_BorderColor(topColor);
+	}
 
 	
     });
@@ -453,7 +448,7 @@ using().module('lively.demofx').run(function() {
 
     sliderModel.addObserver({
 	onAdjValueUpdate: function(value) {
-	    var radius = value*10;
+	    var radius = value*10 || 1;
 	    effect.setRadius(radius);
 	    sliderModel.setLabelValue("radius " + radius.toFixed(2));
 	}
@@ -521,9 +516,14 @@ using().module('lively.demofx').run(function() {
     //gaussian.setPosition(WorldMorph.current().bounds().center().addXY(200, -100));
 
 
-//    var preview2 = makePreview(new lively.scene.BlendEffect("previewBlend"));
+
+
+    var preview2 = makePreview(new lively.scene.BlendEffect("previewBlend", 
+	URL.source.withFilename('Resources/images/water.jpg').toString()));
+
+    
     //var preview2 = makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
-    var preview2 = makePreview(new lively.scene.SaturateEffect("preview2", 0.4));
+    //var preview2 = makePreview(new lively.scene.SaturateEffect("preview2", 0.4));
     preview2.align(preview2.bounds().topLeft(), gaussian.bounds().topRight());
     WorldMorph.current().addMorph(preview2);
     preview2.translateBy(pt(3, 0));
