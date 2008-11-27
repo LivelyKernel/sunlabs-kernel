@@ -979,6 +979,35 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 	return false; 
     },
 
+    setStartX: function(x) {
+	var v = this.vertices();
+	var first = v.first();
+	v.splice(0, 1, first.withX(x));
+	this.setVertices(v);
+    },
+    
+    setStartY: function(y) {
+	var v = this.vertices();
+	var first = v.first();
+	v.splice(0, 1, first.withY(y));
+	this.setVertices(v);
+    },
+
+    setEndX: function(x) {
+	var v = this.vertices();
+	var last = v.last();
+	v.splice(-1, 1, last.withX(x));
+	this.setVertices(v);
+    },
+
+    setEndY: function(y) {
+	var v = this.vertices();
+	var last = v.last();
+	v.splice(-1, 1, last.withY(y));
+	this.setVertices(v);
+    },
+
+
     // poorman's traits :)
     bounds: this.Polygon.prototype.bounds,
     origin: this.Polygon.prototype.origin,
@@ -1005,6 +1034,21 @@ Object.extend(this.Polyline, {
 	return node;
     }
 });
+
+
+
+this.Line = { // sugar syntax
+    
+    fromLiteral: function(literal) {
+	var pts = [
+	    pt(literal.StartX || 0.0, literal.StartY || 0.0),
+	    pt(literal.EndX || 0.0, literal.EndY || 0.0)];
+	// FIXME more efficient?
+	return lively.scene.Polyline.fromLiteral(Object.extend(literal, {points: pts}));
+    }
+    
+};
+
 
 
 

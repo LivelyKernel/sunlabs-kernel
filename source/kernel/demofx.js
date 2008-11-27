@@ -258,13 +258,15 @@ using().module('lively.demofx').run(function() {
 
     lively.demofx.SceneMorph.subclass('lively.demofx.Knob',  {
 	formals: ["_KnobValue",  // private to morph
-		  "ImageRotation" // public
+		  "ImageRotation", // public
+		  "KnobWidth",
+		  "_KnobHandleLength"
 		 ],
 	content: {
 	    $:"Group", 
 	    content: [
 		{$:"Ellipse", 
-		 radius: knobWidth,  // Bind width
+		 radius: {$:"Bind", to: "KnobWidth"},
 		 fill: {$:"LinearGradient", 
 			stops: [
 			    {$:"Stop", offset: 0.0, color: Color.rgb(172, 172, 172) },
@@ -281,13 +283,13 @@ using().module('lively.demofx').run(function() {
 		
 		{$:"Ellipse", centerX: 0.5, centerY: 0.5, radius: 5 },
 		
-		{$:"Polyline", points: [pt(0, 0), pt(knobWidth/2 + 2, 0)],
+		{$:"Line", EndX: {$:"Bind", to: "_KnobHandleLength"}, EndY : 0,
 		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "_KnobValue"}}],
 		 stroke: Color.white,
 		 strokeWidth: 2.5
 		},
 		
-		{$:"Polyline", points: [pt(0,0), pt(knobWidth/2 + 2, 0)],
+		{$:"Line", EndX: {$:"Bind", to: "_KnobHandleLength"}, EndY: 0,
 		 transforms: [{$:"Rotate", Angle: {$:"Bind", to: "_KnobValue"}}],
 		 stroke: {$:"LinearGradient",
 			  stops: [{$:"Stop", offset: 0.0, color: Color.rgb( 40,  40,  40)},
@@ -307,7 +309,7 @@ using().module('lively.demofx').run(function() {
 	onMouseMove: function(evt) {
 	    if (!evt.mouseButtonPressed) return;
 	    var drag = this.localize(evt.point()).subPt(this.hitPoint);
-	    var v = this.origValue + (drag.x / knobWidth);
+	    var v = this.origValue + (drag.x / this.getKnobWidth());
 	    //console.log('drag ' + [drag, v, this.origValue]);
 	    /*if (v < 0) {
 		    v = 0;
@@ -324,6 +326,10 @@ using().module('lively.demofx').run(function() {
 
 	onImageRotationUpdate: function(value) {
 	    this.set_KnobValue(0 - value);
+	},
+
+	onKnobWidthUpdate: function(value) {
+	    this.set_KnobHandleLength(value/2 + 2);
 	}
 
     });
@@ -400,12 +406,10 @@ using().module('lively.demofx').run(function() {
 	},
 	
 	onMouseOver: function(evt) {
-	    this.setSelected(true);
 	    this.set_BorderColor(selColor);
 	},
 
 	onMouseOut: function(evt) {
-	    this.setSelected(false);
 	    this.set_BorderColor(topColor);
 	},
 
@@ -455,7 +459,7 @@ using().module('lively.demofx').run(function() {
 	}
     });
     
-    var canvasModel = Record.newPlainInstance({Image: targetImage, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0});
+    var canvasModel = Record.newPlainInstance({Image: targetImage, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0, KnobWidth: 25, _KnobHandleLength: (25/2 + 2)}); // FIXME: note explicit calculation
 
     var container = new BoxMorph(new Rectangle(230, 30, canvasWidth, canvasHeight + 100));
 
@@ -471,7 +475,9 @@ using().module('lively.demofx').run(function() {
 
     var canvasMorph = container.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
-    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), true);
+    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", 
+						   _CanvasX: "+_CanvasX", 
+						   _CanvasY: "+_CanvasY"}), true);
     
     
     var sliderMorph = container.addMorph(new lively.demofx.Slider(sliderModel));
@@ -488,7 +494,9 @@ using().module('lively.demofx').run(function() {
     var knobMorph = container.addMorph(new lively.demofx.Knob(canvasModel));
     knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
     knobMorph.translateBy(pt(0, 5));
-    knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", ImageRotation: "ImageRotation"}));
+    knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", 
+						 KnobWidth: "-KnobWidth",
+						 ImageRotation: "ImageRotation"}));
     
     WorldMorph.current().addMorph(container);
 
