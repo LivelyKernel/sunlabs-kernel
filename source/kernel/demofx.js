@@ -426,9 +426,12 @@ using().module('lively.demofx').run(function() {
 	    $super(model);
 	    this.label = new TextMorph(new Rectangle(0,0,0,0), labelText).beLabel();
 	    this.label.beLabel();
-	    this.label.setTextColor(Color.white);
+	    this.label.setWrapStyle(lively.Text.WrapStyle.Shrink);
+	    this.label.setFontSize(10);
+	    this.label.setTextColor(Color.darkGray);
 	    this.addMorph(this.label);
 	    this.label.align(this.label.bounds().bottomCenter(), this.bounds().bottomCenter());
+	    this.label.translateBy(pt(4, 0));
 	    console.log('added label ' + label + " text " + this.label.textString + " vs " + labelText);	    
 
 	}
@@ -520,15 +523,16 @@ using().module('lively.demofx').run(function() {
     WorldMorph.current().addMorph(container);
 
 
-    function makePreview(effect, name) {
+    function makePreview(effect, name, shortName) {
 	var factor = 0.17;
 	var thumbImage = new ImageMorph(new Rectangle(0, 0, 500*factor, 333*factor),
-	    URL.source.withFilename('Resources/images/flower.jpg').toString());
+	    URL.source.withFilename('Resources/images/' + shortName).toString());
+	thumbImage.setFillOpacity(0);
 	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, _BorderColor: topColor});
 	var previewMorph = new lively.demofx.Preview(previewModel, name);
 	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", _BorderColor: "+_BorderColor"}), 
 				  true);
-	effect.applyTo(previewModel.getThumbImage());
+	if (effect) effect.applyTo(previewModel.getThumbImage());
 	return previewMorph;
     }
 
@@ -562,15 +566,24 @@ using().module('lively.demofx').run(function() {
 
 
 
+    var effectNames = ["Blend", "Blur", "Motion Blur", "Bloom", "Glow", "Color Adjust"];
+    var shortFileNames = ["flower.jpg", "flower.jpg", "flower-motion-blur.png",
+	"flower-bloom.png", "flower-glow.png", "flower-color-adjust.png"];
+    
     var gaussian = 
-	rowMorph.addMorph(makePreview(new lively.scene.GaussianBlurEffect(1, "previewBlur"), "Gaussian Blur"));
+	rowMorph.addMorph(makePreview(new lively.scene.BlendEffect(1, "effect0"), 
+				      effectNames[0], shortFileNames[0]));
     gaussian.translateBy(pt(10, 8)); 
+
 
     var previous = gaussian;
     var margin = 10;
-    for (var i = 1; i < 6; i++) {					     
-	var preview =  makePreview(new lively.scene.BlendEffect("previewBlend" + i,
-	    URL.source.withFilename('Resources/images/water.jpg').toString()), "Effect " + (i + 1));  
+    for (var i = 1; i < 6; i++) {
+
+	var effect = null;
+	if (i == 1) effect = new lively.scene.GaussianBlurEffect(i, "effect" + i);
+	//URL.source.withFilename('Resources/images/water.jpg').toString())
+	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
 	//var preview2 = mak  ePreview(new lively.scene.SaturateEffect("preview2", 0.4));
 	preview.align(preview.bounds().topLeft(), previous.bounds().topRight());
