@@ -1162,15 +1162,12 @@ this.PathElement.subclass('lively.scene.QuadCurveTo', {
     },
 
     controlPoints: function() {
-	return [pt(this.x, this.y), pt(this.controlX, this.controlY)];
+	return [pt(this.controlX, this.controlY), pt(this.x, this.y)];
     },
 
     attributeFormat: function() {
-	// FIXME not a good base element
-	return this.charCode + this.x + "," + this.y + "," + this.controlX + "," + this.controlY;
+	return this.charCode + this.controlX + "," + this.controlY + "," + this.x + "," + this.y;
     }
-    
-
 
 });
 
