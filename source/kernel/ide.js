@@ -154,6 +154,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.setPane2Content(node.childNodesAsListItems());
         this.setPane1Menu(node.menuSpec());
         this.setSourceString(node.sourceString());
+		this.updateTitle();
     },
  
     onPane2SelectionUpdate: function(node) {
@@ -167,6 +168,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.setPane3Content(node.childNodesAsListItems());
         this.setPane2Menu(node.menuSpec());
         this.setSourceString(node.sourceString());
+		this.updateTitle();
     },
  
     onPane3SelectionUpdate: function(node) {
@@ -177,6 +179,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         }
         this.setPane3Menu(node.menuSpec());
         this.setSourceString(node.sourceString());
+		this.updateTitle();
     },
  
     onSourceStringUpdate: function(methodString) {
@@ -229,6 +232,19 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
 	textChanged: function(node) {
 		 this.setSourceString(node.sourceString());
+	},
+
+	updateTitle: function() {
+		var window = this.panel.owner;
+		if (!window) return;
+		var n1 = this.getPane1Selection();
+        var n2 = this.getPane2Selection();
+        var n3 = this.getPane3Selection();
+		var title = '';
+		if (n1) title += n1.asString();
+		if (n2) title += ':' + n2.asString();
+		if (n3) title += ':' + n3.asString();
+		window.setTitle(title);
 	},
 
 	inPaneSelectNodeNamed: function(paneName,  nodeName) {
