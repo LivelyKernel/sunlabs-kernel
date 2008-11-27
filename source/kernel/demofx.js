@@ -412,9 +412,26 @@ using().module('lively.demofx').run(function() {
 	},
 
 	onMouseOut: function(evt) {
-    	this.set_BorderColor(topColor);
-	}
+    	    this.set_BorderColor(topColor);
+	},
 
+	handlesMouseDown: Functions.True,
+	
+	onMouseDown: function(evt) {
+	    // tell someone to select me
+	    console.log('selected ' + this  + ", label " + this.label + " center " + this.bounds().bottomCenter());
+	},
+
+	initialize: function($super, model, labelText) {
+	    $super(model);
+	    this.label = new TextMorph(new Rectangle(0,0,0,0), labelText).beLabel();
+	    this.label.beLabel();
+	    this.label.setTextColor(Color.white);
+	    this.addMorph(this.label);
+	    this.label.align(this.label.bounds().bottomCenter(), this.bounds().bottomCenter());
+	    console.log('added label ' + label + " text " + this.label.textString + " vs " + labelText);	    
+
+	}
 	
     });
 
@@ -485,7 +502,7 @@ using().module('lively.demofx').run(function() {
     var sliderMorph = container.addMorph(new lively.demofx.Slider(sliderModel));
     sliderMorph.align(sliderMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
     sliderMorph.translateBy(pt(0, 5));
-
+    
     var label = container.addMorph(new TextMorph(new Rectangle(0,0,0,0)).beLabel());
     label.setTextColor(Color.white);
     label.connectModel(sliderModel.newRelay({Text: "LabelValue"}), true);
@@ -503,12 +520,12 @@ using().module('lively.demofx').run(function() {
     WorldMorph.current().addMorph(container);
 
 
-    function makePreview(effect) {
+    function makePreview(effect, name) {
 	var factor = 0.17;
 	var thumbImage = new ImageMorph(new Rectangle(0, 0, 500*factor, 333*factor),
 	    URL.source.withFilename('Resources/images/flower.jpg').toString());
 	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, _BorderColor: topColor});
-	var previewMorph = new lively.demofx.Preview(previewModel);
+	var previewMorph = new lively.demofx.Preview(previewModel, name);
 	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", _BorderColor: "+_BorderColor"}), 
 				  true);
 	effect.applyTo(previewModel.getThumbImage());
@@ -533,7 +550,7 @@ using().module('lively.demofx').run(function() {
                          ]
 			}
                  },
-                 //firstRowPreviews,
+                 //firstRowPreviews (these are morphs)
              ]
             }
 	]};
@@ -545,14 +562,15 @@ using().module('lively.demofx').run(function() {
 
 
 
-    var gaussian = rowMorph.addMorph(makePreview(new lively.scene.GaussianBlurEffect(1, "previewBlur")));
+    var gaussian = 
+	rowMorph.addMorph(makePreview(new lively.scene.GaussianBlurEffect(1, "previewBlur"), "Gaussian Blur"));
     gaussian.translateBy(pt(10, 8)); 
 
     var previous = gaussian;
-    var margin = 14;
+    var margin = 10;
     for (var i = 1; i < 6; i++) {					     
-	var preview =  makePreview(new lively.scene.BlendEffect("previewBlend" + i,  
-	    URL.source.withFilename('Resources/images/water.jpg').toString()));  
+	var preview =  makePreview(new lively.scene.BlendEffect("previewBlend" + i,
+	    URL.source.withFilename('Resources/images/water.jpg').toString()), "Effect " + (i + 1));  
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
 	//var preview2 = mak  ePreview(new lively.scene.SaturateEffect("preview2", 0.4));
 	preview.align(preview.bounds().topLeft(), previous.bounds().topRight());
