@@ -540,9 +540,8 @@ using().module('lively.demofx').run(function() {
     // application code
 
 
-
     var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0, 
-	LabelValue: "radius 0.00"});
+	LabelValue: "radius +0.00"});
     
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
 	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
@@ -553,7 +552,7 @@ using().module('lively.demofx').run(function() {
 	onAdjValueUpdate: function(value) {
 	    var radius = value*10 || 1;
 	    theEffect.setRadius(radius);
-	    sliderModel.setLabelValue("radius " + radius.toFixed(2));
+	    sliderModel.setLabelValue("radius +" + radius.toFixed(2));
 	}
     });
     
@@ -649,7 +648,7 @@ using().module('lively.demofx').run(function() {
     }
 
 
-    var controlPlate = new BoxMorph(new Rectangle(0, 0, canvasWidth, 90));
+    var controlPlate = new BoxMorph(new Rectangle(0, 0, canvasWidth, 40));
     controlPlate.setFill(using(lively.paint).link(
         {$:"LinearGradient",
          startX: 0,
@@ -668,7 +667,7 @@ using().module('lively.demofx').run(function() {
     
     var sliderMorph = controlPlate.addMorph(new lively.demofx.Slider(sliderModel));
     sliderMorph.align(sliderMorph.bounds().topCenter(), controlPlate.shape.bounds().topCenter());
-    sliderMorph.translateBy(pt(0, 5));
+    sliderMorph.translateBy(pt(0, 10));
     
     var label = controlPlate.addMorph(new TextMorph(new Rectangle(0,0,0,0)).beLabel());
     label.setTextColor(Color.white);
@@ -677,12 +676,6 @@ using().module('lively.demofx').run(function() {
     label.translateBy(pt(10, 0));
 
 
-    var knobMorph = controlPlate.addMorph(new lively.demofx.Knob(canvasModel));
-    knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
-    knobMorph.translateBy(pt(0, 5));
-    knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", 
-						 KnobWidth: "-KnobWidth",
-						 ImageRotation: "ImageRotation"}));
 
 
     lively.demofx.SceneMorph.subclass('lively.demofx.Footer', {
@@ -702,8 +695,8 @@ using().module('lively.demofx').run(function() {
 		 }
     });
 
-    var footer = WorldMorph.current().addMorph(new lively.demofx.Footer(buttonModel));
-    footer.align(footer.bounds().topLeft(), container.bounds().bottomLeft());
+    var footer = container.addMorph(new lively.demofx.Footer(buttonModel));
+    footer.align(footer.bounds().topCenter(), controlPlate.bounds().bottomCenter());
 
 
 
@@ -714,5 +707,14 @@ using().module('lively.demofx').run(function() {
     footer.addMorph(button);
     button.align(button.bounds().topLeft(), footer.shape.bounds().topLeft());
     button.translateBy(pt(20, 3));
+
+
+    var knobMorph = footer.addMorph(new lively.demofx.Knob(canvasModel));
+    knobMorph.align(knobMorph.bounds().topCenter(), footer.shape.bounds().topCenter());
+    knobMorph.translateBy(pt(0, 5));
+    knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", 
+						 KnobWidth: "-KnobWidth",
+						 ImageRotation: "ImageRotation"}));
+
  
 }.logErrors());
