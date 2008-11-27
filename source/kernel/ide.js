@@ -800,7 +800,29 @@ ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
 })
  
 ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
- 
+
+	menuSpec: function() {
+		var fragment = this.target;
+		return [
+    		['senders', function() {
+					var list = tools.SourceControl
+						.searchFor(fragment.name)
+						.select(function(ea) {
+							if (ea.name !== fragment.name) return true;
+							var src = ea.getSourceCodeWithoutSubElements();
+							return src.indexOf(fragment.name) !== src.lastIndexOf(fragment.name)
+					}); // we don't want pure implementors, but implementors which are also senders should appear
+					var title = 'senders of' + fragment.name;
+					new ChangeList(title, null, list).openIn(WorldMorph.current()) }],
+			['implementors', function() {
+					var list = tools.SourceControl
+						.searchFor(fragment.name)
+						.without(fragment)
+						.select(function(ea) { return ea.name == fragment.name });
+					var title = 'implementers of' + fragment.name;
+					new ChangeList(title, null, list).openIn(WorldMorph.current()) }]
+    	];
+	} 
 });
  
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
