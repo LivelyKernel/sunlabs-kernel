@@ -781,7 +781,21 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
     },
- 
+
+	menuSpec: function() {
+		var fragment = this.target;
+		var index = fragment.name.lastIndexOf('.');
+		// don't search for complete namespace name, just its last part
+		var searchName = index === -1 ? fragment.name : fragment.name.substring(index+1);
+		return [
+    		['references', function() {
+					var list = tools.SourceControl
+						.searchFor(searchName)
+						.without(fragment)
+					var title = 'references of' + fragment.name;
+					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]]
+	} 
+
 });
  
 ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
@@ -795,7 +809,9 @@ ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
             .select(function(ea) { return ea.type === 'propertyDef' || ea.type === 'methodDef' })
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
-    }
+    },
+
+	menuSpec: ide.ClassFragmentNode.prototype.menuSpec, // FIXME
  
 })
  
@@ -803,30 +819,33 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 
 	menuSpec: function() {
 		var fragment = this.target;
+		var searchName = fragment.name;
 		return [
     		['senders', function() {
 					var list = tools.SourceControl
-						.searchFor(fragment.name)
+						.searchFor(searchName)
 						.select(function(ea) {
-							if (ea.name !== fragment.name) return true;
+							if (!ea.name.include(searchName)) return true;
 							var src = ea.getSourceCodeWithoutSubElements();
-							return src.indexOf(fragment.name) !== src.lastIndexOf(fragment.name)
+							return src.indexOf(searchName) !== src.lastIndexOf(searchName)
 					}); // we don't want pure implementors, but implementors which are also senders should appear
-					var title = 'senders of' + fragment.name;
-					new ChangeList(title, null, list).openIn(WorldMorph.current()) }],
+					var title = 'senders of' + searchName;
+					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }],
 			['implementors', function() {
 					var list = tools.SourceControl
-						.searchFor(fragment.name)
+						.searchFor(searchName)
 						.without(fragment)
-						.select(function(ea) { return ea.name == fragment.name });
-					var title = 'implementers of' + fragment.name;
-					new ChangeList(title, null, list).openIn(WorldMorph.current()) }]
+						.select(function(ea) { return ea.name === searchName });
+					var title = 'implementers of' + searchName;
+					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]
     	];
 	} 
 });
  
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
- 
+
+	menuSpec: ide.ClassElemFragmentNode.prototype.menuSpec, // FIXME
+
 });
 
 ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {

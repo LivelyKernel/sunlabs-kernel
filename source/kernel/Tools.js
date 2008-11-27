@@ -1435,10 +1435,11 @@ WidgetModel.subclass('ChangeList', {
     initialViewExtent: pt(420,450),
     openTriggerVariable: 'getChangeBanners',
 
-    initialize: function($super, title, ignored, changes) {
+    initialize: function($super, title, ignored, changes, searchString) {
         $super();
         this.title = title;
         this.changeList = changes;
+		this.searchString = searchString;
     },
     
     getChangeBanners: function() {
@@ -1823,8 +1824,8 @@ ChangeList.subclass('SourceDatabase', {
         var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
         jsFiles = jsFiles.uniq();
         // FIXME remove
-        var rejects = ["Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
-                       "Serialization.js", "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
+        var rejects = [/*"Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
+                       "Serialization.js",*/ "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
                        "workspace.js", 'JSON.js']
         return jsFiles.reject(function(ea) { return rejects.include(ea) });
     },
