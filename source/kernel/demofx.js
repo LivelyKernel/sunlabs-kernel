@@ -2,7 +2,10 @@ using().module('lively.demofx').run(function() {
 
     Morph.subclass('lively.demofx.WrapperMorph', {
 	initialize: function($super, content, model) {
-	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(content));
+	    // passing this as second argument wil mean that all the linked literals
+	    // with the $var name will be instance fields 
+	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(content, this));
+
 	}
     });
 
@@ -372,9 +375,7 @@ using().module('lively.demofx').run(function() {
 		 
 		},
                 {$:"Rectangle",
-		 $var: "rect", // unused
-		 // $var: "Rect" to create a local (private) model variable and set its value to 
-		 // the linked literal?
+		 $var: "rect", 
                  x: 1,
                  y: 1,
                  width: width - 1,
@@ -406,6 +407,7 @@ using().module('lively.demofx').run(function() {
 	    this.addMorph(label);
 	    label.align(label.bounds().center(), this.shape.bounds().center());
 	    label.translateBy(pt(0, -3)); // ouch
+	    console.log('my variable rect is ' + this.rect);
 	}
 	
     });

@@ -39,8 +39,8 @@ function using() {
 	    this.model = model;
 	    return this;
 	},
-	link: function link(literal) { 
-	    return new lively.data.Resolver().link(literal, [], undefined, $A(args), this.model); 
+	link: function link(literal, variableMap) { 
+	    return new lively.data.Resolver().link(literal, [], undefined, (variableMap || {}), $A(args), this.model); 
 	},
 	extend: function extend(base, extLiteral) {
 	    return this.link(Object.extend(Object.clone(base), extLiteral));
@@ -2206,9 +2206,10 @@ Object.extend(lively.data.Bind, {
 Object.subclass('lively.data.Resolver', {
     description: "resolves literals to full-blown objects",
     storedClassKey: '$', // type info, missing in 
+    variableBindingKey: '$var',
     defaultSearchPath: [Global],
     
-    link: function(literal, binders, key, optSearchPath, optModel) {
+    link: function(literal, binders, key, variableBindings, optSearchPath, optModel) {
 	var constr;
 	var type = literal[this.storedClassKey];
 	if (type) {
@@ -2228,6 +2229,7 @@ Object.subclass('lively.data.Resolver', {
 	var subBinders = [];
 	for (var name in literal) {
 	    if (name === this.storedClassKey) continue;
+	    if (name === this.variableBindingKey) continue;
 	    if (!literal.hasOwnProperty(name)) continue;
 	    var value = literal[name];
 	    if (value === null || value === undefined)
@@ -2244,10 +2246,10 @@ Object.subclass('lively.data.Resolver', {
 		if (value instanceof Array) {
 		    var array = initializer[name] = [];
 		    for (var i = 0; i < value.length; i++)  {
-			array.push((this.link(value[i], subBinders, i, optSearchPath, optModel)));
+			array.push((this.link(value[i], subBinders, i, variableBindings, optSearchPath, optModel)));
 		    }
 		} else {
-		    initializer[name] = this.link(value, subBinders, name, optSearchPath, optModel);
+		    initializer[name] = this.link(value, subBinders, name, variableBindings, optSearchPath, optModel);
 		}
 		break;
 	    }
@@ -2275,6 +2277,13 @@ Object.subclass('lively.data.Resolver', {
 	    //console.log('reified is ' + (initializer && initializer.constructor) + " vs  " + literal);
 	    reified = initializer;
 	}
+
+	if (literal[this.variableBindingKey]) {
+	    var varName = literal[this.variableBindingKey];
+	    console.log('binding ' + varName + ' to ' + reified + " on " + variableBindings);
+	    variableBindings[varName] = reified;
+	}
+	
 	return reified;
     }
 });
