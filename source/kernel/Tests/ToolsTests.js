@@ -787,25 +787,29 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
         this.root = db.addModule('foo.js', src);
    },
    
+	fragmentNamed: function(name) {
+		return this.root.flattened().detect(function(ea) { return ea.name == name});
+	},
+
    testCorrectNumberOfFragments: function() {
        this.assertEqual(this.root.type, 'moduleDef');
        this.assertEqual(this.root.flattened().length, 8);
    },
    
    testFragmentsOfOwnFile: function() {
-       var classFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassA' });
-       this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
+		var classFragment = this.fragmentNamed('ClassA');
+		this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
    },
    
    testPutNewSource: function() {
-       var classFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassA' });
+       var classFragment = this.fragmentNamed('ClassA');
        classFragment.putSourceCode('Object.subclass(\'ClassA\', { //thisHas17Chars\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
        this.assertEqual(classFragment.startIndex, 55, 'classFrag1 start');
        this.assertEqual(classFragment.stopIndex, 123+17, 'classFrag1 stop');
        this.assertEqual(classFragment.subElements.length, 1);
        this.assertEqual(classFragment.subElements[0].startIndex, 84+17, 'method1 start');
        this.assertEqual(classFragment.subElements[0].stopIndex, 119+17, 'method1 stop');
-       var otherClassFragment = this.root.flattened().detect(function(ea) { return ea.name == 'ClassB' });
+       var otherClassFragment = this.fragmentNamed('ClassB');
        this.assertEqual(otherClassFragment.startIndex, 180+17, 'classFrag2 start');
        this.assertEqual(otherClassFragment.stopIndex, 257+17, 'classFrag2 stop');
        this.assertEqual(this.root.stopIndex, 277+17, 'root stop');
@@ -813,25 +817,33 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
    },
 
 	testGetSourceCodeWithoutSubElements: function() {
-		var fragment = this.root.flattened().detect(function(ea) { return ea.name === 'ClassB' });
+		var fragment = this.fragmentNamed('ClassB');
 		this.assert(fragment, 'no fragment found');
 		var expected =  'ClassA.subclass(\'ClassB\', {\n\t\n});\n';
 		this.assertEqual(fragment.getSourceCodeWithoutSubElements(), expected);
 	},
 
 	testRenameClass: function() {
-		var fragment = this.root.flattened().detect(function(ea) { return ea.name === 'ClassA' });
+		var fragment = this.fragmentNamed('ClassA');
 		var newName = 'ClassARenamed';
 		fragment.putSourceCode('Object.subclass(\'' + newName + '\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
 		this.assertEqual(fragment.name, newName);
-		var foundAgain = this.root.flattened().detect(function(ea) { return ea.name === newName });
+		var foundAgain = this.fragmentNamed(newName);
 		this.assertIdentity(foundAgain, fragment);
-		var old = this.root.flattened().detect(function(ea) { return ea.name === 'ClassA' });
+		var old = this.fragmentNamed('ClassA');
 		this.assert(!old, 'old fragment still exisiting!');
 	}
    
 });
-    
+
+thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTests', {
+
+	testFragmentsOfNodesDiffer: function() {
+	var node1 = 1;
+	
+	}
+});
+
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     
     shouldRun: false,

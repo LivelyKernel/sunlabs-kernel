@@ -867,7 +867,23 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 	}
 
 });
- 
+
+ide.BrowserCommand.subclass('lively.ide.RefreshCommand', {
+
+wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		return 'Refresh'
+	},
+
+	trigger: function() {
+		this.browser.allChanged();
+	}
+
+});
+
 ide.BrowserCommand.subclass('lively.ide.AlphabetizeCommand', {
 
 	wantsButton: function() {
@@ -908,7 +924,7 @@ Object.subclass('AnotherFileParser', {
     
     callOMeta: function(rule, src) {
         if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'))
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, /*!this.debugMode*/true/*hideErrors?*/);
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, !this.debugMode/*hideErrors?*/);
     },
     
     parseClass: function() {
