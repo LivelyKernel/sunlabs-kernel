@@ -375,7 +375,7 @@ using().module('lively.demofx').run(function() {
 		 
 		},
                 {$:"Rectangle",
-		 $var: "rect", 
+		 $var: "rect",  // this.rect will be bound to this value
                  x: 1,
                  y: 1,
                  width: width - 1,
@@ -387,6 +387,7 @@ using().module('lively.demofx').run(function() {
 	},
 	
 	handlesMouseDown: Functions.True,
+	suppressHandles: true,
 
 	onMouseOver: function() {
 	    this.setGlowColor(new Color(0.5, 0.5, 0.5, 0.5));
@@ -407,7 +408,6 @@ using().module('lively.demofx').run(function() {
 	    this.addMorph(label);
 	    label.align(label.bounds().center(), this.shape.bounds().center());
 	    label.translateBy(pt(0, -3)); // ouch
-	    console.log('my variable rect is ' + this.rect);
 	}
 	
     });
