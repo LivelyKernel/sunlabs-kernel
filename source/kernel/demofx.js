@@ -6,7 +6,6 @@ using().module('lively.demofx').run(function() {
 	}
     });
 
-
     lively.demofx.WrapperMorph.subclass('lively.demofx.SceneMorph', {
 	content: {},
 	initialize: function($super, model) {
@@ -337,6 +336,81 @@ using().module('lively.demofx').run(function() {
     });
     });
  
+    
+    using().run(function() {
+	const width = 100;
+	const height = 20;
+
+    lively.demofx.SceneMorph.subclass('lively.demofx.Button',  {
+	formals: ["GlowColor", "GlowOpacity"],
+	content: {
+	    $:"Group",
+	    content: [
+		{$:"Rectangle",
+                 //cursor: Cursor.HAND
+                 width: width,
+                 height: height,
+                 fill: {$:"LinearGradient",
+			startX: 0,
+			startY: 0,
+			endX: 0,
+			endY: 1,
+			stops: [
+                            {$:"Stop", offset: 0.0, color: Color.rgb( 65,  65,  65) },
+                            {$:"Stop", offset: 0.4, color: Color.rgb(  1,   1,   1) },
+                            {$:"Stop", offset: 0.8, color: Color.rgb( 21,  21,  21) },
+                            {$:"Stop", offset: 1.0, color: Color.rgb(  4,   4,   4) }
+                        ]
+                       },
+                 stroke: {$:"LinearGradient", startX: 0, startY: 0, endX: 0, endY: 1,
+                          stops: [
+                              {$:"Stop", offset: 0.0, color: Color.rgb(  5,   5,   5) },
+                              {$:"Stop", offset: 1.0, color: Color.rgb( 85,  85,  85) },
+                          ]
+			 } ,
+		 /// FIXME fade/in/out behavior here
+		 
+		},
+                {$:"Rectangle",
+		 $var: "rect", // unused
+		 // $var: "Rect" to create a local (private) model variable and set its value to 
+		 // the linked literal?
+                 x: 1,
+                 y: 1,
+                 width: width - 1,
+                 height: height - 1,
+		 fillOpacity: {$:"Bind", to: "GlowOpacity"},
+                 fill: {$:"Bind", to: "GlowColor"}
+                }
+	    ]
+	},
+	
+	handlesMouseDown: Functions.True,
+
+	onMouseOver: function() {
+	    this.setGlowColor(new Color(0.5, 0.5, 0.5, 0.5));
+	    this.setGlowOpacity(0.5);
+	},
+
+	onMouseOut: function() {
+	    this.setGlowColor(Color.white);
+	    this.setGlowOpacity(0);
+	},
+	
+	initialize: function($super, model, labelText) {
+	    $super(model);
+	    var label = new TextMorph(new Rectangle(0, 0, 0, 0), labelText);
+	    label.beLabel();
+	    label.setTextColor(Color.white);
+	    label.setFontSize(11);
+	    this.addMorph(label);
+	    label.align(label.bounds().center(), this.shape.bounds().center());
+	    label.translateBy(pt(0, -3)); // ouch
+	}
+	
+    });
+
+    });
 
     const twidth = 82;
     const theight = 71;
@@ -428,7 +502,7 @@ using().module('lively.demofx').run(function() {
 	    this.label.beLabel();
 	    this.label.setWrapStyle(lively.Text.WrapStyle.Shrink);
 	    this.label.setFontSize(10);
-	    this.label.setTextColor(Color.darkGray);
+	    this.label.setTextColor(Color.gray);
 	    this.addMorph(this.label);
 	    this.label.align(this.label.bounds().bottomCenter(), this.bounds().bottomCenter());
 	    this.label.translateBy(pt(4, 0));
@@ -608,6 +682,10 @@ using().module('lively.demofx').run(function() {
 						 KnobWidth: "-KnobWidth",
 						 ImageRotation: "ImageRotation"}));
 
-
+    var buttonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
+    var button = new lively.demofx.Button(buttonModel, "Open Image 1");
+    button.connectModel(buttonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
+    WorldMorph.current().addMorph(button);
+    button.align(button.bounds().topLeft(), container.bounds().bottomLeft());
  
 }.logErrors());

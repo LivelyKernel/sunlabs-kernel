@@ -500,7 +500,9 @@ this.Node.addMethods({
     // FIXME: unfortunate aliasing for FX, should be removed (Bind doesn't translate accessors properly)
 this.Node.addMethods({
     setstroke: lively.scene.Node.prototype.setStroke,
-    setvisible: lively.scene.Node.prototype.setvisible
+    setfill: lively.scene.Node.prototype.setFill,
+    setfillOpacity: lively.scene.Node.prototype.setFillOpacity,
+    setvisible: lively.scene.Node.prototype.setVisible
     
 });
 
@@ -685,6 +687,7 @@ Object.extend(this.Rectangle, {
 	if (literal.stroke !== undefined) node.setStroke(literal.stroke);
 	node.setStrokeWidth(literal.strokeWidth === undefined ? 1 : literal.strokeWidth);
 	if (literal.fill !== undefined) node.setFill(literal.fill);
+	if (literal.fillOpacity !== undefined) node.setFillOpacity(literal.fillOpacity);
 	if (literal.arcWidth !== undefined) node.roundEdgesBy(literal.arcWidth/2);
 	return node;
     }
