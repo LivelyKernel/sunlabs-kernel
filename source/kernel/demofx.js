@@ -470,13 +470,13 @@ using().module('lively.demofx').run(function() {
     
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
 	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
-    var effect = new lively.scene.GaussianBlurEffect(0.001, "myfilter");
-    effect.applyTo(targetImage);
+    var theEffect = new lively.scene.GaussianBlurEffect(0.001, "myfilter");
+    theEffect.applyTo(targetImage);
 
     sliderModel.addObserver({
 	onAdjValueUpdate: function(value) {
 	    var radius = value*10 || 1;
-	    effect.setRadius(radius);
+	    theEffect.setRadius(radius);
 	    sliderModel.setLabelValue("radius " + radius.toFixed(2));
 	}
     });
@@ -502,24 +502,6 @@ using().module('lively.demofx').run(function() {
 						   _CanvasY: "+_CanvasY"}), true);
     
     
-    var sliderMorph = container.addMorph(new lively.demofx.Slider(sliderModel));
-    sliderMorph.align(sliderMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
-    sliderMorph.translateBy(pt(0, 5));
-    
-    var label = container.addMorph(new TextMorph(new Rectangle(0,0,0,0)).beLabel());
-    label.setTextColor(Color.white);
-    label.connectModel(sliderModel.newRelay({Text: "LabelValue"}), true);
-    label.align(label.bounds().leftCenter(), sliderMorph.bounds().rightCenter());
-    label.translateBy(pt(10, 0));
-
-
-    var knobMorph = container.addMorph(new lively.demofx.Knob(canvasModel));
-    knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
-    knobMorph.translateBy(pt(0, 5));
-    knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", 
-						 KnobWidth: "-KnobWidth",
-						 ImageRotation: "ImageRotation"}));
-    
     WorldMorph.current().addMorph(container);
 
 
@@ -537,7 +519,6 @@ using().module('lively.demofx').run(function() {
     }
 
 
-    
     var firstRow = {$:"Group",
 	content: [
             {$:"Group",
@@ -561,9 +542,8 @@ using().module('lively.demofx').run(function() {
 
     var rowModel = Record.newPlainInstance({FirstRowStartY: 3});
     var rowMorph = new lively.demofx.WrapperMorph(firstRow, rowModel);
-    WorldMorph.current().addMorph(rowMorph);
-    rowMorph.align(rowMorph.bounds().topCenter(), container.bounds().bottomCenter());
-
+    container.addMorph(rowMorph);
+    rowMorph.align(rowMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
 
 
     var effectNames = ["Blend", "Blur", "Motion Blur", "Bloom", "Glow", "Color Adjust"];
@@ -592,6 +572,41 @@ using().module('lively.demofx').run(function() {
 	previous = preview;
     }
 
+
+    var controlPlate = new BoxMorph(new Rectangle(0, 0, canvasWidth, 90));
+    controlPlate.setFill(using(lively.paint).link(
+        {$:"LinearGradient",
+         startX: 0,
+         startY: 0,
+         endX: 0,
+         endY: 1,
+         stops: [ {$:"Stop", offset: 0.0,  color: Color.rgb(102, 102, 102) },
+                  {$:"Stop", offset: 0.5,  color: Color.rgb(148, 148, 148) },
+                  {$:"Stop", offset: 1.0,  color: Color.rgb(102, 102, 102) },
+                ]
+	 
+        }));
+
+    container.addMorph(controlPlate);
+    controlPlate.align(controlPlate.bounds().topCenter(), rowMorph.bounds().bottomCenter());
+    
+    var sliderMorph = controlPlate.addMorph(new lively.demofx.Slider(sliderModel));
+    sliderMorph.align(sliderMorph.bounds().topCenter(), controlPlate.shape.bounds().topCenter());
+    sliderMorph.translateBy(pt(0, 5));
+    
+    var label = controlPlate.addMorph(new TextMorph(new Rectangle(0,0,0,0)).beLabel());
+    label.setTextColor(Color.white);
+    label.connectModel(sliderModel.newRelay({Text: "LabelValue"}), true);
+    label.align(label.bounds().leftCenter(), sliderMorph.bounds().rightCenter());
+    label.translateBy(pt(10, 0));
+
+
+    var knobMorph = controlPlate.addMorph(new lively.demofx.Knob(canvasModel));
+    knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
+    knobMorph.translateBy(pt(0, 5));
+    knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", 
+						 KnobWidth: "-KnobWidth",
+						 ImageRotation: "ImageRotation"}));
 
 
  
