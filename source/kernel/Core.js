@@ -1254,7 +1254,6 @@ lively.data.Wrapper.subclass('Morph', {
 		// console.log("found field " + Exporter.stringify(node));
 		helperNodes.push(node);
 		var name = LivelyNS.getAttribute(node, "name");
-		
 		if (name) {
 		    var ref = LivelyNS.getAttribute(node, "ref");
 		    if (ref) {

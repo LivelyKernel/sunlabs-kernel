@@ -1893,6 +1893,7 @@ Object.extend(Color, {
     blue:  new Color(0,0,0.8),
     purple: new Color(1,0,1),
     magenta: new Color(1,0,1),
+    
 
     random: function() {
 	return new Color(Math.random(),Math.random(),Math.random()); 
@@ -2159,11 +2160,14 @@ Record.subclass('lively.data.StyleRecord', {
 
 Object.subclass('lively.data.Bind', {
     // unify with the record mechanism
-    initialize: function(varName) {
+    initialize: function(varName, debugString) {
 	this.varName = varName;
+	this.debugString = debugString;
 	this["on" + varName + "Update"] = function(value) {
 	    var method = this.target["set" + this.key];
 	    if (!method) alert('no method for ' + this.key);
+	    if (this.debugString) console.log('triggering update of ' + this.varName  + " to " + value 
+					      + " context " + this.debugString);
 	    method.call(this.target, value);
 	}
 
@@ -2174,7 +2178,10 @@ Object.subclass('lively.data.Bind', {
 	if (!model) return undefined;
 	var method = model["get" + this.varName];
 	dbgOn(!method);
-	return method.call(model);
+	var result = method.call(model);
+	if (this.debugString) console.log('Bind to:' + this.varName  + " retrieved model value " + result  
+					  + ' context '  + this.debugString);
+	return result;
     },
 
     toString: function() {
@@ -2190,7 +2197,7 @@ Object.subclass('lively.data.Bind', {
 
 Object.extend(lively.data.Bind, {
     fromLiteral: function(literal) {
-	return new lively.data.Bind(literal.to);
+	return new lively.data.Bind(literal.to, literal.debugString);
     }	
 });
 

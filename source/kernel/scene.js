@@ -677,11 +677,9 @@ Object.extend(this.Rectangle, {
 	var height = literal.height || 0.0;
 
 	var node = new lively.scene.Rectangle(new Rectangle(x, y, width, height));
-	literal.stroke && node.setStroke(literal.stroke);
-	if (literal.strokeWidth !== undefined)
-	    node.setStrokeWidth(literal.strokeWidth);
-	else node.setStrokeWidth(1);
-	literal.fill && node.setFill(literal.fill);
+	if (literal.stroke !== undefined) node.setStroke(literal.stroke);
+	node.setStrokeWidth(literal.strokeWidth === undefined ? 1 : literal.strokeWidth);
+	if (literal.fill !== undefined) node.setFill(literal.fill);
 	if (literal.arcWidth !== undefined) node.roundEdgesBy(literal.arcWidth/2);
 	return node;
     }
@@ -1258,10 +1256,6 @@ this.Shape.subclass('lively.scene.Group', {
     setContent: function(nodes) {
 	nodes.forEach(function(node) { 
 	    this.add(node); 
-	    if (node instanceof Morph) {
-		Global.FIXME_lastMorph = node;
-	    }
-
 	}, this);
     },
 

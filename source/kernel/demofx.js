@@ -246,6 +246,7 @@ using().module('lively.demofx').run(function() {
 	onImageUpdate: function(imageMorph) {
 	    this.set_CanvasX((canvasWidth - imageMorph.image.getWidth())/2);
 	    this.set_CanvasY(canvasHeight/2 - imageMorph.image.getHeight()/2);
+	    // FIXME this !== this
 	}
 	
     });
@@ -255,7 +256,7 @@ using().module('lively.demofx').run(function() {
     const minimum = 0.0;
     const maximum = 1.0;
 
-    lively.demofx.SceneMorph.subclass('lively.demofx.KnobMorph',  {
+    lively.demofx.SceneMorph.subclass('lively.demofx.Knob',  {
 	formals: ["_KnobValue",  // private to morph
 		  "ImageRotation" // public
 		 ],
@@ -329,6 +330,73 @@ using().module('lively.demofx').run(function() {
     });
  
 
+    const twidth = 82;
+    const theight = 71;
+
+    lively.demofx.SceneMorph.subclass('lively.demofx.Preview',  {
+	formals: ["Selected", "ThumbImage"],
+	content: {
+	    $:"Group",
+            //blocksMouse: true
+            //cursor: Cursor.HAND
+	    
+            content: [
+		{$:"Group",
+		 //cache: true,
+		 clip: {$:"Rectangle", /*smooth: false*/ width: twidth, height: theight },
+                 content: [
+		     {$:"Group", 
+/*		      transforms: [{$:"Translate", 
+				    //X: {$:"Bind", eval: "(twidth - control.thumbImage.layoutBounds.width) / 2 - control.thumbImage.layoutBounds.minX"}, Y: 0}
+				    X: 0, Y: 0} ], */
+		      content: [{$:"Bind", to: "ThumbImage", debugString: 'here'}] // eval: "control.thumbImage"}]
+		     },
+		     {$:"Rectangle",
+                      y: theight * 0.72,
+                      width: twidth,
+                      height: theight * 0.28,
+                      fill: new Color(0, 0, 0, 0.7),
+                      stroke: Color.black
+		     }
+		     /*text = {$:"Text",
+                        translateX: bind (twidth - text.layoutBounds.width) / 2 - text.layoutBounds.minX
+                        translateY: bind rect.layoutBounds.minY + (rect.layoutBounds.height / 2) + 4
+                        font: Font { size: 10 }
+                        content: label
+                        fill: Color.WHITE
+                    },*/
+		 ]},
+
+		{$:"Rectangle",
+		 width: twidth,
+		 height: theight,
+		 fill: null,
+                 stroke: Color.white,  //{$:"Bind", eval: "bind if (selected) selColor else topColor"},
+                },
+
+                {$:"Polygon",
+                 visible: {$:"Bind", to: "Selected"},
+		 transforms: [{$:"Translate", X:twidth / 2, Y: -7}],
+                 points: [pt(0, 0), pt(5, 5), pt(-5, 5)],
+                 fill: Color.rgb(190, 190, 190),
+                },
+                {$:"Polygon",
+                 visible: {$:"Bind", to: "Selected"},
+		 transforms:[{$:"Translate", X:twidth / 2, Y: theight + 3}],
+                 points: [pt(-5, 0), pt(5, 0), pt(0, 5)],
+                 fill: Color.rgb(190, 190, 190)
+                }
+	    ]
+	},
+
+	onThumbImageUpdate: function(img) {
+	    console.log('patching owner to ' + img);
+	    img.owner = this; // ouch FIXME
+	}
+	
+    });
+
+
 
     false && using().test(function() {
 	// more structural experiments
@@ -358,7 +426,7 @@ using().module('lively.demofx').run(function() {
     var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0, 
 	LabelValue: "radius 0.00"});
     
-    var targetImage = new ImageMorph(new Rectangle(100, 100, 500, 333), 
+    var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
 	URL.source.withFilename('Resources/images/flower.jpg').toString());
     var effect = new lively.scene.GaussianBlur(0.001, "myfilter");
 
@@ -387,15 +455,8 @@ using().module('lively.demofx').run(function() {
     }
 
     var canvasMorph = container.addMorph(new lively.demofx.Canvas(canvasModel));
-    if (Global.FIXME_lastMorph) {
-	//canvasMorph.addMorph(Global.FIXME_lastMorph);
-    }
-    //    alert('its ' + Global.FIXME_lastMorph);
-    
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
     canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), true);
-
-
     
     
     var sliderMorph = container.addMorph(new lively.demofx.Slider(sliderModel));
@@ -409,11 +470,23 @@ using().module('lively.demofx').run(function() {
     label.translateBy(pt(10, 0));
 
 
-    var knobMorph = container.addMorph(new lively.demofx.KnobMorph(canvasModel));
+    var knobMorph = container.addMorph(new lively.demofx.Knob(canvasModel));
     knobMorph.align(knobMorph.bounds().topCenter(), sliderMorph.bounds().bottomCenter());
     knobMorph.translateBy(pt(0, 5));
     knobMorph.connectModel(canvasModel.newRelay({_KnobValue: "+_KnobValue", ImageRotation: "ImageRotation"}));
     
     WorldMorph.current().addMorph(container);
+
+
+    var factor = 0.17;
+    var thumbImage = new ImageMorph(new Rectangle(0, 0, 500, 333),
+	URL.source.withFilename('Resources/images/flower.jpg').toString());
+    thumbImage.image.scaleBy(factor);
+
+    var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage});
+    var previewMorph = new lively.demofx.Preview(previewModel);
+    previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage"}), true);
+    WorldMorph.current().addMorph(previewMorph);
+    previewMorph.setPosition(WorldMorph.current().bounds().center().addXY(200, -100));
  
 }.logErrors());
