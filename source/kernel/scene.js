@@ -430,7 +430,7 @@ this.Node.addMethods({
     getFill: function() {
 	return this._fill;
     },
-
+    
     setStroke: function(paint) {
 	if ((this._stroke !== paint) && (this._stroke instanceof lively.paint.Gradient)) {
 	    this._stroke.dereference();
@@ -496,8 +496,12 @@ this.Node.addMethods({
 
 });
 
-
-
+    // FIXME: unfortunate aliasing for FX, should be removed (Bind doesn't translate accessors properly)
+this.Node.addMethods({
+    setstroke: lively.scene.Node.prototype.setStroke,
+    setvisible: lively.scene.Node.prototype.setvisible
+    
+});
 
 
 // ===========================================================================

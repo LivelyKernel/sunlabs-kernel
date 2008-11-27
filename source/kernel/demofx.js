@@ -332,9 +332,14 @@ using().module('lively.demofx').run(function() {
 
     const twidth = 82;
     const theight = 71;
+    const selColor =  Color.white;
+    const topColor = new Color(0.3, 0.3, 0.3);
+
 
     lively.demofx.SceneMorph.subclass('lively.demofx.Preview',  {
-	formals: ["Selected", "ThumbImage"],
+	formals: ["Selected", "ThumbImage", "_BorderColor"],
+	suppressHandles: true,
+	
 	content: {
 	    $:"Group",
             //blocksMouse: true
@@ -371,7 +376,7 @@ using().module('lively.demofx').run(function() {
 		 width: twidth,
 		 height: theight,
 		 fill: null,
-                 stroke: Color.white,  //{$:"Bind", eval: "bind if (selected) selColor else topColor"},
+                 stroke: {$:"Bind", to: "_BorderColor"},
                 },
 
                 {$:"Polygon",
@@ -392,7 +397,18 @@ using().module('lively.demofx').run(function() {
 	onThumbImageUpdate: function(img) {
 	    console.log('patching owner to ' + img);
 	    img.owner = this; // ouch FIXME
-	}
+	},
+	
+	onMouseOver: function(evt) {
+	    this.setSelected(true);
+	    this.set_BorderColor(selColor);
+	},
+
+	onMouseOut: function(evt) {
+	    this.setSelected(false);
+	    this.set_BorderColor(topColor);
+	},
+
 	
     });
 
@@ -442,7 +458,7 @@ using().module('lively.demofx').run(function() {
     
     var canvasModel = Record.newPlainInstance({Image: targetImage, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0});
 
-    var container = new BoxMorph(new Rectangle(230, 100, canvasWidth, canvasHeight + 100));
+    var container = new BoxMorph(new Rectangle(230, 30, canvasWidth, canvasHeight + 100));
 
 
     var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
@@ -478,15 +494,29 @@ using().module('lively.demofx').run(function() {
     WorldMorph.current().addMorph(container);
 
 
-    var factor = 0.17;
-    var thumbImage = new ImageMorph(new Rectangle(0, 0, 500, 333),
-	URL.source.withFilename('Resources/images/flower.jpg').toString());
-    thumbImage.image.scaleBy(factor);
+    function makePreview(effect) {
+	var factor = 0.17;
+	var thumbImage = new ImageMorph(new Rectangle(0, 0, 500*factor, 333*factor),
+	    URL.source.withFilename('Resources/images/flower.jpg').toString());
+	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, _BorderColor: topColor});
+	var previewMorph = new lively.demofx.Preview(previewModel);
+	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", _BorderColor: "+_BorderColor"}), true);
+	effect.applyTo(previewModel.getThumbImage());
+	return previewMorph;
+    }
 
-    var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage});
-    var previewMorph = new lively.demofx.Preview(previewModel);
-    previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage"}), true);
-    WorldMorph.current().addMorph(previewMorph);
-    previewMorph.setPosition(WorldMorph.current().bounds().center().addXY(200, -100));
+
+    var gaussian = makePreview(new lively.scene.GaussianBlur(1, "previewBlur"));
+
+    WorldMorph.current().addMorph(gaussian);
+    gaussian.align(gaussian.bounds().topLeft(), container.bounds().bottomLeft());
+    gaussian.translateBy(pt(-3, 7)); // dunno why -3 to get the right alignment
+    //gaussian.setPosition(WorldMorph.current().bounds().center().addXY(200, -100));
+
+
+    var preview2 = makePreview(new lively.scene.GaussianBlur(4, "previewBlur2"));
+    preview2.align(preview2.bounds().topLeft(), gaussian.bounds().topRight());
+    WorldMorph.current().addMorph(preview2);
+    preview2.translateBy(pt(3, 0));
  
 }.logErrors());
