@@ -2704,6 +2704,11 @@ BoxMorph.subclass("TitleBarMorph", {
 	var clip = this.contentMorph.owner;
 	clip.setBounds(innerBounds.insetByRect(Rectangle.inset(-w/2, -w/2, -w/2, 0)));
     },
+	
+	setTitle: function(string) {
+		this.label.setTextString(string);
+		this.adjustForNewBounds();  // This will align the buttons and label properly
+	},
 
     okToDuplicate: Functions.False
 
@@ -3054,7 +3059,11 @@ Morph.subclass('WindowMorph', {
         if (this.isCollapsed()) return;
         this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
-    }
+    },
+
+	setTitle: function(string) {
+		this.titleBar.setTitle(string);
+	}
 
 });
    
