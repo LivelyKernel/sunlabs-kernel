@@ -2010,7 +2010,8 @@ TextMorph.addMethods({ // change clue additions
 
 	addChangeClue: function(useChangeClue) {
 		if (!useChangeClue) return;
-		this.changeClue = Morph.makeRectangle(0,0,5,5);
+		this.changeClue = Morph.makeRectangle(1,1,5,5);
+		this.changeClue.setBorderWidth(0);
 		this.changeClue.setFill(Color.red);
 		this.changeClue.ignoreEvents();
 	},

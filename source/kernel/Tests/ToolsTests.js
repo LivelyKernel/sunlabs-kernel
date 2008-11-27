@@ -817,6 +817,17 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
 		this.assert(fragment, 'no fragment found');
 		var expected =  'ClassA.subclass(\'ClassB\', {\n\t\n});\n';
 		this.assertEqual(fragment.getSourceCodeWithoutSubElements(), expected);
+	},
+
+	testRenameClass: function() {
+		var fragment = this.root.flattened().detect(function(ea) { return ea.name === 'ClassA' });
+		var newName = 'ClassARenamed';
+		fragment.putSourceCode('Object.subclass(\'' + newName + '\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
+		this.assertEqual(fragment.name, newName);
+		var foundAgain = this.root.flattened().detect(function(ea) { return ea.name === newName });
+		this.assertIdentity(foundAgain, fragment);
+		var old = this.root.flattened().detect(function(ea) { return ea.name === 'ClassA' });
+		this.assert(!old, 'old fragment still exisiting!');
 	}
    
 });

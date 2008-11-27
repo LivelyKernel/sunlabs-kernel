@@ -57,11 +57,11 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.start();
  
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['Pane1', newRealListPane, new Rectangle(0, 0, 0.35, 0.40)],
-            ['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.45)], //['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
+            ['Pane1', newRealListPane, new Rectangle(0, 0, 0.3, 0.40)],
+            ['Pane2', newRealListPane, new Rectangle(0.3, 0, 0.35, 0.45)], //['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
             ['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-            ['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.5)],
-            ['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
+            ['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+            //['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
         ]);
  
         var model = this.getModel();
@@ -87,7 +87,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
         panel.sourcePane.innerMorph().maxSafeSize = 2e6;
         panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
  
-	panel.statusPane.connectModel(model.newRelay({Text: "-StatusMessage"}));
+		//panel.statusPane.connectModel(model.newRelay({Text: "-StatusMessage"}));
+		this.buildCommandButtons(panel);
  
 	    this.panel = panel;
         return panel;
@@ -200,9 +201,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
         return siblings.without(node);
     },
     
-    nodeChanged: function(node) {
-        // currently update everything, this isn't really necessary
-        // FIXME remove duplication
+	allChanged: function() {
+	      // FIXME remove duplication
         var oldN1 = this.getPane1Selection();
         var oldN2 = this.getPane2Selection();
         var oldN3 = this.getPane3Selection();
@@ -220,6 +220,11 @@ Widget.subclass('lively.ide.BasicBrowser', {
             var newN3 = this.nodesInPane('Pane3').detect(function(ea) { return ea.target === oldN3.target });
             this.setPane3Selection(newN3, true);
         }
+},
+
+    nodeChanged: function(node) {
+        // currently update everything, this isn't really necessary
+  		this.allChanged();
     },
  
 	textChanged: function(node) {
@@ -233,7 +238,28 @@ Widget.subclass('lively.ide.BasicBrowser', {
 			var list = this.panel[paneName].innerMorph();
 			var i = list.itemList.indexOf(wanted);
 			list.selectLineAt(i, true /*should update*/);
-	}
+	},
+
+	commands: function() {
+		var cmdClasses = ide.BrowserCommand.allSubclasses();
+		return cmdClasses.collect(function(ea) { return new ea(this) }, this);
+	},
+
+	buildCommandButtons: function(morph) {
+		var cmds = this.commands().select(function(ea) { return ea.wantsButton() });
+		if (cmds.length === 0) return;
+
+        var height = 20;
+        var width = morph.getExtent().x / cmds.length
+        var y = morph.getExtent().y * 0.5 - height;
+
+        var btns = cmds.forEach(function(cmd, i) {
+            var btn = new ButtonMorph(new Rectangle(i*width, y, width, height));
+			btn.setLabel(cmd.asString());
+			btn.connectModel({model: {action: function(val) { if (!val) cmd.trigger() }}, setValue: 'action'});
+			morph.addMorph(btn);
+        })
+	},
 });
  
 Object.subclass('lively.ide.BrowserNode', {
@@ -255,9 +281,15 @@ Object.subclass('lively.ide.BrowserNode', {
     },
  
     childNodesAsListItems: function() {
-        return this.childNodes().collect(function(ea) {
+        var items = this.childNodes().collect(function(ea) {
             return {isListItem: true, string: ea.asString(), value: ea}
-        })
+        });
+		if (!this.browser.alphabetize) return items;
+		return items.sort(function(a,b) {
+			if (a.string < b.string) return -1;
+			if (a.string > b.string) return 1;
+			return 0;
+		});
     },
  
     asString: function() {
@@ -294,6 +326,7 @@ Object.subclass('lively.ide.BrowserNode', {
     },
     
     statusMessage: function(string) {
+		console.log('Browser statusMessage: ' + string);
         this.browser && this.browser.setStatusMessage(string);
     },
     
@@ -306,7 +339,25 @@ Object.subclass('lively.ide.BrowserNode', {
     }
  
 });
- 
+
+Object.subclass('lively.ide.BrowserCommand', {
+
+	initialize: function(browser) {
+		this.browser = browser;
+	},
+
+	wantsButton: function() {
+		return false;
+	},
+
+	asString: function() {
+		return 'unnamed command'
+	},
+
+	trigger: function() {}
+
+});
+
 /*
  *  Nodes for viewing classes, functions, objects (from within the system, no parsed source)
  */
@@ -743,7 +794,24 @@ ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
  
 });
  
- 
+ide.BrowserCommand.subclass('lively.ide.AlphabetizeCommand', {
+
+	wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		if (this.browser.alphabetize) return 'unsort';
+		return 'sort'
+	},
+
+	trigger: function() {
+		this.browser.alphabetize = !this.browser.alphabetize;
+		this.browser.allChanged();
+	}
+
+});
+
 // ===========================================================================
 // Another File Parser - uses mostly OMeta for parsing LK sources
 // ===========================================================================
@@ -1109,7 +1177,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     
     preLoadFileNames: function($super) {
 		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
-		return [ ]
+		return [ 'Tests/ToolsTests.js' ]
     },
 });
  
@@ -1175,8 +1243,9 @@ Object.subclass('lively.ide.FileFragment', {
         // re parse this for updating the subelements
         var newMe = this.getSourceControl().reparse(this);
         dbgOn(!newMe);
-        if (newMe.name !== this.name || newMe.type !== this.type || this.startIndex !== newMe.startIndex || this.stopIndex !== newMe.stopIndex)
+        if (newMe.type !== this.type || this.startIndex !== newMe.startIndex || this.stopIndex !== newMe.stopIndex)
             throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
+		this.name = newMe.name; // for renaming
         this.subElements = newMe.subElements;
     },
     

@@ -1556,8 +1556,8 @@ WidgetModel.subclass('ChangeList', {
 
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['topPane', newListPane, new Rectangle(0, 0, 1, 0.5)],
-            ['bottomPane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)]
+            ['topPane', newListPane, new Rectangle(0, 0, 1, 0.4)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.4, 1, 0.6)]
         ]);
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getSelection: "getChangeSelection", getMenu: "getListPaneMenu"});
