@@ -1,9 +1,16 @@
 using().module('lively.demofx').run(function() {	
 
-    Morph.subclass('lively.demofx.SceneMorph', {
+    Morph.subclass('lively.demofx.WrapperMorph', {
+	initialize: function($super, content, model) {
+	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(content));
+	}
+    });
+
+
+    lively.demofx.WrapperMorph.subclass('lively.demofx.SceneMorph', {
 	content: {},
 	initialize: function($super, model) {
-	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(this.content));
+	    $super(this.content, model);
 	}
     });
 
@@ -509,12 +516,37 @@ using().module('lively.demofx').run(function() {
     }
 
 
-    var gaussian = makePreview(new lively.scene.GaussianBlurEffect(1, "previewBlur"));
+    
+    var firstRow = {$:"Group",
+	content: [
+            {$:"Group",
+             transforms: [{$:"Translate", X: 0, Y: {$:"Bind", to: "FirstRowStartY"}}],
+	     content: [
+                 {$:"Rectangle",
+                  width: width,
+                  height: theight + 21,
+                  fill: {$:"LinearGradient",
+                         startX: 0, startY: 0, endX: 0, endY: 1,
+                         stops: [
+                             {$:"Stop", offset: 0.0,  color: Color.rgb(107, 107, 107) },
+                             {$:"Stop", offset: 0.95, color: Color.black },
+                         ]
+			}
+                 },
+                 //firstRowPreviews,
+             ]
+            }
+	]};
 
-    WorldMorph.current().addMorph(gaussian);
-    gaussian.align(gaussian.bounds().topLeft(), container.bounds().bottomLeft());
-    gaussian.translateBy(pt(0, 8)); 
-    //gaussian.setPosition(WorldMorph.current().bounds().center().addXY(200, -100));
+    var rowModel = Record.newPlainInstance({FirstRowStartY: 3});
+    var rowMorph = new lively.demofx.WrapperMorph(firstRow, rowModel);
+    WorldMorph.current().addMorph(rowMorph);
+    rowMorph.align(rowMorph.bounds().topCenter(), container.bounds().bottomCenter());
+
+
+
+    var gaussian = rowMorph.addMorph(makePreview(new lively.scene.GaussianBlurEffect(1, "previewBlur")));
+    gaussian.translateBy(pt(10, 8)); 
 
     var previous = gaussian;
     var margin = 14;
@@ -524,7 +556,7 @@ using().module('lively.demofx').run(function() {
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
 	//var preview2 = mak  ePreview(new lively.scene.SaturateEffect("preview2", 0.4));
 	preview.align(preview.bounds().topLeft(), previous.bounds().topRight());
-	WorldMorph.current().addMorph(preview);
+	rowMorph.addMorph(preview);
 	preview.translateBy(pt(margin, 0));
 	previous = preview;
     }
