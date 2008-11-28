@@ -444,8 +444,7 @@ var PaintModule = {
 		// FIXME what if fill is not a color?
 		fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
 	    }  
-	} else {
-	}
+	} 
 	shape.setDrawPaint(fxPaint);
 	return fxPaint;
     },
@@ -470,6 +469,7 @@ fx.dom.renderers[SVGRectElement.tagName] = function(element) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
 
     var shape = fx.util.antiAlias(new fx.Shape());
+    shape.setDrawPaint(null); // do not stroke until told so
     element._fxShape = shape;
 
     // TODO optimize - use rounding if necessary
@@ -497,6 +497,8 @@ fx.dom.renderers[SVGEllipseElement.tagName] = function(element, attr) {
     var rx = element.rx.baseVal.value;
     var ry = element.ry.baseVal.value;
     var shape = fx.util.antiAlias(new fx.Shape());
+    shape.setDrawPaint(null); // do not stroke until told so
+
     element._fxShape = shape;
 
     shape.setShape(new fx.Ellipse(cx - rx, cy - ry, rx*2, ry*2));
@@ -515,9 +517,12 @@ fx.dom.renderers[SVGPolylineElement.tagName] =
 fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
     if (!element._fxBegin) element._fxBegin = new fx.Parent();
     var fxObj = fx.util.antiAlias(new fx.Shape());
+    fxObj.setDrawPaint(null); // do not stroke until told so
+
     element._fxShape = fxObj;
     var path = new fx.Path();
     fxObj.setShape(path);
+
 
     PaintModule.render(element);
     var attr = element.attributes.getNamedItem("points");
@@ -574,7 +579,7 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element, attr) {
     if (fillAttr) {
 	textColor = PaintModule.parseColor(fillAttr);
     }
-//    console.log('changing on ' + attr + " content  " + element.textContent);
+
 
     var newFont = new fx.Font(fontFamily, fx.Font.PLAIN, fontSize);
     element.getElementsByTagNameNS(Namespace.SVG, 'tspan').each(function(node) {
@@ -586,9 +591,6 @@ fx.dom.renderers[SVGTextElement.tagName] = function(element, attr) {
 	var origin = new fx.Point(node.getAttributeNS(null, "x") || 0, node.getAttributeNS(null, "y") || 0);
 	text.setLocation(origin);
 	text.setText(node.firstChild.nodeValue); 
-	
-
-
 	element._fxEnd.add(text);
     });
 
