@@ -658,7 +658,9 @@ using().module('lively.demofx').run(function() {
 
 
     var effectNames = ["Blend", "Blur", "Motion Blur", "Bloom", "Glow", "Color Adjust"];
-    var shortFileNames = ["flower-blend.png", "flower-blur.png", "flower-motion-blur.png",
+    var shortFileNames = ["flower-blend.png", 
+	"flower.jpg", 
+	"flower-motion-blur.png",
 	"flower-bloom.png", "flower-glow.png", "flower-color-adjust.png"];
     
     var gaussian = 
