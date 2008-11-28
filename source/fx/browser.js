@@ -431,7 +431,6 @@ var PaintModule = {
 	var fxPaint = PaintModule.parsePaint(value, element);
 	if (alpha && fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
 	    // FIXME what if fill is not a color?
-	    console.log('modded opacity to ' + alpha);
 	    fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
 	}
 	shape.setFillPaint(fxPaint);
