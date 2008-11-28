@@ -256,7 +256,6 @@ using().module('lively.demofx').run(function() {
 	    this.set_CanvasX((canvasWidth - imageMorph.image.getWidth())/2);
 	    this.set_CanvasY(canvasHeight/2 - imageMorph.image.getHeight()/2);
 	    this.layoutChanged();
-	    // FIXME this !== this
 	}
 	
     });
@@ -567,9 +566,17 @@ using().module('lively.demofx').run(function() {
     var theEffect = new lively.scene.GaussianBlurEffect(0.001, "myfilter");
     theEffect.applyTo(targetImage); // FIXME, apply to whatever is canvasModel.getImage()
 
+    canvasModel.addObserver({
+	onImageUpdate: function(image) {
+	    console.log('applying effect to ' + image);
+	    theEffect.applyTo(image);
+	}
+    });
+
+
     sliderModel.addObserver({
 	onAdjValueUpdate: function(value) {
-	    var radius = value*10 || 1;
+	    var radius = value*10 || 0.01;
 	    theEffect.setRadius(radius);
 	    sliderModel.setLabelValue("radius +" + radius.toFixed(2));
 	}
