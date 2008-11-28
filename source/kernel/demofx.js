@@ -230,6 +230,8 @@ using().module('lively.demofx').run(function() {
 		 transforms: [{$:"Translate", X: {$:"Bind", to: "_CanvasX"}, Y: {$:"Bind", to: "_CanvasY"}},
 			      {$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}, X: canvasWidth/2, Y: canvasHeight/2}],
 		 // very dirty, mixing scene graph with morphs, parent doesnt know that it has a submorph
+		 // plus, the array will be notified of changes, but we'd like the enclosing Group to be notified
+		 $var: "imageContainer",
 		 content: [{$:"Bind",  to: "Image"} ] 
 		},
 		
@@ -248,8 +250,12 @@ using().module('lively.demofx').run(function() {
 	},
 
 	onImageUpdate: function(imageMorph) {
+	    // FIXME dirty dealings to make up for Bind's unablility to update content automatically
+	    this.imageContainer.removeAll();
+	    this.imageContainer.add(imageMorph);
 	    this.set_CanvasX((canvasWidth - imageMorph.image.getWidth())/2);
 	    this.set_CanvasY(canvasHeight/2 - imageMorph.image.getHeight()/2);
+	    this.layoutChanged();
 	    // FIXME this !== this
 	}
 	
@@ -420,8 +426,15 @@ using().module('lively.demofx').run(function() {
     const topColor = new Color(0.3, 0.3, 0.3);
 
 
+    var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
+	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
+
+    var canvasModel = Record.newPlainInstance({Image: targetImage, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0, KnobWidth: 25, _KnobHandleLength: (25/2 + 2)}); // FIXME: note explicit calculation
+
+
+
     lively.demofx.SceneMorph.subclass('lively.demofx.Preview',  {
-	formals: ["Selected", "ThumbImage", "_BorderColor"],
+	formals: ["Selected", "FullImage", "ThumbImage", "_BorderColor"],
 	suppressHandles: true,
 	
 	content: {
@@ -497,8 +510,13 @@ using().module('lively.demofx').run(function() {
 	handlesMouseDown: Functions.True,
 	
 	onMouseDown: function(evt) {
-	    // tell someone to select me
-	    console.log('selected ' + this  + ", label " + this.label + " center " + this.bounds().bottomCenter());
+	    //console.log('selected ' + this.getThumbImage() + ": " + this.getThumbImage().image.getURL());
+	    var url = this.getThumbImage().image.getURL();
+	    var image = new ImageMorph(new Rectangle(0, 0, 500, 333), url);
+	    image.setFillOpacity(0);
+	    this.setFullImage(image);
+	    // FIXME FIXME FIXME: breach of encapsulattion
+	    canvasModel.setImage(image);
 	},
 
 	initialize: function($super, model, labelText) {
@@ -546,10 +564,8 @@ using().module('lively.demofx').run(function() {
     var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0, 
 	LabelValue: "radius +0.00"});
     
-    var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
-	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
     var theEffect = new lively.scene.GaussianBlurEffect(0.001, "myfilter");
-    theEffect.applyTo(targetImage);
+    theEffect.applyTo(targetImage); // FIXME, apply to whatever is canvasModel.getImage()
 
     sliderModel.addObserver({
 	onAdjValueUpdate: function(value) {
@@ -559,8 +575,6 @@ using().module('lively.demofx').run(function() {
 	}
     });
     
-    var canvasModel = Record.newPlainInstance({Image: targetImage, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0, KnobWidth: 25, _KnobHandleLength: (25/2 + 2)}); // FIXME: note explicit calculation
-
     var container = new BoxMorph(new Rectangle(230, 30, canvasWidth, canvasHeight + 100));
 
 
@@ -588,11 +602,22 @@ using().module('lively.demofx').run(function() {
 	var thumbImage = new ImageMorph(new Rectangle(0, 0, 500*factor, 333*factor),
 	    URL.source.withFilename('Resources/demofx/' + shortName).toString());
 	thumbImage.setFillOpacity(0);
-	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, _BorderColor: topColor});
+	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, 
+	    FullImage: null,
+	    _BorderColor: topColor});
 	var previewMorph = new lively.demofx.Preview(previewModel, name);
-	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", _BorderColor: "+_BorderColor"}), 
+	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", 
+							 FullImage: "+FullImage",
+							 _BorderColor: "+_BorderColor"}), 
 				  true);
 	if (effect) effect.applyTo(previewModel.getThumbImage());
+	previewModel.addObserver({
+	    onFullImageUpdate: function(value) {
+		console.log('udpdated full image ' + value);
+		canvasModel.setImage(value);
+	    }
+	});
+				 
 	return previewMorph;
     }
 
@@ -625,7 +650,7 @@ using().module('lively.demofx').run(function() {
 
 
     var effectNames = ["Blend", "Blur", "Motion Blur", "Bloom", "Glow", "Color Adjust"];
-    var shortFileNames = ["flower.jpg", "flower.jpg", "flower-motion-blur.png",
+    var shortFileNames = ["flower-blend.png", "flower-blur.png", "flower-motion-blur.png",
 	"flower-bloom.png", "flower-glow.png", "flower-color-adjust.png"];
     
     var gaussian = 
