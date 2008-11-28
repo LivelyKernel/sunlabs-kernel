@@ -758,14 +758,21 @@ fx.dom.renderers[SVGImageElement.tagName] = function(element) {
 	var width = parseFloat(element.getAttribute("width")) || 0.0;
 	var height = parseFloat(element.getAttribute("height")) || 0.0;
 	var path = element.getAttributeNS(Namespace.XLINK, "href");
-	console.log('image size ' + [width, height] + ' path ' + path);	
 	if (path) {
 	    var relativePath = path.match("^http://localhost/(.*)$");
 	    console.log('relative path ' + relativePath[1]);
 	    // FIXME: the following image translation is of course
 	    // bogus, but it matches the rest of the FX port for now
 	    var file = new Packages.java.io.File("../kernel/" + relativePath[1]); 
-	    img.setImage(Packages.javax.imageio.ImageIO.read(file));
+	    var awtImage = Packages.javax.imageio.ImageIO.read(file);
+	    var imgWidth = awtImage.getWidth();
+	    var imgHeight = awtImage.getHeight();
+	    if ((imgWidth > 0 && imgWidth != width) || (imgHeight > 0 && imgHeight != height)) {
+		console.log('scaling image from ' + [imgWidth, imgHeight] + ' to ' + [width, height]);
+		awtImage = awtImage.getScaledInstance(width, height, awtImage.SCALE_DEFAULT);
+	    }
+	    img.setImage(awtImage);
+	    
 	}
     }
     return element._fxBegin;
