@@ -429,7 +429,7 @@ var PaintModule = {
 
     renderFill: function(element, shape, value, alpha) {
 	var fxPaint = PaintModule.parsePaint(value, element);
-	if (alpha && fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
+	if (!isNaN(alpha) && fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
 	    // FIXME what if fill is not a color?
 	    fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
 	}
@@ -440,7 +440,7 @@ var PaintModule = {
     renderStroke: function(element, shape, value, alpha) {
 	var fxPaint = PaintModule.parsePaint(value, element);
 	if (fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
-	    if (alpha) {
+	    if (!isNaN(alpha)) {
 		// FIXME what if fill is not a color?
 		fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
 	    }  
