@@ -1,24 +1,17 @@
 using().module('lively.demofx').run(function() {	
 
-    Morph.subclass('lively.demofx.WrapperMorph', {
-	initialize: function($super, content, model) {
+    Morph.subclass('lively.demofx.FXMorph', {
+	content: {},
+	initialize: function($super, model, optContent) {
 	    // passing this as second argument wil mean that all the linked literals
 	    // with the $var name will be instance fields 
-	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(content, this));
-
-	}
-    });
-
-    lively.demofx.WrapperMorph.subclass('lively.demofx.SceneMorph', {
-	content: {},
-	initialize: function($super, model) {
-	    $super(this.content, model);
+	    $super(using(lively.scene, lively.paint, lively.data).model(model).link(optContent || this.content, this));
 	}
     });
 
     using().run(function() {
     const closeSize = 12;
-    lively.demofx.SceneMorph.subclass('lively.demofx.CloseButton', {
+    lively.demofx.FXMorph.subclass('lively.demofx.CloseButton', {
 
 	formals: ["Color"],
 
@@ -58,7 +51,7 @@ using().module('lively.demofx').run(function() {
     const minimum = 0.0;
     const maximum = 1.0;
 
-    lively.demofx.SceneMorph.subclass('lively.demofx.SliderThumb', {
+    lively.demofx.FXMorph.subclass('lively.demofx.SliderThumb', {
 	formals: ["_ThumbValue",  // private
 		  "AdjValue", 
 		  "Width", 
@@ -207,7 +200,7 @@ using().module('lively.demofx').run(function() {
     const canvasWidth = width-10;
     const canvasHeight = 333 + 40;
     
-    lively.demofx.SceneMorph.subclass('lively.demofx.Canvas', {
+    lively.demofx.FXMorph.subclass('lively.demofx.Canvas', {
 	formals: ["Image",  // public
 		  "_CanvasX", // private to class
 		  "_CanvasY",   // private to class
@@ -267,7 +260,7 @@ using().module('lively.demofx').run(function() {
     const minimum = 0.0;
     const maximum = 1.0;
 
-    lively.demofx.SceneMorph.subclass('lively.demofx.Knob',  {
+    lively.demofx.FXMorph.subclass('lively.demofx.Knob',  {
 	formals: ["_KnobValue",  // private to morph
 		  "ImageRotation", // public
 		  "KnobWidth",
@@ -351,7 +344,7 @@ using().module('lively.demofx').run(function() {
 	const width = 100;
 	const height = 20;
 
-    lively.demofx.SceneMorph.subclass('lively.demofx.Button',  {
+    lively.demofx.FXMorph.subclass('lively.demofx.Button',  {
 	formals: ["GlowColor", "GlowOpacity", "Action"],
 	content: {
 	    $:"Group",
@@ -442,7 +435,7 @@ using().module('lively.demofx').run(function() {
 
 
 
-    lively.demofx.SceneMorph.subclass('lively.demofx.Preview',  {
+    lively.demofx.FXMorph.subclass('lively.demofx.Preview',  {
 	formals: ["Selected", "FullImage", "ThumbImage", "_BorderColor"],
 	suppressHandles: true,
 	
@@ -592,27 +585,26 @@ using().module('lively.demofx').run(function() {
 	}
     });
     
-    var container = new BoxMorph(new Rectangle(230, 30, canvasWidth, canvasHeight + 100));
+    var stage = new BoxMorph(new Rectangle(230, 30, canvasWidth, canvasHeight + 100));
 
 
     var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
-    var closeMorph = container.addMorph(new lively.demofx.CloseButton(closeModel));
-    closeMorph.align(closeMorph.bounds().topRight(), container.shape.bounds().topRight());
+    var closeMorph = stage.addMorph(new lively.demofx.CloseButton(closeModel));
+    closeMorph.align(closeMorph.bounds().topRight(), stage.shape.bounds().topRight());
     closeMorph.suppressHandles = true;
     closeMorph.handlesMouseDown = Functions.True;
     closeMorph.onMouseDown = function() {
-	container.remove();
+	stage.remove();
     }
 
-    var canvasMorph = container.addMorph(new lively.demofx.Canvas(canvasModel));
+    var canvasMorph = stage.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
     canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", 
 						   _CanvasX: "+_CanvasX", 
 						   _CanvasY: "+_CanvasY"}), true);
     
     
-    WorldMorph.current().addMorph(container);
-
+    WorldMorph.current().addMorph(stage);
 
     function makePreview(effect, name, shortName) {
 	var factor = 0.17;
@@ -660,8 +652,8 @@ using().module('lively.demofx').run(function() {
 	]};
 
     var rowModel = Record.newPlainInstance({FirstRowStartY: 3, SecondRowStartY: 3});
-    var rowMorph = new lively.demofx.WrapperMorph(firstRow, rowModel);
-    container.addMorph(rowMorph);
+    var rowMorph = new lively.demofx.FXMorph(rowModel, firstRow);
+    stage.addMorph(rowMorph);
     rowMorph.align(rowMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
 
 
@@ -703,7 +695,7 @@ using().module('lively.demofx').run(function() {
 	 
         }));
 
-    container.addMorph(controlPlate);
+    stage.addMorph(controlPlate);
     controlPlate.align(controlPlate.bounds().topCenter(), rowMorph.bounds().bottomCenter());
     
     var sliderMorph = controlPlate.addMorph(new lively.demofx.Slider(sliderModel));
@@ -756,8 +748,8 @@ using().module('lively.demofx').run(function() {
             }
 	]};
 
-    rowMorph = new lively.demofx.WrapperMorph(secondRow, rowModel);
-    container.addMorph(rowMorph);
+    rowMorph = new lively.demofx.FXMorph(rowModel, secondRow);
+    stage.addMorph(rowMorph);
     rowMorph.align(rowMorph.bounds().topCenter(), controlPlate.bounds().bottomCenter());
 
 
@@ -778,7 +770,7 @@ using().module('lively.demofx').run(function() {
     }
 
 
-    lively.demofx.SceneMorph.subclass('lively.demofx.Footer', {
+    lively.demofx.FXMorph.subclass('lively.demofx.Footer', {
 	content: {$:"Group",
 		  content: [
 		      {$:"Path", 
@@ -795,7 +787,7 @@ using().module('lively.demofx').run(function() {
 		 }
     });
 
-    var footer = container.addMorph(new lively.demofx.Footer());
+    var footer = stage.addMorph(new lively.demofx.Footer());
     footer.align(footer.bounds().topCenter(), rowMorph.bounds().bottomCenter());
 
     
