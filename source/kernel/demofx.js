@@ -587,7 +587,22 @@ using().module('lively.demofx').run(function() {
 	}
     });
     
-    var stage = new BoxMorph(new Rectangle(230, 30, canvasWidth+ 10, canvasHeight + 100));
+    var stage = new BoxMorph(new Rectangle(230, 30, canvasWidth + 10, canvasHeight + 20));
+
+    stage.setFill(using(lively.paint).link({
+        $:"LinearGradient",
+        startX: 0,
+        startY: 0,
+        endX: 0,
+        endY: 1,
+        stops: [
+            {$:"Stop", offset: 0.0,  color: Color.rgb(126, 127, 134) },
+            {$:"Stop", offset: 0.01, color: Color.rgb( 26,  26,  26) },
+            {$:"Stop", offset: 0.65, color: Color.black },
+            {$:"Stop", offset: 1.0,  color: Color.rgb(107, 107, 107) }
+        ]
+    }));
+
 
     var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
     var closeMorph = stage.addMorph(new lively.demofx.CloseButton(closeModel));
