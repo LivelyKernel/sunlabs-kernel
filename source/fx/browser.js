@@ -681,9 +681,12 @@ fx.dom.renderers[SVGGElement.tagName] = function(element, attribute) {
     var effectElement = element.getAttributeNS(null, "filter");
     if (effectElement) { 
 	var save = fxObj;
-	fxObj = FilterModule.newEffect(effectElement, element);
-	if (fxObj !== save) {
-	    fxObj.setChild(save);
+	var effectNode = FilterModule.newEffect(effectElement, element);
+	if (effectNode) {
+	    fxObj = effectNode;
+	    if (fxObj !== save) {
+		fxObj.setChild(save);
+	    }
 	}
     }
 

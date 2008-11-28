@@ -697,3 +697,28 @@ var SVGFEGaussianBlurElement = SVGElement.defineElement('feGaussianBlur', null,
 //    {name: "stdDeviationY", readonly: true, type:SVGAnimatedNumber} // verify the spec about XY vs a single deviation
 );
 						       
+
+//
+						       
+						       
+var SVGPathElement = SVGElement.defineElement('path', [SVGLocatable, SVGStylable], {});
+												     
+ 
+ Object.extend(SVGPathElement.prototype, {
+     createSVGPathSegMovetoAbs: function(x, y) {
+	 return {};
+     },
+
+     createSVGPathSegLinetoAbs: function(x, y) {
+	 return {};
+     },
+
+     createSVGPathSegCurvetoQuadraticSmoothAbs: function(x, y) {
+	 return {};
+     },
+
+     createSVGPathSegCurvetoQuadraticAbs: function(x, y, controlX, controlY) {
+	 return {};
+     }
+
+});
