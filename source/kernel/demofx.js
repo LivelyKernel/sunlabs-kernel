@@ -10,7 +10,7 @@ using().module('lively.demofx').run(function() {
     });
 
     using().run(function() {
-    const closeSize = 12;
+    const size = 8;
     lively.demofx.FXMorph.subclass('lively.demofx.CloseButton', {
 
 	formals: ["Color"],
@@ -19,24 +19,26 @@ using().module('lively.demofx').run(function() {
 	    $:"Group",
 	    content: [
 		{$:"Rectangle",
-                 x: 0, //{$:"Bind", eval: "ex.layoutBounds.minX"},
-                 y: 0, //{$:"Bind", eval:  "ex.layoutBounds.minY"},
-                 width: closeSize, //{$:"Bind", eval: "ex.layoutBounds.width"},
-                 height: closeSize //{$:"Bind", eval " ex.layoutBounds.height"},
+                 x: 0, //{$:"Bind", eval: "g.layoutBounds.minX"},
+                 y: 0, //{$:"Bind", eval:  "g.layoutBounds.minY"},
+                 width: size, //{$:"Bind", eval: "g.layoutBounds.width"},
+                 height: size //{$:"Bind", eval " g.layoutBounds.height"},
                  //fill: null
                 },
 		{ $:"Group",
+		  $var: "g",
 		  content: [
-		      {$:"Polyline", points: [pt(2,2), pt(closeSize - 2, closeSize - 2)],
-		       stroke: {$:"Bind", to: "Color"},
-		       strokeWidth: 3
-		       //strokeLineCap: StrokeLineCap.ROUND
-		      },
-		      {$:"Polyline", points: [pt(2, closeSize - 2), pt(closeSize - 2, 2)],
-		       stroke: {$:"Bind", to: "Color"},
-		       strokeWidth: 3
-		       //strokeLineCap: StrokeLineCap.ROUND
-		      }
+                      {$:"Line", StartX: 0, StartY: 0, EndX: size, EndY: size,
+                       stroke: {$:"Bind", to: "Color"},
+                       strokeWidth: 3,
+                      // strokeLineCap: StrokeLineCap.ROUND
+                      },
+		      
+                      {$:"Line", StartX: 0, StartY: size, EndX: size, EndY: 0,
+                            stroke: {$:"Bind", to: "Color"},
+                            strokeWidth: 3
+                       //strokeLineCap: StrokeLineCap.ROUND
+                      }
 		  ]
 		}
 	    ]
@@ -585,20 +587,21 @@ using().module('lively.demofx').run(function() {
 	}
     });
     
-    var stage = new BoxMorph(new Rectangle(230, 30, canvasWidth, canvasHeight + 100));
-
+    var stage = new BoxMorph(new Rectangle(230, 30, canvasWidth+ 10, canvasHeight + 100));
 
     var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
     var closeMorph = stage.addMorph(new lively.demofx.CloseButton(closeModel));
     closeMorph.align(closeMorph.bounds().topRight(), stage.shape.bounds().topRight());
+    closeMorph.translateBy(pt(-5, 5));
     closeMorph.suppressHandles = true;
     closeMorph.handlesMouseDown = Functions.True;
-    closeMorph.onMouseDown = function() {
+    closeMorph.onMouseUp = function() {
 	stage.remove();
     }
 
     var canvasMorph = stage.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
+    canvasMorph.translateBy(pt(0, 5));
     canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", 
 						   _CanvasX: "+_CanvasX", 
 						   _CanvasY: "+_CanvasY"}), true);
@@ -676,7 +679,7 @@ using().module('lively.demofx').run(function() {
 	//URL.source.withFilename('Resources/demofx/water.jpg').toString())
 	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
-	//var preview2 = mak  ePreview(new lively.scene.SaturateEffect("preview2", 0.4));
+	//var preview2 = makePreview(new lively.scene.SaturateEffect("preview2", 0.4));
 	preview.align(preview.bounds().topLeft(), previous.bounds().topRight());
 	rowMorph.addMorph(preview);
 	preview.translateBy(pt(margin, 0));
