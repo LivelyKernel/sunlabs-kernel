@@ -1239,7 +1239,10 @@ Object.extend(Record, {
             	for (var i = 0; i < deps.length; i++) {
                     var dep = deps[i];
 		    // shouldn't this be uncoerced value? ......
-                    dep[updateName].call(dep, coercedValue, optSource);
+		    var method = dep[updateName];
+		    //console.log('updating  ' + updateName + ' in ' + dep);
+		    method.call(dep, coercedValue, optSource);
+
             	}
             }
         }
@@ -2164,8 +2167,14 @@ Object.subclass('lively.data.Bind', {
 	this.varName = varName;
 	this.debugString = debugString;
 	this["on" + varName + "Update"] = function(value) {
+	    // FIXME: if we're updating an array, the owner of the array should get the notification
+	    // but the array probably doesn't know its owner
+	    if (Object.isNumber(this.key)) {
+		console.log('cannot notify owner of array ' + this.target + ' to update element ' + this.key);
+		return;
+	    }
 	    var method = this.target["set" + this.key];
-	    if (!method) alert('no method for ' + this.key);
+	    if (!method) alert('no method for binding ' + this.varName + " to " + this.key);
 	    if (this.debugString) console.log('triggering update of ' + this.varName  + " to " + value 
 					      + " context " + this.debugString);
 	    method.call(this.target, value);
@@ -2280,7 +2289,7 @@ Object.subclass('lively.data.Resolver', {
 
 	if (literal[this.variableBindingKey]) {
 	    var varName = literal[this.variableBindingKey];
-	    console.log('binding ' + varName + ' to ' + reified + " on " + variableBindings);
+	    //console.log('binding ' + varName + ' to ' + reified + " on " + variableBindings);
 	    variableBindings[varName] = reified;
 	}
 	
