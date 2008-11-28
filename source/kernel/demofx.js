@@ -225,6 +225,8 @@ using().module('lively.demofx').run(function() {
 				 {$:"Stop", offset: 1.0, color: Color.rgb(193, 193, 193) } ]}
 		},
 		
+		// note that the whole group could be replaced by a single ImageMorph, but it is convenient 
+		// to declare transforms like this:
 		{$:"Group",
 		 //cache: true,
 		 transforms: [{$:"Translate", X: {$:"Bind", to: "_CanvasX"}, Y: {$:"Bind", to: "_CanvasY"}},
@@ -350,7 +352,7 @@ using().module('lively.demofx').run(function() {
 	const height = 20;
 
     lively.demofx.SceneMorph.subclass('lively.demofx.Button',  {
-	formals: ["GlowColor", "GlowOpacity"],
+	formals: ["GlowColor", "GlowOpacity", "Action"],
 	content: {
 	    $:"Group",
 	    content: [
@@ -394,6 +396,12 @@ using().module('lively.demofx').run(function() {
 	handlesMouseDown: Functions.True,
 	suppressHandles: true,
 
+	onMouseUp: function(evt) {
+	    var action = this.getAction();
+	    console.log('action ' + action);
+	    if (action) action.run(evt);
+	},
+
 	onMouseOver: function() {
 	    this.setGlowColor(new Color(0.5, 0.5, 0.5, 0.5));
 	    this.setGlowOpacity(0.5);
@@ -413,7 +421,9 @@ using().module('lively.demofx').run(function() {
 	    this.addMorph(label);
 	    label.align(label.bounds().center(), this.shape.bounds().center());
 	    label.translateBy(pt(0, -3)); // ouch
-	}
+	},
+
+	onActionUpdate: Functions.Null,
 	
     });
 
@@ -561,14 +571,14 @@ using().module('lively.demofx').run(function() {
 
 
     var sliderModel = Record.newPlainInstance({_Value: 0, Width: 150, AdjValue: 0, _ThumbValue: 0, 
-	LabelValue: "radius +0.00"});
+	LabelValue: "Radius +0.00"});
     
     var theEffect = new lively.scene.GaussianBlurEffect(0.001, "myfilter");
-    theEffect.applyTo(targetImage); // FIXME, apply to whatever is canvasModel.getImage()
+    //theEffect.applyTo(targetImage); // FIXME, apply to whatever is canvasModel.getImage()
 
     canvasModel.addObserver({
 	onImageUpdate: function(image) {
-	    console.log('applying effect to ' + image);
+	    console.log('applying effect to ' + image); //FIXME: only when effect active!
 	    theEffect.applyTo(image);
 	}
     });
@@ -578,7 +588,7 @@ using().module('lively.demofx').run(function() {
 	onAdjValueUpdate: function(value) {
 	    var radius = value*10 || 0.01;
 	    theEffect.setRadius(radius);
-	    sliderModel.setLabelValue("radius +" + radius.toFixed(2));
+	    sliderModel.setLabelValue("Radius +" + radius.toFixed(2));
 	}
     });
     
@@ -730,6 +740,7 @@ using().module('lively.demofx').run(function() {
                   y: -1,
                   width: width,
                   height: 1,
+		  stroke: null,
                   fill: Color.rgb(177, 177, 177)
                  },
                  {$:"Rectangle",
@@ -804,10 +815,19 @@ using().module('lively.demofx').run(function() {
     button2.translateBy(pt(20, 0));
 
 
+    var removeEffect = {
+	run: function() {
+	    console.log('remove effect ' + theEffect);
+	    canvasModel.getImage().removeTrait("filter");
+	}
+    }
 
-    var removeButtonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
+    var removeButtonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0, Action: removeEffect});
     var removeButton = new lively.demofx.Button(removeButtonModel, "Remove Effect");
-    removeButton.connectModel(removeButtonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
+    removeButton.connectModel(removeButtonModel.newRelay({
+	Action: "-Action",
+	GlowColor: "+GlowColor", 
+	GlowOpacity: "+GlowOpacity"}));
     footer.addMorph(removeButton);
     removeButton.align(removeButton.bounds().topRight(), footer.shape.bounds().topRight());
     removeButton.translateBy(pt(-20, 3));
