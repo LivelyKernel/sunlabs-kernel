@@ -1,4 +1,4 @@
-module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js').toRun(function(ide, tools, ometa) {
+module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js', 'lively.Helper').toRun(function(ide, tools, ometa, help) {
     
     // Modules: "+Modules" --> setModule in model
     // Modules: "-Modules" --> getModule in model
@@ -24,7 +24,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
     initialize: function($super) { 
         $super();
- 
+ 		//test123
         // create empty onUpdate functions
         var paneNames = ['Pane1', 'Pane2', 'Pane3'];
         paneNames.forEach(function(ea) {
@@ -48,6 +48,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
         throw dbgOn(new Error('To be implemented from subclass'));
     },
  
+	selectedNode: function() {
+		return this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
+	},
+
     start: function() {
         this.setPane1Content(this.rootNode().childNodesAsListItems());
     },
@@ -184,10 +188,9 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
     onSourceStringUpdate: function(methodString) {
         if (methodString == '-----') return;
-        var responsibleNode = this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
-        if (responsibleNode.sourceString() == methodString) return;
-        responsibleNode.newSource(methodString);
-        this.nodeChanged(responsibleNode);
+        if (this.selectedNode().sourceString() == methodString) return;
+        this.selectedNode().newSource(methodString);
+        this.nodeChanged(this.selectedNode());
     },
  
     nodesInPane: function(paneName) { // panes have listItems, no nodes
@@ -619,7 +622,7 @@ ide.BrowserNode.subclass('lively.ide.FunctionNode', {
 /*
  *  SystemBrowser implementation for browsing parsed sources
  */
-ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
+ide.BasicBrowser.subclass('lively.ide.SystemBrowser', { // 123
  
     documentation: 'Browser for source code parsed from js files',
     viewTitle: "SystemBrowser",
@@ -669,7 +672,8 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
     
     sourceString: function() {
-        return this.target.getSourceCode();
+        this.savedSource = this.target.getSourceCode();
+		return this.savedSource;
     },
     
     asString: function() {
@@ -677,9 +681,17 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
     },
     
     saveSource: function(newSource, sourceControl) {
+		if (!this.hasCurrentSource()) throw dbgOn(new Error('Old Source, Refresh!'));
         this.target.putSourceCode(newSource);
+		this.savedSource = this.target.getSourceCode(); // assume that users sees newSource after that
         return true;
-    }
+    },
+
+	hasCurrentSource: function() {
+		if (!this.target) return false;
+		if (!this.savedSource) return false;
+		return this.savedSource == this.target.getSourceCode();
+	}
     
 });
 
@@ -750,10 +762,10 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
             }]];*/
         },
     
-    sourceString: function() {
+    sourceString: function($super) {
 		this.loadModule();
         //if (!this.target) return '';
-		var src = this.target.getSourceCode();
+		var src = $super();
 		if (src.length > this.maxStringLength && !this.showAll) return '';
         return src;
     },

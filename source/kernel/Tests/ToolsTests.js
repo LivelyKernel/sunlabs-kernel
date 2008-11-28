@@ -838,9 +838,23 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
 
 thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTests', {
 
+	setUp: function($super) {
+		$super();
+		this.browser = {};
+	},
+
 	testFragmentsOfNodesDiffer: function() {
-	var node1 = 1;
-	
+		var class1Frag = this.fragmentNamed('ClassA');
+		var node1 = new ideModule.ClassFragmentNode(class1Frag, this.browser);
+		node1.sourceString(); // 'show' node1
+		var class2Frag = this.fragmentNamed('ClassB');
+		var node2 = new ideModule.ClassFragmentNode(class2Frag, this.browser);
+		node2.sourceString(); // 'show' node2
+		this.assert(node1.hasCurrentSource(), 'node1 hasCurrentSource');
+		this.assert(node2.hasCurrentSource(), 'node2 hasCurrentSource');
+		node1.newSource('Object.subclass(\'ClassA\', {});\n');
+		this.assert(node1.hasCurrentSource(), 'node1 hasCurrentSource 2');
+		this.assert(!node2.hasCurrentSource(), 'node2 hasCurrentSource 2');
 	}
 });
 
