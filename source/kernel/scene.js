@@ -1327,7 +1327,13 @@ this.Shape.subclass('lively.scene.Group', {
 	this.content.push(node);
     },
 
+    removeAll: function() {
+	while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
+	this.content = [];
+    },
+    
     setContent: function(nodes) {
+	// FIXME how about clearing what's there
 	nodes.forEach(function(node) { 
 	    this.add(node); 
 	}, this);
