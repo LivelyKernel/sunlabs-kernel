@@ -628,7 +628,6 @@ using().module('lively.demofx').run(function() {
 	return previewMorph;
     }
 
-
     var firstRow = {$:"Group",
 	content: [
             {$:"Group",
@@ -650,7 +649,7 @@ using().module('lively.demofx').run(function() {
             }
 	]};
 
-    var rowModel = Record.newPlainInstance({FirstRowStartY: 3});
+    var rowModel = Record.newPlainInstance({FirstRowStartY: 3, SecondRowStartY: 3});
     var rowMorph = new lively.demofx.WrapperMorph(firstRow, rowModel);
     container.addMorph(rowMorph);
     rowMorph.align(rowMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
@@ -663,13 +662,11 @@ using().module('lively.demofx').run(function() {
     var gaussian = 
 	rowMorph.addMorph(makePreview(new lively.scene.BlendEffect(1, "effect0"), 
 				      effectNames[0], shortFileNames[0]));
-    gaussian.translateBy(pt(10, 8)); 
-
-
+    gaussian.translateBy(pt(10, 8));
+    
     var previous = gaussian;
     var margin = 10;
     for (var i = 1; i < 6; i++) {
-
 	var effect = null;
 	if (i == 1) effect = new lively.scene.GaussianBlurEffect(i, "effect" + i);
 	//URL.source.withFilename('Resources/demofx/water.jpg').toString())
@@ -681,7 +678,6 @@ using().module('lively.demofx').run(function() {
 	preview.translateBy(pt(margin, 0));
 	previous = preview;
     }
-
 
     var controlPlate = new BoxMorph(new Rectangle(0, 0, canvasWidth, 40));
     controlPlate.setFill(using(lively.paint).link(
@@ -711,6 +707,64 @@ using().module('lively.demofx').run(function() {
     label.translateBy(pt(10, 0));
 
 
+     // second row
+    var secondRow = {$:"Group",
+	content: [
+            {$:"Group",
+             transforms: [{$:"Translate", X: 0, Y: {$:"Bind", to: "SecondRowStartY"}}],
+	     content: [
+                 {$:"Rectangle",
+                  width: width,
+                  height: theight + 21,
+                  fill: {$:"LinearGradient",
+                         startX: 0, startY: 0, endX: 0, endY: 1,
+                         stops: [
+                             {$:"Stop", offset: 0.0,  color: Color.rgb(107, 107, 107) },
+                             {$:"Stop", offset: 0.95, color: Color.black },
+                         ]
+			}
+                 },
+		 
+                 {$:"Rectangle",
+                  x: 0,
+                  y: -1,
+                  width: width,
+                  height: 1,
+                  fill: Color.rgb(177, 177, 177)
+                 },
+                 {$:"Rectangle",
+                  x: 0,
+                  y: 0,
+                  width: width,
+                  height: 1,
+                  fill: Color.rgb(80, 80, 80),
+                 }
+
+                 //secondRowPreviews (these are morphs)
+             ]
+            }
+	]};
+
+    rowMorph = new lively.demofx.WrapperMorph(secondRow, rowModel);
+    container.addMorph(rowMorph);
+    rowMorph.align(rowMorph.bounds().topCenter(), controlPlate.bounds().bottomCenter());
+
+
+    effectNames = ["Drop Shadow", "Inner Shadow", "Perspective", "Lighting", "Sepia Tone", "Reflection"];
+    shortFileNames = ["flower-drop-shadow.png", "flower-inner-shadow.png", "flower-perspective.png",
+		      "flower-lighting.png", "flower-sepia-tone.png", "flower-reflection.png"];
+
+    var previous = null;
+    var margin = 10;
+    for (var i = 0; i < 6; i++) {
+	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
+	preview.align(preview.bounds().topLeft(), 
+		      previous == null ? rowMorph.shape.bounds().topLeft() : previous.bounds().topRight());
+	rowMorph.addMorph(preview);
+	if (!previous) preview.translateBy(pt(margin/2, 10));
+	else preview.translateBy(pt(margin, 0));
+	previous = preview;
+    }
 
 
     lively.demofx.SceneMorph.subclass('lively.demofx.Footer', {
@@ -730,9 +784,8 @@ using().module('lively.demofx').run(function() {
 		 }
     });
 
-
     var footer = container.addMorph(new lively.demofx.Footer());
-    footer.align(footer.bounds().topCenter(), controlPlate.bounds().bottomCenter());
+    footer.align(footer.bounds().topCenter(), rowMorph.bounds().bottomCenter());
 
     
     var button1Model = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
@@ -757,7 +810,7 @@ using().module('lively.demofx').run(function() {
     removeButton.connectModel(removeButtonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
     footer.addMorph(removeButton);
     removeButton.align(removeButton.bounds().topRight(), footer.shape.bounds().topRight());
-    removeButton.translateBy(pt(-20, 0));
+    removeButton.translateBy(pt(-20, 3));
 
 
     var saveButtonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
