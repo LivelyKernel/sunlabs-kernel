@@ -395,7 +395,7 @@ using().module('lively.demofx').run(function() {
 	},
 
 	onMouseOut: function() {
-	    this.setGlowColor(Color.white);
+	    this.setGlowColor(Color.black);
 	    this.setGlowOpacity(0);
 	},
 	
@@ -444,16 +444,19 @@ using().module('lively.demofx').run(function() {
                       y: theight * 0.72,
                       width: twidth,
                       height: theight * 0.28,
-                      fill: new Color(0, 0, 0, 0.7),
+                      fill: new Color(0, 0, 0),
+		      fillOpacity: 0.7,
                       stroke: Color.black
 		     }
-		     /*text = {$:"Text",
-                        translateX: bind (twidth - text.layoutBounds.width) / 2 - text.layoutBounds.minX
-                        translateY: bind rect.layoutBounds.minY + (rect.layoutBounds.height / 2) + 4
-                        font: Font { size: 10 }
-                        content: label
-                        fill: Color.WHITE
-                    },*/
+		     /* simulated by a real morph
+		     {$:"Text",
+		      $var:"text",
+                      translateX: 0, // bind (twidth - text.layoutBounds.width) / 2 - text.layoutBounds.minX
+                        translateY: 0. //bind rect.layoutBounds.minY + (rect.layoutBounds.height / 2) + 4
+                      //font: Font { size: 10 }
+                      //content: label
+                      fill: Color.white
+                    }*/
 		 ]},
 
 		{$:"Rectangle",
@@ -507,8 +510,8 @@ using().module('lively.demofx').run(function() {
 	    this.label.setTextColor(Color.gray);
 	    this.addMorph(this.label);
 	    this.label.align(this.label.bounds().bottomCenter(), this.bounds().bottomCenter());
-	    this.label.translateBy(pt(4, 0));
-	    console.log('added label ' + label + " text " + this.label.textString + " vs " + labelText);	    
+	    this.label.translateBy(pt(6, 0)); // not sure yet why the displacement
+	    //console.log('added label ' + label + " text " + this.label.textString + " vs " + labelText);	    
 
 	}
 	
@@ -695,18 +698,42 @@ using().module('lively.demofx').run(function() {
 		 }
     });
 
-    var footer = container.addMorph(new lively.demofx.Footer(buttonModel));
+
+    var footer = container.addMorph(new lively.demofx.Footer());
     footer.align(footer.bounds().topCenter(), controlPlate.bounds().bottomCenter());
 
+    
+    var button1Model = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
+    var button1 = new lively.demofx.Button(button1Model, "Open Image 1");
+    button1.connectModel(button1Model.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
+    footer.addMorph(button1);
+    button1.align(button1.bounds().topLeft(), footer.shape.bounds().topLeft());
+    button1.translateBy(pt(20, 3));
+
+
+    var button2Model = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
+    var button2 = new lively.demofx.Button(button2Model, "Open Image 2");
+    button2.connectModel(button2Model.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
+    footer.addMorph(button2);
+    button2.align(button2.bounds().topLeft(), button1.bounds().topRight());
+    button2.translateBy(pt(20, 0));
 
 
 
-    var buttonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
-    var button = new lively.demofx.Button(buttonModel, "Open Image 1");
-    button.connectModel(buttonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
-    footer.addMorph(button);
-    button.align(button.bounds().topLeft(), footer.shape.bounds().topLeft());
-    button.translateBy(pt(20, 3));
+    var removeButtonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
+    var removeButton = new lively.demofx.Button(removeButtonModel, "Remove Effect");
+    removeButton.connectModel(removeButtonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
+    footer.addMorph(removeButton);
+    removeButton.align(removeButton.bounds().topRight(), footer.shape.bounds().topRight());
+    removeButton.translateBy(pt(-20, 0));
+
+
+    var saveButtonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
+    var saveButton = new lively.demofx.Button(saveButtonModel, "Save Image");
+    saveButton.connectModel(saveButtonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
+    footer.addMorph(saveButton);
+    saveButton.align(saveButton.bounds().topRight(), removeButton.bounds().topLeft());
+    saveButton.translateBy(pt(-20, 0));
 
 
     var knobMorph = footer.addMorph(new lively.demofx.Knob(canvasModel));
