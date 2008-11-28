@@ -699,26 +699,50 @@ var SVGFEGaussianBlurElement = SVGElement.defineElement('feGaussianBlur', null,
 						       
 
 //
-						       
+
+function SVGPathSegMovetoAbs(x, y) {
+    this.x = x;
+    this.y = y;
+}
+
+function SVGPathSegLinetoAbs(x, y) {
+    this.x = x;
+    this.y = y;
+}
+						
+function SVGPathSegCurvetoQuadraticSmoothAbs(x, y) {
+    this.x = x;
+    this.y = y;
+}
+
+function SVGPathSegCurvetoQuadraticAbs(x, y, controlX, controlY) {
+    this.x = x;
+    this.y = y;
+    this.controlX = controlX;
+    this.controlY = controlY;
+}
+
+       
 						       
 var SVGPathElement = SVGElement.defineElement('path', [SVGLocatable, SVGStylable], {});
 												     
- 
- Object.extend(SVGPathElement.prototype, {
+Object.extend(SVGPathElement.prototype, {
      createSVGPathSegMovetoAbs: function(x, y) {
-	 return {};
+	 return new SVGPathSegMovetoAbs(x, y);
      },
 
      createSVGPathSegLinetoAbs: function(x, y) {
-	 return {};
+	 return new SVGPathSegLinetoAbs(x, y);
      },
 
      createSVGPathSegCurvetoQuadraticSmoothAbs: function(x, y) {
-	 return {};
+	 return new SVGPathSegCurvetoQuadraticSmoothAbs(x, y);
      },
 
      createSVGPathSegCurvetoQuadraticAbs: function(x, y, controlX, controlY) {
-	 return {};
+	 return new SVGPathSegCurvetoQuadraticAbs(x, y, controlX, controlY);
      }
 
 });
+
+

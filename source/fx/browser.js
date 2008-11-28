@@ -411,6 +411,7 @@ var PaintModule = {
 
 	var fillOpacityAttr = attrs.getNamedItem('fill-opacity');
 	if (fillOpacityAttr) fillOpacity = parseFloat(fillOpacityAttr.value);
+
 	
 	var fillAttr = attrs.getNamedItem('fill');
 	if (fillAttr && fillAttr.value) this.renderFill(element, shape, fillAttr.value, fillOpacity);
@@ -430,6 +431,7 @@ var PaintModule = {
 	var fxPaint = PaintModule.parsePaint(value, element);
 	if (alpha && fx.util.isInstanceOf(fxPaint, 'java.awt.Color')) {
 	    // FIXME what if fill is not a color?
+	    console.log('modded opacity to ' + alpha);
 	    fxPaint = new fx.Color(fxPaint.getRed()/255, fxPaint.getGreen()/255, fxPaint.getBlue()/255, alpha);
 	}
 	shape.setFillPaint(fxPaint);
@@ -775,6 +777,50 @@ fx.dom.renderers[SVGFEGaussianBlurElement.tagName] = function(element) {
     var radius = parseFloat(element.getAttributeNS(null, "stdDeviation"));
     if (radius < 1) radius = 1;
     element._fxFilter.setRadius(parseFloat(radius));
+    //console.log('upated feGaussianBlur to ' + radius);
+}
+
+
+fx.dom.renderers[SVGPathElement.tagName] = function(element, attr) {
+    if (!element._fxBegin) { 
+	element._fxBegin = new fx.Parent();
+    }
+
+    var fxObj = fx.util.antiAlias(new fx.Shape());
+    element._fxShape = fxObj;
+    var path = new fx.Path();
+    fxObj.setShape(path);
+
+    PaintModule.render(element);
+    var attr = element.attributes.getNamedItem("d");
+    if (attr && attr.value) {
+	var items = attr.value.split(' '); 
+	// FIXME this is not real parsing but it works for the attr values that our implementation creates
+	for (var i = 0; i < items.length; i++) {
+	    var seg = items[i];
+	    switch (seg[0]) {
+	    case "M":
+		var coords = seg.substring(1).split(',').map(function (str) { return parseFloat(str) });
+		path.moveTo(coords[0], coords[1]);
+		break;
+	    case 'L':
+		var coords = seg.substring(1).split(',').map(function (str) { return parseFloat(str) });
+		path.lineTo(coords[0], coords[1]);
+		break;
+	    case 'Q':
+		var coords = seg.substring(1).split(',').map(function (str) { return parseFloat(str) });
+		path.quadTo(coords[0], coords[1], coords[2], coords[3]);
+		break;
+	    default:
+		console.log('unknown seg ' + seg);
+	    }
+	}
+    }
+
+
+    element._fxBegin.setChild(fxObj);
+
+    return element._fxBegin;
     //console.log('upated feGaussianBlur to ' + radius);
 }
 
