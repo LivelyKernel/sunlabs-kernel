@@ -2163,6 +2163,8 @@ Record.subclass('lively.data.StyleRecord', {
 
 Object.subclass('lively.data.Bind', {
     // unify with the record mechanism
+    
+    // note that Bind could specify which model to bind to, not just the default one
     initialize: function(varName, kickstart, debugString) {
 	this.varName = varName;
 	this.kickstart = kickstart;

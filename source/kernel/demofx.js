@@ -424,10 +424,6 @@ using().module('lively.demofx').run(function() {
 
     });
 
-    const twidth = 82;
-    const theight = 71;
-    const selColor =  Color.white;
-    const topColor = new Color(0.3, 0.3, 0.3);
 
 
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
@@ -438,8 +434,13 @@ using().module('lively.demofx').run(function() {
 	_KnobHandleLength: (25/2 + 2),// FIXME: note explicit calculation
 	SelectedPreview: null }); 
 
+    const twidth = 82;
+    const theight = 71;
+    const selColor =  Color.white;
+    const topColor = new Color(0.3, 0.3, 0.3);
 
-
+    using().run(function() {
+	
     lively.demofx.FXMorph.subclass('lively.demofx.Preview',  {
 	formals: ["_Selected", "ThumbImage", "_BorderColor"],
 	suppressHandles: true,
@@ -554,6 +555,7 @@ using().module('lively.demofx').run(function() {
 	
     });
 
+    });
 
 
     false && using().test(function() {

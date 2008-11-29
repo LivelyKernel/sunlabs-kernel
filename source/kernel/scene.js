@@ -1821,11 +1821,15 @@ Wrapper.subclass('lively.scene.Transform', {
 	    var delta = this.getTranslate();
 	    return "translate(" + delta.x + "," + delta.y +")";
 	case SVGTransform.SVG_TRANSFORM_ROTATE:
-	    // FIXME how about the rotation ancor?
+
 	    var mx = this.rawNode.matrix;
 	    if (mx.e || mx.f) {
-		var str = "rotate(" + this.getAngle().toFixed(2) + " " + (mx.e||0).toFixed(2)  + " " + (mx.f||0).toFixed(2) + ")";
-		console.log('format ' + str);
+		var disp = pt(mx.e || 0, mx.f || 0);
+		var str = "translate(" + disp.x.toFixed(2) + "," + disp.y.toFixed(2) + ") "; 
+		str += "rotate(" + this.getAngle().toFixed(2) + ") ";
+		//str += "translate(" + (-disp.x).toFixed(2)  + ", " + (-disp.y).toFixed(2) + ")";
+		// FIXME, hmm.... wouldn't we want to transform back?
+		//console.log('format ' + str);
 		return str;
 	    } else return "rotate(" + this.getAngle()  +")"; // in degrees
 	case SVGTransform.SVG_TRANSFORM_SCALE:
