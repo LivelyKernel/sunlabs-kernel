@@ -511,8 +511,8 @@ using().module('lively.demofx').run(function() {
 	},
 
 	onMouseOut: function(evt) {
-	    console.log(this + ' selected? ' + this.get_Selected());
-    	    this.set_BorderColor(topColor);
+	    if (!this.get_Selected())
+    		this.set_BorderColor(topColor);
 	},
 
 	handlesMouseDown: Functions.True,
@@ -540,9 +540,15 @@ using().module('lively.demofx').run(function() {
 	    canvasModel.addObserver(this, {SelectedPreview: "!SelectedPreview"});
 	},
 
+	on_SelectedUpdate: function(value) {
+	    // only needed because of the relays
+
+	},
+
 	onSelectedPreviewUpdate: function(value) {
 	    if (value !== this) {
 		this.set_Selected(false);
+    		this.set_BorderColor(topColor);
 	    }
 	}
 	
@@ -642,7 +648,7 @@ using().module('lively.demofx').run(function() {
 	    ThumbImage: thumbImage, _BorderColor: topColor});
 	var previewMorph = new lively.demofx.Preview(previewModel, name);
 	previewMorph.connectModel(previewModel.newRelay({
-	    _Selected: "+_Selected",
+	    _Selected: "_Selected",
 	    ThumbImage: "ThumbImage", 
 	    _BorderColor: "+_BorderColor"}), true);
 	if (effect) effect.applyTo(previewModel.getThumbImage());
