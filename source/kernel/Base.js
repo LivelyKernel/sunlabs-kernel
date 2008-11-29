@@ -2163,33 +2163,35 @@ Record.subclass('lively.data.StyleRecord', {
 
 Object.subclass('lively.data.Bind', {
     // unify with the record mechanism
-    initialize: function(varName, debugString) {
+    initialize: function(varName, kickstart, debugString) {
 	this.varName = varName;
-	this.debugString = debugString;
-	this["on" + varName + "Update"] = function(value) {
-	    // FIXME: if we're updating an array, the owner of the array should get the notification
-	    // but the array probably doesn't know its owner
-	    if (Object.isNumber(this.key)) {
-		console.log('cannot notify owner of array ' + this.target + ' to update element ' + this.key);
-		return;
-	    }
-	    var method = this.target["set" + this.key];
-	    if (!method) alert('no method for binding ' + this.varName + " to " + this.key);
-	    if (this.debugString) console.log('triggering update of ' + this.varName  + " to " + value 
-					      + " context " + this.debugString);
-	    method.call(this.target, value);
-	}
-
+	this.kickstart = kickstart;
 	this.key = null;
+	this.debugString = debugString;
+	this["on" + varName + "Update"] = this.update;
     },
+
+    update: function(value) {
+	if (Object.isNumber(this.key)) {
+	    console.log('cannot notify owner of array ' + this.target + ' to update element ' + this.key);
+	    return;
+	}
+	var method = this.target["set" + this.key];
+	if (!method) { console.warn('no method for binding ' + this.varName + " to " + this.key); return }
+	if (this.debugString) console.log('triggering update of ' + this.varName  + " to " + value 
+					  + " context " + this.debugString);
+	method.call(this.target, value);
+    },
+
 
     get: function(model) {
 	if (!model) return undefined;
 	var method = model["get" + this.varName];
 	dbgOn(!method);
 	var result = method.call(model);
-	if (this.debugString) console.log('Bind to:' + this.varName  + " retrieved model value " + result  
-					  + ' context '  + this.debugString);
+	if (this.debugString) 
+	    console.log('Bind to:' + this.varName  + " retrieved model value " + result  
+			+ ' context '  + this.debugString);
 	return result;
     },
 
@@ -2200,13 +2202,15 @@ Object.subclass('lively.data.Bind', {
     hookup: function(target, model) {
 	this.target = target;
 	model.addObserver(this);
+	if (this.kickstart)
+	    this.update(this.get(model)); // kickstart
     }
     
 });
 
 Object.extend(lively.data.Bind, {
     fromLiteral: function(literal) {
-	return new lively.data.Bind(literal.to, literal.debugString);
+	return new lively.data.Bind(literal.to, literal.kickstart || false, literal.debugString);
     }	
 });
 
