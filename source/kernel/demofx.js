@@ -433,7 +433,10 @@ using().module('lively.demofx').run(function() {
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
 	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
 
-    var canvasModel = Record.newPlainInstance({Image: targetImage, ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0, KnobWidth: 25, _KnobHandleLength: (25/2 + 2)}); // FIXME: note explicit calculation
+    var canvasModel = Record.newPlainInstance({Image: targetImage, 
+	ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0, KnobWidth: 25, 
+	_KnobHandleLength: (25/2 + 2),// FIXME: note explicit calculation
+	SelectedPreview: null }); 
 
 
 
@@ -509,7 +512,6 @@ using().module('lively.demofx').run(function() {
 
 	onMouseOut: function(evt) {
     	    this.set_BorderColor(topColor);
-	    //this.set_Selected(false);
 	},
 
 	handlesMouseDown: Functions.True,
@@ -523,6 +525,7 @@ using().module('lively.demofx').run(function() {
 	    this.set_Selected(true);
 	    // FIXME FIXME FIXME: breach of encapsulattion
 	    canvasModel.setImage(image);
+	    canvasModel.setSelectedPreview(this);
 	},
 
 	initialize: function($super, model, labelText) {
@@ -534,8 +537,13 @@ using().module('lively.demofx').run(function() {
 	    this.label.setTextColor(Color.gray);
 	    this.addMorph(this.label);
 	    this.label.align(this.label.bounds().bottomCenter(), this.bounds().bottomCenter());
-	    //console.log('added label ' + label + " text " + this.label.textString + " vs " + labelText);	    
+	    canvasModel.addObserver(this, {SelectedPreview: "!SelectedPreview"});
+	},
 
+	onSelectedPreviewUpdate: function(value) {
+	    if (value !== this) {
+		this.set_Selected(false);
+	    }
 	}
 	
     });
