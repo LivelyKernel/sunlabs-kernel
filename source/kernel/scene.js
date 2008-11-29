@@ -1153,7 +1153,6 @@ this.PathElement.subclass('lively.scene.QuadCurveTo', {
 	this.y = y;
 	this.controlX = controlX;
 	this.controlY = controlY;
-	console.log('created QuadCurveTo ' + [x, y, controlX, controlY]);
     },
 
     allocateRawNode: function(rawPathNode) {
