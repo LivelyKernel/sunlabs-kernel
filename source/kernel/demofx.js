@@ -441,7 +441,7 @@ using().module('lively.demofx').run(function() {
 
 
     lively.demofx.FXMorph.subclass('lively.demofx.Preview',  {
-	formals: ["_Selected", "FullImage", "ThumbImage", "_BorderColor"],
+	formals: ["_Selected", "ThumbImage", "_BorderColor"],
 	suppressHandles: true,
 	
 	content: {
@@ -511,6 +511,7 @@ using().module('lively.demofx').run(function() {
 	},
 
 	onMouseOut: function(evt) {
+	    console.log(this + ' selected? ' + this.get_Selected());
     	    this.set_BorderColor(topColor);
 	},
 
@@ -521,7 +522,6 @@ using().module('lively.demofx').run(function() {
 	    var url = this.getThumbImage().image.getURL();
 	    var image = new ImageMorph(new Rectangle(0, 0, 500, 333), url);
 	    image.setFillOpacity(0);
-	    this.setFullImage(image);
 	    this.set_Selected(true);
 	    // FIXME FIXME FIXME: breach of encapsulattion
 	    canvasModel.setImage(image);
@@ -626,7 +626,8 @@ using().module('lively.demofx').run(function() {
     var canvasMorph = stage.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
     canvasMorph.translateBy(pt(5, 5));
-    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), 
+    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", 
+						   _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), 
 			     true);
     
     
@@ -638,20 +639,13 @@ using().module('lively.demofx').run(function() {
 	    URL.source.withFilename('Resources/demofx/' + shortName).toString());
 	thumbImage.setFillOpacity(0);
 	var previewModel = Record.newPlainInstance({_Selected: false, 
-	    ThumbImage: thumbImage, FullImage: null, _BorderColor: topColor});
+	    ThumbImage: thumbImage, _BorderColor: topColor});
 	var previewMorph = new lively.demofx.Preview(previewModel, name);
 	previewMorph.connectModel(previewModel.newRelay({
 	    _Selected: "+_Selected",
 	    ThumbImage: "ThumbImage", 
-	    FullImage: "+FullImage",
 	    _BorderColor: "+_BorderColor"}), true);
 	if (effect) effect.applyTo(previewModel.getThumbImage());
-	previewModel.addObserver({
-	    onFullImageUpdate: function(value) {
-		console.log('udpdated full image ' + value);
-		canvasModel.setImage(value);
-	    }
-	});
 				 
 	return previewMorph;
     }
