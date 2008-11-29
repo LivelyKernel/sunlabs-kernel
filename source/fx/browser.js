@@ -279,6 +279,14 @@ Function.wrap(Element.prototype, ['removeAttributeNS'], function(func, args) {
 });
  
 
+ // FIXME, apply to all the other elements?
+Function.wrap(SVGPolygonElement.prototype, ['removeAttributeNS'], function(func, args) {
+    func.apply(this, args);
+    fx.dom.enqueue(this);
+});
+ 
+
+
 window.setTimeout = function(action, delay) {
     var timer = fx.util.setInterval(function() {
 	action.apply(this, arguments);
@@ -522,6 +530,13 @@ fx.dom.renderers[SVGPolygonElement.tagName] = function(element) {
     element._fxShape = fxObj;
     var path = new fx.Path();
     fxObj.setShape(path);
+
+    // this prolly should apply uniformly to all
+    var visibility = element.attributes.getNamedItem('display');
+    if (visibility && visibility.value == 'none')
+	fxObj.setVisible(false);
+    else 
+	fxObj.setVisible(true);
 
 
     PaintModule.render(element);
