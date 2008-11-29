@@ -198,7 +198,7 @@ using().module('lively.demofx').run(function() {
     });
 
     
-    const width = 600;//(6 * (82 + 10)) + 20;    
+    const width = 600 - 20;//(6 * (82 + 10)) + 20;    
     const canvasWidth = width-10;
     const canvasHeight = 333 + 40;
     
@@ -438,7 +438,7 @@ using().module('lively.demofx').run(function() {
 
 
     lively.demofx.FXMorph.subclass('lively.demofx.Preview',  {
-	formals: ["Selected", "FullImage", "ThumbImage", "_BorderColor"],
+	formals: ["_Selected", "FullImage", "ThumbImage", "_BorderColor"],
 	suppressHandles: true,
 	
 	content: {
@@ -484,13 +484,13 @@ using().module('lively.demofx').run(function() {
                 },
 
                 {$:"Polygon",
-                 visible: {$:"Bind", to: "Selected"},
+                 Visible: {$:"Bind", to: "_Selected", kickstart: true},
 		 transforms: [{$:"Translate", X:twidth / 2, Y: -7}],
                  points: [pt(0, 0), pt(5, 5), pt(-5, 5)],
-                fill: Color.rgb(190, 190, 190)
+                 fill: Color.rgb(190, 190, 190)
                 },
                 {$:"Polygon",
-                 visible: {$:"Bind", to: "Selected"},
+                 Visible: {$:"Bind", to: "_Selected" , kickstart: true},
 		 transforms:[{$:"Translate", X:twidth / 2, Y: theight + 3}],
                  points: [pt(-5, 0), pt(5, 0), pt(0, 5)],
                  fill: Color.rgb(190, 190, 190)
@@ -509,6 +509,7 @@ using().module('lively.demofx').run(function() {
 
 	onMouseOut: function(evt) {
     	    this.set_BorderColor(topColor);
+	    //this.set_Selected(false);
 	},
 
 	handlesMouseDown: Functions.True,
@@ -519,6 +520,7 @@ using().module('lively.demofx').run(function() {
 	    var image = new ImageMorph(new Rectangle(0, 0, 500, 333), url);
 	    image.setFillOpacity(0);
 	    this.setFullImage(image);
+	    this.set_Selected(true);
 	    // FIXME FIXME FIXME: breach of encapsulattion
 	    canvasModel.setImage(image);
 	},
@@ -532,7 +534,6 @@ using().module('lively.demofx').run(function() {
 	    this.label.setTextColor(Color.gray);
 	    this.addMorph(this.label);
 	    this.label.align(this.label.bounds().bottomCenter(), this.bounds().bottomCenter());
-	    this.label.translateBy(pt(6, 0)); // not sure yet why the displacement
 	    //console.log('added label ' + label + " text " + this.label.textString + " vs " + labelText);	    
 
 	}
@@ -587,7 +588,7 @@ using().module('lively.demofx').run(function() {
 	}
     });
     
-    var stage = new BoxMorph(new Rectangle(230, 30, canvasWidth + 10, canvasHeight + 20));
+    var stage = new BoxMorph(new Rectangle(230, 30, canvasWidth + 10, canvasHeight + 22));
 
     stage.setFill(using(lively.paint).link({
         $:"LinearGradient",
@@ -607,7 +608,7 @@ using().module('lively.demofx').run(function() {
     var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
     var closeMorph = stage.addMorph(new lively.demofx.CloseButton(closeModel));
     closeMorph.align(closeMorph.bounds().topRight(), stage.shape.bounds().topRight());
-    closeMorph.translateBy(pt(-5, 5));
+    closeMorph.translateBy(pt(-10, 7));
     closeMorph.suppressHandles = true;
     closeMorph.handlesMouseDown = Functions.True;
     closeMorph.onMouseUp = function() {
@@ -616,10 +617,9 @@ using().module('lively.demofx').run(function() {
 
     var canvasMorph = stage.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
-    canvasMorph.translateBy(pt(0, 5));
-    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", 
-						   _CanvasX: "+_CanvasX", 
-						   _CanvasY: "+_CanvasY"}), true);
+    canvasMorph.translateBy(pt(5, 5));
+    canvasMorph.connectModel(canvasModel.newRelay({Image: "Image", _CanvasX: "+_CanvasX", _CanvasY: "+_CanvasY"}), 
+			     true);
     
     
     WorldMorph.current().addMorph(stage);
@@ -629,14 +629,14 @@ using().module('lively.demofx').run(function() {
 	var thumbImage = new ImageMorph(new Rectangle(0, 0, 500*factor, 333*factor),
 	    URL.source.withFilename('Resources/demofx/' + shortName).toString());
 	thumbImage.setFillOpacity(0);
-	var previewModel = Record.newPlainInstance({Selected: true, ThumbImage: thumbImage, 
-	    FullImage: null,
-	    _BorderColor: topColor});
+	var previewModel = Record.newPlainInstance({_Selected: false, 
+	    ThumbImage: thumbImage, FullImage: null, _BorderColor: topColor});
 	var previewMorph = new lively.demofx.Preview(previewModel, name);
-	previewMorph.connectModel(previewModel.newRelay({ThumbImage: "ThumbImage", 
-							 FullImage: "+FullImage",
-							 _BorderColor: "+_BorderColor"}), 
-				  true);
+	previewMorph.connectModel(previewModel.newRelay({
+	    _Selected: "+_Selected",
+	    ThumbImage: "ThumbImage", 
+	    FullImage: "+FullImage",
+	    _BorderColor: "+_BorderColor"}), true);
 	if (effect) effect.applyTo(previewModel.getThumbImage());
 	previewModel.addObserver({
 	    onFullImageUpdate: function(value) {
@@ -653,14 +653,11 @@ using().module('lively.demofx').run(function() {
             {$:"Group",
              transforms: [{$:"Translate", X: 0, Y: {$:"Bind", to: "FirstRowStartY"}}],
 	     content: [
-                 {$:"Rectangle",
-                  width: width,
-                  height: theight + 21,
-                  fill: {$:"LinearGradient",
-                         startX: 0, startY: 0, endX: 0, endY: 1,
+                 {$:"Rectangle", width: width, height: theight + 21,
+                  fill: {$:"LinearGradient", startX: 0, startY: 0, endX: 0, endY: 1,
                          stops: [
                              {$:"Stop", offset: 0.0,  color: Color.rgb(107, 107, 107) },
-                             {$:"Stop", offset: 0.95, color: Color.black },
+                             {$:"Stop", offset: 0.95, color: Color.black }
                          ]
 			}
                  },
@@ -681,12 +678,12 @@ using().module('lively.demofx').run(function() {
 	"flower-motion-blur.png",
 	"flower-bloom.png", "flower-glow.png", "flower-color-adjust.png"];
     
-    var gaussian = 
+    var blendPreview = 
 	rowMorph.addMorph(makePreview(new lively.scene.BlendEffect(1, "effect0"), 
 				      effectNames[0], shortFileNames[0]));
-    gaussian.translateBy(pt(10, 8));
+    blendPreview.translateBy(pt(10, 8));
     
-    var previous = gaussian;
+    var previous = blendPreview;
     var margin = 10;
     for (var i = 1; i < 6; i++) {
 	var effect = null;
