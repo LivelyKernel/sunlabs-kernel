@@ -245,8 +245,31 @@ Object.subclass('lively.data.Wrapper', {
 	    lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary"); // for debugging
 	}
 	return lively.data.Wrapper.dictionary;
-    }
-
+    },
+    
+    deserializeFieldFromNode: function(importer, node) {
+        var name = LivelyNS.getAttribute(node, "name");
+        if (name) {
+            var ref = LivelyNS.getAttribute(node, "ref");
+            if (ref) {
+                importer.addPatchSite(this, name, ref);
+            } else {
+                var value = node.textContent;
+                if (value) {
+                    var family = LivelyNS.getAttribute(node, "family");
+                    if (family) {
+                        var cls = Class.forName(family);
+                        if (!cls) throw new Error('uknown type ' + family);
+                        this[name] = cls.fromLiteral(JSON.unserialize(value));
+                    } else {
+                        this[name] = JSON.unserialize(value);
+                    }
+                }
+            }
+        } else {
+            throw new Error("could not deserialize field without name");
+        }       
+    },
 });
 
 Object.extend(lively.data.Wrapper, {

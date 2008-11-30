@@ -154,8 +154,8 @@ TestCase.subclass('ASerializationTestCase', {
                         '<field name="exampleReference" ref="103:Morph"></field>' +
                         '<field name="myWidget" ref="104:DummyWidget"></field>' +
                         '<widget id="104:DummyWidget">'   +
-                            '<field name="morph1" ref="102:Morph"></field>' +
-                            '<field name="morph2" ref="102:Morph"></field>' +
+                            '<field name="myMorph1" ref="102:Morph"></field>' +
+                            '<field name="myMorph2" ref="103:Morph"></field>' +
                         '</widget>' +
                     '</g>'+
                     '<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
@@ -168,12 +168,13 @@ TestCase.subclass('ASerializationTestCase', {
         var morph1 = world.submorphs[0];
         var morph2 = world.submorphs[1];
         
-        this.assert(morph1.myWidget instanceof DummyWidget, "morph1.myWidget is not DummyWidget");
-        this.assertIdentity(morph1.myWidget, morph2.myWidget, "morph1.myWidget is not identical to morph2.myWidget");
         
         var widget = morph1.myWidget;
-        //this.assert(widget.morph1, "widget.morph1 not set");
-        //this.assertIdentity(morph1, widget.morph1, "widget.morph1 is not identical to morph1");
+        this.assert(widget instanceof DummyWidget, "morph1.myWidget is not DummyWidget");
+        this.assertIdentity(morph1.myWidget, morph2.myWidget, "morph1.myWidget is not identical to morph2.myWidget");
+        
+        this.assert(widget.myMorph1, "widget.myMorph1 not set");
+        this.assertIdentity(morph1, widget.myMorph1, "widget.morph1 is not identical to morph1");
         //this.showMyWorld(world)
     }
 });

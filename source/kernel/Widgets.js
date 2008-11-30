@@ -2340,6 +2340,40 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 	    parent = parent.owner;
 	}
 	return parent;
+    },
+    
+    restoreFromSubnodes: function(importer, node){
+        // Todo: 1. refactor to the one pass style of Morph>>restoreFromSubnodes 
+        // Todo: 2. move common parts to super class wrapper
+        $A(node.getElementsByTagName("record")).forEach(function(child) {
+            var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
+            var Rec = lively.data.DOMRecord.prototype.create(spec);
+            var model = new Rec(importer, child);
+            var id = child.getAttribute("id");
+            if (id) importer.addMapping(id, model); 
+            widget.actualModel = model;
+        });
+
+        $A(node.getElementsByTagName("relay")).forEach(function(child) {
+            var spec = {};
+            $A(child.getElementsByTagName("binding")).forEach(function(elt) {
+                var key = elt.getAttributeNS(null, "formal");
+                var value = elt.getAttributeNS(null, "actual");
+                spec[key] = value;
+            });
+
+            var name = LivelyNS.getAttribute(child, "name");
+            if (name) {
+                // here widget instead of name is the only difference
+                var relay = widget[name] = Relay.newInstance(spec, null);
+                var ref = LivelyNS.getAttribute(child, "ref");
+                importer.addPatchSite(relay, "delegate", ref);
+            }
+        });
+        
+        $A(node.getElementsByTagName("field")).forEach(function(child) {
+            this.deserializeFieldFromNode(importer, child);
+        }, this);
     }
 
 });

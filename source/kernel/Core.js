@@ -1216,6 +1216,19 @@ lively.data.Wrapper.subclass('Morph', {
 	// Override me
     },
 
+    deserializeWidgetFromNode: function(importer, node) {
+        var type = lively.data.Wrapper.getEncodedType(node);
+        if (type) {
+            var klass = Class.forName(type);
+            if (klass) {
+                var widget = new klass(importer, node);
+                widget.restoreFromSubnodes(importer, node);
+            } else {
+                console.log("Error in deserializing Widget:" + type + ", no class");
+            };
+        }        
+    },
+
     restoreFromSubnodes: function(importer) {
 	//  wade through the children
 	var children = [];
@@ -1253,61 +1266,11 @@ lively.data.Wrapper.subclass('Morph', {
 	    case "field": {
 		// console.log("found field " + Exporter.stringify(node));
 		helperNodes.push(node);
-		var name = LivelyNS.getAttribute(node, "name");
-		if (name) {
-		    var ref = LivelyNS.getAttribute(node, "ref");
-		    if (ref) {
-			importer.addPatchSite(this, name, ref);
-		    } else {
-			var value = node.textContent;
-			if (value) {
-			    var family = LivelyNS.getAttribute(node, "family");
-			    if (family) {
-				var cls = Class.forName(family);
-				if (!cls) throw new Error('uknown type ' + family);
-				this[name] = cls.fromLiteral(JSON.unserialize(value));
-			    } else this[name] = JSON.unserialize(value);
-			}
-		    }
-		}
+                this.deserializeFieldFromNode(importer, node);		
 		break;
 	    }
 	    case "widget": {
-		// FIXME!
-		var type = lively.data.Wrapper.getEncodedType(node);
-		if (type) {
-		    var klass = Class.forName(type);
-		    if (klass)
-		        var widget = new klass(importer, node);
-		    else
-		        console.log("Error in deserializing " + type + ", no class");
-		    $A(node.getElementsByTagName("record")).forEach(function(child) {
-			var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
-			var Rec = lively.data.DOMRecord.prototype.create(spec);
-			var model = new Rec(importer, child);
-			var id = child.getAttribute("id");
-			if (id) importer.addMapping(id, model); 
-			widget.actualModel = model;
-		    });
-		    
-		    $A(node.getElementsByTagName("relay")).forEach(function(child) {
-			var spec = {};
-			$A(child.getElementsByTagName("binding")).forEach(function(elt) {
-			    var key = elt.getAttributeNS(null, "formal");
-			    var value = elt.getAttributeNS(null, "actual");
-			    spec[key] = value;
-			});
-			
-			var name = LivelyNS.getAttribute(child, "name");
-			if (name) {
-			    // here widget instead of name is the only difference
-			    var relay = widget[name] = Relay.newInstance(spec, null);
-			    var ref = LivelyNS.getAttribute(child, "ref");
-			    importer.addPatchSite(relay, "delegate", ref);
-			}
-		    });
-		}
-		
+	        this.deserializeWidgetFromNode(importer, node);
 		break;
 	    }
 	    case "array": {
