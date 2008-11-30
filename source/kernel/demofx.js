@@ -12,9 +12,7 @@ using().module('lively.demofx').run(function() {
     using().run(function() {
     const size = 8;
     lively.demofx.FXMorph.subclass('lively.demofx.CloseButton', {
-
 	formals: ["Color"],
-
 	content: {
 	    $:"Group",
 	    content: [
@@ -31,12 +29,13 @@ using().module('lively.demofx').run(function() {
                       {$:"Line", StartX: 0, StartY: 0, EndX: size, EndY: size,
                        stroke: {$:"Bind", to: "Color"},
                        strokeWidth: 3,
-                      // strokeLineCap: StrokeLineCap.ROUND
+                       strokeLineCap: lively.scene.LineCaps.Round
                       },
 		      
                       {$:"Line", StartX: 0, StartY: size, EndX: size, EndY: 0,
-                            stroke: {$:"Bind", to: "Color"},
-                            strokeWidth: 3
+                       stroke: {$:"Bind", to: "Color"},
+                       strokeWidth: 3,
+                       strokeLineCap: lively.scene.LineCaps.Round
                        //strokeLineCap: StrokeLineCap.ROUND
                       }
 		  ]
@@ -154,7 +153,7 @@ using().module('lively.demofx').run(function() {
 		{$:"Rectangle", 
 		 width: {$:"Bind", to: "Width"},
 		 height: 8,
-		  arcWidth: 10,
+		 arcWidth: 10,
 		 //                 arcHeight: 10
 		 fill: {$:"LinearGradient",
 			startX: 0,
@@ -251,7 +250,7 @@ using().module('lively.demofx').run(function() {
 	    this.imageContainer.removeAll();
 	    this.imageContainer.add(imageMorph);
 	    this.set_CanvasX((canvasWidth - imageMorph.image.getWidth())/2);
-	    this.set_CanvasY(canvasHeight/2 - imageMorph.image.getHeight()/2);
+	    this.set_CanvasY((canvasHeight- imageMorph.image.getHeight())/2);
 	    this.layoutChanged();
 	}
 	
@@ -719,22 +718,20 @@ using().module('lively.demofx').run(function() {
                   {$:"Stop", offset: 0.5,  color: Color.rgb(148, 148, 148) },
                   {$:"Stop", offset: 1.0,  color: Color.rgb(102, 102, 102) },
                 ]
-	 
         }));
-
+    
     stage.addMorph(controlPlate);
     controlPlate.align(controlPlate.bounds().topCenter(), rowMorph.bounds().bottomCenter());
-    
-    var sliderMorph = controlPlate.addMorph(new lively.demofx.Slider(sliderModel));
-    sliderMorph.align(sliderMorph.bounds().topCenter(), controlPlate.shape.bounds().topCenter());
-    sliderMorph.translateBy(pt(0, 10));
     
     var label = controlPlate.addMorph(new TextMorph(new Rectangle(0,0,0,0)).beLabel());
     label.setTextColor(Color.white);
     label.connectModel(sliderModel.newRelay({Text: "LabelValue"}), true);
-    label.align(label.bounds().leftCenter(), sliderMorph.bounds().rightCenter());
+    label.align(label.bounds().leftCenter(), controlPlate.shape.bounds().leftCenter());
     label.translateBy(pt(10, 0));
-
+    
+    var sliderMorph = controlPlate.addMorph(new lively.demofx.Slider(sliderModel));
+    sliderMorph.align(sliderMorph.bounds().leftCenter(), label.bounds().rightCenter());
+    sliderMorph.translateBy(pt(20, 0));
 
      // second row
     var secondRow = {$:"Group",
@@ -833,7 +830,6 @@ using().module('lively.demofx').run(function() {
     button2.align(button2.bounds().topLeft(), button1.bounds().topRight());
     button2.translateBy(pt(20, 0));
 
-
     var removeEffect = {
 	run: function() {
 	    console.log('remove effect ' + theEffect);
@@ -851,14 +847,12 @@ using().module('lively.demofx').run(function() {
     removeButton.align(removeButton.bounds().topRight(), footer.shape.bounds().topRight());
     removeButton.translateBy(pt(-20, 3));
 
-
     var saveButtonModel = Record.newPlainInstance({GlowColor: null, GlowOpacity: 0});
     var saveButton = new lively.demofx.Button(saveButtonModel, "Save Image");
     saveButton.connectModel(saveButtonModel.newRelay({GlowColor: "+GlowColor", GlowOpacity: "+GlowOpacity"}));
     footer.addMorph(saveButton);
     saveButton.align(saveButton.bounds().topRight(), removeButton.bounds().topLeft());
     saveButton.translateBy(pt(-20, 0));
-
 
     var knobMorph = footer.addMorph(new lively.demofx.Knob(canvasModel));
     knobMorph.align(knobMorph.bounds().topCenter(), footer.shape.bounds().topCenter());

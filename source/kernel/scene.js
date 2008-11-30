@@ -1054,6 +1054,9 @@ Object.extend(this.Polyline, {
 	if (literal.strokeWidth !== undefined)
 	    node.setStrokeWidth(literal.strokeWidth);
 	else node.setStrokeWidth(1);
+	if (literal.strokeLineCap !== undefined) {
+	    node.setLineCap(literal.strokeLineCap);
+	}  
 	literal.fill && node.setFill(literal.fill);
 	if (literal.transforms !== undefined) node.setTransforms(literal.transforms);
 	
