@@ -2341,10 +2341,10 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 	}
 	return parent;
     },
-    
+       
     restoreFromSubnodes: function(importer, node){
-        // Todo: 1. refactor to the one pass style of Morph>>restoreFromSubnodes 
-        // Todo: 2. move common parts to super class wrapper
+        // Todo: refactor to  restoreFromSubnode style
+        // Todo: move common parts to super class wrapper
         $A(node.getElementsByTagName("record")).forEach(function(child) {
             var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
             var Rec = lively.data.DOMRecord.prototype.create(spec);

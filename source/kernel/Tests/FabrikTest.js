@@ -265,7 +265,7 @@ FabrikTestCase.subclass('PointSnapperTest', {
     }
 });
 
-FabrikTestCase.subclass('AUserFrameTest', {
+FabrikTestCase.subclass('UserFrameTest', {
     
     setUp: function($super) {
         $super();
@@ -1377,7 +1377,7 @@ TestCase.subclass('HandPositionObserverTest', {
     
 });
 
-TestCase.subclass('ATextListComponentTest', {
+TestCase.subclass('TextListComponentTest', {
 
     setUp: function() {
         this.textList = new TextListComponent();
@@ -1511,7 +1511,7 @@ TestCase.subclass('ComponentSerializeTest', {
     
 });
 
-TestCase.subclass('ANodeRecordSerializationTest', {
+TestCase.subclass('NodeRecordSerializationTest', {
     documentation: 'The new NodeRecord seems to have bugs when serializing/deserializing. Especially \
                     in combination with the new node serialization which is needed for Fabrik WebRequests',
     

@@ -35,14 +35,17 @@ Widget.subclass('DummyWidget', {
     
     buildView: function(extent) {
         this.panel = new Morph(new lively.scene.Rectangle(rect(pt(20,20), pt(150,150))));
-        this.panel.setFill(Color.green);    
-        this.morph =  new TextMorph(rect(pt(10,10), pt(100,30)));
-        this.morph2 =  new TextMorph(rect(pt(10,40), pt(100,60)));
-        this.morph.widget = this;
-        this.morph.connectModel(this.model.newRelay({Text: "MyText"}));
-        this.morph2.connectModel(this.model.newRelay({Text: "MyText"}));
-        this.panel.addMorph(this.morph);
-        this.panel.addMorph(this.morph2);        
+        this.panel.setFill(Color.green);
+        this.panel.widget = this; // backreference
+        this.myMorph1 = new TextMorph(rect(pt(10,10), pt(100,30)));
+        this.myMorph2 = new TextMorph(rect(pt(10,40), pt(100,60)));
+        this.myMorph1.connectModel(this.model.newRelay({Text: "MyText"}));
+        this.myMorph2.connectModel(this.model.newRelay({Text: "MyText"}));
+        this.panel.addMorph(this.myMorph1);
+        this.panel.addMorph(this.myMorph2);
+        
+        // this.panel.rawNode.appendChild(this.rawNode); // should we do this manually?
+        this.panel.ownerWidget = this;
         return  this.panel;
     },
     
@@ -114,11 +117,18 @@ TestCase.subclass('ASerializationTestCase', {
         return (new Importer()).loadWorldContents(xml);
     },
 
-	exportMorph: function(morph) {
-	    var exporter = new Exporter(morph);
-    	exporter.extendForSerialization();
-		return exporter.rootMorph.rawNode
-	},
+    exportMorph: function(morph) {
+        var exporter = new Exporter(morph);
+        exporter.extendForSerialization();
+        return exporter.rootMorph.rawNode
+    },
+    
+    getFieldNamed: function(node, fieldName) {
+        var result = $A(node.getElementsByTagName("field")).detect(function(ea) {
+            return ea.getAttribute("name") == fieldName});
+        this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
+        return result
+    },
 
     testWorldMorphOnCanvas: function() {
         this.assert(this.worldMorph, 'No WorldMorph');
@@ -263,15 +273,14 @@ TestCase.subclass('ASerializationTestCase', {
            <field name="simpleString"><![CDATA["eineZeichenkette"]]></field>
         </g>
         */
-        var fieldNodes = $A(morphNode.getElementsByTagName("field"));
-        var numberNode = fieldNodes.detect(function(ea) {return ea.getAttribute("name") == "simpleNumber"});
+        var numberNode = this.getFieldNamed(morphNode, "simpleNumber");
         this.assertEqual(numberNode.textContent, "12345", "simpleNumber failed");
         
-        var stringNode = fieldNodes.detect(function(ea) {return ea.getAttribute("name") == "simpleString"});    
+        var stringNode = this.getFieldNamed(morphNode, "simpleString");    
         this.assertEqual(stringNode.textContent, '"eineZeichenkette"', "simpleString failed");
     },
 
-    testSerializeDummyWidget: function(){
+    testSerializeDummyWidget: function() {
        var widget = new DummyWidget();
        widget.sayHello();
        var view = widget.buildView();
@@ -283,64 +292,21 @@ TestCase.subclass('ASerializationTestCase', {
        
        var viewNode = doc.getElementById(view.id());
        this.assert(view, "no view node by id found (" + view.id() + ")");
+
+       var widgetNode = doc.getElementById(widget.id());
+       this.assert(widgetNode, "no widget node by id found (" + widget.id() + ")");
        
+       var widgetNodeMyMorph1Field = this.getFieldNamed(widgetNode, "myMorph1");    
+       this.assertEqual(widgetNodeMyMorph1Field.getAttribute("ref"), widget.myMorph1.id() ,"wrong ref to myMorph1");
        
-       // TODO: implement this test
-       // var widgetNode = doc.getElementById(widget.id());
-       // this.assert(widgetNode, "no widget node by id found (" + widget.id() + ")");
+       var widgetNodeMyMorph2Field = this.getFieldNamed(widgetNode, "myMorph2");
+       this.assertEqual(widgetNodeMyMorph2Field.getAttribute("ref"), widget.myMorph2.id() ,"wrong ref to myMorph2");
        
-       // console.log(Exporter.stringify(worldNode));
+       console.log(Exporter.stringify(worldNode));
     }
 });
 
 
-
-
-
-
-
-// 
-// TestCase.subclass('SharedNodeModelTest', {
-//     
-//     setUp: function() {
-//         this.widget = new Widget();
-//         this.model = Record.newNodeInstance({MyMorph: null, MyWidget: null});
-//         this.morph = new Morph();
-//         this.world = WorldMorph.current();
-// 
-//         this.world.addMorph(this.morph)
-// 
-//         this.morph.addNonMorph(this.widget.rawNode);
-// 
-//     },
-//     
-//     // testStoringMorphReferences: function(number){        
-//     //     this.model.setMyMorph(this.morph);
-//     //     var found = Wrapper.prototype.getWrapperByUri(this.model.getMyMorph());
-//     //     this.assertIdentity(found, this.morph, "failed to store morph")
-//     // }, 
-// 
-//     // testStoringWidgetReferences: function(number){        
-//     //     this.model.setMyWidget(this.widget);
-//     //     var found = Wrapper.prototype.getWrapperByUri(this.model.getMyWidget());
-//     //     this.assertIdentity(found, this.widget, "failed to store widget")
-//     // }, 
-//     split
-//     // m = new Morph(); WorldMorph.current().addMorph(m); m.linkWrapee(); n = Global.document.getElementById(m.id()); n.wrapper
-//     // testGetWrapperByUri: function(number){        
-//     //     var uri = this.morph.uri();
-//     //     this.assert(uri,"no uri");
-//     //     this.assert(this.morph.rawNode,"no raw node");
-//     //     this.assertIdentity(Wrapper.prototype.getWrapperByUri(uri), this.morph);
-//     // },
-//     
-//     tearDown: function() {
-//         this.morph.remove();
-//     }
-//     
-// });
-// 
-// 
 TestCase.subclass('DomRecordTest', {
 
     testAddField: function() {
