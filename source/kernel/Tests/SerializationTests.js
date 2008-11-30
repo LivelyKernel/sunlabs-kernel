@@ -1,5 +1,58 @@
 module('lively.Tests.SerializationTests').requires('lively.TestFramework').toRun(function() {
 
+/* Helper Classes */
+
+Morph.subclass('DummyMorph', {
+
+    initialize: function($super) { 
+        $super(rect(pt(0,0), pt(100,050)), "rect");
+        this.formalModel = Record.newInstance({MyValue: {}},{});
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+        console.log("DummyMorph>>deserialize: " + Exporter.stringify(d))
+        $super(importer, rawNode);
+    },
+
+});
+
+Widget.subclass('DummyWidget', {
+
+    description: "Dummy Widget for serialization",
+    viewTitle: "Dummy Widget",
+    initialViewExtent: pt(250, 260),
+
+    initialize: function($super) { 
+        $super();
+        this.model = Record.newNodeInstance({MyText: "tada"});
+        this.relayToModel(this.model, {MyText: "+MyText"});
+        this.ownModel(this.model);
+    },
+    
+    sayHello: function() {
+        this.model.setMyText("Hello World");
+    },
+    
+    buildView: function(extent) {
+        this.panel = new Morph(new lively.scene.Rectangle(rect(pt(20,20), pt(150,150))));
+        this.panel.setFill(Color.green);    
+        this.morph =  new TextMorph(rect(pt(10,10), pt(100,30)));
+        this.morph2 =  new TextMorph(rect(pt(10,40), pt(100,60)));
+        this.morph.widget = this;
+        this.morph.connectModel(this.model.newRelay({Text: "MyText"}));
+        this.morph2.connectModel(this.model.newRelay({Text: "MyText"}));
+        this.panel.addMorph(this.morph);
+        this.panel.addMorph(this.morph2);        
+        return  this.panel;
+    },
+    
+    open: function(){
+        this.buildView();
+        WorldMorph.current().addMorph(this.panel);
+    }
+});
+
+
 /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
 
 TestCase.subclass('ASerializationTestCase', {
@@ -19,6 +72,9 @@ TestCase.subclass('ASerializationTestCase', {
         this.worldMorph = new WorldMorph(this.canvas);
         this.canvas.appendChild(this.worldMorph.rawNode);
         this.morphs = [];
+        
+        this.bounds = rect(pt(10,10), pt(100,100));
+	    this.parentMorph =  Morph.makeRectangle(0,0, 300, 300);
     },
 
     tearDown: function() {
@@ -57,6 +113,12 @@ TestCase.subclass('ASerializationTestCase', {
         var xml = (new DOMParser()).parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");   
         return (new Importer()).loadWorldContents(xml);
     },
+
+	exportMorph: function(morph) {
+	    var exporter = new Exporter(morph);
+    	exporter.extendForSerialization();
+		return exporter.rootMorph.rawNode
+	},
 
     testWorldMorphOnCanvas: function() {
         this.assert(this.worldMorph, 'No WorldMorph');
@@ -167,8 +229,7 @@ TestCase.subclass('ASerializationTestCase', {
             '</svg>'); 
         var morph1 = world.submorphs[0];
         var morph2 = world.submorphs[1];
-        
-        
+                
         var widget = morph1.myWidget;
         this.assert(widget instanceof DummyWidget, "morph1.myWidget is not DummyWidget");
         this.assertIdentity(morph1.myWidget, morph2.myWidget, "morph1.myWidget is not identical to morph2.myWidget");
@@ -176,8 +237,65 @@ TestCase.subclass('ASerializationTestCase', {
         this.assert(widget.myMorph1, "widget.myMorph1 not set");
         this.assertIdentity(morph1, widget.myMorph1, "widget.morph1 is not identical to morph1");
         //this.showMyWorld(world)
+    },
+
+    /* Serialize Tests */
+
+    testSerializeMorph: function() {
+        var morph = new Morph(new lively.scene.Rectangle(this.bounds));
+        morph.simpleNumber = 12345;
+        morph.simpleString = "eineZeichenkette";
+        this.worldMorph.addMorph(morph);
+        var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+        
+        this.assert(doc, "shrinkWrapMorph failed");
+        var worldNode = doc.getElementById(this.worldMorph.id());
+        this.assert(worldNode, "no world node by id found (" + this.worldMorph.id() + ")");
+        var morphNode = doc.getElementById(morph.id());
+        this.assert(morphNode, "no morph node by id found (" + morph.id() + ")"); 
+
+        // console.log(Exporter.stringify(morphNode));
+        /*
+        <g xmlns="http://www.w3.org/2000/svg" type="Morph" id="171:Morph" transform="translate(10,10)">
+           <rect x="0" y="0" width="90" height="90"/><field name="origin" family="Point"><![CDATA[{"x":10,"y":10}]]></field>
+           <field name="fullBounds">null</field>
+           <field name="simpleNumber">12345</field>
+           <field name="simpleString"><![CDATA["eineZeichenkette"]]></field>
+        </g>
+        */
+        var fieldNodes = $A(morphNode.getElementsByTagName("field"));
+        var numberNode = fieldNodes.detect(function(ea) {return ea.getAttribute("name") == "simpleNumber"});
+        this.assertEqual(numberNode.textContent, "12345", "simpleNumber failed");
+        
+        var stringNode = fieldNodes.detect(function(ea) {return ea.getAttribute("name") == "simpleString"});    
+        this.assertEqual(stringNode.textContent, '"eineZeichenkette"', "simpleString failed");
+    },
+
+    testSerializeDummyWidget: function(){
+       var widget = new DummyWidget();
+       widget.sayHello();
+       var view = widget.buildView();
+       this.worldMorph.addMorph(view);
+       
+       var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+       var worldNode = doc.getElementById(this.worldMorph.id());
+       this.assert(worldNode, "no world node by id found (" + this.worldMorph.id() + ")");
+       
+       var viewNode = doc.getElementById(view.id());
+       this.assert(view, "no view node by id found (" + view.id() + ")");
+       
+       
+       // TODO: implement this test
+       // var widgetNode = doc.getElementById(widget.id());
+       // this.assert(widgetNode, "no widget node by id found (" + widget.id() + ")");
+       
+       // console.log(Exporter.stringify(worldNode));
     }
 });
+
+
+
+
 
 
 
