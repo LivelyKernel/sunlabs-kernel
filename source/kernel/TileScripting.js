@@ -2,8 +2,10 @@ module('lively.TileScripting').requires('Helper.js').toRun(function(thisModule) 
 
 Morph.addMethods({
    layout: function(notResizeSelf) {
-       this.layoutSpec && this.layoutSpec.layouterClass && new this.layoutSpec.layouterClass(this, this.layoutSpec).layout();
-       this.owner && this.owner.layout();
+       if (this.layoutSpec && this.layoutSpec.layouterClass)
+			new this.layoutSpec.layouterClass(this, this.layoutSpec).layout();
+		if (this.owner)
+			this.owner.layout();
    },
    asTile: function() {
        return new thisModule.ObjectTile(null,this);
@@ -17,14 +19,20 @@ Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt
 
 
 PanelMorph.subclass('lively.TileScripting.TileBoxPanel', {
+
+	documentation: 'Panel Morph of TileBox. Currently needed for deserializing TileBox (which is a Widget)',
+
     onDeserialize: function() {
         // FIXME complete new morph is build, is this really necessary?
         this.owner.targetMorph = this.owner.addMorph(new TileBox().buildView(this.getExtent()));
         this.owner.targetMorph.setPosition(this.getPosition());
         this.remove();
     }
+
 })
 Widget.subclass('lively.TileScripting.TileBox', {
+
+	documentation: 'Widget with which Tiles can be created',
 
     viewTitle: "Tile Box",
     viewExtent: pt(600,300),
@@ -98,6 +106,8 @@ Object.extend(thisModule.TileBox, {
 
 Widget.subclass('lively.TileScripting.ScriptEnvironment', {
     
+	documentation: 'Widget for assembling scripts via tiles and running them',
+
     viewTitle: "ScriptBox",
     viewExtent: pt(200,300),
     
@@ -162,6 +172,8 @@ Object.extend(thisModule.ScriptEnvironment, {
 
 BoxMorph.subclass('lively.TileScripting.TileHolder', {
     
+	documentation: 'Morph for listing tiles in ScriptEnvironment',
+
     layoutSpec: {layouterClass: VLayout},
     dropAreaExtent: pt(80,20),
     formals: ["Value"],
@@ -203,7 +215,7 @@ BoxMorph.subclass('lively.TileScripting.TileHolder', {
     
     addDropArea: function() {
         
-        var cleanUp = function() {
+        var cleanUp = function actionWhenDropped() {
             var emptyDrops = this.submorphs.select(function(ea) { return ea.isDropArea && !ea.tile() });
             emptyDrops.invoke('remove');
             this.ensureEmptyDropAreaExists();
@@ -280,6 +292,8 @@ Object.subclass('Test', {
 
 BoxMorph.subclass('lively.TileScripting.Tile', {
 
+	documentation: 'Abstract Tile',
+
     isTile: true,
     defaultExtent: pt(100,20),
     layoutSpec: {layouterClass: HLayout, center: true},
@@ -308,6 +322,8 @@ BoxMorph.subclass('lively.TileScripting.Tile', {
 
 thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
     
+	documentation: 'Allows to insert JavaScript',
+
     defaultExtent: pt(100,35),
     layoutSpec: {layouterClass: null},
     
@@ -328,6 +344,8 @@ thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
 
 thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
     
+	documentation: 'Alias to another morph for scripting it',
+
     initialize: function($super, bounds, targetMorphOrObject) {
         $super(bounds);
         
@@ -397,6 +415,8 @@ thisModule.ObjectTile.findMorph = function(id) {
 
 Object.subclass('lively.TileScripting.TileMenuCreator', {
     
+	documentation: 'Generates a menu of methods of an object referenced by an ObjectTile',
+
     initialize: function(target, tile) {
         this.target = target;
         this.tile = tile;
@@ -459,14 +479,13 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
                     "nativeWorldBounds", "canvas", "setVisible", "isVisible",
                     "applyFilter", "copy", "getType", "newId", "id", "setId", "setDerivedId", "removeRawNode",
                     "replaceRawNodeChildren", "toMarkupString", "uri", "getLivelyTrait", "setLivelyTrait", "removeLivelyTrait", "getLengthTrait",
-                    "setLengthTrait", "getTrait", "setTrait", "removeTrait", "preparePropertyForSerialization",
-                    
-                    // from OMeta
-                    "printOn", "delegated", "ownPropertyNames", "hasProperty", "isNumber", "isString", "isCharacter"]
+                    "setLengthTrait", "getTrait", "setTrait", "removeTrait", "preparePropertyForSerialization"]
 });
 
 thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
     
+	documentation: 'Wraps a method of an Object',
+
     initialize: function($super, bounds, methodName) {
         $super(bounds);
 
@@ -501,6 +520,8 @@ thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
 
 thisModule.Tile.subclass('lively.TileScripting.IfTile', {
     
+	documentation: 'Conditional Tile',
+
     initialize: function($super, bounds) {
         $super(bounds);
         this.addMorph(new TextMorph(new Rectangle(0,0,20,this.bounds().height), 'if').beLabel());
@@ -515,6 +536,8 @@ thisModule.Tile.subclass('lively.TileScripting.IfTile', {
 
 thisModule.Tile.subclass('lively.TileScripting.NumberTile', {
     
+	documentation: 'Represents a number',
+
     layoutSpec: {layouterClass: null, center: true},
     eps: 0.001,
     
@@ -568,6 +591,8 @@ thisModule.Tile.subclass('lively.TileScripting.NumberTile', {
 });
 
 BoxMorph.subclass('lively.TileScripting.DropArea', {
+
+	documentation: 'Only on DropAreas Tiles can be dropped',
 
     isDropArea: true,
     layoutSpec: {layouterClass: VLayout},

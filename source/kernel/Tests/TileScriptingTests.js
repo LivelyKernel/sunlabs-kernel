@@ -1,16 +1,5 @@
 module('lively.Tests.TileScriptingTests').requires('lively.TestFramework', 'lively.TileScripting').toRun(function(thisModule) {
 
-TestCase.subclass('lively.Tests.TileScriptingTests.ScriptEnvironmentTest', {
-    // testRunScript: function() {
-    //     var sut = new ScriptEnvironment();
-    //     var tileHolder = sut.buildView().tileHolder;
-    //     var tile = new DebugTile(null, '123;');
-    //     tileHolder.submorphs.last().addMorph(tile);
-    //     var result = sut.runScript();
-    //     this.assertIdentity(123, result);
-    // }
-});
-
 TestCase.subclass('lively.Tests.TileScriptingTests.TileHolderTest', {
     
     testAddNewDropWhenExistingOneWasUsed: function() {
