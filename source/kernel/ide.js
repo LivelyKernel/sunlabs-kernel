@@ -16,6 +16,11 @@ module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js',
 Widget.subclass('lively.ide.BasicBrowser', {
  
     documentation: 'Abstract widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
+
+	emptyText: '-----',
+
+	allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
+
     initialViewExtent: pt(620, 450),
     formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer", "Pane1Menu",
               "Pane2Content", "Pane2Selection", "Pane2Choicer", "Pane2Menu",
@@ -50,6 +55,20 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
 	selectedNode: function() {
 		return this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
+	},
+
+	selectNode: function(node) {
+		var paneName = this.paneNameOfNode(node);
+		if (!paneName) return;
+		this.inPaneSelectNodeNamed(paneName, node.asString());
+	},
+
+	allNodes: function() {
+		return this.allPaneNames.collect(function(ea) { return this.nodesInPane(ea) }, this);
+	},
+
+	paneNameOfNode: function(node) {
+    	return this.allPaneNames.detect(function(ea) { return this.nodesInPane(ea).include(node) }, this);
 	},
 
     start: function() {
@@ -150,7 +169,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
     onPane1SelectionUpdate: function(node) {
         this.setStatusMessage('');
         this.setPane2Selection(null, true);
-        this.setPane2Content(['-----']);
+        this.setPane2Content([this.emptyText]);
         if (!node) {
             this.hideButtons(null, this.panel.Pane1, 'Pane1')
             return
@@ -164,7 +183,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
     onPane2SelectionUpdate: function(node) {
         this.setStatusMessage('');
         this.setPane3Selection(null);
-        this.setPane3Content(['-----']);        
+        this.setPane3Content([this.emptyText]);        
         if (!node) {
             this.hideButtons(null, this.panel.Pane2, 'Pane2')
             return
@@ -187,22 +206,22 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
  
     onSourceStringUpdate: function(methodString) {
-        if (methodString == '-----') return;
+        if (!methodString || methodString == this.emptyText) return;
         if (this.selectedNode().sourceString() == methodString) return;
         this.selectedNode().newSource(methodString);
         this.nodeChanged(this.selectedNode());
     },
  
     nodesInPane: function(paneName) { // panes have listItems, no nodes
-        var listItems = this['get' + paneName + 'Content']();
-        if (!listItems) return [];
+         var listItems = this['get' + paneName + 'Content']();
+         if (!listItems) return [];
         return listItems.collect(function(ea) { return ea.value })    
     },
- 
+    
     siblingsFor: function(node) {
-        var siblings = ['Pane1', 'Pane2', 'Pane3']
-            .collect(function(ea) { return this.nodesInPane(ea) }.bind(this))
-            .detect(function(ea) { return ea.include(node) });
+        var siblings = this.allPaneNames
+             .collect(function(ea) { return this.nodesInPane(ea) }.bind(this))
+             .detect(function(ea) { return ea.include(node) });
         if (!siblings) return [];
         return siblings.without(node);
     },
@@ -226,7 +245,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
             var newN3 = this.nodesInPane('Pane3').detect(function(ea) { return ea.target === oldN3.target });
             this.setPane3Selection(newN3, true);
         }
-},
+    },
 
     nodeChanged: function(node) {
         // currently update everything, this isn't really necessary
@@ -234,7 +253,9 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
  
 	textChanged: function(node) {
-		 this.setSourceString(node.sourceString());
+		// be careful -- this can lead to overwritten source code
+		this.selectNode(node);
+		// this.setSourceString(node.sourceString());
 	},
 
 	updateTitle: function() {
