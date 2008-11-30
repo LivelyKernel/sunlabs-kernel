@@ -203,7 +203,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         var siblings = ['Pane1', 'Pane2', 'Pane3']
             .collect(function(ea) { return this.nodesInPane(ea) }.bind(this))
             .detect(function(ea) { return ea.include(node) });
-        if (!siblings) return null;
+        if (!siblings) return [];
         return siblings.without(node);
     },
     
@@ -677,9 +677,15 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
     },
     
     asString: function() {
-        return this.target.name || this.sourceString().truncate(22).replace('\n', '') + '(' + this.type + ')'
+        var name = this.target.name || this.sourceString().truncate(22).replace('\n', '') + '(' + this.type + ')';
+		if (this.showLines()) name += ' (' + this.target.startLine() + '-' + this.target.stopLine() + ')';
+		return name;
     },
     
+	showLines: function() {
+		return this.browser.showLines;
+	},
+
     saveSource: function(newSource, sourceControl) {
 		if (!this.hasCurrentSource()) throw dbgOn(new Error('Old Source, Refresh!'));
         this.target.putSourceCode(newSource);
@@ -771,7 +777,10 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
     
     asString: function() {
-        return this.moduleName + (this.target ? '' : ' (not loaded)');
+		var name = this.moduleName;
+		if (!this.target) return name + ' (not loaded)';
+		if (!this.showLines()) return name;
+		return name + ' (' + this.target.startLine() + '-' + this.target.stopLine() + ')';
     },
 
 	loadModule: function() {
@@ -796,7 +805,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
 
 	menuSpec: function() {
 		var fragment = this.target;
-		var index = fragment.name.lastIndexOf('.');
+		var index = fragment.name ? fragment.name.lastIndexOf('.') : -1;
 		// don't search for complete namespace name, just its last part
 		var searchName = index === -1 ? fragment.name : fragment.name.substring(index+1);
 		return [
@@ -867,7 +876,7 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 	},
 
 	asString: function() {
-		return 'load all modules'
+		return 'Load all modules'
 	},
 
 	trigger: function() {
@@ -875,6 +884,23 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 		srcCtrl.interestingLKFileNames()
 			.concat(srcCtrl.preLoadFileNames())
 			.forEach(function(ea) { srcCtrl.addModule(ea) });
+		this.browser.allChanged();
+	}
+
+});
+
+ide.BrowserCommand.subclass('lively.ide.ShowLineNumbersCommand', {
+	
+	wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		return 'Toggle LineNo'
+	},
+
+	trigger: function() {
+		this.browser.showLines = !this.browser.showLines;
 		this.browser.allChanged();
 	}
 
@@ -903,8 +929,8 @@ ide.BrowserCommand.subclass('lively.ide.AlphabetizeCommand', {
 	},
 
 	asString: function() {
-		if (this.browser.alphabetize) return 'unsort';
-		return 'sort'
+		if (this.browser.alphabetize) return 'Unsort';
+		return 'Sort'
 	},
 
 	trigger: function() {
@@ -1389,6 +1415,16 @@ Object.subclass('lively.ide.FileFragment', {
     newChangeList: function() {
         throw dbgOn(new Error('Not yet!'));
     },
+
+	startLine: function() {
+		// FIXME!!!
+		return AnotherFileParser.prototype.findLineNo(this.getFileString().split(/[\n\r]/), this.startIndex);
+	},
+
+	stopLine: function() {
+		// FIXME!!!
+		return AnotherFileParser.prototype.findLineNo(this.getFileString().split('\n'), this.stopIndex);
+	},
     
     toString: function() {
         return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',

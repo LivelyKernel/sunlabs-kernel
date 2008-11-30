@@ -252,9 +252,20 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
             console.log(descr[i].name + ':' + descr[i].startIndex + '-' + descr[i].stopIndex + '<->' + descr[i+1].name + ':' + descr[i+1].startIndex + '-' + descr[i+1].stopIndex);
             this.assertEqual(descr[i].stopIndex, descr[i+1].startIndex - 1,
                 'descrs conflict: ' + descr[i].type + ' ' + descr[i].name + ' <----> ' + descr[i+1].type + ' ' + descr[i+1].name);
-            
         }
-    }
+    },
+
+	srcFromLinesOfFile: function(fileName, startLine, endLine) {
+		// for testing parsing parts of files
+		// returns a substring of the file begining with first character if startLine and last Character of endLine
+		var db = lively.ide.startSourceControl();
+        var src = db.getCachedText(fileName);
+		var lines = src.split('\n');
+		// get the ptrs
+		var start = AnotherFileParser.prototype.ptrOfLine(lines, startLine);
+		var end = AnotherFileParser.prototype.ptrOfLine(lines, endLine) + lines[endLine-1].length-1;
+		return src.slice(start, end);
+	}
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest1', {
@@ -479,7 +490,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserSpecialTest', {
+thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserParsesCoreTest', {
             
     testParseCoreAlternativ: function() {
         // var url = URL.source.withFilename('Core.js');
@@ -489,6 +500,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         var result = this.sut.parseSource(src);
         // this.assertDescriptorsAreValid(result);
     },
+
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest2', {
@@ -707,32 +719,18 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest3', {
     
-    setUp: function($super) {
-        $super();
-        var db = new SourceDatabase();
-        this.src = db.getCachedText('Core.js');
-    },
-    
-    xtestParseMorph: function() {    // Object.subclass        
-        var src = this.src;
-        src = src.slice(src.indexOf('lively.data.Wrapper.subclass(\'Morph\', \{'), src.indexOf('\});\n\nMorph.addMethods')+3);
-        this.sut.src = src;
-        var descriptor = this.sut.parseClass();
-        this.assertEqual(descriptor.type, 'klassDef');
-    },
+	documentation: 'Tests which directly access LK files. Tests are quite brittle because they will fail when th eline numbers of the used files change.',
     
     testParseWorldMorph: function() {    // Object.subclass
-        var src = this.src;
-        src = src.slice(src.indexOf('PasteUpMorph.subclass("WorldMorph", \{'), src.indexOf('\});\n\nObject.extend(WorldMorph, \{')+3);
+		// Class definition of Morph
+		var src = this.srcFromLinesOfFile('Core.js', 1049, 1381);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
     
     testParseOldFileParser: function() {
-        var db = new SourceDatabase();
-        var src = db.getCachedText('Tools.js');
-        this.assert(src, 'no source!');
-        src = src.slice(src.indexOf('Object.subclass(\'FileParser\', \{'), src.search(/\}\)\;\n\n\n\/\/ =+\n\/\/ ChangeList/)+3);
+		// Class definition of FileParser
+		var src = this.srcFromLinesOfFile('Tools.js', 1226, 1421);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
@@ -745,15 +743,18 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     },
     
     testParseTestKlass: function() {
-        var db = new SourceDatabase();
-        var src = db.getCachedText('Tests/ToolsTests.js');
-        var lines = src.split('\n');
-        var start = src.indexOf('thisModule.AnotherFileParserTest.subclass(\'lively.Tests.ToolsTests.AnotherFileParserTest1\', \{');
-        var end = AnotherFileParser.prototype.ptrOfLine(lines, 480) + lines[480-1].length-1;
-        src = src.slice(start, end);
+		// Class definition of AnotherFileParserTest1
+		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 271, 491);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
-    }
+    },
+
+	testParseFailingAddMethods: function() {
+		// addMethods of Morph
+		var src = this.srcFromLinesOfFile('Core.js', 2981, 3009);
+		var descriptor = this.sut.callOMeta('klassExtensionDef', src);
+		this.assertEqual(descriptor.type, 'klassExtensionDef');
+	}
     
 });
 
