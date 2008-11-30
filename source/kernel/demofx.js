@@ -11,8 +11,9 @@ using().module('lively.demofx').run(function() {
 
     using().run(function() {
     const size = 8;
+	
     lively.demofx.FXMorph.subclass('lively.demofx.CloseButton', {
-	formals: ["Color"],
+	formals: ["_Color"],
 	content: {
 	    $:"Group",
 	    content: [
@@ -27,13 +28,13 @@ using().module('lively.demofx').run(function() {
 		  $var: "g",
 		  content: [
                       {$:"Line", StartX: 0, StartY: 0, EndX: size, EndY: size,
-                       stroke: {$:"Bind", to: "Color"},
+                       stroke: {$:"Bind", to: "_Color"},
                        strokeWidth: 3,
                        strokeLineCap: lively.scene.LineCaps.Round
                       },
 		      
                       {$:"Line", StartX: 0, StartY: size, EndX: size, EndY: 0,
-                       stroke: {$:"Bind", to: "Color"},
+                       stroke: {$:"Bind", to: "_Color"},
                        strokeWidth: 3,
                        strokeLineCap: lively.scene.LineCaps.Round
                        //strokeLineCap: StrokeLineCap.ROUND
@@ -41,6 +42,14 @@ using().module('lively.demofx').run(function() {
 		  ]
 		}
 	    ]
+	},
+	
+	onMouseOver: function() {
+	    this.set_Color(Color.white);
+	},
+
+	onMouseOut: function() {
+	    this.set_Color(Color.rgb(153, 153, 153));
 	}
 	
     });
@@ -620,15 +629,17 @@ using().module('lively.demofx').run(function() {
     }));
 
 
-    var closeModel = Record.newPlainInstance({ Color: Color.rgb(153, 153, 153) });
-    var closeMorph = stage.addMorph(new lively.demofx.CloseButton(closeModel));
+    var closeModel = Record.newPlainInstance({ _Color: Color.rgb(153, 153, 153) });
+    var closeMorph = stage.addMorph(Object.extend(new lively.demofx.CloseButton(closeModel), {
+	suppressHandles: true,
+	handlesMouseDown: Functions.True,
+	onMouseUp: function() {
+	    stage.remove();
+	}
+    }));
+    closeMorph.connectModel(closeModel.newRelay({_Color: "+_Color"}), true);
     closeMorph.align(closeMorph.bounds().topRight(), stage.shape.bounds().topRight());
     closeMorph.translateBy(pt(-10, 7));
-    closeMorph.suppressHandles = true;
-    closeMorph.handlesMouseDown = Functions.True;
-    closeMorph.onMouseUp = function() {
-	stage.remove();
-    }
 
     var canvasMorph = stage.addMorph(new lively.demofx.Canvas(canvasModel));
     canvasMorph.align(canvasMorph.bounds().topRight(), closeMorph.bounds().bottomRight());
