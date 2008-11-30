@@ -2941,7 +2941,7 @@ Morph.addMethods({
 });
 
 // Inspectors for Morphs
-Morph.addMethods( {
+Morph.addMethods({
 
     addSvgInspector: function() {
 	var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
