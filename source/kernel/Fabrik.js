@@ -562,12 +562,7 @@ Morph.subclass('PinMorph', {
         this.setExtent(pt(18,18)); // fixes ellipse pt(0,0) === center behavior
         return this;
     },
-    
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);    
-        console.log("###deserialize " + this.id() +  " raw: " + rawNode.id)
-    },
-    
+
     restorePersistentState: function($super, importer) {
         console.log("###restorePersistentState " + this.id())
         var uri = this.getTrait("pinHandle");
@@ -771,8 +766,8 @@ Widget.subclass('PinHandle', {
         //this.type = "regular";
         this.component = component;
         this.initializeTransientState();
-
-        this.rawNode.appendChild(this.getModel().rawNode);
+        
+        // this.rawNode.appendChild(this.getModel().rawNode);
     },
     
     initializeTransientState: function() {
@@ -797,6 +792,8 @@ Widget.subclass('PinHandle', {
 
     buildView: function() {
         this.morph = new PinMorph();
+        this.morph.ownerWidget = this;
+        
         // perhaps move to morph
         this.morph.setPinHandle(this);
         if (this.isInputPin())
@@ -804,16 +801,14 @@ Widget.subclass('PinHandle', {
         return this.morph;
     },
     
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        console.log("###deserialize " + this.id())
-        
-        var records = this.rawNode.getElementsByTagName('record')
-        if(records.length > 0) {
-            this.formalModel = this.deserializeModelFromNode(importer, records[0]);
-            this.formalModel.owner = this; // remember the component diretly in a non persisten way 
-        };
-    },
+    // deserialize: function($super, importer, rawNode) {
+    //     $super(importer, rawNode);        
+    //     // var records = this.rawNode.getElementsByTagName('record')
+    //     //         if(records.length > 0) {
+    //     //             this.formalModel = this.deserializeModelFromNode(importer, records[0]);
+    //     //             this.formalModel.owner = this; // remember the component diretly in a non persisten way 
+    //     };
+    // },
     
     setValue: function(value) {
         this.component.formalModel["set" + this.getName()](value);
@@ -1194,20 +1189,20 @@ Widget.subclass('PinConnector', {
         console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
     },
 
-    prepareForSerialization: function($super, helperNodes) {
-        $super(helperNodes);
-        this.setTrait("bidirectional", this.isBidirectional);
-        this.setTrait("fromPin", this.fromPin);
-        this.setTrait("toPin", this.toPin);
-    },
+    // prepareForSerialization: function($super, helperNodes) {
+    //     $super(helperNodes);
+    //     this.setTrait("bidirectional", this.isBidirectional);
+    //     this.setTrait("fromPin", this.fromPin);
+    //     this.setTrait("toPin", this.toPin);
+    // },
 
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
-        // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
-        // this.isBidirectional = this.getTrait("bidirectional") == "true";
-    },
-
+    // deserialize: function($super, importer, rawNode) {
+    //       $super(importer, rawNode);
+    //       // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
+    //       // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
+    //       // this.isBidirectional = this.getTrait("bidirectional") == "true";
+    //   },
+  
     // just for make things work ...
     buildView: function() {
         this.morph = new ConnectorMorph(null, 4, Color.blue, this);
@@ -1215,6 +1210,7 @@ Widget.subclass('PinConnector', {
         if (!this.toPin.morph) this.toPin.buildView();
         this.morph.formalModel.setStartHandle(this.fromPin.morph);
         this.morph.formalModel.setEndHandle(this.toPin.morph);
+        this.morph.ownerWidget = this;
         this.morph.connector = this; // for debugging... of course...
         return this.morph;
     },
@@ -1307,7 +1303,8 @@ BoxMorph.subclass('ComponentMorph', {
         //this.relayToModel(component.getModel(), {Name: "Name"});
         this.formalModel = component.getModel()
         this.setupWithComponent();
-        this.rawNode.setAttribute("model", this.formalModel.uri()); // ok, lets do this by hand...
+        // this.rawNode.setAttribute("model", this.formalModel.uri()); // ok, lets do this by hand...
+        this.ownerWidget = component; // for serialization
     },
     
     setupWithComponent: function() {
@@ -1707,7 +1704,7 @@ Widget.subclass('Component', {
         //this.addField("Name"); // just to have something for testing....
         this.formalModel.setName("Abstract Component");
               
-        this.rawNode.appendChild(this.getModel().rawNode);
+        // this.rawNode.appendChild(this.getModel().rawNode);
         
         this.pinHandles = [];
         
@@ -1718,24 +1715,23 @@ Widget.subclass('Component', {
 
     },
     
-    prepareForSerialization: function(helperNodes) {
-        this.pinHandles.each(function(ea){
-            this.rawNode.appendChild(ea.rawNode)
-        }, this)
-    },
+    // prepareForSerialization: function(helperNodes) {
+    //     this.pinHandles.each(function(ea){
+    //         this.rawNode.appendChild(ea.rawNode)
+    //     }, this)
+    // },
     
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
-        console.log("###deserialize " + this.id())
-        // dam it only morphs are clever right now... so I have to be stupid!
+        // console.log("###deserialize " + this.id())
         
-        var records = this.rawNode.getElementsByTagName('record')
-        if (records.length > 0) {
-            // this.formalModel = this.deserializeModelFromNode(importer, records[0]);
-            this.formalModel = new lively.data.DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
-            this.formalModel.owner = this; // remember the component diretly in a non persisten way 
-        } else console.warn('No record for ' + this);
-        
+        // var records = this.rawNode.getElementsByTagName('record')
+        //         if (records.length > 0) {
+        //             // this.formalModel = this.deserializeModelFromNode(importer, records[0]);
+        //             this.formalModel = new lively.data.DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
+        //             this.formalModel.owner = this; // remember the component diretly in a non persisten way 
+        //         } else console.warn('No record for ' + this);
+        //         
         // var widgets = [];        
         // $A(this.rawNode.childNodes).each(function(node) {
         //     console.log(" node: "+ node.id)
@@ -2001,10 +1997,6 @@ ComponentMorph.subclass('FabrikMorph', {
     automaticLayout: function() {
         (new FlowLayout()).layoutElementsInMorph(this.fabrik.components, this);
     },
-
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-    },
     
     // remove and put stuff in setupforcomponent instead
     setupForFabrik: function(fabrik){
@@ -2226,10 +2218,10 @@ Component.subclass('FabrikComponent', {
     },
     
     prepareForSerialization: function($super, helperNodes) {
-        $super();
-        this.connectors.each(function(ea){
-            this.rawNode.appendChild(ea.rawNode)
-        }, this)
+        $super(helperNodes);
+        // this.connectors.each(function(ea){
+        //    this.rawNode.appendChild(ea.rawNode)
+        // }, this)
     },
 
     setupChildWidgets: function($super, widgets) {
@@ -2253,11 +2245,6 @@ Component.subclass('FabrikComponent', {
         this.panel.fabrik = this;
         this.panel.setComponent(this);
      
-        //var pseudo = new PseudoMorph();
-        //WorldMorph.current().addMorphBack(pseudo);
-        //pseudo.addNonMorph(this.rawNode); // fabrik hangs the all compontens implicit into this tree position
-     
-     
         this.morph.setupForFabrik(this);
         // this.panel.linkToStyles(['fabrik']);
         this.morph.linkToStyles(['fabrik']);
@@ -2265,13 +2252,9 @@ Component.subclass('FabrikComponent', {
         return this.panel;
     },
     
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-    },
-
     // can be called when this.morph does not exist, simply adds components and wires them
     plugin: function(component) {
-        this.rawNode.appendChild(component.rawNode);
+        // this.rawNode.appendChild(component.rawNode);
         
         if (this.components.include(component)) {
             console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
@@ -2285,8 +2268,8 @@ Component.subclass('FabrikComponent', {
 
     unplug: function(component) {
         this.components = this.components.reject(function(ea) { return ea === component });
-        if (this.rawNode && $A(this.rawNode.childNodes).include(component.rawNode))
-            this.rawNode.removeChild(component.rawNode);
+        // if (this.rawNode && $A(this.rawNode.childNodes).include(component.rawNode))
+        //    this.rawNode.removeChild(component.rawNode);
         component.fabrik = null;
     },
     

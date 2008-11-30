@@ -55,11 +55,9 @@ Widget.subclass('DummyWidget', {
     }
 });
 
+TestCase.subclass('SerializationBaseTestCase', {
 
-/* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
-
-TestCase.subclass('ASerializationTestCase', {
-   
+    /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
     setUp: function() {
         this.realWorld = WorldMorph.current();
         this.dom = stringToXML(
@@ -79,57 +77,62 @@ TestCase.subclass('ASerializationTestCase', {
         this.bounds = rect(pt(10,10), pt(100,100));
 	    this.parentMorph =  Morph.makeRectangle(0,0, 300, 300);
     },
-
-    tearDown: function() {
-        WorldMorph.currentWorld = this.realWorld;
-        this.morphs.each(function(each){ each.remove()})
-        Global.document = this.oldGlobalDocument 
-    },
-
-    showMyWorld: function(optWorld) {
-        if (optWorld) {
-            this.worldMorph = optWorld
-        };
-        // for debugging
-        var oldCanvas = document.getElementById('canvas');
-        var owner = oldCanvas.parentElement;
-        // hack, so that we do not run into a conflict: when calling importNode the canvas changes
-        if (this.worldMorph.rawNode.parentNode) {
-            this.worldMorph.rawNode.parentNode.removeChild(this.worldMorph.rawNode);
-        };
-        var newCanvas = document.importNode(this.canvas, true);
-
-        var oldWorld = this.realWorld;
-        oldWorld.onExit();    
-        oldWorld.hands.clone().forEach(function(hand) {oldWorld.removeHand(hand)});
-        oldWorld.suspendAllActiveScripts(); // ???
-        oldWorld.remove();
-
-        var newWorld = this.worldMorph;
-        newWorld.displayOnCanvas(newCanvas); 
-        newWorld.resumeAllSuspendedScripts();  
-
-        owner.replaceChild(newCanvas, oldCanvas);     
-    },
-
-    loadWorldFromSource: function(xmlString) {
-        var xml = (new DOMParser()).parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");   
-        return (new Importer()).loadWorldContents(xml);
-    },
-
-    exportMorph: function(morph) {
-        var exporter = new Exporter(morph);
-        exporter.extendForSerialization();
-        return exporter.rootMorph.rawNode
-    },
     
-    getFieldNamed: function(node, fieldName) {
-        var result = $A(node.getElementsByTagName("field")).detect(function(ea) {
-            return ea.getAttribute("name") == fieldName});
-        this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
-        return result
-    },
+    tearDown: function() {
+           WorldMorph.currentWorld = this.realWorld;
+           this.morphs.each(function(each){ each.remove()})
+           Global.document = this.oldGlobalDocument 
+       },
 
+       showMyWorld: function(optWorld) {
+           if (optWorld) {
+               this.worldMorph = optWorld
+           };
+           // for debugging
+           var oldCanvas = document.getElementById('canvas');
+           var owner = oldCanvas.parentElement;
+           // hack, so that we do not run into a conflict: when calling importNode the canvas changes
+           if (this.worldMorph.rawNode.parentNode) {
+               this.worldMorph.rawNode.parentNode.removeChild(this.worldMorph.rawNode);
+           };
+           var newCanvas = document.importNode(this.canvas, true);
+
+           var oldWorld = this.realWorld;
+           oldWorld.onExit();    
+           oldWorld.hands.clone().forEach(function(hand) {oldWorld.removeHand(hand)});
+           oldWorld.suspendAllActiveScripts(); // ???
+           oldWorld.remove();
+
+           var newWorld = this.worldMorph;
+           newWorld.displayOnCanvas(newCanvas); 
+           newWorld.resumeAllSuspendedScripts();  
+
+           owner.replaceChild(newCanvas, oldCanvas);     
+       },
+
+       loadWorldFromSource: function(xmlString) {
+           var xml = (new DOMParser()).parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
+           this.doc = xml;   
+           return (new Importer()).loadWorldContents(xml);
+       },
+
+       exportMorph: function(morph) {
+           var exporter = new Exporter(morph);
+           exporter.extendForSerialization();
+           return exporter.rootMorph.rawNode
+       },
+
+       getFieldNamed: function(node, fieldName) {
+           var result = $A(node.getElementsByTagName("field")).detect(function(ea) {
+               return ea.getAttribute("name") == fieldName});
+           this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
+           return result
+       }
+
+});
+
+SerializationBaseTestCase.subclass('SerializationTest', {
+   
     testWorldMorphOnCanvas: function() {
         this.assert(this.worldMorph, 'No WorldMorph');
         this.assert(this.worldMorph.rawNode, 'RawNode');
@@ -302,7 +305,7 @@ TestCase.subclass('ASerializationTestCase', {
        var widgetNodeMyMorph2Field = this.getFieldNamed(widgetNode, "myMorph2");
        this.assertEqual(widgetNodeMyMorph2Field.getAttribute("ref"), widget.myMorph2.id() ,"wrong ref to myMorph2");
        
-       console.log(Exporter.stringify(worldNode));
+       // console.log(Exporter.stringify(worldNode));
     }
 });
 
