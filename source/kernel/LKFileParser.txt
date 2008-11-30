@@ -101,9 +101,10 @@ ometa LKFileParser <: Parser {
     klassDef            = pos:p nsFollowedBy("subclass"):sName   '(' klassName:kName restKlassDef:spec ')' defEnd
                         -> { spec.classElems.forEach(function(ea) { ea.className = kName });
                              $elf._fragment(kName, 'klassDef', p, $elf.pos()-1, spec.classElems, {trait: spec.trait, superclassName: sName}) },
-    basicKlassExt       = "Object.extend" '(' klass:n restKlassDef:spec ')' -> { {name: n, trait: spec.trait, subElements: spec.classElems } }
+    basicKlassExt       = "Object.extend" '(' klass:n restKlassDef:spec ')'
+                            -> { spec.classElems.forEach(function(ea) { ea.className = n }); {name: n, trait: spec.trait, subElements: spec.classElems } }
                         | (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
-                        -> { {name: n, subElements: clElems } },
+                            -> { clElems.forEach(function(ea) { ea.className = n }); {name: n, subElements: clElems } },
     klassExtensionDef   = pos:p basicKlassExt:spec defEnd
                         -> { $elf._fragment(spec.name + ' (extension)', 'klassExtensionDef', p, $elf.pos()-1, spec.subElements, {trait: spec.trait}) },
     
