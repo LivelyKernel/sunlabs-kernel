@@ -433,7 +433,6 @@ using().module('lively.demofx').run(function() {
     });
 
 
-
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
 	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
 
@@ -664,7 +663,6 @@ using().module('lively.demofx').run(function() {
 	    ThumbImage: "ThumbImage", 
 	    _BorderColor: "+_BorderColor"}), true);
 	if (effect) effect.applyTo(previewModel.getThumbImage());
-				 
 	return previewMorph;
     }
 
@@ -698,9 +696,7 @@ using().module('lively.demofx').run(function() {
 	"flower-motion-blur.png",
 	"flower-bloom.png", "flower-glow.png", "flower-color-adjust.png"];
     
-    var blendPreview = 
-	rowMorph.addMorph(makePreview(new lively.scene.BlendEffect(1, "effect0"), 
-				      effectNames[0], shortFileNames[0]));
+    var blendPreview = rowMorph.addMorph(makePreview(null, effectNames[0], shortFileNames[0]));
     blendPreview.translateBy(pt(10, 8));
     
     var previous = blendPreview;
@@ -708,6 +704,8 @@ using().module('lively.demofx').run(function() {
     for (var i = 1; i < 6; i++) {
 	var effect = null;
 	if (i == 1) effect = new lively.scene.GaussianBlurEffect(i, "effect" + i);
+	else if (i == 0) effect = new lively.scene.BlendEffect(1, "effect0");
+	else effect = null;
 	//URL.source.withFilename('Resources/demofx/water.jpg').toString())
 	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
