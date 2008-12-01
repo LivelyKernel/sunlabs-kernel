@@ -761,11 +761,14 @@ Widget.subclass('PinHandle', {
         
         // Why isnt this handled at a central point?????
         this.formalModel = ComponentModel.newModel({Name: pinName, Type: "regular"});
+        this.ownModel(this.formalModel);
+
         //this.formalModel = Record.newPlainInstance({Name: pinName, Type: "regular"});
         //this.name = pinName;
         //this.type = "regular";
         this.component = component;
         this.initializeTransientState();
+        
         
         // this.rawNode.appendChild(this.getModel().rawNode);
     },
@@ -1703,6 +1706,8 @@ Widget.subclass('Component', {
                 
         //this.addField("Name"); // just to have something for testing....
         this.formalModel.setName("Abstract Component");
+        this.ownModel(this.formalModel);
+        
               
         // this.rawNode.appendChild(this.getModel().rawNode);
         
@@ -2683,6 +2688,8 @@ Widget.subclass('ComponentBox', {
         $super();
         // FIXME Why isnt this handled at a central point?????
         this.model = ComponentModel.newModel();
+        this.ownModel(this.model);
+        
     },
     
     addMorphOfComponent: function(comp, createFunc, optExtent) {

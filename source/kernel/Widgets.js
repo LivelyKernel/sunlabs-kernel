@@ -2341,41 +2341,99 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 	}
 	return parent;
     },
-       
-    restoreFromSubnodes: function(importer, node){
-        // Todo: refactor to  restoreFromSubnode style
-        // Todo: move common parts to super class wrapper
-        $A(node.getElementsByTagName("record")).forEach(function(child) {
-            var spec = JSON.unserialize(child.getElementsByTagName("definition")[0].textContent);
-            var Rec = lively.data.DOMRecord.prototype.create(spec);
-            var model = new Rec(importer, child);
-            var id = child.getAttribute("id");
-            if (id) importer.addMapping(id, model); 
-            widget.actualModel = model;
+    
+    // copied from Morph
+    // move up to Wrapper
+    
+    deserializeRelayFromNode: function(importer, node) {
+       var spec = {};
+        $A(node.getElementsByTagName("binding")).forEach(function(elt) {
+            var key = elt.getAttributeNS(null, "formal");
+            var value = elt.getAttributeNS(null, "actual");
+            spec[key] = value;
         });
 
-        $A(node.getElementsByTagName("relay")).forEach(function(child) {
-            var spec = {};
-            $A(child.getElementsByTagName("binding")).forEach(function(elt) {
-                var key = elt.getAttributeNS(null, "formal");
-                var value = elt.getAttributeNS(null, "actual");
-                spec[key] = value;
-            });
-
-            var name = LivelyNS.getAttribute(child, "name");
-            if (name) {
-                // here widget instead of name is the only difference
-                var relay = widget[name] = Relay.newInstance(spec, null);
-                var ref = LivelyNS.getAttribute(child, "ref");
-                importer.addPatchSite(relay, "delegate", ref);
-            }
-        });
+        var name = LivelyNS.getAttribute(node, "name");
+        if (name) {
+            // here widget instead of name is the only difference
+            var relay = widget[name] = Relay.newInstance(spec, null);
+            var ref = LivelyNS.getAttribute(node, "ref");
+            importer.addPatchSite(relay, "delegate", ref);
+        }
+    },
+    
+    deserializeRecordFromNode: function(importer, node) { 
+        var spec = JSON.unserialize(node.getElementsByTagName("definition")[0].textContent);
+        var Rec = lively.data.DOMRecord.prototype.create(spec);
+        var model = new Rec(importer, node);
+        var id = node.getAttribute("id");
+        if (id) importer.addMapping(id, model); 
+        this.actualModel = model;
+    },
+    
+    deserializeArrayFromNode: function(importer, node) {
+    	var name = LivelyNS.getAttribute(node, "name");
+    	this[name] = [];
+    	var index = 0;
+    	$A(node.getElementsByTagName("item")).forEach(function(elt) {
+    	    var ref = LivelyNS.getAttribute(elt, "ref");
+    	    if (ref) {
+    		importer.addPatchSite(this, name, ref, index);
+    	    } else this[name].push(null);
+    	    index ++;
+    	}, this);
+    },
+    
+    restoreFromSubnodes: function(importer) {
         
-        $A(node.getElementsByTagName("field")).forEach(function(child) {
-            this.deserializeFieldFromNode(importer, child);
-        }, this);
-    }
+        // Todo: move common parts to super class wrapper
+        var children = [];
+        var helperNodes = [];
+        
+        children = this.rawNode.childNodes;
+        
+        for (var i = 0; i < children.length; i++) {
+            var node = children[i];
+            switch (node.localName) {
+                // nodes from the Lively namespace
+                case "field": {
+                    helperNodes.push(node);
+                    this.deserializeFieldFromNode(importer, node);      
+                    break;
+                }
+                case "widget": {
+                    this.deserializeWidgetFromNode(importer, node);
+                    break;
+                }
+                case "array": {
+                    helperNodes.push(node);
+                    this.deserializeArrayFromNode(importer, node);
+                    break;
+                }
+                case "relay": {
+                    this.deserializeRelayFromNode(importer, node);
+                    break;
+                }
+                case "record": {
+                    this.deserializeRecordFromNode(importer, node);
+                    break;
+                }
+                default: {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        console.log('text tag name %s', node.tagName);
+                        // whitespace, ignore
+                    } else if (!this.restoreFromSubnode(importer, node)) {
+                        console.warn('not handling %s, %s', node.tagName || node.nodeType, node.textContent);
+                    }
+                }
+            }
+        } // end for
 
+        for (var i = 0; i < helperNodes.length; i++) {
+            var n = helperNodes[i];
+            n.parentNode.removeChild(n);
+        }
+    }
 });
 
 Widget.subclass('Dialog', {

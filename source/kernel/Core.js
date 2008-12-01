@@ -1223,122 +1223,124 @@ lively.data.Wrapper.subclass('Morph', {
             if (klass) {
                 var widget = new klass(importer, node);
                 widget.restoreFromSubnodes(importer, node);
+                return widget
             } else {
-                console.log("Error in deserializing Widget:" + type + ", no class");
+                throw new Error("Error in deserializing Widget:" + type + ", no class");
             };
-        }        
+        };
+        throw new Error("Error in deserializing Widget: no getEncodedType for " + node);     
     },
 
     restoreFromSubnodes: function(importer) {
-	//  wade through the children
-	var children = [];
-	var helperNodes = [];
-	var codeNodes = [];
-	
-	for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
-	    if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE) {
-		if (desc.textContent == "\n") 
-		    helperNodes.push(desc); // remove newlines, which will be reinserted for formatting
-		continue; // ignore whitespace and maybe other things
-	    }
-	    var type = lively.data.Wrapper.getEncodedType(desc);
-	    // depth first traversal
-	    if (type) {
-		var wrapper = importer.importWrapperFromNode(desc);
-		if (wrapper instanceof Morph) {
-		    this.submorphs.push(wrapper); 
-		    wrapper.owner = this;
-		} else children.push(desc);
-	    } else {
-		children.push(desc);
-	    }
-	}
+        //  wade through the children
+        var children = [];
+        var helperNodes = [];
+        var codeNodes = [];
+        
+        for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
+            if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE) {
+                if (desc.textContent == "\n") 
+                    helperNodes.push(desc); // remove newlines, which will be reinserted for formatting
+                continue; // ignore whitespace and maybe other things
+            }
+            var type = lively.data.Wrapper.getEncodedType(desc);
+            // depth first traversal
+            if (type) {
+                var wrapper = importer.importWrapperFromNode(desc);
+                if (wrapper instanceof Morph) {
+                    this.submorphs.push(wrapper); 
+                    wrapper.owner = this;
+                } else children.push(desc);
+            } else {
+                children.push(desc);
+            }
+        }
 
-	for (var i = 0; i < children.length; i++) {
-	    var node = children[i];
-	    var shape = lively.scene.Shape.importFromNode(importer, node);
-	    if (shape) {
-		this.shape = shape;
-		continue;
-	    }
-	    switch (node.localName) {
-		// nodes from the Lively namespace
-	    case "field": {
-		// console.log("found field " + Exporter.stringify(node));
-		helperNodes.push(node);
-                this.deserializeFieldFromNode(importer, node);		
-		break;
-	    }
-	    case "widget": {
-	        this.deserializeWidgetFromNode(importer, node);
-		break;
-	    }
-	    case "array": {
-		helperNodes.push(node);
-		var name = LivelyNS.getAttribute(node, "name");
-		this[name] = [];
-		var index = 0;
-		$A(node.getElementsByTagName("item")).forEach(function(elt) {
-		    var ref = LivelyNS.getAttribute(elt, "ref");
-		    if (ref) {
-			importer.addPatchSite(this, name, ref, index);
-		    } else this[name].push(null);
-		    index ++;
-		}, this);
-		break;
-	    }
+        for (var i = 0; i < children.length; i++) {
+            var node = children[i];
+            var shape = lively.scene.Shape.importFromNode(importer, node);
+            if (shape) {
+                this.shape = shape;
+                continue;
+            }
+            switch (node.localName) {
+                // nodes from the Lively namespace
+            case "field": {
+                // console.log("found field " + Exporter.stringify(node));
+                helperNodes.push(node);
+                this.deserializeFieldFromNode(importer, node);          
+                break;
+            }
+            case "widget": {
+                this.deserializeWidgetFromNode(importer, node);
+                break;
+            }
+            case "array": {
+                helperNodes.push(node);
+                var name = LivelyNS.getAttribute(node, "name");
+                this[name] = [];
+                var index = 0;
+                $A(node.getElementsByTagName("item")).forEach(function(elt) {
+                    var ref = LivelyNS.getAttribute(elt, "ref");
+                    if (ref) {
+                        importer.addPatchSite(this, name, ref, index);
+                    } else this[name].push(null);
+                    index ++;
+                }, this);
+                break;
+            }
 
-	    case "relay": {
-		var spec = {};
-		$A(node.getElementsByTagName("binding")).forEach(function(elt) {
-		    var key = elt.getAttributeNS(null, "formal");
-		    var value = elt.getAttributeNS(null, "actual");
-		    spec[key] = value;
-		});
-		var name = LivelyNS.getAttribute(node, "name");
-		if (name) {
-		    var relay = this[name] = Relay.newInstance(spec, null);
-		    var ref = LivelyNS.getAttribute(node, "ref");
-		    importer.addPatchSite(relay, "delegate", ref);
-		}
-		break;
-	    }
-		
-	    case "defs": { // the only one handled here "code"
-		if (!Config.skipChanges) { // Can be blocked by URL param 
-		    var codes = node.getElementsByTagName("code");
-		    for (var j = 0; j < codes.length; j++) {
-			codeNodes.push(codes.item(j));
-		    }
-		}
-		break;
-	    }
-	    default: {
-		if (node.nodeType === Node.TEXT_NODE) {
-		    console.log('text tag name %s', node.tagName);
-		    // whitespace, ignore
-		} else if (!this.restoreFromSubnode(importer, node)) {
-		    console.warn('not handling %s, %s', node.tagName || node.nodeType, node.textContent);
-		}
-	    }
-	    }
-	} // end for
+            case "relay": {
+                var spec = {};
+                $A(node.getElementsByTagName("binding")).forEach(function(elt) {
+                    var key = elt.getAttributeNS(null, "formal");
+                    var value = elt.getAttributeNS(null, "actual");
+                    spec[key] = value;
+                });
+                var name = LivelyNS.getAttribute(node, "name");
+                if (name) {
+                    var relay = this[name] = Relay.newInstance(spec, null);
+                    var ref = LivelyNS.getAttribute(node, "ref");
+                    importer.addPatchSite(relay, "delegate", ref);
+                }
+                break;
+            }
+                
+            case "defs": { // the only one handled here "code"
+                if (!Config.skipChanges) { // Can be blocked by URL param 
+                    var codes = node.getElementsByTagName("code");
+                    for (var j = 0; j < codes.length; j++) {
+                        codeNodes.push(codes.item(j));
+                    }
+                }
+                break;
+            }
+            default: {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    console.log('text tag name %s', node.tagName);
+                    // whitespace, ignore
+                } else if (!this.restoreFromSubnode(importer, node)) {
+                    console.warn('not handling %s, %s', node.tagName || node.nodeType, node.textContent);
+                }
+            }
+            }
+        } // end for
 
-	for (var i = 0; i < helperNodes.length; i++) {
-	    var n = helperNodes[i];
-	    n.parentNode.removeChild(n);
-	}
+        for (var i = 0; i < helperNodes.length; i++) {
+            var n = helperNodes[i];
+            n.parentNode.removeChild(n);
+        }
 
-	codeNodes.forEach(function(code) {
-	    // we clearly don't handle more than one change yet
-	    this.changes = new ChangeSet(this);
-	    // this.changes.evaluateAll(); 
-	    var result = new BasicCodeMarkupParser().parseDocumentElement(code, true);
-	    // FIXME something doesn't work here
-	    console.log("Successfully evalled "  + result.length);
+        codeNodes.forEach(function(code) {
+            // we clearly don't handle more than one change yet
+            this.changes = new ChangeSet(this);
+            // this.changes.evaluateAll(); 
+            var result = new BasicCodeMarkupParser().parseDocumentElement(code, true);
+            // FIXME something doesn't work here
+            console.log("Successfully evalled "  + result.length);
 
-	}, this);
-	    
+        }, this);
+            
     }
     
 });

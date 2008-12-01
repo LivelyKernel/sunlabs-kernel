@@ -41,15 +41,5 @@ TestCase.subclass('SharedNodeModelTest', {
 });
 
 
-TestCase.subclass('DomRecordTest', {
-
-    testAddField: function() {
-        this.model = Record.newNodeInstance({StaticField: null});
-        this.assertEqualState(this.model.definition, {StaticField: {}});
-        this.model.addField("DynamicField");
-        this.assertEqualState(this.model.definition, {StaticField: {}, DynamicField: {} });
-    }
-
-});
 
 }) // end of module

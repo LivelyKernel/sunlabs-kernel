@@ -2125,6 +2125,17 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
             // this[name + "$Element"] = child.getAttributeNS(null, "name");
 	    this[child.getAttributeNS(null, "name") + "$Element"] = child;
         }, this);
+    },
+    
+    updateDefintionNode: function() {
+        var definitionNode = this.rawNode.getElementsByTagName("definition")[0];
+        definitionNode.removeChild(definitionNode.firstChild);
+        definitionNode.appendChild(NodeFactory.createCDATA(String(JSON.serialize(this.definition))));  
+    },
+    
+    addField: function($super, fieldName, coercionSpec, forceSet) {
+        $super(fieldName, coercionSpec, forceSet);
+        this.updateDefintionNode();
     }
     
 });
