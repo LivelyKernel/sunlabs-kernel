@@ -69,8 +69,15 @@ TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.NodeTest', {
-    setUp: function() { thisModule.createDummyNamespace() },
-    tearDown: function() { thisModule.removeDummyNamespace() }
+    setUp: function() {
+		this.oldSourceControl = toolsModule.SourceControl;
+		toolsModule.SourceControl = new SourceDatabase();
+		thisModule.createDummyNamespace()
+	},
+    tearDown: function() {
+		toolsModule.SourceControl = this.oldSourceControl;
+		thisModule.removeDummyNamespace()
+	}
 });
 
 thisModule.NodeTest.subclass('lively.Tests.ToolsTests.EnvironmentNodeTest', {
@@ -744,14 +751,14 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     
     testParseTestKlass: function() {
 		// Class definition of AnotherFileParserTest1
-		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 271, 491);
+		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 278, 498);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
 
 	testParseFailingAddMethods: function() {
 		// addMethods of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 2981, 3009);
+		var src = this.srcFromLinesOfFile('Core.js', 2976, 3028);
 		var descriptor = this.sut.callOMeta('klassExtensionDef', src);
 		this.assertEqual(descriptor.type, 'klassExtensionDef');
 	}
