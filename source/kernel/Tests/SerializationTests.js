@@ -232,10 +232,16 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
                             '<field name="myMorph1" ref="102:Morph"></field>' +
                             '<field name="myMorph2" ref="103:Morph"></field>' +
                             '<field name="myPointValue" family="Point"><![CDATA[{"x":3,"y":4}]]></field>' +
+                            '<field name="formalModel" ref="105:anonymous_106"/>' +
                             '<array name="myArray">' +
-                    			'<item ref="102:Morph"/>' +
-                    			'<item ref="103:Morph"/>' +
-                    		'</array>' +
+                                '<item ref="102:Morph"/>' +
+                                '<item ref="103:Morph"/>' +
+                            '</array>' +
+                            '<record id="105:anonymous_106">' +
+                                '<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                                '<field name="Name"><![CDATA["EinName"]]></field>' +
+                                '<field name="Text"><![CDATA["DiesIstKeinText"]]></field>' +
+                            '</record>' +
                         '</widget>' +
                     '</g>'+
                     '<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
@@ -257,7 +263,10 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
 
         this.assert(widget.myPointValue, "widget.myPointValue not set");
         this.assert(widget.myArray, "widget.myArray not set"); 
-        
+ 
+        this.assert(widget.formalModel, "widget.formalModel not set"); 
+      
+        this.assertEqual(widget.formalModel.getName(), "EinName",  "widget.formalModel not set");
         
         //this.showMyWorld(world)
     },
@@ -296,7 +305,7 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
 
     testSerializeDummyWidget: function() {
        var widget = new DummyWidget();
-       widget.sayHello();
+       widget.sayHello(); 
        var view = widget.buildView();
        this.worldMorph.addMorph(view);
        
@@ -333,7 +342,7 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
        var definition = recordNode.firstChild;
 
        this.assertEqual(definition.textContent, '{"MyText":{},"MyDynamicField":{}}', "dynamic definition missing in serialization")
-       console.log(Exporter.stringify(widgetNode));
+       //console.log(Exporter.stringify(widgetNode));
     }
     
     

@@ -2369,7 +2369,7 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
     
     deserializeRecordFromNode: function(importer, node) { 
         var spec = JSON.unserialize(node.getElementsByTagName("definition")[0].textContent);
-        var Rec = lively.data.DOMRecord.prototype.create(spec);
+        var Rec = lively.data.DOMNodeRecord.prototype.create(spec);
         var model = new Rec(importer, node);
         var id = node.getAttribute("id");
         if (id) importer.addMapping(id, model); 
@@ -3338,22 +3338,6 @@ Object.extend(PieMenuMorph, {
 	PieMenuMorph.undoer = null;
     }
 });
-
-Widget.addMethods({
-    
-    deserializeModelFromNode: function(importer, node) {    
-	// for Fabrik widget deserialization
-        console.log(" unserialize node " + node.id)
-        if (node.textContent)
-            var spec = JSON.unserialize(node.textContent);
-        else
-            var spec = {};
-        var Rec = lively.data.DOMRecord.prototype.create(spec);
-        var model = new Rec(importer, node);
-        return model;
-    },
-});
-
 
 }.logCompletion('loaded Widgets.js')); // end using
 

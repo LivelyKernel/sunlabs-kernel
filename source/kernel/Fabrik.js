@@ -760,7 +760,7 @@ Widget.subclass('PinHandle', {
         $super();
         
         // Why isnt this handled at a central point?????
-        this.formalModel = ComponentModel.newModel({Name: pinName, Type: "regular"});
+        this.formalModel = ComponentModel.newModel({Name: pinName, PinType: "regular"});
         this.ownModel(this.formalModel);
 
         //this.formalModel = Record.newPlainInstance({Name: pinName, Type: "regular"});
@@ -768,9 +768,6 @@ Widget.subclass('PinHandle', {
         //this.type = "regular";
         this.component = component;
         this.initializeTransientState();
-        
-        
-        // this.rawNode.appendChild(this.getModel().rawNode);
     },
     
     initializeTransientState: function() {
@@ -783,12 +780,12 @@ Widget.subclass('PinHandle', {
     },
     
     isInputPin: function() {
-        return this.formalModel.getType() === "input"   
+        return this.formalModel.getPinType() === "input"   
         //return  this.type === "input";
     },
     
     becomeInputPin: function() {
-        this.formalModel.setType("input");
+        this.formalModel.setPinType("input");
         //this.type = "input" 
         if (this.morph) this.morph.setupInputMorphStyle();
     },
@@ -803,15 +800,6 @@ Widget.subclass('PinHandle', {
             this.morph.setupInputMorphStyle();
         return this.morph;
     },
-    
-    // deserialize: function($super, importer, rawNode) {
-    //     $super(importer, rawNode);        
-    //     // var records = this.rawNode.getElementsByTagName('record')
-    //     //         if(records.length > 0) {
-    //     //             this.formalModel = this.deserializeModelFromNode(importer, records[0]);
-    //     //             this.formalModel.owner = this; // remember the component diretly in a non persisten way 
-    //     };
-    // },
     
     setValue: function(value) {
         this.component.formalModel["set" + this.getName()](value);
@@ -1191,20 +1179,6 @@ Widget.subclass('PinConnector', {
         
         console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
     },
-
-    // prepareForSerialization: function($super, helperNodes) {
-    //     $super(helperNodes);
-    //     this.setTrait("bidirectional", this.isBidirectional);
-    //     this.setTrait("fromPin", this.fromPin);
-    //     this.setTrait("toPin", this.toPin);
-    // },
-
-    // deserialize: function($super, importer, rawNode) {
-    //       $super(importer, rawNode);
-    //       // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
-    //       // this.fromPin = Wrapper.prototype.getWrapperByUri(this.getTrait("fromPin"));
-    //       // this.isBidirectional = this.getTrait("bidirectional") == "true";
-    //   },
   
     // just for make things work ...
     buildView: function() {
@@ -1279,34 +1253,10 @@ BoxMorph.subclass('ComponentMorph', {
         return this;
     },
     
-    prepareForSerialization: function($super, helperNodes) {
-        $super(helperNodes);
-        this.component.prepareForSerialization(helperNodes)
-    },
-    
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-
-        console.log("+++deserialize Morph: " + this.id());
-        var uri = this.getLivelyTrait("model");
-        // this.formalModel = Wrapper.prototype.getWrapperByUri(uri);
-        // if(this.formalModel) {
-        //     this.component = this.formalModel.owner;
-        //     if(this.component)
-        //         this.component.panel = this;
-        //     else
-        //         console.log("no owner for formalModel found")
-        // } else {
-        //     console.log("no formalModel found for " + uri)
-        // }
-    },
-    
     setComponent: function(component) {
         this.component = component;
-        //this.relayToModel(component.getModel(), {Name: "Name"});
         this.formalModel = component.getModel()
         this.setupWithComponent();
-        // this.rawNode.setAttribute("model", this.formalModel.uri()); // ok, lets do this by hand...
         this.ownerWidget = component; // for serialization
     },
     
@@ -1703,62 +1653,20 @@ Widget.subclass('Component', {
         
 // FIXME Why isnt this handled at a central point?????
         this.formalModel = ComponentModel.newModel({Name: "NoName"});
-                
-        //this.addField("Name"); // just to have something for testing....
         this.formalModel.setName("Abstract Component");
         this.ownModel(this.formalModel);
-        
-              
-        // this.rawNode.appendChild(this.getModel().rawNode);
-        
+                
         this.pinHandles = [];
         
         this.initializeTransientState();
     },
     
     initializeTransientState: function() {
-
+        // to be overridden
     },
-    
-    // prepareForSerialization: function(helperNodes) {
-    //     this.pinHandles.each(function(ea){
-    //         this.rawNode.appendChild(ea.rawNode)
-    //     }, this)
-    // },
-    
+       
     deserialize: function($super, importer, rawNode) {
         $super(importer, rawNode);
-        // console.log("###deserialize " + this.id())
-        
-        // var records = this.rawNode.getElementsByTagName('record')
-        //         if (records.length > 0) {
-        //             // this.formalModel = this.deserializeModelFromNode(importer, records[0]);
-        //             this.formalModel = new lively.data.DOMNodeRecord(importer, rawNode.getElementsByTagName('record')[0])
-        //             this.formalModel.owner = this; // remember the component diretly in a non persisten way 
-        //         } else console.warn('No record for ' + this);
-        //         
-        // var widgets = [];        
-        // $A(this.rawNode.childNodes).each(function(node) {
-        //     console.log(" node: "+ node.id)
-        //     if (node.localName == "widget") {
-        //         var type = Wrapper.getEncodedType(node);
-        //         console.log(" found widget node (" + node.id + ")")
-        //         if (node.wrapper) {
-        //             widgets.push(node.wrapper)
-        //         } else if (type) {
-        //             var constructor = Global[type];
-        //             if (!constructor)
-        //                 console.log("ERROR: no constructor for " + type)
-        //             else {
-        //                 var widget = new constructor(importer, node);
-        //                 widgets.push(widget);
-        //             }
-        //         } else {
-        //             console.log("no type found ")
-        //         } 
-        //     }
-        // });
-        // this.setupChildWidgets(widgets);
         this.initializeTransientState();
     },
     
@@ -1771,8 +1679,6 @@ Widget.subclass('Component', {
         this.panel = new this.morphClass(bounds);
         this.morph = this.panel;
         this.panel.setComponent(this);
-       
-        
        
         // this.setupHandles();
         // Fix for adding to Fabrik with addMorph()
@@ -2222,13 +2128,6 @@ Component.subclass('FabrikComponent', {
         $super()
     },
     
-    prepareForSerialization: function($super, helperNodes) {
-        $super(helperNodes);
-        // this.connectors.each(function(ea){
-        //    this.rawNode.appendChild(ea.rawNode)
-        // }, this)
-    },
-
     setupChildWidgets: function($super, widgets) {
         console.log("///////////setupChildWidgets: " + widgets.length)
         $super(widgets);
@@ -2259,7 +2158,6 @@ Component.subclass('FabrikComponent', {
     
     // can be called when this.morph does not exist, simply adds components and wires them
     plugin: function(component) {
-        // this.rawNode.appendChild(component.rawNode);
         
         if (this.components.include(component)) {
             console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
@@ -2273,8 +2171,6 @@ Component.subclass('FabrikComponent', {
 
     unplug: function(component) {
         this.components = this.components.reject(function(ea) { return ea === component });
-        // if (this.rawNode && $A(this.rawNode.childNodes).include(component.rawNode))
-        //    this.rawNode.removeChild(component.rawNode);
         component.fabrik = null;
     },
     

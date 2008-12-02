@@ -207,7 +207,9 @@ Object.subclass('lively.data.Wrapper', {
 		extraNodes.push(arr.appendChild(NodeFactory.createNL()));
 	    }, this);
 	    if (!abort) { 
-		appendNode(arr);
+	        //console.assert($A(this.rawNode.getElementsByTagName("array")).select(function(ea){ 
+                //    return ea.getAttribute("name") == prop }).length == 1, "ERROR: node with " + prop + " is already in raw Node");
+                appendNode(arr)
 	    }
 	} else if (prop === 'rawNode' || prop === 'defs') { // necessary because nodes get serialized
 	    return;
