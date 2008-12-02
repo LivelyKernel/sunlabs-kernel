@@ -235,14 +235,17 @@ Widget.subclass('lively.ide.BasicBrowser', {
         
         if (oldN1) {
             var newN1 = this.nodesInPane('Pane1').detect(function(ea) { return ea.target === oldN1.target });
+			if (newN1) newN1.mode = oldN1.mode;
             this.setPane1Selection(newN1, true);
         }
         if (oldN2) {
             var newN2 = this.nodesInPane('Pane2').detect(function(ea) { return ea.target === oldN2.target });
+			if (newN2) newN2.mode = oldN2.mode;
             this.setPane2Selection(newN2, true);
         }
         if (oldN3) {
             var newN3 = this.nodesInPane('Pane3').detect(function(ea) { return ea.target === oldN3.target });
+			if (newN3) newN3.mode = oldN3.mode;
             this.setPane3Selection(newN3, true);
         }
     },
