@@ -592,7 +592,6 @@ var Properties = {
 // bootstrap namespaces
 Object.subclass('Namespace', {
     
-    isNamespace: true,
     
     initialize: function(context, nsName) {
         this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
@@ -607,7 +606,7 @@ Object.subclass('Namespace', {
     
     subNamespaces: function(recursive) {
         return this.gather('subNamespaces',
-                    function(ea) { try { return ea && ea.isNamespace && ea !== this } catch(e) {return false} },
+			   function(ea) { try { return ea instanceof Namespace && ea !== this } catch(e) {return false} },
                     recursive);
     },
     

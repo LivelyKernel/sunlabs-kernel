@@ -1391,7 +1391,7 @@ this.Shape.subclass('lively.scene.Group', {
 	// FIXME this should mimic relativize in Morph
 	var disp = this.pvtGetTranslate() || pt(0, 0);
 	p = p.subPt(disp);
-	return this.content.any(function(item) { return item.containsPoint(p); });
+	return this.content.some(function(item) { return item.containsPoint(p); });
     },
 
     origin: function(shape) { 
