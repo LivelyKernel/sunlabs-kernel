@@ -870,7 +870,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 					var list = tools.SourceControl
 						.searchFor(searchName)
 						.select(function(ea) {
-							if (!ea.name.include(searchName)) return true;
+							if (!ea.name || !ea.name.include(searchName)) return true;
 							var src = ea.getSourceCodeWithoutSubElements();
 							return src.indexOf(searchName) !== src.lastIndexOf(searchName)
 					}); // we don't want pure implementors, but implementors which are also senders should appear
