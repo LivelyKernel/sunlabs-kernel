@@ -20,7 +20,7 @@ thisModule.removeDummyNamespace = function() {
 };
 
 // Browser related tests
-TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
+TestCase.subclass('lively.Tests.ToolsTests.BrowserTests', {
     
     shouldRun: true,
     
@@ -62,11 +62,10 @@ TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
     tearDown: function() {
         thisModule.removeDummyNamespace();
     }
-        
-    
 
-    
 });
+
+thisModule.BrowserTests.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {});
 
 TestCase.subclass('lively.Tests.ToolsTests.NodeTest', {
     setUp: function() {
@@ -751,14 +750,14 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     
     testParseTestKlass: function() {
 		// Class definition of AnotherFileParserTest1
-		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 278, 498);
+		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 277, 497);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
 
 	testParseFailingAddMethods: function() {
 		// addMethods of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 2976, 3028);
+		var src = this.srcFromLinesOfFile('Core.js', 2985, 3037);
 		var descriptor = this.sut.callOMeta('klassExtensionDef', src);
 		this.assertEqual(descriptor.type, 'klassExtensionDef');
 	}
