@@ -1095,6 +1095,12 @@ lively.data.Wrapper.subclass('Morph', {
 	this.initializeTransientState();
     },
 
+shallowCopy: function () {
+	// Return a copy of this morph with no submorphs, but 
+	//  with the same shape and shape attributes as this
+	return new Morph(this.shape.copy()); 
+	},
+
     initializePersistentState: function(shape) {
 	// a rect shape by default, will change later
 	this.shape = shape;
@@ -2412,6 +2418,7 @@ Morph.addMethods({
 	    ["edit style", function() { new StylePanel(this).open()}],
 	    ["drill", this.showOwnerChain.curry(evt)],
 	    ["grab", this.pickMeUp.curry(evt)],
+	    ["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
 	    ["reset rotation", this.setRotation.curry(0)],
 	    ["reset scaling", this.setScale.curry(1)],
 	    [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
