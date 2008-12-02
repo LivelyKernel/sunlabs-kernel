@@ -165,8 +165,10 @@ Object.extend(Node.prototype, {
   hasChildNodes: function() { return this.childNodes.length > 0; },
 
   deepClone: function() {
+      // KP: added _fxBegin, _fxShape to blacklist. This is obviously a workaround
+      //,  objects should be able to declare their blacklists
     var clone = Object.deepClone(this,
-      '_ownerDocument', '_parentNode', '_ownerElement');
+	'_ownerDocument', '_parentNode', '_ownerElement', '_fxBegin', '_fxShape');
     if (this._ownerDocument)
       clone._ownerDocument = this._ownerDocument;
     if (this.childNodes)
