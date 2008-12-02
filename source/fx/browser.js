@@ -635,7 +635,7 @@ var FilterModule = {
     newEffect: function(filterUri, element) {
 	// the implementation goes here:
 	var effect = lively.data.FragmentURI.getElement(filterUri).firstChild;
-	console.log('found filter ' + effect);
+	//console.log('found filter ' + effect);
 	if (effect.localName == 'feGaussianBlur') {
 	    fx.dom.render(effect);
 	    var fxNode = new Packages.com.sun.scenario.scenegraph.SGEffect();
@@ -775,7 +775,7 @@ fx.dom.renderers[SVGImageElement.tagName] = function(element) {
 	var path = element.getAttributeNS(Namespace.XLINK, "href");
 	if (path) {
 	    var relativePath = path.match("^http://localhost/(.*)$");
-	    console.log('relative path ' + relativePath[1]);
+	    //console.log('relative path ' + relativePath[1]);
 	    // FIXME: the following image translation is of course
 	    // bogus, but it matches the rest of the FX port for now
 	    var file = new Packages.java.io.File("../kernel/" + relativePath[1]); 
@@ -783,7 +783,7 @@ fx.dom.renderers[SVGImageElement.tagName] = function(element) {
 	    var imgWidth = awtImage.getWidth();
 	    var imgHeight = awtImage.getHeight();
 	    if ((imgWidth > 0 && imgWidth != width) || (imgHeight > 0 && imgHeight != height)) {
-		console.log('scaling image from ' + [imgWidth, imgHeight] + ' to ' + [width, height]);
+		//console.log('scaling image from ' + [imgWidth, imgHeight] + ' to ' + [width, height]);
 		awtImage = awtImage.getScaledInstance(width, height, awtImage.SCALE_DEFAULT);
 	    }
 	    img.setImage(awtImage);
