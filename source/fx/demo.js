@@ -8,6 +8,7 @@
  * other countries.
  */ 
 
+
 load('browser.js');
 load('dom/index.xhtml.js');
 
@@ -32,15 +33,15 @@ Loader.scriptInDOM = function(url) {
     return Loader.loadedFiles.include(url);
 }
 
+Config.rollOut = true;  // config for quick setup
+
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
 
 XenoMorph.addMethods({
-
     setFXComponent: function(component) {
 	this.foRawNode._fxSetComponent(component);
     }
-
 });
 
 
@@ -122,6 +123,7 @@ function morphicMain() {
     console.log('created empty world ' + world);
     world.displayOnCanvas(canvas);
     console.log("displayed world");
+if (!Config.rollOut) {
     var colors = Color.wheel(4);
     var loc = pt(150, 450); 
     var widgetExtent = pt(70, 30);
@@ -131,13 +133,10 @@ function morphicMain() {
     var widget = Morph.makeRectangle(loc.extent(widgetExtent));
     widget.setFill(colors[0]);
     world.addMorph(widget);
-     
-     // Create a sample ellipse
 
+    // Create a sample ellipse
     widget = new Morph(new lively.scene.Ellipse(loc.addPt(dx).extent(widgetExtent)));
-    
     widget.applyStyle({fill:colors[1], borderWidth: 1, borderColor:Color.black});
-
     world.addMorph(widget);
 
      // Create a sample line
@@ -145,7 +144,6 @@ function morphicMain() {
      widget = Morph.makeLine([pt(0,15), pt(70,15)], 2, Color.black);
     widget.setPosition(loc);
      world.addMorph(widget);
-
      
      // Create a sample polygon
      widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
@@ -156,10 +154,8 @@ function morphicMain() {
      // Create sample text widgets
     widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
     world.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
-    
     widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
     world.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null})); 
-
 
     if (true) {  // Make a star
 	var makeStarVertices = function(r,center,startAngle) {
@@ -181,6 +177,7 @@ function morphicMain() {
             widget.startStepping(60, "rotateBy", 0.1);
 	}
     }
+}	// end of rollOut block
 
     if (Config.showClock) {
         var widget = new ClockMorph(pt(80, 100), 50);
@@ -194,25 +191,15 @@ function morphicMain() {
 	EngineMorph.makeEngine(world, pt(400, 5))
 
     
-    // piano
-    if (false) { // Can be opened from menu - show it later in demo
-	module('Main.js').requires('Examples.js').toRun(function() {
-        var m = new PianoKeyboard(pt(100, 650));
-        m.scaleBy(1.5);  
-	//m.rotateBy(-0.2);
-    	world.addMorph(m);
-    }); }
-    //return;
-
-    swingDemo();
+    if (!Config.rollOut) swingDemo();
     //swingFileChooserDemo();
     
-    if (Config.showTester)
+    if (Config.showTester && !Config.rollOut)
         require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
 
     // tile script environment
     Config.activateTileScripting = true;
-    if (Config.activateTileScripting) {
+    if (Config.activateTileScripting && !Config.rollOut) {
         require('TileScripting.js').toRun(function() {
             lively.TileScripting.ScriptEnvironment.open();
             world.topSubmorph().moveBy(pt(820, 80));
