@@ -77,6 +77,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
     buildView: function (extent) {
  
+		extent = extent || this.initialViewExtent;
+
         this.start();
  
         var panel = PanelMorph.makePanedPanel(extent, [
@@ -346,11 +348,11 @@ Object.subclass('lively.ide.BrowserNode', {
  
     newSource: function(newSource) {
         // throw dbgOn(new Error("Shouldn't try to eval and save things now..."));
-        if (!this.evalSource(newSource)) {
-            console.log('couldn\'t eval');
-        }
         if (!this.saveSource(newSource, tools.SourceControl))
             console.log('couldn\'t save');
+		if (!this.evalSource(newSource)) {
+            console.log('couldn\'t eval');
+        }
     },
  
     evalSource: function(newSource) {
@@ -761,16 +763,17 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
  
     buttonSpecs: function() {
-        var node = this;
+		var browser = this.browser;
+		var myPane = browser.paneNameOfNode(this);
         return [
             {label: 'classes',action: function() {
-                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'classes' }) 
+                browser.nodesInPane(myPane).each(function(ea) { ea.mode = 'classes' }) 
             }},
             {label: 'functions', action: function() {
-                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'functions' })
+                browser.nodesInPane(myPane).each(function(ea) { ea.mode = 'functions' })
             }},
             {label: 'objects', action: function() {
-                node.siblingNodes().concat([node]).each(function(ea) { ea.mode = 'objects' })
+                browser.nodesInPane(myPane).each(function(ea) { ea.mode = 'objects' })
             }}
         ]
     },
@@ -884,7 +887,30 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 					var title = 'implementers of' + searchName;
 					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]
     	];
-	} 
+	},
+
+	evalSource: function(newSource) {
+		if (!this.browser.evaluate) return false;
+		var className = this.target.className;
+		if (!Class.forName(className)) {
+			console.log('Didn\'t found class');
+			return false
+		}
+		var methodName = this.target.name;
+		var methodString = this.target.getSourceCode();
+		methodString = methodString.slice(methodString.indexOf(':')+1); // remove method name
+		if (methodString.endsWith(',')) methodString = methodString.slice(0, methodString.length-1); // remove ,
+		var methodDef = className + ".prototype." + methodName + " = " + methodString;
+		try {
+			eval(methodDef);
+		} catch (er) {
+			console.log("error evaluating method " + methodDef + ': ' + er);
+			return false;
+		}
+		console.log('Successfully evaluated #' + methodName);
+        return true;
+    }
+
 });
  
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
@@ -946,7 +972,24 @@ wantsButton: function() {
 
 });
 
-ide.BrowserCommand.subclass('lively.ide.AlphabetizeCommand', {
+ide.BrowserCommand.subclass('lively.ide.EvaluateCommand', {
+
+	wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		if (this.browser.evaluate) return 'Evaluation off';
+		return 'Evaluation on'
+	},
+
+	trigger: function() {
+		this.browser.evaluate = !this.browser.evaluate;
+	}
+
+});
+
+ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 
 	wantsButton: function() {
 		return true;
