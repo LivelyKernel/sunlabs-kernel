@@ -5,9 +5,26 @@ function print(string) {
     
 
 var window = this;
-window.load = function load(arg) { applet.load(arg); }
 
- function fxSceneGraphTest(panel) {
+
+function load(file) {
+    var match = file.match('^\.\./kernel/(.*)');
+    if (match) {
+	print('tinkering with load ' + match[1]);
+	return applet.load('kernel/' + match[1]);
+    } 
+    match = file.match('^dom/(.*)');
+    if (match) {
+	print('tinkering with load ' + match[1]);
+	return applet.load('../fx/dom/' + match[1]);
+    }
+    print('tinkering with load ' + file);
+    return applet.load("../fx/" + file);
+}
+
+
+
+function fxSceneGraphTest(panel) {
 
     var width = 500;
     var height = 300;
@@ -36,27 +53,9 @@ function run() {
 
     applet.setContentPane(panel);
     fxSceneGraphTest(panel);
-
-    load('kernel/rhino-compat.js');
-    
-    load('kernel/JSON.js');
-    load('kernel/miniprototype.js'); 
-    load('kernel/defaultconfig.js');
-    
-    Config.useTransformAPI = false;
-    Config.useGetTransformToElement = false;
-    Config.logDnD = true;
-    //Config.fakeFontMetrics = false;
-    //Config.fontMetricsFromSVG = true;
-    load('kernel/Base.js');
-    
-    load('fx/dom/mico.js');
-    load('fx/dom/dom2-core.js');
-    load('fx/dom/dom2-events.js');
-    load('fx/dom/dom2-html.js');
-    load('fx/dom/svg1.1.js');
-    print('loaded DOM implementation in JS');
-    
+    applet.load('../fx/demo.js');
+    applet.setContentPane(browser.panel);
+    //    load('../fx/browser.js');
 }
 
 run();
