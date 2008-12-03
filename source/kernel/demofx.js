@@ -233,7 +233,11 @@ using().module('lively.demofx').run(function() {
 		{$:"Group",
 		 //cache: true,
 		 transforms: [{$:"Translate", X: {$:"Bind", to: "_CanvasX"}, Y: {$:"Bind", to: "_CanvasY"}},
-			      {$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}, X: canvasWidth/2, Y: canvasHeight/2}],
+			      {$:"Translate", X: canvasWidth/2, Y: canvasHeight/2},
+			      {$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}},
+			      {$:"Translate", X: -canvasWidth/2, Y: -canvasHeight/2}],
+		 // use following when anchor angle is correctly supported
+		 //{$:"Rotate", Angle: {$:"Bind", to: "ImageRotation"}, X: canvasWidth/2, Y: canvasHeight/2}],
 		 // very dirty, mixing scene graph with morphs, parent doesnt know that it has a submorph
 		 // plus, the array will be notified of changes, but we'd like the enclosing Group to be notified
 		 $var: "imageContainer",
@@ -466,7 +470,7 @@ using().module('lively.demofx').run(function() {
 /*		      transforms: [{$:"Translate", 
 				    //X: {$:"Bind", eval: "(twidth - control.thumbImage.layoutBounds.width) / 2 - control.thumbImage.layoutBounds.minX"}, Y: 0}
 				    X: 0, Y: 0} ], */
-		      content: [{$:"Bind", to: "ThumbImage", debugString: 'here'}] // eval: "control.thumbImage"}]
+		      content: [{$:"Bind", to: "ThumbImage", /*debugString: 'here'*/}] 
 		     },
 		     {$:"Rectangle",
                       y: theight * 0.72,
