@@ -2,6 +2,11 @@
 /* DO NOT EDIT */
 
 grant {
-  permission java.security.AllPermission;
+//       permission java.security.AllPermission;
+	permission java.io.FilePermission "${user.home}/-", "read";
+	permission java.lang.RuntimePermission "createClassLoader";
+	permission java.lang.RuntimePermission "accessDeclaredMembers";
+	permission java.lang.RuntimePermission "getProtectionDomain";
+	permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
 };
 
