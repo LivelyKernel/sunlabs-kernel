@@ -29,7 +29,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
     initialize: function($super) { 
         $super();
- 		//test123
         // create empty onUpdate functions
         var paneNames = ['Pane1', 'Pane2', 'Pane3'];
         paneNames.forEach(function(ea) {
@@ -49,6 +48,12 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.relayToModel(model, spec);
     },
  
+	mySourceControl: function() {
+		var ctrl = lively.Tools.SourceControl;
+		if (!ctrl) throw dbgOn(new Error('Browser has no SourceControl!'));
+		return ctrl;
+	},
+
     rootNode: function() {
         throw dbgOn(new Error('To be implemented from subclass'));
     },
@@ -73,6 +78,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 
     start: function() {
         this.setPane1Content(this.rootNode().childNodesAsListItems());
+		this.mySourceControl().registerBrowser(this);
     },
  
     buildView: function (extent) {
@@ -213,7 +219,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.selectedNode().newSource(methodString);
         this.nodeChanged(this.selectedNode());
     },
- 
+
     nodesInPane: function(paneName) { // panes have listItems, no nodes
          var listItems = this['get' + paneName + 'Content']();
          if (!listItems) return [];
@@ -228,29 +234,45 @@ Widget.subclass('lively.ide.BasicBrowser', {
         return siblings.without(node);
     },
     
-	allChanged: function() {
+    hasUnsavedChanges: function() {
+        return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
+    },
+    
+	allChanged: function(keepUnsavedChanges) {
 	      // FIXME remove duplication
         var oldN1 = this.getPane1Selection();
         var oldN2 = this.getPane2Selection();
         var oldN3 = this.getPane3Selection();
+
+		var src;
+		if (keepUnsavedChanges && this.hasUnsavedChanges())
+			src = this.panel.sourcePane.innerMorph().textString;
+
         this.start();
-        
         if (oldN1) {
             var newN1 = this.nodesInPane('Pane1').detect(function(ea) { return ea.target === oldN1.target });
+			if (!newN1) newN1 = this.nodesInPane('Pane1').detect(function(ea) { return ea.asString() === oldN1.asString() });
 			if (newN1) newN1.mode = oldN1.mode;
             this.setPane1Selection(newN1, true);
         }
         if (oldN2) {
             var newN2 = this.nodesInPane('Pane2').detect(function(ea) { return ea.target === oldN2.target });
+			if (!newN2) newN2 = this.nodesInPane('Pane2').detect(function(ea) { return ea.asString() === oldN2.asString() });
 			if (newN2) newN2.mode = oldN2.mode;
             this.setPane2Selection(newN2, true);
-        }
+        }	
         if (oldN3) {
             var newN3 = this.nodesInPane('Pane3').detect(function(ea) { return ea.target === oldN3.target });
+			if (!newN3) newN3 = this.nodesInPane('Pane3').detect(function(ea) { return ea.asString() === oldN3.asString() });
 			if (newN3) newN3.mode = oldN3.mode;
             this.setPane3Selection(newN3, true);
         }
-    },
+
+		if (src) {
+			this.setSourceString(src);
+			this.panel.sourcePane.innerMorph().showChangeClue(); // FIXME
+		}
+	},
 
     nodeChanged: function(node) {
         // currently update everything, this isn't really necessary
@@ -261,6 +283,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		// be careful -- this can lead to overwritten source code
 		this.selectNode(node);
 		// this.setSourceString(node.sourceString());
+	},
+    
+	signalNewSource: function() {
+		this.mySourceControl().updateBrowsers(this);
 	},
 
 	updateTitle: function() {
@@ -353,6 +379,7 @@ Object.subclass('lively.ide.BrowserNode', {
 		if (!this.evalSource(newSource)) {
             console.log('couldn\'t eval');
         }
+		this.browser.signalNewSource();
     },
  
     evalSource: function(newSource) {
@@ -979,8 +1006,8 @@ ide.BrowserCommand.subclass('lively.ide.EvaluateCommand', {
 	},
 
 	asString: function() {
-		if (this.browser.evaluate) return 'Evaluation off';
-		return 'Evaluation on'
+		if (this.browser.evaluate) return 'Turn eval off';
+		return 'Turn eval on'
 	},
 
 	trigger: function() {
@@ -1293,6 +1320,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         this.cachedFullText = {};
         this.editHistory = {};
         this.modules = {};
+		this.registeredBrowsers = [];
     },
     
     rootFragmentForModule: function(moduleOrModuleName) {
@@ -1373,8 +1401,25 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     
     preLoadFileNames: function($super) {
 		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
-		return [ 'Tests/ToolsTests.js' ]
+		return [ 'Tests/ToolsTests.js', 'test.js']
     },
+
+	// browser stuff
+	registerBrowser: function(browser) {
+		if (this.registeredBrowsers.include(browser)) return;
+		this.registeredBrowsers.push(browser);
+	},
+	
+	unregisterBrowser: function(browser) {
+		this.registeredBrowsers = this.registeredBrowsers.without(browser);
+	},
+	
+	updateBrowsers: function(changedBrowser) {
+		this.registeredBrowsers.without(changedBrowser).forEach(function(ea) {
+			ea.allChanged(true);
+		});
+	},
+	
 });
  
 // see also lively.Tools.startSourceControl

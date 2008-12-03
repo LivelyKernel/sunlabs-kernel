@@ -74,16 +74,21 @@ thisModule.BrowserTests.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
 		});
 		var browser = new lively.ide.BasicBrowser();
 		this.createNode = function(children, target) { return new mockNodeClass(target, browser, children) };
-		browser.rootNode = this.createNode;
+		var root = this.createNode();
+		browser.rootNode = function() { return root };
 		this.browser = browser;
 	},
 
 	testSelectNodeInFirstPane: function() {
 		var browser = this.browser;
-		browser.rootNode.children = [this.createNode(), this.createNode()];
-		browser.openIn(WorldMorph.current());
-	}
-
+		var node1 = this.createNode();
+		var node2 = this.createNode();
+		browser.rootNode().children = [node1, node2];
+		browser.buildView();
+		this.assertEqual(browser.nodesInPane('Pane1').length, 2);
+		browser.selectNode(node1);
+		this.assertIdentity(node1, browser.selectedNode());
+	},
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.NodeTest', {
