@@ -1650,6 +1650,40 @@ TestCase.subclass('FabrikConverterTest', {
 
 SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
 
+    assertFabrikWithTwoTextComponentsAndConnector: function(fabrik) {
+        this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");
+        
+        this.assert(fabrik.components, "components are not defined");
+        this.assertEqual(fabrik.components.length, 2, "wrong number of components");
+
+        this.assert(fabrik.pinHandles, "pinHandles are not defined");
+        this.assertEqual(fabrik.pinHandles.length, 0, "wrong number of pinHandles");
+
+        this.assertEqual(fabrik.connectors.length, 1, "wrong number of connectors");
+               
+        var text1 = fabrik.components[0];
+        this.assert(text1 instanceof TextComponent , "first text component is no TextComponent");
+        var text2 = fabrik.components[1];
+        this.assert(text2 instanceof TextComponent , "second text component is no TextComponent");
+                        
+        this.assert(text1.pinHandles, "no pinHandles in component");              
+        this.assertEqual(text1.pinHandles.length, 1, "wrong number of pinHandles in component");
+        
+        var pin1 = text1.pinHandles[0];
+        this.assert(pin1 instanceof PinHandle , "no text1 pin (" + pin1 + ")");
+        this.assertEqual(pin1.getName(), "Text", "pinHandle1 forgot its name");
+        var pin2 = text2.pinHandles[0];
+
+        this.assert(pin2 instanceof PinHandle , "no text2 pin (" + pin2 + ")");
+        this.assertEqual(pin2.getName(), "Text", "pinHandle2 forgot its name");        
+        
+        var connector1 = fabrik.connectors[0];
+        this.assert(connector1 instanceof PinConnector , "connector1 is no PinConnecotr (" + connector1 + ")");
+        
+        this.assertIdentity(connector1.fromPin, text1.getPin("Text"), " wrong fromPin")
+        this.assertIdentity(connector1.toPin, text2.getPin("Text"), " wrong toPin")        
+    },
+
     testLoadFabrik: function() {
         // generate with textmate replace: "(<.*>$)" with: "'$1' +"
         var world = this.loadWorldFromSource(
@@ -1957,6 +1991,13 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
                     		'<field name="panel" ref="531:FabrikMorph"/>' +
                     		'<field name="morph" ref="531:FabrikMorph"/>' +
                     	'</widget>' +
+                    	'<widget id="610:PinConnector">' +
+                			'<field name="fromPin" ref="525:PinHandle"/>' +
+                			'<field name="toPin" ref="529:PinHandle"/>' +
+                			'<field name="isBidirectional">false</field>' +
+                			'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                			'<field name="morph" ref="611:ConnectorMorph"/>' +
+                		'</widget>' +
                     	'<field name="fabrik" ref="521:FabrikComponent"/>' +
                     	'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":100,"y":100}]]></field>' +
                     '</g>' +
@@ -1966,44 +2007,12 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         this.assert(world instanceof WorldMorph, "world is no WorldMorph");
         var fabrikMorph = world.submorphs[0];
         var fabrik = fabrikMorph.component;
-        this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");
         
-
-        this.assert(fabrik.components, "components are not defined");
-        this.assertEqual(fabrik.components.length, 2, "wrong number of components");
-
-        this.assertEqual(fabrik.connectors.length, 1, "wrong number of connectors");
-               
-        var text1 = fabrik.components[0];
-        this.assert(text1 instanceof TextComponent , "first text component is no TextComponent");
-        var text2 = fabrik.components[1];
-        this.assert(text2 instanceof TextComponent , "second text component is no TextComponent");
-                        
-        this.assert(text1.pinHandles, "no pinHandles in component");              
-        this.assertEqual(text1.pinHandles.length, 1, "wrong number of pinHandles in component");
-        
-        var pin1 = text1.pinHandles[0];
-        this.assert(pin1 instanceof PinHandle , "no text1 pin (" + pin1 + ")");
-        this.assertEqual(pin1.getName(), "Text", "pinHandle1 forgot its name");
-        var pin2 = text2.pinHandles[0];
-
-        this.assert(pin2 instanceof PinHandle , "no text2 pin (" + pin2 + ")");
-        this.assertEqual(pin2.getName(), "Text", "pinHandle2 forgot its name");        
-        
-        var connector1 = fabrik.connectors[0];
-        this.assert(connector1 instanceof PinConnector , "connector1 is no PinConnecotr (" + connector1 + ")");
-    
-        
-        this.assertIdentity(connector1.fromPin, text1.getPin("Text"), " wrong fromPin")
-        this.assertIdentity(connector1.toPin, text2.getPin("Text"), " wrong toPin")
-        
-        
-        
-        
+        this.assertFabrikWithTwoTextComponentsAndConnector(fabrik);
         //this.showMyWorld(world)
         
     },
-
+    
     testLoadFabrikWidgets: function() {
         // generate with textmate replace: "(<.*>$)" with: "'$1' +"
         var world = this.loadWorldFromSource(
@@ -2021,19 +2030,91 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
                     		'</record>' +
                     		'<field name="formalModel" ref="379:anonymous_103"/>' +
                     		'<field name="actualModel" ref="379:anonymous_103"/>' +
-                    		'<array name="pinHandles"/>' +
-                    		'<array name="components">' +
+                    		'<array name="pinHandles">' + 
                     		'</array>' +
+                    		'<array name="components">' +
+                    			'<item ref="523:TextComponent"/>' +
+                    			'<item ref="527:TextComponent"/>' +
+                    		'</array>' +
+                    		'<array name="connectors">' +
+                    			'<item ref="610:PinConnector"/>' +
+                    		'</array>' +
+                    		'<widget id="527:TextComponent">' +
+                    			'<record id="528:anonymous_141">' +
+                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                    				'<field name="Text"><![CDATA["null"]]></field>' +
+                    			'</record>' +
+                    			'<field name="formalModel" ref="528:anonymous_141"/>' +
+                    			'<field name="actualModel" ref="528:anonymous_141"/>' +
+                    			'<array name="pinHandles">' +
+                    				'<item ref="529:PinHandle"/>' +
+                    			'</array>' +
+                    			'<widget id="529:PinHandle">' +
+                    				'<record id="530:anonymous_142">' +
+                    					'<field name="Name"><![CDATA["Text"]]></field>' +
+                    					'<field name="PinType"><![CDATA["regular"]]></field>' +
+                    					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                    				'</record>' +
+                    				'<field name="formalModel" ref="530:anonymous_142"/>' +
+                    				'<field name="actualModel" ref="530:anonymous_142"/>' +
+                    				'<field name="component" ref="527:TextComponent"/>' +
+                    				'<array name="connectors">' +
+                    					'<item ref="610:PinConnector"/>' +
+                    				'</array>' +
+                    			'</widget>' +
+                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    			'<field name="panel" ref="584:TextComponentMorph"/>' +
+                    		'</widget>' +
+                    		'<widget id="523:TextComponent">' +
+                    			'<record id="524:anonymous_139">' +
+                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                    				'<field name="Text"><![CDATA["null"]]></field>' +
+                    			'</record>' +
+                    			'<field name="formalModel" ref="524:anonymous_139"/>' +
+                    			'<field name="actualModel" ref="524:anonymous_139"/>' +
+                    			'<array name="pinHandles">' +
+                    				'<item ref="525:PinHandle"/>' +
+                    			'</array>' +
+                    			'<widget id="525:PinHandle">' +
+                    				'<record id="526:anonymous_140">' +
+                    					'<field name="Name"><![CDATA["Text"]]></field>' +
+                    					'<field name="PinType"><![CDATA["regular"]]></field>' +
+                    					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                    				'</record>' +
+                    				'<field name="formalModel" ref="526:anonymous_140"/>' +
+                    				'<field name="actualModel" ref="526:anonymous_140"/>' +
+                    				'<field name="component" ref="523:TextComponent"/>' +
+                    				'<array name="connectors">' +
+                    					'<item ref="610:PinConnector"/>' +
+                    				'</array>' +
+                    			'</widget>' +
+                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    		'</widget>' +
+                    		'<widget id="610:PinConnector">' +
+                    			'<field name="fromPin" ref="525:PinHandle"/>' +
+                    			'<field name="toPin" ref="529:PinHandle"/>' +
+                    			'<field name="isBidirectional">false</field>' +
+                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    		'</widget>' +
                     	'</widget>' +
                     	'<field name="fabrik" ref="378:FabrikComponent"/>' +
                     '</g>' +
                 '</g>'+ 
-            '</svg>');
-        
+            '</svg>');        
         this.assert(world instanceof WorldMorph, "world is no WorldMorph");
         var fabrikMorph = world.submorphs[0];
         var fabrik = fabrikMorph.component;
-        this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");        
+        
+        this.assertFabrikWithTwoTextComponentsAndConnector(fabrik);    
+        
+        
+        fabrikMorph.remove();
+        
+        // fabrik.openIn(world);
+        // this.showMyWorld(world);
+        
     },
     
     
@@ -2049,10 +2130,10 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         pin1.connectTo(pin2); // Todo: it seems, that building
 	
         fabrik.buildView(pt(400, 400));
-        this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
         
-        // connecting at this point would work
-     
+        this.assertIdentity(pin2, text2.getPin("Text"), "pin2 has changed");
+        this.assert(pin2.morph, "pin morph2 has no morph");
+        
         this.assertIdentity(pin2.morph.owner, text2.panel, "pin morph2 is lost when connecting before building view");
     },
 

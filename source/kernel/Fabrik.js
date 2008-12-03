@@ -752,13 +752,9 @@ Widget.subclass('PinHandle', {
         //this.name = pinName;
         //this.type = "regular";
         this.component = component;
-        this.initializeTransientState();
-    },
-    
-    initializeTransientState: function() {
         this.connectors = [];            
     },
-
+    
     getName: function() {
         return this.formalModel.getName();
         //return this.name
@@ -860,6 +856,7 @@ Widget.subclass('PinHandle', {
         this.connectors.push(connector);
         otherPinHandle.connectors.push(connector);
         
+        
         //FIXME
         if (this.component instanceof FabrikComponent && this.component === otherPinHandle.component)
             this.component.pluginConnector(connector);
@@ -869,6 +866,7 @@ Widget.subclass('PinHandle', {
             this.component.pluginConnector(connector);
         else
             this.component.fabrik && this.component.fabrik.pluginConnector(connector);
+        
                     
         return connector;
     },
@@ -1633,28 +1631,11 @@ Widget.subclass('Component', {
     
     initialize: function($super) {
         $super();
-        
-// FIXME Why isnt this handled at a central point?????
         this.formalModel = ComponentModel.newModel({Name: "NoName"});
         this.formalModel.setName("Abstract Component");
         this.ownModel(this.formalModel);
                 
         this.pinHandles = [];
-        
-        this.initializeTransientState();
-    },
-    
-    initializeTransientState: function() {
-        // to be overridden
-    },
-       
-    deserialize: function($super, importer, rawNode) {
-        $super(importer, rawNode);
-        this.initializeTransientState();
-    },
-    
-    setupChildWidgets: function(widgets) {
-        this.pinHandles = widgets.select(function(ea){return ea instanceof PinHandle});        
     },
     
     buildView: function(optExtent) {
@@ -1728,10 +1709,13 @@ Widget.subclass('Component', {
 
     // move this to morph!! Just say addNewPinHandle. Morph must figure out where it should go.
     setupHandles: function() {
+        logCall(arguments, this);
         if (!this.panel) return;
         var offset = this.panel.bounds().height / 2 - 10;
         this.pinHandles.each(function(handle) {
-            if (!handle.morph) this.setupPinHandle(handle);
+            if (!handle.morph || (handle.morph.owner !== this.panel)) {
+                this.setupPinHandle(handle);
+            };
             handle.morph.setPosition(pt(-1 * (handle.morph.getExtent().x / 2), offset));
             offset += handle.morph.bounds().height + 10;
         }, this);
@@ -1882,10 +1866,6 @@ ComponentMorph.subclass('FabrikMorph', {
     
     initialize: function($super, bounds) {
         $super(bounds);
-    },
-    
-    initializeTransientState: function($super) {
-        $super();
     },
     
     automaticLayout: function() {
@@ -2101,28 +2081,13 @@ Component.subclass('FabrikComponent', {
 
     initialize: function($super) {
         $super(null);
-        this.initializeTransientState();
         this.components = [];
         this.connectors = [];
         return this;
     },
-  
-    initializeTransientState: function($super) {
-        $super()
-    },
     
-    setupChildWidgets: function($super, widgets) {
-        console.log("///////////setupChildWidgets: " + widgets.length)
-        $super(widgets);
-        this.components = widgets.select(function(ea) {
-            return ea instanceof Component});
-        this.connectors = widgets.select(function(ea) {
-            return ea instanceof PinConnector});
-
-    },
-  
     buildView: function($super, optExtent) {
-        //console.log("buildView for " + this);
+        console.log("buildView for " + this);
         // this.panel = PanelMorph.makePanedPanel(this.viewExtent || optExtent || this.defaultViewExtent,
         //     [['playfield', function(initialBounds){ return new FabrikMorph(initialBounds) }, pt(1,1).extentAsRectangle()]]
         // );
