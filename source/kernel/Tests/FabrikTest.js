@@ -2127,14 +2127,14 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
 	    var pin1 = text1.getPin("Text");
 	    var pin2 = text2.getPin("Text");
 	
-        pin1.connectTo(pin2); // Todo: it seems, that building
+        pin1.connectTo(pin2);
 	
         fabrik.buildView(pt(400, 400));
         
         this.assertIdentity(pin2, text2.getPin("Text"), "pin2 has changed");
         this.assert(pin2.morph, "pin morph2 has no morph");
         
-        this.assertIdentity(pin2.morph.owner, text2.panel, "pin morph2 is lost when connecting before building view");
+        this.assertIdentity(pin2.morph.owner, text2.panel, "pin morph2 is lost when connecting before building view");  
     },
 
 
@@ -2154,7 +2154,7 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         fabrik.panel.setPosition(pt(100,100));
 
         pin1.connectTo(pin2); // Todo: it seems, that building 
-
+        
         this.assertIdentity(pin2.morph.owner, text2.panel, "pin morph2 is lost");
     
         //this.showMyWorld();
@@ -2183,7 +2183,7 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         var pinMorph2 = doc.getElementById(text2.getPin("Text").morph.id());
         this.assert(pinMorph2, "pinMorph2 is not serialized");
         
-        console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
+        // console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
     }
 
 });

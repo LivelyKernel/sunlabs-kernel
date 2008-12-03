@@ -902,6 +902,7 @@ Widget.subclass('PinHandle', {
         fakePin.isFakeHandle = true;
         fakePin.originPin = this;
         fakePin.component = this.component;
+        fakePin.buildView();
         // in PinMorph.onMouseDown() fabrik.connectPins is send again after the connector morph was created
         // for adding the connector morph to the update position logic. This is redundant, how to remove this
         // without mixing model and view logic?
@@ -1164,8 +1165,8 @@ Widget.subclass('PinConnector', {
     // just for make things work ...
     buildView: function() {
         this.morph = new ConnectorMorph(null, 4, Color.blue, this);
-        if (!this.fromPin.morph) this.fromPin.buildView();
-        if (!this.toPin.morph) this.toPin.buildView();
+        if (!this.fromPin.morph) throw new Error("fromPin.morph is nil");
+        if (!this.toPin.morph) throw new Error("toPin.morph is nil");
         this.morph.formalModel.setStartHandle(this.fromPin.morph);
         this.morph.formalModel.setEndHandle(this.toPin.morph);
         this.morph.ownerWidget = this;
@@ -1175,6 +1176,7 @@ Widget.subclass('PinConnector', {
 
     // FIXME do we need this anymore? Can be directly called from pinMorph?... ?
     updateView: function(varname, source) {
+        if (!this.fromPin.morph || !this.toPin.morph) return; // nothing to update from.... 
         if (!this.morph) this.buildView();
         this.morph.updateView(varname, source);
     },
