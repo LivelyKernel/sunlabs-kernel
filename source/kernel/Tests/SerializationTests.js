@@ -9,10 +9,9 @@ Morph.subclass('DummyMorph', {
         this.formalModel = Record.newInstance({MyValue: {}},{});
     },
     
-    deserialize: function($super, importer, rawNode) {
-        console.log("DummyMorph>>deserialize: " + Exporter.stringify(d))
-        $super(importer, rawNode);
-    },
+    onDeserialize: function() {
+        this.onDesieralizeWasRun = true
+    }
 
 });
 
@@ -48,6 +47,10 @@ Widget.subclass('DummyWidget', {
         this.panel.ownerWidget = this;
         return  this.panel;
     },
+
+    onDeserialize: function() {
+        this.onDesieralizeWasRun = true
+    },
     
     open: function(){
         this.buildView();
@@ -79,55 +82,55 @@ TestCase.subclass('SerializationBaseTestCase', {
     },
     
     tearDown: function() {
-           WorldMorph.currentWorld = this.realWorld;
-           this.morphs.each(function(each){ each.remove()})
-           Global.document = this.oldGlobalDocument 
-       },
+        WorldMorph.currentWorld = this.realWorld;
+        this.morphs.each(function(each){ each.remove()})
+        Global.document = this.oldGlobalDocument 
+    },
 
-       showMyWorld: function(optWorld) {
-           if (optWorld) {
-               this.worldMorph = optWorld
-           };
-           // for debugging
-           var oldCanvas = document.getElementById('canvas');
-           var owner = oldCanvas.parentElement;
-           // hack, so that we do not run into a conflict: when calling importNode the canvas changes
-           if (this.worldMorph.rawNode.parentNode) {
-               this.worldMorph.rawNode.parentNode.removeChild(this.worldMorph.rawNode);
-           };
-           var newCanvas = document.importNode(this.canvas, true);
+    showMyWorld: function(optWorld) {
+        if (optWorld) {
+            this.worldMorph = optWorld
+        };
+        // for debugging
+        var oldCanvas = document.getElementById('canvas');
+        var owner = oldCanvas.parentElement;
+        // hack, so that we do not run into a conflict: when calling importNode the canvas changes
+        if (this.worldMorph.rawNode.parentNode) {
+            this.worldMorph.rawNode.parentNode.removeChild(this.worldMorph.rawNode);
+        };
+        var newCanvas = document.importNode(this.canvas, true);
 
-           var oldWorld = this.realWorld;
-           oldWorld.onExit();    
-           oldWorld.hands.clone().forEach(function(hand) {oldWorld.removeHand(hand)});
-           oldWorld.suspendAllActiveScripts(); // ???
-           oldWorld.remove();
+        var oldWorld = this.realWorld;
+        oldWorld.onExit();    
+        oldWorld.hands.clone().forEach(function(hand) {oldWorld.removeHand(hand)});
+        oldWorld.suspendAllActiveScripts(); // ???
+        oldWorld.remove();
 
-           var newWorld = this.worldMorph;
-           newWorld.displayOnCanvas(newCanvas); 
-           newWorld.resumeAllSuspendedScripts();  
+        var newWorld = this.worldMorph;
+        newWorld.displayOnCanvas(newCanvas); 
+        newWorld.resumeAllSuspendedScripts();  
 
-           owner.replaceChild(newCanvas, oldCanvas);     
-       },
+        owner.replaceChild(newCanvas, oldCanvas);     
+    },
 
-       loadWorldFromSource: function(xmlString) {
-           var xml = (new DOMParser()).parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
-           this.doc = xml;   
-           return (new Importer()).loadWorldContents(xml);
-       },
+    loadWorldFromSource: function(xmlString) {
+        var xml = (new DOMParser()).parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
+        this.doc = xml;   
+        return (new Importer()).loadWorldContents(xml);
+    },
 
-       exportMorph: function(morph) {
-           var exporter = new Exporter(morph);
-           exporter.extendForSerialization();
-           return exporter.rootMorph.rawNode
-       },
+    exportMorph: function(morph) {
+        var exporter = new Exporter(morph);
+        exporter.extendForSerialization();
+        return exporter.rootMorph.rawNode
+    },
 
-       getFieldNamed: function(node, fieldName) {
-           var result = $A(node.getElementsByTagName("field")).detect(function(ea) {
-               return ea.getAttribute("name") == fieldName});
-           this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
-           return result
-       }
+    getFieldNamed: function(node, fieldName) {
+        var result = $A(node.getElementsByTagName("field")).detect(function(ea) {
+            return ea.getAttribute("name") == fieldName});
+        this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
+        return result
+    }
 
 });
 
@@ -185,6 +188,23 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
         this.assertEqual(world.submorphs.length, 2, "world has two submorphs");
          
         //this.showMyWorld(world)
+    },
+    
+    
+    testRunOnDeserializeMorph: function() {
+         var world = this.loadWorldFromSource( 
+                '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+                    '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
+                        '<rect x="0" y="0" width="800" height="600"/>' +
+                        '<g type="DummyMorph" id="102:DummyMorph" transform="matrix(1 0 0 1 11 11)">'+
+                            '<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
+                        '</g>'+
+                    '</g>'+
+                '</svg>');
+        var morph1 = world.submorphs[0];
+        this.assertEqual(world.submorphs.length, 1, "world submorphs are wrong");
+        this.assert(morph1 instanceof DummyMorph, " morph1 is no DummyMorph");
+        this.assert(morph1.onDesieralizeWasRun, "onDesieralize was not run");
     },
     
     testLoadWorldWithTwoMorphs: function() {

@@ -1680,8 +1680,17 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         var connector1 = fabrik.connectors[0];
         this.assert(connector1 instanceof PinConnector , "connector1 is no PinConnecotr (" + connector1 + ")");
         
-        this.assertIdentity(connector1.fromPin, text1.getPin("Text"), " wrong fromPin")
-        this.assertIdentity(connector1.toPin, text2.getPin("Text"), " wrong toPin")        
+        this.assertIdentity(connector1.fromPin, text1.getPin("Text"), " wrong fromPin");
+        this.assertIdentity(connector1.toPin, text2.getPin("Text"), " wrong toPin");
+                      
+        var testString = "HelloFromPin1";
+        pin1.setValue(testString);
+        this.assertEqual(pin1.getValue(), testString, "setting string value failed");        
+        
+        this.assert(text1.formalModel["Text$observers"], "no observer array for text pin");
+		this.assertEqual(text1.formalModel["Text$observers"].length, 1, "wrong number of observers");
+        this.assertEqual(pin2.getValue(), testString, "observing pin1 failed");
+          
     },
 
     testLoadFabrik: function() {
@@ -2009,6 +2018,9 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         var fabrik = fabrikMorph.component;
         
         this.assertFabrikWithTwoTextComponentsAndConnector(fabrik);
+        
+
+        
         //this.showMyWorld(world)
         
     },
@@ -2111,9 +2123,10 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         
         
         fabrikMorph.remove();
+        fabrik.openIn(world);
+        fabrik.panel.automaticLayout();
         
-        // fabrik.openIn(world);
-        // this.showMyWorld(world);
+        this.showMyWorld(world);
         
     },
     

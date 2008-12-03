@@ -1174,6 +1174,10 @@ Widget.subclass('PinConnector', {
         return this.morph;
     },
 
+    onDeserialize: function() {
+        console.log("dersialize connector from" + this.fromPin + " to " + this.toPin)  
+    },
+
     // FIXME do we need this anymore? Can be directly called from pinMorph?... ?
     updateView: function(varname, source) {
         if (!this.fromPin.morph || !this.toPin.morph) return; // nothing to update from.... 
