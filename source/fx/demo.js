@@ -53,7 +53,7 @@ load('../kernel/Examples.js');
 
 // example program
 
-var browser = new fx.Frame(1200, 800);
+var browser = new fx.Frame(1200, 800, window.applet); //applet may be undefined
 
 
 var canvas = document.getElementById("canvas");

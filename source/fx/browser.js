@@ -77,7 +77,7 @@ Object.extend(fx.util, {
 	    handler.call(this, awtEvent, sgNode);
 	}
 	var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGMouseListener;
-	node.addMouseListener(new listenerClass(adapter));
+	node.addMouseListener(new JavaAdapter(listenerClass, adapter));
     },
     
     addKeyListener: function(node, eventName, handler) {
@@ -86,7 +86,7 @@ Object.extend(fx.util, {
 	    handler.call(this, awtEvent, sgNode);
 	}
 	var listenerClass = Packages.com.sun.scenario.scenegraph.event.SGKeyListener;
-	node.addKeyListener(new listenerClass(adapter));
+	node.addKeyListener(new JavaAdapter(listenerClass, adapter));
     },
     
     dispatchMouseEvent: function(type, evt, node) {
@@ -128,7 +128,7 @@ Object.extend(fx.util, {
     
     setInterval: function(callback, delay) {
 	// env.js setInterval is not Swing-friendly
-	var listener = new Packages.java.awt.event.ActionListener({
+	var listener = new JavaAdapter(Packages.java.awt.event.ActionListener, {
 	    actionPerformed: function(actionEvent) {
 		// transform actionEvent ?
 		callback.call(window, actionEvent);
@@ -176,8 +176,8 @@ Object.subclass('fx.util.KeyAdapter', {
 });
 
 Object.subclass('fx.Frame', {
-    initialize: function(width, height) {
-	this.frame = new Packages.javax.swing.JFrame();
+    initialize: function(width, height, applet) {
+	this.frame = applet || new Packages.javax.swing.JFrame();
 	this.frame.setSize(width, height);
 	this.panel = new Packages.com.sun.scenario.scenegraph.JSGPanel();
 	this.panel.setBackground(fx.Color.white);
@@ -185,7 +185,6 @@ Object.subclass('fx.Frame', {
 	this.frame.add(this.panel);
 	var node = new fx.Parent();
 	this.panel.setScene(node);
-
     },
 
     display: function(element) {
@@ -220,10 +219,10 @@ Object.subclass('fx.Frame', {
 	});
 	node.requestFocus();
 
-
-	this.frame.pack();
-	this.frame.setVisible(true);
-	
+	if (!fx.util.isInstanceOf(this.frame, 'java.applet.Applet')) {
+	    this.frame.pack();
+	    this.frame.setVisible(true);
+	}
     }
 });
     
