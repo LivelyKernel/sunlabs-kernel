@@ -2024,6 +2024,11 @@ TextMorph.addMethods({ // change clue additions
 	hideChangeClue: function() {
 		if (!this.changeClue) return;
 		this.changeClue.remove();
+	},
+
+	hasUnsavedChanges: function() {
+		// FIXME just another hack...
+		return this.submorphs.include(this.changeClue);
 	}
 });
 
