@@ -591,9 +591,7 @@ var Properties = {
 
 // bootstrap namespaces
 Object.subclass('Namespace', {
-    
-    isNamespace: true,
-    
+        
     initialize: function(context, nsName) {
         this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
         this.createTime = new Date();
@@ -607,8 +605,8 @@ Object.subclass('Namespace', {
     
     subNamespaces: function(recursive) {
         return this.gather('subNamespaces',
-			   function(ea) { try { return ea && ea.isNamespace && ea !== this } catch(e) {return false} },
-                    recursive);
+			    function(ea) { return (ea instanceof lively.lang.Namespace || ea === Global) && ea !== this },
+                recursive);
     },
     
     classes: function(recursive) {        
