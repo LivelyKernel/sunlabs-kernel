@@ -184,7 +184,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         };
         this.setPane2Content(node.childNodesAsListItems());
         this.setPane1Menu(node.menuSpec());
-        this.setSourceString(node.sourceString());
+       	this.setSourceString(node.sourceString());
 		this.updateTitle();
     },
  
@@ -238,7 +238,12 @@ Widget.subclass('lively.ide.BasicBrowser', {
         return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
     },
     
-	allChanged: function(keepUnsavedChanges) {
+	allChanged: function(keepUnsavedChanges, changedNode) {
+		// optimization: if no node looks like the changed node in my browser do nothing
+		if (changedNode)
+			if (this.allNodes().flatten().every(function(ea) { return !ea || ea.target !== changedNode.target }))
+				return;
+
 	      // FIXME remove duplication
         var oldN1 = this.getPane1Selection();
         var oldN2 = this.getPane2Selection();
@@ -285,8 +290,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		// this.setSourceString(node.sourceString());
 	},
     
-	signalNewSource: function() {
-		this.mySourceControl().updateBrowsers(this);
+	signalNewSource: function(changedNode) {
+		this.mySourceControl().updateBrowsers(this, changedNode);
 	},
 
 	updateTitle: function() {
@@ -358,8 +363,8 @@ Object.subclass('lively.ide.BrowserNode', {
         });
 		if (!this.browser.alphabetize) return items;
 		return items.sort(function(a,b) {
-			if (a.string < b.string) return -1;
-			if (a.string > b.string) return 1;
+			if (a.string.toLowerCase() < b.string.toLowerCase()) return -1;
+			if (a.string.toLowerCase() > b.string.toLowerCase()) return 1;
 			return 0;
 		});
     },
@@ -379,7 +384,7 @@ Object.subclass('lively.ide.BrowserNode', {
 		if (!this.evalSource(newSource)) {
             console.log('couldn\'t eval');
         }
-		this.browser.signalNewSource();
+		this.browser.signalNewSource(this);
     },
  
     evalSource: function(newSource) {
@@ -740,17 +745,10 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 	},
 
     saveSource: function(newSource, sourceControl) {
-		if (!this.hasCurrentSource()) throw dbgOn(new Error('Old Source, Refresh!'));
         this.target.putSourceCode(newSource);
 		this.savedSource = this.target.getSourceCode(); // assume that users sees newSource after that
         return true;
     },
-
-	hasCurrentSource: function() {
-		if (!this.target) return false;
-		if (!this.savedSource) return false;
-		return this.savedSource == this.target.getSourceCode();
-	}
     
 });
 
@@ -1414,10 +1412,12 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		this.registeredBrowsers = this.registeredBrowsers.without(browser);
 	},
 	
-	updateBrowsers: function(changedBrowser) {
+	updateBrowsers: function(changedBrowser, changedNode) {
+		var msStart = new Date().getTime();
 		this.registeredBrowsers.without(changedBrowser).forEach(function(ea) {
-			ea.allChanged(true);
+			ea.allChanged(true, changedNode);
 		});
+		console.log('updated ' + this.registeredBrowsers.length + ' browsers in ' + (new Date().getTime()-msStart)/1000 + 's')
 	},
 	
 });
@@ -1507,6 +1507,8 @@ Object.subclass('lively.ide.FileFragment', {
 
     putSourceCode: function(newString) {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
+		this.reparse
+
         this.getSourceControl().putSourceCodeFor(this, newString);
         // dbgOn(true);
         this.updateIndices(newString);
