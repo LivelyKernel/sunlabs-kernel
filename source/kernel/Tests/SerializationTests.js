@@ -233,6 +233,7 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
                             '<field name="myMorph2" ref="103:Morph"></field>' +
                             '<field name="myPointValue" family="Point"><![CDATA[{"x":3,"y":4}]]></field>' +
                             '<field name="formalModel" ref="105:anonymous_106"/>' +
+                            '<field name="otherWidget" ref="106:DummyWidget"></field>' +
                             '<array name="myArray">' +
                                 '<item ref="102:Morph"/>' +
                                 '<item ref="103:Morph"/>' +
@@ -249,13 +250,24 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
                         '<field name="exampleReference" ref="102:Morph"></field>' +
                         '<field name="myWidget" ref="104:DummyWidget"></field>' +
                     '</g>'+
+                    '<g type="Morph" id="107:Morph" transform="matrix(1 0 0 1 100 100)">'+
+                        '<rect x="0" y="0" width="100" height="100" fill="rgb(0,250,250)"/>'+
+                        '<field name="exampleReference" ref="102:Morph"></field>' +
+                        '<field name="myWidget" ref="106:DummyWidget"></field>' +
+                        '<widget id="106:DummyWidget">'   +
+                            '<field name="otherWidget" ref="104:DummyWidget"></field>' +                
+                        '</widget>' +        
+                    '</g>'+
                 '</g>'+
             '</svg>'); 
         var morph1 = world.submorphs[0];
         var morph2 = world.submorphs[1];
+        var morph3 = world.submorphs[2];
                 
         var widget = morph1.myWidget;
+        var widget2 = morph3.myWidget;
         this.assert(widget instanceof DummyWidget, "morph1.myWidget is not DummyWidget");
+        
         this.assertIdentity(morph1.myWidget, morph2.myWidget, "morph1.myWidget is not identical to morph2.myWidget");
         
         this.assert(widget.myMorph1, "widget.myMorph1 not set");
@@ -267,6 +279,9 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
         this.assert(widget.formalModel, "widget.formalModel not set"); 
       
         this.assertEqual(widget.formalModel.getName(), "EinName",  "widget.formalModel not set");
+      
+        this.assertIdentity(widget2.otherWidget, widget,  "backreference: widget2.otherWidget is not widget");
+        this.assertIdentity(widget.otherWidget, widget2,  "forwardreference: widget.otherWidget is not widget2");
         
         //this.showMyWorld(world)
     },
@@ -275,7 +290,7 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
     /* Serialize Tests */
 
     testSerializeMorph: function() {
-        var morph = new Morph(new lively.scene.Rectangle(this.bounds));
+            var morph = new Morph(new lively.scene.Rectangle(this.bounds));
         morph.simpleNumber = 12345;
         morph.simpleString = "eineZeichenkette";
         this.worldMorph.addMorph(morph);

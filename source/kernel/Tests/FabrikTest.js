@@ -1655,18 +1655,18 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         var world = this.loadWorldFromSource(
             '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
                 '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
-                    '<rect x="0" y="0" width="800" height="600"/>' +          
-                    '<g xmlns="http://www.w3.org/2000/svg" type="FabrikMorph" id="389:FabrikMorph" transform="translate(0,0)">' +
+                    '<rect x="0" y="0" width="800" height="600"/>' +
+                    '<g xmlns="http://www.w3.org/2000/svg" type="FabrikMorph" id="531:FabrikMorph" transform="translate(100,100)">' +
                     	'<rect x="0" y="0" width="400" height="400" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="3" ry="3"/>' +
-                    	'<g type="TextComponentMorph" id="446:TextComponentMorph" transform="translate(0,0)">' +
+                    	'<g type="TextComponentMorph" id="584:TextComponentMorph" transform="translate(20,140)">' +
                     		'<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
-                    		'<g type="ScrollPane" id="463:ScrollPane" transform="translate(7,7)">' +
+                    		'<g type="ScrollPane" id="602:ScrollPane" transform="translate(7,7)">' +
                     			'<rect x="0" y="0" width="166" height="86" stroke-width="1" fill="none" rx="3" ry="3"/>' +
-                    			'<g type="ClipMorph" id="464:ClipMorph" clip-path="url(#9:lively.scene.Clip)" transform="translate(1,1)">' +
+                    			'<g type="ClipMorph" id="603:ClipMorph" clip-path="url(#11:lively.scene.Clip)" transform="translate(1,1)">' +
                     				'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
-                    				'<g type="TextMorph" id="460:TextMorph" transform="translate(0,0)">' +
+                    				'<g type="TextMorph" id="599:TextMorph" transform="translate(0,0)">' +
                     					'<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
-                    					'<g type="TextSelectionMorph" id="461:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+                    					'<g type="TextSelectionMorph" id="600:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
                     						'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
                     						'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
                     						'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
@@ -1679,29 +1679,29 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
                     					'<field name="textString"><![CDATA["------"]]></field>' +
                     					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
                     					'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
-                    					'<field name="textSelection" ref="461:TextSelectionMorph"/>' +
-                    					'<field name="changeClue" ref="462:Morph"/>' +
+                    					'<field name="textSelection" ref="600:TextSelectionMorph"/>' +
+                    					'<field name="changeClue" ref="601:Morph"/>' +
                     					'<field name="suppressHandles">true</field>' +
                     					'<field name="openForDragAndDrop">false</field>' +
-                    					'<relay name="formalModel" ref="385:anonymous_106">' +
+                    					'<relay name="formalModel" ref="528:anonymous_141">' +
                     						'<binding formal="Text" actual="Text"/>' +
                     					'</relay>' +
                     				'</g>' +
                     				'<defs>' +
-                    					'<clipPath id="9:lively.scene.Clip">' +
+                    					'<clipPath id="11:lively.scene.Clip">' +
                     						'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="none"/>' +
                     					'</clipPath>' +
                     				'</defs>' +
                     				'<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
                     				'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":84}]]></field>' +
-                    				'<field name="clip" ref="9:lively.scene.Clip"/>' +
+                    				'<field name="clip" ref="11:lively.scene.Clip"/>' +
                     				'<field name="suppressHandles">true</field>' +
                     				'<field name="openForDragAndDrop">false</field>' +
                     			'</g>' +
-                    			'<g type="SliderMorph" id="465:SliderMorph" transform="translate(152,1)">' +
-                    				'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#469:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
-                    				'<g type="Morph" id="466:Morph" transform="translate(0,0)">' +
-                    					'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#470:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
+                    			'<g type="SliderMorph" id="604:SliderMorph" transform="translate(152,1)">' +
+                    				'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#608:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
+                    				'<g type="Morph" id="605:Morph" transform="translate(0,0)">' +
+                    					'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#609:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
                     					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
                     					'<field name="fullBounds">null</field>' +
                     					'<field name="styleClass"><![CDATA["slider"]]></field>' +
@@ -1709,232 +1709,256 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
                     				'</g>' +
                     				'<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
                     				'<field name="fullBounds">null</field>' +
-                    				'<relay name="formalModel" ref="463:ScrollPane">' +
+                    				'<relay name="formalModel" ref="602:ScrollPane">' +
                     					'<binding formal="Value" actual="ScrollPosition"/>' +
                     					'<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
                     				'</relay>' +
                     				'<field name="valueScale">1</field>' +
-                    				'<field name="slider" ref="466:Morph"/>' +
+                    				'<field name="slider" ref="605:Morph"/>' +
                     				'<field name="suppressHandles">true</field>' +
                     				'<field name="openForDragAndDrop">false</field>' +
                     			'</g>' +
                     			'<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
                     			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":7,"width":166,"height":86}]]></field>' +
-                    			'<field name="clipMorph" ref="464:ClipMorph"/>' +
-                    			'<field name="scrollBar" ref="465:SliderMorph"/>' +
+                    			'<field name="clipMorph" ref="603:ClipMorph"/>' +
+                    			'<field name="scrollBar" ref="604:SliderMorph"/>' +
                     			'<field name="suppressHandles">true</field>' +
                     			'<field name="openForDragAndDrop">false</field>' +
                     		'</g>' +
-                    		'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="fullBounds">null</field>' +
-                    		'<field name="openForDragAndDrop">false</field>' +
-                    		'<field name="styleClass"><![CDATA["fabrik"]]></field>' +
-                    		'<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="component" ref="384:TextComponent"/>' +
-                    		'<field name="formalModel" ref="385:anonymous_106"/>' +
-                    		'<field name="halos" ref="447:Morph"/>' +
-                    		'<field name="closeHalo" ref="448:ButtonMorph"/>' +
-                    		'<field name="text" ref="460:TextMorph"/>' +
-                    		'<field name="ownerWidget" ref="384:TextComponent"/>' +
-                    		'<widget id="384:TextComponent">' +
-                    			'<record id="385:anonymous_106">' +
-                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
-                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                    				'<field name="Text"><![CDATA["null"]]></field>' +
-                    			'</record>' +
-                    			'<field name="formalModel" ref="385:anonymous_106"/>' +
-                    			'<field name="actualModel" ref="385:anonymous_106"/>' +
-                    			'<array name="pinHandles">' +
-                    				'<item ref="386:PinHandle"/>' +
-                    			'</array>' +
-                    			'<field name="fabrik" ref="378:FabrikComponent"/>' +
-                    			'<field name="panel" ref="446:TextComponentMorph"/>' +
-                    			'<field name="morph" ref="460:TextMorph"/>' +
-                    		'</widget>' +
-                    		'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    	'</g>' +
-                    	'<g type="TextComponentMorph" id="416:TextComponentMorph" transform="translate(0,0)">' +
-                    		'<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
-                    		'<g type="ScrollPane" id="438:ScrollPane" transform="translate(7,7)">' +
-                    			'<rect x="0" y="0" width="166" height="86" stroke-width="1" fill="none" rx="3" ry="3"/>' +
-                    			'<g type="ClipMorph" id="439:ClipMorph" clip-path="url(#8:lively.scene.Clip)" transform="translate(1,1)">' +
-                    				'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
-                    				'<g type="TextMorph" id="435:TextMorph" transform="translate(0,0)">' +
-                    					'<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
-                    					'<g type="TextSelectionMorph" id="436:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
-                    						'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
-                    						'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    						'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
-                    						'<field name="mouseHandler">null</field>' +
-                    						'<field name="openForDragAndDrop">false</field>' +
-                    					'</g>' +
-                    					'<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
-                    						'<tspan x="7" y="15.8">------</tspan>' +
-                    					'</text>' +
-                    					'<field name="textString"><![CDATA["------"]]></field>' +
-                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    					'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
-                    					'<field name="textSelection" ref="436:TextSelectionMorph"/>' +
-                    					'<field name="changeClue" ref="437:Morph"/>' +
-                    					'<field name="suppressHandles">true</field>' +
-                    					'<field name="openForDragAndDrop">false</field>' +
-                    					'<relay name="formalModel" ref="381:anonymous_104">' +
-                    						'<binding formal="Text" actual="Text"/>' +
-                    					'</relay>' +
-                    				'</g>' +
-                    				'<defs>' +
-                    					'<clipPath id="8:lively.scene.Clip">' +
-                    						'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="none"/>' +
-                    					'</clipPath>' +
-                    				'</defs>' +
-                    				'<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
-                    				'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":84}]]></field>' +
-                    				'<field name="clip" ref="8:lively.scene.Clip"/>' +
-                    				'<field name="suppressHandles">true</field>' +
-                    				'<field name="openForDragAndDrop">false</field>' +
-                    			'</g>' +
-                    			'<g type="SliderMorph" id="440:SliderMorph" transform="translate(152,1)">' +
-                    				'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#444:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
-                    				'<g type="Morph" id="441:Morph" transform="translate(0,0)">' +
-                    					'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#445:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
-                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    					'<field name="fullBounds">null</field>' +
-                    					'<field name="styleClass"><![CDATA["slider"]]></field>' +
-                    					'<field name="openForDragAndDrop">false</field>' +
-                    				'</g>' +
-                    				'<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
-                    				'<field name="fullBounds">null</field>' +
-                    				'<relay name="formalModel" ref="438:ScrollPane">' +
-                    					'<binding formal="Value" actual="ScrollPosition"/>' +
-                    					'<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
-                    				'</relay>' +
-                    				'<field name="valueScale">1</field>' +
-                    				'<field name="slider" ref="441:Morph"/>' +
-                    				'<field name="suppressHandles">true</field>' +
-                    				'<field name="openForDragAndDrop">false</field>' +
-                    			'</g>' +
-                    			'<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
-                    			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":7,"width":166,"height":86}]]></field>' +
-                    			'<field name="clipMorph" ref="439:ClipMorph"/>' +
-                    			'<field name="scrollBar" ref="440:SliderMorph"/>' +
-                    			'<field name="suppressHandles">true</field>' +
-                    			'<field name="openForDragAndDrop">false</field>' +
-                    		'</g>' +
-                    		'<g type="PinMorph" id="417:PinMorph" transform="translate(-9,40)" pinHandle="url(#382:PinHandle)">' +
+                    		'<g type="PinMorph" id="585:PinMorph" transform="translate(-9,40)">' +
                     			'<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,204,0)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
                     			'<field name="origin" family="Point"><![CDATA[{"x":-9,"y":40}]]></field>' +
                     			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-9,"y":40,"width":18,"height":18}]]></field>' +
                     			'<field name="suppressHandles">true</field>' +
                     			'<field name="openForDragAndDrop">false</field>' +
-                    			'<field name="ownerWidget" ref="382:PinHandle"/>' +
-                    			'<widget id="382:PinHandle">' +
-                    				'<record id="383:anonymous_105">' +
+                    			'<field name="pinHandle" ref="529:PinHandle"/>' +
+                    			'<field name="ownerWidget" ref="529:PinHandle"/>' +
+                    			'<widget id="529:PinHandle">' +
+                    				'<record id="530:anonymous_142">' +
                     					'<field name="Name"><![CDATA["Text"]]></field>' +
                     					'<field name="PinType"><![CDATA["regular"]]></field>' +
                     					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
                     				'</record>' +
-                    				'<field name="formalModel" ref="383:anonymous_105"/>' +
-                    				'<field name="actualModel" ref="383:anonymous_105"/>' +
-                    				'<field name="component" ref="380:TextComponent"/>' +
+                    				'<field name="formalModel" ref="530:anonymous_142"/>' +
+                    				'<field name="actualModel" ref="530:anonymous_142"/>' +
+                    				'<field name="component" ref="527:TextComponent"/>' +
                     				'<array name="connectors">' +
-                    					'<item ref="388:PinConnector"/>' +
+                    					'<item ref="610:PinConnector"/>' +
                     				'</array>' +
-                    				'<field name="morph" ref="417:PinMorph"/>' +
+                    				'<field name="morph" ref="585:PinMorph"/>' +
                     			'</widget>' +
-                    			'<field name="pinHandle" ref="382:PinHandle"/>' +
                     		'</g>' +
-                    		'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="fullBounds">null</field>' +
+                    		'<field name="origin" family="Point"><![CDATA[{"x":20,"y":140}]]></field>' +
+                    		'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":11,"y":140,"width":189,"height":100}]]></field>' +
                     		'<field name="openForDragAndDrop">false</field>' +
                     		'<field name="styleClass"><![CDATA["fabrik"]]></field>' +
                     		'<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
                     		'<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="component" ref="380:TextComponent"/>' +
-                    		'<field name="formalModel" ref="381:anonymous_104"/>' +
-                    		'<field name="halos" ref="422:Morph"/>' +
-                    		'<field name="closeHalo" ref="423:ButtonMorph"/>' +
-                    		'<field name="text" ref="435:TextMorph"/>' +
-                    		'<field name="ownerWidget" ref="380:TextComponent"/>' +
-                    		'<widget id="380:TextComponent">' +
-                    			'<record id="381:anonymous_104">' +
+                    		'<field name="component" ref="527:TextComponent"/>' +
+                    		'<field name="formalModel" ref="528:anonymous_141"/>' +
+                    		'<field name="halos" ref="586:Morph"/>' +
+                    		'<field name="closeHalo" ref="587:ButtonMorph"/>' +
+                    		'<field name="text" ref="599:TextMorph"/>' +
+                    		'<field name="ownerWidget" ref="527:TextComponent"/>' +
+                    		'<widget id="527:TextComponent">' +
+                    			'<record id="528:anonymous_141">' +
                     				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
                     				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
                     				'<field name="Text"><![CDATA["null"]]></field>' +
                     			'</record>' +
-                    			'<field name="formalModel" ref="381:anonymous_104"/>' +
-                    			'<field name="actualModel" ref="381:anonymous_104"/>' +
+                    			'<field name="formalModel" ref="528:anonymous_141"/>' +
+                    			'<field name="actualModel" ref="528:anonymous_141"/>' +
                     			'<array name="pinHandles">' +
-                    				'<item ref="382:PinHandle"/>' +
+                    				'<item ref="529:PinHandle"/>' +
                     			'</array>' +
-                    			'<field name="fabrik" ref="378:FabrikComponent"/>' +
-                    			'<field name="panel" ref="416:TextComponentMorph"/>' +
-                    			'<field name="morph" ref="435:TextMorph"/>' +
+                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    			'<field name="panel" ref="584:TextComponentMorph"/>' +
+                    			'<field name="morph" ref="599:TextMorph"/>' +
                     		'</widget>' +
-                    		'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    		'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":140}]]></field>' +
                     	'</g>' +
-                    	'<g type="ConnectorMorph" id="418:ConnectorMorph" transform="translate(0,0)">' +
-                    		'<polyline points="0,49 0,49" stroke-width="4" stroke="rgb(0,0,204)"/>' +
-                    		'<g type="ArrowHeadMorph" id="419:ArrowHeadMorph" transform="translate(0,49)" pointer-events="none">' +
+                    	'<g type="TextComponentMorph" id="558:TextComponentMorph" transform="translate(20,20)">' +
+                    		'<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
+                    		'<g type="ScrollPane" id="576:ScrollPane" transform="translate(7,7)">' +
+                    			'<rect x="0" y="0" width="166" height="86" stroke-width="1" fill="none" rx="3" ry="3"/>' +
+                    			'<g type="ClipMorph" id="577:ClipMorph" clip-path="url(#10:lively.scene.Clip)" transform="translate(1,1)">' +
+                    				'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
+                    				'<g type="TextMorph" id="573:TextMorph" transform="translate(0,0)">' +
+                    					'<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
+                    					'<g type="TextSelectionMorph" id="574:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+                    						'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+                    						'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    						'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+                    						'<field name="mouseHandler">null</field>' +
+                    						'<field name="openForDragAndDrop">false</field>' +
+                    					'</g>' +
+                    					'<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
+                    						'<tspan x="7" y="15.8">------</tspan>' +
+                    					'</text>' +
+                    					'<field name="textString"><![CDATA["------"]]></field>' +
+                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    					'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
+                    					'<field name="textSelection" ref="574:TextSelectionMorph"/>' +
+                    					'<field name="changeClue" ref="575:Morph"/>' +
+                    					'<field name="suppressHandles">true</field>' +
+                    					'<field name="openForDragAndDrop">false</field>' +
+                    					'<relay name="formalModel" ref="524:anonymous_139">' +
+                    						'<binding formal="Text" actual="Text"/>' +
+                    					'</relay>' +
+                    				'</g>' +
+                    				'<defs>' +
+                    					'<clipPath id="10:lively.scene.Clip">' +
+                    						'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="none"/>' +
+                    					'</clipPath>' +
+                    				'</defs>' +
+                    				'<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
+                    				'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":84}]]></field>' +
+                    				'<field name="clip" ref="10:lively.scene.Clip"/>' +
+                    				'<field name="suppressHandles">true</field>' +
+                    				'<field name="openForDragAndDrop">false</field>' +
+                    			'</g>' +
+                    			'<g type="SliderMorph" id="578:SliderMorph" transform="translate(152,1)">' +
+                    				'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#582:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
+                    				'<g type="Morph" id="579:Morph" transform="translate(0,0)">' +
+                    					'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#583:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
+                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    					'<field name="fullBounds">null</field>' +
+                    					'<field name="styleClass"><![CDATA["slider"]]></field>' +
+                    					'<field name="openForDragAndDrop">false</field>' +
+                    				'</g>' +
+                    				'<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
+                    				'<field name="fullBounds">null</field>' +
+                    				'<relay name="formalModel" ref="576:ScrollPane">' +
+                    					'<binding formal="Value" actual="ScrollPosition"/>' +
+                    					'<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
+                    				'</relay>' +
+                    				'<field name="valueScale">1</field>' +
+                    				'<field name="slider" ref="579:Morph"/>' +
+                    				'<field name="suppressHandles">true</field>' +
+                    				'<field name="openForDragAndDrop">false</field>' +
+                    			'</g>' +
+                    			'<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
+                    			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":7,"width":166,"height":86}]]></field>' +
+                    			'<field name="clipMorph" ref="577:ClipMorph"/>' +
+                    			'<field name="scrollBar" ref="578:SliderMorph"/>' +
+                    			'<field name="suppressHandles">true</field>' +
+                    			'<field name="openForDragAndDrop">false</field>' +
+                    		'</g>' +
+                    		'<g type="PinMorph" id="559:PinMorph" transform="translate(-9,40)">' +
+                    			'<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,204,0)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
+                    			'<field name="origin" family="Point"><![CDATA[{"x":-9,"y":40}]]></field>' +
+                    			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-9,"y":40,"width":18,"height":18}]]></field>' +
+                    			'<field name="suppressHandles">true</field>' +
+                    			'<field name="openForDragAndDrop">false</field>' +
+                    			'<field name="pinHandle" ref="525:PinHandle"/>' +
+                    			'<field name="ownerWidget" ref="525:PinHandle"/>' +
+                    			'<widget id="525:PinHandle">' +
+                    				'<record id="526:anonymous_140">' +
+                    					'<field name="Name"><![CDATA["Text"]]></field>' +
+                    					'<field name="PinType"><![CDATA["regular"]]></field>' +
+                    					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                    				'</record>' +
+                    				'<field name="formalModel" ref="526:anonymous_140"/>' +
+                    				'<field name="actualModel" ref="526:anonymous_140"/>' +
+                    				'<field name="component" ref="523:TextComponent"/>' +
+                    				'<array name="connectors">' +
+                    					'<item ref="610:PinConnector"/>' +
+                    				'</array>' +
+                    				'<field name="morph" ref="559:PinMorph"/>' +
+                    			'</widget>' +
+                    		'</g>' +
+                    		'<field name="origin" family="Point"><![CDATA[{"x":20,"y":20}]]></field>' +
+                    		'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":11,"y":20,"width":189,"height":100}]]></field>' +
+                    		'<field name="openForDragAndDrop">false</field>' +
+                    		'<field name="styleClass"><![CDATA["fabrik"]]></field>' +
+                    		'<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    		'<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    		'<field name="component" ref="523:TextComponent"/>' +
+                    		'<field name="formalModel" ref="524:anonymous_139"/>' +
+                    		'<field name="halos" ref="560:Morph"/>' +
+                    		'<field name="closeHalo" ref="561:ButtonMorph"/>' +
+                    		'<field name="text" ref="573:TextMorph"/>' +
+                    		'<field name="ownerWidget" ref="523:TextComponent"/>' +
+                    		'<widget id="523:TextComponent">' +
+                    			'<record id="524:anonymous_139">' +
+                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                    				'<field name="Text"><![CDATA["null"]]></field>' +
+                    			'</record>' +
+                    			'<field name="formalModel" ref="524:anonymous_139"/>' +
+                    			'<field name="actualModel" ref="524:anonymous_139"/>' +
+                    			'<array name="pinHandles">' +
+                    				'<item ref="525:PinHandle"/>' +
+                    			'</array>' +
+                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    			'<field name="panel" ref="558:TextComponentMorph"/>' +
+                    			'<field name="morph" ref="573:TextMorph"/>' +
+                    		'</widget>' +
+                    		'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":20}]]></field>' +
+                    	'</g>' +
+                    	'<g type="ConnectorMorph" id="611:ConnectorMorph" transform="translate(0,0)">' +
+                    		'<polyline points="20,69 20,189" stroke-width="4" stroke="rgb(0,0,204)"/>' +
+                    		'<g type="ArrowHeadMorph" id="612:ArrowHeadMorph" transform="translate(20,189) rotate(90)" pointer-events="none">' +
                     			'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" fill-opacity="0" stroke-opacity="0"/>' +
-                    			'<g type="Morph" id="420:Morph" transform="translate(0,0)" pointer-events="none">' +
+                    			'<g type="Morph" id="613:Morph" transform="translate(0,0)" pointer-events="none">' +
                     				'<polygon points="0,0 -16,6 -16,-6" stroke-width="1" stroke="rgb(0,0,204)" fill="rgb(0,0,204)"/>' +
                     				'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
                     				'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-16,"y":-6,"width":16,"height":12}]]></field>' +
                     				'<field name="mouseHandler">null</field>' +
                     			'</g>' +
-                    			'<field name="origin" family="Point"><![CDATA[{"x":0,"y":49}]]></field>' +
+                    			'<field name="origin" family="Point"><![CDATA[{"x":20,"y":189}]]></field>' +
                     			'<field name="fullBounds">null</field>' +
-                    			'<field name="head" ref="420:Morph"/>' +
+                    			'<field name="head" ref="613:Morph"/>' +
                     			'<field name="mouseHandler">null</field>' +
+                    			'<field name="rotation">1.5707963267948966</field>' +
                     		'</g>' +
-                    		'<field name="pinConnector" ref="388:PinConnector"/>' +
+                    		'<field name="pinConnector" ref="610:PinConnector"/>' +
                     		'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
                     		'<field name="fullBounds">null</field>' +
                     		'<field name="openForDragAndDrop">false</field>' +
-                    		'<field name="arrowHead" ref="419:ArrowHeadMorph"/>' +
-                    		'<field name="ownerWidget" ref="388:PinConnector"/>' +
-                    		'<widget id="388:PinConnector">' +
-                    			'<field name="fromPin" ref="382:PinHandle"/>' +
-                    			'<field name="toPin" ref="386:PinHandle"/>' +
+                    		'<field name="arrowHead" ref="612:ArrowHeadMorph"/>' +
+                    		'<field name="ownerWidget" ref="610:PinConnector"/>' +
+                    		'<widget id="610:PinConnector">' +
+                    			'<field name="fromPin" ref="525:PinHandle"/>' +
+                    			'<field name="toPin" ref="529:PinHandle"/>' +
                     			'<field name="isBidirectional">false</field>' +
-                    			'<field name="fabrik" ref="378:FabrikComponent"/>' +
-                    			'<field name="morph" ref="418:ConnectorMorph"/>' +
+                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    			'<field name="morph" ref="611:ConnectorMorph"/>' +
                     		'</widget>' +
-                    		'<field name="connector" ref="388:PinConnector"/>' +
+                    		'<field name="connector" ref="610:PinConnector"/>' +
                     	'</g>' +
-                    	'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    	'<field name="origin" family="Point"><![CDATA[{"x":100,"y":100}]]></field>' +
                     	'<field name="fullBounds">null</field>' +
                     	'<field name="openForDragAndDrop">false</field>' +
                     	'<field name="styleClass"><![CDATA["fabrik"]]></field>' +
                     	'<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
                     	'<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    	'<field name="component" ref="378:FabrikComponent"/>' +
-                    	'<field name="formalModel" ref="379:anonymous_103"/>' +
-                    	'<field name="halos" ref="403:Morph"/>' +
-                    	'<field name="closeHalo" ref="404:ButtonMorph"/>' +
-                    	'<field name="collapseHalo" ref="412:ButtonMorph"/>' +
-                    	'<field name="ownerWidget" ref="378:FabrikComponent"/>' +
-                    	'<widget id="378:FabrikComponent">' +
-                    		'<record id="379:anonymous_103">' +
+                    	'<field name="component" ref="521:FabrikComponent"/>' +
+                    	'<field name="formalModel" ref="522:anonymous_138"/>' +
+                    	'<field name="halos" ref="545:Morph"/>' +
+                    	'<field name="closeHalo" ref="546:ButtonMorph"/>' +
+                    	'<field name="collapseHalo" ref="554:ButtonMorph"/>' +
+                    	'<field name="ownerWidget" ref="521:FabrikComponent"/>' +
+                    	'<widget id="521:FabrikComponent">' +
+                    		'<record id="522:anonymous_138">' +
                     			'<definition><![CDATA[{"Name":{}}]]></definition>' +
                     			'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
                     		'</record>' +
-                    		'<field name="formalModel" ref="379:anonymous_103"/>' +
-                    		'<field name="actualModel" ref="379:anonymous_103"/>' +
+                    		'<field name="formalModel" ref="522:anonymous_138"/>' +
+                    		'<field name="actualModel" ref="522:anonymous_138"/>' +
                     		'<array name="pinHandles"/>' +
                     		'<array name="components">' +
-                    			'<item ref="380:TextComponent"/>' +
-                    			'<item ref="384:TextComponent"/>' +
+                    			'<item ref="523:TextComponent"/>' +
+                    			'<item ref="527:TextComponent"/>' +
                     		'</array>' +
                     		'<array name="connectors">' +
-                    			'<item ref="388:PinConnector"/>' +
+                    			'<item ref="610:PinConnector"/>' +
                     		'</array>' +
-                    		'<field name="panel" ref="389:FabrikMorph"/>' +
-                    		'<field name="morph" ref="389:FabrikMorph"/>' +
+                    		'<field name="panel" ref="531:FabrikMorph"/>' +
+                    		'<field name="morph" ref="531:FabrikMorph"/>' +
                     	'</widget>' +
-                    	'<field name="fabrik" ref="378:FabrikComponent"/>' +
-                    	'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    	'<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    	'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":100,"y":100}]]></field>' +
                     '</g>' +
                 '</g>'+ 
             '</svg>');
@@ -1951,23 +1975,87 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         this.assertEqual(fabrik.connectors.length, 1, "wrong number of connectors");
                
         var text1 = fabrik.components[0];
+        this.assert(text1 instanceof TextComponent , "first text component is no TextComponent");
         var text2 = fabrik.components[1];
+        this.assert(text2 instanceof TextComponent , "second text component is no TextComponent");
                         
         this.assert(text1.pinHandles, "no pinHandles in component");              
         this.assertEqual(text1.pinHandles.length, 1, "wrong number of pinHandles in component");
         
         var pin1 = text1.pinHandles[0];
-        this.assert(pin1 instanceof PinHandle , "no text pin (" + pin1 + ")");
-        this.assertEqual(pin1.getName(), "Text", "pinHandle forgot its name");
+        this.assert(pin1 instanceof PinHandle , "no text1 pin (" + pin1 + ")");
+        this.assertEqual(pin1.getName(), "Text", "pinHandle1 forgot its name");
+        var pin2 = text2.pinHandles[0];
+
+        this.assert(pin2 instanceof PinHandle , "no text2 pin (" + pin2 + ")");
+        this.assertEqual(pin2.getName(), "Text", "pinHandle2 forgot its name");        
+        
+        var connector1 = fabrik.connectors[0];
+        this.assert(connector1 instanceof PinConnector , "connector1 is no PinConnecotr (" + connector1 + ")");
+    
+        
+        this.assertIdentity(connector1.fromPin, text1.getPin("Text"), " wrong fromPin")
+        this.assertIdentity(connector1.toPin, text2.getPin("Text"), " wrong toPin")
         
         
-        var connector1 = fabrik.components[0];
         
-        //this.assertIdentity(connector1.fromPin, text1.getPin("Text"), " wrong fromPin")
-        //this.assertIdentity(connector1.toPin, text2.getPin("Text"), " wrong toPin")
         
+        //this.showMyWorld(world)
         
     },
+
+    testLoadFabrikWidgets: function() {
+        // generate with textmate replace: "(<.*>$)" with: "'$1' +"
+        var world = this.loadWorldFromSource(
+            '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+                '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
+                    '<rect x="0" y="0" width="800" height="600"/>' +          
+                    '<g xmlns="http://www.w3.org/2000/svg" type="FabrikMorph" id="389:FabrikMorph" transform="translate(0,0)">' +
+                    	'<rect x="0" y="0" width="400" height="400" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="3" ry="3"/>' +    	
+                    	'<field name="ownerWidget" ref="378:FabrikComponent"/>' +
+                    	'<field name="component" ref="378:FabrikComponent"/>' +
+                    	'<widget id="378:FabrikComponent">' +
+                    		'<record id="379:anonymous_103">' +
+                    			'<definition><![CDATA[{"Name":{}}]]></definition>' +
+                    			'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                    		'</record>' +
+                    		'<field name="formalModel" ref="379:anonymous_103"/>' +
+                    		'<field name="actualModel" ref="379:anonymous_103"/>' +
+                    		'<array name="pinHandles"/>' +
+                    		'<array name="components">' +
+                    		'</array>' +
+                    	'</widget>' +
+                    	'<field name="fabrik" ref="378:FabrikComponent"/>' +
+                    '</g>' +
+                '</g>'+ 
+            '</svg>');
+        
+        this.assert(world instanceof WorldMorph, "world is no WorldMorph");
+        var fabrikMorph = world.submorphs[0];
+        var fabrik = fabrikMorph.component;
+        this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");        
+    },
+    
+    
+    testConnectingPinsBeforeBuildingFabrik: function() {
+        var fabrik = new FabrikComponent();
+        var text1 = new TextComponent();
+        var text2 = new TextComponent();
+        fabrik.plugin(text1);
+        fabrik.plugin(text2);
+	    var pin1 = text1.getPin("Text");
+	    var pin2 = text2.getPin("Text");
+	
+        pin1.connectTo(pin2); // Todo: it seems, that building
+	
+        fabrik.buildView(pt(400, 400));
+        this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
+        
+        // connecting at this point would work
+     
+        this.assertIdentity(pin2.morph.owner, text2.panel, "pin morph2 is lost when connecting before building view");
+    },
+
 
     testSerializeFabrik: function() {
         var fabrik = new FabrikComponent();
@@ -1975,27 +2063,45 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         var text2 = new TextComponent();
         fabrik.plugin(text1);
         fabrik.plugin(text2);
-	    text1.getPin("Text").connectTo(text2.getPin("Text"));        
-
+	    
+	    var pin1 = text1.getPin("Text");
+	    var pin2 = text2.getPin("Text");
+	    
         fabrik.buildView(pt(400, 400));
+        fabrik.panel.automaticLayout();
         this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
+        fabrik.panel.setPosition(pt(100,100));
 
+        pin1.connectTo(pin2); // Todo: it seems, that building 
+
+        this.assertIdentity(pin2.morph.owner, text2.panel, "pin morph2 is lost");
+    
+        //this.showMyWorld();
 
         var doc = Exporter.shrinkWrapMorph(this.worldMorph);
 
         var worldNode = doc.getElementById(this.worldMorph.id());
         var fabrikNode = doc.getElementById(fabrik.id());
         var textNode1 = doc.getElementById(text1.id());
+        var textNode2 = doc.getElementById(text2.id());
         
         
         this.assert(fabrikNode, "no fabrik node with id " + fabrik.id() + " found");
 
         this.assertEqual($A(textNode1.getElementsByTagName("array")).select(function(ea){ 
             return ea.getAttribute("name") == "pinHandles" }).length, 
-            1, "wrong number of pinHandle arrays in serialization");
-        
-        // and here should the tests begin...
+            1, "wrong number of pinHandle arrays in serialization text1");
 
+        this.assertEqual($A(textNode2.getElementsByTagName("array")).select(function(ea){ 
+            return ea.getAttribute("name") == "pinHandles" }).length, 
+        1, "wrong number of pinHandle arrays in serialization text2");
+        
+        var pinMorph1 = doc.getElementById(text1.getPin("Text").morph.id());
+        this.assert(pinMorph1, "pinMorph1 is not serialized");
+        
+        var pinMorph2 = doc.getElementById(text2.getPin("Text").morph.id());
+        this.assert(pinMorph2, "pinMorph2 is not serialized");
+        
         console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
     }
 

@@ -249,6 +249,21 @@ Object.subclass('lively.data.Wrapper', {
 	return lively.data.Wrapper.dictionary;
     },
     
+    deserializeWidgetFromNode: function(importer, node) {
+        var type = lively.data.Wrapper.getEncodedType(node);
+        if (type) {
+            var klass = Class.forName(type);
+            if (klass) {
+                var widget = new klass(importer, node);
+                widget.restoreFromSubnodes(importer, node);
+                return widget
+            } else {
+                throw new Error("Error in deserializing Widget:" + type + ", no class");
+            };
+        };
+        throw new Error("Error in deserializing Widget: no getEncodedType for " + node);     
+    },
+    
     deserializeFieldFromNode: function(importer, node) {
         var name = LivelyNS.getAttribute(node, "name");
         if (name) {

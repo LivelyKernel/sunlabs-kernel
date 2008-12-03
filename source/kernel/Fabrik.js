@@ -562,26 +562,11 @@ Morph.subclass('PinMorph', {
         this.setExtent(pt(18,18)); // fixes ellipse pt(0,0) === center behavior
         return this;
     },
-
-    restorePersistentState: function($super, importer) {
-        console.log("###restorePersistentState " + this.id())
-        var uri = this.getTrait("pinHandle");
-        if (uri)
-            console.log(" uri: " + uri);
-        else
-        console.log(" NO URI FOUND");
-        this.debugValue = "I was here"
-
-        // this.pinHandle = Wrapper.prototype.getWrapperByUri(uri);
-        // console.log("found wrapper: " + this.pinHandle);
-        // if (!this.pinHandle)
-        //     console.log("no wrapper found")       
-    },
     
     setPinHandle: function(pinHandle) {
         console.log("setPinHandle" + pinHandle)
-        this.setTrait("pinHandle", pinHandle.uri());
         this.pinHandle = pinHandle;
+        this.ownerWidget = pinHandle;
     },
     
      /* Drag and Drop of Pin */        
@@ -792,7 +777,6 @@ Widget.subclass('PinHandle', {
 
     buildView: function() {
         this.morph = new PinMorph();
-        this.morph.ownerWidget = this;
         
         // perhaps move to morph
         this.morph.setPinHandle(this);
@@ -1161,7 +1145,6 @@ Widget.subclass('PinConnector', {
     initialize: function($super, fromPinHandle, toPinHandle) {
         $super();
         
-        // manual serialization for now: until the Records are fixe to handle references correctly
         this.fromPin = fromPinHandle; 
         this.toPin = toPinHandle;                 
         this.isBidirectional = false;

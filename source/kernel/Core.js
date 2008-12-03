@@ -1222,21 +1222,6 @@ shallowCopy: function () {
 	// Override me
     },
 
-    deserializeWidgetFromNode: function(importer, node) {
-        var type = lively.data.Wrapper.getEncodedType(node);
-        if (type) {
-            var klass = Class.forName(type);
-            if (klass) {
-                var widget = new klass(importer, node);
-                widget.restoreFromSubnodes(importer, node);
-                return widget
-            } else {
-                throw new Error("Error in deserializing Widget:" + type + ", no class");
-            };
-        };
-        throw new Error("Error in deserializing Widget: no getEncodedType for " + node);     
-    },
-
     restoreFromSubnodes: function(importer) {
         //  wade through the children
         var children = [];
