@@ -4734,7 +4734,8 @@ Morph.subclass("HandMorph", {
 		break;
 	    }
 	}
-	
+	if (evt.isAltDown())
+	    evt.preventDefault();
     },
 
     bounds: function($super) {
