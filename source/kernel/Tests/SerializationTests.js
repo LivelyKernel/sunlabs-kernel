@@ -198,13 +198,21 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
                         '<rect x="0" y="0" width="800" height="600"/>' +
                         '<g type="DummyMorph" id="102:DummyMorph" transform="matrix(1 0 0 1 11 11)">'+
                             '<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
+                            '<field name="myWidget" ref="104:DummyWidget"></field>' +
+                            '<widget id="104:DummyWidget">'   +                    
+                            '</widget>' +  
                         '</g>'+
                     '</g>'+
                 '</svg>');
         var morph1 = world.submorphs[0];
+        var widget = morph1.myWidget;
         this.assertEqual(world.submorphs.length, 1, "world submorphs are wrong");
         this.assert(morph1 instanceof DummyMorph, " morph1 is no DummyMorph");
         this.assert(morph1.onDesieralizeWasRun, "onDesieralize was not run");
+
+        this.assert(widget instanceof DummyWidget, " widget is no DummyWidget");
+        this.assert(widget.onDesieralizeWasRun, "onDesieralize was not run in widget");
+
     },
     
     testLoadWorldWithTwoMorphs: function() {
@@ -394,6 +402,8 @@ TestCase.subclass('DomRecordTest', {
         this.assertEqualState(this.model.definition, {StaticField: {}, DynamicField: {}});
         this.assert(this.model.getDynamicField && this.model.setDynamicField);
     }
+        
+    
 });
 
 }) // end of module
