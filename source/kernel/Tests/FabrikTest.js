@@ -1688,7 +1688,7 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         this.assertEqual(pin1.getValue(), testString, "setting string value failed");        
         
         this.assert(text1.formalModel["Text$observers"], "no observer array for text pin");
-		this.assertEqual(text1.formalModel["Text$observers"].length, 1, "wrong number of observers");
+		this.assert(text1.formalModel["Text$observers"].length > 0, "wrong number of observers");
         this.assertEqual(pin2.getValue(), testString, "observing pin1 failed");
           
     },
@@ -2018,11 +2018,8 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         var fabrik = fabrikMorph.component;
         
         this.assertFabrikWithTwoTextComponentsAndConnector(fabrik);
-        
 
-        
-        //this.showMyWorld(world)
-        
+        // this.showMyWorld(world)
     },
     
     testLoadFabrikWidgets: function() {
