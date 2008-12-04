@@ -1718,6 +1718,7 @@ BoxMorph.subclass("TextMorph", {
     tryClipboardAction: function(evt) {
         // Copy and Paste Hack that works in Webkit/Safari
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
+		console.log('ready for clipboard action, key: ' + evt.getKeyChar() + '(' + evt.getKeyCode() + ')');
         var buffer = ClipboardHack.ensurePasteBuffer();
         if(!buffer) return false;
         if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
@@ -1725,30 +1726,24 @@ BoxMorph.subclass("TextMorph", {
                 TextMorph.clipboardString = event.clipboardData.getData("text/plain");
                 this.doPaste();
             }.bind(this);
-			buffer.select();
         	buffer.focus();
         	return true;
         };
         if (evt.getKeyChar().toLowerCase() === "c" || evt.getKeyCode() === 3) {
-            buffer.oncopy = function() {
-               	this.doCopy();
-                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
-                event.preventDefault();
-            }.bind(this);
+			this.doCopy();
+			buffer.textContent = TextMorph.clipboardString;
 			buffer.select();
         	buffer.focus();
         	return true;
         };
         if (evt.getKeyChar().toLowerCase() === "x" || evt.getKeyCode() === 24) {
-            buffer.oncut = function() {
-                this.doCut();
-                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
-                event.preventDefault();
-            }.bind(this);
+			this.doCut();
+			buffer.textContent = TextMorph.clipboardString;
 			buffer.select();
         	buffer.focus();
         	return true;
         };
+		console.log('Clipboard action not successful');
 		return false;
     },
     

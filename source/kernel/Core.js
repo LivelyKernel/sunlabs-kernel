@@ -5086,18 +5086,16 @@ Morph.subclass('BoxMorph', {
 
 ClipboardHack = {
     ensurePasteBuffer: function() {
-       var buffer = document.getElementById("copypastebuffer");
-       if (!buffer) {
-           buffer = document.createElement("textarea");
-           buffer.setAttribute("cols","1");
-           buffer.setAttribute("rows","1");
-           buffer.setAttribute("id","copypastebuffer");
-           buffer.setAttribute("style","position:absolute;left:0px; top:1px; width:1px; height:1px;");
-           buffer.textContent = "NoText";
-           document.body.appendChild(buffer);
-           buffer = document.getElementById("copypastebuffer");
-       };
-       return buffer
+		var buffer = document.getElementById("copypastebuffer");
+		if (buffer) return buffer;
+		buffer = document.createElement("textarea");
+		buffer.setAttribute("cols","1");
+		buffer.setAttribute("rows","1");
+		buffer.setAttribute("id","copypastebuffer");
+		buffer.setAttribute("style","position:absolute;left:0px; top:1px; width:1px; height:1px;");
+		buffer.textContent = "NoText";
+		document.body.appendChild(buffer);
+		return buffer;
    }
 }
 
