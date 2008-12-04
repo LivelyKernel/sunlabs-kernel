@@ -1820,7 +1820,7 @@ ChangeList.subclass('SourceDatabase', {
     
     interestingLKFileNames: function() {
         var kernelFileNames = new FileDirectory(URL.source).filenames();
-        var testFileNames = []/*new FileDirectory(URL.source.withFilename('Tests/')).filenames()*/;
+        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
         var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
         jsFiles = jsFiles.uniq();
         // FIXME remove
