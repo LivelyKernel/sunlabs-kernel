@@ -4710,15 +4710,21 @@ Morph.subclass("HandMorph", {
 
     blockBrowserKeyBindings: function(evt) {
 	switch (evt.getKeyCode()) {
-	case Event.KEY_SPACEBAR: // [don't] scroll
-	    // stop keypress but don't try to stop preceeding keydown,
-	    // which would prevent keypress from firing and being handled by Text etc
-	    if (evt.type == "KeyPress") evt.stop();
-	    break;
+		case Event.KEY_SPACEBAR: // [don't] scroll
+	    	// stop keypress but don't try to stop preceeding keydown,
+	    	// which would prevent keypress from firing and being handled by Text etc
+	    	if (evt.type == "KeyPress") evt.stop();
+	    	break;
 	    case Event.KEY_BACKSPACE: // [don't] go to the previous page 
-	    evt.stop();
-	    break;
-	}
+	    	evt.stop();
+	    	break;
+		case 22:
+		case 3:
+		case 24:
+			if (evt.isCtrlDown() && evt.type == "KeyPress")  // ctrl+x, ctrl+c, or ctrl+v pressed
+			        evt.preventDefault();
+			break;
+		}
 	switch (evt.getKeyChar()) {
 	case "[":
 	case "]":
