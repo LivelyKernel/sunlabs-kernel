@@ -1698,42 +1698,7 @@ BoxMorph.subclass("TextMorph", {
     onKeyPress: function(evt) {
         if (!this.acceptInput) return true;
 
-        // Copy and Paste Hack that works in Webkit 
-        var self= this;        
-        if(evt.isMetaDown() && (evt.getKeyChar() == "v")) {
-            var buffer = ClipboardHack.ensurePasteBuffer();
-            if(!buffer) return;
-            buffer.onpaste = function() {
-                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
-                self.doPaste();
-            };
-            buffer.focus(); 
-            return;
-        };
-        if(evt.isMetaDown() && (evt.getKeyChar() == "c")) {
-            var buffer = ClipboardHack.ensurePasteBuffer();
-            if(!buffer) return;
-            buffer.oncopy = function() {
-                self.doCopy();
-                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
-                event.preventDefault();
-            };
-            buffer.select();
-            buffer.focus();
-            return;
-        };
-        if(evt.isMetaDown() && (evt.getKeyChar() == "x")) {
-            var buffer = ClipboardHack.ensurePasteBuffer();
-            if(!buffer) return;
-            buffer.oncut = function() {
-                self.doCut();
-                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
-                event.preventDefault();
-            };
-            buffer.select();
-            buffer.focus();
-            return;   
-        };
+		if (this.tryClipboardAction(evt)) return;
 
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
         if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
@@ -1748,6 +1713,36 @@ BoxMorph.subclass("TextMorph", {
 	    return true;
         }
 	return false;
+    },
+    
+    tryClipboardAction: function(evt) {
+        // Copy and Paste Hack that works in Webkit/Safari
+        if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
+        var buffer = ClipboardHack.ensurePasteBuffer();
+        if(!buffer) return false;
+        if (evt.getKeyChar() == "v") {
+            buffer.onpaste = function() {
+                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
+                this.doPaste();
+            }.bind(this);
+        };
+        if (evt.getKeyChar() == "c") {
+            buffer.oncopy = function() {
+               	this.doCopy();
+                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
+                event.preventDefault();
+            }.bind(this);
+        };
+        if (evt.getKeyChar() == "x") {
+            buffer.oncut = function() {
+                this.doCut();
+                event.clipboardData.setData("text/plain", TextMorph.clipboardString);
+                event.preventDefault();
+            }.bind(this);
+        };
+        buffer.select();
+        buffer.focus();
+        return true;
     },
     
     replaceSelectionfromKeyboard: function(replacement) {

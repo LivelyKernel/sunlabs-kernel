@@ -505,6 +505,10 @@ var Event = (function() {
 	    return this.rawEvent.metaKey;
 	},
 
+	isCtrlDown: function() {
+	    return this.rawEvent.ctrlKey;
+	},
+
 	toString: function() {
 	    return Strings.format("#<Event:%s%s%s>", this.type, this.mousePoint ?  "@" + this.mousePoint : "",
 				  this.getKeyCode() || "");
