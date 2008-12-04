@@ -774,7 +774,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     
     testParseTestKlass: function() {
 		// Class definition of AnotherFileParserTest1
-		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 277, 497);
+		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 301, 521);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
@@ -816,6 +816,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
             db.cachedFullText['foo.js'] = newFileString;
         };
         this.root = db.addModule('foo.js', src);
+		this.db = db;
    },
    
 	fragmentNamed: function(name) {
@@ -863,7 +864,25 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
 		this.assertIdentity(foundAgain, fragment);
 		var old = this.fragmentNamed('ClassA');
 		this.assert(!old, 'old fragment still exisiting!');
-	}
+	},
+
+	testSourceWithErrorsWillNotBeSaved: function() {
+		var fragment = this.fragmentNamed('ClassA');
+		var newName = 'ClassAEdited';
+		fragment.putSourceCode('Object.subclass(\'' + newName + '\', \{\n');
+
+		this.assert(!this.db.cachedFullText['foo.js'].include('ClassAEdited'))
+	},
+
+	testReparse: function() {
+		var fragment = this.fragmentNamed('ClassA');
+		var result = fragment.reparse();
+		this.assertEqual(fragment.type, result.type);
+		this.assertEqual(fragment.name, result.name);
+		this.assertEqual(fragment.stopIndex, result.stopIndex);
+		this.assertEqual(fragment.startIndex, result.startIndex);
+		this.assertEqual(fragment.subElements.length, result.subElements.length);
+	},
    
 });
 
@@ -875,6 +894,7 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTe
 	},
 
 	testFragmentsOfNodesDiffer: function() {
+		/* just use updating via registered browsers, no need for hasCurrentSource
 		var class1Frag = this.fragmentNamed('ClassA');
 		var node1 = new ideModule.ClassFragmentNode(class1Frag, this.browser);
 		node1.sourceString(); // 'show' node1
@@ -886,30 +906,36 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTe
 		node1.newSource('Object.subclass(\'ClassA\', {});\n');
 		this.assert(node1.hasCurrentSource(), 'node1 hasCurrentSource 2');
 		this.assert(!node2.hasCurrentSource(), 'node2 hasCurrentSource 2');
+		*/
 	}
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     
-    shouldRun: false,
+    shouldRun: true,
     
     testStartKeyWatcher: function() {
-        var keyWatcher = Morph.makeRectangle(0,0,100,30);
-        var label = new TextMorph(keyWatcher.bounds());
+		var keyWatcher = Morph.makeRectangle(0,0,100,20);
+		keyWatcher.setFill(Color.red);
+  
+		var label = new TextMorph(keyWatcher.bounds().translatedBy(0,50));
         label.takesKeyboardFocus = Functions.False;
         label.onKeyDown = Functions.False;
         label.onKeyPress = Functions.False;
+		
         keyWatcher.addMorph(label);
         keyWatcher.takesKeyboardFocus = Functions.True;
         keyWatcher.onKeyPress = function(evt) {
                 console.log('PRESS');
+				if (evt.rawEvent.ctrlKey) console.log('Ctrl key pressed');
              //debugger;
             label.setTextString(evt.getKeyChar() + '---' + evt.getKeyCode());
             // evt.stop();
         }
         
         keyWatcher.openInWorld();
-        keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
+        //keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
+		WorldMorph.current().hands.first().setKeyboardFocus(keyWatcher);
     }
 })
     

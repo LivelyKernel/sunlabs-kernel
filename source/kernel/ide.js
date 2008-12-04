@@ -239,9 +239,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
     
 	allChanged: function(keepUnsavedChanges, changedNode) {
+
 		// optimization: if no node looks like the changed node in my browser do nothing
 		if (changedNode)
-			if (this.allNodes().flatten().every(function(ea) { return !ea || ea.target !== changedNode.target }))
+			if (this.allNodes().flatten().every(function(ea) { return !changedNode.hasSimilarTarget(ea) }))
 				return;
 
 	      // FIXME remove duplication
@@ -377,6 +378,16 @@ Object.subclass('lively.ide.BrowserNode', {
         return '-----'
     },
  
+	hasSimilarTarget: function(other) {
+		if (!other)
+			return false;
+		var myString = this.asString();
+		var otherString = other.asString();
+		return myString.length >= otherString.length ?
+			myString.include(otherString) :
+			otherString.include(myString);
+	},
+
     newSource: function(newSource) {
         // throw dbgOn(new Error("Shouldn't try to eval and save things now..."));
         if (!this.saveSource(newSource, tools.SourceControl))
@@ -1054,7 +1065,7 @@ Object.subclass('AnotherFileParser', {
     
     callOMeta: function(rule, src) {
         if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'))
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, !this.debugMode/*hideErrors?*/);
+        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, this.debugMode);
     },
     
     parseClass: function() {
@@ -1327,22 +1338,6 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         return this.modules[moduleOrModuleName];
     },
     
-    reparse: function(fragment) {
-        // this does not belong here ... 
-        if (!(fragment instanceof lively.ide.FileFragment)) throw dbgOn(new Error('Strange fragment'));
-        var parser = AnotherFileParser.withOMetaParser();
-        
-        // FIXME whoaa, that's ugly, better dispatch in fragments!
-        if (fragment.type === 'moduleDef') {
-            return parser.parseSource(fragment.getFileString(), {ptr: fragment.startIndex, fileName: fragment.fileName})[0];
-        }        
-        parser.ptr = fragment.startIndex;
-        parser.src = fragment.getFileString();
-        parser.lines = parser.src.split(/[\n\r]/);
-        parser.fileName = fragment.fileName;
-        return parser.parseWithOMeta(fragment.type);
-    },
-    
     addModule: function(fileName, fileString) {
 		if (this.modules[fileName]) return this.modules[fileName];
         fileString = fileString || this.getCachedText(fileName);
@@ -1482,7 +1477,7 @@ Object.subclass('lively.ide.FileFragment', {
         });
  
         // re parse this for updating the subelements
-        var newMe = this.getSourceControl().reparse(this);
+        var newMe = this.reparse();
         dbgOn(!newMe);
         if (newMe.type !== this.type || this.startIndex !== newMe.startIndex || this.stopIndex !== newMe.stopIndex)
             throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
@@ -1507,13 +1502,27 @@ Object.subclass('lively.ide.FileFragment', {
 
     putSourceCode: function(newString) {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
-		this.reparse
+		//this.reparse
 
         this.getSourceControl().putSourceCodeFor(this, newString);
         // dbgOn(true);
         this.updateIndices(newString);
     },
-    
+
+	reparse: function() {
+        var parser = AnotherFileParser.withOMetaParser();
+        
+        if (this.type === 'moduleDef') {
+            return parser.parseSource(this.getFileString(),
+					{ptr: this.startIndex, fileName: this.fileName})[0];
+        }
+        parser.ptr = this.startIndex;
+        parser.src = this.getFileString();
+        parser.lines = parser.src.split(/[\n\r]/);
+        parser.fileName = this.fileName;
+        return parser.parseWithOMeta(this.type);
+    },
+
     getSourceControl: function() {
         var ctrl = this.sourceControl || tools.SourceControl;
         if (!ctrl) throw dbgOn(new Error('No sourcecontrol !! '));
