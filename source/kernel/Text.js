@@ -1720,29 +1720,36 @@ BoxMorph.subclass("TextMorph", {
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
         var buffer = ClipboardHack.ensurePasteBuffer();
         if(!buffer) return false;
-        if (evt.getKeyChar() == "v") {
+        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
             buffer.onpaste = function() {
                 TextMorph.clipboardString = event.clipboardData.getData("text/plain");
                 this.doPaste();
             }.bind(this);
+			buffer.select();
+        	buffer.focus();
+        	return true;
         };
-        if (evt.getKeyChar() == "c") {
+        if (evt.getKeyChar().toLowerCase() === "c" || evt.getKeyCode() === 3) {
             buffer.oncopy = function() {
                	this.doCopy();
                 event.clipboardData.setData("text/plain", TextMorph.clipboardString);
                 event.preventDefault();
             }.bind(this);
+			buffer.select();
+        	buffer.focus();
+        	return true;
         };
-        if (evt.getKeyChar() == "x") {
+        if (evt.getKeyChar().toLowerCase() === "x" || evt.getKeyCode() === 24) {
             buffer.oncut = function() {
                 this.doCut();
                 event.clipboardData.setData("text/plain", TextMorph.clipboardString);
                 event.preventDefault();
             }.bind(this);
+			buffer.select();
+        	buffer.focus();
+        	return true;
         };
-        buffer.select();
-        buffer.focus();
-        return true;
+		return false;
     },
     
     replaceSelectionfromKeyboard: function(replacement) {

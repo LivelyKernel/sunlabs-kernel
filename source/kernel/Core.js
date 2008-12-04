@@ -4721,8 +4721,7 @@ Morph.subclass("HandMorph", {
 		case 22:
 		case 3:
 		case 24:
-			if (evt.isCtrlDown() && evt.type == "KeyPress")  // ctrl+x, ctrl+c, or ctrl+v pressed
-			        evt.preventDefault();
+			if (evt.isCtrlDown() && evt.type == "KeyPress") evt.preventDefault(); // ctrl+x, ctrl+c, or ctrl+v pressed
 			break;
 		}
 	switch (evt.getKeyChar()) {
@@ -4734,8 +4733,7 @@ Morph.subclass("HandMorph", {
 		break;
 	    }
 	}
-	if (evt.isAltDown())
-	    evt.preventDefault();
+	
     },
 
     bounds: function($super) {
