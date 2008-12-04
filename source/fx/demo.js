@@ -186,6 +186,20 @@ function morphicMain() {
         var widget = new ClockMorph(pt(80, 100), 50);
         world.addMorph(widget);
         widget.startSteppingScripts();
+        if (false) {  // needs XMLHttpRequest :-(
+            require('lively.Tools').toRun(function() {
+                var parser = new CodeMarkupParser(URL.source.withFilename('Pen.lkml'));
+	        parser.onComplete = function() {
+		    var widget;
+		    if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+		    else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
+		    widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100))); 
+		    if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
+		    devWorld.myWorld.addMorph(widget);
+	        }
+	        parser.parse();    
+            });
+        }
     }
     var link = new LinkMorph(null, pt(60, 400));
     world.addMorph(link);

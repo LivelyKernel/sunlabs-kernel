@@ -3021,38 +3021,26 @@ Morph.subclass('WindowMorph', {
     
     expand: function() {
         if (!this.isCollapsed()) return;
-console.log("*** expand 0 ***");
         this.collapsedTransform = this.getTransform();
-console.log("*** expand 1 ***");
         this.collapsedExtent = this.innerBounds().extent();
-console.log("*** expand 2 ***");
 	this.collapsedPosition = this.position();
         var finExpand = function () {	
 		this.setTransform(this.expandedTransform); 
-console.log("*** expand 3 ***");
 		this.targetMorph.setVisible(true);
 		// enable events if they weren't disabled in expanded form
 		if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
-console.log("*** expand 4 ***");
         	this.state = 'expanded';  // Set it now so setExtent works right
 		if (this.expandedExtent) {
-console.log("*** expand 5 ***");
 			this.setExtent(this.expandedExtent);
-console.log("*** expand 6 ***");
 			this.shape.setBounds(this.expandedExtent.extentAsRectangle());
 		}
-console.log("*** expand 7 ***");
 		this.world().addMorphFront(this);  // Bring this window forward if it wasn't already
-console.log("*** expand 8 ***");
 		this.layoutChanged();
-console.log("*** expand 9 ***");
         	this.takeHighlight();
-console.log("*** expand 10 ***");
 	}.bind(this);
 	if(this.expandedPosition && this.expandedPosition.dist(this.position()) > 100)
 			this.animatedInterpolateTo(this.expandedPosition, 5, 50, finExpand);
 		else finExpand();
-console.log("*** expand 11 ***");
     },
 
     isCollapsed: function() { return this.state === 'collapsed'; },
