@@ -928,7 +928,6 @@ Morph.subclass('ArrowHeadMorph', {
         this.setFillOpacity(0);
         this.setStrokeOpacity(0);
 
-
         lineWidth = lineWidth || 1;
         lineColor = lineColor || Color.black;
         fill = fill || Color.black;
@@ -936,10 +935,10 @@ Morph.subclass('ArrowHeadMorph', {
         width = width || 12;
 
         var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
-	var poly = new lively.scene.Polygon(verts);
-	// FIXME: positioning hack, remove the following
+        var poly = new lively.scene.Polygon(verts);
+        // FIXME: positioning hack, remove the following
         this.head = this.addMorph(new Morph(poly));
-	this.head.applyStyle({fill: fill, borderWidth: 1, borderColor: lineColor});
+        this.head.applyStyle({fill: fill, borderWidth: 1, borderColor: lineColor});
         
         this.setPosition(this.head.getPosition());
         this.setExtent(this.head.getExtent());
@@ -965,7 +964,7 @@ ComponentModel = {
         // FIXME Why isnt this handled at a central point?????
         return Record.newNodeInstance(optSpec || {});
     }
-}
+};
 
 Morph.subclass('ConnectorMorph', {
     
@@ -981,7 +980,7 @@ Morph.subclass('ConnectorMorph', {
         
         var vertices = verts.invoke('subPt', verts[0]);
         $super(new lively.scene.Polyline(vertices));
-	this.applyStyle({borderWidth: lineWidth, borderColor: lineColor});
+        this.applyStyle({borderWidth: lineWidth, borderColor: lineColor});
         this.customizeShapeBehavior();
         
         // this.setStrokeOpacity(0.7);
@@ -1023,13 +1022,13 @@ Morph.subclass('ConnectorMorph', {
             if (part == 0 || part == (this.vertices().length - 1)) return null
             return part 
         });
-	
+    
     },
 
     makeHandle: function($super, position, partName, evt) {
         // change behavior of the control point handles 
-	var handleMorph = $super(position, partName, evt);
-	var self = this;
+        var handleMorph = $super(position, partName, evt);
+        var self = this;
         handleMorph.showHelp =  handleMorph.showHelp.wrap(function(proceed, evt) {
             proceed(evt);
             self.showContextMenu(evt);
@@ -1322,7 +1321,7 @@ BoxMorph.subclass('ComponentMorph', {
         var otherRelevantMorphs = this.submorphs.reject(function(ea) { return ea.constructor === PinMorph});
         if (otherRelevantMorphs.length > 0) {
             this.adoptSubmorphsToNewExtent(this.getPosition(), this.getExtent(),
-                this.getPosition(), this.getExtent().subPt(pt(0, minHeight)));
+            this.getPosition(), this.getExtent().subPt(pt(0, minHeight)));
             // new topLeft so that we can put morph below the last one. let inset/2 space between morphs
             topLeft = topLeft.addPt(pt(0, bottomRight.y - minHeight - this.padding.top() / 2));
         };
@@ -1394,14 +1393,14 @@ BoxMorph.subclass('ComponentMorph', {
         var minHeight = 80;
         var morph = new LabeledTextMorph(this.getBoundsAndShrinkIfNecessary(minHeight), label , '-----');
         morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, lastCall) {
-	    try {
-		return proceed(partName, newPoint, lastCall);
-	    } finally {
-		var owner = this.owner;
-		if (owner.getExtent().subPt(pt(owner.padding.topLeft())).y < this.bounds().extent().y) {
+            try {
+                return proceed(partName, newPoint, lastCall);
+            } finally {
+                var owner = this.owner;
+                if (owner.getExtent().subPt(pt(owner.padding.topLeft())).y < this.bounds().extent().y) {
                     owner.setExtent(this.getExtent().addPt(owner.padding.topLeft()));
-		}
-	    }
+                }
+            }
         });
         
         var spec = {borderWidth: 0, /*opacity: 0.9,*/ borderRadius: 3};
@@ -1467,7 +1466,7 @@ BoxMorph.subclass('ComponentMorph', {
         var retval = $super(partName, newPoint, lastCall);
         this.adoptSubmorphsToNewExtent(priorPosition,priorExtent, this.getPosition(), this.getExtent().subPt(insetPt))
         this.setPosition(this.getPosition().addPt(deltaPos));
-	return retval;
+    return retval;
     },
     
     setExtent: function($super, newExt) {
@@ -1706,7 +1705,7 @@ Widget.subclass('Component', {
     },
 
     inputPins: function() {
-        return this.pinHandles.select(function(ea){return ea.isInputPin()})
+        return this.pinHandles.select(function(ea) { return ea.isInputPin() })
     },
 
     toString: function($super){
@@ -1773,7 +1772,7 @@ SelectionMorph.subclass('UserFrameMorph', {
     reshape: function($super, partName, newPoint, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
-	var result = null;
+        var result = null;
         if (this.initialSelection) {
             var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
             if (selRect.width*selRect.height > 30) {
@@ -1799,10 +1798,11 @@ SelectionMorph.subclass('UserFrameMorph', {
         
         if (lastCall) {
             if ((this.shape.bounds().extent().x < 10 && this.shape.bounds().extent().y < 10) ||
-		(this.shape.bounds().extent().x < 3 || this.shape.bounds().extent().y < 3))
-		this.remove();
-	}
-	return result;
+                (this.shape.bounds().extent().x < 3 || this.shape.bounds().extent().y < 3)) {
+                this.remove();
+            }
+        }
+        return result;
     },
     
     // removeWhenEmpty: false, 
@@ -1950,8 +1950,10 @@ ComponentMorph.subclass('FabrikMorph', {
     
     collapseToggle: function(value) {
         if (!value) return; // FIXME value from button click... ignore!
-        if (this.isCollapsed) this.uncollapse()
-        else this.collapse();
+        if (this.isCollapsed) 
+            this.uncollapse()
+        else 
+            this.collapse();
         this.updateHaloItemPositions();
         if (this.isFramed())
             this.setExtent(this.getExtent().addPt(this.owner.titleBar.getExtent().withX(0)));
@@ -2048,7 +2050,7 @@ ComponentMorph.subclass('FabrikMorph', {
             // window.setExtent(windowdBnds.extent());
             window.setBounds(windowdBnds);
             window.adjustForNewBounds();
-	    return result;
+        return result;
         });
         
         this.collapseToggle = this.collapseToggle.wrap(function(proceed, val) {
@@ -2252,7 +2254,7 @@ ComponentMorph.subclass('FunctionComponentMorph', {
         var self = this;
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
             var source = self.component.composeFunction(self.component.getFunctionHeader(), str, interactiveEval);
-            console.log("eval: " + source)			
+            console.log("eval: " + source)          
             return eval(source).apply(self.component, self.component.parameterValues());
         });
     }
@@ -2573,11 +2575,13 @@ Widget.subclass('ComponentBox', {
         var panel = new PanelMorph(this.viewExtent);
         this.panel = panel;
         
-        panel.applyStyle({borderWidth: 2,
-			  fill: new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white), 
-								 new lively.paint.Stop(1, Color.primary.blue)], 
-								lively.paint.LinearGradient.NorthSouth)});
-	
+        panel.applyStyle({
+                borderWidth: 2,
+                fill: new lively.paint.LinearGradient([
+                        new lively.paint.Stop(0, Color.white), 
+                        new lively.paint.Stop(1, Color.primary.blue)], 
+                    lively.paint.LinearGradient.NorthSouth)});
+    
 
         this.addMorphOfComponent(new FabrikComponent(), function() {
             var extent = pt(300,250);
