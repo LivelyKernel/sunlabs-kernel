@@ -14,6 +14,9 @@ load('dom/index.xhtml.js');
 
 print('loaded start document emulation');
 Config.suppressImageElementSerializationHack = true;
+Config.suppressBalloonHelp = true;  // to reduce distraction during demos
+Config.rollOut = true;  // config for quick setup
+
 load('../kernel/scene.js');
 load('../kernel/Core.js');
 
@@ -33,7 +36,6 @@ Loader.scriptInDOM = function(url) {
     return Loader.loadedFiles.include(url);
 }
 
-Config.rollOut = true;  // config for quick setup
 
 load('../kernel/Text.js');
 load('../kernel/Widgets.js');
@@ -123,7 +125,8 @@ function morphicMain() {
     console.log('created empty world ' + world);
     world.displayOnCanvas(canvas);
     console.log("displayed world");
-if (!Config.rollOut) {
+
+    var createSimpleObjects = function (world) {  // ----- start createSimpleObjects
     var colors = Color.wheel(4);
     var loc = pt(150, 450); 
     var widgetExtent = pt(70, 30);
@@ -177,7 +180,7 @@ if (!Config.rollOut) {
             widget.startStepping(60, "rotateBy", 0.1);
 	}
     }
-}	// end of rollOut block
+    }	// ----- end createSimpleObjects
 
     if (Config.showClock) {
         var widget = new ClockMorph(pt(80, 100), 50);
@@ -186,6 +189,7 @@ if (!Config.rollOut) {
     }
     var link = new LinkMorph(null, pt(60, 400));
     world.addMorph(link);
+    createSimpleObjects(link.myWorld);
 
     if (Config.showEngine()) 
 	EngineMorph.makeEngine(world, pt(400, 5))
