@@ -1148,17 +1148,19 @@ Widget.subclass('PinConnector', {
         this.isBidirectional = false;
         
         if (toPinHandle.isFakeHandle) return;
-        
+        this.observeFromTo(fromPinHandle, toPinHandle);
+            
+        console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
+    },
+  
+    observeFromTo: function(fromPinHandle, toPinHandle) {
         // FIXME: Relays inbetween? Serialization?
         var fromModel = fromPinHandle.component.formalModel;
         var toModel = toPinHandle.component.formalModel;
-
         // implicit assertion: pinHandle name equals field name of model
         var spec = {};
         spec[fromPinHandle.getName()] = "=set" + toPinHandle.getName();
-        fromModel.addObserver(toModel, spec);
-        
-        console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
+        fromModel.addObserver(toModel, spec);    
     },
   
     // just for make things work ...
@@ -1175,6 +1177,10 @@ Widget.subclass('PinConnector', {
 
     onDeserialize: function() {
         console.log("dersialize connector from" + this.fromPin + " to " + this.toPin)  
+        this.observeFromTo(this.fromPin, this.toPin);
+        if (this.isBidirectional) {
+            this.observeFromTo(this.toPin, this.fromPin);
+        }
     },
 
     // FIXME do we need this anymore? Can be directly called from pinMorph?... ?
@@ -1207,13 +1213,7 @@ Widget.subclass('PinConnector', {
     
     beBidirectional: function() {
         this.isBidirectional = true;
-        // FIXME: Relays inbetween? (Law of Demeter)
-        var fromModel = this.fromPin.component.formalModel;
-        var toModel = this.toPin.component.formalModel;
-        
-        var spec = {};
-        spec[this.toPin.getName()] = "=set" + this.fromPin.getName();
-        toModel.addObserver(fromModel, spec);
+        this.observeFromTo(this.toPin, this.fromPin);        
         this.updateView();
     },
 });

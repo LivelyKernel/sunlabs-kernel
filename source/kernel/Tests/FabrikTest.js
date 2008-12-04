@@ -2126,7 +2126,7 @@ SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
         fabrik.openIn(world);
         fabrik.panel.automaticLayout();
         
-        this.showMyWorld(world);
+        //this.showMyWorld(world);
         
     },
     
