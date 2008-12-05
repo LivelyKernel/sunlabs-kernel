@@ -396,6 +396,16 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
     },
+
+    testParseMethodWithComment: function() {
+    		var src = 'm1: function() { /*\{*/ }';
+            this.sut.src = src;
+            var descriptor = this.sut.callOMeta('methodDef');
+            this.assert(descriptor, 'no descriptor');
+            this.assertEqual(descriptor.name, 'm1');
+            this.assertIdentity(descriptor.startIndex, 0);
+            this.assertIdentity(descriptor.stopIndex, src.length - 1);
+    },
     
     testParseProperty: function() { // xxx: yyy,
         var src = 'initialViewExtent: pt(400,250),';
@@ -516,7 +526,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         this.sut.src = src;
         var all = this.sut.callOMeta('fileContent');
         this.assertEqual(all.length, 6);
-    }
+    },
         
 });
 
@@ -528,14 +538,15 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         var db = new SourceDatabase();
         var src = db.getCachedText('Core.js');
         var result = this.sut.parseSource(src);
+        this.assert(result && !result.isError)
         // this.assertDescriptorsAreValid(result);
     },
 
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest2', {
-        
-    testFindLinNo: function() {
+
+   	testFindLinNo: function() {
         var str = 'abc\ndef123\n\n\nxyz\n';
         var lines = str.split(/[\n\r]/);
         this.assertEqual(this.sut.findLineNo(lines, 0), 1);
@@ -680,13 +691,13 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     },
     
     testFailingKlassExtension3: function() {
-        var src = 'Morph.addMethods({})})';
+        var src = 'Morph.addMethods(\{\})\}\)';
         var result = this.sut.callOMeta('klassExtensionDef', src);
         this.assertEqual(result.type, 'klassExtensionDef');
     },
     
     testFailingPropertyDef: function() {
-        var src = 'neutral: {'  + '\n' +
+        var src = 'neutral: \{'  + '\n' +
     	'lightGray: Color.rgb(0xbd, 0xbe, 0xc0),'  + '\n' +
     	'gray: Color.rgb(0x80, 0x72, 0x77)' + '\n' + '\},';
     	var result = this.sut.callOMeta('propertyDef', src);
@@ -708,7 +719,7 @@ main.logCompletion("main").delay(Config.mainDelay);\n\
         this.assertEqual(result[1].subElements.length, 1);
     },
     
-    testParseModuledef: function() {
+testParseModuledef: function() {
         var src = 'module(\'lively.TileScripting\').requires(\'Helper.js\').toRun(function(thisModule) {\n\nMorph.addMethods({})\n});';
         var result = this.sut.parseSource(src);
 
@@ -745,6 +756,14 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
 		this.assertEqual(result.stopIndex, src.length-1);
     },
 
+	testParseError: function() { // unequal number of curly bracktes
+		var src = 'Object.subclass(\'ClassAEdited\', \{';
+		var result = this.sut.parseSource(src);
+		y = result;
+        this.assertEqual(result.length, 1);
+        this.assert(result[0].isError, 'no Error');
+    },
+
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest3', {
@@ -753,7 +772,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     
     testParseWorldMorph: function() {    // Object.subclass
 		// Class definition of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 1049, 1381);
+		var src = this.srcFromLinesOfFile('Core.js', 3465, 4218);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
@@ -774,18 +793,58 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     
     testParseTestKlass: function() {
 		// Class definition of AnotherFileParserTest1
-		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 301, 521);
+		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 301, 531);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
 
 	testParseFailingAddMethods: function() {
 		// addMethods of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 2985, 3037);
+		var src = this.srcFromLinesOfFile('Core.js', 2974, 3026);
 		var descriptor = this.sut.callOMeta('klassExtensionDef', src);
 		this.assertEqual(descriptor.type, 'klassExtensionDef');
 	}
     
+});
+
+thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTest', {
+
+	setUp: function($super) {
+		$super();
+		this.ometaParser = this.sut.ometaParser;
+		this.chunkParser = Object.delegated(ChunkParser, {});
+		this.debugFunction = function(src, grammarInstance, errorIndex) {
+			var startIndex = Math.max(0, errorIndex - 100);
+        	var stopIndex = Math.min(src.length, errorIndex + 100);
+        	var str = src.substring(startIndex, errorIndex) + '<--Error-->' + src.substring(errorIndex, stopIndex);
+			console.log(str);
+		}
+	},
+
+	testParseChunkWithComment: function() {
+		var src = '{/* abc */}'; // '{/}';
+		var p = this.ometaParser;
+		var result = p.matchAll(src, 'chunk', ['{', '}'], this.debugFunction.curry(src));
+		this.assert(result, 'couldn\'t parse');
+		this.assertEqual(result.length, src.length);
+	},
+
+	testParseChunkWithComment2: function() {
+		var src = '{// abc\n }';
+		var p = this.ometaParser;
+		var result = p.matchAll(src, 'chunk', ['{', '}'], this.debugFunction.curry(src));
+		this.assert(result, 'couldn\'t parse');	
+		this.assertEqual(result.length, src.length);
+	},
+
+	testParseChunkWithString: function() {
+		var src = '{\'bl\{a\'}';
+		var p = this.ometaParser;
+		var result = p.matchAll(src, 'chunk', ['{', '}'], this.debugFunction.curry(src));
+		this.assert(result, 'couldn\'t parse');
+		this.assertEqual(result.length, src.length);
+	},
+
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
@@ -809,79 +868,96 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentT
                '}); // end of module';
         var db = new AnotherSourceDatabase();
         db.cachedFullText['foo.js'] = src;
-        db.putSourceCodeFor = function(fileFragment, newString) {
-            var beforeString = src.substring(0, fileFragment.startIndex);
-            var afterString = src.substring(fileFragment.stopIndex);
-            var newFileString = beforeString.concat(newString, afterString);
-            db.cachedFullText['foo.js'] = newFileString;
-        };
+        db.putSourceCodeFor = function(fileFragment, newFileString) { db.cachedFullText['foo.js'] = newFileString };
         this.root = db.addModule('foo.js', src);
 		this.db = db;
+		this.src = src;
    },
    
 	fragmentNamed: function(name) {
 		return this.root.flattened().detect(function(ea) { return ea.name == name});
 	},
 
-   testCorrectNumberOfFragments: function() {
-       this.assertEqual(this.root.type, 'moduleDef');
-       this.assertEqual(this.root.flattened().length, 8);
-   },
-   
-   testFragmentsOfOwnFile: function() {
-		var classFragment = this.fragmentNamed('ClassA');
-		this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
-   },
-   
-   testPutNewSource: function() {
-       var classFragment = this.fragmentNamed('ClassA');
-       classFragment.putSourceCode('Object.subclass(\'ClassA\', { //thisHas17Chars\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
-       this.assertEqual(classFragment.startIndex, 55, 'classFrag1 start');
-       this.assertEqual(classFragment.stopIndex, 123+17, 'classFrag1 stop');
-       this.assertEqual(classFragment.subElements.length, 1);
-       this.assertEqual(classFragment.subElements[0].startIndex, 84+17, 'method1 start');
-       this.assertEqual(classFragment.subElements[0].stopIndex, 119+17, 'method1 stop');
-       var otherClassFragment = this.fragmentNamed('ClassB');
-       this.assertEqual(otherClassFragment.startIndex, 180+17, 'classFrag2 start');
-       this.assertEqual(otherClassFragment.stopIndex, 257+17, 'classFrag2 stop');
-       this.assertEqual(this.root.stopIndex, 277+17, 'root stop');
-       // this.assertEqual(this.root.subElements[0].stopIndex, 277+17);
-   },
-
-	testGetSourceCodeWithoutSubElements: function() {
-		var fragment = this.fragmentNamed('ClassB');
-		this.assert(fragment, 'no fragment found');
-		var expected =  'ClassA.subclass(\'ClassB\', {\n\t\n});\n';
-		this.assertEqual(fragment.getSourceCodeWithoutSubElements(), expected);
-	},
-
-	testRenameClass: function() {
-		var fragment = this.fragmentNamed('ClassA');
-		var newName = 'ClassARenamed';
-		fragment.putSourceCode('Object.subclass(\'' + newName + '\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
-		this.assertEqual(fragment.name, newName);
-		var foundAgain = this.fragmentNamed(newName);
-		this.assertIdentity(foundAgain, fragment);
-		var old = this.fragmentNamed('ClassA');
-		this.assert(!old, 'old fragment still exisiting!');
-	},
-
-	testSourceWithErrorsWillNotBeSaved: function() {
-		var fragment = this.fragmentNamed('ClassA');
-		var newName = 'ClassAEdited';
-		fragment.putSourceCode('Object.subclass(\'' + newName + '\', \{\n');
-
-		this.assert(!this.db.cachedFullText['foo.js'].include('ClassAEdited'))
-	},
+       testCorrectNumberOfFragments: function() {
+           this.assertEqual(this.root.type, 'moduleDef');
+           this.assertEqual(this.root.flattened().length, 8);
+       },
+       
+       testFragmentsOfOwnFile: function() {
+     var classFragment = this.fragmentNamed('ClassA');
+     this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
+       },
+       
+       testPutNewSource: function() {
+           var classFragment = this.fragmentNamed('ClassA');
+           classFragment.putSourceCode('Object.subclass(\'ClassA\', { //thisHas17Chars\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
+           this.assertEqual(classFragment.startIndex, 55, 'classFrag1 start');
+           this.assertEqual(classFragment.stopIndex, 123+17, 'classFrag1 stop');
+           this.assertEqual(classFragment.subElements.length, 1);
+           this.assertEqual(classFragment.subElements[0].startIndex, 84+17, 'method1 start');
+           this.assertEqual(classFragment.subElements[0].stopIndex, 119+17, 'method1 stop');
+           var otherClassFragment = this.fragmentNamed('ClassB');
+           this.assertEqual(otherClassFragment.startIndex, 180+17, 'classFrag2 start');
+           this.assertEqual(otherClassFragment.stopIndex, 257+17, 'classFrag2 stop');
+           this.assertEqual(this.root.stopIndex, 277+17, 'root stop');
+           // this.assertEqual(this.root.subElements[0].stopIndex, 277+17);
+       },
+    
+    testGetSourceCodeWithoutSubElements: function() {
+     var fragment = this.fragmentNamed('ClassB');
+     this.assert(fragment, 'no fragment found');
+     var expected =  'ClassA.subclass(\'ClassB\', {\n\t\n});\n';
+     this.assertEqual(fragment.getSourceCodeWithoutSubElements(), expected);
+    },
+    
+    testRenameClass: function() {
+     var fragment = this.fragmentNamed('ClassA');
+     var newName = 'ClassARenamed';
+     fragment.putSourceCode('Object.subclass(\'' + newName + '\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
+     this.assertEqual(fragment.name, newName);
+     var foundAgain = this.fragmentNamed(newName);
+     this.assertIdentity(foundAgain, fragment);
+     var old = this.fragmentNamed('ClassA');
+     this.assert(!old, 'old fragment still exisiting!');
+    },
+    
+    testSourceWithErrorsWillNotBeSaved: function() {
+     var fragment = this.fragmentNamed('ClassA');
+     var newName = 'ClassAEdited';
+     fragment.putSourceCode('Object.subclass(\'' + newName + '\', \{\n');
+    
+     this.assert(!this.db.cachedFullText['foo.js'].include('ClassAEdited'))
+    },
 
 	testReparse: function() {
 		var fragment = this.fragmentNamed('ClassA');
-		var result = fragment.reparse();
+		var result = fragment.reparse(fragment.getSourceCode());
 		this.assertEqual(fragment.type, result.type);
 		this.assertEqual(fragment.name, result.name);
 		this.assertEqual(fragment.stopIndex, result.stopIndex);
 		this.assertEqual(fragment.startIndex, result.startIndex);
 		this.assertEqual(fragment.subElements.length, result.subElements.length);
+	},
+
+	testReparseWithError: function() {
+		var fragment = this.fragmentNamed('ClassA');
+		var newSrc = 'Object.subclass(\'ClassAEdited\', \{\n';
+		var result = fragment.reparse(newSrc);
+dbgOn(true)
+		this.assert(result.isError, 'no errorFileFrag');
+	},
+
+	testBuildNewSourceString: function() {
+		var fragment = this.fragmentNamed('ClassA');
+		var newString = 'Object.subclass(\'ClassXYZ\', {});\n';
+		var result = fragment.buildNewFileString(newString);
+		var expected = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
+               'Object.subclass(\'ClassXYZ\', {});\n' +
+               'ClassA.m3 = function() { 123 };\n' +
+               'function abc() { 1+2 };\n' +
+               'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
+               '}); // end of module';
+		this.assertEqual(expected, result);
 	},
    
 });

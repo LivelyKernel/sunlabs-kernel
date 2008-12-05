@@ -1064,8 +1064,19 @@ Object.subclass('AnotherFileParser', {
     },
     
     callOMeta: function(rule, src) {
-        if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'))
-        return OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, this.debugMode);
+        if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'));
+
+        var errorDescr;
+        var errorHandler;
+        errorHandler = function(src, rule, grammarInstance, errorIndex) {
+         var restLength = src.length - this.ptr
+         errorDescr = new ide.ParseErrorFileFragment(src, null, 'errorDef', 0, restLength-1);
+         if (this.debugMode)
+             OMetaSupport.handleErrorDebug(src, rule, grammarInstance, errorIndex);
+        }.bind(this);
+        var result = OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, errorHandler);
+		return result ? result : errorDescr;
+		//return result
     },
     
     parseClass: function() {
@@ -1127,8 +1138,10 @@ Object.subclass('AnotherFileParser', {
         var descr;
         if (hint) descr = this.callOMeta(hint, partToParse);
         // if (descr) console.log('hint helped!!!!');
-        if (!descr)
-            this.ometaRules.detect(function(rule) { return descr = this.callOMeta(rule, partToParse) }, this);
+        if (!descr || descr.isError)
+            this.ometaRules
+				.without(hint)
+				.detect(function(rule) { descr = this.callOMeta(rule, partToParse); return descr && !descr.isError }, this);
  
         if (descr === undefined)
             throw dbgOn(new Error('Could not parse src at ' + this.ptr));
@@ -1188,7 +1201,19 @@ Object.subclass('AnotherFileParser', {
                 throw new Error('Could not parse ' + this.currentLine + ' ...');
             }
             /*******/
-            if (this.ptr <= tmpPtr) throw dbgOn(new Error('Could not go forward: ' + tmpPtr));
+            if (this.ptr <= tmpPtr) {
+				dbgOn(true);
+				console.warn('Could not go forward before line ' + this.findLineNo(this.lines, tmpPtr));
+				// throw the last added descriptor away and add an errorDescriptor
+				var responsible;
+				if (this.changeList.last() === descr) responsible = this.changeList;
+				else if (specialDescr.last().subElements.last() === descr) responsible = specialDescr.last().subElements;
+				else throw new Error('Couldn\'t find last added descriptor');
+				responsible.pop();
+				descr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1);
+				responsible.push(descr);
+				this.ptr = descr.stopIndex + 1;
+			}
 
             if (this.debugMode) {
                 var msNow = new Date().getTime();
@@ -1202,8 +1227,9 @@ Object.subclass('AnotherFileParser', {
             descr = null;
         }
         
-        if (specialDescr.length > 0)
-            throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.last().type));
+        if (specialDescr.length > 0 &&  (!specialDescr.last().subElements.last().isError || !this.changeList.last().isError))
+            console.warn('Couldn\'t find end of ' + specialDescr.last().type);
+            //throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.last().type));
         
         console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
         // console.log('Overhead:................................' + this.overheadTime/1000 + 's');
@@ -1353,12 +1379,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         return root;
     },
     
-    putSourceCodeFor: function(fileFragment, newString) {
+    putSourceCodeFor: function(fileFragment, newFileString) {
         if (!(fileFragment instanceof lively.ide.FileFragment)) throw dbgOn(new Error('Strange fragment'));
-        var fileString = fileFragment.getFileString();
-        var beforeString = fileString.substring(0, fileFragment.startIndex);
-        var afterString = fileString.substring(fileFragment.stopIndex+1);
-        var newFileString = beforeString.concat(newString, afterString);
         newFileString = newFileString.replace(/\r/gi, '\n');  // change all CRs to LFs
         console.log("Saving " + fileFragment.fileName + "...");
         new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
@@ -1394,7 +1416,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     
     preLoadFileNames: function($super) {
 		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
-		return [ 'Tests/ToolsTests.js', 'test.js']
+    return [ 'Tests/ToolsTests.js', 'test.js']
+    //return [];
     },
 
 	// browser stuff
@@ -1459,32 +1482,6 @@ Object.subclass('lively.ide.FileFragment', {
         }, this);
     },
     
-    updateIndices: function(newSource) {
-        this.checkConsistency();
-        
-        var prevStop = this.stopIndex;
-        var newStop = this.startIndex + newSource.length - 1;
-        var delta = newStop - prevStop;
-        
-        this.stopIndex = newStop;    // self
-        
-        // update fragments which follow after this or where this is a part of
-        this.fragmentsOfOwnFile().each(function(ea) {
-            if (ea.stopIndex < prevStop) return;
-            ea.stopIndex += delta;
-            if (ea.startIndex <= prevStop) return;
-            ea.startIndex += delta;
-        });
- 
-        // re parse this for updating the subelements
-        var newMe = this.reparse();
-        dbgOn(!newMe);
-        if (newMe.type !== this.type || this.startIndex !== newMe.startIndex || this.stopIndex !== newMe.stopIndex)
-            throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
-		this.name = newMe.name; // for renaming
-        this.subElements = newMe.subElements;
-    },
-    
     getSourceCode: function() {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
         return this.getFileString().substring(this.startIndex, this.stopIndex+1);
@@ -1504,29 +1501,73 @@ Object.subclass('lively.ide.FileFragment', {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
 		//this.reparse
 
-        this.getSourceControl().putSourceCodeFor(this, newString);
-        // dbgOn(true);
-        this.updateIndices(newString);
+        var newMe = this.reparse(newString);
+        dbgOn(!newMe);
+        if (newMe.type !== this.type || this.startIndex !== newMe.startIndex)
+            throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
+        
+		var newFileString = this.buildNewFileString(newString);
+        this.getSourceControl().putSourceCodeFor(this, newFileString);
+        
+        /*if (newMe.getSourceCode() !== newString) {
+            console.warn('newString not equal source of new fragment...???!!!');
+            console.log(newMe.getSourceCode());
+            console.log('vs');
+            console.log(newString)
+        }
+         */   
+
+        this.updateIndices(newString, newMe);
     },
 
-	reparse: function() {
+	buildNewFileString: function(newString) {
+        var fileString = this.getFileString();
+        var beforeString = fileString.substring(0, this.startIndex);
+        var afterString = fileString.substring(this.stopIndex+1);
+        var newFileString = beforeString.concat(newString, afterString);
+		return newFileString;
+	},
+
+	reparse: function(newSource) {
+		var newFileString = this.buildNewFileString(newSource);
+		newFileString = newFileString.slice(0,this.startIndex + newSource.length)
+
         var parser = AnotherFileParser.withOMetaParser();
-        
-        if (this.type === 'moduleDef') {
-            return parser.parseSource(this.getFileString(),
-					{ptr: this.startIndex, fileName: this.fileName})[0];
-        }
+        if (this.type === 'moduleDef')
+            return parser.parseSource(newFileString, {ptr: this.startIndex, fileName: this.fileName})[0];
         parser.ptr = this.startIndex;
-        parser.src = this.getFileString();
-        parser.lines = parser.src.split(/[\n\r]/);
+        parser.src = newFileString;
+        parser.lines = newFileString.split(/[\n\r]/);
         parser.fileName = this.fileName;
         return parser.parseWithOMeta(this.type);
     },
 
+    updateIndices: function(newSource, newMe) {
+        this.checkConsistency();
+
+        var prevStop = this.stopIndex;
+        var newStop = newMe.stopIndex;
+        var delta = newStop - prevStop;
+        
+        this.stopIndex = newStop;    // self
+        
+        // update fragments which follow after this or where this is a part of
+        this.fragmentsOfOwnFile().each(function(ea) {
+            if (ea.stopIndex < prevStop) return;
+            ea.stopIndex += delta;
+            if (ea.startIndex <= prevStop) return;
+            ea.startIndex += delta;
+        });
+ 
+		this.name = newMe.name; // for renaming
+        this.subElements = newMe.subElements;
+		this.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
+    },
+    
     getSourceControl: function() {
         var ctrl = this.sourceControl || tools.SourceControl;
         if (!ctrl) throw dbgOn(new Error('No sourcecontrol !! '));
-        if (!(ctrl instanceof AnotherSourceDatabase)) console.warn('Using old source control, could lead to errors...');
+        if (!(ctrl instanceof AnotherSourceDatabase)) throw dbgOn(new Error('Using old source control, could lead to errors...'));
         return ctrl;
     },
     
@@ -1556,8 +1597,22 @@ Object.subclass('lively.ide.FileFragment', {
  
     inspect: function() {
     	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
-	}
+	},
     
-})
+});
+
+ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
+
+	isError: true,
+
+	initialize: function($super, fileString, name, type, startI, stopI, lineNo, fileName, subElems, srcCtrl) {
+		$super(name, type, startI, stopI, lineNo, fileName, subElems, srcCtrl);
+		this.fileString = fileString;
+    },
+
+	getFileString: function() {
+        return this.fileString
+    },
+});
  
 });
