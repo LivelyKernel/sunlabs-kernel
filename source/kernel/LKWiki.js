@@ -333,7 +333,7 @@ Widget.subclass('WikiNavigator', {
 	},
 		
 	createWikiNavigatorButton: function() {
-	    var btn =  new TextMorph(new Rectangle(0,0,200,50), 'Wiki control');
+	    var btn =  new TextMorph(new Rectangle(0,0,80,50), 'Wiki control');
 	    btn.supressHandles = true;
 	    btn.handlesMouseDown = Functions.False;
 	    var self = this;
