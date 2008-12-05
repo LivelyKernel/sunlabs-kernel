@@ -260,19 +260,19 @@ Global.Fabrik = {
     openFabrikWebRequestExample: function(world, loc) {
         if (!loc) loc = pt(120, 110);
         var f = this.openFabrikComponent(world, loc, pt(730, 170), 'WebRequest Example');
-
+    
         var urlHolder = this.addTextComponent(f);
         urlHolder.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
-
+    
         var req = this.addWebRequestComponent(f);
-
+    
         var result = this.addTextComponent(f);
-
+    
         f.morph.automaticLayout();
-
+    
         return f;
     },
-
+    
     openFabrikWeatherWidgetExample: function(world, loc) {
         if (!loc) loc = pt(100, 100);
         
@@ -306,7 +306,7 @@ Global.Fabrik = {
         combineURLAndZIP.removePin('Input');
         zipPin.connectTo(combineURLAndZIP.getPin('Zip'));
         // urlPin.connectTo(combineURLAndZIP.getPin('Url'));
-
+    
         /* WebRequestor */
         var req = this.addWebRequestComponent(requestor);
         combineURLAndZIP.getPin('Result').connectTo(req.getPin('URL'));
@@ -337,7 +337,7 @@ Global.Fabrik = {
         var humidityPin = extractCondition.addPin('Humidity'); this.setPositionRel(pt(0.96, 0.6), humidityPin.morph);
         var windPin = extractCondition.addPin('Wind'); this.setPositionRel(pt(0.96, 0.8), windPin.morph);
         var imagePin = extractCondition.addPin('Image'); this.setPositionRel(pt(0.5, 0.96), imagePin.morph);
-        extractCondition.setFunctionBody('if (input) {\n var infos = input.js.current_conditions; \n this.setCondition(infos.condition); \n this.setTemp(infos.temp_c + "°C / " + infos.temp_f + "°F"); \n this.setHumidity(infos.humidity); \n this.setWind(infos.wind_condition); \n this.setImage("http://www.google.com/ig" + infos.icon);\n }');
+        extractCondition.setFunctionBody('if (input) {\n var infos = input.js.current_conditions; \n this.setCondition(infos.condition); \n this.setTemp(infos.temp_c + "°C / " + infos.temp_f + "°F"); \n this.setHumidity(infos.humidity); \n this.setWind(infos.wind_condition); \n this.setImage("http:\/\/www.google.com/ig" + infos.icon);\n }');
                 
         // add the 'UI'
         var extent = pt(80,50);
@@ -392,8 +392,6 @@ Global.Fabrik = {
         zipInput.setText('12685');
         combineURLAndZIP.setFunctionBody("'http://www.google.com/ig/api?weather=' + zip");
         
-        
-        
         return base;
     },
     
@@ -401,7 +399,7 @@ Global.Fabrik = {
         // the next variables are intentionally defined global
         if (!loc) loc = pt(10,10);
         var f = this.openFabrikComponent(world, loc, pt(940,270), 'Currency Converter');
-
+    
         var urlComp = this.addTextComponent(f);
         urlComp.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
         var reqComp = this.addFunctionComponent(f);
@@ -426,37 +424,37 @@ Global.Fabrik = {
         currencyComp.setText("0");
         currency1Comp.setText("");
         currency2Comp.setText("");
-
-
+    
+    
         f.morph.automaticLayout();
         return f;
     },
-
+    
     openFahrenheitCelsiusExample: function(world, loc) {
         if (!loc) loc = pt(100, 100);
         var f = this.openFabrikComponent(world, loc, pt(940,270), 'Celsius-Fahrenheit Converter');
         celsius = this.addTextComponent(f);
         celsius.setText("");
-
+    
         var f1 = this.addFunctionComponent(f);
         f1.setFunctionBody("input * 9/5 + 32");
-
+    
         var fahrenheit = this.addTextComponent(f);
         fahrenheit.setText("");
-
+    
         var f2 = this.addFunctionComponent(f);
         //f4.addFieldAndPinHandle('Input');
         f2.setFunctionBody("(input - 32) * 5/9");
-
+    
         f.connectComponents(celsius, "Text", f1, "Input");
         f.connectComponents(f1, "Result", fahrenheit, "Text");
-
+    
         // f.connectComponents(fahrenheit, "Text", f3, "Input");
         // f.connectComponents(f3, "Result", f4, "Input");
         // f.connectComponents(f4, "Result", celsius, "Text");
-
+    
         f.morph.automaticLayout();
-
+    
         // some manual layouting
         // f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
         // f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
@@ -464,36 +462,36 @@ Global.Fabrik = {
         this.positionComponentRelativeToOther(f2, f1, pt(0, f1.panel.getExtent().y + 20));
         celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,celsius.panel.getExtent().y / 2)));
         fahrenheit.panel.setPosition(fahrenheit.panel.getPosition().addPt(pt(0,(fahrenheit.panel.getExtent().y + 20) / 2)));
-
+    
         return f;
     },
-
-
+    
+    
     openFahrenheitCelsiusExampleSimple: function(world, loc) {
         if (!loc) loc = pt(100, 100);
         var f = this.openFabrikComponent(world, loc, pt(940,270), 'Celsius-Fahrenheit Converter');
         celsius = this.addTextComponent(f);
         celsius.setText("");
-
+    
         var f1 = this.addFunctionComponent(f);
         f1.setFunctionBody("input * 9/5 + 32");
-
+    
         var fahrenheit = this.addTextComponent(f);
         fahrenheit.setText("");
-
+    
         var f2 = this.addFunctionComponent(f);
         //f4.addFieldAndPinHandle('Input');
         f2.setFunctionBody("(input - 32) * 5/9");
-
+    
         f.connectComponents(celsius, "Text", f1, "Input");
         f.connectComponents(f1, "Result", fahrenheit, "Text");
-
+    
         // f.connectComponents(fahrenheit, "Text", f3, "Input");
         // f.connectComponents(f3, "Result", f4, "Input");
         // f.connectComponents(f4, "Result", celsius, "Text");
-
+    
         f.morph.automaticLayout();
-
+    
         // some manual layouting
         // f3.panel.setPosition(f1.panel.getPosition().addPt(pt(0,f1.panel.getExtent().y + 20)));
         // f4.panel.setPosition(f2.panel.getPosition().addPt(pt(0,f2.panel.getExtent().y + 20)));
@@ -501,16 +499,10 @@ Global.Fabrik = {
         this.positionComponentRelativeToOther(f2, f1, pt(0, f1.panel.getExtent().y + 20));
         celsius.panel.setPosition(celsius.panel.getPosition().addPt(pt(0,celsius.panel.getExtent().y / 2)));
         fahrenheit.panel.setPosition(fahrenheit.panel.getPosition().addPt(pt(0,(fahrenheit.panel.getExtent().y + 20) / 2)));
-
+    
         return f;
     },
-
-
-
-
-
-
-
+    
     openFabrikFunctionComponentExample2: function() {
         // the next variables are intentionally defined global
         var f = this.openFabrikComponent();
@@ -519,16 +511,17 @@ Global.Fabrik = {
         var f1 = this.addFunctionComponent(f);
         c1.setText("");
         c2.setText("");
-
+    
         f1.setFunctionBody("return this.getInput() * this.getInput()");
-
+    
         f.connectComponents(f1, "Result", c1, "Text");
         f.connectComponents(c2, "Text", f1, "Input");
-
+    
         f.morph.automaticLayout();
-
+    
         return f;
     }
+
 };
 
 
@@ -2529,7 +2522,7 @@ Component.subclass('TextListComponent', {
         }.bind(this) });
     }
     
-}),
+});
 
 Widget.subclass('ComponentBox', {
 
