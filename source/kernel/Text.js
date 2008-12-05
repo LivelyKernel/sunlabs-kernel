@@ -1718,7 +1718,6 @@ BoxMorph.subclass("TextMorph", {
     tryClipboardAction: function(evt) {
         // Copy and Paste Hack that works in Webkit/Safari
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
-		console.log('ready for clipboard action, key: ' + evt.getKeyChar() + '(' + evt.getKeyCode() + ')');
         var buffer = ClipboardHack.ensurePasteBuffer();
         if(!buffer) return false;
         if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
