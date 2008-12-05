@@ -147,9 +147,8 @@ Global.ChunkParser = {
   },
 
   parseEscapedChar: function() {
-    if (this.next !== '\\') return false;
+    if (this.next !== '\\') return;
     this.makeStep();
-    return true
   },
 
   parseComment: function() {
@@ -158,13 +157,13 @@ Global.ChunkParser = {
     if (this.next !== '/') return false;
     if (this.nextNext === '/') comment1Opened = true;
     if (this.nextNext === '*') comment2Opened = true;
-    if (!comment1Opened && !comment2Opened) return false;
+    if (!comment1Opened && !comment2Opened) return;
     this.makeStep();
-    while (true) {
+    while (true) { // this seems to crash Safari/Webkit, using do while below
       while (this.parseEscapedChar()) {};
       this.makeStep();
-      if (comment1Opened && this.next === '\n' ) return true;
-      if (comment2Opened && this.next === '*' && this.nextNext === '/' /*&& this.makeStep()*/) return true;
+      if (comment1Opened && this.next === '\n' ) return;
+      if (comment2Opened && this.next === '*' && this.nextNext === '/' && this.makeStep()) return;
     }
   },
 
@@ -173,20 +172,19 @@ Global.ChunkParser = {
     var string2Opened;
     if (this.next === '\'') string1Opened = true;
     if (this.next === '"') string2Opened = true;
-    if (!string1Opened && !string2Opened) return false;
-    while (true) {
+    if (!string1Opened && !string2Opened) return;
+    while (true) { // this seems to crash Safari/Webkit
       while (this.parseEscapedChar()) {};
       this.makeStep();
-      if (string1Opened && this.next === '\'') return true;
-      if (string2Opened && this.next === '"') return true;
+      if (string1Opened && this.next === '\'') return;
+      if (string2Opened && this.next === '"') return;
     }
   },
   
   parseRest: function() {
-    if (this.parseEscapedChar()) return false;
-    // if (this.parseString()) return false;
-    // if (this.parseComment()) return false;
-      
+    this.parseEscapedChar();
+    this.parseString();
+    this.parseComment();
     if (this.next === this.chunkEnd && this.counter === 0) // end
       return true;
     if (this.next === this.chunkEnd) { // end of another chunk
