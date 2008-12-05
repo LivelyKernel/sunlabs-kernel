@@ -276,7 +276,7 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
     },
     
     activationArea: function() {
-        var relative = new Rectangle(0.9,0,0.1,1);
+        var relative = new Rectangle(0.95,0,0.05,1);
         return this.getWorld().bounds().scaleByRect(relative);
     },
     
