@@ -120,8 +120,87 @@ Global.makeOMInputStreamProxy = function makeOMInputStreamProxy(target) {
 Global.Failer = function Failer() { }
 Failer.prototype.used = false
 
-// the OMeta "class" and basic functionality
+Global.ChunkParser = {
+  
+  start: function(ometaParser, chunkStart, chunkEnd) {
+    this.ometaParser = ometaParser;
+    this.chunkStart = chunkStart;
+    this.chunkEnd = chunkEnd;
+    this.chunkEndFound = false;
+    this.next = null;
+    this.counter = 0;
+    this.result = [];
+    this.parseStart();
+    do { this.makeStep() } while (!this.parseRest());
+    return this.result;
+  },
+  
+  parseStart: function() {
+    this.result.push(this.ometaParser._applyWithArgs('exactly', this.chunkStart));
+  },
+  
+  makeStep: function() {
+    this.next = this.ometaParser._apply("anything");
+    this.result.push(this.next);
+    this.nextNext = this.ometaParser.input.hd;
+    return this.next;
+  },
 
+  parseEscapedChar: function() {
+    if (this.next !== '\\') return false;
+    this.makeStep();
+    return true
+  },
+
+  parseComment: function() {
+    var comment1Opened;
+    var comment2Opened;
+    if (this.next !== '/') return false;
+    if (this.nextNext === '/') comment1Opened = true;
+    if (this.nextNext === '*') comment2Opened = true;
+    if (!comment1Opened && !comment2Opened) return false;
+    this.makeStep();
+    while (true) {
+      while (this.parseEscapedChar()) {};
+      this.makeStep();
+      if (comment1Opened && this.next === '\n' ) return true;
+      if (comment2Opened && this.next === '*' && this.nextNext === '/' /*&& this.makeStep()*/) return true;
+    }
+  },
+
+  parseString: function() {
+    var string1Opened;
+    var string2Opened;
+    if (this.next === '\'') string1Opened = true;
+    if (this.next === '"') string2Opened = true;
+    if (!string1Opened && !string2Opened) return false;
+    while (true) {
+      while (this.parseEscapedChar()) {};
+      this.makeStep();
+      if (string1Opened && this.next === '\'') return true;
+      if (string2Opened && this.next === '"') return true;
+    }
+  },
+  
+  parseRest: function() {
+    if (this.parseEscapedChar()) return false;
+    // if (this.parseString()) return false;
+    // if (this.parseComment()) return false;
+      
+    if (this.next === this.chunkEnd && this.counter === 0) // end
+      return true;
+    if (this.next === this.chunkEnd) { // end of another chunk
+      this.counter--;
+      return false;
+    }
+    if (this.next === this.chunkStart) // begin of another chunk
+      this.counter++;
+    return false;
+  }
+  
+};
+
+// the OMeta "class" and basic functionality
 Global.OMeta = {
   _apply: function(rule) {
     dbgOn(this.shouldHalt);
@@ -355,27 +434,65 @@ Global.OMeta = {
   },
   basicChunk: function() {
     var chunkStart = this._apply("anything"),
-        chunkEnd   = this._apply("anything"),
-        r          = [],
-        counter    = 0,
-        next       = null;
-    r.push(this._applyWithArgs('exactly', chunkStart));
-    while (true) {
-      var next = this._apply("anything");
-      r.push(next);
-      if (next === '\\') { // escaped char, ignore next input
-        r.push(this._apply("anything"));
-        continue;
-      }
-      if (next === chunkEnd && counter === 0) // end
-        return r;
-      if (next === chunkEnd) { // end of another chunk
-        counter--;
-        continue;
-      }
-      if (next === chunkStart)
-        counter++;
-    }
+        chunkEnd   = this._apply("anything");
+    if (!this.chunkParser)
+      this.chunkParser = Object.delegated(ChunkParser, {});
+    return this.chunkParser.start(this, chunkStart, chunkEnd);
+    // var $elf       = this,
+    //     chunkStart = this._apply("anything"),
+    //     chunkEnd   = this._apply("anything"),
+    //     r          = [],
+    //     counter    = 0,
+    //     next       = null,
+    //     simpleCommentFound = false,
+    //     longCommentFound = false,
+    //     string1Opened = false,
+    //     string2Opened = false;
+    //     
+    // r.push(this._applyWithArgs('exactly', chunkStart));
+    // 
+    // while (true) {
+    //   
+    //   next = this._apply("anything"); r.push(next);
+    //           
+    //   if (next === '\\') { // escaped char, ignore next input
+    //     r.push(this._apply("anything"));
+    //     continue;
+    //   }
+    //   
+    //   if (next === '/') { // comment?
+    //     next = this._apply("anything"); r.push(next);
+    //     if (next === '/') { simpleCommentFound = true; continue};
+    //     if (next === '*') { longCommentFound = true; continue };
+    //   }
+    //   
+    //   if (simpleCommentFound && next === '\n') {simpleCommentFound = false; continue }; //comment end?
+    //   if (longCommentFound && next === '*') {
+    //     next = this._apply("anything"); r.push(next);        
+    //     if (next === '/') { longCommentFound = false; continue };
+    //   }
+    //   
+    //   if (simpleCommentFound || longCommentFound) continue;
+    //   
+    //   if (next === '\'') string1Opened = !string1Opened;
+    //   if (next === '"') string2Opened = !string2Opened;
+    //   if (string1Opened || string2Opened) continue;
+    //         
+    //   if (simpleCommentFound || longCommentFound) continue;
+    // 
+    //   if (next === '\'') string1Opened = !string1Opened;
+    //   if (next === '"') string2Opened = !string2Opened;
+    //   if (string1Opened || string2Opened) continue;
+    //   
+    //   if (next === chunkEnd && counter === 0) // end
+    //     return r;
+    //   if (next === chunkEnd) { // end of another chunk
+    //     counter--;
+    //     continue;
+    //   }
+    //   if (next === chunkStart)
+    //     counter++;
+    // }
   },
   
   initialize: function() { },
