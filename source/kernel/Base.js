@@ -17,35 +17,37 @@ function dbgOn(cond, optMessage) {
 
 // namespace logic adapted from
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
-function using() {
-    var args = arguments; 
-    return {
-	run: function run(inner) { 
+var using = (function() {
+    function Util(args) { 
+	this.args = args;
+    }
+    Util.prototype = {
+	run: function(inner) {
+	    var args = this.args;
 	    if (this.moduleName) { 
 		// little convenience, 
 		if (args.length > 0) console.log('using().module(): ignoring args ' + args);
 		return module(this.moduleName).requires().toRun(inner);
 	    } else return inner.apply(args[0], args); 
 	},
-
-	module: function(moduleName) {
-	    this.moduleName = moduleName;
-	    return this;
-	},
-
 	model: function(model) {
 	    // KP: interestingly, declaring the above as "model: function model(model)" 
 	    // seems to bind model to to the function, not the formal parameter, at least in rhino!
 	    this.model = model;
 	    return this;
 	},
+	module: function(moduleName) {
+	    this.moduleName = moduleName;
+	    return this;
+	},
 	link: function link(literal, variableMap) { 
-	    return new lively.data.Resolver().link(literal, [], undefined, (variableMap || {}), $A(args), this.model); 
+	    variableMap = variableMap || {};
+	    return new lively.data.Resolver().link(literal, [], undefined, variableMap, $A(this.args), this.model); 
 	},
 	extend: function extend(base, extLiteral) {
 	    return this.link(Object.extend(Object.clone(base), extLiteral));
 	},
-
+	
 	test: function(inner) {
 	    try {
 		return this.run(inner);
@@ -54,9 +56,13 @@ function using() {
 		return undefined;
 	    }
 	}
-	
-    };
-}
+    }
+    
+    return function using() {
+	return new Util(arguments);
+    }
+})();
+
 
 function namespace(spec, context) {
     var  i,N;
