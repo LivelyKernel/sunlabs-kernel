@@ -223,6 +223,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
     nodesInPane: function(paneName) { // panes have listItems, no nodes
          var listItems = this['get' + paneName + 'Content']();
          if (!listItems) return [];
+         dbgOn(!listItems.collect);
         return listItems.collect(function(ea) { return ea.value })    
     },
     
@@ -1050,7 +1051,7 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 Object.subclass('AnotherFileParser', {
     
     debugMode: false,
-    
+
     documentation: 'Extended FileParser. Scans source code and extracts SourceCodeDescriptors for ' +
                    'classes, objects, functions, methods. Uses OMeta.',
     
@@ -1503,7 +1504,7 @@ Object.subclass('lively.ide.FileFragment', {
 
         var newMe = this.reparse(newString);
         dbgOn(!newMe);
-        if (newMe.type !== this.type || this.startIndex !== newMe.startIndex)
+        if (/*newMe.type !== this.type ||*/ /*bla*/ this.startIndex !== newMe.startIndex)
             throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
         
 		var newFileString = this.buildNewFileString(newString);

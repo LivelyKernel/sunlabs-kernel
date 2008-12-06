@@ -845,6 +845,14 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTe
 		this.assertEqual(result.length, src.length);
 	},
 
+	testParseChunkWithString2: function() {
+		var src = "'a\\'b'";
+		var p = this.ometaParser;
+		var result = p.matchAll(src, 'chunk', ['\'', '\''], this.debugFunction.curry(src));
+		this.assert(result, 'couldn\'t parse');
+		this.assertEqual(result.length, src.length);
+	},
+
 });
 
 thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {

@@ -131,6 +131,7 @@ Global.ChunkParser = {
     this.counter = 0;
     this.result = [];
     this.parseStart();
+    // dbgOn(true);
     do { this.makeStep() } while (!this.parseRest());
     return this.result;
   },
@@ -147,8 +148,10 @@ Global.ChunkParser = {
   },
 
   parseEscapedChar: function() {
-    if (this.next !== '\\') return;
-    this.makeStep();
+    while (this.next === '\\') {
+        this.makeStep();
+        this.makeStep();
+    }
   },
 
   parseComment: function() {
@@ -158,26 +161,27 @@ Global.ChunkParser = {
     if (this.nextNext === '/') comment1Opened = true;
     if (this.nextNext === '*') comment2Opened = true;
     if (!comment1Opened && !comment2Opened) return;
-    this.makeStep();
+    this.makeStep(); this.makeStep();
     while (true) { // this seems to crash Safari/Webkit, using do while below
-      while (this.parseEscapedChar()) {};
-      this.makeStep();
+      this.parseEscapedChar();
       if (comment1Opened && this.next === '\n' ) return;
       if (comment2Opened && this.next === '*' && this.nextNext === '/' && this.makeStep()) return;
+      this.makeStep();
     }
   },
 
   parseString: function() {
     var string1Opened;
     var string2Opened;
-    if (this.next === '\'') string1Opened = true;
-    if (this.next === '"') string2Opened = true;
+    if (this.chunkStart !== '\'' && this.next === '\'') string1Opened = true;
+    if (this.chunkStart !== '"' && this.next === '"') string2Opened = true;
     if (!string1Opened && !string2Opened) return;
+    this.makeStep();
     while (true) { // this seems to crash Safari/Webkit
-      while (this.parseEscapedChar()) {};
-      this.makeStep();
+      this.parseEscapedChar()
       if (string1Opened && this.next === '\'') return;
       if (string2Opened && this.next === '"') return;
+      this.makeStep();
     }
   },
   
