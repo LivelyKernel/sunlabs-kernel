@@ -1197,10 +1197,9 @@ ButtonMorph.subclass('EllipseMakerMorph', {
 	this.lastTick = thisTick;
     },
     stepEllipses: function() {
-	var ownerBounds = this.owner.innerBounds();
 	this.ellipses.forEach( function(e) {
 		e.stepByVelocities();
-		e.bounceInBounds(ownerBounds);
+		e.bounceInBounds();
 		});
 	},
     startSteppingScripts: function() { this.startStepping(30,'nextStep'); }

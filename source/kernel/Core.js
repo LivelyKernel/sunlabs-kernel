@@ -2149,9 +2149,9 @@ Morph.addMethods({
 
 Morph.addMethods({     // particle behavior
 
-    bounceInBounds: function(ob) {
-	// ob is outer bounds, a rectangle
+    bounceInBounds: function() {
 	if (!this.velocity) return;  // Can't bounce without a velocity vector
+	var ob = this.owner.innerBounds();
 	var b = this.bounds();
 	if (b.x < ob.x || b.maxX() > ob.maxX()) {
 	    this.velocity = this.velocity.scaleByPt(pt(-1, 1));
