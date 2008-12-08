@@ -667,6 +667,7 @@ using().module('lively.demofx').run(function() {
 	    ThumbImage: "ThumbImage", 
 	    _BorderColor: "+_BorderColor"}), true);
 	if (effect) effect.applyTo(previewModel.getThumbImage());
+	previewMorph.margin = Rectangle.inset(5, 0, 5, 0);
 	return previewMorph;
     }
 
@@ -690,6 +691,7 @@ using().module('lively.demofx').run(function() {
 
     var rowModel = Record.newPlainInstance({FirstRowStartY: 3, SecondRowStartY: 3});
     var rowMorph = new lively.demofx.FXMorph(rowModel, firstRow);
+    rowMorph.layoutManager = new HorizontalAlignment();
     stage.addMorph(rowMorph);
     rowMorph.align(rowMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
 
@@ -700,8 +702,9 @@ using().module('lively.demofx').run(function() {
 	"flower-motion-blur.png",
 	"flower-bloom.png", "flower-glow.png", "flower-color-adjust.png"];
     
-    var blendPreview = rowMorph.addMorph(makePreview(null, effectNames[0], shortFileNames[0]));
-    blendPreview.translateBy(pt(10, 8));
+    var blendPreview = makePreview(null, effectNames[0], shortFileNames[0]);
+    rowMorph.addMorph(blendPreview);
+    blendPreview.translateBy(pt(5, 8));
     
     var previous = blendPreview;
     var margin = 10;
@@ -712,11 +715,10 @@ using().module('lively.demofx').run(function() {
 	else effect = null;
 	//URL.source.withFilename('Resources/demofx/water.jpg').toString())
 	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
+	
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
 	//var preview2 = makePreview(new lively.scene.SaturateEffect("preview2", 0.4));
-	preview.align(preview.bounds().topLeft(), previous.bounds().topRight());
 	rowMorph.addMorph(preview);
-	preview.translateBy(pt(margin, 0));
 	previous = preview;
     }
 
@@ -786,6 +788,8 @@ using().module('lively.demofx').run(function() {
 	]};
 
     rowMorph = new lively.demofx.FXMorph(rowModel, secondRow);
+    rowMorph.layoutManager = new HorizontalAlignment();
+    
     stage.addMorph(rowMorph);
     rowMorph.align(rowMorph.bounds().topCenter(), controlPlate.bounds().bottomCenter());
 
@@ -794,16 +798,10 @@ using().module('lively.demofx').run(function() {
     shortFileNames = ["flower-drop-shadow.png", "flower-inner-shadow.png", "flower-perspective.png",
 		      "flower-lighting.png", "flower-sepia-tone.png", "flower-reflection.png"];
 
-    var previous = null;
-    var margin = 10;
     for (var i = 0; i < 6; i++) {
 	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
-	preview.align(preview.bounds().topLeft(), 
-		      previous == null ? rowMorph.shape.bounds().topLeft() : previous.bounds().topRight());
 	rowMorph.addMorph(preview);
-	if (!previous) preview.translateBy(pt(margin/2, 10));
-	else preview.translateBy(pt(margin, 0));
-	previous = preview;
+	if (i === 0) preview.translateBy(pt(5, 10));
     }
 
 

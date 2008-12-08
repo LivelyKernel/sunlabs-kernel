@@ -1597,20 +1597,36 @@ Object.subclass('LayoutManager', {
 	
     },
 
-    addMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
-	submorph.changed();
-	submorph.layoutChanged();
-	supermorph.layoutChanged();
-	return submorph;
+    beforeAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
     },
 
     removeMorph: function(supermorph, submorph) {
 	// new behavior:
 	submorph.layoutChanged();
-
     }
     
 });
+
+
+
+LayoutManager.subclass('HorizontalAlignment',  {
+    
+    beforeAddMorph: function(supermorph, submorph, isFront) {
+	// runs before submorph is added
+	var totalMargin = (submorph.margin || new Rectangle(0,0,0,0)).left();
+	var firstMorph = supermorph.topSubmorph();
+
+	if (firstMorph) {
+	    submorph.align(submorph.bounds().topLeft(), firstMorph.bounds().topRight());
+	    totalMargin += (firstMorph.margin || new Rectangle(0,0,0,0)).right();
+	} //else pick up the padding of supermorph?
+	if (totalMargin > 0)
+	    submorph.translateBy(pt(totalMargin, 0));
+	console.log('total margin ' + totalMargin);
+    }
+
+});
+
 
 
 LayoutManager.subclass('VerticalLayout', {
@@ -1632,9 +1648,8 @@ LayoutManager.subclass('VerticalLayout', {
 	return target.padding || new Rectangle(0, 0, 0, 0); // memoise?
     },
     
-    addMorph: function($super, supermorph, submorph, isFront) {
+    beforeAddMorph: function(supermorph, submorph, isFront) {
 	if (!isFront) throw new Error('cannot layout yet');
-	$super(supermorph, submorph, isFront);
 	var margin = submorph.margin || rect(pt(0,0), pt(0,0));
 	this.nextTopLeft = this.nextTopLeft.addXY(0, margin.top());
 
@@ -1750,9 +1765,12 @@ Morph.addMethods({
 	    // morph.setTransform(tfm); 
 	    // m.layoutChanged(); 
 	} 
+	this.layoutManager.beforeAddMorph(this, m, isFront);
 	this.insertMorph(m, isFront);
-	
-	return this.layoutManager.addMorph(this, m, isFront);
+	m.changed();
+	m.layoutChanged();
+	this.layoutChanged();
+	return m;
     },
 
     setSubmorphs: function(morphs) {
