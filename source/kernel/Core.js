@@ -2149,9 +2149,14 @@ Morph.addMethods({
 
 Morph.addMethods({     // particle behavior
 
-    bounceInBounds: function() {
+    bounceInOwnerBounds: function() {
+	this.bounceInBounds(this.owner.innerBounds());
+    },
+    bounceInBounds: function(ob) {
+	// typcially ob = this.owner.innerBounds()
 	if (!this.velocity) return;  // Can't bounce without a velocity vector
-	var ob = this.owner.innerBounds();
+
+	// Bounce by reversing the component of velocity that put us out of bounds
 	var b = this.bounds();
 	if (b.x < ob.x || b.maxX() > ob.maxX()) {
 	    this.velocity = this.velocity.scaleByPt(pt(-1, 1));
@@ -2165,6 +2170,10 @@ Morph.addMethods({     // particle behavior
     stepByVelocities: function() {
         if (this.velocity) this.moveBy(this.velocity);
         if (this.angularVelocity) this.rotateBy(this.angularVelocity);
+    },
+    stepAndBounce: function() {  // convenience for tile scripting
+        this.stepByVelocities();
+        this.bounceInOwnerBounds();
     }
 
 });
