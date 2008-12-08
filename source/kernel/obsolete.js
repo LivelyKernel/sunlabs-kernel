@@ -1333,3 +1333,60 @@ lively.scene.Similitude.addMethods({
 
 
 });
+
+
+
+
+LayoutManager.subclass('VerticalLayout', {
+
+    initialize: function(target) {
+	this.reset(target);
+	//this.debugPositions = [];
+    },
+    
+    reset: function(target) {
+	var pad = this.getPadding(target);
+        this.extent = pt(0,0);//pad.topLeft();
+
+	this.nextTopLeft = pt(pad.left(), pad.top());
+	// target.setBounds(target.getPosition().extent(pt(pad.left() + pad.right(), pad.top() + pad.bottom())));
+    },
+
+    getPadding: function(target) {
+	return target.padding || new Rectangle(0, 0, 0, 0); // memoise?
+    },
+    
+    beforeAddMorph: function(supermorph, submorph, isFront) {
+	if (!isFront) throw new Error('cannot layout yet');
+	var margin = submorph.margin || rect(pt(0,0), pt(0,0));
+	this.nextTopLeft = this.nextTopLeft.addXY(0, margin.top());
+
+        submorph.setPosition(this.nextTopLeft);
+	//this.debugPositions.push(new pt(this.nextTopLeft.x, this.nextTopLeft.y));
+
+	
+        var ext = submorph.getExtent();
+        this.extent = pt(Math.max(this.extent.x, margin.left()  + ext.x + margin.right()),  
+			    this.nextTopLeft.y + ext.y + margin.bottom());
+        
+	this.nextTopLeft = this.nextTopLeft.withY(this.extent.y);
+	
+	//var extent = extent.withY(extent.y + inset.y);
+	
+	var newBounds = supermorph.getPosition().extent(this.extent);
+	var pad = this.getPadding(supermorph);
+	//newBounds.width += pad.right();
+	newBounds.height += pad.bottom()/2;  // FIXME: don't get it
+	supermorph.setBounds(newBounds);
+	
+	// supermorph visually contains submorphs
+
+    },
+    
+    removeMorph: function(supermorph, submorph) {
+	console.warn('cant handle removal yet');
+	// assume remove all
+	this.reset(supermorph); 
+    }
+});
+

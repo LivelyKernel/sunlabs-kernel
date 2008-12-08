@@ -691,7 +691,8 @@ using().module('lively.demofx').run(function() {
 
     var rowModel = Record.newPlainInstance({FirstRowStartY: 3, SecondRowStartY: 3});
     var rowMorph = new lively.demofx.FXMorph(rowModel, firstRow);
-    rowMorph.layoutManager = new HorizontalAlignment();
+    rowMorph.layoutManager = new HorizontalLayout();
+    rowMorph.padding = Rectangle.inset(0, 5, 0, 5);
     stage.addMorph(rowMorph);
     rowMorph.align(rowMorph.bounds().topCenter(), canvasMorph.bounds().bottomCenter());
 
@@ -704,22 +705,17 @@ using().module('lively.demofx').run(function() {
     
     var blendPreview = makePreview(null, effectNames[0], shortFileNames[0]);
     rowMorph.addMorph(blendPreview);
-    blendPreview.translateBy(pt(5, 8));
-    
-    var previous = blendPreview;
-    var margin = 10;
+
     for (var i = 1; i < 6; i++) {
 	var effect = null;
 	if (i == 1) effect = new lively.scene.GaussianBlurEffect(i, "effect" + i);
 	else if (i == 0) effect = new lively.scene.BlendEffect(1, "effect0");
 	else effect = null;
 	//URL.source.withFilename('Resources/demofx/water.jpg').toString())
-	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
-	
 	//var preview2	= makePreview(new lively.scene.ColorAdjustEffect("previewColorAdjust"));
 	//var preview2 = makePreview(new lively.scene.SaturateEffect("preview2", 0.4));
-	rowMorph.addMorph(preview);
-	previous = preview;
+	rowMorph.addMorph(makePreview(effect, effectNames[i], shortFileNames[i]));
+
     }
 
     var controlPlate = new BoxMorph(new Rectangle(0, 0, canvasWidth, 40));
@@ -788,7 +784,8 @@ using().module('lively.demofx').run(function() {
 	]};
 
     rowMorph = new lively.demofx.FXMorph(rowModel, secondRow);
-    rowMorph.layoutManager = new HorizontalAlignment();
+    rowMorph.layoutManager = new HorizontalLayout();
+    rowMorph.padding = Rectangle.inset(0, 5, 0, 5);
     
     stage.addMorph(rowMorph);
     rowMorph.align(rowMorph.bounds().topCenter(), controlPlate.bounds().bottomCenter());
@@ -799,9 +796,7 @@ using().module('lively.demofx').run(function() {
 		      "flower-lighting.png", "flower-sepia-tone.png", "flower-reflection.png"];
 
     for (var i = 0; i < 6; i++) {
-	var preview = makePreview(effect, effectNames[i], shortFileNames[i]);
-	rowMorph.addMorph(preview);
-	if (i === 0) preview.translateBy(pt(5, 10));
+	rowMorph.addMorph(makePreview(effect, effectNames[i], shortFileNames[i]));
     }
 
 

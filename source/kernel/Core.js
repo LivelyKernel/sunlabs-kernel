@@ -1603,83 +1603,55 @@ Object.subclass('LayoutManager', {
     removeMorph: function(supermorph, submorph) {
 	// new behavior:
 	submorph.layoutChanged();
+    },
+
+
+    leftMarginOf: function(morph) {
+	return morph.margin ? morph.margin.left() : 0;
+    },
+
+    rightMarginOf: function(morph) {
+	return morph.margin ? morph.margin.right() : 0;
+    },
+    
+    rightPaddingOf: function(morph) {
+	return morph.padding ? morph.padding.right() : 0;
+    },
+
+    leftPaddingOf: function(morph) {
+	return morph.padding ? morph.padding.left() : 0;
+    },
+
+    topPaddingOf: function(morph) {
+	return morph.padding ? morph.padding.top() : 0;
+    },
+
+    bottomPaddingOf: function(morph) {
+	return morph.padding ? morph.padding.top() : 0;
     }
     
 });
 
+LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 
-
-LayoutManager.subclass('HorizontalAlignment',  {
-    
     beforeAddMorph: function(supermorph, submorph, isFront) {
 	// runs before submorph is added
-	var totalMargin = (submorph.margin || new Rectangle(0,0,0,0)).left();
+	var dx = this.leftMarginOf(submorph);
+	var dy;
 	var firstMorph = supermorph.topSubmorph();
-
-	if (firstMorph) {
+	
+	if (!firstMorph) {
+	    dx += this.leftPaddingOf(supermorph);
+	    dy =  this.topPaddingOf(supermorph);
+	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
+	} else {
+	    dx += this.rightMarginOf(firstMorph);
+	    dy = 0;
 	    submorph.align(submorph.bounds().topLeft(), firstMorph.bounds().topRight());
-	    totalMargin += (firstMorph.margin || new Rectangle(0,0,0,0)).right();
-	} //else pick up the padding of supermorph?
-	if (totalMargin > 0)
-	    submorph.translateBy(pt(totalMargin, 0));
-	console.log('total margin ' + totalMargin);
+	}
+	submorph.translateBy(pt(dx, dy));
     }
 
-});
-
-
-
-LayoutManager.subclass('VerticalLayout', {
-
-    initialize: function(target) {
-	this.reset(target);
-	//this.debugPositions = [];
-    },
-    
-    reset: function(target) {
-	var pad = this.getPadding(target);
-        this.extent = pt(0,0);//pad.topLeft();
-
-	this.nextTopLeft = pt(pad.left(), pad.top());
-	// target.setBounds(target.getPosition().extent(pt(pad.left() + pad.right(), pad.top() + pad.bottom())));
-    },
-
-    getPadding: function(target) {
-	return target.padding || new Rectangle(0, 0, 0, 0); // memoise?
-    },
-    
-    beforeAddMorph: function(supermorph, submorph, isFront) {
-	if (!isFront) throw new Error('cannot layout yet');
-	var margin = submorph.margin || rect(pt(0,0), pt(0,0));
-	this.nextTopLeft = this.nextTopLeft.addXY(0, margin.top());
-
-        submorph.setPosition(this.nextTopLeft);
-	//this.debugPositions.push(new pt(this.nextTopLeft.x, this.nextTopLeft.y));
-
-	
-        var ext = submorph.getExtent();
-        this.extent = pt(Math.max(this.extent.x, margin.left()  + ext.x + margin.right()),  
-			    this.nextTopLeft.y + ext.y + margin.bottom());
-        
-	this.nextTopLeft = this.nextTopLeft.withY(this.extent.y);
-	
-	//var extent = extent.withY(extent.y + inset.y);
-	
-	var newBounds = supermorph.getPosition().extent(this.extent);
-	var pad = this.getPadding(supermorph);
-	//newBounds.width += pad.right();
-	newBounds.height += pad.bottom()/2;  // FIXME: don't get it
-	supermorph.setBounds(newBounds);
-	
-	// supermorph visually contains submorphs
-
-    },
-    
-    removeMorph: function(supermorph, submorph) {
-	console.warn('cant handle removal yet');
-	// assume remove all
-	this.reset(supermorph); 
-    }
 });
 
 
