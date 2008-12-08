@@ -312,10 +312,11 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	inPaneSelectNodeNamed: function(paneName,  nodeName) {
 			var nodes = this['get' + paneName + 'Content']();
 			var wanted = nodes.detect(function(ea) { return ea.string.include(nodeName) });
-			if (!wanted) return;
+			if (!wanted) return null;
 			var list = this.panel[paneName].innerMorph();
 			var i = list.itemList.indexOf(wanted);
 			list.selectLineAt(i, true /*should update*/);
+			return wanted;
 	},
 
 	commands: function() {
@@ -734,8 +735,11 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 			.concat(this.target.preLoadFileNames())
 			.uniq()
 			.collect(function(ea) {
-            	return new ide.CompleteFileFragmentNode(this.target.rootFragmentForModule(ea), this.browser, ea);
-        	}.bind(this));
+				var nodeClass = ea.endsWith('.js') ? // FIXME
+					ide.CompleteFileFragmentNode :
+					ide.CompleteOmetaFragmentNode;
+            	return new nodeClass(this.target.rootFragmentForModule(ea), this.browser, ea)
+		}, this);
     }
 });
  
@@ -855,6 +859,36 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     
 });
 
+ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
+    
+    asString: function() {
+		var name = this.moduleName;
+		if (!this.target) return name + ' (not loaded)';
+		if (!this.showLines()) return name;
+		return name + ' (' + this.target.startLine() + '-' + this.target.stopLine() + ')';
+    },
+
+	buttonSpecs: function() { return [] },
+
+	menuSpec: function() {
+    		var fileName = this.moduleName;
+    		if (!this.target) return [];
+    		return [
+    			['Translate grammar', function() {
+					WorldMorph.current().prompt(
+						'File name of translated grammar?',
+						function(input) {
+							if (!input.endsWith('.js'))
+								input += '.js';
+							OMetaSupport.translateAndWrite(fileName, input);
+						},
+						fileName.slice(0, fileName.indexOf('.'))
+					);
+				}]
+				];
+        },
+
+});
 
 ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
  
@@ -1360,26 +1394,43 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     },
     
     rootFragmentForModule: function(moduleOrModuleName) {
-        if (!Object.isString(moduleOrModuleName) || !moduleOrModuleName.endsWith('.js'))
-            throw dbgOn(new Error('I do not support modules yet... ' + moduleOrModuleName + 'isn\'t valid, sorry!'));
+        if (!Object.isString(moduleOrModuleName) || !(moduleOrModuleName.endsWith('.js') || moduleOrModuleName.endsWith('.txt')))
+            throw dbgOn(new Error('I do not support modules yet... ' + moduleOrModuleName + ', sorry!'));
         return this.modules[moduleOrModuleName];
     },
     
     addModule: function(fileName, fileString) {
 		if (this.modules[fileName]) return this.modules[fileName];
         fileString = fileString || this.getCachedText(fileName);
-        var fileFragments = AnotherFileParser.withOMetaParser().parseSource(fileString, {fileName: fileName});
+		var root;
+		if (fileName.endsWith('.js')) {
+			root = this.parseJs(fileName, fileString);
+		} else if (fileName.endsWith('.txt')) {
+			root = this.parseOmeta(fileName, fileString);
+		} else { 
+			throw dbgOn(new Error('Don\'t know how to parse ' + fileName))
+		}
+        root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
+        this.modules[fileName] = root;
+        return root;
+    },
+    
+	parseJs: function(fileName, fileString) {
+		var fileFragments = AnotherFileParser.withOMetaParser().parseSource(fileString, {fileName: fileName});
         var root;
         var firstRealFragment = fileFragments.detect(function(ea) { return ea.type !== 'comment' });
         if (firstRealFragment.type === 'moduleDef')
             root = firstRealFragment;
         else
             root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, null, fileName, fileFragments, this);
-        root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
-        this.modules[fileName] = root;
         return root;
-    },
-    
+	},
+
+	parseOmeta: function(fileName, fileString) {
+        var root = new lively.ide.FileFragment(fileName, 'ometaGrammar', 0, fileString.length-1, null, fileName, [], this);
+        return root;
+	},
+
     putSourceCodeFor: function(fileFragment, newFileString) {
         if (!(fileFragment instanceof lively.ide.FileFragment)) throw dbgOn(new Error('Strange fragment'));
         newFileString = newFileString.replace(/\r/gi, '\n');  // change all CRs to LFs
@@ -1500,13 +1551,17 @@ Object.subclass('lively.ide.FileFragment', {
 
     putSourceCode: function(newString) {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
-		//this.reparse
 
         var newMe = this.reparse(newString);
         dbgOn(!newMe);
         if (/*newMe.type !== this.type ||*/ /*bla*/ this.startIndex !== newMe.startIndex)
             throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
-        
+		if (newMe.type !== this.type) {
+			console.warn(Strings.format('Error occured during parsing. %s (%s) was parsed as %s. End line: %s. Changes are NOT saved.',
+				this.name, this.type, newMe.type, newMe.stopLine()));
+			return;
+		}
+
 		var newFileString = this.buildNewFileString(newString);
         this.getSourceControl().putSourceCodeFor(this, newFileString);
         
@@ -1600,6 +1655,24 @@ Object.subclass('lively.ide.FileFragment', {
     	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
 	},
     
+});
+
+ide.FileFragment.addMethods({
+
+	browseIt: function() {
+		var browser = new ide.SystemBrowser();
+		browser.openIn(WorldMorph.current());
+		// FIXME ... subclassing
+		if (this.type === 'klassDef') {
+			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
+			browser.inPaneSelectNodeNamed('Pane2', this.name);
+		} else if (this.type === 'methodDef') {
+			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
+			browser.inPaneSelectNodeNamed('Pane2', this.className);
+			browser.inPaneSelectNodeNamed('Pane3', this.name);
+		}
+		return browser;
+	}
 });
 
 ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {

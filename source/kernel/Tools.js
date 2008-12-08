@@ -1538,6 +1538,15 @@ WidgetModel.subclass('ChangeList', {
         return "Change list for " + this.title;
     },
 
+	keyActions: function(evt) {
+		// --> alt +b
+		console.log('Key pressed....');
+		if (!evt.isAltDown()) return false;
+		if (evt.getKeyChar().toLowerCase() !== 'b') return false;
+		if (!this.selectedItem().browseIt) return false;
+		this.selectedItem().browseIt();
+	},
+
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['topPane', newListPane, new Rectangle(0, 0, 1, 0.4)],
@@ -1545,6 +1554,14 @@ WidgetModel.subclass('ChangeList', {
         ]);
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getSelection: "getChangeSelection", getMenu: "getListPaneMenu"});
+
+		// adding keyPress actions fot the list
+		// FIXME should be done in another way
+		m.innerMorph().onKeyDown = m.innerMorph().onKeyDown.wrap(function(proceed, evt) {
+			this.keyActions(evt);
+			proceed(evt);
+		}.bind(this));
+
         m = panel.bottomPane;
         m.innerMorph().textSelection.borderRadius = 0;
         m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString", getMenu: "default"});
@@ -1803,14 +1820,17 @@ ChangeList.subclass('SourceDatabase', {
     
     interestingLKFileNames: function() {
         var kernelFileNames = new FileDirectory(URL.source).filenames();
-        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
-        var jsFiles = kernelFileNames.concat(testFileNames).select(function(ea) { return ea.endsWith('.js') });
+        var testFileNames = [];//new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
+		var ometaFileNames = [];//new FileDirectory(URL.source.withFilename('ometa/')).filenames().collect(function(ea) { return 'ometa/' + ea });
+        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') });
         jsFiles = jsFiles.uniq();
         // FIXME remove
         var rejects = [/*"Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
                        "Serialization.js",*/ "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
-                       "workspace.js", 'JSON.js']
-        return jsFiles.reject(function(ea) { return rejects.include(ea) });
+                       "workspace.js", 'JSON.js'];
+		jsFiles = jsFiles.reject(function(ea) { return rejects.include(ea) });
+		var otherFiles = ['LKFileParser.txt'];
+        return jsFiles.concat(otherFiles);
     },
 
 });
