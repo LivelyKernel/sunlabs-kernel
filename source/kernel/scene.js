@@ -994,12 +994,9 @@ this.Shape.subclass('lively.scene.Polygon', {
 });
 
 
-
 Object.extend(this.Polygon, {
     fromLiteral: function(literal) {
-	var node = new lively.scene.Polygon(literal.points);
-	lively.scene.Shape.fromLiteral(node, literal);
-	return node;
+	return lively.scene.Shape.fromLiteral(new lively.scene.Polygon(literal.points), literal);
     }
 });
 
@@ -1070,9 +1067,7 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 
 Object.extend(this.Polyline, {
     fromLiteral: function(literal) {
-	var node = new lively.scene.Polyline(literal.points);
-	lively.scene.Shape.fromLiteral(node, literal);
-	return node;
+	return lively.scene.Shape.fromLiteral(new lively.scene.Polyline(literal.points), literal);
     }
 });
 
