@@ -614,9 +614,24 @@ this.Node.subclass('lively.scene.Shape', {
 	 default:
 	     return null;
 	 }
+     },
+
+     fromLiteral: function(node, literal) {
+	 // axiliary
+	 if (literal.stroke !== undefined) node.setStroke(literal.stroke);
+	 node.setStrokeWidth(literal.strokeWidth === undefined ? 1 : literal.strokeWidth);
+	 if (literal.fill !== undefined) node.setFill(literal.fill);
+	 if (literal.fillOpacity !== undefined) node.setFillOpacity(literal.fillOpacity);
+	 if (literal.strokeLineCap !== undefined) node.setLineCap(literal.strokeLineCap);
+
+	 if (literal.transforms !== undefined) node.setTransforms(literal.transforms);
+
+	 return node;
      }
      
  });
+
+
     
 
 Object.extend(this,  { 
@@ -724,10 +739,7 @@ Object.extend(this.Rectangle, {
 	var height = literal.height || 0.0;
 
 	var node = new lively.scene.Rectangle(new Rectangle(x, y, width, height));
-	if (literal.stroke !== undefined) node.setStroke(literal.stroke);
-	node.setStrokeWidth(literal.strokeWidth === undefined ? 1 : literal.strokeWidth);
-	if (literal.fill !== undefined) node.setFill(literal.fill);
-	if (literal.fillOpacity !== undefined) node.setFillOpacity(literal.fillOpacity);
+	lively.scene.Shape.fromLiteral(node, literal);
 	if (literal.arcWidth !== undefined) node.roundEdgesBy(literal.arcWidth/2);
 	return node;
     }
@@ -818,10 +830,7 @@ this.Shape.subclass('lively.scene.Ellipse', {
 Object.extend(this.Ellipse, {
     fromLiteral: function(literal) {
 	var node = new lively.scene.Ellipse(pt(literal.centerX || 0.0, literal.centerY || 0.0), literal.radius);
-	literal.stroke && node.setStroke(literal.stroke);
-	literal.strokeWidth && node.setStrokeWidth(literal.strokeWidth);
-	literal.fill && node.setFill(literal.fill);
-
+	lively.scene.Shape.fromLiteral(node, literal);
 	return node;
     }
 });
@@ -989,12 +998,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 Object.extend(this.Polygon, {
     fromLiteral: function(literal) {
 	var node = new lively.scene.Polygon(literal.points);
-	literal.stroke && node.setStroke(literal.stroke);
-	if (literal.strokeWidth !== undefined)
-	    node.setStrokeWidth(literal.strokeWidth);
-	else node.setStrokeWidth(1);
-	literal.fill && node.setFill(literal.fill);
-	if (literal.transforms !== undefined) node.setTransforms(literal.transforms); // empty array would be valid
+	lively.scene.Shape.fromLiteral(node, literal);
 	return node;
     }
 });
@@ -1067,16 +1071,7 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 Object.extend(this.Polyline, {
     fromLiteral: function(literal) {
 	var node = new lively.scene.Polyline(literal.points);
-	literal.stroke && node.setStroke(literal.stroke);
-	if (literal.strokeWidth !== undefined)
-	    node.setStrokeWidth(literal.strokeWidth);
-	else node.setStrokeWidth(1);
-	if (literal.strokeLineCap !== undefined) {
-	    node.setLineCap(literal.strokeLineCap);
-	}  
-	literal.fill && node.setFill(literal.fill);
-	if (literal.transforms !== undefined) node.setTransforms(literal.transforms);
-	
+	lively.scene.Shape.fromLiteral(node, literal);
 	return node;
     }
 });
