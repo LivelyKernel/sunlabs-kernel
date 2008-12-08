@@ -43,7 +43,7 @@ ometa LKFileParser <: Parser {
 /*	chunkWith :x :y :p  = ~~exactly(x) ( open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y }
 	                    | remove(x) ),*/
 	somethingRelated    = ~end (~'\n' ~'\r' ~';' anything)*,
-	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | spacesNoNl '+' spaces | ~',' ~';' ~nl anything)*,
+	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | spacesNoNl '+' spaces | ~',' ~';' ~'(' ~'{' ~'[' ~'\'' ~'"' ~nl anything)*,
 	defEnd              = ';' '\n' | ';' spacesNoNl | "",
 	classElemDefEnd     = "," | "",
 	
@@ -112,7 +112,18 @@ ometa LKFileParser <: Parser {
     restObjDef          = classElems:propsAndMethodDescrs spaces -> propsAndMethodDescrs,
     objectDef           = pos:p ( "var" spaces namespaceId:o | namespaceId:o) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
                         -> { $elf._fragment(o, 'objectDef', p, $elf.pos()-1, propsAndMethodDescrs) },
-
+    
+    /* ometa stuff */
+    ometaParameter      = ':' name:n spaces       -> n,
+    ometaParameters     =  ometaParameter*,
+    ometaRuleDef        = pos:p name:n spaces ometaParameters:a ('=' | "->") (~',' anything)*:body ( ',' | "" )
+                        -> { var m = {parameters: a}; $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, [], m) },
+    ometaInherit        = "<:" spaces name:sn                                           -> sn
+                        | ""                                                            -> { null },
+    ometaDef            = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' ometaRuleDef*:d '}'
+                        -> { var m = {superclassName: sn}; $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, d, m) },
+                        
+                    
     /* otherStuff */
     // comment     = descriptor:d spacesNoNl /*(fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl*/   -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
     comment     = pos:p space+                                          -> { $elf._fragment(null, 'comment', p, $elf.pos()-1) },
