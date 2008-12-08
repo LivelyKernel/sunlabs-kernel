@@ -9,12 +9,6 @@
 
 var Prototype = {
   Version: '1.6.0_rc1',
-
-  Browser: {
-    IE:     !!(window.attachEvent && !window.opera),
-    Opera:  !!window.opera
-  },
-
   K: function(x) { return x }
 };
 
@@ -84,14 +78,6 @@ Object.extend(Function.prototype, {
   argumentNames: function() {
     var names = this.toString().match(/^[\s\(]*function[^(]*\((.*?)\)/)[1].split(",").invoke("strip");
     return names.length == 1 && !names[0] ? [] : names;
-  },
-
-  bind: function bind() {
-    if (arguments.length < 2 && arguments[0] === undefined) return this;
-    var __method = this, args = $A(arguments), object = args.shift();
-    return function bound() {
-      return __method.apply(object, args.concat($A(arguments)));
-    }
   },
 
   curry: function curry() {
@@ -532,19 +518,4 @@ if (!Array.prototype.lastIndexOf) Array.prototype.lastIndexOf = function(item, i
 
 Array.prototype.toArray = Array.prototype.clone;
 
-if (Prototype.Browser.Opera){
-  Array.prototype.concat = function() {
-    var array = [];
-    for (var i = 0, length = this.length; i < length; i++) array.push(this[i]);
-    for (var i = 0, length = arguments.length; i < length; i++) {
-      if (Object.isArray(arguments[i])) {
-        for (var j = 0, arrayLength = arguments[i].length; j < arrayLength; j++)
-          array.push(arguments[i][j]);
-      } else {
-        array.push(arguments[i]);
-      }
-    }
-    return array;
-  };
-}
 

@@ -7,6 +7,107 @@
  * or registered trademarks of Sun Microsystems, Inc. in the U.S. and
  * other countries.
  */ 
+
+
+ (function() {
+// ES 3.1 proposed static functions
+// according to rationale_for_es3_1_static_object_methodsaug26.pdf on wiki.ecmascript.org
+// implementation uses __defineGetter__/__proto__ logic
+
+
+     Object.defineProperty = function(object, property, descriptor) {
+	 if (descriptor.value) {
+	     object[String(property)] = descriptor.value;
+	 } else {
+	     if (descriptor.getter) 
+		 object.__defineGetter__(property, descriptor.getter);
+	     if (descriptor.setter)
+		 object.__defineSetter__(property, descriptor.setter);
+	 }
+     };
+     
+     Object.defineProperties = function(object, descriptorSet) {
+	 for (var name in descriptorSet) {
+	     Object.defineProperty(object, name, descriptorSet[name]);
+	 }
+     }
+     
+     Object.defineProperties(Object, {
+	 create: { value: function(proto, descriptorSet) { //descriptor can be undefined
+	     var object = {};
+	     object.__proto__ = proto;
+	     Object.defineProperties(object, descriptorSet);
+	return object;
+	 }},
+	 
+	 keys: { value: function(object, optFast) {
+	     if (typeof object !== 'object') throw new TypeError();
+	     var names = []; // check behavior wrt arrays
+	     for (var name in object) {
+		 if (object.hasOwnProperty(name)) 
+		     names.push(name);
+	     }
+	     if (!optFast) names.sort();
+	     return names;
+	 }},
+	 
+	 getOwnPropertyNames: { value: function(object) {
+	     // would be different from keys if we could access non-enumerable properties
+	     return Object.keys(object);
+	 }},
+	 
+	 getPrototypeOf: { value: function(object) {
+	     if (typeof object !== 'object') throw new TypeError();
+	     return object.__proto__;
+	 }},
+	 
+	 getOwnPropertyDescriptor: { value: function(object, name) {
+	     var descriptor = { enumerable: true, writable: true, flexible: true};
+	     var getter = object.__lookupGetter__(name);
+	     var setter = object.__lookupSetter__(name);
+	     if (getter || setter) {
+		 descriptor.getter = getter;
+		 descriptor.setter = setter;
+	     } else descriptor.value = object[name];
+	     return descriptor;
+	 }},
+	 
+	 seal: {value: function(object) {
+	     // prevent adding and removing properties
+	     // in rhino only see use org.mozilla.javascript.tools.shell.Global.seal
+	     // not implementable yet
+	     return object;
+	 }},
+	 
+	 freeze: { value: function(object) {
+	     // like seal, but properties are read-only now
+	     // not implementable yet
+	     return object;
+	 }}
+     });
+     
+     Object.defineProperties(Function.prototype, {
+	 bind: { 
+	     value: function(self, var_args) {
+		 var thisFunc = this;
+		 if (arguments.length === 0) {
+		     return function() {
+			 return thisFunc.apply(self, arguments);
+		     }
+		 }
+		 var leftArgs = Array.prototype.slice.call(arguments, 1);
+		 return function(var_args) {
+		     var args = leftArgs.concat(Array.prototype.slice.call(arguments, 0));
+		     return thisFunc.apply(self, args);
+		 };
+	     }
+	 }
+     });
+     
+ })();
+
+
+
 var Global = this.window.top || this.window; // set to the context enclosing the SVG context.
 function dbgOn(cond, optMessage) {
     if (optMessage) console.log(optMessage);
@@ -19,14 +120,20 @@ function dbgOn(cond, optMessage) {
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 var using = (function() {
     function Util(args) { 
-	this.args = args;
-    }
+	var ownArgs = this.objects = new Array(args.length);
+	for (var i = 0; i < args.length; i++) 
+	    ownArgs[i] = args[i];
+    };
     Util.prototype = {
+	log: function(msg) {
+	    console.log(msg);
+	},
+	
 	run: function(inner) {
-	    var args = this.args;
+	    var args = this.objects;
 	    if (this.moduleName) { 
 		// little convenience, 
-		if (args.length > 0) console.log('using().module(): ignoring args ' + args);
+		if (args.length > 0) this.log('using().module(): ignoring args ' + args);
 		return module(this.moduleName).requires().toRun(inner);
 	    } else return inner.apply(args[0], args); 
 	},
@@ -42,7 +149,7 @@ var using = (function() {
 	},
 	link: function link(literal, variableMap) { 
 	    variableMap = variableMap || {};
-	    return new lively.data.Resolver().link(literal, [], undefined, variableMap, $A(this.args), this.model); 
+	    return new lively.data.Resolver().link(literal, [], undefined, variableMap, this.objects, this.model); 
 	},
 	extend: function extend(base, extLiteral) {
 	    return this.link(Object.extend(Object.clone(base), extLiteral));
