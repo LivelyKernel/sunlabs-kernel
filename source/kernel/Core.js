@@ -4004,22 +4004,20 @@ PasteUpMorph.subclass("WorldMorph", {
             ["FabrikClock", function(evt) {
 		require('Fabrik.js').toRun(function() {
                     var m = world.addMorph(new FabrikClockMorph(evt.point(), 50));
-                    m.startSteppingScripts(); });
-	    }],
+                    m.startSteppingScripts(); }); }],
+            ["Text Window", function(evt) {
+		WorldMorph.current().addTextWindow("Editable text"); }],
             ["Piano Keyboard", function(evt) {
                 require('Examples.js').toRun(function() {
                     var m = new PianoKeyboard(evt.point());
                     m.scaleBy(1.5);  m.rotateBy(-Math.PI*2/12);
-                    world.addMorph(m)})
-             }],
+                    world.addMorph(m); }); }],
             ["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
 		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
-		});
-	    }],
+		}); }],
 	    ["Effects demo (FF only)", function(evt) {
-		require('demofx.js').toRun(Functions.Empty);
-	    }]
+		require('demofx.js').toRun(Functions.Empty); }]
         ];
         var toolMenuItems = [
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
@@ -4178,6 +4176,7 @@ PasteUpMorph.subclass("WorldMorph", {
 
     internalAddWindow: function(pane, titleSpec, posSpec) {
 	var pos = (posSpec instanceof Point) ? posSpec : undefined;
+	pane.setBorderWidth(2);  pane.setBorderColor(Color.black);
 	var win = this.addFramedMorph(pane, String(titleSpec || ""), pos || this.firstHand().position().subPt(pt(5, 5)));
 	if (posSpec == "center") {
 	    win.align(win.bounds().center(), this.viewport().center());
