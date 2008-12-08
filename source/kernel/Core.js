@@ -2147,6 +2147,29 @@ Morph.addMethods({
 
 });
 
+Morph.addMethods({     // particle behavior
+
+    bounceInBounds: function(ob) {
+	// ob is outer bounds, a rectangle
+	if (!this.velocity) return;  // Can't bounce without a velocity vector
+	var b = this.bounds();
+	if (b.x < ob.x || b.maxX() > ob.maxX()) {
+	    this.velocity = this.velocity.scaleByPt(pt(-1, 1));
+	    this.moveBy(this.velocity);
+	}
+	if (b.y < ob.y || b.maxY() > ob.maxY()) {
+	    this.velocity = this.velocity.scaleByPt(pt(1, -1));
+	    this.moveBy(this.velocity);
+	}
+    },
+    stepByVelocities: function() {
+        if (this.velocity) this.moveBy(this.velocity);
+        if (this.angularVelocity) this.rotateBy(this.angularVelocity);
+    }
+
+});
+
+
 Morph.addMethods({     // help handling
 
     getHelpText: Functions.Null,  // override to supply help text

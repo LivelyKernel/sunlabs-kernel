@@ -1174,17 +1174,13 @@ ButtonMorph.subclass('EllipseMakerMorph', {
     	this.connectModel({model: this, getValue: "getThisValue", setValue: "setThisValue"});
 	this.pushed = false;
     },
-    setThisValue: function(bool) {
-        this.pushed = bool;
-	console.log("this.pushed = " + this.pushed);
-    },
-    getThisValue: function(bool) { return this.pushed },
+    setThisValue: function(bool) { this.pushed = bool; },
+    getThisValue: function(bool) { return this.pushed; },
 
     makeNewEllipse: function(date) {
         var e = new Morph(new lively.scene.Ellipse(pt(25, 25), 25));
 	e.applyStyle({ fill: Color.random(), fillOpacity: Math.random(), borderWidth: 1, borderColor: Color.random()});
 	e.velocity = pt(20,20).random();
-	e.bounceInBounds = this.bounceInBounds;
 	this.world().addMorph(e);
 	this.ellipses.push(e);
 	this.report()
@@ -1201,21 +1197,12 @@ ButtonMorph.subclass('EllipseMakerMorph', {
 	this.lastTick = thisTick;
     },
     stepEllipses: function() {
-        this.ellipses.forEach( function(e) { e.moveBy(e.velocity); e.bounceInBounds(); });
-    },
-    bounceInBounds: function() {
-	// should be in particles protocol of Morph
-        var b = this.bounds();
-	var ob = this.owner.innerBounds();
-	if (b.x < ob.x || b.maxX() > ob.maxX()) {
-	    this.velocity = this.velocity.scaleByPt(pt(-1, 1));
-	    this.moveBy(this.velocity);
-	}
-	if (b.y < ob.y || b.maxY() > ob.maxY()) {
-	    this.velocity = this.velocity.scaleByPt(pt(1, -1));
-	    this.moveBy(this.velocity);
-	}
-    },
+	var ownerBounds = this.owner.innerBounds();
+	this.ellipses.forEach( function(e) {
+		e.stepByVelocities();
+		e.bounceInBounds(ownerBounds);
+		});
+	},
     startSteppingScripts: function() { this.startStepping(30,'nextStep'); }
 });
 
