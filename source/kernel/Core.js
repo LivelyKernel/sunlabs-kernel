@@ -1649,18 +1649,18 @@ LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 	// runs before submorph is added
 	var dx = this.leftMarginOf(submorph);
 	var dy;
-	var firstMorph = supermorph.topSubmorph();
+	var last = supermorph.topSubmorph();
 	
-	if (!firstMorph) {
+	if (!last) {
 	    dx += this.leftPaddingOf(supermorph);
 	    dy =  this.topPaddingOf(supermorph);
 	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
 	} else {
-	    dx += this.rightMarginOf(firstMorph);
+	    dx += this.rightMarginOf(last);
 	    dy = 0;
-	    submorph.align(submorph.bounds().topLeft(), firstMorph.bounds().topRight());
+	    submorph.align(submorph.bounds().topLeft(), last.bounds().topRight());
+	    submorph.translateBy(pt(dx, dy));
 	}
-	submorph.translateBy(pt(dx, dy));
     }
 
 });
@@ -1683,8 +1683,9 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 	    dx = 0;
 	    dy += this.bottomMarginOf(last);
 	    submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
+	    submorph.translateBy(pt(dx, dy));
 	}
-	submorph.translateBy(pt(dx, dy));
+
     }
 
 });
