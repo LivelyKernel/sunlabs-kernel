@@ -1673,16 +1673,16 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 	// runs before submorph is added
 	var dx;
 	var dy = this.topMarginOf(submorph);
-	var firstMorph = supermorph.topSubmorph();
+	var last = supermorph.topSubmorph();
 	
-	if (!firstMorph) {
+	if (!last) {
 	    dx =  this.leftPaddingOf(supermorph);
 	    dy += this.topPaddingOf(supermorph);
 	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
 	} else {
 	    dx = 0;
-	    dy += this.topMarginOf(firstMorph);
-	    submorph.align(submorph.bounds().topLeft(), firstMorph.bounds().bottomLeft());
+	    dy += this.bottomMarginOf(last);
+	    submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
 	}
 	submorph.translateBy(pt(dx, dy));
     }

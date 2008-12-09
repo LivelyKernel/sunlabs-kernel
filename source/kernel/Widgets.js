@@ -995,8 +995,9 @@ TextMorph.subclass("CheapListMorph", {
 
 Morph.addMethods({
     
-    leftAlignSubmorphs: function(pad, inset) { 
+    leftAlignSubmorphs: function(pad, insetRect) { 
 
+	var inset = insetRect ? insetRect.topLeft() : pt(0, 0);
         var ownExtent = inset;
         var topLeft = pt(ownExtent.x + pad.left(), ownExtent.y + pad.top());
 	
@@ -1090,7 +1091,7 @@ BoxMorph.subclass("TextListMorph", {
     },
 
     alignAll: function(optMargin) {
-        this.leftAlignSubmorphs(this.itemMargin, optMargin || pt(0, 0));
+        this.leftAlignSubmorphs(this.itemMargin, optMargin);
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1573,7 +1574,7 @@ Morph.subclass("MenuMorph", {
 	
 	var textList = this.items.pluck('name');
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
-					   textList, pt(0, this.listStyle.borderRadius), this.textStyle);
+					   textList, Rectangle.inset(0, this.listStyle.borderRadius), this.textStyle);
 	
 	var menu = this;
 	this.listMorph.onKeyDown = function(evt) {
