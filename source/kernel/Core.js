@@ -1676,7 +1676,6 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 	var last = supermorph.topSubmorph();
 
 	if (!last) {
-	    console.log('left padding ' + this.leftPaddingOf(supermorph));
 	    dx = this.leftPaddingOf(supermorph);
 	    dy += this.topPaddingOf(supermorph);
 	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
