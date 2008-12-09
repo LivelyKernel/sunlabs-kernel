@@ -1685,7 +1685,6 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 	    submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
 	    submorph.translateBy(pt(dx, dy));
 	}
-
     }
 
 });
@@ -5126,7 +5125,7 @@ Morph.subclass('BoxMorph', {
     },
         // ??
     innerBounds: function() { 
-        return this.shape.bounds().insetByRect(this.padding);
+        return this.shape.bounds().outsetByRect(this.padding);
     },
 
     applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
@@ -5140,6 +5139,38 @@ Morph.subclass('BoxMorph', {
 
 });
 
+BoxMorph.subclass('ContainerMorph', {
+    documentation: "Box morph whose shape grows to contain all its submrphs",
+    initialize: function($super,rect) {
+	$super(rect);//new Rectangle(0,0,0,0));
+    },
+
+    initializeTransientState: function($super) {
+        $super();
+        this.priorExtent = this.innerBounds().extent();
+    },
+
+    addMorph: function($super, m, isFront) {
+	var ret = $super(m, isFront);
+	this.shape.setBounds(this.submorphBounds(true).outsetByRect(this.padding));
+	return ret;
+    },
+
+    adjustForNewBounds: function ($super) {
+	// borrowed from PanelMorph
+        // Compute scales of old submorph extents in priorExtent, then scale up to new extent
+        $super();
+        var newExtent = this.innerBounds().extent();
+        var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
+	this.submorphs.forEach(function(sub) {
+	    sub.setPosition(sub.getPosition().scaleByPt(scalePt));
+            sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+	});
+	this.priorExtent = newExtent;
+    },
+
+    
+});
 
 
 ClipboardHack = {
