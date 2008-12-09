@@ -1674,16 +1674,17 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 	var dx;
 	var dy = this.topMarginOf(submorph);
 	var last = supermorph.topSubmorph();
-	
+
 	if (!last) {
-	    dx =  this.leftPaddingOf(supermorph);
+	    console.log('left padding ' + this.leftPaddingOf(supermorph));
+	    dx = this.leftPaddingOf(supermorph);
 	    dy += this.topPaddingOf(supermorph);
 	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
 	} else {
 	    dx = 0;
 	    dy += this.bottomMarginOf(last);
 	    submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
-	    submorph.translateBy(pt(dx, dy));
+	    //submorph.translateBy(pt(dx, dy));
 	}
     }
 

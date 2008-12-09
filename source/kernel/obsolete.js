@@ -1390,3 +1390,32 @@ LayoutManager.subclass('VerticalLayout', {
     }
 });
 
+
+Morph.addMethods({
+    
+    leftAlignSubmorphs: function(pad, containerPadding) { 
+
+	var inset = containerPadding ? containerPadding.topLeft() : pt(0, 0);
+        var ownExtent = inset;
+        var topLeft = pt(ownExtent.x + pad.left(), ownExtent.y + pad.top());
+	
+        for (var i = 0; i < this.submorphs.length; i++) {
+            var morph = this.submorphs[i];
+            morph.setPosition(topLeft);
+            var ext = morph.getExtent();
+            ownExtent = pt(Math.max(ownExtent.x, pad.left()  + ext.x + pad.right()),  
+			   topLeft.y + pad.top() + ext.y + pad.bottom());
+            topLeft = topLeft.withY(ownExtent.y);
+        }
+	ownExtent = ownExtent.withY(ownExtent.y + inset.y);
+	
+	var bounds = this.getPosition().extent(ownExtent);
+	
+        if (this.owner) 
+            this.setBounds(bounds);
+	else
+            this.layoutManager.setBounds(this, bounds);
+    }
+    
+});
+

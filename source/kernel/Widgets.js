@@ -993,59 +993,28 @@ TextMorph.subclass("CheapListMorph", {
 
 });
 
-Morph.addMethods({
-    
-    leftAlignSubmorphs: function(pad, containerPadding) { 
-
-	var inset = containerPadding ? containerPadding.topLeft() : pt(0, 0);
-        var ownExtent = inset;
-        var topLeft = pt(ownExtent.x + pad.left(), ownExtent.y + pad.top());
-	
-        for (var i = 0; i < this.submorphs.length; i++) {
-            var morph = this.submorphs[i];
-            morph.setPosition(topLeft);
-            var ext = morph.getExtent();
-            ownExtent = pt(Math.max(ownExtent.x, pad.left()  + ext.x + pad.right()),  
-			   topLeft.y + pad.top() + ext.y + pad.bottom());
-            topLeft = topLeft.withY(ownExtent.y);
-        }
-	ownExtent = ownExtent.withY(ownExtent.y + inset.y);
-	
-	var bounds = this.getPosition().extent(ownExtent);
-	
-        if (this.owner) 
-            this.setBounds(bounds);
-	else
-            this.layoutManager.setBounds(this, bounds);
-    }
-    
-});
-
 
 BoxMorph.subclass("TextListMorph", {
 
     documentation: "A list that uses TextMorphs to display individual items",
     style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
     formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
-    itemMargin: Rectangle.inset(1), // stylize
     defaultCapacity: 50,
     highlightItemsOnMove: false,
     layoutManager: new VerticalLayout(), // singleton is OK
     
-    
     initialize: function($super, initialBounds, itemList, optPadding, optTextStyle) {
         // itemList is an array of strings
 	this.baseWidth = initialBounds.width;
-        var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.top() + this.itemMargin.bottom()));
+        var height = Math.max(initialBounds.height, itemList.length * TextMorph.prototype.fontSize);
         initialBounds = initialBounds.withHeight(height);
+	if (optPadding) this.padding = optPadding;
         $super(initialBounds);
         this.itemList = itemList;
         this.selectedLineNo = -1;
 	this.textStyle = optTextStyle;
 	this.generateSubmorphs(itemList);
-	if (optPadding) this.padding = optPadding;
-	// this should go away
-        this.alignAll(optPadding);
+	
 	if (Config.selfConnect) { // self connect logic, not really needed 
             var model = Record.newNodeInstance({List: [], Selection: null, Capacity: this.defaultCapacity, 
 		ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
@@ -1073,7 +1042,7 @@ BoxMorph.subclass("TextListMorph", {
     handlesMouseDown: Functions.True,
 
     generateSubmorphs: function(itemList) {
-	var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
+	var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle();
 	for (var i = 0; i < itemList.length; i++)  {
 	    var m = new TextMorph(rect, itemList[i]).beListItem();
 	    if (this.textStyle) m.applyStyle(this.textStyle);
@@ -1081,8 +1050,10 @@ BoxMorph.subclass("TextListMorph", {
 	    m.relayMouseEvents(this);
 	}
 	// FIXME: border doesn't belong here, doesn't take into account padding.
-	var borderBounds = this.bounds().expandBy(this.getBorderWidth()/2);
-	this.shape.setBounds(pt(0, 0).extent(borderBounds.extent()));
+	var borderBounds = this.bounds();//.expandBy(this.getBorderWidth()/2);
+	var delta = 2; // FIXME FIXME
+	var newBounds = new Rectangle(delta, 0, borderBounds.width - delta, borderBounds.height + this.padding.bottom());
+	this.shape.setBounds(newBounds);
     },
 
     adjustForNewBounds: function($super) {
@@ -1090,10 +1061,6 @@ BoxMorph.subclass("TextListMorph", {
 	// FIXME: go through all the submorphs adjust?
 	// Really, just fold into the layout logic, when in place
 	this.baseWidth = this.bounds().width;
-    },
-
-    alignAll: function(optPadding) {
-        this.leftAlignSubmorphs(this.itemMargin, optPadding);
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1321,7 +1288,7 @@ TextListMorph.subclass("ListMorph", {
     },
 
     generateSubmorphs: function(itemList) {
-        var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
+        var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle();
         for (var i = 0; i < itemList.length; i++)  {
             var m = this.generateListItem(itemList[i], rect);
             if (this.textStyle) m.applyStyle(this.textStyle);
@@ -1576,7 +1543,7 @@ Morph.subclass("MenuMorph", {
 	
 	var textList = this.items.pluck('name');
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
-					   textList, Rectangle.inset(0, this.listStyle.borderRadius), this.textStyle);
+					   textList, Rectangle.inset(0, this.listStyle.borderRadius/2), this.textStyle);
 	
 	var menu = this;
 	this.listMorph.onKeyDown = function(evt) {
