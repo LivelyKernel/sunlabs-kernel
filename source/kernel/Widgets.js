@@ -995,9 +995,9 @@ TextMorph.subclass("CheapListMorph", {
 
 Morph.addMethods({
     
-    leftAlignSubmorphs: function(pad, insetRect) { 
+    leftAlignSubmorphs: function(pad, containerPadding) { 
 
-	var inset = insetRect ? insetRect.topLeft() : pt(0, 0);
+	var inset = containerPadding ? containerPadding.topLeft() : pt(0, 0);
         var ownExtent = inset;
         var topLeft = pt(ownExtent.x + pad.left(), ownExtent.y + pad.top());
 	
@@ -1030,9 +1030,10 @@ BoxMorph.subclass("TextListMorph", {
     itemMargin: Rectangle.inset(1), // stylize
     defaultCapacity: 50,
     highlightItemsOnMove: false,
+    layoutManager: new VerticalLayout(), // singleton is OK
     
-
-    initialize: function($super, initialBounds, itemList, optMargin, optTextStyle) {
+    
+    initialize: function($super, initialBounds, itemList, optPadding, optTextStyle) {
         // itemList is an array of strings
 	this.baseWidth = initialBounds.width;
         var height = Math.max(initialBounds.height, itemList.length * (TextMorph.prototype.fontSize + this.itemMargin.top() + this.itemMargin.bottom()));
@@ -1041,9 +1042,10 @@ BoxMorph.subclass("TextListMorph", {
         this.itemList = itemList;
         this.selectedLineNo = -1;
 	this.textStyle = optTextStyle;
-	this.layoutManager = new VerticalLayout();
 	this.generateSubmorphs(itemList);
-        this.alignAll(optMargin);
+	if (optPadding) this.padding = optPadding;
+	// this should go away
+        this.alignAll(optPadding);
 	if (Config.selfConnect) { // self connect logic, not really needed 
             var model = Record.newNodeInstance({List: [], Selection: null, Capacity: this.defaultCapacity, 
 		ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
@@ -1069,7 +1071,7 @@ BoxMorph.subclass("TextListMorph", {
     },
 
     handlesMouseDown: Functions.True,
-    
+
     generateSubmorphs: function(itemList) {
 	var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle().insetByRect(this.itemMargin);
 	for (var i = 0; i < itemList.length; i++)  {
@@ -1090,8 +1092,8 @@ BoxMorph.subclass("TextListMorph", {
 	this.baseWidth = this.bounds().width;
     },
 
-    alignAll: function(optMargin) {
-        this.leftAlignSubmorphs(this.itemMargin, optMargin);
+    alignAll: function(optPadding) {
+        this.leftAlignSubmorphs(this.itemMargin, optPadding);
     },
 
     takesKeyboardFocus: Functions.True,
@@ -1307,8 +1309,8 @@ BoxMorph.subclass("TextListMorph", {
 // it should be the other way round...
 TextListMorph.subclass("ListMorph", {
 
-    initialize: function($super, initialBounds, itemList, optMargin, optTextStyle, suppressSelectionOnUpdate) {
-        $super(initialBounds, itemList, optMargin, optTextStyle)
+    initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
+        $super(initialBounds, itemList, optPadding, optTextStyle)
         this.suppressSelectionOnUpdate = suppressSelectionOnUpdate;
     },
     
