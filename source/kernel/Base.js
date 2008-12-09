@@ -37,7 +37,7 @@
 	     var object = {};
 	     object.__proto__ = proto;
 	     Object.defineProperties(object, descriptorSet);
-	return object;
+	     return object;
 	 }},
 	 
 	 keys: { value: function(object, optFast) {
@@ -105,9 +105,14 @@
 	 // FIXME redefining, 
 	 bind: {
 	     value: function bind() {
+		 function cdr(iterable) {
+		     var length = iterable.length, results = new Array(length - 1);
+		     while (length--) results[length - 1] = iterable[length];
+		     return results;
+		 }
 		 // this is the prototype.js definition
 		 if (arguments.length < 2 && arguments[0] === undefined) return this;
-		 var __method = this, args = $A(arguments), object = args.shift();
+		 var __method = this, args = cdr(arguments), object = arguments[0];
 		 return function bound() {
 		     return __method.apply(object, args.concat($A(arguments)));
 		 }
