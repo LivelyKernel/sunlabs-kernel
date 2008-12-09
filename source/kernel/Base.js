@@ -101,7 +101,19 @@
 		     return thisFunc.apply(self, args);
 		 };
 	     }
+	 },
+	 // FIXME redefining, 
+	 bind: {
+	     value: function bind() {
+		 // this is the prototype.js definition
+		 if (arguments.length < 2 && arguments[0] === undefined) return this;
+		 var __method = this, args = $A(arguments), object = args.shift();
+		 return function bound() {
+		     return __method.apply(object, args.concat($A(arguments)));
+		 }
+	     }
 	 }
+	 
      });
      
  })();
@@ -1883,6 +1895,11 @@ Rectangle.addMethods({
     insetByRect: function(r) {
 	return new Rectangle(this.x + r.left(), this.y + r.top(), this.width - (r.left() + r.right()), this.height - (r.top() + r.bottom()));
     },
+
+    outsetByRect: function(r) {
+	return new Rectangle(this.x - r.left(), this.y - r.top(), this.width + (r.left() + r.right()), this.height + (r.top() + r.bottom()));
+    },
+
 
     toLiteral: function() { return {x: this.x, y: this.y, width: this.width, height: this.height}; },
     
