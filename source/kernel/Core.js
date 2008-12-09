@@ -1613,6 +1613,15 @@ Object.subclass('LayoutManager', {
     rightMarginOf: function(morph) {
 	return morph.margin ? morph.margin.right() : 0;
     },
+
+    topMarginOf: function(morph) {
+	return morph.margin ? morph.margin.top() : 0;
+    },
+
+    bottomMarginOf: function(morph) {
+	return morph.margin ? morph.margin.bottom() : 0;
+    },
+
     
     rightPaddingOf: function(morph) {
 	return morph.padding ? morph.padding.right() : 0;
@@ -1627,7 +1636,7 @@ Object.subclass('LayoutManager', {
     },
 
     bottomPaddingOf: function(morph) {
-	return morph.padding ? morph.padding.top() : 0;
+	return morph.padding ? morph.padding.bottom() : 0;
     }
     
 });
@@ -1635,6 +1644,8 @@ Object.subclass('LayoutManager', {
 LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 
     beforeAddMorph: function(supermorph, submorph, isFront) {
+	if (submorph.isEpimorph) return;
+	
 	// runs before submorph is added
 	var dx = this.leftMarginOf(submorph);
 	var dy;
@@ -1653,6 +1664,31 @@ LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
     }
 
 });
+
+
+LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
+
+    beforeAddMorph: function(supermorph, submorph, isFront) {
+	if (submorph.isEpimorph) return;
+	// runs before submorph is added
+	var dx;
+	var dy = this.topMarginOf(submorph);
+	var firstMorph = supermorph.topSubmorph();
+	
+	if (!firstMorph) {
+	    dx =  this.leftPaddingOf(supermorph);
+	    dy += this.topPaddingOf(supermorph);
+	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
+	} else {
+	    dx = 0;
+	    dy += this.topMarginOf(firstMorph);
+	    submorph.align(submorph.bounds().topLeft(), firstMorph.bounds().bottomLeft());
+	}
+	submorph.translateBy(pt(dx, dy));
+    }
+
+});
+
 
 
 

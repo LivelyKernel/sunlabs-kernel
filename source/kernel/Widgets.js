@@ -1040,6 +1040,7 @@ BoxMorph.subclass("TextListMorph", {
         this.itemList = itemList;
         this.selectedLineNo = -1;
 	this.textStyle = optTextStyle;
+	this.layoutManager = new VerticalLayout();
 	this.generateSubmorphs(itemList);
         this.alignAll(optMargin);
 	if (Config.selfConnect) { // self connect logic, not really needed 
@@ -1076,6 +1077,9 @@ BoxMorph.subclass("TextListMorph", {
 	    this.addMorph(m);
 	    m.relayMouseEvents(this);
 	}
+	// FIXME: border doesn't belong here, doesn't take into account padding.
+	var borderBounds = this.bounds().expandBy(this.getBorderWidth()/2);
+	this.shape.setBounds(pt(0, 0).extent(borderBounds.extent()));
     },
 
     adjustForNewBounds: function($super) {
@@ -1197,7 +1201,6 @@ BoxMorph.subclass("TextListMorph", {
         }
         this.itemList = this.itemList.concat(newItems);
         this.generateSubmorphs(newItems);
-        this.alignAll();
         if (this.selectedLineNo + removed >= this.itemList.length - 1) {
             this.selectedLineNo = -1;
         }
@@ -1210,7 +1213,6 @@ BoxMorph.subclass("TextListMorph", {
         this.itemList = newList;
         this.removeAllMorphs();
         this.generateSubmorphs(newList);
-        this.alignAll();
         this.setSelectionToMatch(priorItem);
         this.resetScrollPane();
         // this.emitSelection(); 
