@@ -2097,6 +2097,14 @@ Morph.addMethods({
 	return this.align(this.bounds().center(), p); 
     },
 
+    moveOriginBy: function(delta) {
+	// This method changes the origin (and thus center of rotation) without changing any other effect
+	// To center a rectangular morph, use m.moveOriginBy(m.innerBounds().center())
+	this.origin = this.origin.addPt(delta);
+	this.shape.translateBy(delta.negated());
+	this.submorphs.forEach(function (ea) { ea.translateBy(delta.negated()); });
+    },
+
     // Animated moves for, eg, window collapse/expand
     animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn) {
 	if (nSteps <= 0) return;
