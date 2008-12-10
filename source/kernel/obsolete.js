@@ -1419,3 +1419,48 @@ Morph.addMethods({
     
 });
 
+
+
+
+
+// adds convenience functions
+function interactiveEval(text) { 
+    /*
+    function $h() {  
+	// history
+	for (var i = self.commandBuffer.length - 1; i > 0; i--) {
+	    self.log(i + ") " + self.commandBuffer[i]);
+	}
+    }
+    function $c() {
+	self.setModelValue("setRecentMessages", []);
+    }
+
+*/
+    function $w() { 
+	// current world
+	return WorldMorph.current(); 
+    }
+    function $m(morph) {
+	// morphs
+	return [].concat((morph || WorldMorph.current()).submorphs);
+    }
+    function $i(id) { // maybe just '$'
+	return document.getElementById(id.toString());
+    }
+    function $x(node) {
+	return Exporter.stringify(node);
+    }
+    function $f(id) {
+	// format node by id
+	return $x($i(id));
+    }
+    function $p(obj) {
+	return Properties.all(obj);
+    }
+    function $x(node, expr) {
+	return new Query(expr).findAll(node.rawNode || node);
+    }
+    return eval(text);
+};
+

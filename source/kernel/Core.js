@@ -1099,16 +1099,22 @@ lively.data.Wrapper.subclass('Morph', {
 	this.initializeTransientState();
     },
 
-shallowCopy: function () {
+    shallowCopy: function () {
 	// Return a copy of this morph with no submorphs, but 
 	//  with the same shape and shape attributes as this
 	return new Morph(this.shape.copy()); 
-	},
+    },
 
     initializePersistentState: function(shape) {
 	// a rect shape by default, will change later
 	this.shape = shape;
 	this.rawNode.appendChild(this.shape.rawNode);
+	if (this.styleClass) { // inherited from prototype
+	    var attr = this.styleClass.join(' ');
+	    this.rawNode.setAttribute("class", attr);
+	    // Safari needs the explicit assignment (perhaps the names have to be real stylesheets).
+	    this.rawNode.className.baseVal = attr;
+	}
 	this.applyStyle(this.style);
 	return this;
     },
@@ -5043,52 +5049,10 @@ LinkMorph.subclass('ExternalLinkMorph', {
     
 });
 
-
-
-// Some SVG/DOM bindings 
-
-
-
-// adds convenience functions
-function interactiveEval(text) { 
-    /*
-    function $h() {  
-	// history
-	for (var i = self.commandBuffer.length - 1; i > 0; i--) {
-	    self.log(i + ") " + self.commandBuffer[i]);
-	}
-    }
-    function $c() {
-	self.setModelValue("setRecentMessages", []);
-    }
-
-*/
-    function $w() { 
-	// current world
-	return WorldMorph.current(); 
-    }
-    function $m(morph) {
-	// morphs
-	return [].concat((morph || WorldMorph.current()).submorphs);
-    }
-    function $i(id) { // maybe just '$'
-	return document.getElementById(id.toString());
-    }
-    function $x(node) {
-	return Exporter.stringify(node);
-    }
-    function $f(id) {
-	// format node by id
-	return $x($i(id));
-    }
-    function $p(obj) {
-	return Properties.all(obj);
-    }
-    function $x(node, expr) {
-	return new Query(expr).findAll(node.rawNode || node);
-    }
-    return eval(text);
-};
+ function interactiveEval(text) {
+     // FIXME for compatibility, load jQuery for some interactive conveniences
+     return eval(text);
+ }
 
 // for Fabrik
 Morph.addMethods({
