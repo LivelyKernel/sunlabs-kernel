@@ -236,15 +236,16 @@ Object.subclass('lively.data.Wrapper', {
 	if (this.refcount === undefined) throw new Error('sorry, undefined');
 	this.refcount --;
 	if (this.refcount == 0) {
-	    if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
+            if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
 	}
     },
 
     dictionary: function() {
 	if (lively.data.Wrapper.dictionary == null) {
-	    var canvas = Global.document.getElementById("canvas");
-	    var dictNode = lively.data.Wrapper.dictionary = canvas.appendChild(NodeFactory.create("defs"));
-	    lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary"); // for debugging
+            var preExisting = Global.document.getElementById("SystemDictionary");
+            var canvas = Global.document.getElementById("canvas");
+            lively.data.Wrapper.dictionary = preExisting || canvas.appendChild(NodeFactory.create("defs"));
+            lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary"); // for debugging
 	}
 	return lively.data.Wrapper.dictionary;
     },
@@ -469,7 +470,15 @@ this.Node.addMethods({
     },
 
     getFill: function() {
-	return this._fill;
+        // hack
+        if (this._fill)
+	     return this._fill;
+	var attr = this.rawNode.getAttribute('fill');
+	if (!attr) return null;
+	var rawFill = lively.data.FragmentURI.getElement(attr);
+	if (!rawFill) return null;
+	var klass = lively.data.Wrapper.getEncodedType(rawFill);
+	return new (Class.forName(klass))(new Importer(), rawFill);
     },
     
     setStroke: function(paint) {

@@ -691,8 +691,16 @@ Object.extend(Exporter, {
     shrinkWrapMorph: function(morph) {
 	var importer = new Importer();
 	var newDoc = importer.getBaseDocument();
+	// FIXME this should go to another place?
+	this.addSystemDictionary(newDoc);
 	importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
 	return newDoc;
+    },
+    
+    addSystemDictionary: function(doc) {
+        if (!lively.data.Wrapper.dictionary) return;
+        var dict = lively.data.Wrapper.dictionary.cloneNode(true);
+        doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(dict, true));
     },
 
     saveDocumentToFile: function(doc, filename) {
@@ -901,6 +909,11 @@ Copier.subclass('Importer', {
 		found = (wrapper[name])[index] = this.lookup(ref);
 	    } else {
 		found = wrapper[name] = this.lookup(ref);
+	    }
+	    if (!found  && name === 'clip') {
+	        // last hope, not clean
+                found = wrapper[name] = new lively.scene.Clip(this, Global.document.getElementById(ref));
+                if (found) console.warn('Found reference somehow but not in the way it was intended to be found!!!')
 	    }
 	    if (!found) {
 		console.warn("no value found for field %s ref %s in wrapper %s", name, ref, wrapper);

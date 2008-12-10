@@ -1802,7 +1802,8 @@ BoxMorph.subclass("SliderMorph", {
             var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
             var newValue = p.x / (bnds.width-elevPix); 
         }
-    
+        
+        if (isNaN(newValue)) newValue = 0;
         this.setScaledValue(this.clipValue(newValue));
         this.adjustForNewBounds(); 
     },
@@ -1820,6 +1821,7 @@ BoxMorph.subclass("SliderMorph", {
         if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
         else newValue -= inc;
     
+        if (isNaN(newValue)) newValue = 0;
         this.setScaledValue(this.clipValue(newValue));
         this.adjustForNewBounds(); 
     },
