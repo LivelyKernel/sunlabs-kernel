@@ -55,7 +55,7 @@ TestCase.subclass('lively.Tests.ToolsTests.BrowserTests', {
         this.assertIdentity(allNodesButOne.first(), node);
     },
 
-    testOpenSystemBrowser: function() {
+    xtestOpenSystemBrowser: function() {
         this.sut.openIn(WorldMorph.current());
     },
     
@@ -258,10 +258,10 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
     
 });
 
-TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
+TestCase.subclass('lively.Tests.ToolsTests.JsParserTest', {
     
     setUp: function() {
-        this.sut = AnotherFileParser.withOMetaParser();
+        this.sut = JsParser.withOMetaParser();
     },
     
     assertSubDescriptorsAreValid: function(descr) {
@@ -292,13 +292,13 @@ TestCase.subclass('lively.Tests.ToolsTests.AnotherFileParserTest', {
         var src = db.getCachedText(fileName);
 		var lines = src.split('\n');
 		// get the ptrs
-		var start = AnotherFileParser.prototype.ptrOfLine(lines, startLine);
-		var end = AnotherFileParser.prototype.ptrOfLine(lines, endLine) + lines[endLine-1].length-1;
+		var start = JsParser.prototype.ptrOfLine(lines, startLine);
+		var end = JsParser.prototype.ptrOfLine(lines, endLine) + lines[endLine-1].length-1;
 		return src.slice(start, end);
 	}
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest1', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     
     testParseClass: function() {    // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
@@ -530,7 +530,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
         
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserParsesCoreTest', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserParsesCoreTest', {
             
     testParseCoreAlternativ: function() {
         // var url = URL.source.withFilename('Core.js');
@@ -544,7 +544,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
 
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest2', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest2', {
 
    	testFindLinNo: function() {
         var str = 'abc\ndef123\n\n\nxyz\n';
@@ -712,7 +712,6 @@ using(lively.lang.Execution).run(function(exec) {\n\
 main.logCompletion("main").delay(Config.mainDelay);\n\
 }.logCompletion("Main.js"));';
         var result = this.sut.parseSource(src);
-
         this.assertEqual(result.length, 2);
         this.assertEqual(result[1].type, 'usingDef');
         this.assertEqual(result[1].stopIndex, src.length-1);
@@ -766,7 +765,7 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
 
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest3', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
     
 	documentation: 'Tests which directly access LK files. Tests are quite brittle because they will fail when th eline numbers of the used files change.',
     
@@ -792,7 +791,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     },
     
     testParseTestKlass: function() {
-		// Class definition of AnotherFileParserTest1
+		// Class definition of JsParserTest1
 		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 301, 531);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
@@ -807,7 +806,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
     
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFileParserTest4', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest4', {
 
 	documentation: 'For testing parsing of OMeta grammar definitions themselves',
 
@@ -863,7 +862,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.AnotherFilePa
 
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTest', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTest', {
 
 	setUp: function($super) {
 		$super();
@@ -911,7 +910,7 @@ thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTe
 
 });
 
-thisModule.AnotherFileParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
    
    setUp: function() {
        /* creates:

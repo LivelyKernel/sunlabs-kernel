@@ -229,7 +229,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
     
     siblingsFor: function(node) {
         var siblings = this.allPaneNames
-             .collect(function(ea) { return this.nodesInPane(ea) }.bind(this))
+             .collect(function(ea) { return this.nodesInPane(ea) }, this)
              .detect(function(ea) { return ea.include(node) });
         if (!siblings) return [];
         return siblings.without(node);
@@ -455,7 +455,7 @@ Object.subclass('lively.ide.BrowserCommand', {
 ide.BrowserNode.subclass('lively.ide.EnvironmentNode', {
  
     childNodes: function() {
-        return this.target.subNamespaces(true).concat([this.target]).collect(function(ea) { return new ide.NamespaceNode(ea, this.browser) }.bind(this));
+        return this.target.subNamespaces(true).concat([this.target]).collect(function(ea) { return new ide.NamespaceNode(ea, this.browser) }, this);
     }
 });
  
@@ -1082,25 +1082,31 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 // ===========================================================================
 // Another File Parser - uses mostly OMeta for parsing LK sources
 // ===========================================================================
-Object.subclass('AnotherFileParser', {
-    
-    debugMode: false,
+Object.subclass('CodeParser', {
 
-    documentation: 'Extended FileParser. Scans source code and extracts SourceCodeDescriptors for ' +
+	documentation: 'Extended FileParser. Scans source code and extracts SourceCodeDescriptors for ' +
                    'classes, objects, functions, methods. Uses OMeta.',
-    
-    ometaRules: [/*'blankLine',*/ 'comment',
-               'klassDef', 'objectDef', 'klassExtensionDef',
-               'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
-               'unknown'],
- 
-    initialize: function(ometaParser) {
+
+	ometaRules: [],
+
+	initialize: function(ometaParser) {
         this.ometaParser = ometaParser;
     },
-    
-    callOMeta: function(rule, src) {
-        if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'));
 
+	giveHint: Functions.Null,
+
+	/* parsing */
+    prepareParsing: function(src, config) {
+        this.src = src;
+        this.lines = src.split(/[\n\r]/);
+        this.changeList = [];
+        
+        this.ptr = (config && config.ptr) || 0;
+        this.fileName = (config && config.fileName) || null;
+    },
+
+	callOMeta: function(rule, src) {
+        if (!this.ometaParser) throw dbgOn(new Error('No OMeta parser for parsing file sources!'));
         var errorDescr;
         var errorHandler;
         errorHandler = function(src, rule, grammarInstance, errorIndex) {
@@ -1111,73 +1117,21 @@ Object.subclass('AnotherFileParser', {
         }.bind(this);
         var result = OMetaSupport.matchAllWithGrammar(this.ometaParser, rule, src || this.src, errorHandler);
 		return result ? result : errorDescr;
-		//return result
     },
-    
-    parseClass: function() {
-        return this.callOMeta("klassDef");
-    },
-    
-    /* parsing */
-    prepareParsing: function(src, config) {
-        this.src = src;
-        this.lines = src.split(/[\n\r]/);
-        this.changeList = [];
-        
-        this.ptr = (config && config.ptr) || 0;
-        this.fileName = (config && config.fileName) || null;
-    },
-    
-    parseModuleBegin: function() {
-        var match = this.currentLine.match(/^\s*module\([\'\"](.*)[\'\"]\)\.requires\(.*toRun\(.*$/);
-        if (!match) return null;
-		if (this.debugMode)
-			console.log('Found module start in line ' +  this.currentLineNo());
-        var descr = new ide.FileFragment(match[1], 'moduleDef', this.ptr, null, this.currentLineNo(), this.fileName);
-        this.ptr += match[0].length + 1;
-        return descr;
-    },
-    
-    parseUsingBegin: function() {
-        var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*$/);
-        if (!match) return null;
-		if (this.debugMode)
-			console.log('Found using start in line ' +  this.currentLineNo());
-        var descr = new ide.FileFragment(match[1], 'usingDef', this.ptr, null, this.currentLineNo(), this.fileName);
-        this.ptr += match[0].length + 1;
-        return descr;
-    },
-    
-    parseModuleOrUsingEnd: function(specialDescr) {
-        if (specialDescr.length === 0) return null;
-        var match = this.currentLine.match(/^\s*\}.*?\)[\;]?.*$/);
-        if (!match) return null;
-		if (this.debugMode) {
-			if (specialDescr.last().type === 'moduleDef')
-				console.log('Found module end in line ' +  this.currentLineNo());
-			if (specialDescr.last().type === 'usingDef')
-				console.log('Found using end in line ' +  this.currentLineNo());
-		}
-        specialDescr.last().stopIndex = this.ptr + match[0].length - 1;
-        this.ptr = specialDescr.last().stopIndex + 1;
-        // FIXME hack
-        if (this.src[this.ptr] == '\n') {
-            specialDescr.last().stopIndex += 1;
-            this.ptr += 1;
-        }
-        return specialDescr.last();
-    },
-    
-    parseWithOMeta: function(hint) {
+
+	parseWithOMeta: function(hint) {
         var partToParse = this.src.substring(this.ptr, this.src.length);
         var descr;
         if (hint) descr = this.callOMeta(hint, partToParse);
-        // if (descr) console.log('hint helped!!!!');
+
         if (!descr || descr.isError)
             this.ometaRules
 				.without(hint)
-				.detect(function(rule) { descr = this.callOMeta(rule, partToParse); return descr && !descr.isError }, this);
- 
+				.detect(function(rule) {
+					descr = this.callOMeta(rule, partToParse);
+					return descr && !descr.isError
+				}, this);
+        
         if (descr === undefined)
             throw dbgOn(new Error('Could not parse src at ' + this.ptr));
         if (descr.stopIndex === undefined)
@@ -1188,31 +1142,14 @@ Object.subclass('AnotherFileParser', {
         this.fixIndicesAndMore(descr, tmpPtr);
         return descr;
     },
-    
-    giveHint: function() {
-        if (/^[\s]*([\w\.]+)\.subclass\([\'\"]([\w\.]+)[\'\"]/.test(this.currentLine))
-            return 'klassDef';
-        // if (/^[\s]*([\w]+)\:[\s]+function/.test(this.currentLine))
-        //     return 'methodDef';
-        // if (/^[\s]*([\w]+)\:/.test(this.currentLine))
-        //     return 'propertyDef';
-        // if (/^[\s]*function[\s]+([\w]+)[\s]*\(.*\)[\s]*\{.*/.test(this.currentLine)
-        //         || /^[\s]*var[\s]+([\w]+)[\s]*\=[\s]*function\(.*\)[\s]*\{.*/.test(this.currentLine))
-        //             return 'functionDef';
-        if (/^[\s]*Object\.extend.*$/.test(this.currentLine) || /^.*\.addMethods\(.*$/.test(this.currentLine))
-                return 'klassExtensionDef';
-        // if (/^[\s]*\(function.*/.test(this.currentLine))
-        //         return 'executedFuncDef';
-        return null;
-    },
-    
-    parseSource: function(src, optConfig /* FIXME */) {
+
+	parseSource: function(src, optConfig /* FIXME */) {
+		// this is the main parse loop
         var msParseStart;
         var msStart = new Date().getTime();
         this.overheadTime = 0;
         
         this.prepareParsing(src, optConfig);
-        var specialDescr = [];
         var descr;
         
         while (this.ptr < this.src.length) {
@@ -1221,34 +1158,11 @@ Object.subclass('AnotherFileParser', {
             this.currentLine = this.lines[this.currentLineNo()-1];
             var tmpPtr = this.ptr;
  
-            /*******/
-           if (descr = this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
-               if (specialDescr.length > 0) specialDescr.last().subElements.push(descr);
-               else this.changeList.push(descr);
-               specialDescr.push(descr);
-            } else if (this.parseModuleOrUsingEnd(specialDescr)) {
-                specialDescr.pop();
-                continue;
-            } else if (descr = this.parseWithOMeta(this.giveHint())) {
-                if (specialDescr.length > 0) specialDescr.last().subElements.push(descr);
-                else this.changeList.push(descr);
-            } else {
-                throw new Error('Could not parse ' + this.currentLine + ' ...');
-            }
-            /*******/
-            if (this.ptr <= tmpPtr) {
-				dbgOn(true);
-				console.warn('Could not go forward before line ' + this.findLineNo(this.lines, tmpPtr));
-				// throw the last added descriptor away and add an errorDescriptor
-				var responsible;
-				if (this.changeList.last() === descr) responsible = this.changeList;
-				else if (specialDescr.last().subElements.last() === descr) responsible = specialDescr.last().subElements;
-				else throw new Error('Couldn\'t find last added descriptor');
-				responsible.pop();
-				descr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1);
-				responsible.push(descr);
-				this.ptr = descr.stopIndex + 1;
-			}
+			descr = this.parseNextPart();
+            dbgOn(!descr);
+            
+            if (this.ptr <= tmpPtr)
+				this.couldNotGoForward(descr);
 
             if (this.debugMode) {
                 var msNow = new Date().getTime();
@@ -1262,8 +1176,8 @@ Object.subclass('AnotherFileParser', {
             descr = null;
         }
         
-        if (specialDescr.length > 0 &&  (!specialDescr.last().subElements.last().isError || !this.changeList.last().isError))
-            console.warn('Couldn\'t find end of ' + specialDescr.last().type);
+        if (this.specialDescr && this.specialDescr.length > 0 &&  (!this.specialDescr.last().subElements.last().isError || !this.changeList.last().isError))
+            console.warn('Couldn\'t find end of ' + this.specialDescr.last().type);
             //throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.last().type));
         
         console.log('Finished parsing in ' + (new Date().getTime()-msStart)/1000 + ' s');
@@ -1271,33 +1185,27 @@ Object.subclass('AnotherFileParser', {
  
         return this.changeList;
     },
-    
-    /* helper */
-    doForAllDescriptors: function(descr, action) {
-        action.call(this, descr);
-        if (!descr.subElements) return;
-        descr.subElements.forEach(function(ea) { this.doForAllDescriptors(ea, action) }, this);
-    },
-    
-    fixIndicesAndMore: function(descr, startPos) {
-        // var ms = new Date().getTime();
-        // ----------
-        this.doForAllDescriptors(descr, function(d) {
-            d.startIndex += startPos;
-            d.stopIndex += startPos;
-            d.lineNo = this.findLineNo(this.lines, d.startIndex);
-            d.fileName = this.fileName;
-        });
-        // ----------------
-        // this.overheadTime += new Date().getTime() - ms;
-    },
-    
-    currentLineNo: function() {
+
+	couldNotGoForward: function(descr, specialDescr) {
+		dbgOn(true);
+		console.warn('Could not go forward before line ' + this.findLineNo(this.lines, this.ptr));
+		var lastAdded = this.changeList.last();
+		var responsible = lastAdded.flattened().detect(function(ea) { return ea.subElements && ea.subElements.include(descr) });
+		if (!responsible && lastAdded === descr) responsible = this.changeList;
+		if (!responsible) throw new Error('Couldn\'t find last added descriptor');
+		responsible.pop();
+		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1);
+		responsible.push(errorDescr);
+		this.ptr = errorDescr.stopIndex + 1;
+	},
+
+	/* line finders */
+	currentLineNo: function() {
         return this.findLineNo(this.lines, this.ptr);
     },
     
     findLineNo: function(lines, ptr) {
-                // var ms = new Date().getTime();
+         // var ms = new Date().getTime();
         // what a mess, i want ordinary non local returns!
         ptr += 1;
         try {
@@ -1333,8 +1241,28 @@ Object.subclass('AnotherFileParser', {
         }
         return null
     },
+
+	/* descriptor modification */
+	doForAllDescriptors: function(descr, action) {
+        action.call(this, descr);
+        if (!descr.subElements) return;
+        descr.subElements.forEach(function(ea) { this.doForAllDescriptors(ea, action) }, this);
+    },
     
-    /* loading */
+    fixIndicesAndMore: function(descr, startPos) {
+        // var ms = new Date().getTime();
+        // ----------
+        this.doForAllDescriptors(descr, function(d) {
+            d.startIndex += startPos;
+            d.stopIndex += startPos;
+            d.lineNo = this.findLineNo(this.lines, d.startIndex);
+            d.fileName = this.fileName;
+        });
+        // ----------------
+        // this.overheadTime += new Date().getTime() - ms;
+    },
+
+	 /* loading */
     sourceFromUrl: function(url) {
         if (!tools.SourceControl) tools.SourceControl = new SourceDatabase();
         return tools.SourceControl.getCachedText(url.filename());        
@@ -1356,25 +1284,122 @@ Object.subclass('AnotherFileParser', {
         
         return flattened;
     },
+
+});
+
+CodeParser.subclass('JsParser', {
     
+    debugMode: false,
+
+    ometaRules: [/*'blankLine',*/ 'comment',
+               'klassDef', 'objectDef', 'klassExtensionDef',
+               'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
+               'unknown'],
+    
+    parseClass: function() {
+        return this.callOMeta("klassDef");
+    },
+    
+    parseModuleBegin: function() {
+        var match = this.currentLine.match(/^\s*module\([\'\"](.*)[\'\"]\)\.requires\(.*toRun\(.*$/);
+        if (!match) return null;
+		if (this.debugMode)
+			console.log('Found module start in line ' +  this.currentLineNo());
+        var descr = new ide.FileFragment(match[1], 'moduleDef', this.ptr, null, this.currentLineNo(), this.fileName);
+        this.ptr += match[0].length + 1;
+        return descr;
+    },
+    
+    parseUsingBegin: function() {
+        var match = this.currentLine.match(/^\s*using\((.*)\)\.run\(.*$/);
+        if (!match) return null;
+		if (this.debugMode)
+			console.log('Found using start in line ' +  this.currentLineNo());
+        var descr = new ide.FileFragment(match[1], 'usingDef', this.ptr, null, this.currentLineNo(), this.fileName);
+        this.ptr += match[0].length + 1;
+        return descr;
+    },
+    
+    parseModuleOrUsingEnd: function(specialDescr) {
+        if (!specialDescr) return null;
+        var match = this.currentLine.match(/^\s*\}.*?\)[\;]?.*$/);
+        if (!match) return null;
+		if (this.debugMode) {
+			if (specialDescr.type === 'moduleDef')
+				console.log('Found module end in line ' +  this.currentLineNo());
+			if (specialDescr.type === 'usingDef')
+				console.log('Found using end in line ' +  this.currentLineNo());
+		}
+        specialDescr.stopIndex = this.ptr + match[0].length - 1;
+        this.ptr = specialDescr.stopIndex + 1;
+        // FIXME hack
+        if (this.src[this.ptr] == '\n') {
+            specialDescr.stopIndex += 1;
+            this.ptr += 1;
+        }
+        return specialDescr;
+    },
+
+    giveHint: function() {
+        if (/^[\s]*([\w\.]+)\.subclass\([\'\"]([\w\.]+)[\'\"]/.test(this.currentLine))
+            return 'klassDef';
+        // if (/^[\s]*([\w]+)\:[\s]+function/.test(this.currentLine))
+        //     return 'methodDef';
+        // if (/^[\s]*([\w]+)\:/.test(this.currentLine))
+        //     return 'propertyDef';
+        // if (/^[\s]*function[\s]+([\w]+)[\s]*\(.*\)[\s]*\{.*/.test(this.currentLine)
+        //         || /^[\s]*var[\s]+([\w]+)[\s]*\=[\s]*function\(.*\)[\s]*\{.*/.test(this.currentLine))
+        //             return 'functionDef';
+        if (/^[\s]*Object\.extend.*$/.test(this.currentLine) || /^.*\.addMethods\(.*$/.test(this.currentLine))
+                return 'klassExtensionDef';
+        // if (/^[\s]*\(function.*/.test(this.currentLine))
+        //         return 'executedFuncDef';
+        return null;
+    },
+
+	parseNextPart: function() {
+		var descr;
+		if (!this.specialDescriptors) this.specialDescriptors = [];
+		
+		if (descr = this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
+			if (this.specialDescriptors.length > 0) this.specialDescriptors.last().subElements.push(descr);
+			else this.changeList.push(descr);
+			this.specialDescriptors.push(descr)
+			return descr;
+		};
+
+		if (descr = this.parseModuleOrUsingEnd(this.specialDescriptors.last())) {
+		    this.specialDescriptors.pop();
+			return descr;
+		};
+
+		if (descr = this.parseWithOMeta(this.giveHint())) {
+			if (this.specialDescriptors.length > 0) this.specialDescriptors.last().subElements.push(descr);
+			else this.changeList.push(descr);
+			return descr;
+		}
+		
+		throw new Error('Could not parse ' + this.currentLine + ' ...');
+	}
+	
 });
  
-Object.extend(AnotherFileParser, {
+Object.extend(JsParser, {
     
     grammarFile: 'LKFileParser.txt',    
     
     withOMetaParser: function(force) {
         var prototype;
         if (force)
-            prototype = OMetaSupport.fromFile(AnotherFileParser.grammarFile);
+            prototype = OMetaSupport.fromFile(JsParser.grammarFile);
         else
-            prototype = LKFileParser || OMetaSupport.fromFile(AnotherFileParser.grammarFile);
+            prototype = LKFileParser || OMetaSupport.fromFile(JsParser.grammarFile);
         var parser = Object.delegated(prototype, {_owner: this});
-        return new AnotherFileParser(parser);
+        return new JsParser(parser);
     },
     
     parseAndShowFileNamed: function(fileName) {
-        var chgList = AnotherFileParser.withOMetaParser().parseFileFromUrl(URL.source.withFilename(fileName));
+        var chgList = JsParser.withOMetaParser().parseFileFromUrl(URL.source.withFilename(fileName));
         new ChangeList(fileName, null, chgList).openIn(WorldMorph.current()); 
     }
     
@@ -1416,7 +1441,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     },
     
 	parseJs: function(fileName, fileString) {
-		var fileFragments = AnotherFileParser.withOMetaParser().parseSource(fileString, {fileName: fileName});
+		var fileFragments = JsParser.withOMetaParser().parseSource(fileString, {fileName: fileName});
         var root;
         var firstRealFragment = fileFragments.detect(function(ea) { return ea.type !== 'comment' });
         if (firstRealFragment.type === 'moduleDef')
@@ -1588,7 +1613,7 @@ Object.subclass('lively.ide.FileFragment', {
 		var newFileString = this.buildNewFileString(newSource);
 		newFileString = newFileString.slice(0,this.startIndex + newSource.length)
 
-        var parser = AnotherFileParser.withOMetaParser();
+        var parser = JsParser.withOMetaParser();
         if (this.type === 'moduleDef')
             return parser.parseSource(newFileString, {ptr: this.startIndex, fileName: this.fileName})[0];
         parser.ptr = this.startIndex;
@@ -1638,12 +1663,12 @@ Object.subclass('lively.ide.FileFragment', {
 
 	startLine: function() {
 		// FIXME!!!
-		return AnotherFileParser.prototype.findLineNo(this.getFileString().split(/[\n\r]/), this.startIndex);
+		return JsParser.prototype.findLineNo(this.getFileString().split(/[\n\r]/), this.startIndex);
 	},
 
 	stopLine: function() {
 		// FIXME!!!
-		return AnotherFileParser.prototype.findLineNo(this.getFileString().split('\n'), this.stopIndex);
+		return JsParser.prototype.findLineNo(this.getFileString().split('\n'), this.stopIndex);
 	},
     
     toString: function() {
@@ -1688,5 +1713,13 @@ ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
         return this.fileString
     },
 });
- 
+
+Morph.subclass('TestMorph', {
+        style: {borderColor: Color.black, 
+        	    fill: lively.lang.let(lively.paint, function(g) { 
+        		return new g.RadialGradient([new g.Stop(0, Color.blue.lighter()) , new g.Stop(0.5, Color.blue), 
+        					     new g.Stop(1, Color.blue.darker())], pt(0.4, 0.2))})
+        	   },
+});
+
 });
