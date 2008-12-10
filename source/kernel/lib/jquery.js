@@ -525,6 +525,24 @@ jQuery.fn = jQuery.prototype = {
 	}
 };
 
+function getStyleClass(elem) {
+    // SVG classes have baseVal and animVal
+    var value = elem.className;
+    return value && (value.baseVal || value);
+}
+
+function setStyleClass(elem, value) {
+    // SVG classes have baseVal and animVal
+    if (elem.className) {
+	if (elem.className.baseVal !== undefined) {
+	    elem.className.baseVal = value;
+	    return value;
+	}  
+    }
+    elem.className = value;
+    return value;
+}
+
 // Give the init function the jQuery prototype for later instantiation
 jQuery.fn.init.prototype = jQuery.fn;
 
@@ -764,7 +782,7 @@ jQuery.extend({
 		add: function( elem, classNames ) {
 			jQuery.each((classNames || "").split(/\s+/), function(i, className){
 				if ( elem.nodeType == 1 && !jQuery.className.has( elem.className, className ) )
-					elem.className += (elem.className ? " " : "") + className;
+				    setStyleClass(elem,  getStyleClass(elem) + (getStyleClass(elem) ? " " : "") + className);
 			});
 		},
 
@@ -780,7 +798,7 @@ jQuery.extend({
 
 		// internal only, use hasClass("class")
 		has: function( elem, className ) {
-			return jQuery.inArray( className, (elem.className || elem).toString().split(/\s+/) ) > -1;
+		    return jQuery.inArray( className, (getStyleClass(elem) || elem).toString().split(/\s+/) ) > -1;
 		}
 	},
 
@@ -1438,10 +1456,10 @@ jQuery.extend({
 	// The regular expressions that power the parsing engine
 	parse: [
 		// Match: [@value='test'], [@foo]
-		/^(\[) *@?([\w-]+) *([!*$^~=]*) *('?"?)(.*?)\4 *\]/,
+		/^(\[) *@?([\w-]+) *([!*$^~=]*) *('?"?)(.*?)\4 *\]/, // '" comment to pacify Emacs's broken highlighting
 
 		// Match: :contains('foo')
-		/^(:)([\w-]+)\("?'?(.*?(\(.*?\))?[^(]*?)"?'?\)/,
+		/^(:)([\w-]+)\("?'?(.*?(\(.*?\))?[^(]*?)"?'?\)/,     // '" comment to pacify Emacs's broken highlighting
 
 		// Match: :even, :last-child, #id, .class
 		new RegExp("^([:.#]*)(" + chars + "+)")
@@ -1657,7 +1675,7 @@ jQuery.extend({
 		m = " " + m + " ";
 		var tmp = [];
 		for ( var i = 0; r[i]; i++ ) {
-			var pass = (" " + r[i].className + " ").indexOf( m ) >= 0;
+		        var pass = (" " + getStyleClass(r[i]) + " ").indexOf( m ) >= 0;
 			if ( !not && pass || not && !pass )
 				tmp.push( r[i] );
 		}
