@@ -1343,11 +1343,19 @@ shallowCopy: function () {
 Morph.addMethods({  // tmp copy
 
     getStyleClass: function() {
-	return this.styleClass;
+	return this.styleClass || [];
     },
 
     setStyleClass: function(value) {
-	this.styleClass = value;
+	var attr;
+	if (value instanceof Array) {
+	    this.styleClass = value;
+	    attr = value.join(' ');
+	} else {
+	    this.styleClass = [value];
+	    attr = String(value);
+	}
+	this.rawNode.setAttribute("class", attr);
     },
 
     canvas: function() {
@@ -1496,16 +1504,15 @@ Morph.addMethods({
 
     linkToStyles: function(styleClassList, optSupressApplication) {
 	// Record the links for later updates, and apply them now
-	this.setStyleClass(styleClassList.join(' '));
+	this.setStyleClass(styleClassList);
 	if (!optSupressApplication) this.applyLinkedStyles();
 	return this;
     },
 
     applyLinkedStyles: function() {
 	// Apply all the styles to which I am linked, in order
-	var styleClassDecl = this.getStyleClass();
-	if (!styleClassDecl) return;
-	var styleClasses = styleClassDecl.split(' '); // better parsing?
+	var styleClasses = this.getStyleClass();
+	if (!styleClasses) return;
 	for (var i = 0; i < styleClasses.length; i++) {
 	    this.applyStyleNamed(styleClasses[i]); 
 	}

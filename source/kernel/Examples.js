@@ -107,10 +107,11 @@ Widget.subclass('TestWidget', {
 Morph.subclass("ClockMorph", {
 
     openForDragAndDrop: false,
+    styleClass: ['clock', 'raisedBorder'],
 
     initialize: function($super, position, radius, timeZoneOffset) {
         $super(new lively.scene.Ellipse(position, radius));
-        this.linkToStyles(['clock', 'raisedBorder']);
+        this.applyLinkedStyles();
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
         this.timeZoneOffset = timeZoneOffset;
         return this;
@@ -4162,7 +4163,7 @@ ClipMorph.subclass("lively.Examples.canvascape.CanvasScapeMorph", {
 // ===========================================================================
 
 
-Morph.subclass("EngineMorph", {
+BoxMorph.subclass("EngineMorph", {
 
     documentation: "The Radial Engine demo",
     angleStep: Math.PI/8,
@@ -4172,6 +4173,8 @@ Morph.subclass("EngineMorph", {
 	       vector: lively.paint.LinearGradient.NorthSouth},
 	borderColor: Color.black, 
 	borderWidth: 1}),
+
+    styleClass: ['raisedBorder'],
 
     pistonStyle: using(lively.paint).link({
 	fill: {$:"LinearGradient", stops: [{$:"Stop", offset: 0.0, color: Color.darkGray},
@@ -4189,8 +4192,8 @@ Morph.subclass("EngineMorph", {
    
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
-        $super(new lively.scene.Rectangle(fullRect));
-	this.linkToStyles(['raisedBorder']);
+        $super(fullRect);
+	this.applyLinkedStyles();
         this.makeLayout(1, false);
         this.setRunning(true);
     },

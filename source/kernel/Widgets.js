@@ -36,8 +36,10 @@ BoxMorph.subclass('ButtonMorph', {
     focusHaloBorderWidth: 3, // override the default
     label: null,
     toggle: false, //if true each push toggles the model state 
+    styleClass: ['button'],
     
     formals: ["Value"],
+
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
@@ -50,7 +52,7 @@ BoxMorph.subclass('ButtonMorph', {
 	    this.relayToModel(model, {Value: "Value"});
 	}
         // Styling
-        this.linkToStyles(['button']);
+        this.applyLinkedStyles();
         this.changeAppearanceFor(false);
         return this;
     },
@@ -1691,6 +1693,7 @@ Morph.subclass("MenuMorph", {
 BoxMorph.subclass("SliderMorph", {
 
     documentation: "Slider/scroll control",
+
     mss: 12,  // minimum slider size
     formals: { 
 	Value:        {byDefault: 0}, // from: function(value) { alert('from!' + value); return value;}}, 
@@ -1698,6 +1701,7 @@ BoxMorph.subclass("SliderMorph", {
     },
     style: {borderWidth: 1, borderColor: Color.black},
     selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
+    
 
     initialize: function($super, initialBounds, scaleIfAny) {
         $super(initialBounds);
@@ -2791,10 +2795,12 @@ BoxMorph.subclass("TitleTabMorph", {
     controlSpacing: 0,
     suppressHandles: true,
     
+    styleClass: ['titleBar'],
+    
     initialize: function($super, headline, windowWidth, windowMorph) {
         $super(Rectangle(0, 0, windowWidth, this.barHeight));
         this.windowMorph = windowMorph;
-        this.linkToStyles(['titleBar']);
+        this.applyLinkedStyles();
         this.ignoreEvents();
 
         var label;
