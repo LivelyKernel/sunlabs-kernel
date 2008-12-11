@@ -4159,10 +4159,10 @@ PasteUpMorph.subclass("WorldMorph", {
         var helpMenuItems = [
 	    ["Model documentation", function(evt) {
 		this.openURLasText( URL.common.project.withRelativePath(
-			"/index.fcgi/wiki/NewModelProposal?format=txt")); }],
+			"/index.fcgi/wiki/NewModelProposal?format=txt"), "Model documentation"); }],
 	    ["Command key help", function(evt) {
 		this.openURLasText( URL.common.project.withRelativePath(
-			"/index.fcgi/wiki/CommandKeyHelp?format=txt")); }]
+			"/index.fcgi/wiki/CommandKeyHelp?format=txt"), "Command key help"); }]
         ];
 	return [
             ['Simple morphs', morphItems],
@@ -4173,12 +4173,12 @@ PasteUpMorph.subclass("WorldMorph", {
             ['Help', helpMenuItems]];
     },
     
-    openURLasText: function(url) {
+    openURLasText: function(url, title) {
 	// FIXME: This should be moved with other handy services like confirm, notify, etc
 	var model = Record.newPlainInstance({URL: url,  ContentText: null});
 	WorldMorph.current().addTextWindow({
 		content: "fetching ... ",
-		title: "Model documentation",
+		title: title,
 		plug: model.newRelay({Text: "-ContentText"}),
 		position: "center"
 	});
