@@ -291,6 +291,7 @@ TestCase.subclass('lively.Tests.ToolsTests.JsParserTest', {
 		var db = lively.ide.startSourceControl();
         var src = db.getCachedText(fileName);
 		var lines = src.split('\n');
+		endLine = Math.min(endLine, lines.length-1);
 		// get the ptrs
 		var start = JsParser.prototype.ptrOfLine(lines, startLine);
 		var end = JsParser.prototype.ptrOfLine(lines, endLine) + lines[endLine-1].length-1;
@@ -792,7 +793,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
     
     testParseTestKlass: function() {
 		// Class definition of JsParserTest1
-		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 301, 531);
+		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 302, 532);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
@@ -810,6 +811,10 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 
 	documentation: 'For testing parsing of OMeta grammar definitions themselves',
 
+	setUp: function() {
+		this.sut = new OMetaParser();
+	},
+
 	testParseBasicGrammar: function() {
 		var src = 'ometa LKFileParser <: Parser {}';
         var result = this.sut.callOMeta('ometaDef', src);
@@ -823,6 +828,21 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 		var src = 'ometa LKFileParser {}';
         var result = this.sut.callOMeta('ometaDef', src);
         this.assertEqual(result.name, 'LKFileParser');
+	},
+
+	testParseBasicGrammarWithRules: function() {
+		var src = 'ometa LKFileParser {\n' +
+			'rule1 = abc,\n' +
+			'rule2 :x = xyz,\n' +
+			'rule3 = abcxyz -> { 1+2 }\n' +
+			'}';
+        var result = this.sut.parseSource(src);
+        this.assertEqual(result[0].name, 'LKFileParser');
+		var sub = result[0].subElements;
+		this.assertEqual(sub.length, 3);
+		this.assertEqual(sub[0].name, 'rule1');
+		this.assertEqual(sub[1].name, 'rule2');
+		this.assertEqual(sub[2].name, 'rule3');
 	},
 
 	testParseRule: function() {
@@ -859,6 +879,13 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
         this.assertIdentity(result.startIndex, 0);
         this.assertIdentity(result.stopIndex, src.length - 1);
 	},
+
+	testParseLKFileParserTxt: function() {
+		var fn = 'LKFileParser.txt';
+		var src = this.srcFromLinesOfFile(fn, 0, 9999);
+		var result = this.sut.parseSource(src, {fileName: fn});
+		new ChangeList(fn, null, result).openIn(WorldMorph.current());
+    },
 
 });
 

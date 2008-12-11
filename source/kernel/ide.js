@@ -221,11 +221,16 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
 
     nodesInPane: function(paneName) { // panes have listItems, no nodes
-         var listItems = this['get' + paneName + 'Content']();
-         if (!listItems) return [];
-         dbgOn(!listItems.collect);
-        return listItems.collect(function(ea) { return ea.value })    
-    },
+             var listItems = this['get' + paneName + 'Content']();
+             if (!listItems) return [];
+             if (!listItems.collect) {
+    			console.log('Weird bug: listItems: ' + listItems + ' has no collect in pane ' + paneName);
+    			Global.y = listItems;
+    			dbgOn(true);
+    			return [];
+    		}
+            return listItems.collect(function(ea) { return ea.value })    
+        },
     
     siblingsFor: function(node) {
         var siblings = this.allPaneNames
@@ -889,7 +894,33 @@ ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
 				];
         },
 
+	childNodes: function() {
+		var fileDef = this.target;
+		if (!fileDef) return [];
+		var browser = this.browser;
+		var ometaNodes = fileDef.subElements
+			.select(function(ea) { return ea.type === 'ometaDef'})
+			.collect(function(ea) { return new ide.OMetaGrammarNode(ea, browser) });
+		var rest = fileDef.subElements
+			.select(function(ea) { return !fileDef.subElements.include(ea) })
+			.collect(function(ea) { return new ide.ObjectFragmentNode(ea, browser) });
+		return ometaNodes.concat(rest);
+    },
+
 });
+
+ide.FileFragmentNode.subclass('lively.ide.OMetaGrammarNode', {
+
+	childNodes: function() {
+		var def = this.target;
+		var browser = this.browser;
+		return this.target.subElements
+			.collect(function(ea) { return new ide.OMetaRuleNode(ea, browser) });
+	},
+
+});
+
+ide.FileFragmentNode.subclass('lively.ide.OMetaRuleNode', {});
 
 ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
  
@@ -1401,6 +1432,20 @@ Object.extend(JsParser, {
 
 CodeParser.subclass('OMetaParser', {
 
+	debugMode: true,
+
+	ometaRules: ['ometaDef', 'unknown'],
+
+	parseNextPart: function() {
+		var descr;
+		if (descr = this.parseWithOMeta(this.giveHint())) {
+			this.changeList.push(descr);
+			return descr;
+		}
+		
+		throw new Error('Could not parse ' + this.currentLine + ' ...');
+	}
+	
 	
 });
  
@@ -1450,7 +1495,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 	},
 
 	parseOmeta: function(fileName, fileString) {
-        var root = new lively.ide.FileFragment(fileName, 'ometaGrammar', 0, fileString.length-1, null, fileName, [], this);
+		var fileFragments = new OMetaParser().parseSource(fileString, {fileName: fileName});
+        var root = new lively.ide.FileFragment(fileName, 'ometaGrammar', 0, fileString.length-1, null, fileName, fileFragments, this);
         return root;
 	},
 

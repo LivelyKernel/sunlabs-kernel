@@ -65,7 +65,7 @@ ometa LKFileParser <: Parser {
 	                    -> { var i = nArr.indexOf(x); {before: nArr.slice(0,i).join('.'), after: nArr.slice(i+1,nArr.length).join('.')} },
     
     /* functions */
-    basicFunction       = "function" spaces (name:n | "") chunk('(', ')') spaces chunk('{', '}')  -> n,
+    basicFunction       = "function" spaces (name:n | empty) chunk('(', ')') spaces chunk('{', '}')  -> n,
     func                = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction          -> fn,
     functionDef         = pos:p func:fn defEnd
                         -> { $elf._fragment(fn, 'functionDef', p, $elf.pos()-1) },
@@ -77,7 +77,7 @@ ometa LKFileParser <: Parser {
 	/* methods */
 	wrapEnd             = ".wrap" chunk('(', ')'),
     methodDefWithSpcs   = spaces methodDef:mD classElemDefEnd                      -> mD,
-    methodDef           = pos:p name:mName ':' spaces basicFunction (somethingBigRelated | "" ) classElemDefEnd
+    methodDef           = pos:p name:mName ':' spaces basicFunction (somethingBigRelated | empty ) classElemDefEnd
                         -> { $elf._fragment(mName, 'methodDef', p, $elf.pos()-1) },
     methodModificationDef   = pos:p nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
                             -> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {klassName: spec.before}) },
@@ -116,12 +116,12 @@ ometa LKFileParser <: Parser {
     /* ometa stuff */
     ometaParameter      = ':' name:n spaces       -> n,
     ometaParameters     =  ometaParameter*,
-    ometaRuleDef        = pos:p name:n spaces ometaParameters:a ('=' | "->") (~',' anything)*:body ( ',' | "" )
-                        -> { var m = {parameters: a}; $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, [], m) },
+    ometaRuleDef        = pos:p name:n spaces ometaParameters:a ('=' | "->") (~',' (chunk('(', ')') |  chunk('{', '}') | chunk('\'', '\'') | chunk('"', '"') | ~'}' anything))*:body ( ',' | empty )
+                        -> { $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, [], {parameters: a}) },
     ometaInherit        = "<:" spaces name:sn                                           -> sn
-                        | ""                                                            -> { null },
-    ometaDef            = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' ometaRuleDef*:d '}'
-                        -> { var m = {superclassName: sn}; $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, d, m) },
+                        | empty                                                         -> { null },
+    ometaDef            = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' spaces (ometaRuleDef:d spaces -> d)*:defs spaces '}' defEnd
+                        -> { $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, defs, {superclassName: sn}) },
                         
                     
     /* otherStuff */
