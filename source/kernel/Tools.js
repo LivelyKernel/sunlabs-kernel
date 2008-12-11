@@ -1178,10 +1178,15 @@ ButtonMorph.subclass('EllipseMakerMorph', {
     getThisValue: function(bool) { return this.pushed; },
 
     makeNewEllipse: function(date) {
-        var e = new Morph(new lively.scene.Ellipse(pt(25, 25), 25));
+        var ext = this.owner.innerBounds().extent();
+	var s = Math.min(ext.x/2, ext.y/2, 80);
+	var e = new Morph(new lively.scene.Ellipse(pt(0,0), 25));
+	e.setExtent(pt(s, s/2));
 	e.applyStyle({ fill: Color.random(), fillOpacity: Math.random(), borderWidth: 1, borderColor: Color.random()});
-	e.velocity = pt(20,20).random();
-	this.world().addMorph(e);
+	e.velocity = pt(s/8, s/8).random();
+	e.angularVelocity = 0.3  * Math.random();
+	this.owner.addMorph(e);
+	e.moveOriginBy(e.innerBounds().center());  // Rotate about center
 	this.ellipses.push(e);
 	this.report()
     },

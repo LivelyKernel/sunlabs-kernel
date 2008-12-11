@@ -2218,16 +2218,26 @@ Morph.addMethods({     // particle behavior
     },
     bounceInBounds: function(ob) {
 	// typcially ob = this.owner.innerBounds()
+	// Bounce by reversing the component of velocity that put us out of bounds
 	if (!this.velocity) return;  // Can't bounce without a velocity vector
 
-	// Bounce by reversing the component of velocity that put us out of bounds
+	// We take care to only reverse the direction if it's wrong,
+	//	but we move in any case, since we might be deeply out of bounds
 	var b = this.bounds();
-	if (b.x < ob.x || b.maxX() > ob.maxX()) {
-	    this.velocity = this.velocity.scaleByPt(pt(-1, 1));
+	if (b.x < ob.x) {
+	    if (this.velocity.x < 0) this.velocity = this.velocity.scaleByPt(pt(-1, 1));
 	    this.moveBy(this.velocity);
 	}
-	if (b.y < ob.y || b.maxY() > ob.maxY()) {
-	    this.velocity = this.velocity.scaleByPt(pt(1, -1));
+	if (b.maxX() > ob.maxX()) {
+	    if (this.velocity.x > 0) this.velocity = this.velocity.scaleByPt(pt(-1, 1));
+	    this.moveBy(this.velocity);
+	}
+	if (b.y < ob.y) {
+	    if (this.velocity.y < 0) this.velocity = this.velocity.scaleByPt(pt(1, -1));
+	    this.moveBy(this.velocity);
+	}
+	if (b.maxY() > ob.maxY()) {
+	    if (this.velocity.y > 0) this.velocity = this.velocity.scaleByPt(pt(1, -1));
 	    this.moveBy(this.velocity);
 	}
     },
