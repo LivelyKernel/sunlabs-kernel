@@ -28,7 +28,7 @@ Global.getStack = function() {
 
 Global.printStack = function() {  
     function guessFunctionName(func) {
-        return func.qualifiedMethodName() || func.toString().match(/function (.+)\(/)[1] || func;
+        return (func.qualifiedMethodName && func.qualifiedMethodName()) || func.toString().match(/function (.+)\(/)[1] || func;
     };
     
     var string = "== Stack ==\n";
