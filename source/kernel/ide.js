@@ -340,6 +340,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 			morph.addMorph(btn);
         })
 	},
+
 });
  
 Object.subclass('lively.ide.BrowserNode', {
@@ -1089,8 +1090,13 @@ Object.subclass('CodeParser', {
 
 	ometaRules: [],
 
-	initialize: function(ometaParser) {
-        this.ometaParser = ometaParser;
+	grammarFile: 'LKFileParser.txt',
+
+	initialize: function(forceNewCompile) {
+		var prototype = forceNewCompile || !Global['LKFileParser'] ?
+			OMetaSupport.fromFile(this.grammarFile) :
+			LKFileParser;
+		this.ometaParser = Object.delegated(prototype, {_owner: this});
     },
 
 	giveHint: Functions.Null,
@@ -1385,26 +1391,18 @@ CodeParser.subclass('JsParser', {
 });
  
 Object.extend(JsParser, {
-    
-    grammarFile: 'LKFileParser.txt',    
-    
-    withOMetaParser: function(force) {
-        var prototype;
-        if (force)
-            prototype = OMetaSupport.fromFile(JsParser.grammarFile);
-        else
-            prototype = LKFileParser || OMetaSupport.fromFile(JsParser.grammarFile);
-        var parser = Object.delegated(prototype, {_owner: this});
-        return new JsParser(parser);
-    },
-    
+
     parseAndShowFileNamed: function(fileName) {
-        var chgList = JsParser.withOMetaParser().parseFileFromUrl(URL.source.withFilename(fileName));
+        var chgList = new JsParser().parseFileFromUrl(URL.source.withFilename(fileName));
         new ChangeList(fileName, null, chgList).openIn(WorldMorph.current()); 
     }
     
 });
- 
+
+CodeParser.subclass('OMetaParser', {
+
+	
+});
  
 // ===========================================================================
 // Keeps track of parsed sources
@@ -1441,7 +1439,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     },
     
 	parseJs: function(fileName, fileString) {
-		var fileFragments = JsParser.withOMetaParser().parseSource(fileString, {fileName: fileName});
+		var fileFragments = new JsParser().parseSource(fileString, {fileName: fileName});
         var root;
         var firstRealFragment = fileFragments.detect(function(ea) { return ea.type !== 'comment' });
         if (firstRealFragment.type === 'moduleDef')
@@ -1613,7 +1611,7 @@ Object.subclass('lively.ide.FileFragment', {
 		var newFileString = this.buildNewFileString(newSource);
 		newFileString = newFileString.slice(0,this.startIndex + newSource.length)
 
-        var parser = JsParser.withOMetaParser();
+        var parser = new JsParser();
         if (this.type === 'moduleDef')
             return parser.parseSource(newFileString, {ptr: this.startIndex, fileName: this.fileName})[0];
         parser.ptr = this.startIndex;

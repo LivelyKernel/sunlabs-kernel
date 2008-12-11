@@ -261,7 +261,7 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
 TestCase.subclass('lively.Tests.ToolsTests.JsParserTest', {
     
     setUp: function() {
-        this.sut = JsParser.withOMetaParser();
+        this.sut = new JsParser();
     },
     
     assertSubDescriptorsAreValid: function(descr) {
@@ -771,14 +771,14 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
     
     testParseWorldMorph: function() {    // Object.subclass
 		// Class definition of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 3465, 4218);
+		var src = this.srcFromLinesOfFile('Core.js', 3561, 4313);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
     
     testParseOldFileParser: function() {
 		// Class definition of FileParser
-		var src = this.srcFromLinesOfFile('Tools.js', 1226, 1421);
+		var src = this.srcFromLinesOfFile('Tools.js', 1209, 1404);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
@@ -799,14 +799,14 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
 
 	testParseFailingAddMethods: function() {
 		// addMethods of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 2974, 3026);
+		var src = this.srcFromLinesOfFile('Core.js', 3038, 3066);
 		var descriptor = this.sut.callOMeta('klassExtensionDef', src);
 		this.assertEqual(descriptor.type, 'klassExtensionDef');
 	}
     
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest4', {
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 
 	documentation: 'For testing parsing of OMeta grammar definitions themselves',
 
