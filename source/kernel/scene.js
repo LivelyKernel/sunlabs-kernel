@@ -241,13 +241,13 @@ Object.subclass('lively.data.Wrapper', {
     },
 
     dictionary: function() {
-	if (lively.data.Wrapper.dictionary == null) {
-            var preExisting = Global.document.getElementById("SystemDictionary");
-            var canvas = Global.document.getElementById("canvas");
-            lively.data.Wrapper.dictionary = preExisting || canvas.appendChild(NodeFactory.create("defs"));
-            lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary"); // for debugging
-	}
-	return lively.data.Wrapper.dictionary;
+		if (lively.data.Wrapper.dictionary)
+			return  lively.data.Wrapper.dictionary;
+		var preExisting = Global.document.getElementById("SystemDictionary");
+		var canvas = Global.document.getElementById("canvas");
+		lively.data.Wrapper.dictionary = preExisting || canvas.appendChild(NodeFactory.create("defs"));
+		lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary");
+		return lively.data.Wrapper.dictionary;
     },
     
     deserializeWidgetFromNode: function(importer, node) {
@@ -470,15 +470,20 @@ this.Node.addMethods({
     },
 
     getFill: function() {
-        // hack
+		// hack
         if (this._fill)
-	     return this._fill;
-	var attr = this.rawNode.getAttribute('fill');
-	if (!attr) return null;
-	var rawFill = lively.data.FragmentURI.getElement(attr);
-	if (!rawFill) return null;
-	var klass = lively.data.Wrapper.getEncodedType(rawFill);
-	return new (Class.forName(klass))(new Importer(), rawFill);
+			return this._fill;
+		console.log('Didn\'t found native fill, looking in DOM...');
+		var attr = this.rawNode.getAttribute('fill');
+		if (!attr) return null;
+		var rawFill = lively.data.FragmentURI.getElement(attr);
+		if (!rawFill) return null;
+		var klass = lively.data.Wrapper.getEncodedType(rawFill);
+		klass = Class.forName(klass);
+		var importer = new Importer();
+		//dbgOn(true);
+		this._fill = new klass(importer, rawFill);
+		return this._fill;
     },
     
     setStroke: function(paint) {
@@ -2069,7 +2074,7 @@ Wrapper.subclass("lively.paint.Gradient", {
 
     deserialize: function($super, importer, rawNode) {
 	$super(importer, rawNode);
-	rawNode.removeAttribute("id");
+	//rawNode.removeAttribute("id");
 	var rawStopNodes = $A(this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop'));
 	this.stops = rawStopNodes.map(function(stopNode) { return new lively.paint.Stop(importer, stopNode) });
 	this.refcount = 0;
@@ -2078,7 +2083,7 @@ Wrapper.subclass("lively.paint.Gradient", {
     copyFrom: function($super, copier, other) {
 	$super(copier, other);
 	dbgOn(!other.stops);
-	this.rawNode.removeAttribute("id");
+	//this.rawNode.removeAttribute("id");
 	var rawStopNodes = $A(this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop'));
 	this.stops = rawStopNodes.map(function(stopNode) { return new lively.paint.Stop(importer, stopNode) });
 	this.refcount = 0;

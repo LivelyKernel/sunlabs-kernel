@@ -698,9 +698,13 @@ Object.extend(Exporter, {
     },
     
     addSystemDictionary: function(doc) {
-        if (!lively.data.Wrapper.dictionary) return;
-        var dict = lively.data.Wrapper.dictionary.cloneNode(true);
-        doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(dict, true));
+		var dict = lively.data.Wrapper.dictionary;
+        if (!dict) return;
+		var preExisting = doc.getElementById(dict.id);
+		if (preExisting)
+			preExisting.parentNode.removeChild(preExisting);
+        var newDict = dict.cloneNode(true);
+        doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(newDict, true));
     },
 
     saveDocumentToFile: function(doc, filename) {
