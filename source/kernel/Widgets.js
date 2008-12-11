@@ -3152,13 +3152,6 @@ Morph.addMethods({
         return this.owner.window();
     },
 });
-
-WindowMorph.addMethods({
-    // KP: shouldn't this be replaced by Morph.immediateContainer?
-    window: function(morph) {
-        return this
-    },
-});
    
    
 WindowMorph.subclass("TabbedPanelMorph", {
