@@ -17,7 +17,7 @@ ometa LKFileParser <: Parser {
 	num :x              -> { $elf.stack.select(function(ea) { return ea === x }).length },
 	getStack            -> { $elf.stack.clone() },
 	assignStack :s      -> { $elf.stack = s },
-	startTime           -> { /*console.log('start measuring time'); new Date().getTime()*/},
+	startTime           -> { /*console.log('start measuring time'); new Date().getTime()*/ },
 	stopTime :t         -> { /*console.log('time: ' + (new Date().getTime()-t) + ' ms');*/ true},
 	open :x             = add(x)	                                                    -> { /*console.log('opening ' + x);*/  x},
 	close :x :y         = add(y) remove(y) remove(x) -> { /*console.log('closing ' + x + ' with ' + y + ' stack: ' + $elf.stack);*/ y},
@@ -117,7 +117,7 @@ ometa LKFileParser <: Parser {
     ometaParameter      = ':' name:n spaces       -> n,
     ometaParameters     =  ometaParameter*,
     ometaRuleDef        = pos:p name:n spaces ometaParameters:a ('=' | "->") (~',' (chunk('(', ')') |  chunk('{', '}') | chunk('\'', '\'') | chunk('"', '"') | ~'}' anything))*:body ( ',' | empty )
-                        -> { $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, [], {parameters: a}) },
+                        -> { $elf._fragment(n, 'ometaRuleDef', p, $elf.pos()-1, [], {parameters: a}) },
     ometaInherit        = "<:" spaces name:sn                                           -> sn
                         | empty                                                         -> { null },
     ometaDef            = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' spaces (ometaRuleDef:d spaces -> d)*:defs spaces '}' defEnd

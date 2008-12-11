@@ -1657,9 +1657,21 @@ Object.subclass('lively.ide.FileFragment', {
 		var newFileString = this.buildNewFileString(newSource);
 		newFileString = newFileString.slice(0,this.startIndex + newSource.length)
 
-        var parser = new JsParser();
+		// FIXME time to cleanup!!!
+		var parser;
+		if (this.type === 'ometaDef' || this.type === 'ometaRuleDef') {
+			parser = new OMetaParser();
+			parser.ptr = this.startIndex;
+        	parser.src = newFileString;
+        	parser.lines = newFileString.split(/[\n\r]/);
+        	parser.fileName = this.fileName;
+        	return parser.parseWithOMeta(this.type);
+		}
+
+        parser = new JsParser();
         if (this.type === 'moduleDef')
             return parser.parseSource(newFileString, {ptr: this.startIndex, fileName: this.fileName})[0];
+
         parser.ptr = this.startIndex;
         parser.src = newFileString;
         parser.lines = newFileString.split(/[\n\r]/);

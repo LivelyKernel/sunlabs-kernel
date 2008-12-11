@@ -841,6 +841,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 		var sub = result[0].subElements;
 		this.assertEqual(sub.length, 3);
 		this.assertEqual(sub[0].name, 'rule1');
+		this.assertEqual(sub[0].type, 'ometaRuleDef');
 		this.assertEqual(sub[1].name, 'rule2');
 		this.assertEqual(sub[2].name, 'rule3');
 	},
@@ -852,6 +853,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 		this.assertEqualState(result.parameters, ['x', 'y']);
 		/*this.assertEqualState(result.ometaPart, ' seq(\'123\') \'1\'	');
 		this.assertEqualState(result.jsPart, ' {bla}');*/
+		this.assertIdentity(result.type, 'ometaRuleDef');
         this.assertIdentity(result.startIndex, 0);
         this.assertIdentity(result.stopIndex, src.length - 1);
 	},
@@ -884,7 +886,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 		var fn = 'LKFileParser.txt';
 		var src = this.srcFromLinesOfFile(fn, 0, 9999);
 		var result = this.sut.parseSource(src, {fileName: fn});
-		new ChangeList(fn, null, result).openIn(WorldMorph.current());
+		//new ChangeList(fn, null, result).openIn(WorldMorph.current());
     },
 
 });
