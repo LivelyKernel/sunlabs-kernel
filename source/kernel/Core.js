@@ -5121,7 +5121,7 @@ Morph.subclass('BoxMorph', {
     },
         // ??
     innerBounds: function() { 
-        return this.shape.bounds().outsetByRect(this.padding);
+        return this.shape.bounds().insetByRect(this.padding);
     },
 
     applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
