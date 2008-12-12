@@ -1865,7 +1865,15 @@ BoxMorph.subclass("TextMorph", {
 	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
     },
     doSearch: function() {
-        if (lively.Tools.SourceControl) lively.Tools.SourceControl.browseReferencesTo(this.getSelectionString()); 
+		if (!lively.Tools.SourceControl) {
+			var msg = 'No SourceControl available.\nShould I start the SourceControl?';
+			WorldMorph.current().confirm(msg, function(answer) {
+				if (!answer) return;
+				lively.ide.startSourceControl().browseReferencesTo(this.getSelectionString());
+			}.bind(this))
+		};
+
+		lively.Tools.SourceControl.browseReferencesTo(this.getSelectionString()); 
     },
     doDoit: function() {
         var strToEval = this.getSelectionString(); 
