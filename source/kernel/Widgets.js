@@ -2433,6 +2433,10 @@ Widget.subclass('Dialog', {
 	var view = $super(world, position);
 	if (position)  // slight usability improvement
 	    view.align(view.bounds().center(), position);
+	if (this.label) {
+		var newWidth = Math.max(view.getExtent().x, this.label.getExtent().x + 20);
+		view.setExtent(pt(newWidth, view.getExtent().y));
+	}
 	return view;
 
     },
@@ -2468,7 +2472,7 @@ Dialog.subclass('ConfirmDialog', {
         panel.linkToStyles(["panel"]);
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-        var label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
+        this.label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
 
         var indent = extent.x - 2*70 - 3*this.inset;
         
@@ -2516,7 +2520,7 @@ Dialog.subclass('PromptDialog', {
 
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-        var label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
+        this.label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
 
         r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
 

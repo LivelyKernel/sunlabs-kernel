@@ -401,7 +401,7 @@ Dialog.subclass('WikiLinkDialog', {
         panel.linkToStyles(["panel"]);
 
         var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-        var label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
+        this.label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
         var indent = extent.x - 135 - 120 - 60 - 3*this.inset;
         var height = r.maxY() + this.inset;
         
