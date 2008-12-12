@@ -24,12 +24,15 @@
 	     if (descriptor.setter)
 		 object.__defineSetter__(property, descriptor.setter);
 	 }
+	 return object;
      };
      
      Object.defineProperties = function(object, descriptorSet) {
 	 for (var name in descriptorSet) {
+	     if (!descriptorSet.hasOwnProperty(name)) continue;
 	     Object.defineProperty(object, name, descriptorSet[name]);
 	 }
+	 return object;
      }
      
      Object.defineProperties(Object, {
@@ -57,7 +60,7 @@
 	 }},
 	 
 	 getPrototypeOf: { value: function(object) {
-	     if (typeof object !== 'object') throw new TypeError();
+	     if (typeof object !== 'object') throw new TypeError('type ' + (typeof object) + ' does not have a prototype');
 	     return object.__proto__;
 	 }},
 	 
@@ -2153,7 +2156,7 @@ Object.extend(Color, {
 
 });
 
-console.log("Loaded platform-independent graphics primitives");
+Global.console && Global.console.log("Loaded platform-independent graphics primitives");
 
 // the following does not really belong to Base should be somewhere else
 namespace('lively.data');
