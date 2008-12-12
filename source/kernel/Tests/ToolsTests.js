@@ -642,6 +642,13 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
 		var src = this.srcFromLinesOfFile('Core.js', 3048, 3076);
 		var descriptor = this.sut.callOMeta('klassExtensionDef', src);
 		this.assertEqual(descriptor.type, 'klassExtensionDef');
+	},
+
+	testParseSelectionMorph: function() {
+		// Widget.js -- SelectionMorph
+		var src = this.srcFromLinesOfFile('Widgets.js', 464, 684);
+		var descriptor = this.sut.callOMeta('klassDef', src);
+		this.assertEqual(descriptor.type, 'klassDef');
 	}
     
 });

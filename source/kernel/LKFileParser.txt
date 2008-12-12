@@ -43,7 +43,7 @@ ometa LKFileParser <: Parser {
 /*	chunkWith :x :y :p  = ~~exactly(x) ( open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y }
 	                    | remove(x) ),*/
 	somethingRelated    = ~end (~'\n' ~'\r' ~';' anything)*,
-	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | spacesNoNl '+' spaces | ~',' ~';' ~'(' ~'{' ~'[' ~'\'' ~'"' ~nl anything)*,
+	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | spaces '+' spaces | ~',' ~';' ~'(' ~'{' ~'[' ~'\'' ~'"' ~nl anything)*,
 	defEnd              = ';' '\n' | ';' spacesNoNl | "",
 	classElemDefEnd     = "," | "",
 	
