@@ -2,9 +2,7 @@ module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');
-    //creating 5 namespaces
-    namespace('testNS.one', thisModule);
-    namespace('testNS.two', thisModule);
+    //creating 5 namespaces-    namespace('testNS.one', thisModule);    namespace('testNS.two', thisModule);
     namespace('testNS.three.threeOne', thisModule);        
     // create classes
     Object.subclass(thisModule.namespaceIdentifier + '.testNS.Dummy', { method1: function() { 1 } });
@@ -20,52 +18,7 @@ thisModule.removeDummyNamespace = function() {
 };
 
 // Browser related tests
-TestCase.subclass('lively.Tests.ToolsTests.BrowserTests', {
-    
-    shouldRun: true,
-    
-    setUp: function() {
-        thisModule.createDummyNamespace();
-        var browser = new ideModule.SystemBrowser();
-        browser.rootNode = function() { return new ideModule.EnvironmentNode(thisModule.testNS, browser) };
-        browser.start();
-        this.sut = browser;
-    },
-    
-    testModelStuff: function() {
-        this.assert(this.sut.setPane1Content && this.sut.getPane1Content, 'no automatic accessors');
-        var model = this.sut.getModel();
-        this.assert(model, 'No model');
-        this.sut.setPane1Content(1);
-        this.assertEqual(model.getPane1Content(), 1);
-        // model.setModules(2);
-        // this.assertEqual(this.sut.getModules(), 2);
-        
-        this.assert(this.sut.setStatusMessage);
-    },
-    
-    testGetNodeSiblings: function() {
-        var node = this.sut.nodesInPane('Pane1').first()
-        this.assert(node instanceof ideModule.NamespaceNode, 'no nsNode');
-        var result = this.sut.siblingsFor(node);
-        this.assert(result, 'siblingsFor returned nothing useful');
-        var allNodesButOne = Array.prototype.without.apply(this.sut.nodesInPane('Pane1'), result);
-        
-        this.assertEqual(allNodesButOne.length, 1);
-        this.assertIdentity(allNodesButOne.first(), node);
-    },
-
-    xtestOpenSystemBrowser: function() {
-        this.sut.openIn(WorldMorph.current());
-    },
-    
-    tearDown: function() {
-        thisModule.removeDummyNamespace();
-    }
-
-});
-
-thisModule.BrowserTests.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
+TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
 
 	setUp: function() {
 		var mockNodeClass = lively.ide.BrowserNode.subclass('lively.Tests.ToolsTests.MockNode', {
@@ -89,120 +42,6 @@ thisModule.BrowserTests.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
 		browser.selectNode(node1);
 		this.assertIdentity(node1, browser.selectedNode());
 	},
-});
-
-TestCase.subclass('lively.Tests.ToolsTests.NodeTest', {
-    setUp: function() {
-		this.oldSourceControl = toolsModule.SourceControl;
-		toolsModule.SourceControl = new SourceDatabase();
-		thisModule.createDummyNamespace()
-	},
-    tearDown: function() {
-		toolsModule.SourceControl = this.oldSourceControl;
-		thisModule.removeDummyNamespace()
-	}
-});
-
-thisModule.NodeTest.subclass('lively.Tests.ToolsTests.EnvironmentNodeTest', {
-    
-    testEnvironmentNodeReturnsNS: function() {
-        var sut = new ideModule.EnvironmentNode(thisModule.testNS);
-        this.assertIdentity(sut.target, thisModule.testNS);
-        var result = sut.childNodes().collect(function(ea) { return ea.target });
-        this.assertEqual(result.length, 5);
-        this.assert(result.include(thisModule.testNS));
-        this.assert(result.include(thisModule.testNS.three.threeOne));
-    }
-});
-
-thisModule.NodeTest.subclass('lively.Tests.ToolsTests.NamespaceNodeTest', {
-
-    setUp: function($super) {
-        $super();
-        this.sut = new ideModule.NamespaceNode(thisModule.testNS);
-    },
-    
-    testChildNodes: function() {
-        this.sut.mode = 'classes';
-        var result = this.sut.childNodes();
-        this.assertEqual(result.length, 1);
-        this.assertIdentity(result[0].target, thisModule.testNS.Dummy);
-    },
-    
-    testModeButtons: function() {
-        var result = this.sut.buttonSpecs();
-        this.assertEqual(result.length, 3);
-        // test if button specs are correct
-        this.assertEqual(result[0].label, 'classes');
-        this.assert(result[0].action instanceof Function);
-        this.assertEqual(result[1].label, 'functions');
-        this.assert(result[1].action instanceof Function);
-        // test the button action
-        var sibling = new ideModule.NamespaceNode(thisModule.testNS.one);
-        sibling.mode = 'classes';
-        this.sut.siblingNodes = function() { return [sibling] };
-        this.assertEqual(this.sut.mode, 'classes');
-        result[1].action();
-        this.assertEqual(this.sut.mode, 'functions');
-        this.assertEqual(sibling.mode, 'functions');
-    }
-});
-
-thisModule.NodeTest.subclass('lively.Tests.ToolsTests.ClassNodeTest', {
-    
-    setUp: function($super) {
-        $super();
-        this.sut = new ideModule.ClassNode(thisModule.testNS.Dummy); 
-    },
-    
-    testChildNodes: function() {
-        var sut = this.sut;
-        sut.mode = 'instance';
-        var result = sut.childNodes();
-        this.assertEqual(result.length, sut.target.functionNames().length);
-        result.each(function(ea) { this.assertIdentity(ea.theClass, sut.target) }.bind(this));
-        var method = result.detect(function(ea) { return ea.target.methodName === 'method1' });
-        this.assert(method);
-    },
-    
-    testSource: function() {
-        // implement me!
-    }
-});
-
-thisModule.NodeTest.subclass('lively.Tests.ToolsTests.MethodNodeTest', {
-    
-    setUp: function($super) {
-        $super();
-        var theClass = thisModule.testNS.Dummy;
-        this.sut = new ideModule.MethodNode(theClass.prototype.method1, null, theClass); 
-    },
-        
-    testSource: function() {
-        this.assert(this.sut.sourceString().endsWith(thisModule.testNS.Dummy.prototype.method1.toString()));
-    },
-    
-    testEvaluateNewSource: function() {
-        var newSource = 'function () { 2 }';
-        this.assert(this.sut.evalSource(newSource));
-        this.assertEqual(thisModule.testNS.Dummy.prototype.method1.toString(), newSource);
-    },
-    
-    testSaveNewSource: function() {
-        var newSource = 'function () { 2 }';
-        var sourceControl = {
-            methodDictFor: function(className) {
-                this.assertEqual(className, 'thisModule.testNS.Dummy');
-                return {
-                    method1: {putSourceCode: function(src) {
-                        this.assertEqual(src, 'method1: function () { 2 },')
-                    }.bind(this)}
-                }
-            }.bind(this)
-        }
-        this.assert(this.sut.evalSource(newSource));
-        this.assertEqual(thisModule.testNS.Dummy.prototype.method1.toString(), newSource);
-    }
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
@@ -772,14 +611,14 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
     
     testParseWorldMorph: function() {    // Object.subclass
 		// Class definition of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 3561, 4313);
+		var src = this.srcFromLinesOfFile('Core.js', 3571, 4335);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
     
     testParseOldFileParser: function() {
 		// Class definition of FileParser
-		var src = this.srcFromLinesOfFile('Tools.js', 1209, 1404);
+		var src = this.srcFromLinesOfFile('Tools.js', 1214, 1409);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
@@ -793,14 +632,14 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
     
     testParseTestKlass: function() {
 		// Class definition of JsParserTest1
-		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 302, 532);
+		var src = this.srcFromLinesOfFile('Tests/ToolsTests.js', 141, 371);
         var descriptor = this.sut.callOMeta('klassDef', src);
         this.assertEqual(descriptor.type, 'klassDef');
     },
 
 	testParseFailingAddMethods: function() {
 		// addMethods of Morph
-		var src = this.srcFromLinesOfFile('Core.js', 3038, 3066);
+		var src = this.srcFromLinesOfFile('Core.js', 3048, 3076);
 		var descriptor = this.sut.callOMeta('klassExtensionDef', src);
 		this.assertEqual(descriptor.type, 'klassExtensionDef');
 	}
