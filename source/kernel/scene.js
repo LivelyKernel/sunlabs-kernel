@@ -472,7 +472,7 @@ this.Node.addMethods({
 
     getFill: function() {
 		// hack
-        if (this._fill)
+        if (this._fill || this._fill === null)
 			return this._fill;
 		var attr = this.rawNode.getAttribute('fill');
 		if (!attr) { console.log('Didn\'t found fill for ' + this); return null; };
