@@ -474,14 +474,13 @@ this.Node.addMethods({
 		// hack
         if (this._fill)
 			return this._fill;
-		console.log('Didn\'t found native fill, looking in DOM...');
 		var attr = this.rawNode.getAttribute('fill');
-		if (!attr) return null;
+		if (!attr) { console.log('Didn\'t found fill for ' + this); return null; };
 		var rawFill = lively.data.FragmentURI.getElement(attr);
-		if (!rawFill) return null;
+		if (!rawFill) { console.log('Didn\'t found fill for ' + this); return null; };
 		var klass = lively.data.Wrapper.getEncodedType(rawFill);
 		klass = Class.forName(klass) || Class.forName('lively.paint.' + klass);
-		if (!klass) return null;
+		if (!klass) { console.log('Didn\'t found fill for ' + this); return null; };
 		var importer = new Importer();
 		//dbgOn(true);
 		this._fill = new klass(importer, rawFill);
