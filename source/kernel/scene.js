@@ -243,9 +243,10 @@ Object.subclass('lively.data.Wrapper', {
     dictionary: function() {
 		if (lively.data.Wrapper.dictionary)
 			return  lively.data.Wrapper.dictionary;
-		var preExisting = Global.document.getElementById("SystemDictionary");
+		if (lively.data.Wrapper.dictionary = Global.document.getElementById("SystemDictionary"))
+			return lively.data.Wrapper.dictionary;
 		var canvas = Global.document.getElementById("canvas");
-		lively.data.Wrapper.dictionary = preExisting || canvas.appendChild(NodeFactory.create("defs"));
+		lively.data.Wrapper.dictionary =  canvas.appendChild(NodeFactory.create("defs"));
 		lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary");
 		return lively.data.Wrapper.dictionary;
     },
@@ -479,7 +480,8 @@ this.Node.addMethods({
 		var rawFill = lively.data.FragmentURI.getElement(attr);
 		if (!rawFill) return null;
 		var klass = lively.data.Wrapper.getEncodedType(rawFill);
-		klass = Class.forName(klass);
+		klass = Class.forName(klass) || Class.forName('lively.paint.' + klass);
+		if (!klass) return null;
 		var importer = new Importer();
 		//dbgOn(true);
 		this._fill = new klass(importer, rawFill);
