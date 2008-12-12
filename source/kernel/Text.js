@@ -1434,13 +1434,19 @@ BoxMorph.subclass("TextMorph", {
     },
 
     onMouseDown: function(evt) {
-	if (this.mouseIsOverALink(evt)) {
-	    this.doLinkThing(evt);
-	    return true;
-	}
-        this.isSelecting = true;
-        var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-        this.startSelection(charIx);
+		if (this.mouseIsOverALink(evt)) {
+			this.doLinkThing(evt);
+			return true;
+		}
+		this.isSelecting = true;
+		if (evt.isShiftDown()) {
+			if (this.hasNullSelection())
+				this.selectionPivot = this.selectionRange[0];
+			this.extendSelection(evt);
+		} else {
+			var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+			this.startSelection(charIx);
+		}
         this.requestKeyboardFocus(evt.hand);
         return true; 
     },
@@ -1626,8 +1632,10 @@ BoxMorph.subclass("TextMorph", {
             if (evt.isShiftDown() && (wordRange[0] != before.length)) {
                 // move by a whole word if we're not at the beginning of it
                 this.setNullSelectionAt(Math.max(0, wordRange[0]));
-            } else { 
-                this.setNullSelectionAt(Math.max(before.length - 1, 0));
+            } else {
+				//  this.setNullSelectionAt(Math.max(before.length - 1, 0));
+				var start = Math.max(this.hasNullSelection() ?  before.length - 1 : this.selectionRange[0], 0);
+                this.setNullSelectionAt(start);
             }
             evt.stop();
             return true;
@@ -1639,7 +1647,9 @@ BoxMorph.subclass("TextMorph", {
                 // move by a whole word if we're not at the end of it.
                 this.setNullSelectionAt(Math.min(this.textString.length, wordRange[1] + 1));
             } else { 
-                this.setNullSelectionAt(Math.min(before.length + 1, this.textString.length));
+                //this.setNullSelectionAt(Math.min(before.length + 1, this.textString.length));
+				var start = Math.min(this.hasNullSelection() ?  before.length + 1 : this.selectionRange[1] + 1 , this.textString.length);
+				this.setNullSelectionAt(start);
             }
             evt.stop();
             return true;
