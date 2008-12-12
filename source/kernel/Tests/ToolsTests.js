@@ -953,7 +953,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
 			methodDef: m3 (232-253 in foo.js, starting at line 12, 0 subElements)
         */
         var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
-               'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n' +
+               'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n' +
                'ClassA.m3 = function() { 123 };\n' +
                'function abc() { 1+2 };\n' +
                'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
@@ -964,8 +964,17 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
         this.root = db.addModule('foo.js', src);
 		this.db = db;
 		this.src = src;
+
+		// we don't want to see alert
+		this.oldAlert = WorldMorph.prototype.alert;
+		WorldMorph.prototype.alert = Functions.Null;
    },
    
+	tearDown: function($super) {
+		$super();
+		WorldMorph.prototype.alert = this.oldAlert;
+	},
+
 	fragmentNamed: function(name) {
 		return this.root.flattened().detect(function(ea) { return ea.name == name});
 	},
@@ -1019,7 +1028,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
 		fragment.putSourceCode('Object.subclass(\'' + newName + '\', \{\n');
     
 		this.assert(!this.db.cachedFullText['foo.js'].include('ClassAEdited'))
-    },
+	},
 
 	testReparse: function() {
 		var fragment = this.fragmentNamed('ClassA');
@@ -1053,6 +1062,25 @@ dbgOn(true)
                'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
                '}); // end of module';
 		this.assertEqual(expected, result);
+	},
+
+	testSourceCodeWithout: function() {
+		var fragment = this.fragmentNamed('m1');
+		var owner = this.fragmentNamed('ClassA');
+		var result = owner.sourceCodeWithout(fragment);
+		var expected = 'Object.subclass(\'ClassA\', {\n\t\n});\n';
+		this.assertEqual(expected, result);
+	},
+
+	testRemoveFragment: function() {
+		var fragment = this.fragmentNamed('ClassA');
+		var src = fragment.getSourceCode();
+		var expectedLength = fragment.getFileString().length - fragment.getSourceCode().length;
+		fragment.remove();
+		this.assert(!this.root.flattened().include(fragment), 'root still includes fragment');
+		var fileString = this.db.cachedFullText['foo.js'];
+		this.assert(!fileString.include(src), 'filestring includes fragments sourceCode');
+		this.assertEqual(expectedLength, fileString.length, 'strange length');
 	},
    
 });

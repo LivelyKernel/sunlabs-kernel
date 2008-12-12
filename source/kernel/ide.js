@@ -771,6 +771,17 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 		this.savedSource = this.target.getSourceCode(); // assume that users sees newSource after that
         return true;
     },
+
+	menuSpec: function($super) {
+		var spec = $super();
+		var node = this;
+		return spec.concat([
+			['remove', function() {
+				node.target.remove();
+				node.browser.allChanged();
+			}]
+		])
+	},
     
 });
 
@@ -825,22 +836,24 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
         ]
     },
     
-    menuSpec: function() {
-    		var node = this;
-    		if (!this.target) return [];
-    		return [
-    			['toggle showAll', function() {
-    				node.showAll = !node.showAll;
-    				node.signalTextChange()}],
-    			['open ChangeList viewer', function() {
-    				new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}]
-    		];
-
+    menuSpec: function($super) {
+		var menu = $super();
+   		if (!this.target) return menu;
+		var node = this;
+   		return menu.concat([
+			['toggle showAll', function() {
+    			node.showAll = !node.showAll;
+    			node.signalTextChange()}
+			],
+    		['open ChangeList viewer', function() {
+    			new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}
+			],
+    	])
             /*return [['load module', function() {
     			node.loadModule();
                 node.signalChange();
             }]];*/
-        },
+	},
     
     sourceString: function($super) {
 		this.loadModule();
@@ -876,10 +889,11 @@ ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
 
 	buttonSpecs: function() { return [] },
 
-	menuSpec: function() {
+	menuSpec: function($super) {
+		var menu = $super();
     		var fileName = this.moduleName;
-    		if (!this.target) return [];
-    		return [
+    		if (!this.target) return menu;
+    		return menu.concat([
     			['Translate grammar', function() {
 					WorldMorph.current().prompt(
 						'File name of translated grammar?',
@@ -891,7 +905,7 @@ ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
 						fileName.slice(0, fileName.indexOf('.'))
 					);
 				}]
-				];
+				]);
         },
 
 	childNodes: function() {
@@ -933,18 +947,19 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
     },
 
-	menuSpec: function() {
+	menuSpec: function($super) {
+		var menu = $super();
 		var fragment = this.target;
 		var index = fragment.name ? fragment.name.lastIndexOf('.') : -1;
 		// don't search for complete namespace name, just its last part
 		var searchName = index === -1 ? fragment.name : fragment.name.substring(index+1);
-		return [
+		return menu.concat([
     		['references', function() {
 					var list = tools.SourceControl
 						.searchFor(searchName)
 						.without(fragment)
 					var title = 'references of' + fragment.name;
-					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]]
+					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]])
 	} 
 
 });
@@ -968,10 +983,11 @@ ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
  
 ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 
-	menuSpec: function() {
+	menuSpec: function($super) {
+		var menu = $super();
 		var fragment = this.target;
 		var searchName = fragment.name;
-		return [
+		return menu.concat([
     		['senders', function() {
 					var list = tools.SourceControl
 						.searchFor(searchName)
@@ -989,7 +1005,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 						.select(function(ea) { return ea.name === searchName });
 					var title = 'implementers of' + searchName;
 					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]
-    	];
+    	]);
 	},
 
 	evalSource: function(newSource) {
@@ -1001,13 +1017,11 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 		}
 		var methodName = this.target.name;
 		var methodString = this.target.getSourceCode();
-		methodString = methodString.slice(methodString.indexOf(':')+1); // remove method name
-		if (methodString.endsWith(',')) methodString = methodString.slice(0, methodString.length-1); // remove ,
-		var methodDef = className + ".prototype." + methodName + " = " + methodString;
+		var def = className + ".addMethods({\n" + methodString +'\n});';
 		try {
-			eval(methodDef);
+			eval(def);
 		} catch (er) {
-			console.log("error evaluating method " + methodDef + ': ' + er);
+			console.log("error evaluating method " + methodString + ': ' + er);
 			return false;
 		}
 		console.log('Successfully evaluated #' + methodName);
@@ -1588,6 +1602,13 @@ Object.subclass('lively.ide.FileFragment', {
         return this.getSourceControl().rootFragmentForModule(this.fileName).flattened().without(this);
     },
     
+	findOwnerFragment: function() {
+		if (!this.fileName) throw dbgOn(new Error('no fileName for fragment ' + this));
+		return this.getSourceControl().modules[this.fileName].flattened().detect(function(ea) {
+			return ea.subElements.include(this);
+		}, this);
+	},
+
     flattened: function() {
         return this.subElements.inject([this], function(all, ea) {
             return all.concat(ea.flattened());
@@ -1626,8 +1647,10 @@ Object.subclass('lively.ide.FileFragment', {
         if (/*newMe.type !== this.type ||*/ /*bla*/ this.startIndex !== newMe.startIndex)
             throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
 		if (newMe.type !== this.type) {
-			console.warn(Strings.format('Error occured during parsing. %s (%s) was parsed as %s. End line: %s. Changes are NOT saved.',
-				this.name, this.type, newMe.type, newMe.stopLine()));
+			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
+				this.name, this.type, newMe.type, newMe.stopLine());
+			console.warn(msg);
+			WorldMorph.current().alert(msg);
 			return;
 		}
 
@@ -1707,7 +1730,28 @@ Object.subclass('lively.ide.FileFragment', {
         if (!(ctrl instanceof AnotherSourceDatabase)) throw dbgOn(new Error('Using old source control, could lead to errors...'));
         return ctrl;
     },
-    
+
+	sourceCodeWithout: function(childFrag) {
+		if (!this.flattened().include(childFrag)) throw dbgOn(new Error('Fragment' + childFrag + ' isn\'t in my (' + this + ') subelements!'));
+		var mySource = this.getSourceCode();
+		var childSource = childFrag.getSourceCode();
+		x = childSource;
+		var start = mySource.indexOf(childSource);
+		if (start === -1) throw dbgOn(new Error('Cannot find source of ' + childFrag));
+		var end = start + childSource.length;
+		var newSource = mySource.slice(0, start) + mySource.slice(end);
+		return newSource;
+	},
+
+	remove: function() {
+		var owner = this.findOwnerFragment();
+		if (!owner) throw dbgOn(new Error('Cannot find owner of fragment ' + this));
+		var newSource = owner.sourceCodeWithout(this);
+		y = newSource;
+		owner.subElements = owner.subElements.without(this);
+		owner.putSourceCode(newSource);
+	},
+
     getFileString: function() {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
         return this.getSourceControl().getCachedText(this.fileName);
@@ -1729,7 +1773,7 @@ Object.subclass('lively.ide.FileFragment', {
     
     toString: function() {
         return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
-            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.lineNo, this.subElements.length);
+            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.lineNo, this.subElements && this.subElements.length);
     },
  
     inspect: function() {

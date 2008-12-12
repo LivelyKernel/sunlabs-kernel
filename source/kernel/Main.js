@@ -461,10 +461,8 @@ function populateWorldWithExamples(world) {
 
 function documentHasSerializedMorphs(doc) { 
     var nodes = doc.getElementsByTagName("g");
-    if (!nodes || nodes.length == 0)
-        return false;
-    else
-	return true; // nodes[0].getAttribute("type") == "WorldMorph"; // world is not always serialized
+	return nodes && nodes.length > 0;
+	// nodes[0].getAttribute("type") == "WorldMorph"; // world is not always serialized
 }
 
 function main() {
