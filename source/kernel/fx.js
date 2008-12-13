@@ -23,28 +23,21 @@ if (this.arguments && (arguments[0] === 'script')) {
 // the name fx is short and generic. No reference to existing products necessarily implied.
 // Should not make assumptions about other libraries, besides standard JS libraries (incl ES3.1)
 // Could act as a capability, i.e, if the fx object is not available, various runtime things can't happen
-var fx = (function() {
-    function Aux(args) {
-	this.content = Array.prototype.concat.apply([], args);
-    }
 
-    Object.defineProperties(Aux.prototype, {
-	run: {
-	    // convenience to do 'fx().run(function() { })
-	    value: function(inner) {
-		var args = this.content;
-		return inner.apply(args[0], args); 
+
+
+
+var fx = using().run(function() { // scope function
+
+    var fx = {};
+    var BasicMixin = {
+	defineSlots: {
+	    description: "convenience method, redirects to fx.defineSlots",
+	    value: function(descriptorSet) {
+		return fx.defineSlots(this, descriptorSet);
 	    }
 	}
-	
-    });
-    return function fx() {
-	return new Aux(arguments);
-    }
-})();
-
-
-fx().run(function() { // scope function
+    };
     
     var ConstructorMixin = {
 	// every synthetic constructor will get these
@@ -60,7 +53,7 @@ fx().run(function() { // scope function
 	    value: function(descriptorSet) {
 		return fx.mixin(this, descriptorSet);
 	    }
-	}
+	},
     };
 
     // bootstrap fx using Object.defineProperties
@@ -78,6 +71,7 @@ fx().run(function() { // scope function
 		}
 		constr.prototype = Object.create(base.prototype);
 		constr.prototype.constructor = constr;
+		Object.defineProperties(constr, BasicMixin);
 		return Object.defineProperties(constr, ConstructorMixin);
 	    }
 	},
@@ -86,7 +80,7 @@ fx().run(function() { // scope function
 	    // return new class, with the mixin mixed in. 
 	    // Uses prototype chaining, so mixin properties will shadow base properties
 	    value: function(base, descriptorSet) {
-		var hook = descriptorSet && descriptorSet.initialize.value;
+		var hook = descriptorSet && descriptorSet.initialize && descriptorSet.initialize.value;
 		function constr() {
 		    base.apply(this, arguments);
 		    hook && hook.call(this);
@@ -94,6 +88,7 @@ fx().run(function() { // scope function
 		constr.prototype = Object.create(base.prototype);
 		constr.prototype.constructor = constr;
 		fx.defineSlots(constr.prototype, descriptorSet);
+		Object.defineProperties(constr, BasicMixin);
 		return Object.defineProperties(constr, ConstructorMixin); 
 	    }
 	},
@@ -251,17 +246,9 @@ fx().run(function() { // scope function
 	    value: fx.extend(Object)
 	}
     });
-    
 
-    // bootstrap fx.Object
-    fx.defineSlots(fx.Object.prototype, {
-	defineSlots: {
-	    description: "convenience method, redirects to fx.defineSlots",
-	    value: function(set) {
-		return fx.defineSlots(this, set);
-	    }
-	}
-    });
+    // bootstrap fx.Object    
+    Object.defineProperties(fx.Object.prototype, BasicMixin);
     
     // now fx.Object can define its slots itself.
     fx.Object.prototype.defineSlots({
@@ -270,19 +257,28 @@ fx().run(function() { // scope function
 	    value: function(name, descriptor) {
 		return fx.defineSlot(this, name, descriptor);
 	    }
+	},
+	toString: {
+	    value: function() {
+		return "[fx.Object]";
+	    }
 	}
     });
+
+
+
+    return fx;
 });
+
     
 if (this.arguments && (arguments[1] === 'test')) {
-    fx().run(function() {
+    using().run(function() {
 	function test1() {
 	    var TestObj = fx.Object.extend();
 	    
 	    TestObj.prototype.defineSlots({
 		yo: {value: function() { print('yo') }}
 	    });
-	    // do we want TextObj.prototype.defineSlots() as well?
 	    
 	    
 	    var t = new TestObj();
@@ -501,7 +497,7 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    C2.prototype.defineSlot("say", { value: function() { print('silence') }});
 	    c.quiet = true;
 	    c.say();
-	    print(C3.prototype.$schema);
+	    //print(JSON.serialize(C2.prototype.$schema));
 
 	}
 	test4();
