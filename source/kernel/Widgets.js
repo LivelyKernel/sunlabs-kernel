@@ -512,7 +512,7 @@ BoxMorph.subclass("SelectionMorph", {
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-        menu.keepOnlyItemsNamed(['duplicate', 'remove', 'reset rotation', 'reset scaling', 'edit style']);
+        menu.keepOnlyItemsNamed(['duplicate', 'remove', 'reset rotation', 'reset scaling', 'inspect', 'edit style']);
         menu.removeItemNamed('---');
         menu.addLine();
 	menu.addItem(["align vertically", this.alignVertically]);
@@ -603,50 +603,47 @@ BoxMorph.subclass("SelectionMorph", {
     },
     
     setBorderWidth: function($super, width) { 
-        if (!this.selectedMorphs) {
-            $super(width);
-        } else { 
-            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
-        }
+        if (!this.selectedMorphs)  $super(width);
+        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
     },
     
     setFill: function($super, color) { 
-        if (!this.selectedMorphs) {
-            $super(color);
-        } else {
-            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
-        }
+        if (!this.selectedMorphs)  $super(color);
+        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
     },
     
     setBorderColor: function($super, color) { 
-        if (!this.selectedMorphs) {
-            $super(color);
-        } else {
-            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
-        }
+        if (!this.selectedMorphs)  $super(color);
+        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
     },
     shapeRoundEdgesBy: function($super, r) { 
-        if (!this.selectedMorphs) {
-            $super(r);
-        } else {
-            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.shapeRoundEdgesBy(r)});
-        }
+        if (!this.selectedMorphs) $super(r);
+        else this.selectedMorphs.forEach( function(m) { if (m.shape.roundEdgesBy) m.shapeRoundEdgesBy(r); });
     },
     
     setFillOpacity: function($super, op) { 
-        if (!this.selectedMorphs) {
-            $super(op);
-        } else { 
-            this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFillOpacity(op)});
-        }
+        if (!this.selectedMorphs)  $super(op);
+        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFillOpacity(op)});
     },
     
     setStrokeOpacity: function($super, op) { 
-        if (!this.selectedMorphs) {
-            $super(op);
-        } else {
-            this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});
-        }
+        if (!this.selectedMorphs) $super(op);
+        else this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});
+    },
+
+    setTextColor: function(c) { 
+        if (!this.selectedMorphs) return;
+        this.selectedMorphs.forEach( function(m) { if (m.setTextColor) m.setTextColor(c); });
+    },
+
+    setFontSize: function(c) { 
+        if (!this.selectedMorphs) return;
+        this.selectedMorphs.forEach( function(m) { if (m.setFontSize) m.setFontSize(c); });
+    },
+
+    setFontFamily: function(c) { 
+        if (!this.selectedMorphs) return;
+        this.selectedMorphs.forEach( function(m) { if (m.setFontFamily) m.setFontFamily(c); });
     },
 
     setRotation: function($super, theta) {
@@ -670,10 +667,16 @@ BoxMorph.subclass("SelectionMorph", {
     },
     
     shadowCopy: function(hand) {
-	var copy = Morph.makeRectangle(this.bounds())  // Don't show selection's shadow in the hand
-	copy.setFill(null);
-	copy.setBorderWidth(0);
-	return copy;
+		var copy = Morph.makeRectangle(this.bounds())  // Don't show selection's shadow in the hand
+		copy.setFill(null);
+		copy.setBorderWidth(0);
+		return copy;
+    },
+
+    canRespondTo: function(methodName) {
+		if (!this.selectedMorphs) return false;
+		if (methodName == 'shapeRoundEdgesBy') return this.selectedMorphs.any( function(m) { return m.shape.roundEdgesBy instanceof Function; });
+		return this.selectedMorphs.any( function(m) { return m[methodName] instanceof Function; });
     },
 
     okToBeGrabbedBy: function(evt) {

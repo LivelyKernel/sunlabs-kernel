@@ -737,7 +737,6 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	if (r) {
 	    this.setLengthTrait("rx", r);
 	    this.setLengthTrait("ry", r);
-	    this.setStrokeWidth(this.getStrokeWidth());  // DI:  This is here only to force an update on screen
 	}
 	return this;
     }

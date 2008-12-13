@@ -434,6 +434,9 @@ Widget.subclass('StylePanel', {
     
     onBorderRadiusUpdate: function(r) {
         this.targetMorph.shapeRoundEdgesBy(r.roundTo(1));
+        var w = this.targetMorph.getBorderWidth();
+        this.targetMorph.setBorderWidth(0);  // Force an update (!)
+        this.targetMorph.setBorderWidth(w);
     },
 
     onFillTypeUpdate: function(type) { this.fillType = type; this.setFill(); },
@@ -484,6 +487,12 @@ Widget.subclass('StylePanel', {
         this.targetMorph.setFontSize(Number(fontSize));
     },
 
+    needsControlFor: function(methodName) {
+        if (this.targetMorph.canRespondTo) return this.targetMorph.canRespondTo(methodName);
+		if (methodName == 'shapeRoundEdgesBy') return this.targetMorph.shape.roundEdgesBy instanceof Function;
+		return this.targetMorph[methodName] instanceof Function;
+    },
+
     buildView: function(extent) {
         var panel = new PanelMorph(extent);
         panel.linkToStyles(["panel"]);
@@ -509,7 +518,7 @@ Widget.subclass('StylePanel', {
 	
         y += 40;
 	
-        if (this.targetMorph.shape.roundEdgesBy) {
+        if (this.needsControlFor('shapeRoundEdgesBy')) {
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
             m = panel.addMorph(new PrintMorph(new Rectangle(150, y, 40, 20)));
 	    m.precision = 1;
@@ -550,7 +559,7 @@ Widget.subclass('StylePanel', {
         y += 30;
 	
 	
-        if (this.targetMorph.setTextColor) {
+        if (this.needsControlFor('setTextColor')) {
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), "Text Color").beLabel());
             m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
             m.connectModel(model.newRelay({Color: "+TextColor"}));
@@ -558,12 +567,12 @@ Widget.subclass('StylePanel', {
 
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Family').beLabel());
             m = panel.addMorph(new TextMorph(new Rectangle(150, y, 150, 20)));
-            m.connectModel(model.newRelay({Text: "+FontFamily"}));
+            m.connectModel(model.newRelay({Text: "FontFamily"}));
             y += 30;
 
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
             m = panel.addMorph(new TextMorph(new Rectangle(150, y, 50, 20)));
-            m.connectModel(model.newRelay({Text: "+FontSize"}), true);
+            m.connectModel(model.newRelay({Text: "FontSize"}), true);
             y += 30;
         }
 
