@@ -501,6 +501,7 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    C2.prototype.defineSlot("say", { value: function() { print('silence') }});
 	    c.quiet = true;
 	    c.say();
+	    print(C3.prototype.$schema);
 
 	}
 	test4();
