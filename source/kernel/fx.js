@@ -45,6 +45,23 @@ var fx = (function() {
 
 
 fx().run(function() { // scope function
+    
+    var ConstructorMixin = {
+	// every synthetic constructor will get these
+	extend: { 
+	    value: function(derived) {
+		// if derived not specified, lets just call the argument, which should be the superconstructor,
+		// with no arguments
+		derived = derived || function(superconstructor) { superconstructor()}; 
+		return fx.extend(this, derived);
+	    }
+	},
+	mixin: {
+	    value: function(descriptorSet) {
+		return fx.mixin(this, descriptorSet);
+	    }
+	}
+    };
 
     // bootstrap fx using Object.defineProperties
     Object.defineProperties(fx, {
@@ -53,7 +70,6 @@ fx().run(function() { // scope function
 	    description: "creates a new class",
 	    value: function(base, derived) {
 		derived = derived || function(x) { return x; }
-		
 		function constr(/*...*/) {
 		    // this is initialized to a new object
 		    Array.prototype.unshift.call(arguments, base.bind(this));
@@ -62,15 +78,23 @@ fx().run(function() { // scope function
 		}
 		constr.prototype = Object.create(base.prototype);
 		constr.prototype.constructor = constr;
-		constr.extend = Object.freeze(function(derived) {
-		    // convenience method, should be lifted
-		    // if derived not specified, lets just call the argument, which should be the superconstructor,
-		    // with no arguments
-		    derived = derived || function(superconstructor) { superconstructor()}; 
-		    return fx.extend(this, derived);
-		});
-		
-		return constr;
+		return Object.defineProperties(constr, ConstructorMixin);
+	    }
+	},
+	
+	mixin: {
+	    // return new class, with the mixin mixed in. 
+	    // Uses prototype chaining, so mixin properties will shadow base properties
+	    value: function(base, descriptorSet) {
+		var hook = descriptorSet && descriptorSet.initialize.value;
+		function constr() {
+		    base.apply(this, arguments);
+		    hook && hook.call(this);
+		}
+		constr.prototype = Object.create(base.prototype);
+		constr.prototype.constructor = constr;
+		fx.defineSlots(constr.prototype, descriptorSet);
+		return Object.defineProperties(constr, ConstructorMixin); 
 	    }
 	},
 
@@ -457,7 +481,29 @@ if (this.arguments && (arguments[1] === 'test')) {
 	}
 	
 	test3();
-	
+
+	function test4() {
+	    //var C1 = fx.Object.extend(function(inherited) { inherited(); print('hello C1') });
+	    var C1 = fx.Object.mixin({
+		initialize: { value: function() { if (!this.quiet) print('hello from mixin C1'); }},
+		say: { value: function() { print('say what?'); }}
+	    });
+	    
+	    var C2 = C1.mixin({
+		initialize: { value: function() { if (!this.quiet) print('hello from mixin C2'); }}
+	    });
+	    var C3 = C2.mixin({
+		initialize: { value: function() { if (!this.quiet) print('hello from mixin C3'); }}
+	    });
+	    var c = new C3();
+	    c.say();
+	    // update the parent mixin, and the child will pick up the new definition
+	    C2.prototype.defineSlot("say", { value: function() { print('silence') }});
+	    c.quiet = true;
+	    c.say();
+
+	}
+	test4();
 	
     });
 
