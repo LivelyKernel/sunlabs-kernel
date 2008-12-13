@@ -273,6 +273,8 @@ Widget.subclass('WikiNavigator', {
 	},
 	
 	askToNavigateToUrl: function(world) {	    
+        if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway
+
         var msg = 'Go to ' + this.model.getURL() + ' ?';
         var label1 = this.worldExists() ? 'Save and follow link' : 'Save, create, follow link';
         var label2 = this.worldExists() ? 'Just follow link' : 'Create and follow link';

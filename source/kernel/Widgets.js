@@ -512,7 +512,7 @@ BoxMorph.subclass("SelectionMorph", {
 
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
-        menu.keepOnlyItemsNamed(['duplicate', 'remove', 'reset rotation', 'reset scaling', ]);
+        menu.keepOnlyItemsNamed(['duplicate', 'remove', 'reset rotation', 'reset scaling', 'edit style']);
         menu.removeItemNamed('---');
         menu.addLine();
 	menu.addItem(["align vertically", this.alignVertically]);
