@@ -649,7 +649,15 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
 		var src = this.srcFromLinesOfFile('Widgets.js', 464, 684);
 		var descriptor = this.sut.callOMeta('klassDef', src);
 		this.assertEqual(descriptor.type, 'klassDef');
-	}
+	},
+
+	testParseHandMorph: function() {
+		// Core.js -- HandMorph
+		//var src = this.srcFromLinesOfFile('Core.js', 4345, 4875);
+		var src = 'Morph.subclass("HandMorph", {\ndocumentation: "abc\'s defs",\n});';
+		var descriptor = this.sut.callOMeta('klassDef', src);
+		this.assertEqual(descriptor.type, 'klassDef');
+	},
     
 });
 
@@ -781,7 +789,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTest', {
 		var result = p.matchAll(src, 'chunk', ['\'', '\''], this.debugFunction.curry(src));
 		this.assert(result, 'couldn\'t parse');
 		this.assertEqual(result.length, src.length);
-	},
+	}
 
 });
 
