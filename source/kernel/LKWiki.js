@@ -272,7 +272,7 @@ Widget.subclass('WikiNavigator', {
     	}
 	},
 	
-	askToNavigateToUrl: function(world) {	    
+	askToNavigateToUrl: function(world) {    
         if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway
 
         var msg = 'Go to ' + this.model.getURL() + ' ?';
