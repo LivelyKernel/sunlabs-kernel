@@ -46,12 +46,13 @@ var fx = (function() {
 
 fx().run(function() { // scope function
 
+    // bootstrap fx using Object.defineProperties
     Object.defineProperties(fx, {
 	
 	extend: { 
-	    documentation: "creates a new class",
+	    description: "creates a new class",
 	    value: function(base, derived) {
-		derived = derived || Functions.K;
+		derived = derived || function(x) { return x; }
 		
 		function constr(/*...*/) {
 		    // this is initialized to a new object
@@ -72,11 +73,10 @@ fx().run(function() { // scope function
 		return constr;
 	    }
 	},
-	
+
 	defineSlot: { 
-	    documentation: "new member (re)definition pattern, inspired by ES3.1 Object.defineProperty",
+	    //new slot, i.e., member (re)definition pattern, inspired by ES3.1 Object.defineProperty
 	    value: function(target, name, descriptor) {
-		
 		var previousValue = target[name];
 		if (previousValue !== undefined) {
 		    if (!target.hasOwnProperty(name)) {
@@ -117,9 +117,9 @@ fx().run(function() { // scope function
 	    }
 	    
 	},
-	
+
 	defineSlots: { 
-	    documentation: "new member (re)definition pattern, inspired by ES3.1 Object.defineProperties",
+	    // new member (re)definition pattern, inspired by ES3.1 Object.defineProperties
 	    value: function(target, descriptorSet) {
 		for (var name in descriptorSet) {
 		    if (descriptorSet.hasOwnProperty(name))
@@ -127,10 +127,13 @@ fx().run(function() { // scope function
 		}
 		return target;
 	    }
-	},
-	
+	}
+    });
+    
+    // now fx can define its own slots.
+    fx.defineSlots(fx, {
 	clone: { 
-	    documentation: "invoke the optional filter on every source member before assigning to target",
+	    description: "invoke the optional filter on every source member before assigning to target",
 	    value: function(source, filter) { 
 		var dest = Object.create(Object.getPrototypeOf(source));
 		for (var name in source) 
@@ -143,7 +146,7 @@ fx().run(function() { // scope function
 	},
 	
 	shallowCopy: {
-	    description: "shallow clone",
+	    description:  "shallow clone",
 	    value: function(source, optBlacklist) {
 		function filter(source, name) {
 		    if (optBlacklist && optBlacklist.indexOf(name) >= 0) return undefined;
@@ -154,8 +157,8 @@ fx().run(function() { // scope function
 	},
 	
 	deepCopy: { 
-	    documentation: ["clone using a default deep cloner",
-			    "not terribly efficient due to apparent lack of hashcodes in javascript"],
+	    description: ["clone using a default deep cloner",
+			  "not terribly efficient due to apparent lack of hashcodes in javascript"],
 	    value: function(source, optBlacklist) {
 		// consider fast path for objects that have hashcodes
 		var visited = []; // visited.lastIndexOf(object) is the index of objects' copy in the copies array
@@ -178,7 +181,7 @@ fx().run(function() { // scope function
 	},
 	
 	visitProperties: { 
-	    documentation: "visit all the own properties",
+	    description: "visit all the own properties; untested",
 	    value: function(object, visitor) { 
 		for (var name in object) 
 		    if (object.hasOwnProperty(name)) {
@@ -217,31 +220,33 @@ fx().run(function() { // scope function
 		}
 		return fx.visitProperties(source, visitor);
 	    }
-	}
-    });
-    
-    Object.defineProperties(fx, {
-	Object: { // convenience base class
+	},
+	
+	Object: { 
+	    description: "base class with fx conveniences built-in",
 	    value: fx.extend(Object)
 	}
     });
     
-    
+
+    // bootstrap fx.Object
     fx.defineSlots(fx.Object.prototype, {
 	defineSlots: {
 	    description: "convenience method, redirects to fx.defineSlots",
 	    value: function(set) {
 		return fx.defineSlots(this, set);
 	    }
-	},
-	
+	}
+    });
+    
+    // now fx.Object can define its slots itself.
+    fx.Object.prototype.defineSlots({
 	defineSlot: {
 	    description: "convenience method, redirects to fx.defineSlot",
 	    value: function(name, descriptor) {
 		return fx.defineSlot(this, name, descriptor);
 	    }
 	}
-	
     });
 });
     
