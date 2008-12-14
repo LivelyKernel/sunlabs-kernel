@@ -973,6 +973,10 @@ BoxMorph.subclass("TextMorph", {
 	if (this.getFontSize() !== TextMorph.prototype.fontSize) {
 	    spec.fontSize = this.getFontSize();
 	}
+	if (this.getFontFamily() !== TextMorph.prototype.fontFamily) {
+	    spec.fontFamily = this.getFontFamily();
+	}
+
 	if (this.textColor !== TextMorph.prototype.textColor) {
 	    spec.textColor = this.textColor;
 	}

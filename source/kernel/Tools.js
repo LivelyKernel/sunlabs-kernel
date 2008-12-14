@@ -407,8 +407,8 @@ Widget.subclass('StylePanel', {
 	    BorderRadius: spec.borderRadius,
 	    FillOpacity: spec.fillOpacity,
 	    StrokeOpacity: spec.strokeOpacity,
-	    FontSize: spec.fontSize,
-	    FontFamily: null, 
+	    FontSize: String(spec.fontSize || TextMorph.prototype.fontSize),
+	    FontFamily: spec.fontFamily || TextMorph.prototype.fontFamily, 
 	    FillType: "simple", 
 	    FillDir: null, 
 	    Color1: null, 
@@ -567,7 +567,7 @@ Widget.subclass('StylePanel', {
 
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Family').beLabel());
             m = panel.addMorph(new TextMorph(new Rectangle(150, y, 150, 20)));
-            m.connectModel(model.newRelay({Text: "FontFamily"}));
+            m.connectModel(model.newRelay({Text: "FontFamily"}), true);
             y += 30;
 
             panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
