@@ -963,15 +963,11 @@ this.Shape.subclass('lively.scene.Polygon', {
 	var verts = this.vertices();
 
 	for (var i = 0; i < verts.length; i++) { // vertices
-	    if (verts[i].dist(p) < this.controlPointProximity) 
-		return i; 
+	    if (verts[i].dist(p) < this.controlPointProximity) return i; 
 	}
-
 	for (var i = 0; i < verts.length - 1; i++) { // midpoints (for add vertex) return - index
-	    if (verts[i].midPt(verts[i + 1]).dist(p) < this.controlPointProximity) 
-		return -(i + 1); 
+	    if (verts[i].midPt(verts[i + 1]).dist(p) < this.controlPointProximity) return -(i + 1); 
 	}
-
 	return null; 
     },
 

@@ -2468,7 +2468,7 @@ Morph.addMethods({
 	if (this.suppressHandles) return false; // disabled
 	if (this.owner == null) return false; // can't reshape the world
 	var partName = this.shape.partNameNear(this.localize(evt.point()));
-	if (!partName) return false;
+	if (partName == null) return false;
 	var loc = this.shape.partPosition(partName);
 	
 	var handle = this.addMorph(this.makeHandle(loc, partName, evt.hand));  
