@@ -433,10 +433,10 @@ Widget.subclass('StylePanel', {
     },
     
     onBorderRadiusUpdate: function(r) {
+        //var w = this.targetMorph.getBorderWidth();
         this.targetMorph.shapeRoundEdgesBy(r.roundTo(1));
-        var w = this.targetMorph.getBorderWidth();
-        this.targetMorph.setBorderWidth(0);  // Force an update (!)
-        this.targetMorph.setBorderWidth(w);
+        //this.targetMorph.setBorderWidth(0);  // Force an update (!)
+        //this.targetMorph.setBorderWidth(w);
     },
 
     onFillTypeUpdate: function(type) { this.fillType = type; this.setFill(); },
@@ -1188,11 +1188,11 @@ ButtonMorph.subclass('EllipseMakerMorph', {
 
     makeNewEllipse: function(date) {
         var ext = this.owner.innerBounds().extent();
-	var s = Math.min(ext.x/2, ext.y/2, 80);
-	var e = new Morph(new lively.scene.Ellipse(pt(0,0), 25));
-	e.setExtent(pt(s, s/2));
+	var s = Math.min(ext.x/10, ext.y/10, 20);
+	var e = new Morph(new lively.scene.Ellipse(pt(0,0), s));
+	e.setExtent(pt(2*s, 4*s));
 	e.applyStyle({ fill: Color.random(), fillOpacity: Math.random(), borderWidth: 1, borderColor: Color.random()});
-	e.velocity = pt(s/8, s/8).random();
+	e.velocity = pt(s, s).random();
 	e.angularVelocity = 0.3  * Math.random();
 	this.owner.addMorph(e);
 	e.moveOriginBy(e.innerBounds().center());  // Rotate about center

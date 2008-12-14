@@ -737,6 +737,9 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	if (r) {
 	    this.setLengthTrait("rx", r);
 	    this.setLengthTrait("ry", r);
+	    var w = this.getStrokeWidth();  // DI:  Needed to force repaint(!)
+	    		this.setStrokeWidth(w+1); 
+	    		this.setStrokeWidth(w); 
 	}
 	return this;
     }
