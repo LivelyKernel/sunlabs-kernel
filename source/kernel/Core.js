@@ -2505,27 +2505,28 @@ Morph.addMethods({
     morphMenu: function(evt) {
 	var items = [
 	    ["remove", this.remove],
+	    ["drill", this.showOwnerChain.curry(evt)],
+	    ["grab", this.pickMeUp.curry(evt)],
+	    ["edit style", function() { new StylePanel(this).open()}],
 	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
 	    ["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
 					      browser.openIn(this.world(), evt.point());
 					      browser.getModel().setClassName(this.getType());
 					    }],
-	    ["edit style", function() { new StylePanel(this).open()}],
-	    ["drill", this.showOwnerChain.curry(evt)],
-	    ["grab", this.pickMeUp.curry(evt)],
-	    ["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
+	    ["-----"],
 	    ["reset rotation", this.setRotation.curry(0)],
 	    ["reset scaling", this.setScale.curry(1)],
 	    [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
+	    [(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
+	    ["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
+	    [(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }],
 	    ["-----"],
 	    ["put me in a window", this.putMeInAWindow.curry(this.position())], 
 	    ["put me in a tab", this.putMeInATab.curry(this.position())],
 	    ["put me in the open", this.putMeInTheWorld.curry(this.position())],
-	    ["-----"],
-	    [((this.openForDragAndDrop) ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 	    ["show Lively markup", this.addSvgInspector.curry(this)],
 	    ["package", function(evt) {  // FIXME insert package morph in exactly the same position?
-		new PackageMorph(this).openIn(this.world(), evt.point()); this.remove(); } ],
+			new PackageMorph(this).openIn(this.world(), evt.point()); this.remove(); } ],
 	    ["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
 	];
 	if (this.okToDuplicate())
@@ -2534,10 +2535,6 @@ Morph.addMethods({
 	if (this.getModel() instanceof SyntheticModel)
 	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
 	
-	if (this.copySubmorphsOnGrab == true) 
-	    items.push(["unpalettize", function() { this.copySubmorphsOnGrab = false; }]);
-	else 
-	    items.push(["palettize", function() { this.copySubmorphsOnGrab = true; }]);
 	
 	return new MenuMorph(items, this);
     },
