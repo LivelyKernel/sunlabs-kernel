@@ -137,16 +137,16 @@ TestCase.subclass('HandMorphTest', {
 
 TestCase.subclass('TextMorphTest', {
     setUp: function() {
-        this.m = new TextMorph(new Rectangle(0,0,100,100),"Hello\nWorld\n3+4\nEnde");
-        WorldMorph.current().addMorph(this.m);
+        this.m = new TextMorph(new Rectangle(0,0,100,100),"Hello World\n\n3+4\n123\t\tEnde");
+        this.m.openInWorld();
+		this.dontRemove = false;
     },
     
     testLineNumberForIndex: function() {
         this.assertEqual(this.m.lines.length, 4, "wrong line numbers");
         this.assertEqual(this.m.lineNumberForIndex(0), 0);
-        this.assertEqual(this.m.lineNumberForIndex(7), 1);
-        this.assertEqual(this.m.lineNumberForIndex(13), 2);
-        
+        this.assertEqual(this.m.lineNumberForIndex(7), 0);
+        this.assertEqual(this.m.lineNumberForIndex(12), 1);
     },
     
     testSelectionRange: function() {
@@ -155,10 +155,38 @@ TestCase.subclass('TextMorphTest', {
         this.m.setSelectionRange(6,11);
         this.assertEqual(this.m.getSelectionString(), "World");
     },
-    
+
+	testExtendSelection: function() {
+		var m = this.m;
+		this.dontRemove = false;
+		m.startSelection(5);
+		this.assertEqual(m.getCursorPos(), 5);
+		this.assertEqual(m.getSelectionString(), '');
+		m.extendSelection(4);
+		this.assertEqual(m.getCursorPos(), 4);
+		this.assertEqual(m.getSelectionString(), 'o');
+		m.extendSelection(11);
+		this.assertEqual(m.getCursorPos(), 11);
+		this.assertEqual(m.getSelectionString(), ' World');
+	},
+
+	testExtendSelection2: function() {
+		var m = this.m;
+		this.dontRemove = true;
+		var pos = 'Hello World'.length;
+		m.startSelection(pos);
+		m.extendSelection(pos+3);
+		/*this.assertEqual(m.getCursorPos(), 5);
+		this.assertEqual(m.getSelectionString(), '');
+		m.extendSelection(4);*/
+	},
+ 
     tearDown: function() {
+		if (this.dontRemove) {
+			this.m.requestKeyboardFocus(WorldMorph.current().firstHand());
+			return;
+		}
         this.m.remove();
-        delete this.m
     },
     
 });

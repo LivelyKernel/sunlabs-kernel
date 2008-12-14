@@ -769,18 +769,34 @@ var Locale = {
                 return [i1+1, i2]; 
             } 
         }
+
+		// inside of whitespaces?
+		var myI1 = i1;
+		var myI2 = i2;
+		while (myI1-1 >= 0 && this.isWhiteSpace(str[myI1-1])) {
+			myI1 --;
+		}
+		while (myI2 < str.length && this.isWhiteSpace(str[myI2+1])) {
+		    myI2 ++;
+		}
+		if (myI2-myI1 >= 1) return [myI1, myI2];
+	
         var prev = (i1<str.length) ? str[i1] : "";
-	while (i1-1 >= 0 && (this.charSet.alphaNum.include(str[i1-1]) || this.periodWithDigit(str[i1-1], prev)) ) {
+	while (i1-1 >= 0 && (this.charSet.alphaNum.include(str[i1-1]) || this.periodWithDigit(str[i1-1], prev))) {
             prev = str[i1-1];
 	    i1 --;
         }
-	while (i2+1 < str.length && (this.charSet.alphaNum.include(str[i2+1]) || this.periodWithDigit(str[i2+1], prev)) ) {
+	while (i2+1 < str.length && (this.charSet.alphaNum.include(str[i2+1]) || this.periodWithDigit(str[i2+1], prev))) {
             prev = str[i2+1];
 	    i2 ++;
 	}
         return [i1, i2]; 
     },
-    
+
+	isWhiteSpace: function(c) {
+		return c === '\t' || c === ' ';
+	},
+
     periodWithDigit: function(c, prev) { // return true iff c is a period and prev is a digit
         if (c != ".") return false;
         return "0123456789".indexOf(prev) >= 0;
@@ -1446,7 +1462,7 @@ BoxMorph.subclass("TextMorph", {
 		if (evt.isShiftDown()) {
 			if (this.hasNullSelection())
 				this.selectionPivot = this.selectionRange[0];
-			this.extendSelection(evt);
+			this.extendSelectionEvt(evt);
 		} else {
 			var charIx = this.charOfPoint(this.localize(evt.mousePoint));
 			this.startSelection(charIx);
@@ -1456,7 +1472,7 @@ BoxMorph.subclass("TextMorph", {
     },
 
     onMouseMove: function($super, evt) {  
-        if (this.isSelecting) return this.extendSelection(evt);
+        if (this.isSelecting) return this.extendSelectionEvt(evt);
 	if (this.mouseIsOverALink(evt)) evt.hand.lookLinky();
 		else evt.hand.lookNormal();
         return $super(evt);        
@@ -1523,7 +1539,7 @@ BoxMorph.subclass("TextMorph", {
         // this.world().firstHand().setKeyboardFocus(this);
     },
 
-    extendSelection: function(evt) { 
+    extendSelectionEvt: function(evt) { 
         var charIx = this.charOfPoint(this.localize(evt.mousePoint));
         // console.log('extend selection @' + charIx);
         if (charIx < 0) return;
@@ -1624,89 +1640,111 @@ BoxMorph.subclass("TextMorph", {
         if (!this.showsSelectionWithoutFocus()) this.textSelection.undraw();
     },
 
-    onKeyDown: function(evt) {
-        if (!this.acceptInput) return;
-        
-        var before = this.textString.substring(0, this.selectionRange[0]); 
+	onKeyDown: function(evt) {
+		if (!this.acceptInput) return;
 
-        switch (evt.getKeyCode()) {
-        case Event.KEY_LEFT: {
-            // forget the existing selection
-            var wordRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
-            if (evt.isShiftDown() && (wordRange[0] != before.length)) {
-                // move by a whole word if we're not at the beginning of it
-                this.setNullSelectionAt(Math.max(0, wordRange[0]));
-            } else {
-				//  this.setNullSelectionAt(Math.max(before.length - 1, 0));
-				var start = Math.max(this.hasNullSelection() ?  before.length - 1 : this.selectionRange[0], 0);
-                this.setNullSelectionAt(start);
-            }
-            evt.stop();
+		var selecting = evt.isShiftDown();
+		var selectionStopped = !this.hasNullSelection() && !selecting;
+		var pos = this.getCursorPos(); // is selectionRange[0] or selectionRange[1], depends on selectionPivot
+		var wordRange = evt.isMetaDown() ? this.locale.selectWord(this.textString, pos) : null;
+
+		var textMorph = this;
+		var moveCursor = function(newPos) {
+			if (selecting) textMorph.extendSelection(newPos);
+			else textMorph.startSelection(newPos);
+			evt.stop();
             return true;
-        } 
-        case Event.KEY_RIGHT: {
-            // forget the existing selection
-            var wordRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
-            if (evt.isShiftDown() && (wordRange[1] != before.length - 1)) {
-                // move by a whole word if we're not at the end of it.
-                this.setNullSelectionAt(Math.min(this.textString.length, wordRange[1] + 1));
-            } else { 
-                //this.setNullSelectionAt(Math.min(before.length + 1, this.textString.length));
-				var start = Math.min(this.hasNullSelection() ?  before.length + 1 : this.selectionRange[1] + 1 , this.textString.length);
-				this.setNullSelectionAt(start);
-            }
-            evt.stop();
-            return true;
-        }
-        case Event.KEY_UP: {
-            var lineNo = this.lineNumberForIndex(before.length);
-            var line = this.lines[lineNo];
-            if (lineNo > 0) {
-                var lineIndex = before.length  - line.startIndex;
-                var newLine = this.lines[lineNo - 1];
-                this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
-            }
-            evt.stop();
-            return true;
-        }
-        case Event.KEY_DOWN: {
-            var lineNo = this.lineNumberForIndex(before.length);
-            var line = this.lines[lineNo];
-            if (lineNo < this.lines.length - 1) {
-                var lineIndex = before.length  - line.startIndex;
-                var newLine = this.lines[lineNo + 1];
-                this.setNullSelectionAt(Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex()));
-            }
-            evt.stop();
-            return true;
-        }
-	case Event.KEY_TAB: {
-	    this.replaceSelectionfromKeyboard("\t");
-	    evt.stop();
-	    return true;
-	}
-	case Event.KEY_BACKSPACE: {
-	    // Backspace deletes current selection or prev character
-            if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
-            this.replaceSelectionfromKeyboard("");
-	    if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
-            evt.stop(); // do not use for browser navigation
-            return true;
-        }
-        case Event.KEY_ESC: {
-            this.relinquishKeyboardFocus(this.world().firstHand());
-            return true;
-        }
-        }
+		};
+		
+		switch (evt.getKeyCode()) {
+			case Event.KEY_HOME: {
+				// go to the beginning of the line
+				var line = this.lines[this.lineNumberForIndex(pos)];
+				return moveCursor(line.startIndex);
+			}
+			case Event.KEY_END: {
+				// go to the end of the line
+				var line = this.lines[this.lineNumberForIndex(pos)];
+				return moveCursor(line.getStopIndex());
+			}
+			case Event.KEY_PAGEUP: {
+				// go to start
+				return moveCursor(0);
+			}
+			case Event.KEY_PAGEDOWN: {
+				// go to start
+				return moveCursor(this.textString.length-1);
+			}
+			case Event.KEY_LEFT: {
+				if (selectionStopped) // if a selection exists but but selecting off -> jump to the beginning of the selection
+					return moveCursor(this.selectionRange[0]);
+				var newPos = evt.isMetaDown() && wordRange[0] != pos ? wordRange[0] : pos-1;
+				newPos = Math.max(newPos, 0);
+				return moveCursor(newPos);
+			} 
+			case Event.KEY_RIGHT: {
+				if (selectionStopped) // if a selection exists but selecting off -> jump to the end of the selection
+					return moveCursor(this.selectionRange[1]+1);
+				newPos = evt.isMetaDown() && wordRange[1]+1 != pos ? wordRange[1]+1 : pos + 1;
+				newPos = Math.min(this.textString.length, newPos);
+				return moveCursor(newPos);
+			}
+			case Event.KEY_UP: {
+   	        	var lineNo = this.lineNumberForIndex(pos);
+				if (lineNo <= 0) { // cannot move up
+					evt.stop();
+		            return true;
+				}
+				var line = this.lines[lineNo];
+				var lineIndex = pos - line.startIndex;
+				var newLine = this.lines[lineNo - 1];
+				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
+				return moveCursor(newPos);
+			}
+        	case Event.KEY_DOWN: {
+				var lineNo = this.lineNumberForIndex(pos);
+				if (lineNo >= this.lines.length - 1) { // cannot move down
+					evt.stop();
+		            return true;
+				}
+				var line = this.lines[lineNo];
+				if (!line) {
+						console.log('TextMorph finds no line ???');
+						evt.stop();
+						return true
+				}
+				var lineIndex = pos  - line.startIndex;
+				var newLine = this.lines[lineNo + 1];
+				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
+				return moveCursor(newPos);
+			}
+			case Event.KEY_TAB: {
+		    	this.replaceSelectionfromKeyboard("\t");
+		    	evt.stop();
+		    	return true;
+			}
+			case Event.KEY_BACKSPACE: {
+				// Backspace deletes current selection or prev character
+					if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
+					this.replaceSelectionfromKeyboard("");
+				if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
+					evt.stop(); // do not use for browser navigation
+					return true;
+			}
+			case Event.KEY_ESC: {
+				this.relinquishKeyboardFocus(this.world().firstHand());
+				return true;
+			}
+		}
 
         // have to process commands in keydown...
         if (evt.isCommandKey()) {
             if (this.processCommandKeys(evt)) { 
-		evt.stop();
-		return true;
-	    } 
-        } 
-	return false;
+				evt.stop();
+				return true;
+	    	} 
+        }
+		return false;
     },
      
     onKeyPress: function(evt) {
@@ -2011,7 +2049,29 @@ BoxMorph.subclass("TextMorph", {
         return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));      
     },
 });
-    
+
+TextMorph.addMethods({
+	
+	extendSelection: function(charIx) {
+		if (charIx < 0) return;
+        this.setSelectionRange(this.selectionPivot, charIx);
+	},
+
+	getCursorPos: function() {
+		if (this.hasNullSelection())
+			return this.selectionRange[0];
+		if (this.selectionPivot === this.selectionRange[1]+1)
+			return this.selectionRange[0]; // selection expands left
+		if (this.selectionPivot === this.selectionRange[0])
+			return this.selectionRange[1]+1; // selection expands right
+		if (this.selectionPivot < this.selectionRange[1]+1 && this.selectionPivot > this.selectionRange[0])
+			return this.selectionRange[0]; // selection pivot in middle of sel
+		console.log('Can\'t find current position in text');
+		return this.selectionRange[0];
+	},
+
+});
+
 Object.extend(TextMorph, {
     
     fromLiteral: function(literal) {
@@ -2650,5 +2710,8 @@ Object.subclass('TextEmphasis', {
 
 
 }.logCompletion("Text.js"));
+
+
+
 
 
