@@ -392,8 +392,9 @@ Morph.subclass('HandleMorph', {
     onMouseMove: function(evt) {
         // When dragged, I also drag the designated control point of my target
         if (this.rollover && !evt.mouseButtonPressed) { 
+
             // Mouse up: Remove handle if mouse drifts away
-            if (!this.containsWorldPoint(evt.mousePoint)) {
+            if (!this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
                 evt.hand.setMouseFocus(null);
                 this.hideHelp();
                 this.remove(); 
