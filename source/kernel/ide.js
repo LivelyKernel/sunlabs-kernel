@@ -1015,7 +1015,7 @@ Object.subclass('CodeParser', {
 		if (!responsible && lastAdded === descr) responsible = this.changeList;
 		if (!responsible) throw new Error('Couldn\'t find last added descriptor');
 		responsible.pop();
-		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1);
+		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1, this.findLineNo(this.lines, this.ptr), this.fileName);
 		responsible.push(errorDescr);
 		this.ptr = errorDescr.stopIndex + 1;
 	},
@@ -1321,7 +1321,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     
     preLoadFileNames: function($super) {
 		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
-    return [ 'Tests/ToolsTests.js', 'test.js']
+    return [ 'Tests/ToolsTests.js', 'test.js', 'Tests/MorphTest.js']
     //return [];
     },
 
