@@ -1103,38 +1103,46 @@ BoxMorph.subclass("TextMorph", {
         return this;
     },
 
-    // Since command keys do not work on all browsers,
-    // make it possible to evaluate the contents
-    // of the TextMorph via popup menu
-    morphMenu: function($super, evt) { 
+    
 
-        var menu = $super(evt);
+subMenuItems: function($super, evt) {
+	var items = $super(evt);
+	items.unshift(["Text functions" , this.editMenuItems(evt)]);
+	return items;
+    },
 
-        // Add a descriptive separator line
-        menu.addItem(['----- text functions -----']);
-
-        this.editMenuItems().each(function(item) {menu.addItem(item); });
-//		menu.addItem(["accept changes", function() { this.saveContents(this.textString) }]);
-        menu.addItem(["evaluate as JavaScript code", function() { this.boundEval(this.textString) }]);
-
-        menu.addItem(["evaluate as Lively markup", function() { 
-            var importer = new Importer();
-            var txt = this.xml || this.textString;
-            // console.log('evaluating markup ' + txt);
-            var morph = importer.importFromString(txt);
-            this.world().addMorph(morph);
-	    importer.finishImport(this.world());
-        }]);
-	
-        menu.addItem(["save as ...", function() { 
-	    this.world().prompt("save as...", function(filename) {
-		if (!filename) return;
-		var req = new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"});
-		req.put(URL.source.withFilename(filename), this.xml || this.textString);
-	    }.bind(this));
-        }]);
-	
-        return menu;
+    editMenuItems: function(evt) {
+	return [
+		["cut (x)", this.doCut.bind(this)],
+		["copy (c)", this.doCopy.bind(this)],
+		["paste (v)", this.doPaste.bind(this)],
+		["replace next (m)", this.doMore.bind(this)],
+		["exchange (e)", this.doExchange.bind(this)],
+		["undo (z)", this.doUndo.bind(this)],
+		["find (f)", this.doFind.bind(this)],
+		["find next (g)", this.doFindNext.bind(this)],
+		["do it (d)", this.doDoit.bind(this)],
+		["printIt (p)", this.doPrintit.bind(this)],
+		["accept changes (s)", this.doSave.bind(this)],
+		["color (o)", this.colorSelection.bind(this)],
+		["make link (u)", this.linkifySelection.bind(this)],
+		["help", this.doHelp.bind(this)],
+		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
+		["evaluate as Lively markup", function() { 
+			var importer = new Importer();
+			var txt = this.xml || this.textString;
+			// console.log('evaluating markup ' + txt);
+			var morph = importer.importFromString(txt);
+			this.world().addMorph(morph);
+			importer.finishImport(this.world()); }],
+		["save as ...", function() { 
+			this.world().prompt("save as...", function(filename) {
+				if (!filename) return;
+				var req = new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"});
+				req.put(URL.source.withFilename(filename), this.xml || this.textString);
+	    		}.bind(this));
+        	}]
+		]
     },
 
     // TextMorph composition functions
@@ -1142,7 +1150,6 @@ BoxMorph.subclass("TextMorph", {
 	if (!(this.padding instanceof Rectangle)) console.log('padding is ' + this.padding);
         return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
     },
-    
     
     ensureRendered: function() { // created on demand and cached
         if (this.ensureTextString() == null) return null;
@@ -1826,25 +1833,6 @@ BoxMorph.subclass("TextMorph", {
         }
     },
     
-    editMenuItems: function() {
-	return [
-		["cut (x)", this.doCut.bind(this)],
-		["copy (c)", this.doCopy.bind(this)],
-		["paste (v)", this.doPaste.bind(this)],
-		["replace next (m)", this.doMore.bind(this)],
-		["exchange (e)", this.doExchange.bind(this)],
-		["undo (z)", this.doUndo.bind(this)],
-		["find (f)", this.doFind.bind(this)],
-		["find next (g)", this.doFindNext.bind(this)],
-		["do it (d)", this.doDoit.bind(this)],
-		["printIt (p)", this.doPrintit.bind(this)],
-		["accept changes (s)", this.doSave.bind(this)],
-		["color (o)", this.colorSelection.bind(this)],
-		["make link (u)", this.linkifySelection.bind(this)],
-		["help", this.doHelp.bind(this)]
-		]
-    },
-
     doCut: function() {
 	TextMorph.clipboardString = this.getSelectionString(); 
         this.replaceSelectionWith("");

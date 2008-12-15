@@ -2493,9 +2493,7 @@ Morph.addMethods({
 	return this; 
     },
 
-    editMenuItems: function(evt) { 
-	return [];  // Overridden by, eg, TextMorph
-    },
+    
 
     showMorphMenu: function(evt) { 
 	var menu = this.morphMenu(evt);
@@ -2512,15 +2510,30 @@ Morph.addMethods({
 	    ["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
 					      browser.openIn(this.world(), evt.point());
 					      browser.getModel().setClassName(this.getType());
-					    }],
-	    ["-----"],
+					    }]
+	];
+	if (this.okToDuplicate())
+	    items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
+
+	if (this.getModel() instanceof SyntheticModel)
+	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
+
+	var menu = new MenuMorph(items, this);
+	menu.addLine();
+	menu.addItems(this.subMenuItems(evt));
+	return menu;
+},
+
+subMenuItems: function(evt) {
+	var propertiesItems =  [
 	    ["reset rotation", this.setRotation.curry(0)],
 	    ["reset scaling", this.setScale.curry(1)],
 	    [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
 	    [(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 	    ["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
-	    [(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }],
-	    ["-----"],
+	    [(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }]
+	];
+	var windowItems = [
 	    ["put me in a window", this.putMeInAWindow.curry(this.position())], 
 	    ["put me in a tab", this.putMeInATab.curry(this.position())],
 	    ["put me in the open", this.putMeInTheWorld.curry(this.position())],
@@ -2529,14 +2542,10 @@ Morph.addMethods({
 			new PackageMorph(this).openIn(this.world(), evt.point()); this.remove(); } ],
 	    ["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
 	];
-	if (this.okToDuplicate())
-	    items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
-
-	if (this.getModel() instanceof SyntheticModel)
-	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
-	
-	
-	return new MenuMorph(items, this);
+	return [
+            ['Properties', propertiesItems],
+            ['Window and World', windowItems]
+	]
     },
 
     showPieMenu: function(evt) {
@@ -3809,6 +3818,132 @@ PasteUpMorph.subclass("WorldMorph", {
         return menu;
     },
     
+    subMenuItems: function(evt) {
+        //console.log("mouse point == %s", evt.mousePoint);
+	// FIXME this boilerplate code should be abstracted somehow.
+        var world = this.world();
+        var morphItems = [
+            ["Line", function(evt) { var p = evt.point(); world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
+            ["Rectangle", function(evt) { world.addMorph(Morph.makeRectangle(evt.point(), pt(60, 30)));}],
+            ["Ellipse", function(evt) { world.addMorph(Morph.makeCircle(evt.point(), 25)); }],
+            ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
+            ["Star", function(evt) { 
+                var makeStarVertices = function(r,center,startAngle) {
+                    var vertices = [];
+                    var nVerts = 10;
+                    for (var i=0; i <= nVerts; i++) {
+                        var a = startAngle + (2*Math.PI/nVerts*i);
+                        var p = Point.polar(r,a);
+                        if (i%2 == 0) p = p.scaleBy(0.39);
+                        vertices.push(p.addPt(center)); 
+                    }
+                    return vertices; 
+                }
+            	var widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+            	widget.setPosition(evt.point());
+                world.addMorph(widget)}],
+            ["Heart", function(evt) { 
+		var g = lively.scene;
+		var shape = new g.Path([
+		    new g.MoveTo(0, 0),
+		    new g.CurveTo(48.25,-5.77),
+		    new g.CurveTo(85.89,15.05),
+		    new g.CurveTo(61.36,32.78),
+		    new g.CurveTo(53.22,46.00),
+		    new g.CurveTo(25.02,68.58),
+		    new g.CurveTo(1.03, 40.34),
+		    new g.CurveTo(0, 0)
+		]);
+		
+		var widget = new Morph(shape);
+		widget.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
+		widget.setPosition(evt.point());
+		widget.rotateBy(3.9);
+                world.addMorph(widget);
+
+            }],
+        ];
+        var complexMorphItems =  [
+            ["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
+            ["Clock", function(evt) {
+                var m = world.addMorph(new ClockMorph(evt.point(), 50));
+                m.startSteppingScripts(); }],
+            ["FabrikClock", function(evt) {
+		require('Fabrik.js').toRun(function() {
+                    var m = world.addMorph(new FabrikClockMorph(evt.point(), 50));
+                    m.startSteppingScripts(); }); }],
+            ["Text Window", function(evt) {
+		WorldMorph.current().addTextWindow("Editable text"); }],
+            ["Piano Keyboard", function(evt) {
+                require('Examples.js').toRun(function() {
+                    var m = new PianoKeyboard(evt.point());
+                    m.scaleBy(1.5);  m.rotateBy(-Math.PI*2/12);
+                    world.addMorph(m); }); }],
+            ["Layout Demo", function(evt) {
+                require('GridLayout.js').toRun(function() {
+		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
+		}); }],
+	    ["Effects demo (FF only)", function(evt) {
+		require('demofx.js').toRun(Functions.Empty); }]
+        ];
+        var toolMenuItems = [
+            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
+            ["SystemBrowser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
+            ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
+            ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
+            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
+            ["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world, evt.point()) }) }],
+            ["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().openIn(world, evt.point()); }) }],
+    	    ["Call Stack Viewer", function(evt) { 
+    		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
+    		else new StackViewer(this).openIn(world, evt.point()); }],    
+            ["FrameRateMorph", function(evt) {
+                var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
+                m.startSteppingScripts(); }],
+            ["EllipseMaker", function(evt) {
+                var m = world.addMorph(new EllipseMakerMorph(evt.point()));
+                m.startSteppingScripts(); }],
+    	    ["XHTML Browser", function(evt) { 
+    		var xeno = new XenoBrowserWidget('sample.xhtml');
+    		xeno.openIn(world, evt.point()); 
+    	    }]
+        ];
+        var scriptingMenuItems = [
+            ["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world, evt.point()); }) }],
+            ["Fabrik Component Box", function(evt) { require('Fabrik.js').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
+        ];
+        var preferenceMenuItems = [
+		[(Config.usePieMenus ? "don't " : "") + "use pie menus",
+                      function() { Config.usePieMenus = !Config.usePieMenus; }],
+        	["choose display theme...", this.chooseDisplayTheme],
+        	[(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
+                      this.toggleBalloonHelp],
+        	[(HandMorph.prototype.useShadowMorphs ? "don't " : "") + "show drop shadows",
+		      function () { HandMorph.prototype.useShadowMorphs = !HandMorph.prototype.useShadowMorphs}],
+        	[(Config.showGrabHalo ? "don't " : "") + "show bounds halos",
+		      function () { Config.showGrabHalo = !Config.showGrabHalo}],
+        	[HandMorph.prototype.applyDropShadowFilter ? "don't use filter shadows" : "use filter shadows (if supported)",
+		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
+        	[(Config.useDebugBackground ? "use normal background" : "use debug background"),
+                      this.toggleDebugBackground]
+        ];
+        var helpMenuItems = [
+	    ["Model documentation", function(evt) {
+		this.openURLasText( URL.common.project.withRelativePath(
+			"/index.fcgi/wiki/NewModelProposal?format=txt"), "Model documentation"); }],
+	    ["Command key help", function(evt) {
+		this.openURLasText( URL.common.project.withRelativePath(
+			"/index.fcgi/wiki/CommandKeyHelp?format=txt"), "Command key help"); }]
+        ];
+	return [
+            ['Simple morphs', morphItems],
+            ['Complex morphs', complexMorphItems],
+            ['Tools', toolMenuItems],
+            ['Scripting', scriptingMenuItems],
+            ['Preferences', preferenceMenuItems],
+            ['Help', helpMenuItems]];
+    },
+    
     showPieMenu: function(evt) {
     	var menu, targetMorph = this;
 	var items = [
@@ -4052,132 +4187,6 @@ PasteUpMorph.subclass("WorldMorph", {
     relativize: function(pt) { 
         return pt;
         //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
-    },
-    
-    subMenuItems: function(evt) {
-        //console.log("mouse point == %s", evt.mousePoint);
-	// FIXME this boilerplate code should be abstracted somehow.
-        var world = this.world();
-        var morphItems = [
-            ["Line", function(evt) { var p = evt.point(); world.addMorph(Morph.makeLine([p, p.addXY(60, 30)], 2, Color.black));}],
-            ["Rectangle", function(evt) { world.addMorph(Morph.makeRectangle(evt.point(), pt(60, 30)));}],
-            ["Ellipse", function(evt) { world.addMorph(Morph.makeCircle(evt.point(), 25)); }],
-            ["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
-            ["Star", function(evt) { 
-                var makeStarVertices = function(r,center,startAngle) {
-                    var vertices = [];
-                    var nVerts = 10;
-                    for (var i=0; i <= nVerts; i++) {
-                        var a = startAngle + (2*Math.PI/nVerts*i);
-                        var p = Point.polar(r,a);
-                        if (i%2 == 0) p = p.scaleBy(0.39);
-                        vertices.push(p.addPt(center)); 
-                    }
-                    return vertices; 
-                }
-            	var widget = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
-            	widget.setPosition(evt.point());
-                world.addMorph(widget)}],
-            ["Heart", function(evt) { 
-		var g = lively.scene;
-		var shape = new g.Path([
-		    new g.MoveTo(0, 0),
-		    new g.CurveTo(48.25,-5.77),
-		    new g.CurveTo(85.89,15.05),
-		    new g.CurveTo(61.36,32.78),
-		    new g.CurveTo(53.22,46.00),
-		    new g.CurveTo(25.02,68.58),
-		    new g.CurveTo(1.03, 40.34),
-		    new g.CurveTo(0, 0)
-		]);
-		
-		var widget = new Morph(shape);
-		widget.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
-		widget.setPosition(evt.point());
-		widget.rotateBy(3.9);
-                world.addMorph(widget);
-
-            }],
-        ];
-        var complexMorphItems =  [
-            ["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
-            ["Clock", function(evt) {
-                var m = world.addMorph(new ClockMorph(evt.point(), 50));
-                m.startSteppingScripts(); }],
-            ["FabrikClock", function(evt) {
-		require('Fabrik.js').toRun(function() {
-                    var m = world.addMorph(new FabrikClockMorph(evt.point(), 50));
-                    m.startSteppingScripts(); }); }],
-            ["Text Window", function(evt) {
-		WorldMorph.current().addTextWindow("Editable text"); }],
-            ["Piano Keyboard", function(evt) {
-                require('Examples.js').toRun(function() {
-                    var m = new PianoKeyboard(evt.point());
-                    m.scaleBy(1.5);  m.rotateBy(-Math.PI*2/12);
-                    world.addMorph(m); }); }],
-            ["Layout Demo", function(evt) {
-                require('GridLayout.js').toRun(function() {
-		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
-		}); }],
-	    ["Effects demo (FF only)", function(evt) {
-		require('demofx.js').toRun(Functions.Empty); }]
-        ];
-        var toolMenuItems = [
-            ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
-            ["SystemBrowser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
-            ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
-            ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
-            ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
-            ["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world, evt.point()) }) }],
-            ["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().openIn(world, evt.point()); }) }],
-    	    ["Call Stack Viewer", function(evt) { 
-    		if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
-    		else new StackViewer(this).openIn(world, evt.point()); }],    
-            ["FrameRateMorph", function(evt) {
-                var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
-                m.startSteppingScripts(); }],
-            ["EllipseMaker", function(evt) {
-                var m = world.addMorph(new EllipseMakerMorph(evt.point()));
-                m.startSteppingScripts(); }],
-    	    ["XHTML Browser", function(evt) { 
-    		var xeno = new XenoBrowserWidget('sample.xhtml');
-    		xeno.openIn(world, evt.point()); 
-    	    }]
-        ];
-        var scriptingMenuItems = [
-            ["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world, evt.point()); }) }],
-            ["Fabrik Component Box", function(evt) { require('Fabrik.js').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
-        ];
-        var preferenceMenuItems = [
-		[(Config.usePieMenus ? "don't " : "") + "use pie menus",
-                      function() { Config.usePieMenus = !Config.usePieMenus; }],
-        	["choose display theme...", this.chooseDisplayTheme],
-        	[(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
-                      this.toggleBalloonHelp],
-        	[(HandMorph.prototype.useShadowMorphs ? "don't " : "") + "show drop shadows",
-		      function () { HandMorph.prototype.useShadowMorphs = !HandMorph.prototype.useShadowMorphs}],
-        	[(Config.showGrabHalo ? "don't " : "") + "show bounds halos",
-		      function () { Config.showGrabHalo = !Config.showGrabHalo}],
-        	[HandMorph.prototype.applyDropShadowFilter ? "don't use filter shadows" : "use filter shadows (if supported)",
-		      function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
-        	[(Config.useDebugBackground ? "use normal background" : "use debug background"),
-                      this.toggleDebugBackground]
-        ];
-        var helpMenuItems = [
-	    ["Model documentation", function(evt) {
-		this.openURLasText( URL.common.project.withRelativePath(
-			"/index.fcgi/wiki/NewModelProposal?format=txt"), "Model documentation"); }],
-	    ["Command key help", function(evt) {
-		this.openURLasText( URL.common.project.withRelativePath(
-			"/index.fcgi/wiki/CommandKeyHelp?format=txt"), "Command key help"); }]
-        ];
-	return [
-            ['Simple morphs', morphItems],
-            ['Complex morphs', complexMorphItems],
-            ['Tools', toolMenuItems],
-            ['Scripting', scriptingMenuItems],
-            ['Preferences', preferenceMenuItems],
-            ['Help', helpMenuItems]];
     },
     
     openURLasText: function(url, title) {
