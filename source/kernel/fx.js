@@ -12,7 +12,7 @@
 if (this.arguments && (arguments[0] === 'script')) {
     // if called from command line with argument 'script', we'll initialize what is needed for rhino.
     // can be run as $ jrunscript fx.js script
-    var window = this;
+    if (!this.window) this.window = this;
     load('rhino-compat.js');
     load('JSON.js');
     load('miniprototype.js');
@@ -30,13 +30,31 @@ if (this.arguments && (arguments[0] === 'script')) {
 var fx = using().run(function() { // scope function
 
     var fx = {};
-    var BasicMixin = {
+    var BasicMixin = { // both prototpes and fx.* constructors functions get it.
 	defineSlots: {
 	    description: "convenience method, redirects to fx.defineSlots",
 	    value: function(descriptorSet) {
 		return fx.defineSlots(this, descriptorSet);
 	    }
-	}
+	},
+ 
+       respondsTo: {
+           value: function(methodName) {
+               return (this[methodName] instanceof Function);
+           }
+       },
+       
+       tryToPerform:  {
+           value: function(methodName /* ...*/) {
+               if (!methodName) return undefined;
+               Array.prototype.shift.apply(arguments);
+               if (this.respondsTo(methodName)) {
+                   return this[methodName].apply(this, arguments);
+               }
+               return undefined;
+           }
+       }
+	   
     };
     
     var ConstructorMixin = {
@@ -55,6 +73,25 @@ var fx = using().run(function() { // scope function
 	    }
 	},
     };
+
+     // bootstraping isues, may patch Slot to be a subclass of fx.Object
+    fx.Slot = function(name, descriptor) {
+	this.name = name; // FIXME
+	this.value = descriptor.value;
+	this.override = Boolean(descriptor.override);
+	this.enumerable = Boolean(descriptor.enumerable);
+	//this.descriptor = descriptor;
+    }
+
+    fx.Schema = function() { }
+    Object.defineProperties(fx.Schema.prototype, {
+	defineSlot: {
+	    value: function(slot) {
+		console.log('slot is ' + slot.name);
+		this[slot.name] = slot;
+	    }
+	}
+    });
 
     // bootstrap fx using Object.defineProperties
     Object.defineProperties(fx, {
@@ -124,11 +161,12 @@ var fx = using().run(function() { // scope function
 		// FIXME: only if fx.Object is 
 		if (!target.hasOwnProperty('$schema')) { 
 		    // if we inherit a schema, derive from it, otherwise create a regular object.
-		    var schema = Object.create(target.$schema || Object.prototype);
-		    schema[name] = descriptor;
+		    var schema = Object.create(target.$schema || fx.Schema.prototype);
+		    //schema.defineSlot(new fx.Slot(name, descriptor));
+		    schema[name] = new fx.Slot(name, descriptor);
 		    
 		    Object.defineProperty(target, "$schema", { enumerable: false, value: schema});
-		}  else target.$schema[name] = descriptor;
+		}  else target.$schema[name] = new fx.Slot(name, descriptor);
 		
 		return Object.defineProperty(target, name, descriptor);
 		// FIXME: react to 'descriptor.observable', send updates ?
@@ -148,9 +186,14 @@ var fx = using().run(function() { // scope function
 	    }
 	}
     });
+
     
-    // now fx can define its own slots.
     fx.defineSlots(fx, {
+	Object: { 
+	    description: "base class with fx conveniences built-in",
+	    value: fx.extend(Object)
+	},
+	
 	clone: { 
 	    description: "invoke the optional filter on every source member before assigning to target",
 	    value: function(source, filter) { 
@@ -239,14 +282,10 @@ var fx = using().run(function() { // scope function
 		}
 		return fx.visitProperties(source, visitor);
 	    }
-	},
-	
-	Object: { 
-	    description: "base class with fx conveniences built-in",
-	    value: fx.extend(Object)
 	}
     });
 
+    
     // bootstrap fx.Object    
     Object.defineProperties(fx.Object.prototype, BasicMixin);
     
@@ -262,7 +301,19 @@ var fx = using().run(function() { // scope function
 	    value: function() {
 		return "[fx.Object]";
 	    }
-	}
+	},
+
+       adopt: {
+           definition: "make arguments's own properties receiver's own",
+           value: function(object) {
+               for (var name in object) {
+                   if (object.hasOwnProperty(name)) 
+                       this[name] = object[name];
+               }
+               return this;
+           }
+       }
+	
     });
 
 
