@@ -2493,7 +2493,9 @@ Morph.addMethods({
 	return this; 
     },
 
-    
+    editMenuItems: function(evt) { 
+	return [];  // Overridden by, eg, TextMorph
+    },
 
     showMorphMenu: function(evt) { 
 	var menu = this.morphMenu(evt);
