@@ -199,9 +199,6 @@ function populateWorldWithExamples(world) {
 						            'Sun 3D Logo', pt(570, 100));
 		});
 						      
-    if (Config.showTester)
-        require('Examples.js').toRun(function() { new TestWidget().openIn(world, pt(835, 450)) });
-    
     if (Config.showTesterRunnerForDevelopment) {
         var requirements = Config.loadTests.collect(function(ea) { return 'Tests/' + ea + '.js'});
         if (requirements.length === 0) requirements.push('TestFramework.js');
@@ -370,8 +367,10 @@ function populateWorldWithExamples(world) {
             
         if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
 
-        // DI: The ObjectBrowser takes a long time to start due to its long list
-        // ... so don't show it when skipping most examples -- can always open from world menu
+        if (Config.showTester)
+        require('Examples.js').toRun(function() { new TestWidget().openIn(devWorld.myWorld, pt(835, 450)) });
+    
+
         if (!Config.skipMostExamples) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
 
         // Sample executable script pane
