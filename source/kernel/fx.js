@@ -162,8 +162,8 @@ var fx = using().run(function() { // scope function
 		if (!target.hasOwnProperty('$schema')) { 
 		    // if we inherit a schema, derive from it, otherwise create a regular object.
 		    var schema = Object.create(target.$schema || fx.Schema.prototype);
-		    //schema.defineSlot(new fx.Slot(name, descriptor));
-		    schema[name] = new fx.Slot(name, descriptor);
+		    schema.defineSlot(new fx.Slot(name, descriptor));
+		    //schema[name] = new fx.Slot(name, descriptor);
 		    
 		    Object.defineProperty(target, "$schema", { enumerable: false, value: schema});
 		}  else target.$schema[name] = new fx.Slot(name, descriptor);
