@@ -1666,13 +1666,14 @@ subMenuItems: function($super, evt) {
 		switch (evt.getKeyCode()) {
 			case Event.KEY_HOME: {
 				// go to the beginning of the line
-				var line = this.lines[this.lineNumberForIndex(pos)];
+				var line = this.lines[this.lineNumberForIndex(pos)] || this.lines.last(); //FIXME
 				return moveCursor(line.startIndex);
 			}
 			case Event.KEY_END: {
 				// go to the end of the line
-				var line = this.lines[this.lineNumberForIndex(pos)];
-				return moveCursor(line.getStopIndex());
+				var line = this.lines[this.lineNumberForIndex(pos)] || this.lines.last(); //FIXME
+				var idx = line === this.lines.last() ? line.getStopIndex() + 1 : line.getStopIndex(); // FIXME!!!
+				return moveCursor(idx);
 			}
 			case Event.KEY_PAGEUP: {
 				// go to start
@@ -1680,7 +1681,7 @@ subMenuItems: function($super, evt) {
 			}
 			case Event.KEY_PAGEDOWN: {
 				// go to start
-				return moveCursor(this.textString.length-1);
+				return moveCursor(this.textString.length);
 			}
 			case Event.KEY_LEFT: {
 				if (selectionStopped) // if a selection exists but but selecting off -> jump to the beginning of the selection
