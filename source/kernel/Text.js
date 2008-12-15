@@ -1895,16 +1895,19 @@ subMenuItems: function($super, evt) {
 	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
     },
     doSearch: function() {
-		if (!lively.Tools.SourceControl) {
-			var msg = 'No SourceControl available.\nShould I start the SourceControl?';
-			WorldMorph.current().confirm(msg, function(answer) {
-				if (!answer) return;
-				lively.ide.startSourceControl().browseReferencesTo(this.getSelectionString());
-			}.bind(this))
+		var whatToSearch = this.getSelectionString();
+		if (lively.Tools.SourceControl) {
+			lively.Tools.SourceControl.browseReferencesTo(whatToSearch);
+			return;
 		};
-
-		lively.Tools.SourceControl.browseReferencesTo(this.getSelectionString()); 
-    },
+		var msg = 'No SourceControl available.\nStart SourceControl?';
+		WorldMorph.current().confirm(msg, function(answer) {
+			if (!answer) return;
+			require('lively.ide').toRun(function(unused, ide) {
+				ide.startSourceControl().browseReferencesTo(whatToSearch);
+			});
+		});
+	},
     doDoit: function() {
         var strToEval = this.getSelectionString(); 
         if (strToEval.length == 0)
