@@ -982,6 +982,13 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTe
 	}
 });
 
+TestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
+
+	testDoItChange: function() {
+		
+	}
+});
+
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     
     shouldRun: true,

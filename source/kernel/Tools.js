@@ -1903,24 +1903,24 @@ Object.subclass('BasicCodeMarkupParser', {
     },
 
     parseDocumentElement: function(element, isHack) {
-	var classes;
-	if (isHack) {
-	    var xpe = new XPathEvaluator();
-	    function resolver(arg) {
-		//return "http://www.w3.org/2000/svg";
-		return Namespace.SVG;
-	    }
-	    var result = xpe.evaluate("/lively:code/lively:class", element, resolver, XPathResult.ANY_TYPE, null);
-	    var res = null;
-	    classes = [];
-	    while (res = result.iterateNext()) classes.push(res);
-	}  else {
-	    classes = this.classQuery.findAll(element);
-	}
+		var classes;
+		if (isHack) {
+	    	var xpe = new XPathEvaluator();
+	    	function resolver(arg) {
+				//return "http://www.w3.org/2000/svg";
+				return Namespace.SVG;
+			}
+			var result = xpe.evaluate("/lively:code/lively:class", element, resolver, XPathResult.ANY_TYPE, null);
+	    	var res = null;
+	    	classes = [];
+	    	while (res = result.iterateNext()) classes.push(res);
+		}  else {
+	    	classes = this.classQuery.findAll(element);
+		}
 
-	for (var i = 0; i < classes.length; i++) 
-	    this.parseClass(classes[i], isHack);
-	return classes;
+		for (var i = 0; i < classes.length; i++) 
+	  	  this.parseClass(classes[i], isHack);
+		return classes;
     },
 
     parseClass: function(element, isHack) {

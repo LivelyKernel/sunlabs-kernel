@@ -1103,7 +1103,7 @@ Object.subclass('CodeParser', {
 
 CodeParser.subclass('JsParser', {
     
-    debugMode: true,
+    debugMode: false,
 
     ometaRules: [/*'blankLine',*/ 'comment',
                'klassDef', 'objectDef', 'klassExtensionDef',
