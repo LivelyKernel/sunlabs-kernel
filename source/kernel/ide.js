@@ -650,12 +650,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 
 ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
     
-    asString: function() {
-		var name = this.moduleName;
-		if (!this.target) return name + ' (not loaded)';
-		if (!this.showLines()) return name;
-		return name + ' (' + this.target.startLine() + '-' + this.target.stopLine() + ')';
-    },
+    asString: lively.ide.CompleteOmetaFragmentNode.prototype.asString‚
 
 	buttonSpecs: function() { return [] },
 
@@ -1110,7 +1105,7 @@ Object.subclass('CodeParser', {
 
 CodeParser.subclass('JsParser', {
     
-    debugMode: false,
+    debugMode: true,
 
     ometaRules: [/*'blankLine',*/ 'comment',
                'klassDef', 'objectDef', 'klassExtensionDef',
@@ -1424,6 +1419,10 @@ Object.subclass('lively.ide.FileFragment', {
 			 && (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
 			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
 		}
+		if (newMe && (this.type == 'propertyDef' || this.type == 'methodDef')
+			 && (newMe.type == 'propertyDef' || newMe.type == 'methodDef')) {
+			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
+		}
 		if (!newMe || newMe.type !== this.type) {
 			newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
 			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
@@ -1462,15 +1461,21 @@ Object.subclass('lively.ide.FileFragment', {
         	return parser.parseWithOMeta(this.type);
 		}
 
-        if (this.type === 'moduleDef' || this.type === 'completeFileDef')
+		if (this.type === 'moduleDef' || this.type === 'completeFileDef')
             return this.sourceControl.parseCompleteFile(this.fileName, newFileString);
-
+ 
 		parser = new JsParser();
         parser.ptr = this.startIndex;
         parser.src = newFileString;
         parser.lines = newFileString.split(/[\n\r]/);
         parser.fileName = this.fileName;
-        return parser.parseWithOMeta(this.type);
+		parser.ometaRules = [this.type];
+		// REALLY time to cleanup
+		if (this.type === 'methodDef')
+			parser.ometaRules.push('propertyDef')
+		if (this.type === 'propertyDef')
+			parser.ometaRules.push('methodDef')
+		return parser.parseWithOMeta();
     },
 
     updateIndices: function(newSource, newMe) {
