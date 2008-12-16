@@ -650,8 +650,6 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 
 ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
     
-    asString: lively.ide.CompleteOmetaFragmentNode.prototype.asString‚
-
 	buttonSpecs: function() { return [] },
 
 	menuSpec: function($super) {
