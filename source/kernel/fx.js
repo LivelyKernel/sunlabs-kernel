@@ -60,11 +60,8 @@ var fx = using().run(function() { // scope function
     var ConstructorMixin = {
 	// every synthetic constructor will get these
 	extend: { 
-	    value: function(derived) {
-		// if derived not specified, lets just call the argument, which should be the superconstructor,
-		// with no arguments
-		derived = derived || function(superconstructor) { superconstructor()}; 
-		return fx.extend(this, derived);
+	    value: function(slots) {
+		return fx.extend(this, slots);
 	    }
 	},
 	mixin: {
@@ -82,9 +79,10 @@ var fx = using().run(function() { // scope function
     fx.SlotDescriptor = function(name, descriptor) {
 	this.name = name; // FIXME
 	this.override = Boolean(descriptor.override);
-	this.enumerable = Boolean(descriptor.enumerable);
+	if (this.enumerable != descriptor.enumerable) // inherited from the prototype
+	    this.enumerable = descriptor.enumerable;
     }
-
+    
     Object.defineProperties(fx.SlotDescriptor.prototype, {
 	toString: {
 	    value: function() {
@@ -97,6 +95,11 @@ var fx = using().run(function() { // scope function
 		// for completeness here
 		return target[this.name];
 	    }
+	},
+
+	enumerable: {
+	    // true by default
+	    value: true
 	}
 	
     });
@@ -111,9 +114,13 @@ var fx = using().run(function() { // scope function
 	},
 	
 	extend: { 
-	    value: function(base, derived) {
+	    value: function(base, slots) {
 		//"creates a new class",
-		derived = derived || function(x) { return x; }
+		// if derived not specified, lets just call the argument, which should be the superconstructor,
+		// with no arguments
+		// note that the .constructor property will shadow the inherited Object.prototype.constructor, 
+		// which should be OK
+		var derived = (slots && slots.constructor && slots.constructor.value) || function(f) { return f(); }
 		function constr(/*...*/) {
 		    // this is initialized to a new object
 		    Array.prototype.unshift.call(arguments, base.bind(this));
@@ -121,24 +128,35 @@ var fx = using().run(function() { // scope function
 		    return this;
 		}
 		constr.prototype = Object.create(base.prototype);
-		constr.prototype.constructor = constr;
+		if (!slots || slots.constructor === Object.prototype.constructor) {
+		    // no defined constructor, i.e., slots has only the constructor property inherited from 
+		    // Object.prototype
+		    constr.prototype.constructor = constr;
+		}
+		// else fx.defineSlotsOf will handle the case
 		Object.defineProperties(constr, BasicMixin);
-		return Object.defineProperties(constr, ConstructorMixin);
+		Object.defineProperties(constr, ConstructorMixin);
+		fx.defineSlotsOf(constr.prototype, slots);
+		return constr;
 	    }
 	},
 	
 	mixin: {
 	    // return new class, with the mixin mixed in. 
 	    // Uses prototype chaining, so mixin properties will shadow base properties
-	    value: function(base, descriptorSet) {
-		var hook = descriptorSet && descriptorSet.initialize && descriptorSet.initialize.value;
+	    value: function(base, slots) {
+		var hook = slots && slots.constructor && slots.constructor.value;
 		function constr() {
 		    base.apply(this, arguments);
 		    hook && hook.call(this);
 		}
 		constr.prototype = Object.create(base.prototype);
-		constr.prototype.constructor = constr;
-		fx.defineSlotsOf(constr.prototype, descriptorSet);
+		if (!slots || slots.constructor === Object.prototype.constructor) {
+		    // no defined constructor, i.e., slots has only the constructor property inherited from 
+		    // Object.prototype
+		    constr.prototype.constructor = constr;
+		}
+		fx.defineSlotsOf(constr.prototype, slots);
 		Object.defineProperties(constr, BasicMixin);
 		return Object.defineProperties(constr, ConstructorMixin); 
 	    }
@@ -147,6 +165,11 @@ var fx = using().run(function() { // scope function
 	defineSlotOf: { 
 	    //new slot, i.e., member (re)definition pattern, inspired by ES3.1 Object.defineProperty
 	    value: function(target, name, descriptor) {
+		if (name === "constructor") {
+		    // we might check that we're not trying to override a constructor,
+		    // unles we're defining a mixin, in which case it's OK
+		}
+
 		var previousValue = target[name];
 		if (previousValue !== undefined) {
 		    if (!target.hasOwnProperty(name)) {
@@ -171,7 +194,6 @@ var fx = using().run(function() { // scope function
 			throw new Error('property ' + name + ' declared as override but nothing to override');
 		    }
 		}
-		
 		
 		// we define schemas on the object (and not its constructor), since individual object's schema may
 		// differ from the schema of its "constructor family" (the set of all the objects defined by a 
@@ -319,9 +341,7 @@ var fx = using().run(function() { // scope function
 		return fx.visitPropertiesOf(source, visitor);
 	    }
 	}
-
     });
-
     
     // bootstrap fx.Object    
     Object.defineProperties(fx.Object.prototype, BasicMixin);
@@ -347,7 +367,6 @@ var fx = using().run(function() { // scope function
 	    }
 	},
 
-
 	adopt: {
             definition: "make arguments's own properties receiver's own",
             value: function(object) {
@@ -358,10 +377,7 @@ var fx = using().run(function() { // scope function
 		return this;
             }
 	}
-	
     });
-    
-
 
     return fx;
 });
@@ -370,10 +386,13 @@ var fx = using().run(function() { // scope function
 if (this.arguments && (arguments[1] === 'test')) {
     using().run(function() {
 	function test1() {
-	    var TestObj = fx.Object.extend();
-	    
-	    TestObj.prototype.defineSlots({
-		yo: {value: function() { print('yo') }}
+	    var TestObj = fx.Object.extend({
+		constructor: { 
+		    value: function(f) { f(); print('interesting') }
+		},
+		yo: { 
+		    value: function() { print('yo') }
+		}
 	    });
 	    
 	    
@@ -387,9 +406,7 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    t.yo();
 	    print('check ' + [t instanceof Test2, t instanceof TestObj]);
 	    
-	    var OriginalPerson = fx.Object.extend();
-	    
-	    OriginalPerson.prototype.defineSlots({
+	    var OriginalPerson = fx.Object.extend({
 		sayHello: { value: function() {
 		    return "Hello, my name is " + this.getName();
 		}},
@@ -397,10 +414,13 @@ if (this.arguments && (arguments[1] === 'test')) {
 		tag: { value: 'OriginalPerson', override: false}
 	    });
 	    
-	    var Person = OriginalPerson.extend(function(inherited, name) {
-		inherited();
-		this.getName = function() {return name || 'Anonymous';};
-	    });
+	    var Person = OriginalPerson.extend({
+		constructor: { 
+		    value: function(inherited, name) {
+			inherited();
+			this.getName = function() {return name || 'Anonymous';};
+		    }
+		}});
 	    
 	    Person.prototype.defineSlot('tag', { value: 'Person'});
 	    Person.prototype.defineSlot('toString', { value: function() { return "aPerson"}});
@@ -409,20 +429,27 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    var p = new Person('myself');
 	    p.defineSlot('tag', {value: 'special person'});
 	    print('checking p ' + [p instanceof Person, p instanceof OriginalPerson]);
-
+	    
 	    
 	    var p2 = Object.create(p);
 	    p2.defineSlot('tag', {value: 'derived'});
 	    print('derived is ' + p2.tag + ', ' + p2.constructor.name);
 	    
-	    
-	    var Guru = Person.extend(function(inherited, name, topic) {
-		inherited(name);
-		this.getTopic = function() {return topic || 'none';}
+	    var Guru = Person.extend({
+		constructor: {
+		    value: function(inherited, name, topic) {
+			inherited(name);
+			this.getTopic = function() {return topic || 'none';}
+		    }
+		}
 	    });
 	    //    print('guru prototype name ' + Guru.prototype.getName());
-	    var God = Guru.extend(function(inherited) {
-		inherited('Almighty', 'All');
+	    var God = Guru.extend({
+		constructor: {
+		    value: function(inherited) {
+			inherited('Almighty', 'All');
+		    }
+		}
 	    });
 	    
 	    Person.prototype.defineSlot("yo", { value: function() { return "yo" } });
@@ -468,7 +495,8 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    
 	    
 	    Guru.prototype.defineSlot("yo", {
-		value: function(inherited, arg) { return inherited() + "!!!" + (arg || "") }, override: true
+		override: true,
+		value: function(inherited, arg) { return inherited() + "!!!" + (arg || "") }
 	    });
 	    print('God says ' + new God().yo(', yo'));
 	    
@@ -478,31 +506,50 @@ if (this.arguments && (arguments[1] === 'test')) {
 	
 	function test2() {
 	    
-	    var Morph = fx.Object.extend(function(inherited, shape) {
-		this.shape = shape;
+	    var Morph = fx.Object.extend({
+		constructor: { 
+		    value: function(inherited, shape) {
+			this.shape = shape;
+		    }
+		},
+		getShape: { 
+		    value: function() { 
+			return this.shape;
+		    }
+		}
+	    });
+
+	    
+	    var BoxMorph = Morph.extend({
+		constructor: { 
+		    value: function BoxMorph(superconstructor, rect) {
+			//console.log('BoxMorph ' + rect);
+			var shape = rect;
+			superconstructor(shape);
+		    }
+		}
 	    });
 	    
-	    Morph.prototype.defineSlot("getShape", { value: function() { return this.shape;}});
-	    
-	    var BoxMorph = Morph.extend(function BoxMorph(superconstructor, rect) {
-		//console.log('BoxMorph ' + rect);
-		var shape = rect;
-		superconstructor(shape);
-	    });
-	    
-	    var ContainerMorph = BoxMorph.extend(function ContainerMorph(superconstructor, shape) {
-		//console.log('ContainerMorph ');
-		superconstructor(shape);
-	    });
-	    
-	    ContainerMorph.prototype.defineSlots({
-		getShape: {override: true, value: function(superconstructor) {
-		    console.log('hello from ContainerMorph.getShape');
-		    return superconstructor();
-		}},
-		getBounds: { override: false, value: function() {
-		    return this.getShape();
-		}}
+	    var ContainerMorph = BoxMorph.extend({
+		constructor: {
+		    value: function ContainerMorph(superconstructor, shape) {
+			//console.log('ContainerMorph ');
+			superconstructor(shape);
+		    }
+		},
+		getShape: {
+		    override: true, 
+		    value: function(superconstructor) {
+			console.log('hello from ContainerMorph.getShape');
+			return superconstructor();
+		    }
+		},
+		getBounds: { 
+		    override: false, 
+		    value: function() {
+			return this.getShape();
+		    }
+		}
 	    });
 	    
 	    
@@ -527,7 +574,7 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    var schema = fx.getSchemaOf(c);
 	    for (var name in schema) {
 		var desc = schema[name];
-		print(name + ", inherited? " + Object.getPrototypeOf(c).hasOwnProperty(desc));
+		print(name + ", inherited? " + !Object.getPrototypeOf(c).hasOwnProperty(name));
 	    }
 	}
 	
@@ -537,10 +584,14 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    
 	    print(JSON.serialize(fx.deepCopy({x: {a: 10, b:'bar'}, y:'foo'})));
 	    print(JSON.serialize(fx.deepCopy({x: {a: 10, b:'bar'}, y:'foo'}, ['b'])));
-	    var Base = fx.Object.extend(function(inherited, name, content) {
-		inherited();
-		this.toString = function() { return name };
-		Object.extend(this, content);
+	    var Base = fx.Object.extend({
+		constructor: {
+		    value: function(inherited, name, content) {
+			inherited();
+			this.toString = function() { return name };
+			this.adopt(content);
+		    }
+		}
 	    });
 	    
 	    var x = new Base('x', {a:1, b: 2});
@@ -579,17 +630,28 @@ if (this.arguments && (arguments[1] === 'test')) {
 	test3();
 
 	function test4() {
-	    //var C1 = fx.Object.extend(function(inherited) { inherited(); print('hello C1') });
 	    var C1 = fx.Object.mixin({
-		initialize: { value: function() { if (!this.quiet) print('hello from mixin C1'); }},
+		constructor: { 
+		    value: function() { 
+			if (!this.quiet) print('hello from mixin C1'); 
+		    }
+		},
 		say: { value: function() { print('say what?'); }}
 	    });
 	    
 	    var C2 = C1.mixin({
-		initialize: { value: function() { if (!this.quiet) print('hello from mixin C2'); }}
+		constructor: { 
+		    value: function() { 
+			if (!this.quiet) print('hello from mixin C2'); 
+		    }
+		}
 	    });
 	    var C3 = C2.mixin({
-		initialize: { value: function() { if (!this.quiet) print('hello from mixin C3'); }}
+		constructor: { 
+		    value: function() { 
+			if (!this.quiet) print('hello from mixin C3'); 
+		    }
+		}
 	    });
 	    var c = new C3();
 	    c.say();
@@ -597,11 +659,7 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    C2.prototype.defineSlot("say", { value: function() { print('silence') }});
 	    c.quiet = true;
 	    c.say();
-	    //print(JSON.serialize(C2.prototype.$schema));
-
 	}
 	test4();
-	
     });
-
 }
