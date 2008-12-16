@@ -26,7 +26,6 @@ if (this.arguments && (arguments[0] === 'script')) {
 
 
 
-
 var fx = using().run(function() { // scope function
 
     var fx = {};
@@ -70,7 +69,8 @@ var fx = using().run(function() { // scope function
 	    }
 	},
     };
-    const schemaKey = '*schema*';
+    
+    const schemaKey = '*schema*'; 
 
     // schemas are plain objects set up to inherit from each other
 
@@ -86,7 +86,8 @@ var fx = using().run(function() { // scope function
     Object.defineProperties(fx.SlotDescriptor.prototype, {
 	toString: {
 	    value: function() {
-		return "SlotDescriptor[name: " + this.name  + "]";
+		// pick a consistent convention?
+		return "[SlotDescriptor name:" + this.name  + "]";
 	    }
 	},
 
@@ -100,6 +101,20 @@ var fx = using().run(function() { // scope function
 	enumerable: {
 	    // true by default
 	    value: true
+	},
+	
+	getCumulativeValue: {
+	    value: function(target) {
+		// sometimes the value of a multivalued slot should notionally be the union of the values
+		// of the slot for all the objects in the prototype chain
+		var values = [];
+ 		for (var obj = target; obj && obj[this.name]; obj = Object.getPrototypeOf(obj)) {
+		    if (obj.hasOwnProperty(this.name)) {
+			values = values.concat(obj[this.name]);
+		    }
+		}
+		return values;
+	    }
 	}
 	
     });
@@ -109,7 +124,7 @@ var fx = using().run(function() { // scope function
     Object.defineProperties(fx, {
 	
 	rootSchema: { // froozen root, prototype of all schemas
-	    value: Object.freeze({}),
+	    value: Object.freeze(new Object()),
 	    writable: false
 	},
 	
@@ -199,7 +214,7 @@ var fx = using().run(function() { // scope function
 		// differ from the schema of its "constructor family" (the set of all the objects defined by a 
 		// given constructor.
 		
-		var schema = target[schemaKey];
+		var schema = fx.getSchemaOf(target);
 		if (!fx.getOwnSchemaOf(target)) {
 		    // lazily create the schema, make use the existing schema or the root schema as the parent
 		    schema = Object.create(target[schemaKey] || fx.rootSchema);
@@ -366,6 +381,13 @@ var fx = using().run(function() { // scope function
 		return fx.getOwnSchemaOf(this);
 	    }
 	},
+
+	getSlotDescriptor: {
+	    value: function(name) {
+		return fx.getSchemaOf(this)[name];
+	    }
+	},
+	
 
 	adopt: {
             definition: "make arguments's own properties receiver's own",
@@ -636,6 +658,9 @@ if (this.arguments && (arguments[1] === 'test')) {
 			if (!this.quiet) print('hello from mixin C1'); 
 		    }
 		},
+		field: { 
+		    value: ["x","y", "z"]
+		},
 		say: { value: function() { print('say what?'); }}
 	    });
 	    
@@ -644,6 +669,9 @@ if (this.arguments && (arguments[1] === 'test')) {
 		    value: function() { 
 			if (!this.quiet) print('hello from mixin C2'); 
 		    }
+		},
+		field: {
+		    value: ["a", "b", "c"]
 		}
 	    });
 	    var C3 = C2.mixin({
@@ -651,6 +679,9 @@ if (this.arguments && (arguments[1] === 'test')) {
 		    value: function() { 
 			if (!this.quiet) print('hello from mixin C3'); 
 		    }
+		},
+		field: {
+		    value: ["un", "deux", "trois"]
 		}
 	    });
 	    var c = new C3();
@@ -659,6 +690,10 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    C2.prototype.defineSlot("say", { value: function() { print('silence') }});
 	    c.quiet = true;
 	    c.say();
+	    
+	    print(c.getSlotDescriptor('field').getValue(c));
+	    
+	    print(c.getSlotDescriptor('field').getCumulativeValue(c));
 	}
 	test4();
     });
