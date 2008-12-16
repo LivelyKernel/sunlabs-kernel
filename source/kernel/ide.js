@@ -1254,6 +1254,10 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     addModule: function(fileName, fileString) {
 		if (this.modules[fileName]) return this.modules[fileName];
         fileString = fileString || this.getCachedText(fileName);
+		return this.modules[fileName] = this.parseCompleteFile(fileName, fileString);
+    },
+
+	parseCompleteFile: function(fileName, fileString) {
 		var root;
 		if (fileName.endsWith('.js')) {
 			root = this.parseJs(fileName, fileString);
@@ -1263,10 +1267,9 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 			throw dbgOn(new Error('Don\'t know how to parse ' + fileName))
 		}
         root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
-        this.modules[fileName] = root;
-        return root;
-    },
-    
+		return root;
+	},
+
 	parseJs: function(fileName, fileString) {
 		var fileFragments = new JsParser().parseSource(fileString, {fileName: fileName});
         var root;
@@ -1413,10 +1416,16 @@ Object.subclass('lively.ide.FileFragment', {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
 
         var newMe = this.reparse(newString);
-        dbgOn(!newMe);
-        if (/*newMe.type !== this.type ||*/ /*bla*/ this.startIndex !== newMe.startIndex)
+		if (!newMe) dbgOn(true);
+
+        if (newMe && this.startIndex !== newMe.startIndex)
             throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
-		if (newMe.type !== this.type) {
+		if (newMe && (this.type == 'completeFileDef' || this.type == 'moduleDef')
+			 && (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
+			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
+		}
+		if (!newMe || newMe.type !== this.type) {
+			newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
 			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
 				this.name, this.type, newMe.type, newMe.stopLine());
 			console.warn(msg);
@@ -1427,14 +1436,6 @@ Object.subclass('lively.ide.FileFragment', {
 		var newFileString = this.buildNewFileString(newString);
         this.getSourceControl().putSourceCodeFor(this, newFileString);
         
-        /*if (newMe.getSourceCode() !== newString) {
-            console.warn('newString not equal source of new fragment...???!!!');
-            console.log(newMe.getSourceCode());
-            console.log('vs');
-            console.log(newString)
-        }
-         */   
-
         this.updateIndices(newString, newMe);
     },
 
@@ -1461,10 +1462,10 @@ Object.subclass('lively.ide.FileFragment', {
         	return parser.parseWithOMeta(this.type);
 		}
 
-        parser = new JsParser();
-        if (this.type === 'moduleDef')
-            return parser.parseSource(newFileString, {ptr: this.startIndex, fileName: this.fileName})[0];
+        if (this.type === 'moduleDef' || this.type === 'completeFileDef')
+            return this.sourceControl.parseCompleteFile(this.fileName, newFileString);
 
+		parser = new JsParser();
         parser.ptr = this.startIndex;
         parser.src = newFileString;
         parser.lines = newFileString.split(/[\n\r]/);
@@ -1491,7 +1492,7 @@ Object.subclass('lively.ide.FileFragment', {
  
 		this.name = newMe.name; // for renaming
         this.subElements = newMe.subElements;
-		this.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
+		newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
     },
     
     getSourceControl: function() {

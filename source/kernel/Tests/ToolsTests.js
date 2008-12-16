@@ -894,6 +894,25 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
 		this.assertEqual(fragment.subElements.length, result.subElements.length);
 	},
 
+	testReparseCompleteFileFrag: function() {
+		var src = '\nfunction abc() { 1+2 }\n\n';
+		var fileName = 'bar.js';
+		var frag = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, src.length-1, 1, fileName, [], this.db);
+		var result = frag.reparse(src);
+		this.assertEqual(frag.type, result.type);
+		this.assert(result.subElements.length > 0);
+		this.assertEqual(result.stopIndex, src.length-1);
+	},
+
+	testPutNewSourceWithChangingCompleteFileFrag: function() {
+		var oldSrc = '\nfunction abc() { 1+2 }\n\n';
+		var fileName = 'bar.js';		
+		var frag = this.db.addModule(fileName, oldSrc);
+		var newSrc = 'module(\'bar.js\').requires().toRun({function() {' + oldSrc + '});';
+		frag.putSourceCode(newSrc);
+		this.assertEqual(frag.type, 'moduleDef');
+	},
+
 	TODOtestReparseWithError: function() {
 		// TODO make this work
 		/*
