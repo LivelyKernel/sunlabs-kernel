@@ -129,7 +129,7 @@ Global.logObject = function(obj) {
 
 
 Global.stringToXML = function(string) {
-    return new DOMParser().parseFromString(string, "text/xml");
+    return new DOMParser().parseFromString(string, "text/xml").documentElement;
 };
 
 // Generator for an array

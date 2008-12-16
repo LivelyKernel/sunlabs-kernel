@@ -511,6 +511,14 @@ var Class = {
 	return ns[shortName];
     },
 
+	deleteObjectNamed: function(name) {
+	var lastDot = name.lastIndexOf('.'); // lastDot may be -1
+	var ns = Class.namespaceFor(name);
+	var shortName = Class.unqualifiedNameFor(name);
+	if (!ns[shortName]) return;
+	delete ns[shortName];
+},
+
     unqualifiedNameFor: function(name) {
 	var lastDot = name.lastIndexOf('.'); // lastDot may be -1
 	var unqualifiedName = name.substring(lastDot + 1);

@@ -1588,12 +1588,129 @@ ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
     },
 });
 
-Morph.subclass('TestMorph', {
-        style: {borderColor: Color.black, 
-        	    fill: lively.lang.let(lively.paint, function(g) { 
-        		return new g.RadialGradient([new g.Stop(0, Color.blue.lighter()) , new g.Stop(0.5, Color.blue), 
-        					     new g.Stop(1, Color.blue.darker())], pt(0.4, 0.2))})
-        	   },
+// ===========================================================================
+// ChangeSet and lkml handling
+// ===========================================================================
+
+Object.subclass('Change', {
+
+	initialize: function(xmlElement) {
+		this.xmlElement = xmlElement;
+	},
+
+	getParser: function() {
+		return new AnotherCodeMarkupParser();
+	},
+
+	getAttributeNamed: function(name, optXmlElement) {
+		var element = optXmlElement || this.xmlElement;
+		var attr = element.getAttributeNS(null, name);
+		if (!attr) throw dbgOn(new Error("no " + name + " for" + Exporter.stringify(element)));
+		return attr;
+	},
+
+	getName: function() {
+		return this.getAttributeNamed('name');
+	},
+
+	getDefinition: function() {
+		return this.xmlElement.textContent;
+	},
+
+	evaluate: function() {
+		throw dbgOn(new Error('Overwrite me'));
+	},
+
+});
+
+Change.subclass('ClassChange', {
+
+	isClassChange: true,
+
+	getSuperclassName: function() {
+		return this.getAttributeNamed('super');
+	},
+
+	subElements: function() {
+		// memorize?
+		var parser = this.getParser();
+		return $A(this.xmlElement.childNodes).collect(function(ea) { return parser.createChange(ea) });
+	},
+
+	getProtoChanges: function() {
+		return this.subElements().select(function(ea) { return ea.isProtoChange });
+	},
+
+	evaluate: function() {
+		var superClassName = this.getSuperclassName();
+		if (!Class.forName(superClassName))
+			throw dbgOn(new Error('Could not find class ' + superClassName));
+		var className = this.getName();
+		if (Class.forName(className))
+			console.warn('Class' + klass + 'already defined! Evaluating class change regardless');
+		var src = Strings.format('%s.subclass(\'%s\')', superClassName, className);
+		return eval(src);
+	},
+
+});
+
+Object.extend(ClassChange, {
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'class' }
+});
+
+Change.subclass('ProtoChange', {
+
+	isProtoChange: true,
+
+	evaluate: function() {
+		var className = this.getClassName();
+		var klass = Class.forName(className);
+		if (!klass) throw dbgOn(new Error('Could not find class of proto change' + this.getName()));
+		var src = Strings.format('%s.addMethods({%s: %s})', className, this.getName(), this.getDefinition());
+		eval(src);
+		return klass.prototype[this.getName()];
+	},
+
+	getClassName: function() {
+		return this.getAttributeNamed('name', this.xmlElement.parentNode);
+	},
+
+});
+
+Object.extend(ProtoChange, {
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'proto' }
+});
+
+Change.subclass('StaticChange', {
+
+	isStaticChange: true,
+
+});
+
+Object.extend(StaticChange, {
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'static' }
+});
+
+Change.subclass('DoitChange', {
+
+	isDoitChange: true,
+
+});
+
+Object.extend(DoitChange, {
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'doit' }
+});
+
+Object.subclass('AnotherCodeMarkupParser', {
+
+	changeClasses: Change.allSubclasses(),
+
+	createChange: function(xmlElement) {
+		var klass = this.changeClasses.detect(function(ea) { return ea.isResponsibleFor(xmlElement) });
+		if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
+		return new klass(xmlElement);
+	},
+
 });
 
 });

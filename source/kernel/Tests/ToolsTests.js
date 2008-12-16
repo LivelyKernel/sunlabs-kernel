@@ -984,9 +984,78 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTe
 
 TestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 
-	testDoItChange: function() {
-		
-	}
+	setUp: function() {
+		this.parser = new AnotherCodeMarkupParser();
+		this.cleanUpItems = [];
+	},
+
+	tearDown: function() {
+		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
+	},
+
+	testCreateProtoMethodChange: function() {
+		var xml = stringToXML('<proto name="m1"><![CDATA[function(color) { 1+ 2 }]]></proto>');
+		var change = this.parser.createChange(xml);
+		this.assert(change.isProtoChange);
+		this.assertEqual(change.getName(), 'm1');
+		this.assertEqual(change.getDefinition(), 'function(color) { 1+ 2 }');
+	},
+
+	testCreateClassChange: function() {
+		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
+		var change = this.parser.createChange(xml);
+		this.assert(change.isClassChange);
+		this.assertEqual(change.getName(), 'lively.Test');
+		this.assertEqual(change.getSuperclassName(), 'Object');
+	},
+
+	testCreateClassChangeWithSubElems: function() {
+		var xml = stringToXML('<class name="lively.Test" super="Object"><proto name="m1"><![CDATA[function() {xyz}]]></proto></class>');
+		var change = this.parser.createChange(xml);
+		var sub = change.getProtoChanges();
+		this.assertEqual(sub.length, 1);
+		var pChange = sub.first();
+		this.assertEqual(pChange.getName(), 'm1');
+	},
+
+	testEvaluateMethodChangeWithNonExistingClass1: function() {
+		var xml = stringToXML('<proto name="m1"><![CDATA[function(color) { 1+ 2 }]]></proto>');
+		var change = this.parser.createChange(xml);
+		this.assert(change.evaluate, 'no eval func');
+		try { change.evaluate(); } catch(e) { return }
+		this.assert(false, 'could evaluate proto method without class');
+	},
+
+	testEvaluateMethodChangeWithNonExistingClass2: function() {
+		var xml = stringToXML('<class name="lively.Test" super="Object"><proto name="m1"><![CDATA[function() {xyz}]]></proto></class>');
+		var change = this.parser.createChange(xml).getProtoChanges().first();
+		this.assert(change.evaluate, 'no eval func');
+		try { change.evaluate(); } catch(e) { return }
+		this.assert(false, 'could evaluate proto method without exisiting class in system');
+	},
+
+	testEvaluateMethodWithClassInSystem: function() {
+		var className = 'lively.Tests.ToolsTests.DummyForChangeTests1';
+		//this.cleanUpItems.push(className);
+
+		Object.subclass(className);
+		var xml = stringToXML('<class name="' + className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
+		var change = this.parser.createChange(xml).getProtoChanges().first();
+		var m = change.evaluate();
+		this.assert(m instanceof Function);
+		this.assert(Class.forName(className).functionNames().include('m1'), 'no function');
+	},
+
+	testEvaluateClassChange: function() {
+		var className = 'lively.Tests.ToolsTests.DummyForChangeTests2';
+		this.cleanUpItems.push(className);
+		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
+		var change = this.parser.createChange(xml);
+		var klass = change.evaluate();
+		this.assert(klass && Class.isClass(klass));
+		this.assert(klass.functionNames().include('m1'), 'no function');
+	},
+
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
