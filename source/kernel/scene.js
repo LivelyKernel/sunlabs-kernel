@@ -1517,7 +1517,7 @@ this.Node.subclass('lively.scene.Image', {
     },
 
     scaleBy: function(factor) {
-	new lively.scene.Similitude(pt(0, 0), 0, factor).applyTo(this.rawNode);
+	new lively.scene.Similitude(pt(0, 0), 0, pt(factor, factor)).applyTo(this.rawNode);
     },
 
     loadUse: function(url) {
@@ -1624,11 +1624,11 @@ Object.subclass('lively.scene.Similitude', {
 		var delta = duck;
 		var angleInRadians = arguments[1] || 0.0;
 		var scale = arguments[2];
-		if (scale === undefined) scale = 1.0;
-		this.a = this.ensureNumber(scale * Math.cos(angleInRadians));
-		this.b = this.ensureNumber(scale * Math.sin(angleInRadians));
-		this.c = this.ensureNumber(scale * - Math.sin(angleInRadians));
-		this.d = this.ensureNumber(scale * Math.cos(angleInRadians));
+		if (scale === undefined) scale = pt(1.0, 1.0); // FIXME wrong
+		this.a = this.ensureNumber(scale.x * Math.cos(angleInRadians));
+		this.b = this.ensureNumber(scale.y * Math.sin(angleInRadians));
+		this.c = this.ensureNumber(scale.x * - Math.sin(angleInRadians));
+		this.d = this.ensureNumber(scale.y * Math.cos(angleInRadians));
 		this.e = this.ensureNumber(delta.x);
 		this.f = this.ensureNumber(delta.y);
 	    } else {
