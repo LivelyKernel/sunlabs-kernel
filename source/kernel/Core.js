@@ -3004,7 +3004,8 @@ Morph.addMethods({
     },
 
     transformChanged: function() {
-	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, this.scale * this.fisheyeScale);
+	var scale = this.scale * this.fisheyeScale;
+	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, pt(scale, scale));
 	this.pvtCachedTransform.applyTo(this.rawNode);
     },
 
