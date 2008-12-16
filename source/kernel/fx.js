@@ -75,22 +75,29 @@ var fx = using().run(function() { // scope function
     };
 
      // bootstraping isues, may patch Slot to be a subclass of fx.Object
-    fx.Slot = function(name, descriptor) {
+    fx.SlotDescriptor = function(name, descriptor) {
 	this.name = name; // FIXME
 	this.value = descriptor.value;
 	this.override = Boolean(descriptor.override);
 	this.enumerable = Boolean(descriptor.enumerable);
-	//this.descriptor = descriptor;
     }
 
-    fx.Schema = function() { }
+    fx.Schema = function() {
+	// an object can describe itself using the schema which holds
+	// slot descriptors, analogous to property descriptors
+	this.slots = {}; // keyed by slot name
+
+    }
+
     Object.defineProperties(fx.Schema.prototype, {
 	defineSlot: {
-	    value: function(slot) {
-		console.log('slot is ' + slot.name);
-		this[slot.name] = slot;
+	    value: function(slotDescriptor) {
+		//console.log('slot is ' + slot.name);
+		this.slots[slotDescriptor.name] = slotDescriptor;
 	    }
-	}
+	},
+
+
     });
 
     // bootstrap fx using Object.defineProperties
@@ -160,13 +167,9 @@ var fx = using().run(function() { // scope function
 		
 		// FIXME: only if fx.Object is 
 		if (!target.hasOwnProperty('$schema')) { 
-		    // if we inherit a schema, derive from it, otherwise create a regular object.
-		    var schema = Object.create(target.$schema || fx.Schema.prototype);
-		    schema.defineSlot(new fx.Slot(name, descriptor));
-		    //schema[name] = new fx.Slot(name, descriptor);
-		    
-		    Object.defineProperty(target, "$schema", { enumerable: false, value: schema});
-		}  else target.$schema[name] = new fx.Slot(name, descriptor);
+		    Object.defineProperty(target, "$schema", { enumerable: false, value: new fx.Schema()});
+		}
+		target.$schema.defineSlot(new fx.SlotDescriptor(name, descriptor));
 		
 		return Object.defineProperty(target, name, descriptor);
 		// FIXME: react to 'descriptor.observable', send updates ?
