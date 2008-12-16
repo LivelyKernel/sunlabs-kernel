@@ -34,7 +34,7 @@ var fx = using().run(function() { // scope function
 	defineSlots: {
 	    description: "convenience method, redirects to fx.defineSlots",
 	    value: function(descriptorSet) {
-		return fx.defineSlots(this, descriptorSet);
+		return fx.defineSlotsOf(this, descriptorSet);
 	    }
 	},
  
@@ -56,7 +56,7 @@ var fx = using().run(function() { // scope function
        }
 	   
     };
-    
+
     var ConstructorMixin = {
 	// every synthetic constructor will get these
 	extend: { 
@@ -73,39 +73,46 @@ var fx = using().run(function() { // scope function
 	    }
 	},
     };
+    const schemaKey = '*schema*';
+
+    // schemas are plain objects set up to inherit from each other
+
 
      // bootstraping isues, may patch Slot to be a subclass of fx.Object
     fx.SlotDescriptor = function(name, descriptor) {
 	this.name = name; // FIXME
-	this.value = descriptor.value;
 	this.override = Boolean(descriptor.override);
 	this.enumerable = Boolean(descriptor.enumerable);
     }
 
-    fx.Schema = function() {
-	// an object can describe itself using the schema which holds
-	// slot descriptors, analogous to property descriptors
-	this.slots = {}; // keyed by slot name
-
-    }
-
-    Object.defineProperties(fx.Schema.prototype, {
-	defineSlot: {
-	    value: function(slotDescriptor) {
-		//console.log('slot is ' + slot.name);
-		this.slots[slotDescriptor.name] = slotDescriptor;
+    Object.defineProperties(fx.SlotDescriptor.prototype, {
+	toString: {
+	    value: function() {
+		return "SlotDescriptor[name: " + this.name  + "]";
 	    }
 	},
 
-
+	getValue: {
+	    value: function(target) {
+		// for completeness here
+		return target[this.name];
+	    }
+	}
+	
     });
+    
 
     // bootstrap fx using Object.defineProperties
     Object.defineProperties(fx, {
 	
+	rootSchema: { // froozen root, prototype of all schemas
+	    value: Object.freeze({}),
+	    writable: false
+	},
+	
 	extend: { 
-	    description: "creates a new class",
 	    value: function(base, derived) {
+		//"creates a new class",
 		derived = derived || function(x) { return x; }
 		function constr(/*...*/) {
 		    // this is initialized to a new object
@@ -131,13 +138,13 @@ var fx = using().run(function() { // scope function
 		}
 		constr.prototype = Object.create(base.prototype);
 		constr.prototype.constructor = constr;
-		fx.defineSlots(constr.prototype, descriptorSet);
+		fx.defineSlotsOf(constr.prototype, descriptorSet);
 		Object.defineProperties(constr, BasicMixin);
 		return Object.defineProperties(constr, ConstructorMixin); 
 	    }
 	},
 
-	defineSlot: { 
+	defineSlotOf: { 
 	    //new slot, i.e., member (re)definition pattern, inspired by ES3.1 Object.defineProperty
 	    value: function(target, name, descriptor) {
 		var previousValue = target[name];
@@ -165,33 +172,59 @@ var fx = using().run(function() { // scope function
 		    }
 		}
 		
-		// FIXME: only if fx.Object is 
-		if (!target.hasOwnProperty('$schema')) { 
-		    Object.defineProperty(target, "$schema", { enumerable: false, value: new fx.Schema()});
+		
+		// we define schemas on the object (and not its constructor), since individual object's schema may
+		// differ from the schema of its "constructor family" (the set of all the objects defined by a 
+		// given constructor.
+		
+		var schema = target[schemaKey];
+		if (!fx.getOwnSchemaOf(target)) {
+		    // lazily create the schema, make use the existing schema or the root schema as the parent
+		    schema = Object.create(target[schemaKey] || fx.rootSchema);
+		    // now create the special field holding the schema
+		    Object.defineProperty(target, schemaKey, { enumerable: false, value: schema});
 		}
-		target.$schema.defineSlot(new fx.SlotDescriptor(name, descriptor));
+		schema[name] = new fx.SlotDescriptor(name, descriptor);
 		
 		return Object.defineProperty(target, name, descriptor);
 		// FIXME: react to 'descriptor.observable', send updates ?
 		// react to descriptor.replace, allow local replace of previously defined function?
 	    }
-	    
 	},
 
-	defineSlots: { 
+	getConstructorOf: {
+	    value: function(target) {
+		return Object.getPrototypeOf(target).constructor;
+	    }
+	},
+
+	getOwnSchemaOf: {
+	    value: function(target) {
+		return target.hasOwnProperty(schemaKey) ? target[schemaKey] : undefined;
+	    }
+	},
+
+	getSchemaOf: {
+	    value: function(target) {
+		return target[schemaKey];
+	    }
+	},
+
+	defineSlotsOf: { 
 	    // new member (re)definition pattern, inspired by ES3.1 Object.defineProperties
 	    value: function(target, descriptorSet) {
 		for (var name in descriptorSet) {
 		    if (descriptorSet.hasOwnProperty(name))
-			fx.defineSlot(target, name, descriptorSet[name]);
+			fx.defineSlotOf(target, name, descriptorSet[name]);
 		}
 		return target;
 	    }
 	}
+
     });
 
     
-    fx.defineSlots(fx, {
+    fx.defineSlotsOf(fx, {
 	Object: { 
 	    description: "base class with fx conveniences built-in",
 	    value: fx.extend(Object)
@@ -211,7 +244,7 @@ var fx = using().run(function() { // scope function
 	},
 	
 	shallowCopy: {
-	    description:  "shallow clone",
+	    description: "shallow clone",
 	    value: function(source, optBlacklist) {
 		function filter(source, name) {
 		    if (optBlacklist && optBlacklist.indexOf(name) >= 0) return undefined;
@@ -245,7 +278,7 @@ var fx = using().run(function() { // scope function
 	    }
 	},
 	
-	visitProperties: { 
+	visitPropertiesOf: { 
 	    description: "visit all the own properties; untested",
 	    value: function(object, visitor) { 
 		for (var name in object) 
@@ -274,7 +307,7 @@ var fx = using().run(function() { // scope function
 			    index = visited.length;
 			    visited.push(value);
 			    inspector(object, name, index);
-			    fx.visitProperties(value, visitor);
+			    fx.visitPropertiesOf(value, visitor);
 			} else {
 			    inspector(object, name, index);
 			    //print('not recursing into ' + value + ' with id ' + index);
@@ -283,9 +316,10 @@ var fx = using().run(function() { // scope function
 			inspector(object, name, undefined);
 		    }
 		}
-		return fx.visitProperties(source, visitor);
+		return fx.visitPropertiesOf(source, visitor);
 	    }
 	}
+
     });
 
     
@@ -297,28 +331,36 @@ var fx = using().run(function() { // scope function
 	defineSlot: {
 	    description: "convenience method, redirects to fx.defineSlot",
 	    value: function(name, descriptor) {
-		return fx.defineSlot(this, name, descriptor);
+		return fx.defineSlotOf(this, name, descriptor);
 	    }
 	},
+
 	toString: {
 	    value: function() {
 		return "[fx.Object]";
 	    }
 	},
+	
+	getOwnSchema: {
+	    value: function() {
+		return fx.getOwnSchemaOf(this);
+	    }
+	},
 
-       adopt: {
-           definition: "make arguments's own properties receiver's own",
-           value: function(object) {
-               for (var name in object) {
-                   if (object.hasOwnProperty(name)) 
-                       this[name] = object[name];
-               }
-               return this;
-           }
-       }
+
+	adopt: {
+            definition: "make arguments's own properties receiver's own",
+            value: function(object) {
+		for (var name in object) {
+                    if (object.hasOwnProperty(name)) 
+			this[name] = object[name];
+		}
+		return this;
+            }
+	}
 	
     });
-
+    
 
 
     return fx;
@@ -478,11 +520,15 @@ if (this.arguments && (arguments[1] === 'test')) {
 	    
 	    print(b instanceof Rectangle);
 	    print('same thing? ' + (Object.getPrototypeOf(b) === Object.getPrototypeOf(c)));
-	    print('Morph schema: ' + JSON.serialize(Morph.prototype.$schema));
-	    print('BoxMorph schema: ' + JSON.serialize(Object.getPrototypeOf(b).$schema));
-	    print('ContainerMorph schema: ' + JSON.serialize(Object.getPrototypeOf(c).$schema));
-	    
-	    
+	    print('Morph schema: ' + JSON.serialize(Morph.prototype.getOwnSchema()));
+	    print('BoxMorph schema: ' + JSON.serialize(Object.getPrototypeOf(b).getOwnSchema()));
+	    print('ContainerMorph schema: ' + JSON.serialize(Object.getPrototypeOf(c).getOwnSchema()));
+	    print('slots of c:');
+	    var schema = fx.getSchemaOf(c);
+	    for (var name in schema) {
+		var desc = schema[name];
+		print(name + ", inherited? " + Object.getPrototypeOf(c).hasOwnProperty(desc));
+	    }
 	}
 	
 	test2();
