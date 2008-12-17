@@ -1070,6 +1070,17 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 		new AnotherCodeMarkupParser().parseLkml('http://localhost/lively/Pen.lkml')
 		this.assert(Global['Pen']);
 	},
+
+	testDoit: function() {
+		var objName = 'lively.Tests.ToolsTests.DummyObj';
+		this.assert(!Class.forName(objName), 'TestObj already exists');
+		this.cleanUpItems.push(objName);
+		var xml = stringToXML('<doit><![CDATA[' + objName + ' = {test: 1}; 1+2;]]></doit>');
+		var change = this.parser.createChange(xml);
+		this.assert(change.isDoitChange);
+		this.assertEqual(change.evaluate(), 3);
+		this.assert(Class.forName(objName), 'TestObj not created');
+	},
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {

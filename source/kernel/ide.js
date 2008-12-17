@@ -1725,6 +1725,10 @@ Change.subclass('DoitChange', {
 
 	isDoitChange: true,
 
+	evaluate: function() {
+		return eval(this.getDefinition());
+	},
+
 });
 
 Object.extend(DoitChange, {
@@ -1743,7 +1747,7 @@ Object.subclass('AnotherCodeMarkupParser', {
 		var klass = this.changeClasses.detect(function(ea) { return ea.isResponsibleFor(xmlElement) });
 		//if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
 		if (!klass) {
-			console.warn('Found no Change class for ' + Exporter.stringify(xmlElement));
+			console.warn('Found no Change class for ' + Exporter.stringify(xmlElement).replace(/\n|\r/, ' '));
 			return null;
 		}
 		return new klass(xmlElement);
@@ -1766,7 +1770,7 @@ Object.subclass('AnotherCodeMarkupParser', {
 		resource.fetch(true);
 		var doc = resource.getContentDocument();
 		if (doc) return doc;
-		return new DOMParser().parseFromString(resource.getContentText(), "text/xml");
+		return new DOMParser().parseFromString(resource.getContentText(), "application/xml");
 	},
 
 });
