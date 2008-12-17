@@ -770,6 +770,12 @@ var Locale = {
             } 
         }
 
+		// is a '//' left of me?
+		if (str[i1-1] === '/' && str[i1-2] === '/') {
+			while (i2+1<str.length && str[i2+1] !== '\n' && str[i2+1] !== '\r') { i2++ }
+			return [i1, i2];
+		}
+
 		// inside of whitespaces?
 		var myI1 = i1;
 		var myI2 = i2;
