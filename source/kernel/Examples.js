@@ -159,7 +159,72 @@ Morph.subclass("ClockMorph", {
         this.minutes.setRotation(minute/60*2*Math.PI);
         this.seconds.setRotation(second/60*2*Math.PI); 
     }
-    
+});
+
+
+Morph.subclass("SymmetryMorph", {
+
+    initialize: function($super, size, nFold) {
+		//  [WorldMorph.current().addMorph(new SymmetryMorph(200, 8))]
+        $super(new lively.scene.Rectangle(new Rectangle(2*size, size, size, size)));
+		this.setFill(Color.white);
+		this.radius = size;
+		this.nFold = nFold;  // Will be 360/nFold segments, as half that many reflected pairs
+    },
+
+    updateDisplayMorph: function() {
+	var r = this.radius;
+console.log("updateDisplayMorph");
+	if (!this.displayMorph) { 
+		this.displayMorph = Morph.makeCircle(pt(r, r), r);
+		this.world().addMorph(this.displayMorph);
+		}
+	this.displayMorph.removeAllMorphs();
+console.log("updateDisplayMorph1");
+	if (this.clipMorph1) this.clipMorph1.remove();
+	if (this.other) this.clipMorph1.remove();
+	this.clipMorph1 = new ClipMorph(this.bounds().bottomLeft().extent(pt(r/2, r)));
+	this.other = Morph.makeRectangle(this.bounds().bottomLeft().extent(pt(r/2, r)));
+		this.other.setFill(null);
+		this.other.setBorderWidth(0);
+		this.world().addMorph(this.other);
+	this.other.addMorph(this.clipMorph1);
+	this.clipMorph1.setPosition(pt(0, 0));
+console.log("updateDisplayMorph2");
+	if (this.clipMorph2) this.clipMorph2.remove();
+	this.clipMorph2 = new ClipMorph(this.clipMorph1.bounds().bottomLeft().extent(pt(r/2, r)));
+	this.world().addMorph(this.clipMorph2);
+console.log("updateDisplayMorph3");
+	var segment = this.copy(new Copier());
+console.log("updateDisplayMorph5");
+	segment.owner = null;  // suppress relocation
+	segment.setPosition(pt(-r/3, 0));
+console.log("updateDisplayMorph6");
+	this.clipMorph2.addMorph(segment);
+console.log("updateDisplayMorph7");
+	this.clipMorph1.removeAllMorphs();
+console.log("updateDisplayMorph8");
+	var segment2 = this.clipMorph2.copy(new Copier());
+console.log("updateDisplayMorph9");
+	segment2.owner = null;  // suppress relocation
+	segment2.setPosition(pt(r/2, 0));
+console.log("updateDisplayMorph10");
+	this.clipMorph1.addMorph(segment2);
+	segment2.rotateBy(Math.PI/this.nFold);
+console.log("updateDisplayMorph11");
+
+	for (var i=0; i<this.nFold; i++) {
+console.log("segment #" + i);
+		var segment = this.other.copy(new Copier());
+		segment.owner = null;  // suppress relocation
+//console.log("new segment = " + Object.inspect(segment));
+		this.displayMorph.addMorph(segment);
+//console.log("this.displayMorph.submorphs.length = " + this.displayMorph.submorphs.length);
+		segment.setPosition(pt(-r/2, 0));
+		segment.moveOriginBy(pt(r/2, 0));
+		segment.rotateBy(2*Math.PI/this.nFold*i);
+		}
+	}    
 });
 
 
