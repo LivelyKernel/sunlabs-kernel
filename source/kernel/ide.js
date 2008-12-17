@@ -1621,6 +1621,15 @@ Object.subclass('Change', {
 		throw dbgOn(new Error('Overwrite me'));
 	},
 
+    toString: function() {
+		var message = this.constructor.type + ' named ' + this.getName();
+		if (this.subElements) message += ' -- subelems: ' + this.subElements().length;
+		return message;
+	},
+ 
+    inspect: function() {
+    	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
+	}
 });
 
 Change.subclass('ClassChange', {
@@ -1634,11 +1643,17 @@ Change.subclass('ClassChange', {
 	subElements: function() {
 		// memorize?
 		var parser = this.getParser();
-		return $A(this.xmlElement.childNodes).collect(function(ea) { return parser.createChange(ea) });
+		return $A(this.xmlElement.childNodes)
+			.collect(function(ea) { return parser.createChange(ea) })
+			.reject(function(ea) { return !ea })
 	},
 
 	getProtoChanges: function() {
 		return this.subElements().select(function(ea) { return ea.isProtoChange });
+	},
+
+	getStaticChanges: function() {
+		return this.subElements().select(function(ea) { return ea.isStaticChange });
 	},
 
 	evaluate: function() {
@@ -1649,7 +1664,9 @@ Change.subclass('ClassChange', {
 		if (Class.forName(className))
 			console.warn('Class' + klass + 'already defined! Evaluating class change regardless');
 		var src = Strings.format('%s.subclass(\'%s\')', superClassName, className);
-		return eval(src);
+		var klass = eval(src);
+		this.getStaticChanges().concat(this.getProtoChanges()).forEach(function(ea) { ea.evaluate() });
+		return klass;
 	},
 
 });
@@ -1685,6 +1702,19 @@ Change.subclass('StaticChange', {
 
 	isStaticChange: true,
 
+	getClassName: function() { // duplication with protoChange
+		return this.getAttributeNamed('name', this.xmlElement.parentNode);
+	},
+
+	evaluate: function() {
+		var className = this.getClassName();
+		var klass = Class.forName(className);
+		if (!klass) throw dbgOn(new Error('Could not find class of static change' + this.getName()));
+		var src = Strings.format('Object.extend(%s, {%s: %s})', className, this.getName(), this.getDefinition());
+		eval(src);
+		return klass[this.getName()];
+	},
+
 });
 
 Object.extend(StaticChange, {
@@ -1703,12 +1733,40 @@ Object.extend(DoitChange, {
 
 Object.subclass('AnotherCodeMarkupParser', {
 
+	initialize: function() {
+		this.files = {};
+	},
+
 	changeClasses: Change.allSubclasses(),
 
 	createChange: function(xmlElement) {
 		var klass = this.changeClasses.detect(function(ea) { return ea.isResponsibleFor(xmlElement) });
-		if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
+		//if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
+		if (!klass) {
+			console.warn('Found no Change class for ' + Exporter.stringify(xmlElement));
+			return null;
+		}
 		return new klass(xmlElement);
+	},
+
+	parseLkml: function(url) {
+		var doc = this.getDocumentOf(url);
+		var code = doc.getElementsByTagName('code')[0];
+		return $A(code.childNodes)
+			.collect(function(ea) { return this.createChange(ea) }, this)
+			.reject(function(ea) { return ea == null })
+			.forEach(function(ea) { ea.evaluate() });
+	},
+
+	getDocumentOf: function(url) { /*helper*/
+		if (Object.isString(url)) url = new URL(url);
+		var existing = this.files[url.toString()];
+		if (existing) return existing;
+		var resource = new Resource(Record.newPlainInstance({URL: url.toString(), ContentText: null, ContentDocument: null}), "application/xml");
+		resource.fetch(true);
+		var doc = resource.getContentDocument();
+		if (doc) return doc;
+		return new DOMParser().parseFromString(resource.getContentText(), "text/xml");
 	},
 
 });

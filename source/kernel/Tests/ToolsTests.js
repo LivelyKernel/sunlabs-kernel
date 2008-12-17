@@ -1036,8 +1036,7 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 
 	testEvaluateMethodWithClassInSystem: function() {
 		var className = 'lively.Tests.ToolsTests.DummyForChangeTests1';
-		//this.cleanUpItems.push(className);
-
+		this.cleanUpItems.push(className);
 		Object.subclass(className);
 		var xml = stringToXML('<class name="' + className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
 		var change = this.parser.createChange(xml).getProtoChanges().first();
@@ -1056,6 +1055,21 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 		this.assert(klass.functionNames().include('m1'), 'no function');
 	},
 
+	testEvalauteClassChnageWithStaticElem: function() {
+		var className = 'lively.Tests.ToolsTests.DummyForChangeTests3';
+		this.cleanUpItems.push(className);
+		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto><static name="staticM1"><![CDATA[function(xyz) { 1+1 }]]></static></class>');
+		var change = this.parser.createChange(xml);
+		var klass = change.evaluate();
+		this.assert(klass.functionNames().include('m1'), 'no proto function');
+		this.assert(klass['staticM1'] instanceof Function, 'no static function');
+	},
+
+	testLoadPenLkml: function() {
+		delete Global['Pen'];
+		new AnotherCodeMarkupParser().parseLkml('http://localhost/lively/Pen.lkml')
+		this.assert(Global['Pen']);
+	},
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {

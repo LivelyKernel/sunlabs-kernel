@@ -1,5 +1,5 @@
 /*
- * Copyright © 2006-2008 Sun Microsystems, Inc.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
  * This distribution may include materials developed by third parties.
  *  
@@ -644,9 +644,9 @@ Resource.subclass('SVNResource', {
 
     formals: Resource.prototype.formals.concat(['Metadata', 'HeadRevision']),
     
-    initialize: function($super, repoUrl, plug) {
-	this.repoUrl = repoUrl;
-	$super(plug);
+    initialize: function($super, repoUrl, plug, contentType) {
+		this.repoUrl = repoUrl;
+		$super(plug, contentType);
     },
 	
     getLocalUrl: function() {
