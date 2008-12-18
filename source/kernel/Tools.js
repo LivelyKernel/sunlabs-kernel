@@ -2059,7 +2059,7 @@ Object.subclass('ChangeSet', {
 
 	addChange: function(change) {
 		var doc = this.changesNode.ownerDocument;
-		this.changesNode.appendChild(doc.importNode(change.asNode()));
+		this.changesNode.appendChild(doc.importNode(change.asNode(), true));
 		return change;
 	},
 
@@ -2069,6 +2069,10 @@ Object.subclass('ChangeSet', {
 			return parser.createChange(ea);
 		});
 	},
+
+	evaluateAll: function() {
+		this.getChanges().forEach(function(item) { item.evaluate() });
+    },
 
 	/*************************************
 	   Everything below is deprecated
@@ -2095,7 +2099,7 @@ Object.subclass('ChangeSet', {
     setChanges: function(arrayOfItems) {
 	this.changes = arrayOfItems;
     },
-    evaluateAll: function() {
+    evaluateAll_old: function() {
 	// FIXME: use markup parser instead?
 	this.changes.forEach(function(item) {this.evalItem(item)}, this);
     },

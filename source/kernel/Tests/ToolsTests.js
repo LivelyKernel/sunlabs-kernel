@@ -1085,6 +1085,17 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 
 lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 
+	setUp: function($super) {
+		$super();
+		this.parser = new AnotherCodeMarkupParser();
+		this.cleanUpItems = [];
+	},
+
+	tearDown: function($super) {
+		$super();
+		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
+	},
+
 	testAddChangeSetToWorldPlusReconstruct: function() {
 		var world = this.worldMorph;
 		var cs = new ChangeSet(world);
@@ -1095,26 +1106,62 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
 	},
 
-	testAddedChangeSetGetsSerialized: function() {
-		var world = this.worldMorph;
-		var cs = new ChangeSet(world);
-		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
-		var worldNode = doc.getElementById(this.worldMorph.id());
-		this.assert(false);
-	},
-
 	testAddChangesToChangeSet: function() {
 		var cs = new ChangeSet(this.worldMorph);
 		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
-		var change = new AnotherCodeMarkupParser().createChange(xml);
+		var change = this.parser.createChange(xml);
 		cs.addChange(change);
 		var result = cs.getChanges();
 		this.assertEqual(result.length, 1);
 		this.assert(result[0].isClassChange);
-		this.assertEqual(result[0].getName(), 'lively.Test');
+		this.assertEqual(result[0].getName(), change.getName());
 	},
 
-	testEvalChangeSet: function() {},
+	testAddedChangeSetGetsSerialized: function() {
+		var world = this.worldMorph;
+		var cs = new ChangeSet(world);
+		// create change
+		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
+		var change = this.parser.createChange(xml);
+		cs.addChange(change);
+		// serialize a bit
+		var doc = Exporter.shrinkWrapMorph(world);
+		var worldNode = doc.getElementById(world.id());
+		var codeNode = worldNode.getElementsByTagName('code')[0];
+		this.assert(codeNode, 'node codeNode');
+		this.assertEqual(codeNode.childNodes.length, 1);
+		var newChange = this.parser.createChange(codeNode.childNodes[0]);
+		this.assert(newChange);
+		this.assertEqual(newChange.getName(), change.getName());
+	},
+
+	testSerializeAndDeserializeChangeSet: function() {
+		var world = this.worldMorph;
+		var cs = new ChangeSet(world);
+		// create change
+		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
+		var change = this.parser.createChange(xml);
+		cs.addChange(change);
+		// serialize a bit
+		var doc = Exporter.shrinkWrapMorph(world);
+		var newWorld = new Importer().loadWorldContents(doc);
+		var newCs = new ChangeSet(newWorld);
+		this.assertEqual(newCs.getChanges().length, 1);
+		this.assertEqual(newCs.getChanges()[0].getName(), change.getName());
+	},
+
+	testEvalChangeSet: function() {
+		var className = 'lively.Tests.ToolsTests.DummyForChangeTests4';
+		this.cleanUpItems.push(className);
+		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
+		var change = this.parser.createChange(xml);
+		var cs = new ChangeSet(this.worldMorph);
+		cs.addChange(change);
+		cs.evaluateAll();
+		var klass = Class.forName(className);
+		this.assert(klass && Class.isClass(klass), 'no class?');
+		this.assert(klass.functionNames().include('m1'), 'no function');
+	},
 
 });
 
