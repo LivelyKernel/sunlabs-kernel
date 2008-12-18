@@ -1,7 +1,4 @@
-module('lively.Tests.FabrikTest').requires(
-    'lively.TestFramework', 
-    'lively.Tests.SerializationTests', 
-    'lively.Fabrik').toRun(function(ownModule) {
+module('lively.Tests.FabrikTest').requires('lively.TestFramework', 'lively.Tests.SerializationTests', 'lively.Fabrik').toRun(function(ownModule) {
 
 TestCase.subclass('FabrikTestCase', {
     
