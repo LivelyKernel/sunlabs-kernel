@@ -1634,7 +1634,7 @@ Object.subclass('lively.scene.Similitude', {
 		var delta = duck;
 		var angleInRadians = arguments[1] || 0.0;
 		var scale = arguments[2];
-		if (scale === undefined) scale = pt(1.0, 1.0); // FIXME wrong
+		if (scale === undefined) scale = pt(1.0, 1.0); 
 		this.a = this.ensureNumber(scale.x * Math.cos(angleInRadians));
 		this.b = this.ensureNumber(scale.y * Math.sin(angleInRadians));
 		this.c = this.ensureNumber(scale.x * - Math.sin(angleInRadians));
@@ -1652,15 +1652,28 @@ Object.subclass('lively.scene.Similitude', {
     },
 
     getRotation: function() { // in degrees
-	var r =  Math.atan2(this.b, this.a).toDegrees();
+	var r =  Math.atan2(this.b, this.a*this.getAspectRatio()).toDegrees();
 	return Math.abs(r) < this.eps ? 0 : r; // don't bother with values very close to 0
     },
 
     getScale: function() {
+	// this is scale X: derived from transforming vector [1,0] and checking its length
+	// this doesnt work for negative scale values, it'll always return a nonnegative value
 	var a = this.a;
-	var b = this.b;
+	var b = this.b; 
 	var s = Math.sqrt(a * a + b * b);
 	return Math.abs(s - 1) < this.eps ? 1 : s; // don't bother with values very close to 1
+    },
+
+    getAspectRatio: function() {
+	// this doesnt work for negative scale values, it'll always return a nonnegative value
+	var a = this.a;
+	var b = this.b;
+	var c = this.c;
+	var d = this.d;
+	var scaleX = Math.sqrt(a*a + b*b); 
+	var scaleY = Math.sqrt(c*c + d*d); //if (c < 0) scaleY = -scaleY;
+	return scaleY/scaleX;
     },
 
     isTranslation: function() {
@@ -1678,11 +1691,16 @@ Object.subclass('lively.scene.Similitude', {
 
 	if (theta != 0.0)
 	    attr += " rotate(" + this.getRotation()  +")"; // in degrees
-
+	
 	var factor = this.getScale();
+	var ratio = this.getAspectRatio();
 
-	if (factor != 1.0) 
-	    attr += " scale(" + this.getScale() + ")";
+	if (factor != 1.0 || ratio != 1.0) {
+	    if (ratio == 1.0)
+		attr += " scale(" + factor + ")";
+	    else 
+		attr += " scale(" + factor + "," + ratio + ")";
+	}
 
 	return attr;
     },

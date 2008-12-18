@@ -1074,6 +1074,8 @@ lively.data.Wrapper.subclass('Morph', {
     // prototype vars
     rotation: 0.0,
     scale: 1.0,
+    aspectRatio: 1.0,
+
     style: {},
 
     focusHaloBorderWidth: 4,
@@ -1998,6 +2000,7 @@ Morph.addMethods({
 	this.origin = tfm.getTranslation();
 	this.rotation = tfm.getRotation().toRadians();
 	this.scale = tfm.getScale();
+	this.aspectRatio = tfm.getAspectRatio();
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
 	this.scale = this.scale/this.fisheyeScale;
 	this.transformChanged();
@@ -2063,6 +2066,10 @@ Morph.addMethods({
 	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('scale')),
 
+    setAspectRatio: function(aspectRatio/*:float*/) {
+	this.aspectRatio = aspectRatio;
+	// layoutChanged will cause this.transformChanged();
+    }.wrap(Morph.onLayoutChange('aspectRatio')),
 
     gettranslation: function() { 
 	return this.getTransform().getTranslation(); 
@@ -2072,7 +2079,7 @@ Morph.addMethods({
 	return this.getTransform().getRotation().toRadians(); 
     },
 
-    getScale: function() { 
+    getScale: function() {
 	return this.getTransform().getScale(); 
     },
 
@@ -3004,8 +3011,10 @@ Morph.addMethods({
 
     transformChanged: function() {
 	var scale = this.scale * this.fisheyeScale;
-	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, pt(scale, scale));
+	var aspectRatio = this.aspectRatio;
+	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, pt(scale, scale*aspectRatio));
 	this.pvtCachedTransform.applyTo(this.rawNode);
+
     },
 
     layoutChanged: function Morph$layoutChanged() {
