@@ -1085,8 +1085,16 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 
 lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 
-	testAddChangeSetToWorld: function() {},
-	testRestoreChangeSetFromWorld: function() {},
+	testAddChangeSetToWorldPlusReconstruct: function() {
+		var world = this.worldMorph;
+		var cs = new ChangeSet(world);
+		this.assert(cs.changesNode, 'no changesNode');
+		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
+		var cs2 = new ChangeSet(world);
+		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs2.changesNode);
+		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
+	},
+
 	testEvalChangeSet: function() {},
 
 });

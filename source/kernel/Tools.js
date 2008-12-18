@@ -1834,7 +1834,7 @@ ChangeList.subclass('SourceDatabase', {
     
     interestingLKFileNames: function() {
         var kernelFileNames = new FileDirectory(URL.source).filenames();
-        var testFileNames = [];//new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
+        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
 		var ometaFileNames = [];//new FileDirectory(URL.source.withFilename('ometa/')).filenames().collect(function(ea) { return 'ometa/' + ea });
         var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') });
         jsFiles = jsFiles.uniq();
@@ -2037,11 +2037,26 @@ Object.extend(CodeMarkupParser, {
 Object.subclass('ChangeSet', {
 
     initialize: function(world) {
-	// Keep track of an ordered list of changes for this world
-        this.changes = [];
-	this.changesNode = LivelyNS.create("code");
-	world.rawNode.appendChild(NodeFactory.create("defs")).appendChild(this.changesNode);
-    },
+		// Keep track of an ordered list of changes for this world
+		this.changes = []; // necessary? changesNode should be enough...
+		this.changesNode = null;
+		if (this.reconstructFrom(world)) return;
+		this.addHookTo(world);
+	},
+
+	reconstructFrom: function(world) {
+		var codeNodes = world.getDefsNode().getElementsByTagName('code');
+		if (codeNodes.length == 0) return false;
+		if (codeNodes.length > 1) console.warn('multiple code nodes in ' + world);
+		this.changesNode = codeNodes[0];
+		return true;
+	},
+
+	addHookTo: function(world) {
+		this.changesNode = LivelyNS.create("code");
+		world.getDefsNode().appendChild(this.changesNode);
+	},
+
     logChange: function(item) {
 	this.changes.push(item);
 	switch (item.type) {

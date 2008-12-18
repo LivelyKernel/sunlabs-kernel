@@ -1349,15 +1349,14 @@ lively.data.Wrapper.subclass('Morph', {
             n.parentNode.removeChild(n);
         }
 
-        codeNodes.forEach(function(code) {
-            // we clearly don't handle more than one change yet
-            this.changes = new ChangeSet(this);
-            // this.changes.evaluateAll(); 
-            var result = new BasicCodeMarkupParser().parseDocumentElement(code, true);
-            // FIXME something doesn't work here
-            console.log("Successfully evalled "  + result.length);
-
-        }, this);
+		if (codeNodes.length === 0) return;
+		if (codeNodes.length > 1) console.warn('More than one code node');
+		// we clearly don't handle more than one change yet
+		this.changes = new ChangeSet(this);
+		// this.changes.evaluateAll(); 
+		// var result = new BasicCodeMarkupParser().parseDocumentElement(codeNodes[0], true);
+		// FIXME something doesn't work here
+		console.log("Successfully evalled "  + result.length);
             
     }
     
