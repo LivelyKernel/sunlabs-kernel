@@ -1598,6 +1598,10 @@ Object.subclass('Change', {
 		this.xmlElement = xmlElement;
 	},
 
+	asNode: function() {
+		return this.xmlElement;
+	},
+
 	getParser: function() {
 		return new AnotherCodeMarkupParser();
 	},

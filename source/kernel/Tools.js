@@ -2057,7 +2057,24 @@ Object.subclass('ChangeSet', {
 		world.getDefsNode().appendChild(this.changesNode);
 	},
 
+	addChange: function(change) {
+		var doc = this.changesNode.ownerDocument;
+		this.changesNode.appendChild(doc.importNode(change.asNode()));
+		return change;
+	},
+
+	getChanges: function() {
+		var parser = new AnotherCodeMarkupParser();
+		return $A(this.changesNode.childNodes).collect(function(ea) {
+			return parser.createChange(ea);
+		});
+	},
+
+	/*************************************
+	   Everything below is deprecated
+	 *************************************/
     logChange: function(item) {
+	// deprecated!!!
 	this.changes.push(item);
 	switch (item.type) {
 	case 'method':

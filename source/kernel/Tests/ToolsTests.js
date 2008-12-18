@@ -1095,6 +1095,25 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
 	},
 
+	testAddedChangeSetGetsSerialized: function() {
+		var world = this.worldMorph;
+		var cs = new ChangeSet(world);
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		var worldNode = doc.getElementById(this.worldMorph.id());
+		this.assert(false);
+	},
+
+	testAddChangesToChangeSet: function() {
+		var cs = new ChangeSet(this.worldMorph);
+		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
+		var change = new AnotherCodeMarkupParser().createChange(xml);
+		cs.addChange(change);
+		var result = cs.getChanges();
+		this.assertEqual(result.length, 1);
+		this.assert(result[0].isClassChange);
+		this.assertEqual(result[0].getName(), 'lively.Test');
+	},
+
 	testEvalChangeSet: function() {},
 
 });
