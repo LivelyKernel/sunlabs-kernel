@@ -24,7 +24,7 @@ PanelMorph.subclass('lively.TileScripting.TileBoxPanel', {
 
     onDeserialize: function() {
         // FIXME complete new morph is build, is this really necessary?
-        this.owner.targetMorph = this.owner.addMorph(new TileBox().buildView(this.getExtent()));
+        this.owner.targetMorph = this.owner.addMorph(new lively.TileScripting.TileBox().buildView(this.getExtent()));
         this.owner.targetMorph.setPosition(this.getPosition());
         this.remove();
     }
