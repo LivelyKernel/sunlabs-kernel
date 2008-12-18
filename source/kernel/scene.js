@@ -138,6 +138,16 @@ Object.subclass('lively.data.Wrapper', {
 	return this.rawNode.removeAttributeNS(null, name);
     },
 
+	getDefsNode: function() {
+		var defNode = $A(this.rawNode.getElementsByTagName('defs')).detect(function(ea) {
+			return ea.parentNode === this.rawNode;
+		}, this);
+		// create and append one when defNode is not there
+		if (!defNode)
+			defNode = this.rawNode.appendChild(NodeFactory.create('defs'));
+		return defNode;
+	},
+
     prepareForSerialization: function(extraNodes) {
 	for (var prop in this) {
 	    if (!this.hasOwnProperty(prop)) continue;
