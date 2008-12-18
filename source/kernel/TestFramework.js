@@ -55,7 +55,11 @@ Object.subclass('TestCase', {
 			this.log(' -- failed -- ' + '(' + printError(e) + ')');
 			//if (!e.isAssertion) throw e;
 		} finally {
-			this.tearDown();
+			try {
+				this.tearDown();
+			} catch(e) {
+				this.log('Couldn\'t run tearDown for ' + aSelector + ' ' + printError(e));
+			}
 		}
 	},
 	

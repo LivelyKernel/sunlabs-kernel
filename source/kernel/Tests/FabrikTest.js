@@ -306,7 +306,7 @@ FabrikTestCase.subclass('UserFrameTest', {
         this.assert(sel.selectedMorphs.include(comp1.panel), 'wrong selection');
     },
     
-    testSelectedMorphsStayWhenCollapsing: function() {
+    testSelectedMorphsStayWhenCollapsing: function() { // this test succeeds but will make the system unresponsive...?
         var fab = this.fabrikComponent;
         var comp1 = this.components[0];
         var comp2 = this.components[1];
@@ -1406,7 +1406,7 @@ TestCase.subclass('TextListComponentTest', {
     
     testXMLStringArray: function() {
         var xml = stringToXML('<forecast_information>' + '<city data="Berlin, Berlin"/>' +
-                            '<postal_code data="12685"/>' + '</forecast_information>');
+                            '<postal_code data="12685"/>' + '</forecast_information>').parentNode; // get document element
         var list = FabrikConverter.xmlToStringArray(xml);
         this.textList.setList(list);
         console.log('THE LIST::::    ' + this.textList.getList());
@@ -1576,9 +1576,9 @@ TestCase.subclass('FabrikConverterTest', {
     '</xml_api_reply>',
     
     setUp: function() {
-        this.xml = stringToXML(this.xmlString),
-        this.xmlForcastInfo = this.xml.firstChild.firstChild.firstChild,
-        this.xmlLeaf = this.xmlForcastInfo.firstChild, // Berlin
+        this.xml = stringToXML(this.xmlString).parentNode; // get document element
+        this.xmlForcastInfo = this.xml.firstChild.firstChild.firstChild;
+        this.xmlLeaf = this.xmlForcastInfo.firstChild // Berlin
         this.converter = FabrikConverter;
     },
     
@@ -1636,7 +1636,7 @@ TestCase.subclass('FabrikConverterTest', {
     },
     
     testStringArrayWithDeserializedXML: function() {
-        var xml = stringToXML('<double xmlns="http://www.webserviceX.NET/">0.6923</double>');
+        var xml = stringToXML('<double xmlns="http://www.webserviceX.NET/">0.6923</double>').parentNode; // get document element
         xml = document.importNode(xml.documentElement, true);
         var model = Record.newNodeInstance({});
         model.addField('Test');
@@ -1645,7 +1645,7 @@ TestCase.subclass('FabrikConverterTest', {
     }
 });
 
-SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
+lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
 
     assertFabrikWithTwoTextComponentsAndConnector: function(fabrik) {
         this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");

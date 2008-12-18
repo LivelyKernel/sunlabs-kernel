@@ -1,4 +1,4 @@
-module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide').toRun(function(thisModule, testModule, toolsModule, ideModule) {
+module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'lively.Tests.SerializationTests').toRun(function(thisModule, testModule, toolsModule, ideModule) {
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');
@@ -982,7 +982,7 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTe
 	}
 });
 
-TestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
+TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 
 	setUp: function() {
 		this.parser = new AnotherCodeMarkupParser();
@@ -1081,6 +1081,14 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 		this.assertEqual(change.evaluate(), 3);
 		this.assert(Class.forName(objName), 'TestObj not created');
 	},
+});
+
+lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
+
+	testAddChangeSetToWorld: function() {},
+	testRestoreChangeSetFromWorld: function() {},
+	testEvalChangeSet: function() {},
+
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {

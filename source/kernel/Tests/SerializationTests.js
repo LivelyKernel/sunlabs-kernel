@@ -1,4 +1,4 @@
-module('lively.Tests.SerializationTests').requires('lively.TestFramework').toRun(function() {
+module('lively.Tests.SerializationTests').requires('lively.TestFramework').toRun(function(thisModule) {
 
 /* Helper Classes */
 
@@ -58,10 +58,11 @@ Widget.subclass('DummyWidget', {
     }
 });
 
-TestCase.subclass('SerializationBaseTestCase', {
+TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
 
     /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
-    setUp: function() {
+    setUp: function($super) {
+		$super();
         this.realWorld = WorldMorph.current();
         this.dom = stringToXML(
             '<svg xmlns="http://www.w3.org/2000/svg" xmlns:lively="http://www.experimentalstuff.com/Lively" '+
@@ -69,9 +70,9 @@ TestCase.subclass('SerializationBaseTestCase', {
                 'id="canvas" width="100%" height="100%" xml:space="preserve" '+
                 'xmlns:xml="http://www.w3.org/XML/1998/namespace" zoomAndPan="disable">' +
                 '<title>Lively Kernel canvas</title>' + 
-            '</svg>');
+            '</svg>').parentNode;
         this.oldGlobalDocument = Global.document; // importFromNodeList uses Global.document, so we fake it
-        Global.document = this.dom
+        Global.document = this.dom;
         this.canvas = this.dom.documentElement;
         this.worldMorph = new WorldMorph(this.canvas);
         this.canvas.appendChild(this.worldMorph.rawNode);
@@ -79,6 +80,7 @@ TestCase.subclass('SerializationBaseTestCase', {
         
         this.bounds = rect(pt(10,10), pt(100,100));
 	    this.parentMorph =  Morph.makeRectangle(0,0, 300, 300);
+		console.log('Setup run');
     },
     
     tearDown: function() {
@@ -114,9 +116,9 @@ TestCase.subclass('SerializationBaseTestCase', {
     },
 
     loadWorldFromSource: function(xmlString) {
-        var xml = (new DOMParser()).parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
+        var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
         this.doc = xml;   
-        return (new Importer()).loadWorldContents(xml);
+        return new Importer().loadWorldContents(xml);
     },
 
     exportMorph: function(morph) {
@@ -134,7 +136,7 @@ TestCase.subclass('SerializationBaseTestCase', {
 
 });
 
-SerializationBaseTestCase.subclass('ASerializationTest', {
+thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
    
     testWorldMorphOnCanvas: function() {
         this.assert(this.worldMorph, 'No WorldMorph');
@@ -158,7 +160,7 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
                     '<rect x="0" y="0" width="130" height="130" fill="rgb(250,250,250)"/>'+
                 '</g>'+
             '</svg>';
-        var xml = (new DOMParser()).parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");   
+        var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");   
         this.assertEqual(xml.childNodes[0].childNodes[0].getAttribute("id"), "101:Morph");
         this.assert(xml.childNodes[0].childNodes[0].getAttribute("transform"), "has no transform");
 
@@ -185,7 +187,7 @@ SerializationBaseTestCase.subclass('ASerializationTest', {
                 '</g>'+
             '</svg>');
         this.assert(world instanceof WorldMorph, "world is no WorldMorph");
-        this.assertEqual(world.submorphs.length, 2, "world has two submorphs");
+        this.assertEqual(world.submorphs.length, 2, "world hasn't two submorphs");
          
         //this.showMyWorld(world)
     },
