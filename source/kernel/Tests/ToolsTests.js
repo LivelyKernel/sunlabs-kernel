@@ -1163,6 +1163,35 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		this.assert(klass.functionNames().include('m1'), 'no function');
 	},
 
+	testRemoveNamedChanges: function() {
+		var change = DoitChange.create('1+2');
+		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
+		var cs = new ChangeSet(this.worldMorph);
+		cs.addChange(change);
+		cs.removeChangeNamed('aDoit');
+		this.assertEqual(cs.getChanges().length, 0);
+	},
+
+	testRemoveChangeAtIndex: function() {
+		var change = DoitChange.create('1+2');
+		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
+		var cs = new ChangeSet(this.worldMorph);
+		cs.addChange(change);
+		cs.removeChangeAt(0);
+		this.assertEqual(cs.getChanges().length, 0);
+	},
+
+	testRemoveAllChanges: function() {
+		var change = DoitChange.create('1+2');
+		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
+		var cs = new ChangeSet(this.worldMorph);
+		cs.addChange(change);
+		change = DoitChange.create('3+4');
+		cs.addChange(change);
+		cs.removeAllChanges();
+		this.assertEqual(cs.getChanges().length, 0);
+	},
+
 	xtestReal: function() {
 		var src1 = 'var extent = pt(200,200);\n\
 var pos = WorldMorph.current().getExtent().scaleBy(0.5).subPt(extent.scaleBy(0.5));\n\

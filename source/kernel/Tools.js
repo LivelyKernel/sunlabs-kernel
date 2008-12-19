@@ -2074,6 +2074,25 @@ Object.subclass('ChangeSet', {
 		this.getChanges().forEach(function(item) { item.evaluate() });
     },
 
+	removeChangeNamed: function(name) {
+		var change = this.getChanges().detect(function(ea) { return ea.getName() === name});
+		if (!change) return null;
+		change.remove();
+		return change;
+	},
+
+	removeChangeAt: function(i) {
+		var changes = this.getChanges();
+		if (!(i in changes)) return null;
+		var change = changes[i];
+		change.remove();
+		return change;
+	},
+
+	removeAllChanges: function() {
+		this.getChanges().invoke('remove');
+	},
+
 	/*************************************
 	   Everything below is deprecated
 	 *************************************/
@@ -2154,6 +2173,12 @@ Object.subclass('Change', {
 
 	getDefinition: function() {
 		return this.xmlElement.textContent;
+	},
+
+	remove: function() {
+		var elem = this.xmlElement;
+		if (!elem.parentNode) return;
+		elem.parentNode.removeChild(elem);
 	},
 
 	evaluate: function() {
