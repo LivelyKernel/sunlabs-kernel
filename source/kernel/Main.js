@@ -479,6 +479,7 @@ function main() {
             var world = importer.loadWorldContents(document);    
             world.displayOnCanvas(canvas);
             console.log("world is " + world);
+			if (world.changes) world.changes.evaluateAll(); // Run what is in the ChangeSet
             if(Config.showWikiNavigator) {
                 require('LKWiki.js').toRun(function() {
                     //just a quick hack...

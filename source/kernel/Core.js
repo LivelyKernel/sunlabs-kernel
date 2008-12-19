@@ -1329,9 +1329,10 @@ lively.data.Wrapper.subclass('Morph', {
             case "defs": { // the only one handled here "code"
                 if (!Config.skipChanges) { // Can be blocked by URL param 
                     var codes = node.getElementsByTagName("code");
-                    for (var j = 0; j < codes.length; j++) {
-                        codeNodes.push(codes.item(j));
-                    }
+                    for (var j = 0; j < codes.length; j++) { codeNodes.push(codes.item(j)) };
+					if (codeNodes.length > 1) console.warn('More than one code node');
+					if (codeNodes.length > 0) this.changes = new ChangeSet(this);
+					// ChangeSet of World gets evaluated in main
                 }
                 break;
             }
@@ -1350,18 +1351,8 @@ lively.data.Wrapper.subclass('Morph', {
             var n = helperNodes[i];
             n.parentNode.removeChild(n);
         }
-
-		if (codeNodes.length === 0) return;
-		if (codeNodes.length > 1) console.warn('More than one code node');
-		// we clearly don't handle more than one change yet
-		this.changes = new ChangeSet(this);
-		// this.changes.evaluateAll(); 
-		// var result = new BasicCodeMarkupParser().parseDocumentElement(codeNodes[0], true);
-		// FIXME something doesn't work here
-		console.log("Successfully evalled "  + result.length);
-            
     }
-    
+
 });
 
 Morph.addMethods({  // tmp copy

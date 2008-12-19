@@ -1163,6 +1163,18 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		this.assert(klass.functionNames().include('m1'), 'no function');
 	},
 
+	xtestReal: function() {
+		var src1 = 'var extent = pt(200,200);\n\
+var pos = WorldMorph.current().getExtent().scaleBy(0.5).subPt(extent.scaleBy(0.5));\n\
+var m = new BoxMorph(pos.extent(extent));\n\
+m.openInWorld();';
+		var c1 = DoitChange.create(src1);
+		var src2 = 'WorldMorph.current().submorphs.last().setFill(Color.red)';
+		var c2 = DoitChange.create(src2);
+		var cs = ChangeSet.current();
+		cs.addChange(c1);
+		cs.addChange(c2);
+	},
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
