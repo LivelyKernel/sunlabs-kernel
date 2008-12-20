@@ -1836,12 +1836,13 @@ ChangeList.subclass('SourceDatabase', {
         var kernelFileNames = new FileDirectory(URL.source).filenames();
         var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
 		var ometaFileNames = [];//new FileDirectory(URL.source.withFilename('ometa/')).filenames().collect(function(ea) { return 'ometa/' + ea });
-        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') });
+        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') /*|| ea.endsWith('.lkml')*/ });
         jsFiles = jsFiles.uniq();
         // FIXME remove
         var rejects = [/*"Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
                        "Serialization.js",*/ "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
                        "workspace.js", 'JSON.js'];
+
 		jsFiles = jsFiles.reject(function(ea) { return rejects.include(ea) });
 		var otherFiles = ['LKFileParser.txt'];
         return jsFiles.concat(otherFiles);
@@ -2036,25 +2037,39 @@ Object.extend(CodeMarkupParser, {
 // ===========================================================================
 Object.subclass('ChangeSet', {
 
-    initialize: function(world) {
+    initialize: function() {
 		// Keep track of an ordered list of changes for this world
 		this.changes = []; // necessary? changesNode should be enough...
 		this.changesNode = null;
-		if (this.reconstructFrom(world)) return;
-		this.addHookTo(world);
 	},
 
-	reconstructFrom: function(world) {
-		var codeNodes = world.getDefsNode().getElementsByTagName('code');
+	initializeFromWorld: function(world) {
+		var node = world.getDefsNode();
+		if (!this.reconstructFrom(node))
+			this.addHookTo(node);
+		return this;
+	},
+
+	initializeFromFile: function(fileName, fileString) {
+		if (!fileString) fileString = new FileDirectory(URL.source).fileContent(fileName);
+		var doc = new DOMParser().parseFromString(fileString, "text/xml");
+		y=doc;
+		if (!this.reconstructFrom(doc))
+			throw dbgOn(new Error('Couldn\'t create ChangeSet from ' + fileName));
+		return this;
+	},
+
+	reconstructFrom: function(node) {
+		var codeNodes = node.getElementsByTagName('code');
 		if (codeNodes.length == 0) return false;
-		if (codeNodes.length > 1) console.warn('multiple code nodes in ' + world);
+		if (codeNodes.length > 1) console.warn('multiple code nodes in ' + node);
 		this.changesNode = codeNodes[0];
 		return true;
 	},
 
-	addHookTo: function(world) {
+	addHookTo: function(node) {
 		this.changesNode = LivelyNS.create("code");
-		world.getDefsNode().appendChild(this.changesNode);
+		node.appendChild(this.changesNode);
 	},
 
 	addChange: function(change) {
@@ -2065,9 +2080,9 @@ Object.subclass('ChangeSet', {
 
 	getChanges: function() {
 		var parser = new AnotherCodeMarkupParser();
-		return $A(this.changesNode.childNodes).collect(function(ea) {
-			return parser.createChange(ea);
-		});
+		return $A(this.changesNode.childNodes)
+			.collect(function(ea) { return parser.createChange(ea) })
+			.reject(function(ea) { return !ea });
 	},
 
 	evaluateAll: function() {
@@ -2131,16 +2146,28 @@ Object.subclass('ChangeSet', {
     }
 });
 
-ChangeSet.current = function() {
-    // Return the changeSet associated with the current world
-    var world = WorldMorph.current();
-    var chgs = world.changes;
-    if (!chgs) {
-	chgs = new ChangeSet(world);
-	world.changes = chgs;
-    }
-    return chgs;
-};
+Object.extend(ChangeSet, {
+
+	fromWorld: function(world) {
+		return new ChangeSet().initializeFromWorld(world);
+	},
+
+	fromFile: function(fileName, fileString) {
+		return new ChangeSet().initializeFromFile(fileName, fileString);
+	},
+
+	current: function() {
+		// Return the changeSet associated with the current world
+		var world = WorldMorph.current();
+		var chgs = world.changes;
+		if (!chgs) {
+			chgs = ChangeSet.fromWorld(world);
+			world.changes = chgs;
+		}
+		return chgs;
+	}
+
+});
 
 // ===========================================================================
 // ChangeSet and lkml handling
@@ -2322,15 +2349,6 @@ Object.subclass('AnotherCodeMarkupParser', {
 			return null;
 		}
 		return new klass(xmlElement);
-	},
-
-	parseLkml: function(url) {
-		var doc = this.getDocumentOf(url);
-		var code = doc.getElementsByTagName('code')[0];
-		return $A(code.childNodes)
-			.collect(function(ea) { return this.createChange(ea) }, this)
-			.reject(function(ea) { return ea == null })
-			.forEach(function(ea) { ea.evaluate() });
 	},
 
 	getDocumentOf: function(url) { /*helper*/

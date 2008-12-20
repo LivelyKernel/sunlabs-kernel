@@ -1067,7 +1067,7 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 
 	testLoadPenLkml: function() {
 		delete Global['Pen'];
-		new AnotherCodeMarkupParser().parseLkml('http://localhost/lively/Pen.lkml')
+		ChangeSet.fromFile('Pen.lkml').evaluateAll();
 		this.assert(Global['Pen']);
 	},
 
@@ -1098,16 +1098,16 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 
 	testAddChangeSetToWorldPlusReconstruct: function() {
 		var world = this.worldMorph;
-		var cs = new ChangeSet(world);
+		var cs = ChangeSet.fromWorld(world);
 		this.assert(cs.changesNode, 'no changesNode');
 		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
-		var cs2 = new ChangeSet(world);
+		var cs2 = ChangeSet.fromWorld(world);
 		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs2.changesNode);
 		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
 	},
 
 	testAddChangesToChangeSet: function() {
-		var cs = new ChangeSet(this.worldMorph);
+		var cs = ChangeSet.fromWorld(this.worldMorph);
 		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
 		var change = this.parser.createChange(xml);
 		cs.addChange(change);
@@ -1119,7 +1119,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 
 	testAddedChangeSetGetsSerialized: function() {
 		var world = this.worldMorph;
-		var cs = new ChangeSet(world);
+		var cs = ChangeSet.fromWorld(world);
 		// create change
 		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
 		var change = this.parser.createChange(xml);
@@ -1137,7 +1137,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 
 	testSerializeAndDeserializeChangeSet: function() {
 		var world = this.worldMorph;
-		var cs = new ChangeSet(world);
+		var cs = ChangeSet.fromWorld(world);
 		// create change
 		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
 		var change = this.parser.createChange(xml);
@@ -1145,7 +1145,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		// serialize a bit
 		var doc = Exporter.shrinkWrapMorph(world);
 		var newWorld = new Importer().loadWorldContents(doc);
-		var newCs = new ChangeSet(newWorld);
+		var newCs = ChangeSet.fromWorld(newWorld);
 		this.assertEqual(newCs.getChanges().length, 1);
 		this.assertEqual(newCs.getChanges()[0].getName(), change.getName());
 	},
@@ -1155,7 +1155,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		this.cleanUpItems.push(className);
 		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
 		var change = this.parser.createChange(xml);
-		var cs = new ChangeSet(this.worldMorph);
+		var cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
 		cs.evaluateAll();
 		var klass = Class.forName(className);
@@ -1166,7 +1166,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 	testRemoveNamedChanges: function() {
 		var change = DoitChange.create('1+2');
 		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
-		var cs = new ChangeSet(this.worldMorph);
+		var cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
 		cs.removeChangeNamed('aDoit');
 		this.assertEqual(cs.getChanges().length, 0);
@@ -1175,7 +1175,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 	testRemoveChangeAtIndex: function() {
 		var change = DoitChange.create('1+2');
 		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
-		var cs = new ChangeSet(this.worldMorph);
+		var cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
 		cs.removeChangeAt(0);
 		this.assertEqual(cs.getChanges().length, 0);
@@ -1184,7 +1184,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 	testRemoveAllChanges: function() {
 		var change = DoitChange.create('1+2');
 		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
-		var cs = new ChangeSet(this.worldMorph);
+		var cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
 		change = DoitChange.create('3+4');
 		cs.addChange(change);

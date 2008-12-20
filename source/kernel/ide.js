@@ -1238,10 +1238,10 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		this.registeredBrowsers = [];
     },
     
-    rootFragmentForModule: function(moduleOrModuleName) {
-        if (!Object.isString(moduleOrModuleName) || !(moduleOrModuleName.endsWith('.js') || moduleOrModuleName.endsWith('.txt')))
-            throw dbgOn(new Error('I do not support modules yet... ' + moduleOrModuleName + ', sorry!'));
-        return this.modules[moduleOrModuleName];
+    rootFragmentForModule: function(moduleName) {
+        if (!Object.isString(moduleName))
+            throw dbgOn(new Error('Don\'t know what to do with ' + moduleName));
+		return this.modules[moduleName];
     },
     
     addModule: function(fileName, fileString) {
@@ -1256,6 +1256,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 			root = this.parseJs(fileName, fileString);
 		} else if (fileName.endsWith('.txt')) {
 			root = this.parseOmeta(fileName, fileString);
+		} else if (fileName.endsWith('.lkml')) {
+			root = this.parseLkml(fileName, fileString);
 		} else { 
 			throw dbgOn(new Error('Don\'t know how to parse ' + fileName))
 		}
@@ -1278,6 +1280,10 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		var fileFragments = new OMetaParser().parseSource(fileString, {fileName: fileName});
         var root = new lively.ide.FileFragment(fileName, 'ometaGrammar', 0, fileString.length-1, null, fileName, fileFragments, this);
         return root;
+	},
+
+	parseLkml: function(fileName, fileString) {
+		return ChangeSet.fromFile(fileName, fileString);
 	},
 
     putSourceCodeFor: function(fileFragment, newFileString) {

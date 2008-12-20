@@ -1251,7 +1251,7 @@ Morph.addMethods({
 		break;
 	    case "code":
 		if (!Config.skipChanges) { // Can be blocked by URL param 
-		    this.changes = new ChangeSet(this);
+		    this.changes = ChangeSet.fromWorld(this);
 		    // this.changes.evaluateAll(); 
 		    // FIXME probably wrong order, should be at the end of deserialization
 		    new BasicCodeMarkupParser().parseDocumentElement(def, true);
