@@ -1833,19 +1833,21 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     interestingLKFileNames: function() {
+		if (this._interestingLKFileNames) 
+			return this._interestingLKFileNames;
         var kernelFileNames = new FileDirectory(URL.source).filenames();
         var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
 		var ometaFileNames = [];//new FileDirectory(URL.source.withFilename('ometa/')).filenames().collect(function(ea) { return 'ometa/' + ea });
-        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') /*|| ea.endsWith('.lkml')*/ });
+        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') || ea.endsWith('.lkml') });
         jsFiles = jsFiles.uniq();
         // FIXME remove
         var rejects = [/*"Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
                        "Serialization.js",*/ "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
                        "workspace.js", 'JSON.js'];
-
 		jsFiles = jsFiles.reject(function(ea) { return rejects.include(ea) });
 		var otherFiles = ['LKFileParser.txt'];
-        return jsFiles.concat(otherFiles);
+        this._interestingLKFileNames = jsFiles.concat(otherFiles);
+		return this._interestingLKFileNames;
     },
 
 });
@@ -2037,10 +2039,11 @@ Object.extend(CodeMarkupParser, {
 // ===========================================================================
 Object.subclass('ChangeSet', {
 
-    initialize: function() {
-		// Keep track of an ordered list of changes for this world
+    initialize: function(optName) {
+		// Keep track of an ordered list of Changes
 		this.changes = []; // necessary? changesNode should be enough...
 		this.changesNode = null;
+		this.name = optName || '';
 	},
 
 	initializeFromWorld: function(world) {
@@ -2149,11 +2152,11 @@ Object.subclass('ChangeSet', {
 Object.extend(ChangeSet, {
 
 	fromWorld: function(world) {
-		return new ChangeSet().initializeFromWorld(world);
+		return new ChangeSet('ChangeSet for World').initializeFromWorld(world);
 	},
 
 	fromFile: function(fileName, fileString) {
-		return new ChangeSet().initializeFromFile(fileName, fileString);
+		return new ChangeSet(fileName).initializeFromFile(fileName, fileString);
 	},
 
 	current: function() {

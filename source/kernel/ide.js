@@ -69,7 +69,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	},
 
 	allNodes: function() {
-		return this.allPaneNames.collect(function(ea) { return this.nodesInPane(ea) }, this);
+		return this.allPaneNames.collect(function(ea) { return this.nodesInPane(ea) }, this).flatten();
 	},
 
 	paneNameOfNode: function(node) {
@@ -248,7 +248,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 
 		// optimization: if no node looks like the changed node in my browser do nothing
 		if (changedNode)
-			if (this.allNodes().flatten().every(function(ea) { return !changedNode.hasSimilarTarget(ea) }))
+			if (this.allNodes().every(function(ea) { return !changedNode.hasSimilarTarget(ea) }))
 				return;
 
 	      // FIXME remove duplication
@@ -507,16 +507,21 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 	documentation: 'The rootNode of the SystemBrowser',
 
     childNodes: function() {
-        return this.target.interestingLKFileNames()
-			.concat(this.target.preLoadFileNames())
-			.uniq()
-			.collect(function(ea) {
-				var nodeClass = ea.endsWith('.js') ? // FIXME
-					ide.CompleteFileFragmentNode :
-					ide.CompleteOmetaFragmentNode;
-            	return new nodeClass(this.target.rootFragmentForModule(ea), this.browser, ea)
-		}, this);
-    }
+		var nodes = [];
+		var srcDb = this.target;
+		var allFiles = srcDb.allFiles();
+		for (var i = 0; i < allFiles.length; i++) {
+			var fn = allFiles[i];
+			if (fn.endsWith('.js')) {
+				nodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, fn));
+			} else if (fn.endsWith('.txt')) {
+				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, fn));
+			} else if (fn.endsWith('.lkml')) {
+				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser));
+			}
+		};
+		return nodes;
+	}
 });
  
 ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
@@ -545,12 +550,10 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 	menuSpec: function($super) {
 		var spec = $super();
 		var node = this;
-		return spec.concat([
-			['remove', function() {
-				node.target.remove();
-				node.browser.allChanged();
-			}]
-		])
+		spec.push(['remove', function() {
+			node.target.remove();
+			node.browser.allChanged() }]);
+		return spec;
 	},
     
 });
@@ -610,15 +613,13 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		var menu = $super();
    		if (!this.target) return menu;
 		var node = this;
-   		return menu.concat([
-			['toggle showAll', function() {
-    			node.showAll = !node.showAll;
-    			node.signalTextChange()}
-			],
-    		['open ChangeList viewer', function() {
-    			new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current())}
-			],
-    	])
+		menu.unshift(['open ChangeList viewer', function() {
+			new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current()) }]);
+		menu.unshift(['toggle showAll', function() {
+    		node.showAll = !node.showAll;
+    		node.signalTextChange() }]);
+		return menu;
+   	
             /*return [['load module', function() {
     			node.loadModule();
                 node.signalChange();
@@ -654,22 +655,19 @@ ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
 
 	menuSpec: function($super) {
 		var menu = $super();
-    		var fileName = this.moduleName;
-    		if (!this.target) return menu;
-    		return menu.concat([
-    			['Translate grammar', function() {
-					WorldMorph.current().prompt(
-						'File name of translated grammar?',
-						function(input) {
-							if (!input.endsWith('.js'))
-								input += '.js';
-							OMetaSupport.translateAndWrite(fileName, input);
-						},
-						fileName.slice(0, fileName.indexOf('.'))
-					);
-				}]
-				]);
-        },
+    	var fileName = this.moduleName;
+    	if (!this.target) return menu;
+		menu.unshift(['Translate grammar', function() {
+			WorldMorph.current().prompt(
+				'File name of translated grammar?',
+				function(input) {
+					if (!input.endsWith('.js')) input += '.js';
+					OMetaSupport.translateAndWrite(fileName, input);
+				},
+				fileName.slice(0, fileName.indexOf('.'))
+			) }]);
+    		return menu;
+	},
 
 	childNodes: function() {
 		var fileDef = this.target;
@@ -716,13 +714,13 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
 		var index = fragment.name ? fragment.name.lastIndexOf('.') : -1;
 		// don't search for complete namespace name, just its last part
 		var searchName = index === -1 ? fragment.name : fragment.name.substring(index+1);
-		return menu.concat([
-    		['references', function() {
-					var list = tools.SourceControl
-						.searchFor(searchName)
-						.without(fragment)
-					var title = 'references of' + fragment.name;
-					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]])
+		menu.unshift(['references', function() {
+			var list = tools.SourceControl
+				.searchFor(searchName)
+				.without(fragment)
+			var title = 'references of' + fragment.name;
+			new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]);
+		return menu;
 	} 
 
 });
@@ -750,7 +748,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 		var menu = $super();
 		var fragment = this.target;
 		var searchName = fragment.name;
-		return menu.concat([
+		return [
     		['senders', function() {
 					var list = tools.SourceControl
 						.searchFor(searchName)
@@ -768,7 +766,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 						.select(function(ea) { return ea.name === searchName });
 					var title = 'implementers of' + searchName;
 					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]
-    	]);
+    	].concat(menu);
 	},
 
 	evalSource: function(newSource) {
@@ -796,6 +794,31 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 
 	menuSpec: ide.ClassElemFragmentNode.prototype.menuSpec, // FIXME
+
+});
+
+ide.BrowserNode.subclass('lively.ide.ChangeSetNode', {
+
+    childNodes: function() {
+		return [];
+	},
+ 
+    buttonSpecs: function() {
+        return []
+    },
+    
+    sourceString: function($super) {
+		return '';
+/*		this.loadModule();
+        //if (!this.target) return '';
+		var src = $super();
+		if (src.length > this.maxStringLength && !this.showAll) return '';
+        return src;*/
+    },
+    
+    asString: function() {
+		return this.target.name;
+	},
 
 });
 
@@ -838,7 +861,7 @@ ide.BrowserCommand.subclass('lively.ide.ShowLineNumbersCommand', {
 
 ide.BrowserCommand.subclass('lively.ide.RefreshCommand', {
 
-wantsButton: function() {
+	wantsButton: function() {
 		return true;
 	},
 
@@ -1326,6 +1349,12 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     return [ 'Tests/ToolsTests.js', 'test.js', 'Tests/MorphTest.js']
     //return [];
     },
+
+	allFiles: function() {
+		return this.interestingLKFileNames()
+			.concat(this.preLoadFileNames())
+			.uniq();
+	},
 
 	// browser stuff
 	registerBrowser: function(browser) {

@@ -80,7 +80,6 @@ TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
         
         this.bounds = rect(pt(10,10), pt(100,100));
 	    this.parentMorph =  Morph.makeRectangle(0,0, 300, 300);
-		console.log('Setup run');
     },
     
     tearDown: function() {
