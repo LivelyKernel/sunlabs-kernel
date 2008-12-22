@@ -1833,8 +1833,6 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     interestingLKFileNames: function() {
-		if (this._interestingLKFileNames) 
-			return this._interestingLKFileNames;
         var kernelFileNames = new FileDirectory(URL.source).filenames();
         var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
 		var ometaFileNames = [];//new FileDirectory(URL.source.withFilename('ometa/')).filenames().collect(function(ea) { return 'ometa/' + ea });
@@ -1846,8 +1844,7 @@ ChangeList.subclass('SourceDatabase', {
                        "workspace.js", 'JSON.js'];
 		jsFiles = jsFiles.reject(function(ea) { return rejects.include(ea) });
 		var otherFiles = ['LKFileParser.txt'];
-        this._interestingLKFileNames = jsFiles.concat(otherFiles);
-		return this._interestingLKFileNames;
+		return jsFiles.concat(otherFiles);
     },
 
 });
@@ -2077,7 +2074,7 @@ Object.subclass('ChangeSet', {
 
 	addChange: function(change) {
 		var doc = this.changesNode.ownerDocument;
-		this.changesNode.appendChild(doc.importNode(change.asNode(), true));
+		this.changesNode.appendChild(doc.importNode(change.asXMLElement(), true));
 		return change;
 	},
 
@@ -2182,7 +2179,7 @@ Object.subclass('Change', {
 		this.xmlElement = xmlElement;
 	},
 
-	asNode: function() {
+	asXMLElement: function() {
 		return this.xmlElement;
 	},
 
@@ -2193,7 +2190,7 @@ Object.subclass('Change', {
 	getAttributeNamed: function(name, optXmlElement) {
 		var element = optXmlElement || this.xmlElement;
 		var attr = element.getAttributeNS(null, name);
-		if (!attr) throw dbgOn(new Error("no " + name + " for" + Exporter.stringify(element)));
+		if (!attr) console.warn("no " + name + " for" + Exporter.stringify(element));
 		return attr;
 	},
 
@@ -2266,7 +2263,18 @@ Change.subclass('ClassChange', {
 });
 
 Object.extend(ClassChange, {
-	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'class' }
+
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'class' },
+
+	create: function(name, source, optClassName) { // duplication with proto!!!
+		throw new Error('Check this method!');
+		var element = LivelyNS.create('static');
+		element.setAttributeNS(null, 'name', name);
+		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
+		element.textContent = source;
+		return new ProtoChange(element);
+	},
+	
 });
 
 Change.subclass('ProtoChange', {
@@ -2283,13 +2291,24 @@ Change.subclass('ProtoChange', {
 	},
 
 	getClassName: function() {
-		return this.getAttributeNamed('name', this.xmlElement.parentNode);
+		return this.getAttributeNamed('className')
+			|| this.getAttributeNamed('name', this.xmlElement.parentNode);
 	},
 
 });
 
 Object.extend(ProtoChange, {
-	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'proto' }
+	
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'proto' },
+	
+	create: function(name, source, optClassName) {
+		var element = LivelyNS.create('proto');
+		element.setAttributeNS(null, 'name', name);
+		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
+		element.textContent = source;
+		return new ProtoChange(element);
+	},
+	
 });
 
 Change.subclass('StaticChange', {
@@ -2312,7 +2331,17 @@ Change.subclass('StaticChange', {
 });
 
 Object.extend(StaticChange, {
-	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'static' }
+
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'static' },
+
+	create: function(name, source, optClassName) { // duplication with proto!!!
+		var element = LivelyNS.create('static');
+		element.setAttributeNS(null, 'name', name);
+		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
+		element.textContent = source;
+		return new ProtoChange(element);
+	},
+
 });
 
 Change.subclass('DoitChange', {

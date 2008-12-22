@@ -455,18 +455,10 @@ Object.subclass('lively.ide.BrowserCommand', {
 
 });
 
-/*
- *  Nodes for viewing classes, functions, objects (from within the system, no parsed source)
- */
  
- 
- 
- 
- 
- 
-/*
- *  SystemBrowser implementation for browsing parsed sources
- */
+// ===========================================================================
+// Browsing js files and OMeta
+// ===========================================================================
 ide.BasicBrowser.subclass('lively.ide.SystemBrowser', { // 123
  
     documentation: 'Browser for source code parsed from js files',
@@ -507,6 +499,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 	documentation: 'The rootNode of the SystemBrowser',
 
     childNodes: function() {
+		// js files + OMeta files (.txt) + lkml files + ChangeSet current
 		var nodes = [];
 		var srcDb = this.target;
 		var allFiles = srcDb.allFiles();
@@ -520,6 +513,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser));
 			}
 		};
+		nodes.push(new ide.ChangeSetNode(ChangeSet.fromWorld(WorldMorph.current()), this.browser));
 		return nodes;
 	}
 });
@@ -714,6 +708,12 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
 		var index = fragment.name ? fragment.name.lastIndexOf('.') : -1;
 		// don't search for complete namespace name, just its last part
 		var searchName = index === -1 ? fragment.name : fragment.name.substring(index+1);
+		// menu.unshift(['add to current ChangeSet', function() {
+		// 	WorldMorph.current().confirm('Add methods?', function(addMethods) {
+		// 		var cs = ChangeSet.current();
+		// 		var classChange = new 
+		// 	});
+		// }]);
 		menu.unshift(['references', function() {
 			var list = tools.SourceControl
 				.searchFor(searchName)
@@ -797,10 +797,13 @@ ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 
 });
 
+// ===========================================================================
+// Browsing ChangeSets
+// ===========================================================================
 ide.BrowserNode.subclass('lively.ide.ChangeSetNode', {
 
     childNodes: function() {
-		return [];
+		return this.target.getChanges().collect(function(ea) { return ea.asNode(this.browser)}, this);
 	},
  
     buttonSpecs: function() {
@@ -820,6 +823,52 @@ ide.BrowserNode.subclass('lively.ide.ChangeSetNode', {
 		return this.target.name;
 	},
 
+});
+
+ide.BrowserNode.subclass('lively.ide.ChangeSetClassNode', {
+	asString: function() {
+		return this.target.getName();
+	},
+	childNodes: function() {
+		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
+	},    
+	sourceString: function() {
+		return this.target.getDefinition();
+	},
+});
+
+ide.BrowserNode.subclass('lively.ide.ChangeSetClassElemNode', {
+	asString: function() {
+		return this.target.getName();
+	},
+	sourceString: function() {
+		return this.target.getDefinition();
+	},
+});
+
+ide.BrowserNode.subclass('lively.ide.ChangeSetDoitNode', {
+	asString: function() {
+		return this.target.getName();
+	},
+	sourceString: function() {
+		return this.target.getDefinition();
+	},
+});
+
+ClassChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassNode(this, browser) }
+});
+
+ProtoChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+});
+
+StaticChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+});
+
+DoitChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetDoitNode(this, browser) }
 });
 
 ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
@@ -1351,9 +1400,11 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     },
 
 	allFiles: function() {
-		return this.interestingLKFileNames()
-			.concat(this.preLoadFileNames())
-			.uniq();
+		if (!this._allFiles)
+			this._allFiles = this.interestingLKFileNames()
+				.concat(this.preLoadFileNames())
+				.uniq();
+		return this._allFiles;
 	},
 
 	// browser stuff
@@ -1606,6 +1657,17 @@ ide.FileFragment.addMethods({
 			browser.inPaneSelectNodeNamed('Pane3', this.name);
 		}
 		return browser;
+	}
+});
+
+ide.FileFragment.addMethods({
+
+	asChange: function() {
+		// FIXMEEEEE!!! subclassing! Unified hierarchy
+		if (this.type === 'klassDef') {
+			// return 
+		}
+		return null;
 	}
 });
 

@@ -1081,6 +1081,37 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 		this.assertEqual(change.evaluate(), 3);
 		this.assert(Class.forName(objName), 'TestObj not created');
 	},
+
+	testCreateProtoChange: function() {
+		var name = 'test';
+		var src = 'function() { 1+ 2 }';
+		var className = 'lively.Dummy';
+		var change = ProtoChange.create(name, src, className);
+		this.assertEqual(change.getName(), name);
+		this.assertEqual(change.getDefinition(), src);
+		this.assertEqual(change.getClassName(), className);
+	},
+	
+});
+
+thisModule.ChangesTests.subclass('lively.Tests.ToolsTests.ConvertFileFragmentsToChangesTests', {
+
+	setUp: function($super) {
+		$super();
+		this.jsParser = new JsParser();
+	},
+
+	testConvertClassFFToChange: function() {
+		var src = 'Object.subclass(\'Dummy\', {\n' +
+			'\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
+			'\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
+			'})';
+		var frag = this.jsParser.callOMeta('klassDef', src);
+		var change = frag.asChange();
+		y = change;
+		this.assert(change.isClassChange, 'is not a class change');
+	},
+
 });
 
 lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
