@@ -16,6 +16,7 @@
 
 
      Object.defineProperty = function(object, property, descriptor) {
+	 if (typeof descriptor  !== 'object') throw new TypeError();
 	 if (descriptor.value) {
 	     object[String(property)] = descriptor.value;
 	 } else {
@@ -44,7 +45,7 @@
 	 }},
 	 
 	 keys: { value: function(object, optFast) {
-	     if (typeof object !== 'object') throw new TypeError();
+	     if (typeof object !== 'object') throw new TypeError('not an object');
 	     var names = []; // check behavior wrt arrays
 	     for (var name in object) {
 		 if (object.hasOwnProperty(name)) 
@@ -65,6 +66,7 @@
 	 }},
 	 
 	 getOwnPropertyDescriptor: { value: function(object, name) {
+	     // FIXME? use $schema?
 	     var descriptor = { enumerable: true, writable: true, flexible: true};
 	     var getter = object.__lookupGetter__(name);
 	     var setter = object.__lookupSetter__(name);
@@ -139,10 +141,10 @@ function dbgOn(cond, optMessage) {
 // namespace logic adapted from
 // http://higher-order.blogspot.com/2008/02/designing-clientserver-web-applications.html
 var using = (function() {
-    function Util(args) { 
-	var ownArgs = this.objects = new Array(args.length);
-	for (var i = 0; i < args.length; i++) 
-	    ownArgs[i] = args[i];
+    function Util(args) {  // args is an escaping arguments array
+	this.objects = Array.prototype.concat.apply([], args);
+	//var ownArgs = this.objects = new Array(args.length);
+	//for (var i = 0; i < args.length; i++) ownArgs[i] = args[i];
     };
     Util.prototype = {
 	log: function(msg) {
@@ -1187,17 +1189,15 @@ Object.subclass('Record', {
         }
         // find all the "on"<Variable>"Update" methods of dep
         for (var name in dep) {
-            if (name.startsWith("on") && name.endsWith("Update")) {
-                var varname = name.substring(2, name.indexOf("Update"));
+	    var match = name.match(/on(.*)Update/);
+	    if (match) {
+		var varname = match[1];
                 if (!this["set" + varname]) {
                      // console.log("ERROR: cannot observe nonexistent variable " + varname);
                      // logStack();
                     throw new Error("cannot observe nonexistent variable " + varname);
 		}
-                var deps = this[Record.observerListName(varname)];
-                if (!deps) deps = this[Record.observerListName(varname)] = [];
-                else if (deps.indexOf(dep) >= 0) return;
-                deps.push(dep);
+		Record.addObserverTo(this, varname, dep);
             }
         }
     },
@@ -1220,7 +1220,6 @@ Object.subclass('Record', {
             this[ea] = this[ea].reject(function(relay) { return relay === dep || relay.delegate === dep });
         }, this);
     },
-
 
     addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
 	var forwardSpec = {};
@@ -1361,29 +1360,42 @@ Object.extend(Record, {
 
     
     observerListName: function(name) { return name + "$observers"},
+
+    addObserverTo: function(rec, varname, dep) {
+        var deps = rec[Record.observerListName(varname)];
+        if (!deps) deps = rec[Record.observerListName(varname)] = [];
+        else if (deps.indexOf(dep) >= 0) return;
+        deps.push(dep);
+    },
+
+    notifyObserversOf: function(rec, fieldName, coercedValue, optSource) {
+        var deps = rec[Record.observerListName(fieldName)];
+	var updateName = "on" + fieldName + "Update";
+        if (deps) {
+            for (var i = 0; i < deps.length; i++) {
+                var dep = deps[i];
+		// shouldn't this be uncoerced value? ......
+		var method = dep[updateName];
+		//console.log('updating  ' + updateName + ' in ' + Object.keys(dep));
+		method.call(dep, coercedValue, optSource, rec);
+            }
+        }
+    },
+
     
-    newRecordSetter: function newRecordSetter(name, to, byDefault) {
+    newRecordSetter: function newRecordSetter(fieldName, to, byDefault) {
+	var name = fieldName;
         return function recordSetter(value, optSource, force) {
+	    var coercedValue;
             if (value === undefined) {
 		this.removeRecordField(name);
             } else {
             	if (value == null && byDefault) value = byDefault;
-		var coercedValue = to ? to(value) : value;
+		coercedValue = to ? to(value) : value;
 		if (!force && this.getRecordField(name) === coercedValue) return;
 		this.setRecordField(name, coercedValue);
             }
-            var deps = this[Record.observerListName(name)];
-	    var updateName = "on" + name + "Update";
-            if (deps) {
-            	for (var i = 0; i < deps.length; i++) {
-                    var dep = deps[i];
-		    // shouldn't this be uncoerced value? ......
-		    var method = dep[updateName];
-		    //console.log('updating  ' + updateName + ' in ' + dep);
-		    method.call(dep, coercedValue, optSource);
-
-            	}
-            }
+	    Record.notifyObserversOf(this, name, coercedValue, optSource);
         }
     },
     
@@ -1400,6 +1412,26 @@ Object.extend(Record, {
                 throw new Error("no rawNode");
             }
         }
+    },
+
+    createDependentObserver: function(target, computedProperty, baseProperties /*:Array*/) {
+	// create an observer that will trigger the observers of
+	// computedProperty whenever one of the baseProperties changes
+	// The returned observer has to be added to target (as in target.addObserver
+
+	var getterName = "get" + computedProperty;
+	if (!target[getterName]) throw new Error('unknown computedProperty ' + computedProperty);
+
+	function notifier(value, source, record) {
+	    var newValue = record[getterName].call(record);
+	    return Record.notifyObserversOf(record, computedProperty, newValue);
+	}
+	var observer = {};
+	baseProperties.forEach(function(prop) {
+	    // FIXME check if target has field "get" + prop
+	    observer["on" + prop + "Update"] = notifier;
+	});
+	return observer;
     }
     
 });
@@ -1602,7 +1634,7 @@ Object.subclass("Point", {
     },
 
     deserialize: function(importer, string) { // reverse of toString
-	var array = string.substring(3, string.length - 1).split(',');
+	var array = string.slice(3, -1).split(',');
 	this.x = lively.data.Coordinate.parse(array[0]);
 	this.y = lively.data.Coordinate.parse(array[1]);
     },
@@ -1839,7 +1871,7 @@ Rectangle.addMethods({
     },
 
     setterName: function(partName) {
-	return "with" + partName.substring(0,1).toUpperCase() + partName.substring(1); 
+	return "with" + partName[0].toUpperCase() + partName.slice(1); 
     },
 
     partNameNear: function(partNames,p,dist) { 
