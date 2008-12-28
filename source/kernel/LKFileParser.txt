@@ -56,18 +56,20 @@ ometa LKFileParser <: Parser {
 	nameFirst = letter | '$' | '_',
   	nameRest = nameFirst | digit,
   	iName = firstAndRest(#nameFirst, #nameRest):r -> r.join(''),
-  	isKeyword :x        = ?BSJSParser._isKeyword(x),
-  	name                = iName:n /*~isKeyword(n)*/								-> n,
-  	keyword             = iName:k isKeyword(k)								-> k,
+  	isKeyword :x = ?BSJSParser._isKeyword(x),
+  	name = iName:n /*~isKeyword(n)*/ -> n,
+  	keyword = iName:k isKeyword(k) -> k,
 	namespaceIdSplitted = name:n '.' namespaceIdSplitted:r              -> { [n].concat(r) }
 	                    | name:n                                        -> { [n] },
-	namespaceId         = namespaceIdSplitted:nArr                          -> nArr.join('.'),
-	nsFollowedBy :x     = namespaceIdSplitted:nArr ?(nArr.last() === x) -> nArr.slice(0,nArr.length-1).join('.'),
+	namespaceId = namespaceIdSplitted:nArr
+-> nArr.join('.'),
+	nsFollowedBy :x = namespaceIdSplitted:nArr ?(nArr.last() === x)
+-> nArr.slice(0,nArr.length-1).join('.'),
 	nsWith :x = namespaceIdSplitted:nArr ?nArr.include(x)
 -> { var i = nArr.indexOf(x); {before: nArr.slice(0,i).join('.'), after: nArr.slice(i+1,nArr.length).join('.')} },
     
     /* functions */
-    basicFunction       = "function" spaces (name:n | empty) chunk('(', ')') spaces chunk('{', '}')  -> n,
+    basicFunction = "function" spaces (name:n | empty) chunk('(', ')') spaces chunk('{', '}') -> n,
     func = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction -> fn,
     functionDef = pos:p func:fn defEnd
 -> { $elf._fragment(fn, 'functionDef', p, $elf.pos()-1) },
@@ -83,7 +85,7 @@ ometa LKFileParser <: Parser {
 -> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {klassName: spec.before}) },
     
     /* properties */
-    protoDefWithSpcs = spaces protoDef:pD spaces -> pD,
+    
     protoDef = stackSize:s pos:p name:pName ':' spaces (basicFunction (somethingBigRelated | empty ) | somethingBigRelated) classElemDefEnd
 -> { if ($elf.stack.length !== s) {
 		throw new Error('sth wrong with the stack: ' + $elf.stack + ' expected length: ' + s + ' actual length: ' + $elf.stack.length);
@@ -92,7 +94,7 @@ ometa LKFileParser <: Parser {
 },
                                     
     /* class stuff */
-	classElems = '{' spaces protoDefWithSpcs*:a spaces '}'	-> a,
+	classElems = '{' (spaces protoDef:pD spaces -> pD)*:a '}'	-> a,
 	restKlassDef = ',' spaces classElems:descriptors										-> { {classElems: descriptors} }
 						| ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 						| ',' klassName:trait																	-> { {trait: trait, classElems: []} }
@@ -128,16 +130,16 @@ ometa LKFileParser <: Parser {
 -> { $elf._fragment(n, 'ometaRuleDef', p, $elf.pos()-1, [], {parameters: a}) },
     ometaInherit = "<:" spaces name:sn -> sn
 						| empty -> { null },
-    ometaDef            = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' spaces (ometaRuleDef:d spaces -> d)*:defs spaces '}' defEnd
-                        -> { $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, defs, {superclassName: sn}) },
+    ometaDef = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' spaces (ometaRuleDef:d spaces -> d)*:defs spaces '}' defEnd
+-> { $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, defs, {superclassName: sn}) },
                         
                     
     /* otherStuff */
     // comment     = descriptor:d spacesNoNl /*(fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl*/   -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
-    comment     = pos:p space+                                          -> { $elf._fragment(null, 'comment', p, $elf.pos()-1) },
-    newline     = pos:p ('\n' | '\r' )                                  -> { $elf._fragment(null, 'newline', p, $elf.pos()-1) },
-    blankLine   = pos:p (nl | (char:c ?(c.charCodeAt(0) === 32))* nl)   -> { $elf._fragment(null, 'blankLine', p, $elf.pos()-1) },
-    unknown     = pos:p somethingBigRelated defEnd                      -> { $elf._fragment(null, 'unknown', p, $elf.pos()-1) }
+    comment = pos:p space+ -> { $elf._fragment(null, 'comment', p, $elf.pos()-1) },
+    
+    blankLine = pos:p (nl | (char:c ?(c.charCodeAt(0) === 32))* nl) -> { $elf._fragment(null, 'blankLine', p, $elf.pos()-1) },
+    unknown = pos:p somethingBigRelated defEnd -> { $elf._fragment(null, 'unknown', p, $elf.pos()-1) }
                         
 };
 
