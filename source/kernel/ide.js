@@ -697,7 +697,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
         var classFragment = this.target;
         var browser = this.browser;
         return classFragment.subElements
-            .select(function(ea) { return ea.type === 'propertyDef' || ea.type === 'methodDef' })
+            .select(function(ea) { return ea.type === 'protoDef'})
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
     },
@@ -733,7 +733,7 @@ ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
         var obj = this.target;
         var browser = this.browser;
         return obj.subElements
-            .select(function(ea) { return ea.type === 'propertyDef' || ea.type === 'methodDef' })
+            .select(function(ea) { return ea.type === 'protoDef'})
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
     },
@@ -1230,9 +1230,9 @@ CodeParser.subclass('JsParser', {
         if (/^[\s]*([\w\.]+)\.subclass\([\'\"]([\w\.]+)[\'\"]/.test(this.currentLine))
             return 'klassDef';
         // if (/^[\s]*([\w]+)\:[\s]+function/.test(this.currentLine))
-        //     return 'methodDef';
+        //     return 'protoDef';
         // if (/^[\s]*([\w]+)\:/.test(this.currentLine))
-        //     return 'propertyDef';
+        //     return 'protoDef';
         // if (/^[\s]*function[\s]+([\w]+)[\s]*\(.*\)[\s]*\{.*/.test(this.currentLine)
         //         || /^[\s]*var[\s]+([\w]+)[\s]*\=[\s]*function\(.*\)[\s]*\{.*/.test(this.currentLine))
         //             return 'functionDef';
@@ -1503,10 +1503,6 @@ Object.subclass('lively.ide.FileFragment', {
 			 && (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
 			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
 		}
-		if (newMe && (this.type == 'propertyDef' || this.type == 'methodDef')
-			 && (newMe.type == 'propertyDef' || newMe.type == 'methodDef')) {
-			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
-		}
 		if (!newMe || newMe.type !== this.type) {
 			newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
 			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
@@ -1554,11 +1550,6 @@ Object.subclass('lively.ide.FileFragment', {
         parser.lines = newFileString.split(/[\n\r]/);
         parser.fileName = this.fileName;
 		parser.ometaRules = [this.type];
-		// REALLY time to cleanup
-		if (this.type === 'methodDef')
-			parser.ometaRules.push('propertyDef')
-		if (this.type === 'propertyDef')
-			parser.ometaRules.push('methodDef')
 		return parser.parseWithOMeta();
     },
 
@@ -1595,7 +1586,6 @@ Object.subclass('lively.ide.FileFragment', {
 		if (!this.flattened().include(childFrag)) throw dbgOn(new Error('Fragment' + childFrag + ' isn\'t in my (' + this + ') subelements!'));
 		var mySource = this.getSourceCode();
 		var childSource = childFrag.getSourceCode();
-		x = childSource;
 		var start = mySource.indexOf(childSource);
 		if (start === -1) throw dbgOn(new Error('Cannot find source of ' + childFrag));
 		var end = start + childSource.length;
@@ -1607,7 +1597,6 @@ Object.subclass('lively.ide.FileFragment', {
 		var owner = this.findOwnerFragment();
 		if (!owner) throw dbgOn(new Error('Cannot find owner of fragment ' + this));
 		var newSource = owner.sourceCodeWithout(this);
-		y = newSource;
 		owner.subElements = owner.subElements.without(this);
 		owner.putSourceCode(newSource);
 	},
@@ -1628,7 +1617,7 @@ Object.subclass('lively.ide.FileFragment', {
 
 	stopLine: function() {
 		// FIXME!!!
-		return JsParser.prototype.findLineNo(this.getFileString().split('\n'), this.stopIndex);
+		return JsParser.prototype.findLineNo(this.getFileString().split(/[\n\r]/), this.stopIndex);
 	},
     
     toString: function() {
@@ -1651,7 +1640,7 @@ ide.FileFragment.addMethods({
 		if (this.type === 'klassDef') {
 			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
 			browser.inPaneSelectNodeNamed('Pane2', this.name);
-		} else if (this.type === 'methodDef') {
+		} else if (this.type === 'protoDef') {
 			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
 			browser.inPaneSelectNodeNamed('Pane2', this.className);
 			browser.inPaneSelectNodeNamed('Pane3', this.name);

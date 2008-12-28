@@ -1465,16 +1465,16 @@ WidgetModel.subclass('ChangeList', {
             var item = this.changeList[i];
             // Note: should confirm fileName here as well for search lists
             // where lineNo might match, but its a different file
-            if (item.lineNo == lineNo) return item;
+            if (this.lineNoOfItem(item) == lineNo) return item;
         }
         return null;
     },
 
     bannerOfItem: function(item) {
-        var lineStr = item.lineNo ? item.lineNo.toString() : '?';
+		var lineStr = this.lineNoOfItem(item).toString();
         var firstLine = item.getSourceCode().truncate(40);  // a bit wastefull
         if (firstLine.indexOf("\r") >= 0) firstLine = firstLine.replace(/\r/g, "");
-        end = firstLine.indexOf(":");
+        var end = firstLine.indexOf(":");
         if (end >= 0) firstLine = firstLine.substring(0,end+1);
         var type = item.type ? item.type + ':' : '';
         var klass = item.className ? item.className + '>>' : '';
@@ -1518,6 +1518,7 @@ WidgetModel.subclass('ChangeList', {
     reallySaveItemText: function(item, newString, editView) {
         item.putSourceCode(newString);
         editView.acceptChanges();
+		this.changed('getChangeBanners');
 
         // Now recreate (slow but sure) list from new contents, as things may have changed
         if (this.searchString) return;  // Recreating list is not good for searches
@@ -1580,7 +1581,14 @@ WidgetModel.subclass('ChangeList', {
         m.innerMorph().textSelection.borderRadius = 0;
         m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString", getMenu: "default"});
         return panel;
-    }
+    },
+
+	lineNoOfItem: function(item) {
+		// helper for handling SourceCodeDescriptors as well as FileFragments... FIXME
+		if (item.startLine) return item.startLine();
+		if (item.lineNo) return item.lineNo;
+		return null;
+	},
 
 });  // balance
 

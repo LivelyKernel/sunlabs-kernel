@@ -210,7 +210,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseMethod1: function() {   // xxx: function()...,
         var src = 'testMethod_8: function($super,a,b) { function abc(a) {\n\t1+2;\n}; }';
         this.sut.src = src;
-        var descriptor = this.sut.callOMeta('methodDef');
+        var descriptor = this.sut.callOMeta('protoDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'testMethod_8');
         this.assertIdentity(descriptor.startIndex, 0);
@@ -220,7 +220,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseMethod2: function() {   // xxx: function()...,
         var src = 'onEnter: function() {},';
         this.sut.src = src;
-        var descriptor = this.sut.callOMeta('methodDef');
+        var descriptor = this.sut.callOMeta('protoDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'onEnter');
         this.assertIdentity(descriptor.startIndex, 0);
@@ -230,7 +230,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseMethod3: function() {   // xxx: function()...,
         var src = 'setShape: function(newShape) {\n\tthis.internalSetShape(newShape);\n}.wrap(Morph.onLayoutChange(\'shape\')),';
         this.sut.src = src;
-        var descriptor = this.sut.callOMeta('methodDef');
+        var descriptor = this.sut.callOMeta('protoDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'setShape');
         this.assertIdentity(descriptor.startIndex, 0);
@@ -240,7 +240,10 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseMethodWithComment: function() {
     		var src = 'm1: function() { /*\{*/ }';
             this.sut.src = src;
-            var descriptor = this.sut.callOMeta('methodDef');
+            var descriptor = this.sut.callOMeta('protoDef');
+
+
+
             this.assert(descriptor, 'no descriptor');
             this.assertEqual(descriptor.name, 'm1');
             this.assertIdentity(descriptor.startIndex, 0);
@@ -250,7 +253,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseProperty: function() { // xxx: yyy,
         var src = 'initialViewExtent: pt(400,250),';
         this.sut.src = src;
-        var descriptor = this.sut.callOMeta('propertyDef');
+        var descriptor = this.sut.callOMeta('protoDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'initialViewExtent');
         this.assertIdentity(descriptor.startIndex, 0);
@@ -540,8 +543,8 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest2', {
         var src = 'neutral: \{'  + '\n' +
     	'lightGray: Color.rgb(0xbd, 0xbe, 0xc0),'  + '\n' +
     	'gray: Color.rgb(0x80, 0x72, 0x77)' + '\n' + '\},';
-    	var result = this.sut.callOMeta('propertyDef', src);
-        this.assertEqual(result.type, 'propertyDef');
+    	var result = this.sut.callOMeta('protoDef', src);
+        this.assertEqual(result.type, 'protoDef');
     },
     
     testFailingUsing: function() { // from Main.js
@@ -590,8 +593,8 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
 
 	testFailingProperty: function() { // multiline properties
 		var src = 'documentation: \'Extended FileParser\' +\n\t\t\t\'bla\','
-		var result = this.sut.callOMeta('propertyDef', src);
-        this.assertEqual(result.type, 'propertyDef');
+		var result = this.sut.callOMeta('protoDef', src);
+        this.assertEqual(result.type, 'protoDef');
 		this.assertEqual(result.stopIndex, src.length-1);
     },
 
@@ -625,8 +628,8 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
     
     testParseTest: function() {
         var src = 'xyz: function() { \'\}\' },'
-        var descriptor = this.sut.callOMeta('methodDef', src);
-        this.assertEqual(descriptor.type, 'methodDef');
+        var descriptor = this.sut.callOMeta('protoDef', src);
+ this.assertEqual(descriptor.type, 'protoDef');
         this.assertEqual(descriptor.stopIndex, src.length-1);
     },
     
@@ -799,12 +802,12 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
        /* creates:
            moduleDef: foo.js (0-277 in foo.js, starting at line 1, 4 subElements)
 			klassDef: ClassA (55-123 in foo.js, starting at line 2, 1 subElements)
-			methodDef: m1 (84-119 in foo.js, starting at line 3, 0 subElements)
+			protoDef: m1 (84-119 in foo.js, starting at line 3, 0 subElements)
 			staticFuncDef: m3 (124-155 in foo.js, starting at line 8, 0 subElements)
 			functionDef: abc (156-179 in foo.js, starting at line 9, 0 subElements)
 			klassDef: ClassB (180-257 in foo.js, starting at line 10, 2 subElements)
-			methodDef: m2 (209-230 in foo.js, starting at line 11, 0 subElements)
-			methodDef: m3 (232-253 in foo.js, starting at line 12, 0 subElements)
+			protoDef: m2 (209-230 in foo.js, starting at line 11, 0 subElements)
+			protoDef: m3 (232-253 in foo.js, starting at line 12, 0 subElements)
         */
         var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
                'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n' +
