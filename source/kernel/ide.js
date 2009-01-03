@@ -1333,7 +1333,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		} else { 
 			throw dbgOn(new Error('Don\'t know how to parse ' + fileName))
 		}
-        root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
+		if (root.flattened) // FIXME ChangeSets don respond to flattened
+			root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
 		return root;
 	},
 
