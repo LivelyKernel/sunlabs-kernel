@@ -1723,12 +1723,13 @@ Object.subclass('Change', {
 
 Change.addMethods({
 
-	flattened: function() {
-		return this.subElements().inject([this], function(all, ea) {
-			return all.concat([ea]).concat(ea.subElements());
-		});
-	},
-
+	flattened: ide.FileFragment.prototype.flattened,
+	getSourceCode: function() { return this.getDefinition() },
+	getSourceCodeWithoutSubElements: ide.FileFragment.prototype.getSourceCodeWithoutSubElements,
+	putSourceCode: function() { throw new Error('Not yet, sorry!') },
+	getSourceControl: ide.FileFragment.prototype.getSourceControl,
+	sourceCodeWithout: ide.FileFragment.prototype.sourceCodeWithout,
+	getFileString: function() { throw new Error('Not yet, sorry!') },
 });
 
 Change.subclass('ChangeSet', {

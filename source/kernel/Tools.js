@@ -1587,7 +1587,7 @@ WidgetModel.subclass('ChangeList', {
 		// helper for handling SourceCodeDescriptors as well as FileFragments... FIXME
 		if (item.startLine) return item.startLine();
 		if (item.lineNo) return item.lineNo;
-		return null;
+		return -1;
 	},
 
 });  // balance
