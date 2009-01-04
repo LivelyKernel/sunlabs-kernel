@@ -202,9 +202,8 @@ TestCase.subclass('lively.Tests.LKWikiTest.SVNVersionInfoTest', {
     
     testToString: function() {
         var sut = new SVNVersionInfo(75, '2008-08-08T23:03:01.342813Z', null);
-        
-        this.assertEqual(sut.toString(), '(no author), 23:03:01 GMT-0700 (PDT), Fri Aug 08 2008, Revision 75',
-            'vers info toString failure');
+		this.assert(sut.toString().match(/(no author).*Fri Aug 08 2008, Revision 75/));
+
         // see SVNVersionInfo.toString()
         // this.assert(sut.toString().orig === sut, 'vers info string has not pointer to original');
     }

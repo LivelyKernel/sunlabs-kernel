@@ -270,16 +270,22 @@ Widget.subclass('TestRunner', {
 	viewTitle: "TestRunner",
 	documentation: 'Just a simple Tool for running tests in the Lively Kernel environment',
 	initialViewExtent: pt(600,500),
-	pins: ['+TestClasses', 'SelectedTestClass', 'ResultText', 'FailureList', 'Failure'],
+	formals: ['TestClasses', 'SelectedTestClass', 'ResultText', 'FailureList', 'Failure'],
 	ctx: {},
 	
-	initialize: function($super) {
+	initialize: function($super, optTestModule) {
 		$super(null);
-		var model = new SyntheticModel(this.pins);
-		this.connectModel(model.makePlugSpecFromPins(this.pins));
+		var model = Record.newPlainInstance((function(){var x={};this.formals.each(function(ea){x[ea]=null});return x}.bind(this))());
+		this.onTestClassesUpdate = Functions.Null;
+		this.onSelectedTestClassUpdate = Functions.Null;
+		this.onResultTextUpdate = Functions.Null;
+		this.onFailureListUpdate = Functions.Null;
+		this.onFailureUpdate = Functions.Null;
+		this.relayToModel(model, {TestClasses: 'TestClasses', SelectedTestClass: 'SelectedTestClass', ResultText: 'ResultText', FailureList: 'FailureList', Failure: 'Failure'});
 		
-		//Why does this not work here but in buildView?
-		//model.setTestClasses(this.listTestClasses());
+		model.setTestClasses(optTestModule ?
+			this.testClassesOfModule(optTestModule) :
+			this.allTestClasses());
 
 		return this;
 	},
@@ -331,8 +337,17 @@ Widget.subclass('TestRunner', {
 		console.log(testObject.result.printResult());
 		this.testClassListMorph.updateView("all");
 	},
-	
-	listTestClasses: function() {
+
+	testClassesOfModule: function(module) {
+		return module.classes()
+			.select(function(ea) { return ea.isSubclassOf(TestCase) && ea.prototype.shouldRun })
+		    .collect(function(ea) { return ea.type })
+		    .select(function(ea) { return !ea.include('Dummy') })
+		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
+            .sort();
+	},
+
+	allTestClasses: function() {
 		return TestCase.allSubclasses()
 		    .select(function(ea) { return ea.prototype.shouldRun })
 		    .collect(function(ea) { return ea.type })
@@ -365,9 +380,7 @@ Widget.subclass('TestRunner', {
         };
 		
 		
-		testClassList.connectModel({model: model, getList: "getTestClasses", setSelection: "setSelectedTestClass"});
-		this.setModelValue("setTestClasses", this.listTestClasses());
-		//model.setTestClasses(this.listTestClasses());
+		testClassList.connectModel(model.newRelay({List: '-TestClasses', Selection: '+SelectedTestClass'}), true);
 		testClassList.innerMorph().focusHaloBorderWidth = 0;
 	
 		var runButton = panel.runButton;
@@ -380,10 +393,10 @@ Widget.subclass('TestRunner', {
 		
 		// directly using the morph for setting the color -- 
 		this.resultBar = panel.resultBar;
-		this.resultBar.connectModel({model: model, getText: "getResultText"});
+		this.resultBar.connectModel(model.newRelay({Text: '-ResultText'}));
 
 		var failuresList = panel.failuresList;
-		failuresList.connectModel({model: model, getList: "getFailureList", setSelection: "setFailure"});
+		failuresList.connectModel(model.newRelay({List: '-FailureList', Selection: '+Failure'}));
 		// quick hack for building stackList
 		model.setFailure = model.setFailure.wrap(function(proceed, failureDescription) {
 			// FIXME: put his in testResult
