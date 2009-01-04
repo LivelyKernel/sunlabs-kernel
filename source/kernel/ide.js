@@ -667,11 +667,11 @@ ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
 		var fileDef = this.target;
 		if (!fileDef) return [];
 		var browser = this.browser;
-		var ometaNodes = fileDef.subElements
+		var ometaNodes = fileDef.subElements()
 			.select(function(ea) { return ea.type === 'ometaDef'})
 			.collect(function(ea) { return new ide.OMetaGrammarNode(ea, browser) });
-		var rest = fileDef.subElements
-			.select(function(ea) { return !fileDef.subElements.include(ea) })
+		var rest = fileDef.subElements()
+			.select(function(ea) { return !fileDef.subElements().include(ea) })
 			.collect(function(ea) { return new ide.ObjectFragmentNode(ea, browser) });
 		return ometaNodes.concat(rest);
     },
@@ -683,7 +683,7 @@ ide.FileFragmentNode.subclass('lively.ide.OMetaGrammarNode', {
 	childNodes: function() {
 		var def = this.target;
 		var browser = this.browser;
-		return this.target.subElements
+		return this.target.subElements()
 			.collect(function(ea) { return new ide.OMetaRuleNode(ea, browser) });
 	},
 
@@ -696,7 +696,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
     childNodes: function() {
         var classFragment = this.target;
         var browser = this.browser;
-        return classFragment.subElements
+        return classFragment.subElements()
             .select(function(ea) { return ea.type === 'protoDef'})
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
@@ -728,11 +728,11 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
 ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
  
     childNodes: function() {
-        if (!this.target.subElements) return [];
+        if (!this.target.subElements()) return [];
         // FIXME duplication with ClassFragmentNode
         var obj = this.target;
         var browser = this.browser;
-        return obj.subElements
+        return obj.subElements()
             .select(function(ea) { return ea.type === 'protoDef'})
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
@@ -803,7 +803,7 @@ ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 ide.BrowserNode.subclass('lively.ide.ChangeSetNode', {
 
     childNodes: function() {
-		return this.target.getChanges().collect(function(ea) { return ea.asNode(this.browser)}, this);
+		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
 	},
  
     buttonSpecs: function() {
@@ -853,22 +853,6 @@ ide.BrowserNode.subclass('lively.ide.ChangeSetDoitNode', {
 	sourceString: function() {
 		return this.target.getDefinition();
 	},
-});
-
-ClassChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassNode(this, browser) }
-});
-
-ProtoChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
-});
-
-StaticChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
-});
-
-DoitChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetDoitNode(this, browser) }
 });
 
 ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
@@ -1062,7 +1046,7 @@ Object.subclass('CodeParser', {
             descr = null;
         }
         
-        if (this.specialDescr && this.specialDescr.length > 0 &&  (!this.specialDescr.last().subElements.last().isError || !this.changeList.last().isError))
+        if (this.specialDescr && this.specialDescr.length > 0 &&  (!this.specialDescr.last().subElements().last().isError || !this.changeList.last().isError))
             console.warn('Couldn\'t find end of ' + this.specialDescr.last().type);
             //throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.last().type));
         
@@ -1076,7 +1060,7 @@ Object.subclass('CodeParser', {
 		dbgOn(true);
 		console.warn('Could not go forward before line ' + this.findLineNo(this.lines, this.ptr));
 		var lastAdded = this.changeList.last();
-		var responsible = lastAdded.flattened().detect(function(ea) { return ea.subElements && ea.subElements.include(descr) });
+		var responsible = lastAdded.flattened().detect(function(ea) { return ea.subElements() && ea.subElements().include(descr) });
 		if (!responsible && lastAdded === descr) responsible = this.changeList;
 		if (!responsible) throw new Error('Couldn\'t find last added descriptor');
 		responsible.pop();
@@ -1131,8 +1115,8 @@ Object.subclass('CodeParser', {
 	/* descriptor modification */
 	doForAllDescriptors: function(descr, action) {
         action.call(this, descr);
-        if (!descr.subElements) return;
-        descr.subElements.forEach(function(ea) { this.doForAllDescriptors(ea, action) }, this);
+        if (!descr.subElements()) return;
+        descr.subElements().forEach(function(ea) { this.doForAllDescriptors(ea, action) }, this);
     },
     
     fixIndicesAndMore: function(descr, startPos) {
@@ -1248,7 +1232,7 @@ CodeParser.subclass('JsParser', {
 		if (!this.specialDescriptors) this.specialDescriptors = [];
 		
 		if (descr = this.parseUsingBegin() || this.parseModuleBegin()) { // FIXME nested module/using
-			if (this.specialDescriptors.length > 0) this.specialDescriptors.last().subElements.push(descr);
+			if (this.specialDescriptors.length > 0) this.specialDescriptors.last().subElements().push(descr);
 			else this.changeList.push(descr);
 			this.specialDescriptors.push(descr)
 			return descr;
@@ -1260,7 +1244,7 @@ CodeParser.subclass('JsParser', {
 		};
 
 		if (descr = this.parseWithOMeta(this.giveHint())) {
-			if (this.specialDescriptors.length > 0) this.specialDescriptors.last().subElements.push(descr);
+			if (this.specialDescriptors.length > 0) this.specialDescriptors.last().subElements().push(descr);
 			else this.changeList.push(descr);
 			return descr;
 		}
@@ -1333,8 +1317,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		} else { 
 			throw dbgOn(new Error('Don\'t know how to parse ' + fileName))
 		}
-		if (root.flattened) // FIXME ChangeSets don respond to flattened
-			root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
+		root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
 		return root;
 	},
 
@@ -1437,7 +1420,9 @@ ide.startSourceControl = function() {
 	return tools.SourceControl;
 };
  
-// another SourceCodeDescriptor
+// ===========================================================================
+// FileFragments, another SourceCodeDescriptor
+// ===========================================================================
 Object.subclass('lively.ide.FileFragment', {
  
     initialize: function(name, type, startIndex, stopIndex, lineNo, fileName, subElems, srcCtrl) {
@@ -1447,10 +1432,14 @@ Object.subclass('lively.ide.FileFragment', {
         this.stopIndex = stopIndex;
         this.lineNo = lineNo;   // FIXME make virtual
         this.fileName = fileName;
-        this.subElements = subElems || [];
+        this._subElements = subElems || [];
         this.sourceControl = srcCtrl;
     },
     
+	subElements: function() {
+		return this._subElements;
+	},
+
     fragmentsOfOwnFile: function() {
         return this.getSourceControl().rootFragmentForModule(this.fileName).flattened().without(this);
     },
@@ -1458,12 +1447,12 @@ Object.subclass('lively.ide.FileFragment', {
 	findOwnerFragment: function() {
 		if (!this.fileName) throw dbgOn(new Error('no fileName for fragment ' + this));
 		return this.getSourceControl().modules[this.fileName].flattened().detect(function(ea) {
-			return ea.subElements.include(this);
+			return ea.subElements().include(this);
 		}, this);
 	},
 
     flattened: function() {
-        return this.subElements.inject([this], function(all, ea) {
+        return this.subElements().inject([this], function(all, ea) {
             return all.concat(ea.flattened());
         });
     },
@@ -1484,7 +1473,7 @@ Object.subclass('lively.ide.FileFragment', {
  
 	getSourceCodeWithoutSubElements: function() {
 		var completeSrc = this.getSourceCode();
-		return this.subElements.inject(completeSrc, function(src, ea) {
+		return this.subElements().inject(completeSrc, function(src, ea) {
 			var elemSrc = ea.getSourceCode();
 			var start = src.indexOf(elemSrc);
 			var end = elemSrc.length-1 + start;
@@ -1572,7 +1561,7 @@ Object.subclass('lively.ide.FileFragment', {
         });
  
 		this.name = newMe.name; // for renaming
-        this.subElements = newMe.subElements;
+        this._subElements = newMe.subElements();
 		newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
     },
     
@@ -1598,7 +1587,7 @@ Object.subclass('lively.ide.FileFragment', {
 		var owner = this.findOwnerFragment();
 		if (!owner) throw dbgOn(new Error('Cannot find owner of fragment ' + this));
 		var newSource = owner.sourceCodeWithout(this);
-		owner.subElements = owner.subElements.without(this);
+		owner._subElements = owner.subElements().without(this);
 		owner.putSourceCode(newSource);
 	},
 
@@ -1623,7 +1612,7 @@ Object.subclass('lively.ide.FileFragment', {
     
     toString: function() {
         return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
-            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.lineNo, this.subElements && this.subElements.length);
+            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.lineNo, this.subElements().length);
     },
  
     inspect: function() {
@@ -1673,6 +1662,397 @@ ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 	getFileString: function() {
         return this.fileString
     },
+});
+
+// ===========================================================================
+// Change/ChangeSet and lkml handling
+// ===========================================================================
+Object.subclass('Change', {
+
+	initialize: function(xmlElement) {
+		this.xmlElement = xmlElement;
+	},
+
+	asXMLElement: function() {
+		return this.xmlElement;
+	},
+
+	getParser: function() {
+		return new AnotherCodeMarkupParser();
+	},
+
+	getAttributeNamed: function(name, optXmlElement) {
+		var element = optXmlElement || this.xmlElement;
+		var attr = element.getAttributeNS(null, name);
+		if (!attr) console.warn("no " + name + " for" + Exporter.stringify(element));
+		return attr;
+	},
+
+	getName: function() {
+		return this.getAttributeNamed('name');
+	},
+
+	getDefinition: function() {
+		return this.xmlElement.textContent;
+	},
+
+	remove: function() {
+		var elem = this.xmlElement;
+		if (!elem.parentNode) return;
+		elem.parentNode.removeChild(elem);
+	},
+
+	subElements: function() {
+		return [];
+	},
+
+	evaluate: function() {
+		throw dbgOn(new Error('Overwrite me'));
+	},
+
+    toString: function() {
+		var message = this.constructor.type + ' named ' + this.getName();
+		message += ' -- subelems: ' + this.subElements().length;
+		return message;
+	},
+ 
+    inspect: function() {
+    	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
+	}
+});
+
+Change.addMethods({
+
+	flattened: function() {
+		return this.subElements().inject([this], function(all, ea) {
+			return all.concat([ea]).concat(ea.subElements());
+		});
+	},
+
+});
+
+Change.subclass('ChangeSet', {
+
+    initialize: function(optName) {
+		// Keep track of an ordered list of Changes
+		this.changes = []; // necessary? xmlElement should be enough...
+		this.xmlElement = null;
+		this.name = optName || '';
+	},
+
+	initializeFromWorld: function(world) {
+		var node = world.getDefsNode();
+		if (!this.reconstructFrom(node))
+			this.addHookTo(node);
+		return this;
+	},
+
+	initializeFromFile: function(fileName, fileString) {
+		if (!fileString) fileString = new FileDirectory(URL.source).fileContent(fileName);
+		var doc = new DOMParser().parseFromString(fileString, "text/xml");
+		if (!this.reconstructFrom(doc))
+			throw dbgOn(new Error('Couldn\'t create ChangeSet from ' + fileName));
+		return this;
+	},
+
+	reconstructFrom: function(node) {
+		var codeNodes = node.getElementsByTagName('code');
+		if (codeNodes.length == 0) return false;
+		if (codeNodes.length > 1) console.warn('multiple code nodes in ' + node);
+		this.xmlElement = codeNodes[0];
+		return true;
+	},
+
+	addHookTo: function(node) {
+		this.xmlElement = LivelyNS.create("code");
+		node.appendChild(this.xmlElement);
+	},
+
+	addChange: function(change) {
+		var doc = this.xmlElement.ownerDocument;
+		this.xmlElement.appendChild(doc.importNode(change.asXMLElement(), true));
+		return change;
+	},
+
+	subElements: function() {
+		var parser = new AnotherCodeMarkupParser();
+		return $A(this.xmlElement.childNodes)
+			.collect(function(ea) { return parser.createChange(ea) })
+			.reject(function(ea) { return !ea });
+	},
+
+	evaluate: function() {
+		this.subElements().forEach(function(item) { item.evaluate() });
+    },
+
+	removeChangeNamed: function(name) {
+		var change = this.subElements().detect(function(ea) { return ea.getName() === name});
+		if (!change) return null;
+		change.remove();
+		return change;
+	},
+
+	removeChangeAt: function(i) {
+		var changes = this.subElements();
+		if (!(i in changes)) return null;
+		var change = changes[i];
+		change.remove();
+		return change;
+	},
+
+	remove: function() {
+		this.subElements().invoke('remove');
+	},
+
+	/*************************************
+	   Everything below is deprecated
+	 *************************************/
+    logChange: function(item) {
+	// deprecated!!!
+	this.changes.push(item);
+	switch (item.type) {
+	case 'method':
+	    var classNode = this.xmlElement.appendChild(LivelyNS.create("class"));
+	    classNode.setAttributeNS(null, "name", item.className);
+	    var methodNode = classNode.appendChild(LivelyNS.create("proto"));
+	    methodNode.setAttributeNS(null, "name", item.methodName);
+	    methodNode.appendChild(NodeFactory.createCDATA(item.methodString));
+	    break;
+	case 'subclass':
+	    var classNode = this.xmlElement.appendChild(LivelyNS.create("class"));
+	    classNode.setAttributeNS(null, "name", item.subName);
+	    className.setAttributeNS(null, "super", item.className);
+	default:
+	    console.log('not yet handling type ' + item.type);
+	}
+    },
+    setChanges: function(arrayOfItems) {
+	this.changes = arrayOfItems;
+    },
+    evaluateAll_old: function() {
+	// FIXME: use markup parser instead?
+	this.changes.forEach(function(item) {this.evalItem(item)}, this);
+    },
+    evalItem: function(item) {
+	// FIXME: use markup parser instead?
+	console.log("ChangeSet evaluating a " + item.type + " def.");
+	if(item.type == 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
+	if(item.type == 'subclass') eval(item.className + '.subclass("' + item.subName + '", {})');
+	if(item.type == 'doit') eval(item.doitString);
+    }
+});
+
+
+Object.extend(ChangeSet, {
+
+	fromWorld: function(world) {
+		return new ChangeSet('ChangeSet for World').initializeFromWorld(world);
+	},
+
+	fromFile: function(fileName, fileString) {
+		return new ChangeSet(fileName).initializeFromFile(fileName, fileString);
+	},
+
+	current: function() {
+		// Return the changeSet associated with the current world
+		var world = WorldMorph.current();
+		var chgs = world.changes;
+		if (!chgs) {
+			chgs = ChangeSet.fromWorld(world);
+			world.changes = chgs;
+		}
+		return chgs;
+	}
+
+});
+
+Change.subclass('ClassChange', {
+
+	isClassChange: true,
+
+	getSuperclassName: function() {
+		return this.getAttributeNamed('super');
+	},
+
+	subElements: function() {
+		// memorize?
+		var parser = this.getParser();
+		return $A(this.xmlElement.childNodes)
+			.collect(function(ea) { return parser.createChange(ea) })
+			.reject(function(ea) { return !ea })
+	},
+
+	getProtoChanges: function() {
+		return this.subElements().select(function(ea) { return ea.isProtoChange });
+	},
+
+	getStaticChanges: function() {
+		return this.subElements().select(function(ea) { return ea.isStaticChange });
+	},
+
+	evaluate: function() {
+		var superClassName = this.getSuperclassName();
+		if (!Class.forName(superClassName))
+			throw dbgOn(new Error('Could not find class ' + superClassName));
+		var className = this.getName();
+		if (Class.forName(className))
+			console.warn('Class' + klass + 'already defined! Evaluating class change regardless');
+		var src = Strings.format('%s.subclass(\'%s\')', superClassName, className);
+		var klass = eval(src);
+		this.getStaticChanges().concat(this.getProtoChanges()).forEach(function(ea) { ea.evaluate() });
+		return klass;
+	},
+
+});
+
+ClassChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassNode(this, browser) }
+});
+
+Object.extend(ClassChange, {
+
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'class' },
+
+	create: function(name, source, optClassName) { // duplication with proto!!!
+		throw new Error('Check this method!');
+		var element = LivelyNS.create('static');
+		element.setAttributeNS(null, 'name', name);
+		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
+		element.textContent = source;
+		return new ProtoChange(element);
+	},
+	
+});
+
+Change.subclass('ProtoChange', {
+
+	isProtoChange: true,
+
+	evaluate: function() {
+		var className = this.getClassName();
+		var klass = Class.forName(className);
+		if (!klass) throw dbgOn(new Error('Could not find class of proto change' + this.getName()));
+		var src = Strings.format('%s.addMethods({%s: %s})', className, this.getName(), this.getDefinition());
+		eval(src);
+		return klass.prototype[this.getName()];
+	},
+
+	getClassName: function() {
+		return this.getAttributeNamed('className')
+			|| this.getAttributeNamed('name', this.xmlElement.parentNode);
+	},
+
+});
+
+ProtoChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+});
+
+Object.extend(ProtoChange, {
+	
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'proto' },
+	
+	create: function(name, source, optClassName) {
+		var element = LivelyNS.create('proto');
+		element.setAttributeNS(null, 'name', name);
+		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
+		element.textContent = source;
+		return new ProtoChange(element);
+	},
+	
+});
+
+Change.subclass('StaticChange', {
+
+	isStaticChange: true,
+
+	getClassName: function() { // duplication with protoChange
+		return this.getAttributeNamed('name', this.xmlElement.parentNode);
+	},
+
+	evaluate: function() {
+		var className = this.getClassName();
+		var klass = Class.forName(className);
+		if (!klass) throw dbgOn(new Error('Could not find class of static change' + this.getName()));
+		var src = Strings.format('Object.extend(%s, {%s: %s})', className, this.getName(), this.getDefinition());
+		eval(src);
+		return klass[this.getName()];
+	},
+
+});
+
+StaticChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+});
+
+Object.extend(StaticChange, {
+
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'static' },
+
+	create: function(name, source, optClassName) { // duplication with proto!!!
+		var element = LivelyNS.create('static');
+		element.setAttributeNS(null, 'name', name);
+		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
+		element.textContent = source;
+		return new ProtoChange(element);
+	},
+
+});
+
+Change.subclass('DoitChange', {
+
+	isDoitChange: true,
+
+	evaluate: function() {
+		return eval(this.getDefinition());
+	},
+
+});
+
+DoitChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetDoitNode(this, browser) }
+});
+
+Object.extend(DoitChange, {
+
+	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'doit' },
+
+	create: function(source) {
+		var element = stringToXML('<doit name="aDoit"><![CDATA[' + source + ']]></doit>');
+		return new DoitChange(element);
+	},
+
+});
+
+Object.subclass('AnotherCodeMarkupParser', {
+
+	initialize: function() {
+		this.files = {};
+	},
+
+	changeClasses: Change.allSubclasses().without(ChangeSet),
+
+	createChange: function(xmlElement) {
+		var klass = this.changeClasses.detect(function(ea) { return ea.isResponsibleFor(xmlElement) });
+		//if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
+		if (!klass) {
+			console.warn('Found no Change class for ' + Exporter.stringify(xmlElement).replace(/\n|\r/, ' '));
+			return null;
+		}
+		return new klass(xmlElement);
+	},
+
+	getDocumentOf: function(url) { /*helper*/
+		if (Object.isString(url)) url = new URL(url);
+		var existing = this.files[url.toString()];
+		if (existing) return existing;
+		var resource = new Resource(Record.newPlainInstance({URL: url.toString(), ContentText: null, ContentDocument: null}), "application/xml");
+		resource.fetch(true);
+		var doc = resource.getContentDocument();
+		if (doc) return doc;
+		return new DOMParser().parseFromString(resource.getContentText(), "application/xml");
+	},
+
 });
 
 });

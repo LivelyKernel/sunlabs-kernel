@@ -105,7 +105,7 @@ TestCase.subclass('lively.Tests.ToolsTests.JsParserTest', {
     
     assertSubDescriptorsAreValid: function(descr) {
         for (var i = 0; i < descr.length; i++) {
-            if (descr[i].subElements) this.assertSubDescriptorsAreValid(descr[i].subElements);
+            if (descr[i].subElements()) this.assertSubDescriptorsAreValid(descr[i].subElements());
             if (!descr[i+1]) continue;
             console.log(descr[i].name + ':' + descr[i].startIndex + '-' + descr[i].stopIndex + '<->' + descr[i+1].name + ':' + descr[i+1].startIndex + '-' + descr[i+1].stopIndex);
             this.assert(descr[i].stopIndex < descr[i+1].startIndex,
@@ -116,7 +116,7 @@ TestCase.subclass('lively.Tests.ToolsTests.JsParserTest', {
     
     assertDescriptorsAreValid: function(descr) {
         for (var i = 0; i < descr.length; i++) {
-            if (descr[i].subElements) this.assertSubDescriptorsAreValid(descr[i].subElements);
+            if (descr[i].subElements()) this.assertSubDescriptorsAreValid(descr[i].subElements());
             if (!descr[i+1]) continue;
             console.log(descr[i].name + ':' + descr[i].startIndex + '-' + descr[i].stopIndex + '<->' + descr[i+1].name + ':' + descr[i+1].startIndex + '-' + descr[i+1].stopIndex);
             this.assertEqual(descr[i].stopIndex, descr[i+1].startIndex - 1,
@@ -167,7 +167,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         this.assertEqual(descriptor.trait, 'ViewTrait');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
-        this.assertEqual(descriptor.subElements.length, 2);
+        this.assertEqual(descriptor.subElements().length, 2);
         this.assertDescriptorsAreValid([descriptor]);
     },
     
@@ -180,7 +180,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         this.assertEqual(descriptor.superclassName, 'Wrapper');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.length - 1);
-        this.assertEqual(descriptor.subElements.length, 0);
+        this.assertEqual(descriptor.subElements().length, 0);
     },
     
     testParseClassAndMethods: function() {  // Object.subclass
@@ -193,7 +193,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         var descriptor = this.sut.parseClass();
         this.assert(descriptor, 'no descriptor');
         
-        var dscr = descriptor.subElements;
+        var dscr = descriptor.subElements();
         this.assertEqual(dscr.length, 3);
         this.assertEqual(dscr[0].name, 'setUp');
         this.assertIdentity(dscr[0].startIndex, src.indexOf('setUp'));
@@ -271,7 +271,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         this.assertEqual(descriptor.name, 'Converter');
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
-        this.assertEqual(descriptor.subElements.length, 2);
+        this.assertEqual(descriptor.subElements().length, 2);
         this.assertDescriptorsAreValid([descriptor]);
     },
     
@@ -335,7 +335,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         var descriptor = this.sut.callOMeta('klassExtensionDef');
         this.assert(descriptor, 'no descriptor');
         this.assert(descriptor.name.startsWith('thisModule.ScriptEnvironment'));
-        this.assertEqual(descriptor.subElements.length, 1);
+        this.assertEqual(descriptor.subElements().length, 1);
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
         this.assertDescriptorsAreValid([descriptor]);
@@ -347,7 +347,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         var descriptor = this.sut.callOMeta('klassExtensionDef');
         this.assert(descriptor, 'no descriptor');
         this.assert(descriptor.name.startsWith('Morph'));
-        this.assertEqual(descriptor.subElements.length, 1);
+        this.assertEqual(descriptor.subElements().length, 1);
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
         this.assertDescriptorsAreValid([descriptor]);
@@ -558,7 +558,7 @@ main.logCompletion("main").delay(Config.mainDelay);\n\
         this.assertEqual(result.length, 2);
         this.assertEqual(result[1].type, 'usingDef');
         this.assertEqual(result[1].stopIndex, src.length-1);
-        this.assertEqual(result[1].subElements.length, 1);
+        this.assertEqual(result[1].subElements().length, 1);
     },
     
 testParseModuledef: function() {
@@ -587,8 +587,8 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
         var result = this.sut.parseSource(src);
         this.assertEqual(result.length, 1);
         this.assertEqual(result[0].type, 'moduleDef');
-        this.assertEqual(result[0].subElements.length, 1);
-        this.assertEqual(result[0].subElements[0].type, 'usingDef');
+        this.assertEqual(result[0].subElements().length, 1);
+        this.assertEqual(result[0].subElements()[0].type, 'usingDef');
     },
 
 	testFailingProperty: function() { // multiline properties
@@ -695,7 +695,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 			'}';
         var result = this.sut.parseSource(src);
         this.assertEqual(result[0].name, 'LKFileParser');
-		var sub = result[0].subElements;
+		var sub = result[0].subElements();
 		this.assertEqual(sub.length, 3);
 		this.assertEqual(sub[0].name, 'rule1');
 		this.assertEqual(sub[0].type, 'ometaRuleDef');
@@ -851,14 +851,14 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
            classFragment.putSourceCode('Object.subclass(\'ClassA\', { //thisHas17Chars\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
            this.assertEqual(classFragment.startIndex, 55, 'classFrag1 start');
            this.assertEqual(classFragment.stopIndex, 123+17, 'classFrag1 stop');
-           this.assertEqual(classFragment.subElements.length, 1);
-           this.assertEqual(classFragment.subElements[0].startIndex, 84+17, 'method1 start');
-           this.assertEqual(classFragment.subElements[0].stopIndex, 119+17, 'method1 stop');
+           this.assertEqual(classFragment.subElements().length, 1);
+           this.assertEqual(classFragment.subElements()[0].startIndex, 84+17, 'method1 start');
+           this.assertEqual(classFragment.subElements()[0].stopIndex, 119+17, 'method1 stop');
            var otherClassFragment = this.fragmentNamed('ClassB');
            this.assertEqual(otherClassFragment.startIndex, 180+17, 'classFrag2 start');
            this.assertEqual(otherClassFragment.stopIndex, 257+17, 'classFrag2 stop');
            this.assertEqual(this.root.stopIndex, 277+17, 'root stop');
-           // this.assertEqual(this.root.subElements[0].stopIndex, 277+17);
+           // this.assertEqual(this.root.subElements()[0].stopIndex, 277+17);
        },
     
     testGetSourceCodeWithoutSubElements: function() {
@@ -894,7 +894,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
 		this.assertEqual(fragment.name, result.name);
 		this.assertEqual(fragment.stopIndex, result.stopIndex);
 		this.assertEqual(fragment.startIndex, result.startIndex);
-		this.assertEqual(fragment.subElements.length, result.subElements.length);
+		this.assertEqual(fragment.subElements().length, result.subElements().length);
 	},
 
 	testReparseCompleteFileFrag: function() {
@@ -903,7 +903,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
 		var frag = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, src.length-1, 1, fileName, [], this.db);
 		var result = frag.reparse(src);
 		this.assertEqual(frag.type, result.type);
-		this.assert(result.subElements.length > 0);
+		this.assert(result.subElements().length > 0);
 		this.assertEqual(result.stopIndex, src.length-1);
 	},
 
@@ -1070,7 +1070,7 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 
 	testLoadPenLkml: function() {
 		delete Global['Pen'];
-		ChangeSet.fromFile('Pen.lkml').evaluateAll();
+		ChangeSet.fromFile('Pen.lkml').evaluate();
 		this.assert(Global['Pen']);
 	},
 
@@ -1133,11 +1133,11 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 	testAddChangeSetToWorldPlusReconstruct: function() {
 		var world = this.worldMorph;
 		var cs = ChangeSet.fromWorld(world);
-		this.assert(cs.changesNode, 'no changesNode');
-		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
+		this.assert(cs.xmlElement, 'no xmlElement');
+		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.xmlElement);
 		var cs2 = ChangeSet.fromWorld(world);
-		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs2.changesNode);
-		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.changesNode);
+		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs2.xmlElement);
+		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.xmlElement);
 	},
 
 	testAddChangesToChangeSet: function() {
@@ -1145,7 +1145,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
 		var change = this.parser.createChange(xml);
 		cs.addChange(change);
-		var result = cs.getChanges();
+		var result = cs.subElements();
 		this.assertEqual(result.length, 1);
 		this.assert(result[0].isClassChange);
 		this.assertEqual(result[0].getName(), change.getName());
@@ -1180,8 +1180,8 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var doc = Exporter.shrinkWrapMorph(world);
 		var newWorld = new Importer().loadWorldContents(doc);
 		var newCs = ChangeSet.fromWorld(newWorld);
-		this.assertEqual(newCs.getChanges().length, 1);
-		this.assertEqual(newCs.getChanges()[0].getName(), change.getName());
+		this.assertEqual(newCs.subElements().length, 1);
+		this.assertEqual(newCs.subElements()[0].getName(), change.getName());
 	},
 
 	testEvalChangeSet: function() {
@@ -1191,7 +1191,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var change = this.parser.createChange(xml);
 		var cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
-		cs.evaluateAll();
+		cs.evaluate();
 		var klass = Class.forName(className);
 		this.assert(klass && Class.isClass(klass), 'no class?');
 		this.assert(klass.functionNames().include('m1'), 'no function');
@@ -1203,7 +1203,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
 		cs.removeChangeNamed('aDoit');
-		this.assertEqual(cs.getChanges().length, 0);
+		this.assertEqual(cs.subElements().length, 0);
 	},
 
 	testRemoveChangeAtIndex: function() {
@@ -1212,7 +1212,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
 		cs.removeChangeAt(0);
-		this.assertEqual(cs.getChanges().length, 0);
+		this.assertEqual(cs.subElements().length, 0);
 	},
 
 	testRemoveAllChanges: function() {
@@ -1222,8 +1222,8 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		cs.addChange(change);
 		change = DoitChange.create('3+4');
 		cs.addChange(change);
-		cs.removeAllChanges();
-		this.assertEqual(cs.getChanges().length, 0);
+		cs.remove();
+		this.assertEqual(cs.subElements().length, 0);
 	},
 
 	xtestReal: function() {
