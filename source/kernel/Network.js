@@ -748,7 +748,7 @@ Object.subclass('SVNVersionInfo', {
     initialize: function(rev, dateOrString, author) {
         this.rev = rev,
 		if (Object.isString(dateOrString)) {
-			this.date = this.parseUTCDateString(dateString);
+			this.date = this.parseUTCDateString(dateOrString);
 		} else if (dateOrString instanceof Date) {
 			this.date = dateOrString;
 		} else { 
