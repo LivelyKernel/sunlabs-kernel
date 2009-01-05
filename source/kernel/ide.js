@@ -549,7 +549,12 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 			node.browser.allChanged() }]);
 		return spec;
 	},
-    
+
+	getSourceControl: function() {
+		if (this.target.getSourceControl)
+			return this.target.getSourceControl();
+		return tools.SourceControl;
+},
 });
 
 ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should be module node
@@ -609,6 +614,9 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		var node = this;
 		menu.unshift(['open ChangeList viewer', function() {
 			new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current()) }]);
+		menu.unshift(['reparse', function() {
+    		node.getSourceControl().reparseModule(node.moduleName, true);
+    		node.signalChange() }]);
 		menu.unshift(['toggle showAll', function() {
     		node.showAll = !node.showAll;
     		node.signalTextChange() }]);
@@ -1305,6 +1313,13 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         fileString = fileString || this.getCachedText(fileName);
 		return this.modules[fileName] = this.parseCompleteFile(fileName, fileString);
     },
+
+	reparseModule: function(moduleName, readAgain) {
+		this.modules[moduleName] = null;
+		if (readAgain)
+			this.cachedFullText[moduleName] = null;
+		return this.addModule(moduleName);
+	},
 
 	parseCompleteFile: function(fileName, fileString) {
 		var root;
