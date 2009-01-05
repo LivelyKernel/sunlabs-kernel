@@ -182,11 +182,11 @@ View.subclass('lively.storage.WebFile', NetRequestReporterTrait, {
     },
 
     startFetchingFile: function() {
-	this.updateView(this.modelPlug.getFile, this);
+	this.updateView(this.getModel().getFile, this);
     },
 
     updateView: function(aspect, source) { // setContent, getContent, getFile
-	var p = this.modelPlug;
+	var p = this.getModel();
 	if (!p) return;
 	switch (aspect) {
 	case p.getFile:

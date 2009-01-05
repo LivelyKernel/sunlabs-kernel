@@ -783,12 +783,9 @@ Object.subclass('FileDirectory', {
     },
 
     filesAndDirs: function(revision) {
-        var url = this.url;
-        var resource = new SVNResource(url.toString(), Record.newPlainInstance({URL: url.toString(), ContentDocument: null}));
-        var xml = resource.fetchProperties(null, true, null, revision).getResponseXML();
-        if (!xml) throw dbgOn(new Error('fetchProperties from ' + url.toString() + ' wasn\'t successful'));
-        var result = new Query("/D:multistatus/D:response").findAll(xml.documentElement);	
-	return result.map(function(rawNode) { return new lively.storage.CollectionItem(rawNode, url).toURL(); });
+		var webfile = new lively.storage.WebFile(Record.newPlainInstance({DirectoryList: [], RootNode: this.url}));
+		webfile.fetchContent(this.url, true);
+		return webfile.getModel().getDirectoryList();
     },
 
         files: function(optRev) {
