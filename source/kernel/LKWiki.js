@@ -459,6 +459,20 @@ Object.subclass('WikiPatcher', {
     },
 });
 
+PanelMorph.subclass('LatestWikiChangesListPanel', {
+
+	documentation: 'Just a hack for deserializing my widget',
+
+    onDeserialize: function() {
+        // FIXME
+        this.owner.targetMorph = this.owner.addMorph(
+			new LatestWikiChangesList(URL.source.getDirectory()).buildView(this.getExtent()));
+        this.owner.targetMorph.setPosition(this.getPosition());
+        this.remove();
+    }
+
+});
+
 Widget.subclass('LatestWikiChangesList', {
 
     viewTitle: "Latest changes",
@@ -477,11 +491,13 @@ Widget.subclass('LatestWikiChangesList', {
 	},
 
 	buildView: function(extent) {
-		var panel = PanelMorph.makePanedPanel(extent, [
+		var panel;
+		panel = new LatestWikiChangesListPanel(extent);
+		panel = PanelMorph.makePanedPanel(extent, [
 			['refreshButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0, 0.5, 0.1)],
 			['filterButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0, 0.5, 0.1)],
 			['versionList', newRealListPane, new Rectangle(0, 0.1, 1, 0.9)]
-		]);
+		], panel);
 
 		var m;
 		var model = this.getModel();

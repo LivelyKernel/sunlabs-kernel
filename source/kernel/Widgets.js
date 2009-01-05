@@ -768,12 +768,12 @@ BoxMorph.subclass('PanelMorph', {
 
 Object.extend(PanelMorph, {
 
-    makePanedPanel: function(extent, paneSpecs) {
+    makePanedPanel: function(extent, paneSpecs, optPanel) {
         // Generalized constructor for paned window panels
         // paneSpec is an array of arrays of the form...
         //     ['leftPane', newTextListPane, new Rectangle(0, 0, 0.5, 0.6)],
         // See example calls in, eg, SimpleBrowser.buildView() for how to use this
-        var panel = new PanelMorph(extent);
+        var panel = optPanel || new PanelMorph(extent);
         panel.linkToStyles(['panel']);
 
         paneSpecs.forEach(function(spec) {
