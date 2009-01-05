@@ -1188,7 +1188,7 @@ ButtonMorph.subclass('EllipseMakerMorph', {
 
     makeNewEllipse: function(date) {
         var ext = this.owner.innerBounds().extent();
-	var s = Math.min(ext.x/10, ext.y/10, 20);
+	var s = Math.min(ext.x/40, ext.y/40, 20);
 	var e = new Morph(new lively.scene.Ellipse(pt(0,0), s));
 	e.setExtent(pt(2*s, 4*s));
 	e.applyStyle({ fill: Color.random(), fillOpacity: Math.random(), borderWidth: 1, borderColor: Color.random()});
