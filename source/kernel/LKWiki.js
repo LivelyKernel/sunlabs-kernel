@@ -513,7 +513,7 @@ Widget.subclass('LatestWikiChangesList', {
 	searchForNewestFiles: function() {
 		this.notify('Please wait, fetching files');
 		var webfile = new lively.storage.WebFile(this.getModel().newRelay({CollectionItems: "+DirectoryContent", RootNode: "-URL"}));
-		webfile.fetchContent(url);
+		webfile.fetchContent(this.getURL());
 	},
 	
 	onDirectoryContentUpdate: function(colItems) {

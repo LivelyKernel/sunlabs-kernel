@@ -3908,6 +3908,16 @@ PasteUpMorph.subclass("WorldMorph", {
     	    ["XHTML Browser", function(evt) { 
     		var xeno = new XenoBrowserWidget('sample.xhtml');
     		xeno.openIn(world, evt.point()); 
+    	    }],
+			["Viewer for latest file changes", function(evt) {
+			var cb = function(input) {
+				require('lively.LKWiki').toRun(function(u,m) {
+					var url = new URL(input);
+					console.log(url);
+					new LatestWikiChangesList(url).openIn(world, evt.point());
+				})
+			}
+			world.prompt('Url to observe', cb, URL.source.getDirectory().toString()); 
     	    }]
         ];
         var scriptingMenuItems = [
