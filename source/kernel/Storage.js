@@ -138,7 +138,12 @@ lively.data.Wrapper.subclass('lively.storage.CollectionItem', {
     },
 
     toURL: function() {
-	return this.baseUrl.withPath(this.name());
+		// this doesn't return a correct url when used with proxy, see toURL2
+		return this.baseUrl.withPath(this.name());
+    },
+
+    toURL2: function() {
+		this.baseUrl.withFilename(z.shortName());
     },
 
     toString: function() {
@@ -153,19 +158,23 @@ lively.data.Wrapper.subclass('lively.storage.CollectionItem', {
     
     properties: function() {
 	return this.propertiesQ.findAll(this.rawNode).pluck('textContent').join('\n');
-    }
+    },
+
+	asSVNVersionInfo: function() {
+		var r = this.rawNode;
+		// FIXME cleanup --> SVNResource>>pvtSetMetadataDoc
+		return new SVNVersionInfo(
+			Number(r.getElementsByTagName('version-name')[0].textContent),
+			new Date(r.getElementsByTagName('getlastmodified')[0].textContent),
+			r.getElementsByTagName('creator-displayname')[0].textContent);
+	},
 
 });
 
 
 View.subclass('lively.storage.WebFile', NetRequestReporterTrait, { 
     documentation: "Read/Write file",     // merge with Resource?
-    pins: ["-File", "Content", "+DirectoryList", "-RootNode"],
-
-    
-    getFile: function() {
-	return this.getModelValue('getFile');
-    },
+    formals: ["-File", "Content", "+CollectionItems", "+DirectoryList", "-RootNode"],
 
     initialize: function($super, plug) {
 	$super(plug);
@@ -182,7 +191,8 @@ View.subclass('lively.storage.WebFile', NetRequestReporterTrait, {
     },
 
     startFetchingFile: function() {
-	this.updateView(this.getModel().getFile, this);
+		if (this.modelPlug)
+			this.updateView(this.modelPlug.getFile, this);
     },
 
     updateView: function(aspect, source) { // setContent, getContent, getFile
@@ -226,8 +236,9 @@ View.subclass('lively.storage.WebFile', NetRequestReporterTrait, {
     pvtSetDirectoryContent: function(responseXML) {
 	var result = new Query("/D:multistatus/D:response").findAll(responseXML.documentElement);
 	var baseUrl = this.getModelValue("getRootNode");
-	
-	var files = result.map(function(rawNode) { return new module.CollectionItem(rawNode, baseUrl).toURL(); });
+	var colItems = result.map(function(rawNode) { return new module.CollectionItem(rawNode, baseUrl) });
+	this.setModelValue("setCollectionItems", colItems);
+	var files = colItems.map(function(ea) { return ea.toURL(); });
 	files = this.arrangeFiles(files);
 	this.setModelValue("setDirectoryList", files);
     },

@@ -3,7 +3,7 @@ module('lively.LKWiki').requires().toRun(function(ownModule) {
 URL.common.localWiki = URL.proxy.withFilename('wiki/');
 
 // Deprecated
-Widget.subclass('WikiWindow', NetRequestReporterTrait, {
+Widget.subclass('WikiWindow', NetRequestReporterTrait, { // FIXME deprected, remove!
     
     viewTitle: "WikiWindow",
     initialViewExtent: pt(550, 350),
@@ -188,15 +188,6 @@ Widget.subclass('WikiNavigator', {
 		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: this.model.getURL().toString(), HeadRevision: null, Metadata: null}));
 		
 		return this;
-	},
-	
-	// maybe better when we do this with rewrite rules?
-	removeBaselinePartsFrom: function(url) {
-	    // concatenates the two ends of the url
-	    // "http://localhost/livelyBranch/proxy/wiki/!svn/bc/187/test/index.xhtml"
-	    // --> "http://localhost/livelyBranch/proxy/wiki/index.xhtml"
-	    var reg = /(.*)!svn\/bc\/[0-9]+\/(.*)/;
-	    return url.replace(reg, '$1$2');
 	},
 	
 	buildView: function(extent) {
@@ -466,6 +457,110 @@ Object.subclass('WikiPatcher', {
     unpatchSrc: function(src) {
         return src.replace(this.findLinks, '$1"$3"');
     },
-})
+});
+
+Widget.subclass('LatestWikiChangesList', {
+
+    viewTitle: "Latest changes",
+
+    initialViewExtent: pt(200, 210),
+
+	formals: ["URL", "DirectoryContent", "Filter", "VersionList", "VersionSelection"],
+
+	defaultFilter: /^.*xhtml$/,
+
+	maxListLength: 10,
+
+	initialize: function(url) {
+		var model = Record.newPlainInstance({URL: url, DirectoryContent: [], Filter: this.defaultFilter, VersionList: [], VersionSelection: null});
+		this.relayToModel(model, {URL: "-URL", DirectoryContent: "DirectoryContent", Filter: "Filter", VersionList: "VersionList", VersionSelection: "+VersionSelection"});
+	},
+
+	buildView: function(extent) {
+		var panel = PanelMorph.makePanedPanel(extent, [
+			['refreshButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0, 0.5, 0.1)],
+			['filterButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0, 0.5, 0.1)],
+			['versionList', newRealListPane, new Rectangle(0, 0.1, 1, 0.9)]
+		]);
+
+		var m;
+		var model = this.getModel();
+
+		m = panel.refreshButton;
+		m.setLabel("Refresh");
+		m.connectModel({model: this, setValue: "refresh"});
+
+		m = panel.filterButton;
+		m.setLabel("Filename filter");
+		m.connectModel({model: this, setValue: "filterDialog"});
+
+		m = panel.versionList;
+		m.connectModel(model.newRelay({List: "-VersionList"}));
+
+		return panel;
+	},
+
+	notify: function(msg) { // to let the user now what's goin on
+			this.setVersionList([msg]);
+	},
+
+	versionListHasOnlyNotifications: function() {
+		var l = this.getVersionList();
+		if (l.length !== 1) return false;
+		return !l.first().isListItem // notifications are just strings...
+	},
+
+	searchForNewestFiles: function() {
+		this.notify('Please wait, fetching files');
+		var webfile = new lively.storage.WebFile(this.getModel().newRelay({CollectionItems: "+DirectoryContent", RootNode: "-URL"}));
+		webfile.fetchContent(url);
+	},
+	
+	onDirectoryContentUpdate: function(colItems) {
+		this.notify('Please wait, fetching version infos');
+		// TODO -- Use filter here!
+		colItems = colItems.select(function(ea) { return ea.shortName().match(this.getFilter()) }, this);
+		var t = new Date();
+		var list = colItems
+			.collect(function(ea) { return this.createListItemFor(ea) }, this)
+			.sort(function(a,b) { return b.value.versionInfo.rev - a.value.versionInfo.rev });
+		list = list.slice(0, this.maxListLength);
+		console.log('time: ' + (new Date()-t)/1000 + 's');
+		this.setVersionList(list);
+	},
+	
+	createListItemFor: function(colItem) {
+		var versionInfo = colItem.asSVNVersionInfo();
+		return {isListItem: true, string: colItem.shortName() + ' ' + versionInfo.rev, value: {colItem: colItem, versionInfo: versionInfo}};
+	},
+
+	refresh: function(btnVal) {
+		if (btnVal) return;
+		this.searchForNewestFiles();
+	},
+	
+	filterDialog: function(btnVal) {
+		if (btnVal) return;
+		var world = WorldMorph.current();
+		var cb = function(input) {
+			var regexp;
+			try { regexp = eval(input) } catch(e) {};
+			if (!(regexp instanceof RegExp)) {
+				world.prompt('Invalid regular expression!', cb, input);
+				return;
+			}
+			this.setFilter(regexp);
+			this.searchForNewestFiles();
+		}.bind(this);
+		world.prompt('Change the regular expression', cb, this.getFilter().toString());
+	},
+
+	onFilterUpdate: Functions.Null,
+	
+	onVersionSelectionUpdate: Functions.Null,
+	
+	onVersionListUpdate: Functions.Null,
+
+});
 
 }) // end of module
