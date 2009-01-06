@@ -1780,7 +1780,7 @@ BoxMorph.subclass("SliderMorph", {
             this.slider.setFill(new gfx.LinearGradient([ new gfx.Stop(0, baseColor),
 							 new gfx.Stop(1, fill.stops[1].color())], direction));
 	    this.setBorderWidth(this.slider.getBorderWidth());
-        } else {
+        } else if (fill) {
             this.setFill(fill.lighter());
         }
     },
