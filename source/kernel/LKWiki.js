@@ -550,7 +550,7 @@ Widget.subclass('LatestWikiChangesList', {
 		var versionInfo = colItem.asSVNVersionInfo();
 		return {
 			isListItem: true,
-			string: colItem.shortName() + ' (' + versionInfo.rev ' -- ' + versionInfo.author + ')',
+			string: colItem.shortName() + ' (' + versionInfo.rev + ' -- ' + versionInfo.author + ')',
 			value: {colItem: colItem, versionInfo: versionInfo}};
 	},
 
