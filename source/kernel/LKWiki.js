@@ -465,10 +465,11 @@ PanelMorph.subclass('LatestWikiChangesListPanel', {
 
     onDeserialize: function() {
         // FIXME
-        this.owner.targetMorph = this.owner.addMorph(
-			new LatestWikiChangesList(URL.source.getDirectory()).buildView(this.getExtent()));
+		var widget = new LatestWikiChangesList(URL.source.getDirectory())
+        this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
         this.owner.targetMorph.setPosition(this.getPosition());
         this.remove();
+		widget.searchForNewestFiles();
     }
 
 });
@@ -477,13 +478,13 @@ Widget.subclass('LatestWikiChangesList', {
 
     viewTitle: "Latest changes",
 
-    initialViewExtent: pt(200, 210),
+    initialViewExtent: pt(280, 210),
 
 	formals: ["URL", "DirectoryContent", "Filter", "VersionList", "VersionSelection"],
 
 	defaultFilter: /^.*xhtml$/,
 
-	maxListLength: 10,
+	maxListLength: 20,
 
 	initialize: function(url) {
 		var model = Record.newPlainInstance({URL: url, DirectoryContent: [], Filter: this.defaultFilter, VersionList: [], VersionSelection: null});
@@ -547,7 +548,10 @@ Widget.subclass('LatestWikiChangesList', {
 	
 	createListItemFor: function(colItem) {
 		var versionInfo = colItem.asSVNVersionInfo();
-		return {isListItem: true, string: colItem.shortName() + ' ' + versionInfo.rev, value: {colItem: colItem, versionInfo: versionInfo}};
+		return {
+			isListItem: true,
+			string: colItem.shortName() + ' (' + versionInfo.rev ' -- ' + versionInfo.author + ')',
+			value: {colItem: colItem, versionInfo: versionInfo}};
 	},
 
 	refresh: function(btnVal) {
