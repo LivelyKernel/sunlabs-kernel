@@ -488,7 +488,7 @@ Widget.subclass('LatestWikiChangesList', {
 
 	initialize: function(url) {
 		var model = Record.newPlainInstance({URL: url, DirectoryContent: [], Filter: this.defaultFilter, VersionList: [], VersionSelection: null});
-		this.relayToModel(model, {URL: "-URL", DirectoryContent: "DirectoryContent", Filter: "Filter", VersionList: "VersionList", VersionSelection: "+VersionSelection"});
+		this.relayToModel(model, {URL: "-URL", DirectoryContent: "DirectoryContent", Filter: "Filter", VersionList: "VersionList", VersionSelection: "VersionSelection"});
 	},
 
 	buildView: function(extent) {
@@ -512,7 +512,7 @@ Widget.subclass('LatestWikiChangesList', {
 		m.connectModel({model: this, setValue: "filterDialog"});
 
 		m = panel.versionList;
-		m.connectModel(model.newRelay({List: "-VersionList"}));
+		m.connectModel(model.newRelay({List: "-VersionList", Selection: "+VersionSelection"}));
 
 		return panel;
 	},
@@ -577,7 +577,16 @@ Widget.subclass('LatestWikiChangesList', {
 
 	onFilterUpdate: Functions.Null,
 	
-	onVersionSelectionUpdate: Functions.Null,
+	onVersionSelectionUpdate: function(listItem) {
+		console.log('new sel');
+		world = WorldMorph.current();
+		var url = this.getURL().toString() + listItem.colItem.shortName();
+		world.confirm('Navigate to ' + url + '?', function(response) {
+			if (!response) return;
+			Config.askBeforeQuit = false;
+			window.location.assign(url + '?' + new Date().getTime());
+		});
+	},
 	
 	onVersionListUpdate: Functions.Null,
 
