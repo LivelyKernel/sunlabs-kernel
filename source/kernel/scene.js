@@ -1588,6 +1588,11 @@ this.Node.subclass('lively.scene.Clip', {
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
 	//FIXME remap the id?
+        if (!rawNode) {
+            // throw new Error("deserializing Clip withour rawNode");
+            console.log("Error: deserializing Clip withour rawNode");
+            return
+        };
 	var node = rawNode.firstChild; // really firstElement, allow for whitespace
 	if (!node) return; // empty clipPath?
 	this.shape = lively.scene.Shape.importFromNode(importer, node);
