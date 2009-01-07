@@ -22,51 +22,51 @@ FabrikTestCase.subclass('FabrikTest', {
         this.textComponent = new TextComponent();
         this.fabrikComponent.plugin(this.textComponent);
         this.assertEqual(this.fabrikComponent.components.length, 1);
-    },	
+    },  
 
-	testBuildView: function() {
-    	this.buildFabrikWithComponents(0);
+    testBuildView: function() {
+        this.buildFabrikWithComponents(0);
         //this.fabrikComponent.openIn(WorldMorph.current());
-    	//this.assert(this.fabrikComponent.morph.openForDragAndDrop);
-	},
-	testBuildViewAfterPlugin: function() {
-		var textComponent = new TextComponent();
-	    this.fabrikComponent.plugin(textComponent);
-	    this.assert(!textComponent.morph);
-	    this.fabrikComponent.buildView();
-	    this.assert(textComponent.morph, "buildView has to build the component morphs");
-	},
-	testConnectTextComponents: function(){
-	    this.buildFabrikWithComponents(2);
-	    this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
-	    this.assertEqual(this.fabrikComponent.connectors.length, 1);
-	},
-	testDoublePluginConnectors: function(){
-	    this.buildFabrikWithComponents(2);
-	    this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
-	    this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
-	    this.assertEqual(this.fabrikComponent.connectors.length, 1);
-	},
-	testReversePluginConnectors: function(){
-	    this.buildFabrikWithComponents(2);
-	    this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
-	    this.components[1].getPin("Text").connectTo(this.components[0].getPin("Text"));
-	    this.assertEqual(this.fabrikComponent.connectors.length, 1);
-	},
+        //this.assert(this.fabrikComponent.morph.openForDragAndDrop);
+    },
+    testBuildViewAfterPlugin: function() {
+        var textComponent = new TextComponent();
+        this.fabrikComponent.plugin(textComponent);
+        this.assert(!textComponent.morph);
+        this.fabrikComponent.buildView();
+        this.assert(textComponent.morph, "buildView has to build the component morphs");
+    },
+    testConnectTextComponents: function(){
+        this.buildFabrikWithComponents(2);
+        this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
+        this.assertEqual(this.fabrikComponent.connectors.length, 1);
+    },
+    testDoublePluginConnectors: function(){
+        this.buildFabrikWithComponents(2);
+        this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
+        this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
+        this.assertEqual(this.fabrikComponent.connectors.length, 1);
+    },
+    testReversePluginConnectors: function(){
+        this.buildFabrikWithComponents(2);
+        this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
+        this.components[1].getPin("Text").connectTo(this.components[0].getPin("Text"));
+        this.assertEqual(this.fabrikComponent.connectors.length, 1);
+    },
 
     testRemoveConnector: function() {
         this.buildFabrikWithComponents(2);
         var con = this.components[0].getPin("Text").connectTo(this.components[1].getPin("Text"));
-		this.assert(con, "plugin failed");
-		con.remove();
-		this.assertEqual(this.fabrikComponent.connectors.length, 0,"connectors: "+ this.fabrikComponent.connectors);	
+        this.assert(con, "plugin failed");
+        con.remove();
+        this.assertEqual(this.fabrikComponent.connectors.length, 0,"connectors: "+ this.fabrikComponent.connectors);    
     },
     
     testRemoveComponent: function() {
         this.buildFabrikWithComponents(1);
         this.components[0].panel.remove(); // high level remove
-		this.assertEqual(this.fabrikComponent.components.length, 0, "component not removed");
-		this.assert(!this.components[0].fabrik, "fabrik reference still there");
+        this.assertEqual(this.fabrikComponent.components.length, 0, "component not removed");
+        this.assert(!this.components[0].fabrik, "fabrik reference still there");
     },
     
     testFabrikInFabrikConnectorsBelongsToInner: function() {
@@ -353,174 +353,174 @@ TestCase.subclass('ComponentModelTest', {
         this.model = ComponentModel.newModel();
     },
 
-	testSetAndGetText: function() {
-		this.model.addField("Text");
-		this.assert(this.model.getText instanceof Function, "getText method was not created");
-		this.assert(this.model.setText instanceof Function, "setText method was not created");
-		
-		var text = 'text that will be written to the model';
-		this.model.setText(text);
-		this.assertEqual(this.model.getText(), text, "Written value cannot be extracted");
-	},
-	
-	testForcedSet: function() {
-	    var wasRun = false;
-	    var text = 'text that will be written to the model';
-	    var test = this;
-	    
-	    this.model.addField("Test");
-	    this.model.addObserver({onTestUpdate: function(val) { test.assertEqual(val, text); wasRun = true }});
-	    this.model.setTest(text);
-	    this.assert(wasRun, 'not triggered first time');
-	    wasRun = false;
-	    
-	    this.model.setTest(text, null, true);
-	    this.assert(wasRun, 'not triggered second time');
-	},
-	
-	testForcedSetViaRelay: function() {
-	    var wasRun = false;
-	    var text = 'text that will be written to the model';
-	    var test = this;
-	    
-	    this.model.addField("Test");
-	    this.model.addObserver({onTestUpdate: function(val) { test.assertEqual(val, text); wasRun = true }});
-	    var relay = this.model.newRelay({RelayTest: 'Test'});
-	    relay.setRelayTest(text);
-	    this.assert(wasRun, 'not triggered first time');
-	    wasRun = false;
-	    
-	    relay.setRelayTest(text, undefined /*optSource*/, true /*force*/);
-	    this.assert(wasRun, 'not triggered second time');
-	},
-	
-	testObserver: function() {
-		this.model.addField("Text");
-		var wasRun;
-		var text = 'text';
-		var test = this;
-		this.model.addObserver({onTextUpdate: function(value) {
-				test.assertEqual(value, text);
-				wasRun = true;}});
-		this.assert(this.model["Text$observers"], "no observer array for text pin");
-		this.assertEqual(this.model["Text$observers"].length, 1);
-		this.model.setText(text);
-		this.assert(wasRun);
-	},
-	
-	setUpForObserverRemoveTest: function() {
-		this.model.addField("Field1");
-		this.model.addField("Field2");
-		this.observerModel = ComponentModel.newModel();
-		this.observerModel.addField("ObserverField1");
-		this.observerModel.addField("ObserverField2");
-	},
-	
-	testRemoveObserver1: function() { // remove the observer in one fields
-		this.setUpForObserverRemoveTest();
-		this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
-		this.model.removeObserver(this.observerModel, "Field1");
-		this.assertEqual(this.model["Field1$observers"].length, 0);
-		this.model.setField1("text");
-		this.assert(!this.observerModel.getObserverField1(), "ObserverField1 was updated although no observer connection exists");
-	},
-	
-	testRemoveObserver2: function() { // remove the observer in two fields
+    testSetAndGetText: function() {
+        this.model.addField("Text");
+        this.assert(this.model.getText instanceof Function, "getText method was not created");
+        this.assert(this.model.setText instanceof Function, "setText method was not created");
+        
+        var text = 'text that will be written to the model';
+        this.model.setText(text);
+        this.assertEqual(this.model.getText(), text, "Written value cannot be extracted");
+    },
+    
+    testForcedSet: function() {
+        var wasRun = false;
+        var text = 'text that will be written to the model';
+        var test = this;
+        
+        this.model.addField("Test");
+        this.model.addObserver({onTestUpdate: function(val) { test.assertEqual(val, text); wasRun = true }});
+        this.model.setTest(text);
+        this.assert(wasRun, 'not triggered first time');
+        wasRun = false;
+        
+        this.model.setTest(text, null, true);
+        this.assert(wasRun, 'not triggered second time');
+    },
+    
+    testForcedSetViaRelay: function() {
+        var wasRun = false;
+        var text = 'text that will be written to the model';
+        var test = this;
+        
+        this.model.addField("Test");
+        this.model.addObserver({onTestUpdate: function(val) { test.assertEqual(val, text); wasRun = true }});
+        var relay = this.model.newRelay({RelayTest: 'Test'});
+        relay.setRelayTest(text);
+        this.assert(wasRun, 'not triggered first time');
+        wasRun = false;
+        
+        relay.setRelayTest(text, undefined /*optSource*/, true /*force*/);
+        this.assert(wasRun, 'not triggered second time');
+    },
+    
+    testObserver: function() {
+        this.model.addField("Text");
+        var wasRun;
+        var text = 'text';
+        var test = this;
+        this.model.addObserver({onTextUpdate: function(value) {
+                test.assertEqual(value, text);
+                wasRun = true;}});
+        this.assert(this.model["Text$observers"], "no observer array for text pin");
+        this.assertEqual(this.model["Text$observers"].length, 1);
+        this.model.setText(text);
+        this.assert(wasRun);
+    },
+    
+    setUpForObserverRemoveTest: function() {
+        this.model.addField("Field1");
+        this.model.addField("Field2");
+        this.observerModel = ComponentModel.newModel();
+        this.observerModel.addField("ObserverField1");
+        this.observerModel.addField("ObserverField2");
+    },
+    
+    testRemoveObserver1: function() { // remove the observer in one fields
+        this.setUpForObserverRemoveTest();
+        this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
+        this.model.removeObserver(this.observerModel, "Field1");
+        this.assertEqual(this.model["Field1$observers"].length, 0);
+        this.model.setField1("text");
+        this.assert(!this.observerModel.getObserverField1(), "ObserverField1 was updated although no observer connection exists");
+    },
+    
+    testRemoveObserver2: function() { // remove the observer in two fields
         // debugger;
-		this.setUpForObserverRemoveTest();
-		this.model.addObserver(this.observerModel, {Field1: "=setObserverField1", Field2: "=setObserverField2"});
-		this.model.removeObserver(this.observerModel);
-		this.assertEqual(this.model["Field1$observers"].length, 0);
-		this.assertEqual(this.model["Field2$observers"].length, 0);
-	},
-	
-	testRemoveObserver3: function() { // remove a specific observer from a specific field, don't delete the observer in another field
-		this.setUpForObserverRemoveTest();
-		this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
-		this.model.addObserver(this.observerModel, {Field2: "=setObserverField2"});
-		this.model.removeObserver(this.observerModel, "Field1");	
-		this.assertEqual(this.model["Field1$observers"].length, 0);
-		this.assertEqual(this.model["Field2$observers"].length, 1, "Field2$observers was removed");
-	},
-	
-	testRemoveObserver4: function() { // remove only one dependency from a field and let the other one alone
-		this.setUpForObserverRemoveTest();
-		var observerModel2 = ComponentModel.newModel();
-		observerModel2.addField("Observer2Field");
-		this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
-		this.model.addObserver(observerModel2, {Field1: "=setObserver2Field"});
-		this.assertEqual(this.model["Field1$observers"].length, 2, "Setup failure");
-		this.model.removeObserver(this.observerModel, "Field1");
-		this.assertEqual(this.model["Field1$observers"].length, 1);
-		this.model.setField1("text");
-		this.assertEqual(observerModel2.getObserver2Field(), "text", "Observer2 did not get the data");
-		this.assert(!this.observerModel.getObserverField1(), "Observer received something");
-	},
-	
-	testRemoveObserver5: function() { // remove custom observer
-		this.setUpForObserverRemoveTest();
-		var o = {onField1Update: { }}
-		this.model.addObserver(o);
-		this.assertEqual(this.model["Field1$observers"].length, 1, "Field1$observers was not installed");
-		this.model.removeObserver(o);
-		this.assertEqual(this.model["Field1$observers"].length, 0, "Field1$observers was not removed");
-	},
-	
-	testRemoveObserver6: function() { // delete all observers of a specific field
-		this.setUpForObserverRemoveTest();
-		this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
-		this.model.removeObserver(null, 'Field1');
-		this.assert(!this.model["Field1$observers"], "Field1$observers was not removed");
+        this.setUpForObserverRemoveTest();
+        this.model.addObserver(this.observerModel, {Field1: "=setObserverField1", Field2: "=setObserverField2"});
+        this.model.removeObserver(this.observerModel);
+        this.assertEqual(this.model["Field1$observers"].length, 0);
+        this.assertEqual(this.model["Field2$observers"].length, 0);
+    },
+    
+    testRemoveObserver3: function() { // remove a specific observer from a specific field, don't delete the observer in another field
+        this.setUpForObserverRemoveTest();
+        this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
+        this.model.addObserver(this.observerModel, {Field2: "=setObserverField2"});
+        this.model.removeObserver(this.observerModel, "Field1");    
+        this.assertEqual(this.model["Field1$observers"].length, 0);
+        this.assertEqual(this.model["Field2$observers"].length, 1, "Field2$observers was removed");
+    },
+    
+    testRemoveObserver4: function() { // remove only one dependency from a field and let the other one alone
+        this.setUpForObserverRemoveTest();
+        var observerModel2 = ComponentModel.newModel();
+        observerModel2.addField("Observer2Field");
+        this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
+        this.model.addObserver(observerModel2, {Field1: "=setObserver2Field"});
+        this.assertEqual(this.model["Field1$observers"].length, 2, "Setup failure");
+        this.model.removeObserver(this.observerModel, "Field1");
+        this.assertEqual(this.model["Field1$observers"].length, 1);
+        this.model.setField1("text");
+        this.assertEqual(observerModel2.getObserver2Field(), "text", "Observer2 did not get the data");
+        this.assert(!this.observerModel.getObserverField1(), "Observer received something");
+    },
+    
+    testRemoveObserver5: function() { // remove custom observer
+        this.setUpForObserverRemoveTest();
+        var o = {onField1Update: { }}
+        this.model.addObserver(o);
+        this.assertEqual(this.model["Field1$observers"].length, 1, "Field1$observers was not installed");
+        this.model.removeObserver(o);
+        this.assertEqual(this.model["Field1$observers"].length, 0, "Field1$observers was not removed");
+    },
+    
+    testRemoveObserver6: function() { // delete all observers of a specific field
+        this.setUpForObserverRemoveTest();
+        this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
+        this.model.removeObserver(null, 'Field1');
+        this.assert(!this.model["Field1$observers"], "Field1$observers was not removed");
 
-	},
-	
-	// testRemoveObserver5: function() {
-	// 	this.setUpForObserverRemoveTest();
-	// 	this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
-	// 	this.model.addObserver(this.observerModel, {Field1: "=setObserverField2"});
-	// 	this.assertEqual(this.model["Field1$observers"].length, 2, "Setup failure");
-	// 	this.model.removeObserver(this.observerModel, "Field1", "=setObserverField1");
-	// 	this.assertEqual(this.model["Field1$observers"].length, 1, "Whole observer was removed");
-	// },
+    },
+    
+    // testRemoveObserver5: function() {
+    //  this.setUpForObserverRemoveTest();
+    //  this.model.addObserver(this.observerModel, {Field1: "=setObserverField1"});
+    //  this.model.addObserver(this.observerModel, {Field1: "=setObserverField2"});
+    //  this.assertEqual(this.model["Field1$observers"].length, 2, "Setup failure");
+    //  this.model.removeObserver(this.observerModel, "Field1", "=setObserverField1");
+    //  this.assertEqual(this.model["Field1$observers"].length, 1, "Whole observer was removed");
+    // },
 
-	testAddAlreadyExistingField: function() {
-		var model = ComponentModel.newModel();
-		model.addField("TestPin");
-		model.setTestPin("content");
-		model.addField("TestPin");
-		this.assertEqual(model.getTestPin(), "content", "addField overwrote content");
-	},
-	
-	testCreateModelDoesNotAffectComponentModelClass: function() {
-		var model = ComponentModel.newModel();
-		var ModelClass = model.constructor;
-		model.addField("TestPin");
-		this.assert(ModelClass.functionNames().include("getTestPin"), "class wasn't correctly extended");
-		this.assert(!Record.functionNames().include("getTestPin"), "Record was modified");
-	},
-	
-	testCreateNewModelClassCreatesIndependentModels: function() {
-		var model = ComponentModel.newModel();
-		var ModelClass1 = model.constructor;
-		var ModelClass2 = ComponentModel.newModel().constructor;
-		model.addField("TestPin");
-		this.assert(ModelClass1.functionNames().include("getTestPin"));
-		this.assert(!ModelClass2.functionNames().include("getTestPin"));
-	},
-	
-	testHowARelayAsASetterAndGetterWorks: function() {
-	    this.model.addField("Test");
-	    var value = 123;
-	    this.model.setTest(value);
-	    var relay = this.model.newRelay({OtherNameForTest: "Test"});
-	    this.assert(relay.getOtherNameForTest, 'no getter exists');
-	    this.assertEqual(relay.getOtherNameForTest(), value, 'getter cannot get value');
-	    this.assert(relay.setOtherNameForTest, 'no setter exists');
-	    this.model.setTest(null); // reset
-	    relay.setOtherNameForTest(value);
-	    this.assertEqual(this.model.getTest(), value, 'setter cannot set value');
-	}
-	
+    testAddAlreadyExistingField: function() {
+        var model = ComponentModel.newModel();
+        model.addField("TestPin");
+        model.setTestPin("content");
+        model.addField("TestPin");
+        this.assertEqual(model.getTestPin(), "content", "addField overwrote content");
+    },
+    
+    testCreateModelDoesNotAffectComponentModelClass: function() {
+        var model = ComponentModel.newModel();
+        var ModelClass = model.constructor;
+        model.addField("TestPin");
+        this.assert(ModelClass.functionNames().include("getTestPin"), "class wasn't correctly extended");
+        this.assert(!Record.functionNames().include("getTestPin"), "Record was modified");
+    },
+    
+    testCreateNewModelClassCreatesIndependentModels: function() {
+        var model = ComponentModel.newModel();
+        var ModelClass1 = model.constructor;
+        var ModelClass2 = ComponentModel.newModel().constructor;
+        model.addField("TestPin");
+        this.assert(ModelClass1.functionNames().include("getTestPin"));
+        this.assert(!ModelClass2.functionNames().include("getTestPin"));
+    },
+    
+    testHowARelayAsASetterAndGetterWorks: function() {
+        this.model.addField("Test");
+        var value = 123;
+        this.model.setTest(value);
+        var relay = this.model.newRelay({OtherNameForTest: "Test"});
+        this.assert(relay.getOtherNameForTest, 'no getter exists');
+        this.assertEqual(relay.getOtherNameForTest(), value, 'getter cannot get value');
+        this.assert(relay.setOtherNameForTest, 'no setter exists');
+        this.model.setTest(null); // reset
+        relay.setOtherNameForTest(value);
+        this.assertEqual(this.model.getTest(), value, 'setter cannot set value');
+    }
+    
 });
 
 TestCase.subclass('FabrikComponentTest', {
@@ -551,55 +551,55 @@ TestCase.subclass('ComponentTest', {
         comp.setTest(text);
         this.assertEqual(comp.getTest(), text, "Written value cannot be extracted");
     },
-	
-	testAddPinHandle: function() {
-		var comp = this.component;
-		this.assertEqual(comp.pinHandles.length, 0, "Already pins inside the component");
-		fieldName = 'Test';
-		comp.addFieldAndPinHandle(fieldName);
-		this.assertEqual(comp.pinHandles.length, 1);
-		this.assertEqual(comp.pinHandles[0].getName(), fieldName);
-	},
-		
-	testPinInputModifiesComponentModel: function() {
-		var comp = this.component;
-		comp.addFieldAndPinHandle('Test');
-		var pinHandle = comp.pinHandles[0];
-		var content = 'something';
-		pinHandle.setValue(content);
-		this.assertEqual(comp.getTest(), content, "Pin value did not reach component");
-	},
-	
-	testComponentModelChangeReachesPin: function() {
-		var comp = this.component;
-		comp.addFieldAndPinHandle('Test');
-		var pinHandle = comp.pinHandles[0];
-		var content = 'something';
-		comp.setTest(content);
-		this.assertEqual(pinHandle.getValue(), content, "Component change did not reach Pin");
-	},
-	
-	testGetPinHandle: function() {
-		var comp = this.component;
-		comp.addFieldAndPinHandle('Test');
+    
+    testAddPinHandle: function() {
+        var comp = this.component;
+        this.assertEqual(comp.pinHandles.length, 0, "Already pins inside the component");
+        fieldName = 'Test';
+        comp.addFieldAndPinHandle(fieldName);
+        this.assertEqual(comp.pinHandles.length, 1);
+        this.assertEqual(comp.pinHandles[0].getName(), fieldName);
+    },
+        
+    testPinInputModifiesComponentModel: function() {
+        var comp = this.component;
+        comp.addFieldAndPinHandle('Test');
+        var pinHandle = comp.pinHandles[0];
+        var content = 'something';
+        pinHandle.setValue(content);
+        this.assertEqual(comp.getTest(), content, "Pin value did not reach component");
+    },
+    
+    testComponentModelChangeReachesPin: function() {
+        var comp = this.component;
+        comp.addFieldAndPinHandle('Test');
+        var pinHandle = comp.pinHandles[0];
+        var content = 'something';
+        comp.setTest(content);
+        this.assertEqual(pinHandle.getValue(), content, "Component change did not reach Pin");
+    },
+    
+    testGetPinHandle: function() {
+        var comp = this.component;
+        comp.addFieldAndPinHandle('Test');
         this.assert(comp.getPinHandle("Test"));
     },
     
     testRemovePin: function() {
-		var comp = this.component;
-		comp.addFieldAndPinHandle('Test');
-		comp.removePin('Test');
+        var comp = this.component;
+        comp.addFieldAndPinHandle('Test');
+        comp.removePin('Test');
         // this.assert(!comp.getTest, 'accessors not removed');
         this.assert(!comp.getPin('Test'), 'pin still there');
     },
     
     testRemovePinRemovesConnectors: function() {
-		var comp = this.component;
-		comp.addPin('Test');
-		var otherComp = new Component();
-		otherComp.addPin('Test2');
+        var comp = this.component;
+        comp.addPin('Test');
+        var otherComp = new Component();
+        otherComp.addPin('Test2');
         comp.getPin('Test').connectTo(otherComp.getPin('Test2'));
-		
+        
         comp.removePin('Test');
         this.assertEqual(otherComp.getPin('Test2').connectors.length, 0, 'connection not removed');
     },
@@ -659,31 +659,31 @@ TestCase.subclass('ComponentTest', {
     },
     
     testModelFieldForcesSet: function() {
-		var comp = this.component;
-		var wasCalled = false;
-		var content = 'something';
-		var test = this;
-		comp.addFieldAndPinHandle('Test', null, true);
-		comp.formalModel.setTest = comp.formalModel.setTest.wrap(function(proceed, value, optSource, force) {
-		    proceed(value, optSource, force);
-		    wasCalled = true;
-		    test.assertEqual(value, content, 'wrong value');
-		});
-		
-		comp.setTest(content);
-		this.assert(wasCalled, "not called the first time");
-		wasCalled = false;
-		comp.setTest(content);
-		this.assert(wasCalled, "not called the second time");
-		wasCalled = false;
-		comp.formalModel.setTest(content);
-		this.assert(wasCalled, "not called the third time");
-	}
+        var comp = this.component;
+        var wasCalled = false;
+        var content = 'something';
+        var test = this;
+        comp.addFieldAndPinHandle('Test', null, true);
+        comp.formalModel.setTest = comp.formalModel.setTest.wrap(function(proceed, value, optSource, force) {
+            proceed(value, optSource, force);
+            wasCalled = true;
+            test.assertEqual(value, content, 'wrong value');
+        });
+        
+        comp.setTest(content);
+        this.assert(wasCalled, "not called the first time");
+        wasCalled = false;
+        comp.setTest(content);
+        this.assert(wasCalled, "not called the second time");
+        wasCalled = false;
+        comp.formalModel.setTest(content);
+        this.assert(wasCalled, "not called the third time");
+    }
     
 });
 
 TestCase.subclass('FunctionComponentTest', {
-	
+    
     setUp: function() {
         this.fabrikComponent = new FabrikComponent();
         this.textComponent1 = new TextComponent();
@@ -694,8 +694,8 @@ TestCase.subclass('FunctionComponentTest', {
         this.fabrikComponent.plugin(this.functionComponent1);
         this.source = 'return 3 + 4';
     },
-	
-	testSetFunctionSourceFromView: function() {
+    
+    testSetFunctionSourceFromView: function() {
         this.fabrikComponent.buildView();
         this.functionComponent1.morph.setTextString(this.source);
         this.functionComponent1.morph.doSave();
@@ -703,12 +703,12 @@ TestCase.subclass('FunctionComponentTest', {
             'seting from view to model failed: \n');
     },
 
-	testSetFunction: function() {
-		this.functionComponent1.setFunctionBody(this.funcSource);
-		this.assert(this.functionComponent1.pvtGetFunction() instanceof Function, "pvtFunction should be a function...");
-	},
-	
-	testConnectResultToTextComponent: function() {
+    testSetFunction: function() {
+        this.functionComponent1.setFunctionBody(this.funcSource);
+        this.assert(this.functionComponent1.pvtGetFunction() instanceof Function, "pvtFunction should be a function...");
+    },
+    
+    testConnectResultToTextComponent: function() {
         this.fabrikComponent.buildView();
         this.fabrikComponent.connectComponents(this.functionComponent1, "Result", this.textComponent1, "Text");
         this.functionComponent1.setFunctionBody(this.source);
@@ -717,12 +717,12 @@ TestCase.subclass('FunctionComponentTest', {
     },
     
     testExecute: function() {
-		this.functionComponent1.setFunctionBody(this.source);
-		this.functionComponent1.execute();
-		this.assertEqual(this.functionComponent1.getResult(), 7, 'execute should write into a result field / pin');
-	},
-	
-	testAutomaticExecute: function() {
+        this.functionComponent1.setFunctionBody(this.source);
+        this.functionComponent1.execute();
+        this.assertEqual(this.functionComponent1.getResult(), 7, 'execute should write into a result field / pin');
+    },
+    
+    testAutomaticExecute: function() {
         this.functionComponent1.setFunctionBody(this.source);
         this.assertEqual(this.functionComponent1.getResult(), 7);
         this.functionComponent1.setFunctionBody('return 3 * 4');
@@ -820,7 +820,7 @@ TestCase.subclass('FunctionComponentTest', {
 });
 
 TestCase.subclass('TextComponentTest', {
-	
+    
     setUp: function() {
         this.fabrikComponent = new FabrikComponent();
         this.textComponent1 = new TextComponent();
@@ -832,36 +832,36 @@ TestCase.subclass('TextComponentTest', {
         this.text = "Hello World";
     },
 
-	testPlugin: function() {
-    	this.assertEqual(this.fabrikComponent.components.length, 3,"components: " + this.fabrikComponent.components );
-	},
-	
-	testSetText: function() {
+    testPlugin: function() {
+        this.assertEqual(this.fabrikComponent.components.length, 3,"components: " + this.fabrikComponent.components );
+    },
+    
+    testSetText: function() {
         this.fabrikComponent.buildView();
-	    var s = "Hello World";
-	    this.assert(this.textComponent1.morph);
+        var s = "Hello World";
+        this.assert(this.textComponent1.morph);
         this.textComponent1.morph.setTextString(s);
         this.textComponent1.morph.doSave();
         this.assertEqual(this.textComponent1.morph.getText().asString(), s, " failed at morph");
         this.assertEqual(this.textComponent1.formalModel.getText(), s, " failed at component model");
     },
 
-	testChangeInModelEffectsMorph: function() {
-		this.textComponent1.buildView();
-		this.textComponent1.formalModel.setText(this.text);
+    testChangeInModelEffectsMorph: function() {
+        this.textComponent1.buildView();
+        this.textComponent1.formalModel.setText(this.text);
         // this.assertEqual(this.textComponent1.morph.getModelText(), this.text, "morph.formalModel got no content");
-		this.assertEqual(this.textComponent1.morph.getText().asString(), this.text, "morph got no content");
-   	},
+        this.assertEqual(this.textComponent1.morph.getText().asString(), this.text, "morph got no content");
+    },
 
     testWireFromText1ToText2: function() {
         this.fabrikComponent.buildView();
         this.textComponent1.getPinHandle("Text").connectTo(this.textComponent2.getPinHandle("Text"));
-		this.assert(this.textComponent1.formalModel["Text$observers"], "no observers list created in model of textcomponent1")
+        this.assert(this.textComponent1.formalModel["Text$observers"], "no observers list created in model of textcomponent1")
         var s = "Hello World";
         this.textComponent1.morph.setTextString(s);
         this.textComponent1.morph.doSave();
-		this.assertEqual(this.textComponent1.formalModel.getText(), s, "model1 has no text");
-		this.assertEqual(this.textComponent2.formalModel.getText(), s, "model2 has no text");
+        this.assertEqual(this.textComponent1.formalModel.getText(), s, "model1 has no text");
+        this.assertEqual(this.textComponent2.formalModel.getText(), s, "model2 has no text");
         this.assertEqual(this.textComponent2.morph.getText().asString(), s, "morph2 has no text");   
     },
     setUpThreeTexts: function() {
@@ -879,22 +879,22 @@ TestCase.subclass('TextComponentTest', {
     },
     testWireFromThreeTextsSimple: function() {
         this.fabrikComponent.buildView();
-		this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent2.getPinHandle("Text"));
-		this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent3.getPinHandle("Text"));
+        this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent2.getPinHandle("Text"));
+        this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent3.getPinHandle("Text"));
         this.setTextInComponent(this.textComponent3, this.text);
         this.assertTextInComponents(this.text);
     },
     testWireFromThreeTextsTransitive: function() {
         this.fabrikComponent.buildView();
-		this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent2.getPinHandle("Text"));
-		this.textComponent2.getPinHandle("Text").connectBidirectionalTo(this.textComponent3.getPinHandle("Text"));
+        this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent2.getPinHandle("Text"));
+        this.textComponent2.getPinHandle("Text").connectBidirectionalTo(this.textComponent3.getPinHandle("Text"));
         this.setTextInComponent(this.textComponent3, this.text)
         this.assertTextInComponents(this.text);
     },    
     testWireFromThreeTextsReverse: function() {
         this.fabrikComponent.buildView();
-		this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent2.getPinHandle("Text"));
-		this.textComponent3.getPinHandle("Text").connectBidirectionalTo(this.textComponent1.getPinHandle("Text"));
+        this.textComponent1.getPinHandle("Text").connectBidirectionalTo(this.textComponent2.getPinHandle("Text"));
+        this.textComponent3.getPinHandle("Text").connectBidirectionalTo(this.textComponent1.getPinHandle("Text"));
         this.setTextInComponent(this.textComponent3, this.text);
         this.assertTextInComponents(this.text);
     }
@@ -953,134 +953,134 @@ TestCase.subclass('ConnectorMorphTest', {
 });
 
 TestCase.subclass('PinConnectorTest', {
-	
-	setUp: function() {
-		this.comp1 = new Component();
-		this.comp1.addField("Field1");
-		this.pin1 = this.comp1.addPinHandle("Field1");
-		this.comp2 = new Component();
-		this.comp2.addField("Field2");
-		this.pin2 = this.comp2.addPinHandle("Field2");
-	},
-	
-	testIsConnectedTo: function() {
-		this.pin1.connectTo(this.pin2);
-		this.assert(this.pin1.isConnectedTo(this.pin2), "made no connection from pin1 to pin2");
-		this.assert(!this.pin2.isConnectedTo(this.pin1), "made connection from pin2 to pin1");
-	},
-	
-	// Tests also PinHandle connection logic
-	testConnectTwoPins: function() {
-		this.pin1.connectTo(this.pin2);
-		var data = 'string';
-		this.pin1.setValue(data);
-		this.assertEqual(this.pin2.getValue(), data, "data could not be send from pin1 to pin2");
-	},
-	
-	testConnectAlreadyConnectedPins: function() {
-		this.pin1.connectTo(this.pin2);
-		this.assertEqual(1, this.pin1.connectors.length);
-		this.assertEqual(1, this.pin2.connectors.length);
-		this.pin1.connectTo(this.pin2);
-		this.assertEqual(1, this.pin1.connectors.length, "Made another connection for existing connection");
-		this.assertEqual(1, this.pin2.connectors.length, "Made another connection for existing connection");
-	},
-	
-	testIsConnectedToBidirectional: function(){
-	    this.pin1.connectBidirectionalTo(this.pin2);
-	    this.assert(this.pin2.isConnectedTo(this.pin1), "pin2 has no backreference");
-	},
-	
-	testConnectAlsoInOtherDirection: function() {
-		var conCount = this.pin1.connectors.length;
-		this.pin1.connectTo(this.pin2);
-		var connector = this.pin2.connectTo(this.pin1);
-		this.assertEqual(conCount + 1, this.pin1.connectors.length, "Made another connection for existing connection");
-		this.assertEqual(connector.fromPin, this.pin1);
-		this.assertEqual(connector.toPin, this.pin2);
-		
-		var data = 'string';
-		this.pin1.setValue(data);
-		this.assertEqual(this.pin2.getValue(), data, "data could not be send from pin1 to pin2");
-		
-		data = 'otherContent';
-		this.pin2.setValue(data);
-		this.assertEqual(this.pin1.getValue(), data, "data could not be send from pin2 to pin1");
-	},
-	
-	testCreateFakePinHandleCreatesConnector: function() {
-		var fakePin = this.pin1.createFakePinHandle();
-		this.assert(fakePin, "no fakePin");
-		this.assert(this.pin1.isConnectedTo(fakePin), "there is no connection between pin1 and fake pin");
-	},
-	
-	testDropFakePinHandle: function() {
-		var fakePin = this.pin1.createFakePinHandle();
-		this.assertEqual(this.pin1.connectors.length, 1, "connectors error");
-		this.assertEqual(fakePin.connectors.length, 1, "connectors error");
-		this.pin2.connectFromFakeHandle(fakePin);
-		// no observer relationship is created when fakePin is created, so not necessarz to test removal
-		this.assertEqual(fakePin.connectors.length, 0, "fakePin connector not removed ");
-		this.assertEqual(this.pin1.connectors.length, 1, "fakePin connector not removed from pin1");
-		this.assert(this.pin1.isConnectedTo(this.pin2), "fakeHandle connection failed");
-	},
-	
-	testRemove: function() {
-		var connection = this.pin1.connectTo(this.pin2);
-		connection.remove();
-		var data = 'string';
-		this.pin1.setValue(data);
-		this.assert(!this.pin2.getValue(), "pin2 received data although the connection was removed");
-	},
-	
-	testRemoveBidirectionalConnection: function() {
-		var connection = this.pin1.connectTo(this.pin2);
-		var sameConnection = this.pin2.connectTo(this.pin1);
-		this.assert(connection === sameConnection, "Problem with setting up a bidirectional connection");
-		connection.remove();
-		var data = 'string';
-		this.pin1.setValue(data);
-		this.assert(!this.pin2.getValue(), "pin2 received data although the connection was removed");
-		this.pin1.setValue(null);
-		this.pin2.setValue(data);
-		this.assert(!this.pin1.getValue(), "pin1 received data although the connection was removed");
-	},
-	
-	testComponentRemovalAlsoRemovesAllConnections: function() {
-	    var fabrik = new FabrikComponent();
-	    fabrik.buildView();
-	    var comp1Morph = this.comp1.buildView();
-	    fabrik.morph.addMorph(comp1Morph);
-	    fabrik.morph.addMorph(this.comp2.buildView());
-	    this.pin1.connectTo(this.pin2); //arghhhh, get rid of this whole global zeugs
-	    comp1Morph.remove();
-	    this.assertEqual(fabrik.connectors.length, 0, 'conn not removed from fabrik');
-	},
-	
-	testConnectTwoPinsForcesSetInConnected: function() {
-		var data = 'string';
-		this.pin1.setValue(data);
-		this.pin1.connectTo(this.pin2);
-		this.assertEqual(this.pin2.getValue(), data, "data was not setted on connection creation to pin2");
-		this.pin1.setValue(null); // reset
-		this.pin2.setValue(data);
-		this.pin2.connectTo(this.pin1); // test bedirectional update
-		this.assertEqual(this.pin1.getValue(), data, "data was not setted in bidirectional connection");
-	},
+    
+    setUp: function() {
+        this.comp1 = new Component();
+        this.comp1.addField("Field1");
+        this.pin1 = this.comp1.addPinHandle("Field1");
+        this.comp2 = new Component();
+        this.comp2.addField("Field2");
+        this.pin2 = this.comp2.addPinHandle("Field2");
+    },
+    
+    testIsConnectedTo: function() {
+        this.pin1.connectTo(this.pin2);
+        this.assert(this.pin1.isConnectedTo(this.pin2), "made no connection from pin1 to pin2");
+        this.assert(!this.pin2.isConnectedTo(this.pin1), "made connection from pin2 to pin1");
+    },
+    
+    // Tests also PinHandle connection logic
+    testConnectTwoPins: function() {
+        this.pin1.connectTo(this.pin2);
+        var data = 'string';
+        this.pin1.setValue(data);
+        this.assertEqual(this.pin2.getValue(), data, "data could not be send from pin1 to pin2");
+    },
+    
+    testConnectAlreadyConnectedPins: function() {
+        this.pin1.connectTo(this.pin2);
+        this.assertEqual(1, this.pin1.connectors.length);
+        this.assertEqual(1, this.pin2.connectors.length);
+        this.pin1.connectTo(this.pin2);
+        this.assertEqual(1, this.pin1.connectors.length, "Made another connection for existing connection");
+        this.assertEqual(1, this.pin2.connectors.length, "Made another connection for existing connection");
+    },
+    
+    testIsConnectedToBidirectional: function(){
+        this.pin1.connectBidirectionalTo(this.pin2);
+        this.assert(this.pin2.isConnectedTo(this.pin1), "pin2 has no backreference");
+    },
+    
+    testConnectAlsoInOtherDirection: function() {
+        var conCount = this.pin1.connectors.length;
+        this.pin1.connectTo(this.pin2);
+        var connector = this.pin2.connectTo(this.pin1);
+        this.assertEqual(conCount + 1, this.pin1.connectors.length, "Made another connection for existing connection");
+        this.assertEqual(connector.fromPin, this.pin1);
+        this.assertEqual(connector.toPin, this.pin2);
+        
+        var data = 'string';
+        this.pin1.setValue(data);
+        this.assertEqual(this.pin2.getValue(), data, "data could not be send from pin1 to pin2");
+        
+        data = 'otherContent';
+        this.pin2.setValue(data);
+        this.assertEqual(this.pin1.getValue(), data, "data could not be send from pin2 to pin1");
+    },
+    
+    testCreateFakePinHandleCreatesConnector: function() {
+        var fakePin = this.pin1.createFakePinHandle();
+        this.assert(fakePin, "no fakePin");
+        this.assert(this.pin1.isConnectedTo(fakePin), "there is no connection between pin1 and fake pin");
+    },
+    
+    testDropFakePinHandle: function() {
+        var fakePin = this.pin1.createFakePinHandle();
+        this.assertEqual(this.pin1.connectors.length, 1, "connectors error");
+        this.assertEqual(fakePin.connectors.length, 1, "connectors error");
+        this.pin2.connectFromFakeHandle(fakePin);
+        // no observer relationship is created when fakePin is created, so not necessarz to test removal
+        this.assertEqual(fakePin.connectors.length, 0, "fakePin connector not removed ");
+        this.assertEqual(this.pin1.connectors.length, 1, "fakePin connector not removed from pin1");
+        this.assert(this.pin1.isConnectedTo(this.pin2), "fakeHandle connection failed");
+    },
+    
+    testRemove: function() {
+        var connection = this.pin1.connectTo(this.pin2);
+        connection.remove();
+        var data = 'string';
+        this.pin1.setValue(data);
+        this.assert(!this.pin2.getValue(), "pin2 received data although the connection was removed");
+    },
+    
+    testRemoveBidirectionalConnection: function() {
+        var connection = this.pin1.connectTo(this.pin2);
+        var sameConnection = this.pin2.connectTo(this.pin1);
+        this.assert(connection === sameConnection, "Problem with setting up a bidirectional connection");
+        connection.remove();
+        var data = 'string';
+        this.pin1.setValue(data);
+        this.assert(!this.pin2.getValue(), "pin2 received data although the connection was removed");
+        this.pin1.setValue(null);
+        this.pin2.setValue(data);
+        this.assert(!this.pin1.getValue(), "pin1 received data although the connection was removed");
+    },
+    
+    testComponentRemovalAlsoRemovesAllConnections: function() {
+        var fabrik = new FabrikComponent();
+        fabrik.buildView();
+        var comp1Morph = this.comp1.buildView();
+        fabrik.morph.addMorph(comp1Morph);
+        fabrik.morph.addMorph(this.comp2.buildView());
+        this.pin1.connectTo(this.pin2); //arghhhh, get rid of this whole global zeugs
+        comp1Morph.remove();
+        this.assertEqual(fabrik.connectors.length, 0, 'conn not removed from fabrik');
+    },
+    
+    testConnectTwoPinsForcesSetInConnected: function() {
+        var data = 'string';
+        this.pin1.setValue(data);
+        this.pin1.connectTo(this.pin2);
+        this.assertEqual(this.pin2.getValue(), data, "data was not setted on connection creation to pin2");
+        this.pin1.setValue(null); // reset
+        this.pin2.setValue(data);
+        this.pin2.connectTo(this.pin1); // test bedirectional update
+        this.assertEqual(this.pin1.getValue(), data, "data was not setted in bidirectional connection");
+    },
 });
 
 TestCase.subclass('PinHandleTest', {
-	
-	createTextComponentWithFabrik: function() {
+    
+    createTextComponentWithFabrik: function() {
         var fabrikComponent = new FabrikComponent();
         var component = new TextComponent();
         fabrikComponent.plugin(component);
         fabrikComponent.buildView();
-		return component;
-	},
-		
+        return component;
+    },
+        
     testGetPinPosition: function() {
-		var comp = this.createTextComponentWithFabrik();
+        var comp = this.createTextComponentWithFabrik();
         var pinHandle = comp.getPinHandle("Text");
         var point =  pinHandle.morph.getPinPosition();
         var offset = pt(100,100);
@@ -1136,25 +1136,25 @@ TestCase.subclass('PinHandleTest', {
 TestCase.subclass('PluggableConnectorTest', {
 
     testPluginArbitraryModel: function() {
-		var model = Record.newInstance({Field1: {}, Field2: {}}, {Field1: 'default'}, {});
-		var cmp = new PluggableComponent();
-		cmp.adoptToModel(model);
-		this.assertEqual(cmp.formalModel, model, "component has not the correct model");
-		this.assert(cmp.getField1, "component has no accessor method");
-		this.assertEqual(cmp.pinHandles.length, 2, "no pins added");
-		this.assertEqual(cmp.pinHandles.first().getName(), 'Field1', "wrong pin");
-		this.assertEqual(cmp.getField1(), 'default', "cannot access model");
-		cmp.setField2('content');
-		this.assertEqual(model.getField2(), 'content', "cannot write into model");
+        var model = Record.newInstance({Field1: {}, Field2: {}}, {Field1: 'default'}, {});
+        var cmp = new PluggableComponent();
+        cmp.adoptToModel(model);
+        this.assertEqual(cmp.formalModel, model, "component has not the correct model");
+        this.assert(cmp.getField1, "component has no accessor method");
+        this.assertEqual(cmp.pinHandles.length, 2, "no pins added");
+        this.assertEqual(cmp.pinHandles.first().getName(), 'Field1', "wrong pin");
+        this.assertEqual(cmp.getField1(), 'default', "cannot access model");
+        cmp.setField2('content');
+        this.assertEqual(model.getField2(), 'content', "cannot write into model");
     },
 
-	testCreatePinMorphs: function() {
-		var model = Record.newInstance({Field1: {}, Field2: {}}, {Field1: 'default'}, {});
-		var cmp = new PluggableComponent();
-		cmp.buildView();
-		cmp.adoptToModel(model);
-		var morphs = cmp.panel.submorphs.select(function (ea) { console.log(ea.toString()); return ea.constructor.type == "PinMorph"})
-		this.assertEqual(morphs.length, 2, "pinmorphs not created");
+    testCreatePinMorphs: function() {
+        var model = Record.newInstance({Field1: {}, Field2: {}}, {Field1: 'default'}, {});
+        var cmp = new PluggableComponent();
+        cmp.buildView();
+        cmp.adoptToModel(model);
+        var morphs = cmp.panel.submorphs.select(function (ea) { console.log(ea.toString()); return ea.constructor.type == "PinMorph"})
+        this.assertEqual(morphs.length, 2, "pinmorphs not created");
     },
 });
 
@@ -1174,8 +1174,8 @@ TestCase.subclass('ComponentMorphTest', {
     },
     
     testOpenInWorld: function() {
-		var c = new PluggableComponent();
-		c.buildView();
+        var c = new PluggableComponent();
+        c.buildView();
     },
     
     testAddTextPane: function() {
@@ -1257,7 +1257,7 @@ TestCase.subclass('ComponentMorphTest', {
     //     var morph = new ComponentMorph(new Rectangle(0,0,100,100));
     //     var pane = morph.addTextPane();
     //     var list = morph.addListPane();
-		  //     var expectedExtent = morph.getExtent().subPt(morph.padding.topLeft()).scaleBy(2));
+          //     var expectedExtent = morph.getExtent().subPt(morph.padding.topLeft()).scaleBy(2));
     //     var heightTakenByPaneAndList = pane.bounds().topLeft().dist(list.bounds().bottomLeft());
     //     this.assertEqual(heightTakenByPaneAndList, expectedExtent.y, 'initial Extent of exisiting morph not correct');
     //     var totalShrinkHeight = 20;
@@ -1301,30 +1301,30 @@ TestCase.subclass('ComponentMorphTest', {
 TestCase.subclass('WebRequestComponentTest', {
     
     setUp: function() {
-		/* Mock the NetRequest: save NetRequest */
-		this.oldNetRequest = NetRequest;
-	},
-	
-	tearDown: function() {
-		NetRequest = this.oldNetRequest;
-	},
+        /* Mock the NetRequest: save NetRequest */
+        this.oldNetRequest = NetRequest;
+    },
+    
+    tearDown: function() {
+        NetRequest = this.oldNetRequest;
+    },
     
     configureMockNetRequest: function(xmlResponse, textResponse, requestAction) {
         /* Create the mock */
         NetRequest.subclass('MockNetRequest', {
-			request: function(method, url, content) {
-			    requestAction(method, url, content);
-			    this.onReadyStateChange();
-    			return this;
-			},
-			onReadyStateChange: function() {
-    			this.setModelValue('setStatus', this.getStatus());
-    			this.setModelValue('setResponseText', textResponse);
-    			this.setModelValue('setResponseXML', xmlResponse);
-    		}
-		});
-		/* Replace the original NetRequest with the Mock*/
-		NetRequest = MockNetRequest;
+            request: function(method, url, content) {
+                requestAction(method, url, content);
+                this.onReadyStateChange();
+                return this;
+            },
+            onReadyStateChange: function() {
+                this.setModelValue('setStatus', this.getStatus());
+                this.setModelValue('setResponseText', textResponse);
+                this.setModelValue('setResponseXML', xmlResponse);
+            }
+        });
+        /* Replace the original NetRequest with the Mock*/
+        NetRequest = MockNetRequest;
     },
     
     testGetResponseTextFromDummyUrl: function() {
@@ -1493,8 +1493,8 @@ TestCase.subclass('ComponentSerializeTest', {
 
         var importer = new Importer();
         var parser = new DOMParser();
-	    var xml = parser.parseFromString(string, "text/xml");
-	    this.assert(xml, "parse failed");
+        var xml = parser.parseFromString(string, "text/xml");
+        this.assert(xml, "parse failed");
         var newWorld = importer.loadWorldContents(xml);
         
         var fabrikNode = xml.getElementById(fabrik.id());
@@ -1651,17 +1651,18 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");
         
         this.assert(fabrik.components, "components are not defined");
-        this.assertEqual(fabrik.components.length, 2, "wrong number of components");
+        this.assertEqual(fabrik.components.length, 3, "wrong number of components ");
 
         this.assert(fabrik.pinHandles, "pinHandles are not defined");
         this.assertEqual(fabrik.pinHandles.length, 0, "wrong number of pinHandles");
 
-        this.assertEqual(fabrik.connectors.length, 1, "wrong number of connectors");
+        this.assertEqual(fabrik.connectors.length, 2, "wrong number of connectors");
                
         var text1 = fabrik.components[0];
         this.assert(text1 instanceof TextComponent , "first text component is no TextComponent");
         var text2 = fabrik.components[1];
         this.assert(text2 instanceof TextComponent , "second text component is no TextComponent");
+                        
                         
         this.assert(text1.pinHandles, "no pinHandles in component");              
         this.assertEqual(text1.pinHandles.length, 1, "wrong number of pinHandles in component");
@@ -1685,7 +1686,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assertEqual(pin1.getValue(), testString, "setting string value failed");        
         
         this.assert(text1.formalModel["Text$observers"], "no observer array for text pin");
-		this.assert(text1.formalModel["Text$observers"].length > 0, "wrong number of observers");
+        this.assert(text1.formalModel["Text$observers"].length > 0, "wrong number of observers");
         this.assertEqual(pin2.getValue(), testString, "observing pin1 failed");
           
     },
@@ -1694,320 +1695,523 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         // generate with textmate replace: "(<.*>$)" with: "'$1' +"
         var world = this.loadWorldFromSource(
             '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
-                '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
-                    '<rect x="0" y="0" width="800" height="600"/>' +
-                    '<g xmlns="http://www.w3.org/2000/svg" type="FabrikMorph" id="531:FabrikMorph" transform="translate(100,100)">' +
-                    	'<rect x="0" y="0" width="400" height="400" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="3" ry="3"/>' +
-                    	'<g type="TextComponentMorph" id="584:TextComponentMorph" transform="translate(20,140)">' +
-                    		'<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
-                    		'<g type="ScrollPane" id="602:ScrollPane" transform="translate(7,7)">' +
-                    			'<rect x="0" y="0" width="166" height="86" stroke-width="1" fill="none" rx="3" ry="3"/>' +
-                    			'<g type="ClipMorph" id="603:ClipMorph" clip-path="url(#11:lively.scene.Clip)" transform="translate(1,1)">' +
-                    				'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
-                    				'<g type="TextMorph" id="599:TextMorph" transform="translate(0,0)">' +
-                    					'<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
-                    					'<g type="TextSelectionMorph" id="600:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
-                    						'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
-                    						'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    						'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
-                    						'<field name="mouseHandler">null</field>' +
-                    						'<field name="openForDragAndDrop">false</field>' +
-                    					'</g>' +
-                    					'<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
-                    						'<tspan x="7" y="15.8">------</tspan>' +
-                    					'</text>' +
-                    					'<field name="textString"><![CDATA["------"]]></field>' +
-                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    					'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
-                    					'<field name="textSelection" ref="600:TextSelectionMorph"/>' +
-                    					'<field name="changeClue" ref="601:Morph"/>' +
-                    					'<field name="suppressHandles">true</field>' +
-                    					'<field name="openForDragAndDrop">false</field>' +
-                    					'<relay name="formalModel" ref="528:anonymous_141">' +
-                    						'<binding formal="Text" actual="Text"/>' +
-                    					'</relay>' +
-                    				'</g>' +
-                    				'<defs>' +
-                    					'<clipPath id="11:lively.scene.Clip">' +
-                    						'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="none"/>' +
-                    					'</clipPath>' +
-                    				'</defs>' +
-                    				'<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
-                    				'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":84}]]></field>' +
-                    				'<field name="clip" ref="11:lively.scene.Clip"/>' +
-                    				'<field name="suppressHandles">true</field>' +
-                    				'<field name="openForDragAndDrop">false</field>' +
-                    			'</g>' +
-                    			'<g type="SliderMorph" id="604:SliderMorph" transform="translate(152,1)">' +
-                    				'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#608:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
-                    				'<g type="Morph" id="605:Morph" transform="translate(0,0)">' +
-                    					'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#609:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
-                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    					'<field name="fullBounds">null</field>' +
-                    					'<field name="styleClass"><![CDATA["slider"]]></field>' +
-                    					'<field name="openForDragAndDrop">false</field>' +
-                    				'</g>' +
-                    				'<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
-                    				'<field name="fullBounds">null</field>' +
-                    				'<relay name="formalModel" ref="602:ScrollPane">' +
-                    					'<binding formal="Value" actual="ScrollPosition"/>' +
-                    					'<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
-                    				'</relay>' +
-                    				'<field name="valueScale">1</field>' +
-                    				'<field name="slider" ref="605:Morph"/>' +
-                    				'<field name="suppressHandles">true</field>' +
-                    				'<field name="openForDragAndDrop">false</field>' +
-                    			'</g>' +
-                    			'<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
-                    			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":7,"width":166,"height":86}]]></field>' +
-                    			'<field name="clipMorph" ref="603:ClipMorph"/>' +
-                    			'<field name="scrollBar" ref="604:SliderMorph"/>' +
-                    			'<field name="suppressHandles">true</field>' +
-                    			'<field name="openForDragAndDrop">false</field>' +
-                    		'</g>' +
-                    		'<g type="PinMorph" id="585:PinMorph" transform="translate(-9,40)">' +
-                    			'<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,204,0)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
-                    			'<field name="origin" family="Point"><![CDATA[{"x":-9,"y":40}]]></field>' +
-                    			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-9,"y":40,"width":18,"height":18}]]></field>' +
-                    			'<field name="suppressHandles">true</field>' +
-                    			'<field name="openForDragAndDrop">false</field>' +
-                    			'<field name="pinHandle" ref="529:PinHandle"/>' +
-                    			'<field name="ownerWidget" ref="529:PinHandle"/>' +
-                    			'<widget id="529:PinHandle">' +
-                    				'<record id="530:anonymous_142">' +
-                    					'<field name="Name"><![CDATA["Text"]]></field>' +
-                    					'<field name="PinType"><![CDATA["regular"]]></field>' +
-                    					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
-                    				'</record>' +
-                    				'<field name="formalModel" ref="530:anonymous_142"/>' +
-                    				'<field name="actualModel" ref="530:anonymous_142"/>' +
-                    				'<field name="component" ref="527:TextComponent"/>' +
-                    				'<array name="connectors">' +
-                    					'<item ref="610:PinConnector"/>' +
-                    				'</array>' +
-                    				'<field name="morph" ref="585:PinMorph"/>' +
-                    			'</widget>' +
-                    		'</g>' +
-                    		'<field name="origin" family="Point"><![CDATA[{"x":20,"y":140}]]></field>' +
-                    		'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":11,"y":140,"width":189,"height":100}]]></field>' +
-                    		'<field name="openForDragAndDrop">false</field>' +
-                    		'<field name="styleClass"><![CDATA["fabrik"]]></field>' +
-                    		'<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="component" ref="527:TextComponent"/>' +
-                    		'<field name="formalModel" ref="528:anonymous_141"/>' +
-                    		'<field name="halos" ref="586:Morph"/>' +
-                    		'<field name="closeHalo" ref="587:ButtonMorph"/>' +
-                    		'<field name="text" ref="599:TextMorph"/>' +
-                    		'<field name="ownerWidget" ref="527:TextComponent"/>' +
-                    		'<widget id="527:TextComponent">' +
-                    			'<record id="528:anonymous_141">' +
-                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
-                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                    				'<field name="Text"><![CDATA["null"]]></field>' +
-                    			'</record>' +
-                    			'<field name="formalModel" ref="528:anonymous_141"/>' +
-                    			'<field name="actualModel" ref="528:anonymous_141"/>' +
-                    			'<array name="pinHandles">' +
-                    				'<item ref="529:PinHandle"/>' +
-                    			'</array>' +
-                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                    			'<field name="panel" ref="584:TextComponentMorph"/>' +
-                    			'<field name="morph" ref="599:TextMorph"/>' +
-                    		'</widget>' +
-                    		'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":140}]]></field>' +
-                    	'</g>' +
-                    	'<g type="TextComponentMorph" id="558:TextComponentMorph" transform="translate(20,20)">' +
-                    		'<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
-                    		'<g type="ScrollPane" id="576:ScrollPane" transform="translate(7,7)">' +
-                    			'<rect x="0" y="0" width="166" height="86" stroke-width="1" fill="none" rx="3" ry="3"/>' +
-                    			'<g type="ClipMorph" id="577:ClipMorph" clip-path="url(#10:lively.scene.Clip)" transform="translate(1,1)">' +
-                    				'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
-                    				'<g type="TextMorph" id="573:TextMorph" transform="translate(0,0)">' +
-                    					'<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
-                    					'<g type="TextSelectionMorph" id="574:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
-                    						'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
-                    						'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    						'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
-                    						'<field name="mouseHandler">null</field>' +
-                    						'<field name="openForDragAndDrop">false</field>' +
-                    					'</g>' +
-                    					'<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
-                    						'<tspan x="7" y="15.8">------</tspan>' +
-                    					'</text>' +
-                    					'<field name="textString"><![CDATA["------"]]></field>' +
-                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    					'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
-                    					'<field name="textSelection" ref="574:TextSelectionMorph"/>' +
-                    					'<field name="changeClue" ref="575:Morph"/>' +
-                    					'<field name="suppressHandles">true</field>' +
-                    					'<field name="openForDragAndDrop">false</field>' +
-                    					'<relay name="formalModel" ref="524:anonymous_139">' +
-                    						'<binding formal="Text" actual="Text"/>' +
-                    					'</relay>' +
-                    				'</g>' +
-                    				'<defs>' +
-                    					'<clipPath id="10:lively.scene.Clip">' +
-                    						'<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="none"/>' +
-                    					'</clipPath>' +
-                    				'</defs>' +
-                    				'<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
-                    				'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":84}]]></field>' +
-                    				'<field name="clip" ref="10:lively.scene.Clip"/>' +
-                    				'<field name="suppressHandles">true</field>' +
-                    				'<field name="openForDragAndDrop">false</field>' +
-                    			'</g>' +
-                    			'<g type="SliderMorph" id="578:SliderMorph" transform="translate(152,1)">' +
-                    				'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#582:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
-                    				'<g type="Morph" id="579:Morph" transform="translate(0,0)">' +
-                    					'<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#583:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
-                    					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    					'<field name="fullBounds">null</field>' +
-                    					'<field name="styleClass"><![CDATA["slider"]]></field>' +
-                    					'<field name="openForDragAndDrop">false</field>' +
-                    				'</g>' +
-                    				'<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
-                    				'<field name="fullBounds">null</field>' +
-                    				'<relay name="formalModel" ref="576:ScrollPane">' +
-                    					'<binding formal="Value" actual="ScrollPosition"/>' +
-                    					'<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
-                    				'</relay>' +
-                    				'<field name="valueScale">1</field>' +
-                    				'<field name="slider" ref="579:Morph"/>' +
-                    				'<field name="suppressHandles">true</field>' +
-                    				'<field name="openForDragAndDrop">false</field>' +
-                    			'</g>' +
-                    			'<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
-                    			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":7,"width":166,"height":86}]]></field>' +
-                    			'<field name="clipMorph" ref="577:ClipMorph"/>' +
-                    			'<field name="scrollBar" ref="578:SliderMorph"/>' +
-                    			'<field name="suppressHandles">true</field>' +
-                    			'<field name="openForDragAndDrop">false</field>' +
-                    		'</g>' +
-                    		'<g type="PinMorph" id="559:PinMorph" transform="translate(-9,40)">' +
-                    			'<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,204,0)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
-                    			'<field name="origin" family="Point"><![CDATA[{"x":-9,"y":40}]]></field>' +
-                    			'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-9,"y":40,"width":18,"height":18}]]></field>' +
-                    			'<field name="suppressHandles">true</field>' +
-                    			'<field name="openForDragAndDrop">false</field>' +
-                    			'<field name="pinHandle" ref="525:PinHandle"/>' +
-                    			'<field name="ownerWidget" ref="525:PinHandle"/>' +
-                    			'<widget id="525:PinHandle">' +
-                    				'<record id="526:anonymous_140">' +
-                    					'<field name="Name"><![CDATA["Text"]]></field>' +
-                    					'<field name="PinType"><![CDATA["regular"]]></field>' +
-                    					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
-                    				'</record>' +
-                    				'<field name="formalModel" ref="526:anonymous_140"/>' +
-                    				'<field name="actualModel" ref="526:anonymous_140"/>' +
-                    				'<field name="component" ref="523:TextComponent"/>' +
-                    				'<array name="connectors">' +
-                    					'<item ref="610:PinConnector"/>' +
-                    				'</array>' +
-                    				'<field name="morph" ref="559:PinMorph"/>' +
-                    			'</widget>' +
-                    		'</g>' +
-                    		'<field name="origin" family="Point"><![CDATA[{"x":20,"y":20}]]></field>' +
-                    		'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":11,"y":20,"width":189,"height":100}]]></field>' +
-                    		'<field name="openForDragAndDrop">false</field>' +
-                    		'<field name="styleClass"><![CDATA["fabrik"]]></field>' +
-                    		'<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="component" ref="523:TextComponent"/>' +
-                    		'<field name="formalModel" ref="524:anonymous_139"/>' +
-                    		'<field name="halos" ref="560:Morph"/>' +
-                    		'<field name="closeHalo" ref="561:ButtonMorph"/>' +
-                    		'<field name="text" ref="573:TextMorph"/>' +
-                    		'<field name="ownerWidget" ref="523:TextComponent"/>' +
-                    		'<widget id="523:TextComponent">' +
-                    			'<record id="524:anonymous_139">' +
-                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
-                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                    				'<field name="Text"><![CDATA["null"]]></field>' +
-                    			'</record>' +
-                    			'<field name="formalModel" ref="524:anonymous_139"/>' +
-                    			'<field name="actualModel" ref="524:anonymous_139"/>' +
-                    			'<array name="pinHandles">' +
-                    				'<item ref="525:PinHandle"/>' +
-                    			'</array>' +
-                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                    			'<field name="panel" ref="558:TextComponentMorph"/>' +
-                    			'<field name="morph" ref="573:TextMorph"/>' +
-                    		'</widget>' +
-                    		'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":20}]]></field>' +
-                    	'</g>' +
-                    	'<g type="ConnectorMorph" id="611:ConnectorMorph" transform="translate(0,0)">' +
-                    		'<polyline points="20,69 20,189" stroke-width="4" stroke="rgb(0,0,204)"/>' +
-                    		'<g type="ArrowHeadMorph" id="612:ArrowHeadMorph" transform="translate(20,189) rotate(90)" pointer-events="none">' +
-                    			'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" fill-opacity="0" stroke-opacity="0"/>' +
-                    			'<g type="Morph" id="613:Morph" transform="translate(0,0)" pointer-events="none">' +
-                    				'<polygon points="0,0 -16,6 -16,-6" stroke-width="1" stroke="rgb(0,0,204)" fill="rgb(0,0,204)"/>' +
-                    				'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    				'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-16,"y":-6,"width":16,"height":12}]]></field>' +
-                    				'<field name="mouseHandler">null</field>' +
-                    			'</g>' +
-                    			'<field name="origin" family="Point"><![CDATA[{"x":20,"y":189}]]></field>' +
-                    			'<field name="fullBounds">null</field>' +
-                    			'<field name="head" ref="613:Morph"/>' +
-                    			'<field name="mouseHandler">null</field>' +
-                    			'<field name="rotation">1.5707963267948966</field>' +
-                    		'</g>' +
-                    		'<field name="pinConnector" ref="610:PinConnector"/>' +
-                    		'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    		'<field name="fullBounds">null</field>' +
-                    		'<field name="openForDragAndDrop">false</field>' +
-                    		'<field name="arrowHead" ref="612:ArrowHeadMorph"/>' +
-                    		'<field name="ownerWidget" ref="610:PinConnector"/>' +
-                    		'<widget id="610:PinConnector">' +
-                    			'<field name="fromPin" ref="525:PinHandle"/>' +
-                    			'<field name="toPin" ref="529:PinHandle"/>' +
-                    			'<field name="isBidirectional">false</field>' +
-                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                    			'<field name="morph" ref="611:ConnectorMorph"/>' +
-                    		'</widget>' +
-                    		'<field name="connector" ref="610:PinConnector"/>' +
-                    	'</g>' +
-                    	'<field name="origin" family="Point"><![CDATA[{"x":100,"y":100}]]></field>' +
-                    	'<field name="fullBounds">null</field>' +
-                    	'<field name="openForDragAndDrop">false</field>' +
-                    	'<field name="styleClass"><![CDATA["fabrik"]]></field>' +
-                    	'<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    	'<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
-                    	'<field name="component" ref="521:FabrikComponent"/>' +
-                    	'<field name="formalModel" ref="522:anonymous_138"/>' +
-                    	'<field name="halos" ref="545:Morph"/>' +
-                    	'<field name="closeHalo" ref="546:ButtonMorph"/>' +
-                    	'<field name="collapseHalo" ref="554:ButtonMorph"/>' +
-                    	'<field name="ownerWidget" ref="521:FabrikComponent"/>' +
-                    	'<widget id="521:FabrikComponent">' +
-                    		'<record id="522:anonymous_138">' +
-                    			'<definition><![CDATA[{"Name":{}}]]></definition>' +
-                    			'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                    		'</record>' +
-                    		'<field name="formalModel" ref="522:anonymous_138"/>' +
-                    		'<field name="actualModel" ref="522:anonymous_138"/>' +
-                    		'<array name="pinHandles"/>' +
-                    		'<array name="components">' +
-                    			'<item ref="523:TextComponent"/>' +
-                    			'<item ref="527:TextComponent"/>' +
-                    		'</array>' +
-                    		'<array name="connectors">' +
-                    			'<item ref="610:PinConnector"/>' +
-                    		'</array>' +
-                    		'<field name="panel" ref="531:FabrikMorph"/>' +
-                    		'<field name="morph" ref="531:FabrikMorph"/>' +
-                    	'</widget>' +
-                    	'<widget id="610:PinConnector">' +
-                			'<field name="fromPin" ref="525:PinHandle"/>' +
-                			'<field name="toPin" ref="529:PinHandle"/>' +
-                			'<field name="isBidirectional">false</field>' +
-                			'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                			'<field name="morph" ref="611:ConnectorMorph"/>' +
-                		'</widget>' +
-                    	'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                    	'<field name="pvtOldPosition" family="Point"><![CDATA[{"x":100,"y":100}]]></field>' +
+                '<g xmlns="http://www.w3.org/2000/svg" type="WorldMorph" id="529:WorldMorph">' +
+                    '<rect x="0" y="0" width="1280" height="1024" fill="url(#530:lively.paint.LinearGradient)"/>' +
+                    '<g type="FabrikMorph" id="548:FabrikMorph" class="fabrik" transform="translate(100,100)">' +
+                        '<rect x="0" y="0" width="400" height="400" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="3" ry="3"/>' +
+                        '<g type="FunctionComponentMorph" id="627:FunctionComponentMorph" class="fabrik" transform="translate(20,260)">' +
+                            '<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
+                            '<g type="ScrollPane" id="652:ScrollPane" transform="translate(7,26.5)">' +
+                                '<rect x="0" y="0" width="166" height="66.5" stroke-width="1" fill="none" rx="3" ry="3"/>' +
+                                '<g type="ClipMorph" id="653:ClipMorph" clip-path="url(#12:lively.scene.Clip)" transform="translate(1,1)">' +
+                                    '<rect x="0" y="0" width="151" height="64.5" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
+                                    '<g type="TextMorph" id="649:TextMorph" transform="translate(0,0)">' +
+                                        '<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
+                                        '<g type="TextSelectionMorph" id="650:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+                                            '<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+                                            '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                            '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+                                            '<field name="mouseHandler">null</field>' +
+                                            '<field name="openForDragAndDrop">false</field>' +
+                                        '</g>' +
+                                        '<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
+                                            '<tspan x="7" y="15.8">------</tspan>' +
+                                        '</text>' +
+                                        '<field name="textString"><![CDATA["------"]]></field>' +
+                                        '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                        '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
+                                        '<field name="textSelection" ref="650:TextSelectionMorph"/>' +
+                                        '<field name="changeClue" ref="651:Morph"/>' +
+                                        '<field name="suppressHandles">true</field>' +
+                                        '<field name="openForDragAndDrop">false</field>' +
+                                        '<relay name="formalModel" ref="543:anonymous_152">' +
+                                            '<binding formal="Text" actual="FunctionBody"/>' +
+                                        '</relay>' +
+                                    '</g>' +
+                                    '<defs>' +
+                                        '<clipPath id="12:lively.scene.Clip">' +
+                                            '<rect x="0" y="0" width="151" height="64.5" stroke-width="0" fill="none"/>' +
+                                        '</clipPath>' +
+                                    '</defs>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
+                                    '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":64.5}]]></field>' +
+                                    '<field name="clip" ref="12:lively.scene.Clip"/>' +
+                                    '<field name="suppressHandles">true</field>' +
+                                    '<field name="openForDragAndDrop">false</field>' +
+                                '</g>' +
+                                '<g type="SliderMorph" id="654:SliderMorph" transform="translate(152,1)">' +
+                                    '<rect x="0" y="0" width="14" height="65.5" stroke-width="1" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
+                                    '<g type="Morph" id="655:Morph" transform="translate(0,0)" class="slider">' +
+                                        '<rect x="0" y="0" width="14" height="65.5" stroke-width="1" stroke="rgb(0,0,0)" fill="none" rx="7" ry="7"/>' +
+                                        '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                        '<field name="fullBounds">null</field>' +
+                                        '<field name="openForDragAndDrop">false</field>' +
+                                    '</g>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
+                                    '<field name="fullBounds">null</field>' +
+                                    '<relay name="formalModel" ref="652:ScrollPane">' +
+                                        '<binding formal="Value" actual="ScrollPosition"/>' +
+                                        '<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
+                                    '</relay>' +
+                                    '<field name="valueScale">1</field>' +
+                                    '<field name="slider" ref="655:Morph"/>' +
+                                    '<field name="suppressHandles">true</field>' +
+                                    '<field name="openForDragAndDrop">false</field>' +
+                                '</g>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":7,"y":26.5}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":26.5,"width":166,"height":66.5}]]></field>' +
+                                '<field name="clipMorph" ref="653:ClipMorph"/>' +
+                                '<field name="scrollBar" ref="654:SliderMorph"/>' +
+                                '<field name="suppressHandles">true</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                            '</g>' +
+                            '<g type="TextMorph" id="647:TextMorph" transform="translate(7,7)" pointer-events="none">' +
+                                '<rect x="0" y="0" width="84" height="13.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none"/>' +
+                                '<g type="TextSelectionMorph" id="648:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+                                    '<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                    '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+                                    '<field name="mouseHandler">null</field>' +
+                                    '<field name="openForDragAndDrop">false</field>' +
+                                '</g>' +
+                                '<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
+                                    '<tspan x="0" y="10.8">function</tspan>' +
+                                    '<tspan x="46" y="10.8">f(input)</tspan>' +
+                                '</text>' +
+                                '<field name="textString"><![CDATA["function f(input)"]]></field>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":4,"y":4,"width":87,"height":16.199999809265137}]]></field>' +
+                                '<field name="textSelection" ref="648:TextSelectionMorph"/>' +
+                                '<field name="padding" family="Rectangle"><![CDATA[{"x":0,"y":0,"width":0,"height":0}]]></field>' +
+                                '<field name="wrap"><![CDATA["Shrink"]]></field>' +
+                                '<field name="mouseHandler">null</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                                '<relay name="formalModel" ref="543:anonymous_152">' +
+                                    '<binding formal="Text" actual="-FunctionHeader"/>' +
+                                '</relay>' +
+                                '<field name="undoTextString"><![CDATA["------"]]></field>' +
+                                '<field name="delayedComposition">null</field>' +
+                                '<field name="textBeforeChanges"><![CDATA["function f(input)"]]></field>' +
+                            '</g>' +
+                            '<g type="PinMorph" id="628:PinMorph" transform="translate(171,41)">' +
+                                '<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,204,0)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":171,"y":41}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":171,"y":41,"width":18,"height":18}]]></field>' +
+                                '<field name="suppressHandles">true</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                                '<field name="pinHandle" ref="544:PinHandle"/>' +
+                                '<field name="ownerWidget" ref="544:PinHandle"/>' +
+                                '<widget id="544:PinHandle">' +
+                                    '<record id="545:anonymous_153">' +
+                                        '<field name="Name"><![CDATA["Result"]]></field>' +
+                                        '<field name="PinType"><![CDATA["regular"]]></field>' +
+                                        '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                                    '</record>' +
+                                    '<field name="formalModel" ref="545:anonymous_153"/>' +
+                                    '<field name="actualModel" ref="545:anonymous_153"/>' +
+                                    '<field name="component" ref="542:FunctionComponent"/>' +
+                                    '<array name="connectors"/>' +
+                                    '<field name="morph" ref="628:PinMorph"/>' +
+                                '</widget>' +
+                            '</g>' +
+                            '<g type="PinMorph" id="629:PinMorph" transform="translate(-9,41)">' +
+                                '<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,0,204)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":-9,"y":41}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-9,"y":41,"width":18,"height":18}]]></field>' +
+                                '<field name="suppressHandles">true</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                                '<field name="pinHandle" ref="546:PinHandle"/>' +
+                                '<field name="ownerWidget" ref="546:PinHandle"/>' +
+                                '<widget id="546:PinHandle">' +
+                                    '<record id="547:anonymous_154">' +
+                                        '<field name="Name"><![CDATA["Input"]]></field>' +
+                                        '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                                        '<field name="PinType"><![CDATA["input"]]></field>' +
+                                    '</record>' +
+                                    '<field name="formalModel" ref="547:anonymous_154"/>' +
+                                    '<field name="actualModel" ref="547:anonymous_154"/>' +
+                                    '<field name="component" ref="542:FunctionComponent"/>' +
+                                    '<array name="connectors">' +
+                                        '<item ref="664:PinConnector"/>' +
+                                    '</array>' +
+                                    '<field name="morph" ref="629:PinMorph"/>' +
+                                '</widget>' +
+                            '</g>' +
+                            '<field name="origin" family="Point"><![CDATA[{"x":20,"y":260}]]></field>' +
+                            '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":11,"y":260,"width":198,"height":100}]]></field>' +
+                            '<field name="openForDragAndDrop">false</field>' +
+                            '<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="component" ref="542:FunctionComponent"/>' +
+                            '<field name="formalModel" ref="543:anonymous_152"/>' +
+                            '<field name="halos" ref="630:Morph"/>' +
+                            '<field name="closeHalo" ref="631:ButtonMorph"/>' +
+                            '<field name="label" ref="647:TextMorph"/>' +
+                            '<field name="text" ref="652:ScrollPane"/>' +
+                            '<field name="functionBodyMorph" ref="649:TextMorph"/>' +
+                            '<field name="ownerWidget" ref="542:FunctionComponent"/>' +
+                            '<widget id="542:FunctionComponent">' +
+                                '<record id="543:anonymous_152">' +
+                                    '<definition><![CDATA[{"Name":{},"FunctionBody":{},"FunctionHeader":{},"Result":{},"Input":{}}]]></definition>' +
+                                    '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                                    '<field name="FunctionBody">null</field>' +
+                                    '<field name="Result">null</field>' +
+                                    '<field name="FunctionHeader"><![CDATA["function f(input)"]]></field>' +
+                                    '<field name="Input"><![CDATA["null"]]></field>' +
+                                '</record>' +
+                                '<field name="formalModel" ref="543:anonymous_152"/>' +
+                                '<field name="actualModel" ref="543:anonymous_152"/>' +
+                                '<array name="pinHandles">' +
+                                    '<item ref="544:PinHandle"/>' +
+                                    '<item ref="546:PinHandle"/>' +
+                                '</array>' +
+                                '<field name="fabrik" ref="532:FabrikComponent"/>' +
+                                '<field name="panel" ref="627:FunctionComponentMorph"/>' +
+                                '<field name="morph" ref="649:TextMorph"/>' +
+                            '</widget>' +
+                            '<field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":260}]]></field>' +
+                        '</g>' +
+                        '<g type="TextComponentMorph" id="601:TextComponentMorph" class="fabrik" transform="translate(20,140)">' +
+                            '<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
+                            '<g type="ScrollPane" id="619:ScrollPane" transform="translate(7,7)">' +
+                                '<rect x="0" y="0" width="166" height="86" stroke-width="1" fill="none" rx="3" ry="3"/>' +
+                                '<g type="ClipMorph" id="620:ClipMorph" clip-path="url(#11:lively.scene.Clip)" transform="translate(1,1)">' +
+                                    '<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
+                                    '<g type="TextMorph" id="616:TextMorph" transform="translate(0,0)">' +
+                                        '<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
+                                        '<g type="TextSelectionMorph" id="617:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+                                            '<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+                                            '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                            '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+                                            '<field name="mouseHandler">null</field>' +
+                                            '<field name="openForDragAndDrop">false</field>' +
+                                        '</g>' +
+                                        '<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
+                                            '<tspan x="7" y="15.8">------</tspan>' +
+                                        '</text>' +
+                                        '<field name="textString"><![CDATA["------"]]></field>' +
+                                        '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                        '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
+                                        '<field name="textSelection" ref="617:TextSelectionMorph"/>' +
+                                        '<field name="changeClue" ref="618:Morph"/>' +
+                                        '<field name="suppressHandles">true</field>' +
+                                        '<field name="openForDragAndDrop">false</field>' +
+                                        '<relay name="formalModel" ref="539:anonymous_150">' +
+                                            '<binding formal="Text" actual="Text"/>' +
+                                        '</relay>' +
+                                    '</g>' +
+                                    '<defs>' +
+                                        '<clipPath id="11:lively.scene.Clip">' +
+                                            '<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="none"/>' +
+                                        '</clipPath>' +
+                                    '</defs>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
+                                    '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":84}]]></field>' +
+                                    '<field name="clip" ref="11:lively.scene.Clip"/>' +
+                                    '<field name="suppressHandles">true</field>' +
+                                    '<field name="openForDragAndDrop">false</field>' +
+                                '</g>' +
+                                '<g type="SliderMorph" id="621:SliderMorph" transform="translate(152,1)">' +
+                                    '<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#625:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
+                                    '<g type="Morph" id="622:Morph" transform="translate(0,0)" class="slider">' +
+                                        '<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#626:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
+                                        '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                        '<field name="fullBounds">null</field>' +
+                                        '<field name="openForDragAndDrop">false</field>' +
+                                    '</g>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
+                                    '<field name="fullBounds">null</field>' +
+                                    '<relay name="formalModel" ref="619:ScrollPane">' +
+                                        '<binding formal="Value" actual="ScrollPosition"/>' +
+                                        '<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
+                                    '</relay>' +
+                                    '<field name="valueScale">1</field>' +
+                                    '<field name="slider" ref="622:Morph"/>' +
+                                    '<field name="suppressHandles">true</field>' +
+                                    '<field name="openForDragAndDrop">false</field>' +
+                                '</g>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":7,"width":166,"height":86}]]></field>' +
+                                '<field name="clipMorph" ref="620:ClipMorph"/>' +
+                                '<field name="scrollBar" ref="621:SliderMorph"/>' +
+                                '<field name="suppressHandles">true</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                            '</g>' +
+                            '<g type="PinMorph" id="602:PinMorph" transform="translate(-9,40)">' +
+                                '<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,204,0)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":-9,"y":40}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-9,"y":40,"width":18,"height":18}]]></field>' +
+                                '<field name="suppressHandles">true</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                                '<field name="pinHandle" ref="540:PinHandle"/>' +
+                                '<field name="ownerWidget" ref="540:PinHandle"/>' +
+                                '<widget id="540:PinHandle">' +
+                                    '<record id="541:anonymous_151">' +
+                                        '<field name="Name"><![CDATA["Text"]]></field>' +
+                                        '<field name="PinType"><![CDATA["regular"]]></field>' +
+                                        '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                                    '</record>' +
+                                    '<field name="formalModel" ref="541:anonymous_151"/>' +
+                                    '<field name="actualModel" ref="541:anonymous_151"/>' +
+                                    '<field name="component" ref="538:TextComponent"/>' +
+                                    '<array name="connectors">' +
+                                        '<item ref="660:PinConnector"/>' +
+                                    '</array>' +
+                                    '<field name="morph" ref="602:PinMorph"/>' +
+                                '</widget>' +
+                            '</g>' +
+                            '<field name="origin" family="Point"><![CDATA[{"x":20,"y":140}]]></field>' +
+                            '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":11,"y":140,"width":189,"height":100}]]></field>' +
+                            '<field name="openForDragAndDrop">false</field>' +
+                            '<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="component" ref="538:TextComponent"/>' +
+                            '<field name="formalModel" ref="539:anonymous_150"/>' +
+                            '<field name="halos" ref="603:Morph"/>' +
+                            '<field name="closeHalo" ref="604:ButtonMorph"/>' +
+                            '<field name="text" ref="616:TextMorph"/>' +
+                            '<field name="ownerWidget" ref="538:TextComponent"/>' +
+                            '<widget id="538:TextComponent">' +
+                                '<record id="539:anonymous_150">' +
+                                    '<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                                    '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                                    '<field name="Text"><![CDATA["null"]]></field>' +
+                                '</record>' +
+                                '<field name="formalModel" ref="539:anonymous_150"/>' +
+                                '<field name="actualModel" ref="539:anonymous_150"/>' +
+                                '<array name="pinHandles">' +
+                                    '<item ref="540:PinHandle"/>' +
+                                '</array>' +
+                                '<field name="fabrik" ref="532:FabrikComponent"/>' +
+                                '<field name="panel" ref="601:TextComponentMorph"/>' +
+                                '<field name="morph" ref="616:TextMorph"/>' +
+                            '</widget>' +
+                            '<field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":140}]]></field>' +
+                        '</g>' +
+                        '<g type="TextComponentMorph" id="575:TextComponentMorph" class="fabrik" transform="translate(20,20)">' +
+                            '<rect x="0" y="0" width="180" height="100" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="8" ry="8"/>' +
+                            '<g type="ScrollPane" id="593:ScrollPane" transform="translate(7,7)">' +
+                                '<rect x="0" y="0" width="166" height="86" stroke-width="1" fill="none" rx="3" ry="3"/>' +
+                                '<g type="ClipMorph" id="594:ClipMorph" clip-path="url(#10:lively.scene.Clip)" transform="translate(1,1)">' +
+                                    '<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="rgb(243,243,243)" rx="3" ry="3"/>' +
+                                    '<g type="TextMorph" id="590:TextMorph" transform="translate(0,0)">' +
+                                        '<rect x="1" y="1" width="151" height="21.2" stroke-width="0" stroke="rgb(0,0,0)" fill="none" rx="3" ry="3"/>' +
+                                        '<g type="TextSelectionMorph" id="591:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+                                            '<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+                                            '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                            '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+                                            '<field name="mouseHandler">null</field>' +
+                                            '<field name="openForDragAndDrop">false</field>' +
+                                        '</g>' +
+                                        '<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
+                                            '<tspan x="7" y="15.8">------</tspan>' +
+                                        '</text>' +
+                                        '<field name="textString"><![CDATA["------"]]></field>' +
+                                        '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                        '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":155,"height":25.200000762939453}]]></field>' +
+                                        '<field name="textSelection" ref="591:TextSelectionMorph"/>' +
+                                        '<field name="changeClue" ref="592:Morph"/>' +
+                                        '<field name="suppressHandles">true</field>' +
+                                        '<field name="openForDragAndDrop">false</field>' +
+                                        '<relay name="formalModel" ref="535:anonymous_148">' +
+                                            '<binding formal="Text" actual="Text"/>' +
+                                        '</relay>' +
+                                    '</g>' +
+                                    '<defs>' +
+                                        '<clipPath id="10:lively.scene.Clip">' +
+                                            '<rect x="0" y="0" width="151" height="84" stroke-width="0" fill="none"/>' +
+                                        '</clipPath>' +
+                                    '</defs>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":1,"y":1}]]></field>' +
+                                    '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":1,"y":1,"width":151,"height":84}]]></field>' +
+                                    '<field name="clip" ref="10:lively.scene.Clip"/>' +
+                                    '<field name="suppressHandles">true</field>' +
+                                    '<field name="openForDragAndDrop">false</field>' +
+                                '</g>' +
+                                '<g type="SliderMorph" id="595:SliderMorph" transform="translate(152,1)">' +
+                                    '<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#599:lively.paint.LinearGradient)" rx="3" ry="3"/>' +
+                                    '<g type="Morph" id="596:Morph" transform="translate(0,0)" class="slider">' +
+                                        '<rect x="0" y="0" width="14" height="85" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#600:lively.paint.LinearGradient)" rx="7" ry="7"/>' +
+                                        '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                        '<field name="fullBounds">null</field>' +
+                                        '<field name="openForDragAndDrop">false</field>' +
+                                    '</g>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":152,"y":1}]]></field>' +
+                                    '<field name="fullBounds">null</field>' +
+                                    '<relay name="formalModel" ref="593:ScrollPane">' +
+                                        '<binding formal="Value" actual="ScrollPosition"/>' +
+                                        '<binding formal="SliderExtent" actual="-VisibleExtent"/>' +
+                                    '</relay>' +
+                                    '<field name="valueScale">1</field>' +
+                                    '<field name="slider" ref="596:Morph"/>' +
+                                    '<field name="suppressHandles">true</field>' +
+                                    '<field name="openForDragAndDrop">false</field>' +
+                                '</g>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":7,"y":7}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":7,"y":7,"width":166,"height":86}]]></field>' +
+                                '<field name="clipMorph" ref="594:ClipMorph"/>' +
+                                '<field name="scrollBar" ref="595:SliderMorph"/>' +
+                                '<field name="suppressHandles">true</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                            '</g>' +
+                            '<g type="PinMorph" id="576:PinMorph" transform="translate(-9,40)">' +
+                                '<ellipse cx="9" cy="9" rx="9" ry="9" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,204,0)" fill-opacity="0.5" stroke-opacity="0.5"/>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":-9,"y":40}]]></field>' +
+                                '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-9,"y":40,"width":18,"height":18}]]></field>' +
+                                '<field name="suppressHandles">true</field>' +
+                                '<field name="openForDragAndDrop">false</field>' +
+                                '<field name="pinHandle" ref="536:PinHandle"/>' +
+                                '<field name="ownerWidget" ref="536:PinHandle"/>' +
+                                '<widget id="536:PinHandle">' +
+                                    '<record id="537:anonymous_149">' +
+                                        '<field name="Name"><![CDATA["Text"]]></field>' +
+                                        '<field name="PinType"><![CDATA["regular"]]></field>' +
+                                        '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                                    '</record>' +
+                                    '<field name="formalModel" ref="537:anonymous_149"/>' +
+                                    '<field name="actualModel" ref="537:anonymous_149"/>' +
+                                    '<field name="component" ref="534:TextComponent"/>' +
+                                    '<array name="connectors">' +
+                                        '<item ref="660:PinConnector"/>' +
+                                        '<item ref="664:PinConnector"/>' +
+                                    '</array>' +
+                                    '<field name="morph" ref="576:PinMorph"/>' +
+                                '</widget>' +
+                            '</g>' +
+                            '<field name="origin" family="Point"><![CDATA[{"x":20,"y":20}]]></field>' +
+                            '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":11,"y":20,"width":189,"height":100}]]></field>' +
+                            '<field name="openForDragAndDrop">false</field>' +
+                            '<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="component" ref="534:TextComponent"/>' +
+                            '<field name="formalModel" ref="535:anonymous_148"/>' +
+                            '<field name="halos" ref="577:Morph"/>' +
+                            '<field name="closeHalo" ref="578:ButtonMorph"/>' +
+                            '<field name="text" ref="590:TextMorph"/>' +
+                            '<field name="ownerWidget" ref="534:TextComponent"/>' +
+                            '<widget id="534:TextComponent">' +
+                                '<record id="535:anonymous_148">' +
+                                    '<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                                    '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                                    '<field name="Text"><![CDATA["null"]]></field>' +
+                                '</record>' +
+                                '<field name="formalModel" ref="535:anonymous_148"/>' +
+                                '<field name="actualModel" ref="535:anonymous_148"/>' +
+                                '<array name="pinHandles">' +
+                                    '<item ref="536:PinHandle"/>' +
+                                '</array>' +
+                                '<field name="fabrik" ref="532:FabrikComponent"/>' +
+                                '<field name="panel" ref="575:TextComponentMorph"/>' +
+                                '<field name="morph" ref="590:TextMorph"/>' +
+                            '</widget>' +
+                            '<field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":20}]]></field>' +
+                        '</g>' +
+                        '<g type="ConnectorMorph" id="661:ConnectorMorph" transform="translate(0,0)">' +
+                            '<polyline points="20,69 20,189" stroke-width="4" stroke="rgb(0,0,204)"/>' +
+                            '<g type="ArrowHeadMorph" id="662:ArrowHeadMorph" transform="translate(20,189) rotate(90)" pointer-events="none">' +
+                                '<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" fill-opacity="0" stroke-opacity="0"/>' +
+                                '<g type="Morph" id="663:Morph" transform="translate(0,0)" pointer-events="none">' +
+                                    '<polygon points="0,0 -16,6 -16,-6" stroke-width="1" stroke="rgb(0,0,204)" fill="rgb(0,0,204)"/>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                    '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-16,"y":-6,"width":16,"height":12}]]></field>' +
+                                    '<field name="mouseHandler">null</field>' +
+                                '</g>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":20,"y":189}]]></field>' +
+                                '<field name="fullBounds">null</field>' +
+                                '<field name="head" ref="663:Morph"/>' +
+                                '<field name="mouseHandler">null</field>' +
+                                '<field name="rotation">1.5707963267948966</field>' +
+                            '</g>' +
+                            '<field name="pinConnector" ref="660:PinConnector"/>' +
+                            '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="fullBounds">null</field>' +
+                            '<field name="openForDragAndDrop">false</field>' +
+                            '<field name="arrowHead" ref="662:ArrowHeadMorph"/>' +
+                            '<field name="ownerWidget" ref="660:PinConnector"/>' +
+                            '<widget id="660:PinConnector">' +
+                                '<field name="fromPin" ref="536:PinHandle"/>' +
+                                '<field name="toPin" ref="540:PinHandle"/>' +
+                                '<field name="isBidirectional">false</field>' +
+                                '<field name="fabrik" ref="532:FabrikComponent"/>' +
+                                '<field name="morph" ref="661:ConnectorMorph"/>' +
+                            '</widget>' +
+                            '<field name="connector" ref="660:PinConnector"/>' +
+                        '</g>' +
+                        '<g type="ConnectorMorph" id="665:ConnectorMorph" transform="translate(0,0)">' +
+                            '<polyline points="20,69 20,310" stroke-width="4" stroke="rgb(0,0,204)"/>' +
+                            '<g type="ArrowHeadMorph" id="666:ArrowHeadMorph" transform="translate(20,310) rotate(90)" pointer-events="none">' +
+                                '<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" fill-opacity="0" stroke-opacity="0"/>' +
+                                '<g type="Morph" id="667:Morph" transform="translate(0,0)" pointer-events="none">' +
+                                    '<polygon points="0,0 -16,6 -16,-6" stroke-width="1" stroke="rgb(0,0,204)" fill="rgb(0,0,204)"/>' +
+                                    '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                                    '<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-16,"y":-6,"width":16,"height":12}]]></field>' +
+                                    '<field name="mouseHandler">null</field>' +
+                                '</g>' +
+                                '<field name="origin" family="Point"><![CDATA[{"x":20,"y":310}]]></field>' +
+                                '<field name="fullBounds">null</field>' +
+                                '<field name="head" ref="667:Morph"/>' +
+                                '<field name="mouseHandler">null</field>' +
+                                '<field name="rotation">1.5707963267948966</field>' +
+                            '</g>' +
+                            '<field name="pinConnector" ref="664:PinConnector"/>' +
+                            '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                            '<field name="fullBounds">null</field>' +
+                            '<field name="openForDragAndDrop">false</field>' +
+                            '<field name="arrowHead" ref="666:ArrowHeadMorph"/>' +
+                            '<field name="ownerWidget" ref="664:PinConnector"/>' +
+                            '<widget id="664:PinConnector">' +
+                                '<field name="fromPin" ref="536:PinHandle"/>' +
+                                '<field name="toPin" ref="546:PinHandle"/>' +
+                                '<field name="isBidirectional">false</field>' +
+                                '<field name="fabrik" ref="532:FabrikComponent"/>' +
+                                '<field name="morph" ref="665:ConnectorMorph"/>' +
+                            '</widget>' +
+                            '<field name="connector" ref="664:PinConnector"/>' +
+                        '</g>' +
+                        '<field name="origin" family="Point"><![CDATA[{"x":100,"y":100}]]></field>' +
+                        '<field name="fullBounds">null</field>' +
+                        '<field name="openForDragAndDrop">false</field>' +
+                        '<field name="priorExtent" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                        '<field name="priorPosition" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                        '<field name="component" ref="532:FabrikComponent"/>' +
+                        '<field name="formalModel" ref="533:anonymous_147"/>' +
+                        '<field name="halos" ref="562:Morph"/>' +
+                        '<field name="closeHalo" ref="563:ButtonMorph"/>' +
+                        '<field name="collapseHalo" ref="571:ButtonMorph"/>' +
+                        '<field name="ownerWidget" ref="532:FabrikComponent"/>' +
+                        '<widget id="532:FabrikComponent">' +
+                            '<record id="533:anonymous_147">' +
+                                '<definition><![CDATA[{"Name":{}}]]></definition>' +
+                                '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                            '</record>' +
+                            '<field name="formalModel" ref="533:anonymous_147"/>' +
+                            '<field name="actualModel" ref="533:anonymous_147"/>' +
+                            '<array name="pinHandles"/>' +
+                            '<array name="components">' +
+                                '<item ref="534:TextComponent"/>' +
+                                '<item ref="538:TextComponent"/>' +
+                                '<item ref="542:FunctionComponent"/>' +
+                            '</array>' +
+                            '<array name="connectors">' +
+                                '<item ref="660:PinConnector"/>' +
+                                '<item ref="664:PinConnector"/>' +
+                            '</array>' +
+                            '<field name="panel" ref="548:FabrikMorph"/>' +
+                            '<field name="morph" ref="548:FabrikMorph"/>' +
+                        '</widget>' +
+                        '<field name="fabrik" ref="532:FabrikComponent"/>' +
+                        '<field name="pvtOldPosition" family="Point"><![CDATA[{"x":100,"y":100}]]></field>' +
                     '</g>' +
-                '</g>'+ 
+                    '<field name="owner">null</field>' +
+                    '<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+                    '<field name="fullBounds">null</field>' +
+                    '<array name="hands"/>' +
+                    '<array name="scheduledActions"/>' +
+                    '<field name="lastStepTime">1231236812061</field>' +
+                    '<field name="mainLoop">2133</field>' +
+                    '<field name="worldId">6</field>' +
+                    '<field name="enterCount">0</field>' +
+                '</g>' +
             '</svg>');
         
         this.assert(world instanceof WorldMorph, "world is no WorldMorph");
@@ -2019,96 +2223,154 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         // this.showMyWorld(world)
     },
     
-    testLoadFabrikWidgets: function() {
-        // generate with textmate replace: "(<.*>$)" with: "'$1' +"
-        var world = this.loadWorldFromSource(
+    loadWorldWithTrunkFromSource: function(source) {
+        return this.loadWorldFromSource(
             '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
                 '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
                     '<rect x="0" y="0" width="800" height="600"/>' +          
-                    '<g xmlns="http://www.w3.org/2000/svg" type="FabrikMorph" id="389:FabrikMorph" transform="translate(0,0)">' +
-                    	'<rect x="0" y="0" width="400" height="400" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="3" ry="3"/>' +    	
-                    	'<field name="ownerWidget" ref="378:FabrikComponent"/>' +
-                    	'<field name="component" ref="378:FabrikComponent"/>' +
-                    	'<widget id="378:FabrikComponent">' +
-                    		'<record id="379:anonymous_103">' +
-                    			'<definition><![CDATA[{"Name":{}}]]></definition>' +
-                    			'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                    		'</record>' +
-                    		'<field name="formalModel" ref="379:anonymous_103"/>' +
-                    		'<field name="actualModel" ref="379:anonymous_103"/>' +
-                    		'<array name="pinHandles">' + 
-                    		'</array>' +
-                    		'<array name="components">' +
-                    			'<item ref="523:TextComponent"/>' +
-                    			'<item ref="527:TextComponent"/>' +
-                    		'</array>' +
-                    		'<array name="connectors">' +
-                    			'<item ref="610:PinConnector"/>' +
-                    		'</array>' +
-                    		'<widget id="527:TextComponent">' +
-                    			'<record id="528:anonymous_141">' +
-                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
-                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                    				'<field name="Text"><![CDATA["null"]]></field>' +
-                    			'</record>' +
-                    			'<field name="formalModel" ref="528:anonymous_141"/>' +
-                    			'<field name="actualModel" ref="528:anonymous_141"/>' +
-                    			'<array name="pinHandles">' +
-                    				'<item ref="529:PinHandle"/>' +
-                    			'</array>' +
-                    			'<widget id="529:PinHandle">' +
-                    				'<record id="530:anonymous_142">' +
-                    					'<field name="Name"><![CDATA["Text"]]></field>' +
-                    					'<field name="PinType"><![CDATA["regular"]]></field>' +
-                    					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
-                    				'</record>' +
-                    				'<field name="formalModel" ref="530:anonymous_142"/>' +
-                    				'<field name="actualModel" ref="530:anonymous_142"/>' +
-                    				'<field name="component" ref="527:TextComponent"/>' +
-                    				'<array name="connectors">' +
-                    					'<item ref="610:PinConnector"/>' +
-                    				'</array>' +
-                    			'</widget>' +
-                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                    			'<field name="panel" ref="584:TextComponentMorph"/>' +
-                    		'</widget>' +
-                    		'<widget id="523:TextComponent">' +
-                    			'<record id="524:anonymous_139">' +
-                    				'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
-                    				'<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                    				'<field name="Text"><![CDATA["null"]]></field>' +
-                    			'</record>' +
-                    			'<field name="formalModel" ref="524:anonymous_139"/>' +
-                    			'<field name="actualModel" ref="524:anonymous_139"/>' +
-                    			'<array name="pinHandles">' +
-                    				'<item ref="525:PinHandle"/>' +
-                    			'</array>' +
-                    			'<widget id="525:PinHandle">' +
-                    				'<record id="526:anonymous_140">' +
-                    					'<field name="Name"><![CDATA["Text"]]></field>' +
-                    					'<field name="PinType"><![CDATA["regular"]]></field>' +
-                    					'<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
-                    				'</record>' +
-                    				'<field name="formalModel" ref="526:anonymous_140"/>' +
-                    				'<field name="actualModel" ref="526:anonymous_140"/>' +
-                    				'<field name="component" ref="523:TextComponent"/>' +
-                    				'<array name="connectors">' +
-                    					'<item ref="610:PinConnector"/>' +
-                    				'</array>' +
-                    			'</widget>' +
-                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                    		'</widget>' +
-                    		'<widget id="610:PinConnector">' +
-                    			'<field name="fromPin" ref="525:PinHandle"/>' +
-                    			'<field name="toPin" ref="529:PinHandle"/>' +
-                    			'<field name="isBidirectional">false</field>' +
-                    			'<field name="fabrik" ref="521:FabrikComponent"/>' +
-                    		'</widget>' +
-                    	'</widget>' +
-                    	'<field name="fabrik" ref="378:FabrikComponent"/>' +
-                    '</g>' +
+                    source  +
                 '</g>'+ 
-            '</svg>');        
+            '</svg>');                
+    },
+    
+    
+    testLoadFabrikWidgets: function() {
+        // generate with textmate replace: "(<.*>$)" with: "'$1' +"
+        var world = this.loadWorldWithTrunkFromSource(
+           '<g xmlns="http://www.w3.org/2000/svg" type="FabrikMorph" id="389:FabrikMorph" transform="translate(0,0)">' +
+                '<rect x="0" y="0" width="400" height="400" stroke-width="1.5" stroke="rgb(0,0,204)" fill="rgb(127,127,230)" fill-opacity="0.8" stroke-opacity="0.8" rx="3" ry="3"/>' +     
+                '<field name="ownerWidget" ref="378:FabrikComponent"/>' +
+                '<field name="component" ref="378:FabrikComponent"/>' +
+                '<widget id="378:FabrikComponent">' +
+                    '<record id="379:anonymous_103">' +
+                        '<definition><![CDATA[{"Name":{}}]]></definition>' +
+                        '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                    '</record>' +
+                    '<field name="formalModel" ref="379:anonymous_103"/>' +
+                    '<field name="actualModel" ref="379:anonymous_103"/>' +
+                    '<array name="pinHandles">' + 
+                    '</array>' +
+                    '<array name="components">' +
+                        '<item ref="523:TextComponent"/>' +
+                        '<item ref="527:TextComponent"/>' +
+                        '<item ref="542:FunctionComponent"/>' +
+                    '</array>' +
+                    '<array name="connectors">' +
+                        '<item ref="610:PinConnector"/>' +
+                        '<item ref="664:PinConnector"/>' +
+                    '</array>' +
+                    '<widget id="527:TextComponent">' +
+                        '<record id="528:anonymous_141">' +
+                            '<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                            '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                            '<field name="Text"><![CDATA["null"]]></field>' +
+                        '</record>' +
+                        '<field name="formalModel" ref="528:anonymous_141"/>' +
+                        '<field name="actualModel" ref="528:anonymous_141"/>' +
+                        '<array name="pinHandles">' +
+                            '<item ref="529:PinHandle"/>' +
+                        '</array>' +
+                        '<widget id="529:PinHandle">' +
+                            '<record id="530:anonymous_142">' +
+                                '<field name="Name"><![CDATA["Text"]]></field>' +
+                                '<field name="PinType"><![CDATA["regular"]]></field>' +
+                                '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                            '</record>' +
+                            '<field name="formalModel" ref="530:anonymous_142"/>' +
+                            '<field name="actualModel" ref="530:anonymous_142"/>' +
+                            '<field name="component" ref="527:TextComponent"/>' +
+                            '<array name="connectors">' +
+                                '<item ref="610:PinConnector"/>' +
+                            '</array>' +
+                        '</widget>' +
+                        '<field name="fabrik" ref="521:FabrikComponent"/>' +
+                        '<field name="panel" ref="584:TextComponentMorph"/>' +
+                    '</widget>' +
+                    '<widget id="523:TextComponent">' +
+                        '<record id="524:anonymous_139">' +
+                            '<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+                            '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                            '<field name="Text"><![CDATA["null"]]></field>' +
+                        '</record>' +
+                        '<field name="formalModel" ref="524:anonymous_139"/>' +
+                        '<field name="actualModel" ref="524:anonymous_139"/>' +
+                        '<array name="pinHandles">' +
+                            '<item ref="525:PinHandle"/>' +
+                        '</array>' +
+                        '<widget id="525:PinHandle">' +
+                            '<record id="526:anonymous_140">' +
+                                '<field name="Name"><![CDATA["Text"]]></field>' +
+                                '<field name="PinType"><![CDATA["regular"]]></field>' +
+                                '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                            '</record>' +
+                            '<field name="formalModel" ref="526:anonymous_140"/>' +
+                            '<field name="actualModel" ref="526:anonymous_140"/>' +
+                            '<field name="component" ref="523:TextComponent"/>' +
+                            '<array name="connectors">' +
+                                '<item ref="610:PinConnector"/>' +
+                            '</array>' +
+                        '</widget>' +
+                        '<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    '</widget>' +
+                    '<widget id="542:FunctionComponent">' +
+                        '<record id="543:anonymous_152">' +
+                                '<definition><![CDATA[{"Name":{},"FunctionBody":{},"FunctionHeader":{},"Result":{},"Input":{}}]]></definition>' +
+                                '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
+                                '<field name="FunctionBody">null</field>' +
+                                '<field name="Result">null</field>' +
+                                '<field name="FunctionHeader"><![CDATA["function f(input)"]]></field>' +
+                                '<field name="Input"><![CDATA["null"]]></field>' +
+                        '</record>' +
+                        '<field name="formalModel" ref="543:anonymous_152"/>' +
+                        '<field name="actualModel" ref="543:anonymous_152"/>' +
+                        '<array name="pinHandles">' +
+                                '<item ref="544:PinHandle"/>' +
+                                '<item ref="546:PinHandle"/>' +
+                        '</array>' +
+                        '<field name="fabrik" ref="532:FabrikComponent"/>' +
+                        '<field name="panel" ref="627:FunctionComponentMorph"/>' +
+                        '<field name="morph" ref="649:TextMorph"/>' +
+                        '<widget id="544:PinHandle">' +
+                                '<record id="545:anonymous_153">' +
+                                        '<field name="Name"><![CDATA["Result"]]></field>' +
+                                        '<field name="PinType"><![CDATA["regular"]]></field>' +
+                                        '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                                '</record>' +
+                                '<field name="formalModel" ref="545:anonymous_153"/>' +
+                                '<field name="actualModel" ref="545:anonymous_153"/>' +
+                                '<field name="component" ref="542:FunctionComponent"/>' +
+                                '<array name="connectors"/>' +
+                        '</widget>' +
+                        '<widget id="546:PinHandle">' +
+                                '<record id="547:anonymous_154">' +
+                                        '<field name="Name"><![CDATA["Input"]]></field>' +
+                                        '<definition><![CDATA[{"Name":{},"PinType":{}}]]></definition>' +
+                                        '<field name="PinType"><![CDATA["input"]]></field>' +
+                                '</record>' +
+                                '<field name="formalModel" ref="547:anonymous_154"/>' +
+                                '<field name="actualModel" ref="547:anonymous_154"/>' +
+                                '<field name="component" ref="542:FunctionComponent"/>' +
+                                '<array name="connectors">' +
+                                        '<item ref="664:PinConnector"/>' +
+                                '</array>' +
+                                '<field name="morph" ref="629:PinMorph"/>' +
+                        '</widget>' + 
+                    '</widget>' +
+                    '<widget id="610:PinConnector">' +
+                        '<field name="fromPin" ref="525:PinHandle"/>' +
+                        '<field name="toPin" ref="529:PinHandle"/>' +
+                        '<field name="isBidirectional">false</field>' +
+                        '<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    '</widget>' +
+                    '<widget id="664:PinConnector">' +
+                        '<field name="fromPin" ref="525:PinHandle"/>' +
+                        '<field name="toPin" ref="546:PinHandle"/>' +
+                        '<field name="isBidirectional">false</field>' +
+                        '<field name="fabrik" ref="521:FabrikComponent"/>' +
+                    '</widget>' +
+                '</widget>' +
+                '<field name="fabrik" ref="378:FabrikComponent"/>' +
+            '</g>');        
         this.assert(world instanceof WorldMorph, "world is no WorldMorph");
         var fabrikMorph = world.submorphs[0];
         var fabrik = fabrikMorph.component;
@@ -2120,10 +2382,8 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         fabrik.openIn(world);
         fabrik.panel.automaticLayout();
         
-        //this.showMyWorld(world);
-        
+        //this.showMyWorld(world);    
     },
-    
     
     testConnectingPinsBeforeBuildingFabrik: function() {
         var fabrik = new FabrikComponent();
@@ -2131,11 +2391,11 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         var text2 = new TextComponent();
         fabrik.plugin(text1);
         fabrik.plugin(text2);
-	    var pin1 = text1.getPin("Text");
-	    var pin2 = text2.getPin("Text");
-	
+        var pin1 = text1.getPin("Text");
+        var pin2 = text2.getPin("Text");
+    
         pin1.connectTo(pin2);
-	
+    
         fabrik.buildView(pt(400, 400));
         
         this.assertIdentity(pin2, text2.getPin("Text"), "pin2 has changed");
@@ -2149,19 +2409,23 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         var fabrik = new FabrikComponent();
         var text1 = new TextComponent();
         var text2 = new TextComponent();
+        var function1 = new FunctionComponent();
+
         fabrik.plugin(text1);
         fabrik.plugin(text2);
-	    
-	    var pin1 = text1.getPin("Text");
-	    var pin2 = text2.getPin("Text");
-	    
+        fabrik.plugin(function1);
+                
+        var pin1 = text1.getPin("Text");
+        var pin2 = text2.getPin("Text");
+        
         fabrik.buildView(pt(400, 400));
         fabrik.panel.automaticLayout();
         this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
         fabrik.panel.setPosition(pt(100,100));
 
-        pin1.connectTo(pin2); // Todo: it seems, that building 
-        
+        pin1.connectTo(pin2);  
+        pin1.connectTo(function1.getPin("Input"));
+
         this.assertIdentity(pin2.morph.owner, text2.panel, "pin morph2 is lost");
     
         //this.showMyWorld();
@@ -2191,6 +2455,26 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assert(pinMorph2, "pinMorph2 is not serialized");
         
         // console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
+        console.log(Exporter.stringify(worldNode));
+        
+    },
+    
+    testSerializeFunctionComponent: function() {
+        var fabrik = new FabrikComponent();
+        var functionComponent = new FunctionComponent();
+
+        functionComponent.setFunctionBody("return input * input")
+        fabrik.plugin(functionComponent);
+        
+        fabrik.buildView(pt(400, 400));
+        fabrik.panel.automaticLayout();
+        
+        this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
+        fabrik.panel.setPosition(pt(100,100));
+
+        var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+        
+        //console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
     }
 
 });
