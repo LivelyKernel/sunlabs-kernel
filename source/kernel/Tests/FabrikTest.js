@@ -944,8 +944,8 @@ TestCase.subclass('ConnectorMorphTest', {
         m1.getGlobalPinPosition = function(){return this.getPosition()};
         m2 = Morph.makeRectangle(200, 200, 10,10);
         m2.getGlobalPinPosition = m1.getGlobalPinPosition;
-        c.formalModel.setStartHandle(m1);
-        c.formalModel.setEndHandle(m2);
+        c.setStartHandle(m1);
+        c.setEndHandle(m2);
         c.updateView();
         this.assertEqualState(c.getStartPoint(), pt(100,100), "start point failed");
         this.assertEqualState(c.getEndPoint(), pt(200,200), "end point failed");
@@ -1527,6 +1527,24 @@ TestCase.subclass('NodeRecordSerializationTest', {
     },
 });
 
+
+TestCase.subclass('AFabrikUITest', {
+    documentation: 'Tests if some UI building and rebuilding behavior of components.',
+    
+    testDeleteView: function() {
+        var component = new TextComponent();
+        component.buildView();
+        var oldMorph = component.morph
+        this.assert(oldMorph, "text must have a morph");
+        component.deleteView();
+        this.assert(component.morph === null, "text must not have a morph");
+        this.assert(component.panel === null, "text must not have a panel");
+        this.assert(oldMorph.component === null, "text must forget component");        
+    }
+    
+});
+
+
 TestCase.subclass('FabrikConverterTest', {
    
    xmlString:   '<?xml version="1.0"?>' +
@@ -1663,6 +1681,8 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         var text2 = fabrik.components[1];
         this.assert(text2 instanceof TextComponent , "second text component is no TextComponent");
                         
+        var func1 = fabrik.components[2];
+        this.assert(func1 instanceof FunctionComponent , "third component is no FunctionComponent " );
                         
         this.assert(text1.pinHandles, "no pinHandles in component");              
         this.assertEqual(text1.pinHandles.length, 1, "wrong number of pinHandles in component");
@@ -1677,7 +1697,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         
         var connector1 = fabrik.connectors[0];
         this.assert(connector1 instanceof PinConnector , "connector1 is no PinConnecotr (" + connector1 + ")");
-        
+               
         this.assertIdentity(connector1.fromPin, text1.getPin("Text"), " wrong fromPin");
         this.assertIdentity(connector1.toPin, text2.getPin("Text"), " wrong toPin");
                       
@@ -1688,7 +1708,11 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assert(text1.formalModel["Text$observers"], "no observer array for text pin");
         this.assert(text1.formalModel["Text$observers"].length > 0, "wrong number of observers");
         this.assertEqual(pin2.getValue(), testString, "observing pin1 failed");
-          
+      
+        this.assert(func1.formalModel, "func1 has no model");
+        this.assert(func1.formalModel.getFunctionBody, "func1 has no getFunctionBody in model");
+        
+        this.assertEqual(func1.formalModel.getFunctionBody(), "input + input", "wrong FunctionBody content"); 
     },
 
     testLoadFabrik: function() {
@@ -1854,7 +1878,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
                                 '<record id="543:anonymous_152">' +
                                     '<definition><![CDATA[{"Name":{},"FunctionBody":{},"FunctionHeader":{},"Result":{},"Input":{}}]]></definition>' +
                                     '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                                    '<field name="FunctionBody">null</field>' +
+                                    '<field name="FunctionBody"><![CDATA["input + input"]]></field>' +
                                     '<field name="Result">null</field>' +
                                     '<field name="FunctionHeader"><![CDATA["function f(input)"]]></field>' +
                                     '<field name="Input"><![CDATA["null"]]></field>' +
@@ -2220,7 +2244,10 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         
         this.assertFabrikWithTwoTextComponentsAndConnector(fabrik);
 
-        // this.showMyWorld(world)
+        var connector1 = fabrik.connectors[0]; 
+        
+
+        //this.showMyWorld(world)
     },
     
     loadWorldWithTrunkFromSource: function(source) {
@@ -2316,7 +2343,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
                         '<record id="543:anonymous_152">' +
                                 '<definition><![CDATA[{"Name":{},"FunctionBody":{},"FunctionHeader":{},"Result":{},"Input":{}}]]></definition>' +
                                 '<field name="Name"><![CDATA["Abstract Component"]]></field>' +
-                                '<field name="FunctionBody">null</field>' +
+                                '<field name="FunctionBody"><![CDATA["input + input"]]></field>' +
                                 '<field name="Result">null</field>' +
                                 '<field name="FunctionHeader"><![CDATA["function f(input)"]]></field>' +
                                 '<field name="Input"><![CDATA["null"]]></field>' +
@@ -2377,8 +2404,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         
         this.assertFabrikWithTwoTextComponentsAndConnector(fabrik);    
         
-        
-        fabrikMorph.remove();
+        fabrik.deleteView();
         fabrik.openIn(world);
         fabrik.panel.automaticLayout();
         
@@ -2410,6 +2436,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         var text1 = new TextComponent();
         var text2 = new TextComponent();
         var function1 = new FunctionComponent();
+        function1.formalModel.setFunctionBody("input + input")
 
         fabrik.plugin(text1);
         fabrik.plugin(text2);
@@ -2455,7 +2482,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assert(pinMorph2, "pinMorph2 is not serialized");
         
         // console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
-        console.log(Exporter.stringify(worldNode));
+        // console.log(Exporter.stringify(worldNode));
         
     },
     
@@ -2475,9 +2502,10 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         var doc = Exporter.shrinkWrapMorph(this.worldMorph);
         
         //console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
-    }
-
+    },
 });
+
+
 
 
 console.log("Loaded FabrikTest.js");

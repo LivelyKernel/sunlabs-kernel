@@ -155,11 +155,8 @@ Global.Fabrik = {
         world.addMorph(m2);
 
         // FIXME Why isnt this handled at a central point?????
-        c.formalModel = ComponentModel.newModel();
-        c.formalModel.addField("StartHandle");
-        c.formalModel.addField("EndHandle");
-        c.formalModel.setStartHandle(m1);
-        c.formalModel.setEndHandle(m2);
+        c.setStartHandle(m1);
+        c.setEndHandle(m2);
         c.updateView();
         return c;
     },
@@ -774,6 +771,10 @@ Widget.subclass('PinHandle', {
         return this.morph;
     },
     
+    deleteView: function() {
+        
+    },
+    
     setValue: function(value) {
         this.component.formalModel["set" + this.getName()](value);
     },
@@ -967,7 +968,7 @@ Morph.subclass('ConnectorMorph', {
         if (!verts) verts = [pt(0,0), pt(100,100)];
         if (!lineWidth) lineWidth = 1;  
         if (!lineColor) lineColor = Color.red;   
-        this.formalModel = Record.newPlainInstance({StartHandle: null, EndHandle: null});
+        //this.formalModel = Record.newPlainInstance({StartHandle: null, EndHandle: null});
         
         this.pinConnector = pinConnector;
         
@@ -988,16 +989,38 @@ Morph.subclass('ConnectorMorph', {
 
         this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
         this.addMorph(this.arrowHead);
-
+        this.setupArrowHeadUpdating();
+    },
+    
+    onDeserialize: function() {
+        this.setupArrowHeadUpdating();        
+    },
+    
+    setupArrowHeadUpdating: function() {
         var self = this;
         this.shape.setVertices = this.shape.setVertices.wrap(function(proceed) {
             var args = $A(arguments); args.shift(); 
             proceed.apply(this, args);
             self.updateArrow();
         });
-    
     },
     
+    setStartHandle: function(pinHandle) {
+        this.startHandle = pinHandle;
+    },
+
+    getStartHandle: function() {
+        return this.startHandle;
+    },
+
+    setEndHandle: function(pinHandle) {
+        this.endHandle = pinHandle;
+    },    
+
+    getEndHandle: function() {
+        return this.endHandle;
+    },    
+
     // I don't know who sends this, but by intercepting here I can stop him....
     // logStack shows no meaningfull results here
     translateBy: function($super, delta) {
@@ -1060,11 +1083,10 @@ Morph.subclass('ConnectorMorph', {
     containsWorldPoint: Functions.Null,
     
     fullContainsWorldPoint: function($super, p) {
-        if (!this.formalModel)
+        if (this.startHandle && this.endHandle)
             return false;
         // to ensure correct dnd behavior when connector is beneath a pinMorph in hand
-        if (this.formalModel.getStartHandle().fullContainsWorldPoint(p) || 
-            this.formalModel.getEndHandle().fullContainsWorldPoint(p))
+        if (this.startHandle.fullContainsWorldPoint(p) || this.endHandle.fullContainsWorldPoint(p))
             return false;
         return $super(p);
     },
@@ -1117,17 +1139,9 @@ Morph.subclass('ConnectorMorph', {
     },
     
     updateView: function (varname, source) {
-        // console.log("update View for connector");
-        if (!this.formalModel) {
-            console.log("no formal model found for connector: " + this);
-            return;
-        }
-        var start = this.formalModel.getStartHandle();
-        // if (start) this.setStartPoint(start.getPinPosition());
-        if (start) this.setStartPoint(this.localize(start.getGlobalPinPosition()));
-        var end = this.formalModel.getEndHandle();
-        // if (end) this.setEndPoint(end.getPinPosition());
-        if (end) this.setEndPoint(this.localize(end.getGlobalPinPosition()));
+        // console.log("update View for connector");        
+        if (this.startHandle) this.setStartPoint(this.localize(this.startHandle.getGlobalPinPosition()));
+        if (this.endHandle) this.setEndPoint(this.localize(this.endHandle.getGlobalPinPosition()));
     },
 });
 
@@ -1161,15 +1175,19 @@ Widget.subclass('PinConnector', {
         this.morph = new ConnectorMorph(null, 4, Color.blue, this);
         if (!this.fromPin.morph) throw new Error("fromPin.morph is nil");
         if (!this.toPin.morph) throw new Error("toPin.morph is nil");
-        this.morph.formalModel.setStartHandle(this.fromPin.morph);
-        this.morph.formalModel.setEndHandle(this.toPin.morph);
+        this.morph.setStartHandle(this.fromPin.morph);
+        this.morph.setEndHandle(this.toPin.morph);
         this.morph.ownerWidget = this;
         this.morph.connector = this; // for debugging... of course...
         return this.morph;
     },
+    
+    deleteView: function() {
+        
+    },
 
     onDeserialize: function() {
-        console.log("dersialize connector from" + this.fromPin + " to " + this.toPin)  
+        // console.log("dersialize connector from" + this.fromPin + " to " + this.toPin)  
         this.observeFromTo(this.fromPin, this.toPin);
         if (this.isBidirectional) {
             this.observeFromTo(this.toPin, this.fromPin);
@@ -1646,6 +1664,17 @@ Widget.subclass('Component', {
         // Fix for adding to Fabrik with addMorph()
         return this.panel;
     },
+    
+    deleteView: function() {
+        if (this.morph) {
+            this.morph.formalModel = null;
+            this.morph.component = null;
+        }
+        
+        this.panel = null; 
+        this.morph = null;
+        this.pinHandles.each(function(ea) {ea.deleteView});
+    },
              
     addField: function(fieldName, coercionSpec, forceSet) {
         this.formalModel.addField(fieldName, coercionSpec, forceSet);
@@ -2105,6 +2134,13 @@ Component.subclass('FabrikComponent', {
         return this.panel;
     },
     
+    deleteView: function($super) {
+        $super();
+        
+        this.connectors.each(function(ea) {ea.deleteView});
+        this.components.each(function(ea) {ea.deleteView});
+    },
+    
     // can be called when this.morph does not exist, simply adds components and wires them
     plugin: function(component) {
         
@@ -2250,7 +2286,16 @@ ComponentMorph.subclass('FunctionComponentMorph', {
             console.log("eval: " + source)          
             return eval(source).apply(self.component, self.component.parameterValues());
         });
-    }
+    },
+    
+    
+    // onDeserialize: function() {
+    //         // work around LK issue, that text is serialize in many different places...
+    //         var functionBodyText = this.component.formalModel.getFunctionBody();
+    //         // console.log("=========onDeserialize FunctionBody: " +functionBodyText );
+    //         // console.log("view and model are stored inconsistently, so forcing text from model");
+    //         this.functionBodyMorph.setText(functionBodyText + "", true);
+    //     }, 
     
          
 });
@@ -2749,6 +2794,7 @@ Morph.subclass("FabrikClockMorph", {
     initialize: function($super, position, radius) {
         $super(new lively.scene.Ellipse(position, radius));
         this.formalModel = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
+        this.ownModel(this.formalModel);
         this.linkToStyles(['clock']);
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
         return this;
