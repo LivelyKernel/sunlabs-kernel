@@ -394,7 +394,7 @@ Morph.subclass('HandleMorph', {
         if (this.rollover && !evt.mouseButtonPressed) { 
 
             // Mouse up: Remove handle if mouse drifts away
-            if (!this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
+            if (this.owner && !this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
                 evt.hand.setMouseFocus(null);
                 this.hideHelp();
                 this.remove(); 

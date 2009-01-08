@@ -1808,9 +1808,11 @@ SelectionMorph.subclass('UserFrameMorph', {
             result = Morph.prototype.reshape.call(this, partName, newPoint, lastCall);
         }
         this.selectedMorphs = [];
-        this.owner.submorphs.forEach(function(m) {
-            if (m !== this && this.bounds().containsRect(m.bounds()) && m instanceof ComponentMorph) this.selectedMorphs.push(m);
-        }, this);
+		if (this.owner) {
+        	this.owner.submorphs.forEach(function(m) {
+            	if (m !== this && this.bounds().containsRect(m.bounds()) && m instanceof ComponentMorph) this.selectedMorphs.push(m);
+        	}, this);
+		};
         this.selectedMorphs.reverse();
 
         if (lastCall) this.initialSelection = false;

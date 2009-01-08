@@ -26,7 +26,35 @@ TestCase.subclass('Alively.Tests.CoreTest.ConnectModelTest', {
         this.assertEqual(observers.length, 1, "wrong number of registered observers");
         
     },
-  
+    
+    testNotifyObserversOf: function() {
+		var formalModel1 = Record.newPlainInstance({MyValue1: "Hello World 1"});
+		var formalModel2 = Record.newPlainInstance({MyValue2: "Hello World 2"});
+
+        formalModel1.addObserver(formalModel2, {MyValue1: '=setMyValue2'}); 
+
+		// no kickstart here...
+		//this.assertEqual(formalModel1.getMyValue1(), formalModel2.getMyValue2(), "value was not updated initialy");
+
+		var value = "Hallo Welt";
+		formalModel1.setMyValue1(value);
+		this.assertEqual(formalModel2.getMyValue2(), value, "value2 was not update after setting value1");
+	},
+
+    testCyclicNotifyObserversOf: function() {
+		var formalModel1 = Record.newPlainInstance({MyValue1: "Hello World 1"});
+		var formalModel2 = Record.newPlainInstance({MyValue2: "Hello World 2"});
+
+        formalModel1.addObserver(formalModel2, {MyValue1: '=setMyValue2'}); 
+		formalModel2.addObserver(formalModel1, {MyValue2: '=setMyValue1'});
+
+		// no kickstart here...
+		//this.assertEqual(formalModel1.getMyValue1(), formalModel2.getMyValue2(), "value was not updated initialy");
+
+		var value = "Hallo Welt";
+		formalModel1.setMyValue1(value);
+		this.assertEqual(formalModel2.getMyValue2(), value, "value2 was not update after setting value1");
+	},
 
 });
 

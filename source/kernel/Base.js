@@ -1189,18 +1189,19 @@ Object.subclass('Record', {
         }
         // find all the "on"<Variable>"Update" methods of dep
         for (var name in dep) {
-	    var match = name.match(/on(.*)Update/);
-	    if (match) {
-		var varname = match[1];
+	    	var match = name.match(/on(.*)Update/);
+	    	if (match) {
+				var varname = match[1];
                 if (!this["set" + varname]) {
-                     // console.log("ERROR: cannot observe nonexistent variable " + varname);
-                     // logStack();
+                    // console.log("ERROR: cannot observe nonexistent variable " + varname);
+                    // logStack();
                     throw new Error("cannot observe nonexistent variable " + varname);
-		}
-		Record.addObserverTo(this, varname, dep);
+				}
+				Record.addObserverTo(this, varname, dep);
             }
         }
     },
+
     // dep may be the relay or relay.delegate, can be called with dep, dep and fielName, or only with fielName
     removeObserver: function(dep, fieldName) {
         if (fieldName && !this[fieldName + '$observers']) {
@@ -1367,17 +1368,22 @@ Object.extend(Record, {
         else if (deps.indexOf(dep) >= 0) return;
         deps.push(dep);
     },
-
-    notifyObserversOf: function(rec, fieldName, coercedValue, optSource) {
+   
+    notifyObserversOf: function(rec, fieldName, coercedValue, optSource, oldValue, force) {
         var deps = rec[Record.observerListName(fieldName)];
-	var updateName = "on" + fieldName + "Update";
+        if (!force && (oldValue === coercedValue)) {
+	    	// console.log("--- notifyObserversOf stops here: " + rec + ", "+ fieldName + ", " + coercedValue);
+	    	return;
+		};
+		var updateName = "on" + fieldName + "Update";
         if (deps) {
             for (var i = 0; i < deps.length; i++) {
                 var dep = deps[i];
-		// shouldn't this be uncoerced value? ......
-		var method = dep[updateName];
-		//console.log('updating  ' + updateName + ' in ' + Object.keys(dep));
-		method.call(dep, coercedValue, optSource, rec);
+				// shouldn't this be uncoerced value? ......
+				var method = dep[updateName];
+				// console.log('updating  ' + updateName + ' in ' + Object.keys(dep));
+				// "force" should not be propageted
+				method.call(dep, coercedValue, rec);
             }
         }
     },
@@ -1385,17 +1391,18 @@ Object.extend(Record, {
     
     newRecordSetter: function newRecordSetter(fieldName, to, byDefault) {
 	var name = fieldName;
-        return function recordSetter(value, optSource, force) {
+        return function recordSetter(value, optSource, optForce) {
+            // console.log("set " + value + ", " + optSource + ", " + force)
 	    var coercedValue;
             if (value === undefined) {
-		this.removeRecordField(name);
+                this.removeRecordField(name);
             } else {
             	if (value == null && byDefault) value = byDefault;
 		coercedValue = to ? to(value) : value;
-		if (!force && this.getRecordField(name) === coercedValue) return;
+		var oldValue = this.getRecordField(name) 
 		this.setRecordField(name, coercedValue);
             }
-	    Record.notifyObserversOf(this, name, coercedValue, optSource);
+	    Record.notifyObserversOf(this, name, coercedValue, optSource, oldValue, optForce);
         }
     },
     
@@ -2279,7 +2286,7 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 	if (fieldElement) this.rawNode.appendChild(fieldElement);
 	else console.log("failed to encode " + name + "= " + value);
 	this[name + "$Element"] = fieldElement;
-	console.log("created cdata " + fieldElement.textContent);
+	// console.log("created cdata " + fieldElement.textContent);
     },
     
     removeRecordField: function(name) {
