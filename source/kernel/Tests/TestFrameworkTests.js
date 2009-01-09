@@ -191,7 +191,7 @@ TestCase.subclass('TestResultTest', {
     testStringRepresentation: function() {
         this.dummyTestCase.runAll();
         var result = this.dummyTestCase.result;
-        this.assertEqual(result.shortResult(), 'Tests run: 3 -- Tests failed: 1');
+        this.assert(result.shortResult().startsWith('Tests run: 3 -- Tests failed: 1 -- Time:'));
         this.assertEqual(result.failureList().length, 1);
         this.assert(result.toString(), "toString failed");
         this.assert(result.printResult(), "printResult failed");
