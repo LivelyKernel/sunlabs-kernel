@@ -245,7 +245,10 @@ Object.subclass('TestResult', {
 	},
 	
 	shortResult: function() {
-		return 'Tests run: ' + this.runs() + ' -- Tests failed: ' + this.failed.length;
+		var time = Object.values(this.timeToRun).inject(0, function(sum, ea) {return sum + ea});
+		var msg = Strings.format('Tests run: %s -- Tests failed: %s -- Time: %sms',
+			this.runs(), this.failed.length, time);
+		return  msg;
 	},
 	
 	getFileNameFromError: function(err) {
@@ -292,7 +295,7 @@ Widget.subclass('TestRunner', {
 	
 	runTests: function(buttonDown) {
 		if (buttonDown) return;
-		var testClassName = this.getModel().getSelectedTestClass();
+		var testClassName = this.getSelectedTestClass();
 		if (!testClassName) return;
 		var testCase = new (Class.forName(testClassName))();
 		testCase.runAll();
@@ -304,7 +307,7 @@ Widget.subclass('TestRunner', {
 		var testSuite = new TestSuite();
 		var counter = 0;
 		//all classes from the list
-		testSuite.setTestCases(this.getModel().getTestClasses().map(function(ea) {
+		testSuite.setTestCases(this.getTestClasses().map(function(ea) {
 		    return Class.forName(ea);
 		}));
 		var self = this;
@@ -312,11 +315,11 @@ Widget.subclass('TestRunner', {
 		var step = self.resultBar.getExtent().x / testSuite.testCases.length;
 		// Refactor!
 		testSuite.showProgress = function(testCase) {
-		    self.getModel().setResultText(testCase.constructor.type);
+		    self.setResultText(testCase.constructor.type);
 		    self.resultBar.setExtent(pt(step*counter,  self.resultBar.getExtent().y));
 		    var failureList = testSuite.result.failureList();
 		    if(failureList.length > 0) {
-		        self.getModel().setFailureList(failureList);
+		        self.setFailureList(failureList);
 		        self.resultBar.setFill(Color.red);
 		    };
 		    counter += 1;
@@ -329,13 +332,13 @@ Widget.subclass('TestRunner', {
 	},
 		
 	setResultOf: function(testObject) {
-		var model = this.getModel();
 		this.testObject = testObject;
-		model.setResultText(this.testObject.result.shortResult());
-		model.setFailureList(this.testObject.result.failureList());
+		this.setResultText(this.testObject.result.shortResult());
+		this.setFailureList(this.testObject.result.failureList());
 		this.setBarColor(this.testObject.result.failureList().length == 0 ? Color.green : Color.red);
 		console.log(testObject.result.printResult());
-		this.testClassListMorph.updateView("all");
+		// updating list with timings
+		this.setTestClasses(this.getTestClasses(),true);
 	},
 
 	testClassesOfModule: function(m) {
@@ -409,7 +412,7 @@ Widget.subclass('TestRunner', {
 		},
 		
 		setBarColor: function(color) {
-				this.resultBar.setFill(color);
+		this.resultBar.setFill(color);
 	},
 	
 	openErrorStackViewer: function(testFailedObj) {
