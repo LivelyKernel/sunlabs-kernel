@@ -344,18 +344,32 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
                     var browserMorph = new ide.SystemBrowser().openIn(evt.hand.world(), evt.point());
                     evt.hand.grabMorph(browserMorph, evt)
                 })}},
-            {label: 'TextMorph', action: function(evt) {
-                var textMorph = new TextMorph(pt(400,50).extentAsRectangle(), '', true /*show changeClue*/);
-                evt.hand.grabMorph(textMorph, evt) }},
+            {label: 'TextWindow', action: function(evt) {
+				var morph = evt.hand.world().addTextWindow({title: 'doit!', position: evt.point()});
+				evt.hand.grabMorph(morph.owner, evt)
+				//evt.hand.addMorph(morph);
+			}},
             {label: 'OMeta Workspace', action: function(evt) {
                 require('lively.Ometa').toRun(function() {
                     var wrkspc = new OmetaWorkspace().openIn(evt.hand.world(), evt.point());
                     evt.hand.grabMorph(wrkspc, evt);
-                })}},
-            {label: 'Start source control', action: function(evt) {
-                require('lively.ide').toRun(function(unused, ide) {
-                    ide.startSourceControl();
-                })}},
+			})}},
+            {label: 'TestRunner', action: function(evt) {
+				var openTestRunner = function(optModule) {
+					var morph = new TestRunner(optModule).openIn(evt.hand.world(), evt.point());
+					evt.hand.addMorph(morph);
+				}
+				var cb = function(input) {
+					if (input === '') openTestRunner();
+					var m = module(input);
+					var url = new URL(m.uri());
+					if (new FileDirectory(url.getDirectory()).fileOrDirectoryExists(url.filename()))
+						require(input).toRun(function(u, m) { openTestRunner(m) });
+					else
+						evt.hand.world().prompt('Module ' + input + ' does not exist', cb, input);
+				}
+				evt.hand.world().prompt('For which module? None for all', cb);
+			}},
         ]
     }
 });

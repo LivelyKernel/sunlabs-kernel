@@ -338,8 +338,8 @@ Widget.subclass('TestRunner', {
 		this.testClassListMorph.updateView("all");
 	},
 
-	testClassesOfModule: function(module) {
-		return module.classes()
+	testClassesOfModule: function(m) {
+		return m.classes()
 			.select(function(ea) { return ea.isSubclassOf(TestCase) && ea.prototype.shouldRun })
 		    .collect(function(ea) { return ea.type })
 		    .select(function(ea) { return !ea.include('Dummy') })
