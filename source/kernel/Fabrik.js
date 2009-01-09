@@ -575,6 +575,19 @@ Morph.subclass('PinMorph', {
         this.removeMorph(morph);
     },
     
+	onMouseOut: function(evt) { 
+		var self = this;
+		if (this.hideHelpHandObserver) return; // we are already observing
+        this.hideHelpHandObserver = new HandPositionObserver(function(currentMousePosition) {
+            if (self.world() && currentMousePosition.dist(self.worldPoint(pt(5,5))) > 20) {
+				self.hideHelp();
+				this.stop();
+		        self.hideHelpHandObserver = null;
+            }
+        });
+	    this.hideHelpHandObserver.start();
+	},
+	
     setupInputMorphStyle: function() {
         this.setFill(Color.blue);
         if (this.pinHandle.component) {

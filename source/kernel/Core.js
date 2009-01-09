@@ -2390,7 +2390,7 @@ Morph.addMethods({
     }, 
 
     onMouseOut: function(evt) { 
-	this.hideHelp();
+		this.hideHelp();
     }, 
 
     onMouseWheel: function(evt) { 
