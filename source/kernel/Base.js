@@ -1285,6 +1285,7 @@ Object.subclass('Record', {
         this.constructor.addMethods(new Record.extendRecordClass(spec));
         this.definition[fieldName]= spec[fieldName];
         if (!forceSet) return;
+		// does this do anything now?
         this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
             proceed(value, optSource, true);
         })

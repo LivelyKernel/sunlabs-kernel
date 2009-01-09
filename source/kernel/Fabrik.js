@@ -2332,6 +2332,17 @@ Component.subclass('FunctionComponent', {
         this.setupAutomaticExecution();
     },
         
+	onDeserialize: function() {
+		this.setupAutomaticExecution();
+		var self = this;
+		// TODO: this is only a hack to get the bar green! This whole updating should probably be implemented with Relays
+		["Input"].each(function(field) {
+			var specObj = {};
+			specObj['on' + field + 'Update'] = function() { self.execute() };
+        	self.formalModel.addObserver(specObj);
+		});
+	},
+
     buildView: function($super, extent) {
         $super(extent)
 
@@ -2399,6 +2410,7 @@ Component.subclass('FunctionComponent', {
         this.formalModel.addObserver(specObj);
         return result;
     },
+
       
     parameterNames: function() {
         return this.inputPins().collect(function(ea){return ea.getName().toLowerCase()}); 
@@ -2413,12 +2425,12 @@ Component.subclass('FunctionComponent', {
     },
 
     updateFunctionHeader: function() {
-        this.setFunctionHeader(this.functionHeader());
+        this.formalModel.setFunctionHeader(this.functionHeader());
     },
 
     pvtGetFunction: function() {
         this.updateFunctionHeader();
-        return this.composeFunction(this.getFunctionHeader(), this.getFunctionBody() || "", interactiveEval)
+        return this.composeFunction(this.formalModel.getFunctionHeader(), this.formalModel.getFunctionBody() || "", interactiveEval)
     },
     
     composeFunction: function(header, body, evalFunc) {
@@ -2459,11 +2471,11 @@ Component.subclass('FunctionComponent', {
     
     execute: function() {
         try {
-            this.setResult(this.pvtGetFunction().apply(this, this.parameterValues()) || null);
+            this.formalModel.setResult(this.pvtGetFunction().apply(this, this.parameterValues()) || null);
             console.log("Result of function call: " + this.getResult());
         } catch(e) {
             dbgOn(true);
-            console.log("FunctionComponentModel: error " + e + " when executing body" + this.getFunctionBody());
+            console.log("FunctionComponentModel: error " + e + " when executing body" + this.formalModel.getFunctionBody());
             // throw e;
         }
     },

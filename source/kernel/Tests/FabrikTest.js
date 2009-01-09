@@ -1750,6 +1750,10 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assert(func1.formalModel.getFunctionBody, "func1 has no getFunctionBody in model");
         
         this.assertEqual(func1.formalModel.getFunctionBody(), "input + input", "wrong FunctionBody content"); 
+
+		func1.formalModel.setInput("Hello");
+		this.assertEqual(func1.formalModel.getResult(), "HelloHello", "func1 did not evalute and produce result")
+
     },
 
     testLoadFabrik: function() {
