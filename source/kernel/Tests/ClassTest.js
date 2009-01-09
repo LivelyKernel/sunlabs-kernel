@@ -57,9 +57,9 @@ TestCase.subclass('NamespaceTest', {
     
     setUp: function() {
         // create namespaces
-        namespace('testNamespace.one');
+		namespace('testNamespace.one');
         namespace('testNamespace.two');
-        namespace('testNamespace.three.threeOne');        
+		namespace('testNamespace.three.threeOne');
         // create classes
         Object.subclass('testNamespace.Dummy');
         Object.subclass('testNamespace.one.Dummy');
@@ -70,7 +70,7 @@ TestCase.subclass('NamespaceTest', {
     },
     
     tearDown: function() {
-        delete testNamespace;
+		// delete Global.testNamespace; // delete leads to errors when test is re-run?
     },
     
     testNamespaceIsNamespace: function() {
@@ -94,13 +94,13 @@ TestCase.subclass('NamespaceTest', {
     },
     
     testGetAllNamespaceClasses: function() {
-        result = testNamespace.classes(false);
+		var result = testNamespace.classes(false);
         this.assertEqual(result.length, 1);
         this.assert(result.include(testNamespace.Dummy));
     },
     
     testGetAllNamespaceClassesRecursive: function() {
-        result = testNamespace.classes(true);
+        var result = testNamespace.classes(true);
         this.assertEqual(result.length, 3);
         this.assert(result.include(testNamespace.Dummy));
         this.assert(result.include(testNamespace.one.Dummy));
@@ -108,13 +108,13 @@ TestCase.subclass('NamespaceTest', {
     },
     
     testGetAllNamespaceFunctions: function() {
-        result = testNamespace.functions(false);
+        var result = testNamespace.functions(false);
         this.assertEqual(result.length, 1);
         this.assert(result.include(testNamespace.dummyFunc));
     },
     
     testGetAllNamespaceFunctionsrecursive: function() {
-        result = testNamespace.functions(true);
+        var result = testNamespace.functions(true);
         this.assertEqual(result.length, 2);
         this.assert(result.include(testNamespace.dummyFunc));
         this.assert(result.include(testNamespace.three.threeOne.dummyFunc));
