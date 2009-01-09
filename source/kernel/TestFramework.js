@@ -246,8 +246,8 @@ Object.subclass('TestResult', {
 	
 	shortResult: function() {
 		var time = Object.values(this.timeToRun).inject(0, function(sum, ea) {return sum + ea});
-		var msg = Strings.format('Tests run: %s -- Tests failed: %s -- Time: %sms',
-			this.runs(), this.failed.length, time);
+		var msg = Strings.format('Tests run: %s -- Tests failed: %s -- Time: %ss',
+			this.runs(), this.failed.length, time/1000);
 		return  msg;
 	},
 	

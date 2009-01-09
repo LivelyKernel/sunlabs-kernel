@@ -603,7 +603,9 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
 });
 
 thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
-    
+
+	shouldRun: false,
+	
 	documentation: 'Tests which directly access LK files. Tests are quite brittle because they will fail when th eline numbers of the used files change.',
     
     testParseWorldMorph: function() {    // Object.subclass
