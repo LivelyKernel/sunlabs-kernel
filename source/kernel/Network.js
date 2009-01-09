@@ -743,7 +743,7 @@ Resource.subclass('SVNResource', {
 
 Object.subclass('SVNVersionInfo', {
 
-	documentation: 'This object wraps svn infos from report or propfind requests',
+	// documentation: 'This object wraps svn infos from report or propfind requests',
 
     initialize: function(rev, dateOrString, author) {
         this.rev = rev,
