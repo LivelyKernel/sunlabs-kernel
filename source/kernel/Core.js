@@ -14,6 +14,8 @@
 */
 
 
+
+
 /* Code loader. Appends file to DOM. */
 var Loader = {
     
@@ -2716,10 +2718,9 @@ subMenuItems: function(evt) {
 	for (var i = this.submorphs.length - 1; i >= 0; i--) {
 	    var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
 	    if (hit != null) { 
-	        //console.log(this + ">>morphToGrabOrReceive hit");
 		return hit;  // hit a submorph
 	    }
-	}
+	};
 
 	// Check if it's really in this morph (not just fullBounds)
 	if (!this.containsWorldPoint(evt.mousePoint)) return null;
@@ -4506,10 +4507,10 @@ Morph.subclass("HandMorph", {
     },
 
     reallyHandleMouseEvent: function HandMorph$reallyHandleMouseEvent(evt) { 
-	
+		// console.log("reallyHandleMouseEvent " + evt + " focus " +  this.mouseFocus);
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
 					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
-	var world = this.owner;
+		var world = this.owner;
         //-------------
         // mouse move
         //-------------
@@ -4519,7 +4520,7 @@ Morph.subclass("HandMorph", {
             if(evt.isShiftDown())
                 this.alignToGrid();
             
-	    this.updateGrabHalo();
+	    	this.updateGrabHalo();
             
             if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
                 this.hasMovedSignificantly = true;
@@ -4529,6 +4530,7 @@ Morph.subclass("HandMorph", {
                 this.mouseFocus.captureMouseEvent(evt, true);
             } else if (world) {
                 var receiver = world.morphToReceiveEvent(evt);
+				// console.log("found receiver: " + receiver)
                 if (this.checkMouseOverAndOut(receiver, evt)) {  // mouseOverMorph has changed...
                     if (!receiver || !receiver.canvas()) return false;  // prevent errors after world-switch
                     // Note if onMouseOver sets focus, it will get onMouseMove

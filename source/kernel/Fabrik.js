@@ -987,8 +987,10 @@ Morph.subclass('ConnectorMorph', {
         
         var vertices = verts.invoke('subPt', verts[0]);
         $super(new lively.scene.Polyline(vertices));
-        this.applyStyle({borderWidth: lineWidth, borderColor: lineColor});
-        this.customizeShapeBehavior();
+        this.applyStyle({borderWidth: lineWidth, borderColor: lineColor, fill: null});
+        
+
+		this.customizeShapeBehavior();
         
         // this.setStrokeOpacity(0.7);
         this.lineColor = lineColor;
@@ -996,13 +998,14 @@ Morph.subclass('ConnectorMorph', {
         this.closeAllToDnD();    
         
         // try to disable drag and drop for me, but it does not work
-        this.okToBeGrabbedBy = function(){return null};
-        this.morphToGrabOrReceive = Functions.Null;
+        // this.okToBeGrabbedBy = function(){return null};
+        // this.morphToGrabOrReceive = Functions.Null;
         this.handlesMouseDown = Functions.True;
 
         this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
         this.addMorph(this.arrowHead);
         this.setupArrowHeadUpdating();
+
     },
     
     onDeserialize: function() {
@@ -1034,11 +1037,11 @@ Morph.subclass('ConnectorMorph', {
         return this.endHandle;
     },    
 
-    // I don't know who sends this, but by intercepting here I can stop him....
+    // I don't know who sends this, but by intercepting here I can stop him.... drag me
     // logStack shows no meaningfull results here
     translateBy: function($super, delta) {
-        //logStack();
-        //$super(delta)
+		//logStack();
+		//$super(delta)
     },
     
     customizeShapeBehavior: function() {
@@ -1093,10 +1096,11 @@ Morph.subclass('ConnectorMorph', {
         handObserver.start();
     },
     
-    containsWorldPoint: Functions.Null,
+    // containsWorldPoint: Functions.Null,
     
     fullContainsWorldPoint: function($super, p) {
-        if (this.startHandle && this.endHandle)
+		//console.log(indentForDepth(indentLevel) + "check fullContainsWorldPoint" + this);
+        if (!this.startHandle || !this.endHandle)
             return false;
         // to ensure correct dnd behavior when connector is beneath a pinMorph in hand
         if (this.startHandle.fullContainsWorldPoint(p) || this.endHandle.fullContainsWorldPoint(p))

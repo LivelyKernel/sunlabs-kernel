@@ -901,11 +901,23 @@ TestCase.subclass('TextComponentTest', {
 });
 
 TestCase.subclass('ConnectorMorphTest', {
-    setUp: function() {
+    
+	setUp: function() {
         this.componentConnector = new ConnectorMorph();
         this.point1 = pt(100,100);
         this.point2 = pt(200,200);
+		this.morphsToClose = [];
     },
+	
+	openInWorld: function(morph) {
+		this.morphsToClose.push(morph);
+		WorldMorph.current().addMorph(morph)
+	},
+
+	tearDown: function() {
+		this.morphsToClose.each(function(ea){ea.remove()})
+	},
+
     testSetStartPoint: function() {
         this.componentConnector.setStartPoint(this.point1);
         this.assert(this.componentConnector.shape.vertices()[0].eqPt(this.point1),
@@ -938,18 +950,43 @@ TestCase.subclass('ConnectorMorphTest', {
         }
     },
     
-    testUpdatePosition: function() {
-        c = new ConnectorMorph();
-        m1 = Morph.makeRectangle(100,100,10,10);
-        m1.getGlobalPinPosition = function(){return this.getPosition()};
-        m2 = Morph.makeRectangle(200, 200, 10,10);
+	createConnectorMock: function(start, end) {
+		var c = new ConnectorMorph();
+		// center the connection point
+        m1 = Morph.makeRectangle(start.x - 5 ,start.y -5 ,10,10);
+        m1.getGlobalPinPosition = function(){return this.getPosition().addPt(pt(5,5))};
+        m2 = Morph.makeRectangle(end.x - 5 , end.y - 5 , 10,10);
         m2.getGlobalPinPosition = m1.getGlobalPinPosition;
         c.setStartHandle(m1);
         c.setEndHandle(m2);
-        c.updateView();
+		return c
+	},
+
+    testUpdatePosition: function() {
+        var c = this.createConnectorMock(pt(100,100), pt(200,200));
+		c.updateView();
         this.assertEqualState(c.getStartPoint(), pt(100,100), "start point failed");
         this.assertEqualState(c.getEndPoint(), pt(200,200), "end point failed");
-    }
+    },
+
+    testFullContainsWorldPoint: function() {
+   		var c = this.createConnectorMock(pt(50,50), pt(150,50));
+		c.updateView();
+		this.openInWorld(c.getStartHandle());
+		this.openInWorld(c.getEndHandle());
+		this.openInWorld(c);
+		
+		this.assert(c.fullContainsWorldPoint(pt(100,50)), "connector does not contain middle point");
+		this.assert(c.getStartHandle().fullContainsWorldPoint(pt(50,50)), "why does the startHandle not contain its centered position?");
+		this.assert(!c.fullContainsWorldPoint(pt(50,50)), "connector does contain start point, but it should not");
+		
+		
+
+    },
+
+	
+
+
 });
 
 TestCase.subclass('PinConnectorTest', {
