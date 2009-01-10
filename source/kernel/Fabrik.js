@@ -999,17 +999,18 @@ Morph.subclass('ConnectorMorph', {
         // try to disable drag and drop for me, but it does not work
         // this.okToBeGrabbedBy = function(){return null};
         // this.morphToGrabOrReceive = Functions.Null;
-        this.handlesMouseDown = Functions.True;
+        
 
         this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
         this.addMorph(this.arrowHead);
         this.setupArrowHeadUpdating();
-
     },
     
     onDeserialize: function() {
         this.setupArrowHeadUpdating();        
     },
+
+	handlesMouseDown: Functions.True,
     
     setupArrowHeadUpdating: function() {
         var self = this;

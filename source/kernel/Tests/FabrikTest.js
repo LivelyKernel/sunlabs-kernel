@@ -2291,7 +2291,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         
 		var string = "some new content";
 		text2.formalModel.setText(string)
-		this.assertEqual(text2.morph.getText(),s tring, "model to text relay is broken in TextComponent");
+		this.assertEqual(text2.morph.getText(), string, "model to text relay is broken in TextComponent");
 
 
         //this.showMyWorld(world)
