@@ -2342,8 +2342,7 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 
         var name = LivelyNS.getAttribute(node, "name");
         if (name) {
-            // here widget instead of name is the only difference
-            var relay = widget[name] = Relay.newInstance(spec, null);
+            var relay = this[name] = Relay.newInstance(spec, null);
             var ref = LivelyNS.getAttribute(node, "ref");
             importer.addPatchSite(relay, "delegate", ref);
         }

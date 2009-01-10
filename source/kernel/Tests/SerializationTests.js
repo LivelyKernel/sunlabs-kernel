@@ -58,6 +58,9 @@ Widget.subclass('DummyWidget', {
     }
 });
 
+
+
+
 TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
 
     /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
@@ -315,6 +318,127 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
         //this.showMyWorld(world)
     },
 
+	testLoadWidgetWithObservingMorph: function() {
+        // generate with textmate replace: "(<.*>$)" with: "'$1' +"
+        var world = this.loadWorldFromSource(
+			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+				'<g type="WorldMorph" id="529:WorldMorph">' +
+					'<rect x="0" y="0" width="1280" height="1024" fill="url(#530:lively.paint.LinearGradient)"/>' +
+					'<g type="Morph" id="536:Morph" transform="translate(20,20)">' +
+						'<rect x="0" y="0" width="130" height="130" fill="rgb(0,204,0)"/>' +
+						'<g type="TextMorph" id="537:TextMorph" transform="translate(10,10)">' +
+							'<rect x="0" y="0" width="90" height="20" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(243,243,243)"/>' +
+							'<g type="TextSelectionMorph" id="538:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+								'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+								'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+								'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+								'<field name="mouseHandler">null</field>' +
+							'</g>' +
+							'<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica"/>' +
+							'<field name="textString"><![CDATA[""]]></field>' +
+							'<field name="origin" family="Point"><![CDATA[{"x":10,"y":10}]]></field>' +
+							'<field name="lines">null</field>' +
+							'<field name="fullBounds">null</field>' +
+							'<field name="textSelection" ref="538:TextSelectionMorph"/>' +
+							'<relay name="formalModel" ref="533:anonymous_123">' +
+								'<binding formal="Text" actual="MyText"/>' +
+							'</relay>' +
+						'</g>' +
+						'<g type="TextMorph" id="539:TextMorph" transform="translate(10,40)">' +
+							'<rect x="0" y="0" width="90" height="20" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(243,243,243)"/>' +
+							'<g type="TextSelectionMorph" id="540:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+								'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+								'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+								'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+								'<field name="mouseHandler">null</field>' +
+							'</g>' +
+							'<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica"/>' +
+							'<field name="textString"><![CDATA[""]]></field>' +
+							'<field name="origin" family="Point"><![CDATA[{"x":10,"y":40}]]></field>' +
+							'<field name="lines">null</field>' +
+							'<field name="fullBounds">null</field>' +
+							'<field name="textSelection" ref="540:TextSelectionMorph"/>' +
+							'<relay name="formalModel" ref="533:anonymous_123">' +
+								'<binding formal="Text" actual="MyText"/>' +
+							'</relay>' +
+						'</g>' +
+						'<field name="origin" family="Point"><![CDATA[{"x":20,"y":20}]]></field>' +
+						'<field name="fullBounds">null</field>' +
+						'<field name="widget" ref="532:DummyWidget"/>' +
+						'<field name="ownerWidget" ref="532:DummyWidget"/>' +
+						'<widget id="532:DummyWidget">' +
+							'<record id="533:anonymous_123">' +
+								'<field name="MyText"><![CDATA["tada"]]></field>' +
+								'<definition><![CDATA[{"MyText":{},"MyDynamicField":{}}]]></definition>' +
+								'<field name="MyDynamicField"><![CDATA["Hip Hip Hurra!"]]></field>' +
+							'</record>' +
+							'<field name="model" ref="533:anonymous_123"/>' +
+							'<relay name="formalModel" ref="533:anonymous_123">' +
+								'<binding formal="MyText" actual="+MyText"/>' +
+							'</relay>' +
+							'<field name="actualModel" ref="533:anonymous_123"/>' +
+							'<field name="panel" ref="536:Morph"/>' +
+							'<field name="myMorph1" ref="537:TextMorph"/>' +
+							'<field name="myMorph2" ref="539:TextMorph"/>' +
+						'</widget>' +
+					'</g>' +
+					'<g type="TextMorph" id="534:TextMorph" transform="translate(0,0)">' +
+						'<rect x="0" y="0" width="0" height="208.4" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(243,243,243)"/>' +
+						'<g type="TextSelectionMorph" id="535:TextSelectionMorph" pointer-events="none" transform="translate(0,0)">' +
+							'<g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" stroke-width="0" fill="none"/>' +
+							'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+							'<field name="fullBounds" family="Rectangle"><![CDATA[{"x":-3,"y":-3,"width":6,"height":6}]]></field>' +
+							'<field name="mouseHandler">null</field>' +
+						'</g>' +
+						'<text kerning="0" fill="rgb(0,0,0)" font-size="12" font-family="Helvetica">' +
+							'<tspan x="6" y="14.8">H</tspan>' +
+							'<tspan x="6" y="29.2">i</tspan>' +
+							'<tspan x="6" y="43.6">p</tspan>' +
+							'<tspan x="6" y="72.4">H</tspan>' +
+							'<tspan x="6" y="86.79999999999998">i</tspan>' +
+							'<tspan x="6" y="101.19999999999999">p</tspan>' +
+							'<tspan x="6" y="130">H</tspan>' +
+							'<tspan x="6" y="144.4">u</tspan>' +
+							'<tspan x="6" y="158.8">r</tspan>' +
+							'<tspan x="6" y="173.20000000000002">r</tspan>' +
+							'<tspan x="6" y="187.60000000000002">a</tspan>' +
+							'<tspan x="6" y="202.00000000000003">!</tspan>' +
+						'</text>' +
+						'<field name="textString"><![CDATA["Hip Hip Hurra!"]]></field>' +
+						'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+						'<field name="lineNumberHint">13</field>' +
+						'<field name="fullBounds">null</field>' +
+						'<field name="textSelection" ref="535:TextSelectionMorph"/>' +
+						'<relay name="formalModel" ref="533:anonymous_123">' +
+							'<binding formal="Text" actual="MyDynamicField"/>' +
+						'</relay>' +
+						'<field name="undoTextString"><![CDATA[""]]></field>' +
+						'<field name="delayedComposition">null</field>' +
+						'<field name="textBeforeChanges"><![CDATA["Hip Hip Hurra!"]]></field>' +
+					'</g>' +
+					'<field name="owner">null</field>' +
+					'<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>' +
+					'<field name="fullBounds">null</field>' +
+					'<array name="hands"/>' +
+					'<array name="scheduledActions"/>' +
+					'<field name="lastStepTime">1231605195931</field>' +
+					'<field name="mainLoop">4856</field>' +
+					'<field name="worldId">16</field>' +
+					'<field name="enterCount">0</field>' +
+				'</g>' +
+			'</svg>');
+			
+			var widgetMorph = world.submorphs[0];
+			var widget = widgetMorph.widget;
+			var observerMorph = world.submorphs[1];
+			
+			
+			var value = "Yeah!";
+			widget.model.setMyDynamicField(value);
+			this.assertEqual(observerMorph.getText(), value, "text did not observe my field even without serialization");
+	
+	
+	},
 
     /* Serialize Tests */
 
@@ -387,7 +511,38 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
 
        this.assertEqual(definition.textContent, '{"MyText":{},"MyDynamicField":{}}', "dynamic definition missing in serialization")
        //console.log(Exporter.stringify(widgetNode));
-    }
+    },
+
+	testSerializeDynamicFieldObserver: function() {
+		var widget = new DummyWidget();
+		var observerMorph = new TextMorph();
+		widget.model.addField("MyDynamicField");
+ 
+
+		// offical way:
+		observerMorph.connectModel(widget.model.newRelay({Text: "MyDynamicField"}));
+
+		// manual way:
+		//observerMorph.formalModel = widget.model.newRelay({Text: "MyDynamicField"});
+		//widget.model.addObserver(observerMorph, {MyDynamicField: "!Text"});
+		// FIXME we test the manual way beacaus Fabrik has problems with connectModel
+
+		var value = "Hip Hip Hurra!";
+		widget.model.setMyDynamicField(value);
+		this.assertEqual(observerMorph.getText(), value, "text did not observe my field even without serialization");
+
+		var view = widget.buildView();
+		this.worldMorph.addMorph(view);
+		this.worldMorph.addMorph(observerMorph);
+
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		var widgetNode = doc.getElementById(widget.id());
+		var recordNode = widgetNode.firstChild;
+		var definition = recordNode.firstChild;
+
+		console.log(Exporter.stringify(doc));
+		//console.log(Exporter.stringify(widgetNode));
+	}
     
     
     

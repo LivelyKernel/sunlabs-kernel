@@ -1777,6 +1777,7 @@ Widget.subclass('Component', {
         this.morph.formalModel = this.formalModel.newRelay({Text: fieldName});
         var spec = {}; spec[fieldName] = '!Text';
         this.formalModel.addObserver(this.morph, spec);
+		// this.morph.connectModel(this.formalModel, {Text: fieldName});
         return this.morph
     },
     
