@@ -886,6 +886,7 @@ BoxMorph.subclass("TextMorph", {
     selectionPivot: null,  // index of hit at onmousedown
     lineNumberHint: 0,
     hasKeyboardFocus: false,
+	useChangeClue: false,
     
     formals: {
 	Text: { byDefault: ""},
@@ -944,10 +945,18 @@ BoxMorph.subclass("TextMorph", {
 	    	this.textString = this.textString.string || "";
 		}
 		if (this.textString === undefined) alert('initialize: ' + this);
+		this.useChangeClue = useChangeClue == true;
 		this.addChangeClue(useChangeClue);
 		this.layoutChanged();
         return this;
     },
+
+	onDeserialize: function() {
+		// the morph gets lost when it is not hung into the dom 
+		// FIXME perhaps change to hide / visible mechanism 
+		if (this.useChangeClue && !this.changeClue)
+			this.addChangeClue(true);
+	},
 
     bounds: function($super, ignoreTransients) {
         if (this.fullBounds != null) return this.fullBounds;

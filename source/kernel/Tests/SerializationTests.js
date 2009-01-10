@@ -36,8 +36,8 @@ Widget.subclass('DummyWidget', {
         this.panel = new Morph(new lively.scene.Rectangle(rect(pt(20,20), pt(150,150))));
         this.panel.setFill(Color.green);
         this.panel.widget = this; // backreference
-        this.myMorph1 = new TextMorph(rect(pt(10,10), pt(100,30)));
-        this.myMorph2 = new TextMorph(rect(pt(10,40), pt(100,60)));
+        this.myMorph1 = new TextMorph(rect(pt(10,10), pt(100,30)), "text one", true);
+        this.myMorph2 = new TextMorph(rect(pt(10,40), pt(100,60)), "text two", false);
         this.myMorph1.connectModel(this.model.newRelay({Text: "MyText"}));
         this.myMorph2.connectModel(this.model.newRelay({Text: "MyText"}));
         this.panel.addMorph(this.myMorph1);
@@ -492,7 +492,7 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
        
        var widgetNodeMyMorph2Field = this.getFieldNamed(widgetNode, "myMorph2");
        this.assertEqual(widgetNodeMyMorph2Field.getAttribute("ref"), widget.myMorph2.id() ,"wrong ref to myMorph2");
-       
+
        // console.log(Exporter.stringify(worldNode));
     },
     
