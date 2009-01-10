@@ -1752,7 +1752,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assertEqual(func1.formalModel.getFunctionBody(), "input + input", "wrong FunctionBody content"); 
 
 		func1.formalModel.setInput("Hello");
-		this.assertEqual(func1.formalModel.getResult(), "HelloHello", "func1 did not evalute and produce result")
+		this.assertEqual(func1.formalModel.getResult(), "HelloHello", "func1 did not evaluate and produce result")
 
     },
 
@@ -2285,8 +2285,14 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         
         this.assertFabrikWithTwoTextComponentsAndConnector(fabrik);
 
-        var connector1 = fabrik.connectors[0]; 
+        // var connector1 = fabrik.connectors[0]; 
         
+		var text2 = fabrik.components[1];
+        
+		var string = "some new content";
+		text2.formalModel.setText(string)
+		this.assertEqual(text2.morph.getText(),s tring, "model to text relay is broken in TextComponent");
+
 
         //this.showMyWorld(world)
     },

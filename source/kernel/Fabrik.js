@@ -543,15 +543,14 @@ Morph.subclass('PinMorph', {
         $super(new lively.scene.Ellipse(pt( 0, 0), 10));
         
         this.suppressHandles = true; // no handles
-        this.okToBeGrabbedBy = Functions.Null; // no dragging
-       
-        this.handlesMouseDown = Functions.True; // hack
         this.openForDragAndDrop = true;
-        this.onMouseDown = this.onMouseDown.bind(this);
-    
+       
         this.setExtent(pt(18,18)); // fixes ellipse pt(0,0) === center behavior
         return this;
     },
+
+	handlesMouseDown: Functions.True,
+	okToBeGrabbedBy: Functions.Null,
     
     setPinHandle: function(pinHandle) {
         console.log("setPinHandle" + pinHandle)
@@ -659,7 +658,7 @@ Morph.subclass('PinMorph', {
     },
     
     onMouseMove: function(evt) {
-        if (evt.isMetaDown()) {
+        if (evt.isMetaDown() && evt.hand.mouseButtonPressed) {
             this.snapToPointInside(this.owner.localize(evt.mousePoint))
         }
     },
