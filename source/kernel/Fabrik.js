@@ -2286,6 +2286,11 @@ ComponentMorph.subclass('FunctionComponentMorph', {
         this.functionBodyMorph = this.component.addTextMorphForFieldNamed('FunctionBody');
     },
 
+	onDeserialize: function() {
+		this.setupTextField();
+	},
+
+
     setupHaloItems: function($super) {
         $super();
          var inputHalo = this.addHaloItem("+input", new Rectangle(0,0,45,20),
@@ -2302,7 +2307,7 @@ ComponentMorph.subclass('FunctionComponentMorph', {
     setupTextField: function() {
         var self = this;
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
-            var source = self.component.composeFunction(self.component.getFunctionHeader(), str, interactiveEval);
+            var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval);
             console.log("eval: " + source)          
             return eval(source).apply(self.component, self.component.parameterValues());
         });
