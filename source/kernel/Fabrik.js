@@ -1203,7 +1203,8 @@ Widget.subclass('PinConnector', {
         
     },
 
-    onDeserialize: function() {
+    onDeserialize: function($super) {
+		//$super();
         // console.log("dersialize connector from" + this.fromPin + " to " + this.toPin)  
         this.observeFromTo(this.fromPin, this.toPin);
         if (this.isBidirectional) {
@@ -1267,6 +1268,11 @@ BoxMorph.subclass('ComponentMorph', {
         return this;
     },
     
+	onDeserialize: function() {
+		this.setupHalos();
+		this.setupMousOverWrappingForHalos(this);
+	},
+
     setComponent: function(component) {
         this.component = component;
         this.formalModel = component.getModel()
@@ -1328,7 +1334,14 @@ BoxMorph.subclass('ComponentMorph', {
         if (this[accessorname]) throw new Error("Added two times same type of morph. See add methods");
         if (accessorname) this[accessorname] = morph;
 
+		this.setupMousOverWrappingForHalos(morph);
+		
+        return morph;
+    },
+
+	setupMousOverWrappingForHalos: function(morph) {
         // Wrap mouse over to make Halos show everytime
+		// FIXME this is not serializable
         var self = this;
         var wrapMouseOver = function() {
             this.onMouseOver = this.onMouseOver.wrap(function(proceed, evt) {
@@ -1336,10 +1349,8 @@ BoxMorph.subclass('ComponentMorph', {
             });
         };
         wrapMouseOver.apply(morph);
-        morph.withAllSubmorphsDo(wrapMouseOver);
-
-        return morph;
-    },
+        morph.withAllSubmorphsDo(wrapMouseOver);		
+	},
     
     getBoundsAndShrinkIfNecessary: function(minHeight) {
         // assume that we have all the space
@@ -2286,7 +2297,8 @@ ComponentMorph.subclass('FunctionComponentMorph', {
         this.functionBodyMorph = this.component.addTextMorphForFieldNamed('FunctionBody');
     },
 
-	onDeserialize: function() {
+	onDeserialize: function($super) {
+		$super();
 		this.setupTextField();
 	},
 
@@ -2311,18 +2323,7 @@ ComponentMorph.subclass('FunctionComponentMorph', {
             console.log("eval: " + source)          
             return eval(source).apply(self.component, self.component.parameterValues());
         });
-    },
-    
-    
-    // onDeserialize: function() {
-    //         // work around LK issue, that text is serialize in many different places...
-    //         var functionBodyText = this.component.formalModel.getFunctionBody();
-    //         // console.log("=========onDeserialize FunctionBody: " +functionBodyText );
-    //         // console.log("view and model are stored inconsistently, so forcing text from model");
-    //         this.functionBodyMorph.setText(functionBodyText + "", true);
-    //     }, 
-    
-         
+    },        
 });
 
 Component.subclass('FunctionComponent', {
@@ -2478,7 +2479,7 @@ Component.subclass('FunctionComponent', {
     execute: function() {
         try {
             this.formalModel.setResult(this.pvtGetFunction().apply(this, this.parameterValues()) || null);
-            console.log("Result of function call: " + this.getResult());
+            console.log("Result of function call: " + this.formalModel.getResult());
         } catch(e) {
             dbgOn(true);
             console.log("FunctionComponentModel: error " + e + " when executing body" + this.formalModel.getFunctionBody());

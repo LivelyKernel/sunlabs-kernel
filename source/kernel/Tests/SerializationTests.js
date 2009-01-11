@@ -238,12 +238,16 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
         this.assert(world instanceof WorldMorph, "world is no WorldMorph");
         var morph1 = world.submorphs[0];
         var morph2 = world.submorphs[1];
-         
+
         this.assertEqual(morph1.exampleAttributePointAsValue, pt(12,34),"exampleAttributePointAsValue failed");
         this.assertEqual(morph1.id(), "102:Morph", "wrong id");
         this.assertIdentity(morph1.exampleReference, morph2, "morph1 failed to reference morph2");
         this.assertIdentity(morph2.exampleReference, morph1, "morph2 failed to reference morph1");
+		
+		this.assertIdentity(morph1.owner, world, "morph1 owner is not the world");
+        
          
+
         //this.showMyWorld(show)
     },
     
@@ -540,8 +544,8 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
 		var recordNode = widgetNode.firstChild;
 		var definition = recordNode.firstChild;
 
-		console.log(Exporter.stringify(doc));
-		//console.log(Exporter.stringify(widgetNode));
+		// console.log(Exporter.stringify(doc));
+		// console.log(Exporter.stringify(widgetNode));
 	}
     
     

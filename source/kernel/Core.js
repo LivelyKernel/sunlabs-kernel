@@ -1271,6 +1271,7 @@ lively.data.Wrapper.subclass('Morph', {
                 var wrapper = importer.importWrapperFromNode(desc);
                 if (wrapper instanceof Morph) {
                     this.submorphs.push(wrapper); 
+					// console.log("set wrapper.owner " + wrapper + " " + this)
                     wrapper.owner = this;
                 } else children.push(desc);
             } else {
