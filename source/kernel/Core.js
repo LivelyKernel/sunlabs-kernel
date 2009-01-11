@@ -1076,7 +1076,7 @@ lively.data.Wrapper.subclass('Morph', {
     // prototype vars
     rotation: 0.0,
     scale: 1.0,
-    aspectRatio: 1.0,
+    scalePoint: pt(1,1),
 
     style: {},
 
@@ -1993,11 +1993,11 @@ Morph.addMethods({
     pvtSetTransform: function(tfm) {
 	this.origin = tfm.getTranslation();
 	this.rotation = tfm.getRotation().toRadians();
-	var sp = tfm.getScalePoint();
-	this.scale = sp.x;
-	this.aspectRatio = sp.y / sp.x;
+	this.scalePoint = tfm.getScalePoint();
+	this.scale = this.scalePoint.x;  //***remove
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
-	this.scale = this.scale/this.fisheyeScale;
+	if (this.fisheyeScale != 1) this.scale = this.scale/this.fisheyeScale;  //***remove
+	if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1/this.fisheyeScale);
 	this.transformChanged();
     },
 
@@ -2058,17 +2058,13 @@ Morph.addMethods({
     
     setScale: function(scale/*:float*/) {
 	this.scale = scale;
+	this.scalePoint = pt(scale, scale)
 	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('scale')),
 
-    setAspectRatio: function(aspectRatio/*:float*/) {
-	this.aspectRatio = aspectRatio;
-	// layoutChanged will cause this.transformChanged();
-    }.wrap(Morph.onLayoutChange('aspectRatio')),
-
-setScalePoint: function(sp) {
-	this.scale = sp.x;
-	this.aspectRatio = sp.y / sp.x;
+    setScalePoint: function(sp) {
+	this.scalePoint = sp;
+	this.scale = sp.x;  // ***remove
 	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('scale')),
 
@@ -3010,9 +3006,9 @@ Morph.addMethods({
     },
 
     transformChanged: function() {
-	var scale = this.scale * this.fisheyeScale;
-	var aspectRatio = this.aspectRatio;
-	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, pt(scale, scale*aspectRatio));
+	var scalePt = this.scalePoint;
+	if (this.fisheyeScale != 1) scalePt = scalePt.scaleBy(this.fisheyeScale);
+	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, scalePt);
 	this.pvtCachedTransform.applyTo(this.rawNode);
 
     },
