@@ -317,7 +317,8 @@ Widget.subclass('SimpleInspector', {
 	    try {
 		var result = (interactiveEval.bind(this.target))(input);
 	    } catch (er) { throw dbgOn(er); }
-            target[propName] = result;
+			console.log("disabled inspector set " + propName + " from " + target[propName] + " to " + result)
+            // target[propName] = result;
         }
     },
 

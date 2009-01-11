@@ -476,46 +476,68 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
     },
 
     testSerializeDummyWidget: function() {
-       var widget = new DummyWidget();
-       widget.sayHello(); 
-       var view = widget.buildView();
-       this.worldMorph.addMorph(view);
-       
-       var doc = Exporter.shrinkWrapMorph(this.worldMorph);
-       var worldNode = doc.getElementById(this.worldMorph.id());
-       this.assert(worldNode, "no world node by id found (" + this.worldMorph.id() + ")");
-       
-       var viewNode = doc.getElementById(view.id());
-       this.assert(view, "no view node by id found (" + view.id() + ")");
+		var widget = new DummyWidget();
+		widget.sayHello(); 
+		var view = widget.buildView();
+		this.worldMorph.addMorph(view);
 
-       var widgetNode = doc.getElementById(widget.id());
-       this.assert(widgetNode, "no widget node by id found (" + widget.id() + ")");
-       
-       var widgetNodeMyMorph1Field = this.getFieldNamed(widgetNode, "myMorph1");    
-       this.assertEqual(widgetNodeMyMorph1Field.getAttribute("ref"), widget.myMorph1.id() ,"wrong ref to myMorph1");
-       
-       var widgetNodeMyMorph2Field = this.getFieldNamed(widgetNode, "myMorph2");
-       this.assertEqual(widgetNodeMyMorph2Field.getAttribute("ref"), widget.myMorph2.id() ,"wrong ref to myMorph2");
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		var worldNode = doc.getElementById(this.worldMorph.id());
+		this.assert(worldNode, "no world node by id found (" + this.worldMorph.id() + ")");
 
-       // console.log(Exporter.stringify(worldNode));
+		var viewNode = doc.getElementById(view.id());
+		this.assert(view, "no view node by id found (" + view.id() + ")");
+
+		var widgetNode = doc.getElementById(widget.id());
+		this.assert(widgetNode, "no widget node by id found (" + widget.id() + ")");
+
+		var widgetNodeMyMorph1Field = this.getFieldNamed(widgetNode, "myMorph1");    
+		this.assertEqual(widgetNodeMyMorph1Field.getAttribute("ref"), widget.myMorph1.id() ,"wrong ref to myMorph1");
+
+		var widgetNodeMyMorph2Field = this.getFieldNamed(widgetNode, "myMorph2");
+		this.assertEqual(widgetNodeMyMorph2Field.getAttribute("ref"), widget.myMorph2.id() ,"wrong ref to myMorph2");
+
+		// console.log(Exporter.stringify(worldNode));
     },
     
     testSerializeDummyWidgetAddField: function() {
-       var widget = new DummyWidget();
-       widget.sayHello();
-       widget.model.addField("MyDynamicField");
-       this.assertEqualState(widget.model.definition, {MyText: {}, MyDynamicField: {}}, "dynamic definition missing");
-       
-       var view = widget.buildView();
-       this.worldMorph.addMorph(view);
-       var doc = Exporter.shrinkWrapMorph(this.worldMorph);
-       var widgetNode = doc.getElementById(widget.id());
-       var recordNode = widgetNode.firstChild;
-       var definition = recordNode.firstChild;
+		var widget = new DummyWidget();
+		widget.sayHello();
+		widget.model.addField("MyDynamicField");
+		this.assertEqualState(widget.model.definition, {MyText: {}, MyDynamicField: {}}, "dynamic definition missing");
 
-       this.assertEqual(definition.textContent, '{"MyText":{},"MyDynamicField":{}}', "dynamic definition missing in serialization")
-       //console.log(Exporter.stringify(widgetNode));
+		var view = widget.buildView();
+		this.worldMorph.addMorph(view);
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		var widgetNode = doc.getElementById(widget.id());
+		var recordNode = widgetNode.firstChild;
+		var definition = recordNode.firstChild;
+
+		this.assertEqual(definition.textContent, '{"MyText":{},"MyDynamicField":{}}', "dynamic definition missing in serialization")
+		//console.log(Exporter.stringify(widgetNode));
     },
+
+	testSerializeFieldWithCoercion: function() {
+		var widget = new DummyWidget();
+		widget.sayHello();
+		widget.model.addField("MyDynamicField", {to: String});
+		this.assertEqualState(widget.model.definition, {MyText: {}, MyDynamicField: {}}, "dynamic definition missing");
+
+		var view = widget.buildView();
+		this.worldMorph.addMorph(view);
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		var widgetNode = doc.getElementById(widget.id());
+		var recordNode = widgetNode.firstChild;
+		var definition = recordNode.firstChild;
+
+		// This fails because, it is a functions can't be serialized in that way
+		// we need something more declarative
+		// this.assertEqual(definition.textContent, '{"MyText":{},"MyDynamicField":{to: String}}', 
+		//    "dynamic definition with coercion specmissing in serialization")
+		//console.log(Exporter.stringify(widgetNode));
+    },
+    
+
 
 	testSerializeDynamicFieldObserver: function() {
 		var widget = new DummyWidget();

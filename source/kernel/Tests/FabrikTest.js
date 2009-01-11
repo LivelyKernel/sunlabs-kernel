@@ -2622,6 +2622,13 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
 		this.assert(text1 instanceof TextComponent , "first text component is no TextComponent");	
 		this.assertIdentity(text1.panel.owner, fabrik.morph, "text morphs owner is not fabrik morph after serialization");
 		
+		// Test autoconversions
+		try {
+			text1.formalModel.setText(23);
+			text1.formalModel.setText({Hello: "World"});
+			text1.formalModel.setText([1,2,3]);
+		} catch (e){ this.assert(false, "auto converting to text failed: " + e)};
+
 	},
 
 	testLoadFabrikWithTextComponentRealWorld: function() {

@@ -2281,6 +2281,14 @@ Component.subclass('TextComponent', {
         this.addFieldAndPinHandle('Text', {to: String});
     },
 
+    onDeserialize: function() {
+	// because the coercion is a function and the function is stored in a closure we have to build the setters here again 
+	var oldText = this.formalModel.getText();
+	this.addField('Text', {to: String}) 
+	this.formalModel.setText(oldText)
+    },
+
+
     buildView: function($super) {
         $super();
         this.setupHandles();
@@ -2477,14 +2485,16 @@ Component.subclass('FunctionComponent', {
     },
     
     execute: function() {
+		var parameters = this.parameterValues();
         try {
-            this.formalModel.setResult(this.pvtGetFunction().apply(this, this.parameterValues()) || null);
-            console.log("Result of function call: " + this.formalModel.getResult());
+            var result = this.pvtGetFunction().apply(this, parameters);
         } catch(e) {
             dbgOn(true);
             console.log("FunctionComponentModel: error " + e + " when executing body" + this.formalModel.getFunctionBody());
-            // throw e;
-        }
+            return; // don't set any result
+        };
+        console.log("Result of function call: " + result);
+		this.formalModel.setResult(result || null ); 
     },
 });
 
