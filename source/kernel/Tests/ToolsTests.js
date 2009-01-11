@@ -1093,21 +1093,17 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 	
 });
 
-thisModule.ChangesTests.subclass('lively.Tests.ToolsTests.ConvertFileFragmentsToChangesTests', {
+thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.ConvertFileFragmentsToChangesTests', {
 
 	setUp: function($super) {
 		$super();
 		this.jsParser = new JsParser();
+		this.changesParser = new AnotherCodeMarkupParser();
 	},
 
-	xtestConvertClassFFToChange: function() { // coming soon
-		var src = 'Object.subclass(\'Dummy\', {\n' +
-			'\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
-			'\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
-			'})';
-		var frag = this.jsParser.callOMeta('klassDef', src);
+	testConvertClassFFToChange: function() {
+		var frag = this.fragmentNamed('ClassA');
 		var change = frag.asChange();
-		y = change;
 		this.assert(change.isClassChange, 'is not a class change');
 	},
 

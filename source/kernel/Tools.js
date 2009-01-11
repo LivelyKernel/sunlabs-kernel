@@ -1848,9 +1848,7 @@ ChangeList.subclass('SourceDatabase', {
         var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') || ea.endsWith('.lkml') });
         jsFiles = jsFiles.uniq();
         // FIXME remove
-        var rejects = [/*"Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js",
-                       "Serialization.js",*/ "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js",
-                       "workspace.js", 'JSON.js'];
+        var rejects = [/*"Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js", "Serialization.js",*/ "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js", 'JSON.js'];
 		jsFiles = jsFiles.reject(function(ea) { return rejects.include(ea) });
 		var otherFiles = ['LKFileParser.txt'];
 		return jsFiles.concat(otherFiles);

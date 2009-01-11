@@ -1659,12 +1659,12 @@ ide.FileFragment.addMethods({
 	asChange: function() {
 		// FIXMEEEEE!!! subclassing! Unified hierarchy
 		if (this.type === 'klassDef') {
-			// return 
+			return ClassChange.create(this.name, this.superclassName);
 		}
-		return null;
+
+		throw dbgOn(new Error(this.type + ' is not yet supported to be converted to a Change'));
 	}
 });
-
 ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 
 	isError: true,
@@ -1929,13 +1929,11 @@ Object.extend(ClassChange, {
 
 	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'class' },
 
-	create: function(name, source, optClassName) { // duplication with proto!!!
-		throw new Error('Check this method!');
-		var element = LivelyNS.create('static');
+	create: function(name, superClassName) {
+		var element = LivelyNS.create('class');
 		element.setAttributeNS(null, 'name', name);
-		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
-		element.textContent = source;
-		return new ProtoChange(element);
+		element.setAttributeNS(null, 'super', superClassName);
+		return new ClassChange(element);
 	},
 	
 });
