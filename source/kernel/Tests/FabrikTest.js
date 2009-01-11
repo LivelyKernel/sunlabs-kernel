@@ -812,10 +812,16 @@ TestCase.subclass('FunctionComponentTest', {
         str = '{abc: 123, def: 456} + {a: 1, d: 4}';
         expected = '({abc: 123, def: 456})+({a: 1, d: 4})';
         this.assertEqual(this.functionComponent1.fixObjectLiterals(str), expected, '2');
-        
-        
-    }
+    },
 
+	testGenerateInputPinObserverFor: function() {
+		var count = 0;
+		this.functionComponent1.addField("FooBar");
+		this.functionComponent1.execute = function(){count++};
+		this.functionComponent1.generateInputPinObserverFor("FooBar");
+		this.functionComponent1.setFooBar("Hello");
+		this.assertEqual(count, 1, "execute was not executed");
+	}
 
 });
 

@@ -2351,11 +2351,9 @@ Component.subclass('FunctionComponent', {
 		this.setupAutomaticExecution();
 		var self = this;
 		// TODO: this is only a hack to get the bar green! This whole updating should probably be implemented with Relays
-		["Input"].each(function(field) {
-			var specObj = {};
-			specObj['on' + field + 'Update'] = function() { self.execute() };
-        	self.formalModel.addObserver(specObj);
-		});
+		this.inputPins().each(function(inputPin) {
+			this.generateInputPinObserverFor(inputPin.getName())
+		}, this);
 	},
 
     buildView: function($super, extent) {
@@ -2420,13 +2418,16 @@ Component.subclass('FunctionComponent', {
     addFieldAndPinHandle: function($super, field, coercionSpec) {
         var result = $super(field, coercionSpec);
         // for automatic execution when input values change
-        var specObj = {};
-        specObj['on' + field + 'Update'] = function() { this.execute() }.bind(this);
-        this.formalModel.addObserver(specObj);
+		this.generateInputPinObserverFor(field)
         return result;
     },
 
-      
+	generateInputPinObserverFor: function(fieldName) {
+		var specObj = {};
+		specObj['on' + fieldName + 'Update'] = function() { this.execute() }.bind(this);
+		this.formalModel.addObserver(specObj);
+	},
+
     parameterNames: function() {
         return this.inputPins().collect(function(ea){return ea.getName().toLowerCase()}); 
     },  
