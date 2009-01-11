@@ -1993,8 +1993,9 @@ Morph.addMethods({
     pvtSetTransform: function(tfm) {
 	this.origin = tfm.getTranslation();
 	this.rotation = tfm.getRotation().toRadians();
-	this.scale = tfm.getScale();
-	this.aspectRatio = tfm.getAspectRatio();
+	var sp = tfm.getScalePoint();
+	this.scale = sp.x;
+	this.aspectRatio = sp.y / sp.x;
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
 	this.scale = this.scale/this.fisheyeScale;
 	this.transformChanged();
@@ -2064,6 +2065,12 @@ Morph.addMethods({
 	this.aspectRatio = aspectRatio;
 	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('aspectRatio')),
+
+setScalePoint: function(sp) {
+	this.scale = sp.x;
+	this.aspectRatio = sp.y / sp.x;
+	// layoutChanged will cause this.transformChanged();
+    }.wrap(Morph.onLayoutChange('scale')),
 
     gettranslation: function() { 
 	return this.getTransform().getTranslation(); 

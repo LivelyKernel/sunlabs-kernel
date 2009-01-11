@@ -1657,29 +1657,32 @@ Object.subclass('lively.scene.Similitude', {
     },
 
     getRotation: function() { // in degrees
-	var r =  Math.atan2(this.b, this.a*this.getAspectRatio()).toDegrees();
+	// Note the ambiguity with negative scales is resolved by assuming scale x is positive
+	var r =  Math.atan2(-this.c, this.a).toDegrees();
 	return Math.abs(r) < this.eps ? 0 : r; // don't bother with values very close to 0
     },
 
     getScale: function() {
-	// this is scale X: derived from transforming vector [1,0] and checking its length
-	// this doesnt work for negative scale values, it'll always return a nonnegative value
+	// Note the ambiguity with negative scales and rotation is resolved by assuming scale x is positive
 	var a = this.a;
-	var b = this.b; 
-	var s = Math.sqrt(a * a + b * b);
+	var c = this.c; 
+	var s = Math.sqrt(a * a + c * c);
 	return Math.abs(s - 1) < this.eps ? 1 : s; // don't bother with values very close to 1
     },
 
-    getAspectRatio: function() {
-	// this doesnt work for negative scale values, it'll always return a nonnegative value
+getScalePoint: function() {
+	// Note the ambiguity with negative scales and rotation is resolved by assuming scale x is positive
 	var a = this.a;
 	var b = this.b;
 	var c = this.c;
 	var d = this.d;
-	var scaleX = Math.sqrt(a*a + b*b); 
-	var scaleY = Math.sqrt(c*c + d*d); //if (c < 0) scaleY = -scaleY;
-	return scaleY/scaleX;
+	var sx = Math.sqrt(a * a + c * c);
+	var r =  Math.atan2(-c, a);  // radians
+	var sy = (Math.abs(b) > Math.abs(d)) ? b / Math.sin(r) : d / Math.cos(r);  // avoid div by 0
+	return pt(sx, sy);
     },
+
+    
 
     isTranslation: function() {
 	return this.matrix_.type === SVGTransform.SVG_TRANSFORM_TRANSLATE;
@@ -1689,28 +1692,20 @@ Object.subclass('lively.scene.Similitude', {
 	return pt(this.e, this.f);
     },
 
-    toAttributeValue: function() {
+    toAttributeValue: function() { 
 	var delta = this.getTranslation();
 	var attr = "translate(" + delta.x + "," + delta.y +")";
+
 	var theta = this.getRotation();
-
-	if (theta != 0.0)
-	    attr += " rotate(" + this.getRotation()  +")"; // in degrees
+	if (theta != 0.0) attr += " rotate(" + this.getRotation()  +")"; // in degrees
 	
-	var factor = this.getScale();
-	var ratio = this.getAspectRatio();
-
-	if (factor != 1.0 || ratio != 1.0) {
-	    if (ratio == 1.0)
-		attr += " scale(" + factor + ")";
-	    else 
-		attr += " scale(" + factor + "," + ratio + ")";
-	}
+	var sp = this.getScalePoint();
+	if (sp.x != 1.0 || sp.y != 1.0)  attr += " scale(" + sp.x + "," + sp.y + ")";
 
 	return attr;
     },
 
-    applyTo: function(rawNode) {
+    applyTo: function(rawNode) { 
 	if (Config.useTransformAPI) {
 	    var list = rawNode.transform.baseVal;
 	    var canvas = locateCanvas();
@@ -1725,8 +1720,8 @@ Object.subclass('lively.scene.Similitude', {
 	    }
 	    if (this.a != 1.0 || this.d != 1.0) {
 		var scaling = canvas.createSVGTransform();
-		var scale = this.getScale();
-		scaling.setScale(scale, scale);
+		var sp = this.getScalePoint();
+		scaling.setScale(sp.x, sp.y);
 		list.appendItem(scaling);
 	    }
 	} else {
@@ -1879,7 +1874,7 @@ Wrapper.subclass('lively.scene.Transform', {
 
     getAngle: function() {
 	/*
-	var r =  Math.atan2(this.matrix.b, this.matrix.a).toDegrees();
+	var r =  Math.atan2(this.matrix.b, this.matrix.d).toDegrees();
 	return Math.abs(r) < this.eps ? 0 : r; // don't bother with values very close to 0
         */
 	return this.rawNode.angle;
@@ -1889,8 +1884,8 @@ Wrapper.subclass('lively.scene.Transform', {
 	if (this.rawNode.type == SVGTransform.SVG_TRANSFORM_SCALE) {
 	    var mx = this.rawNode.matrix;
 	    var a = mx.a;
-	    var b = mx.b;
-	    return Math.sqrt(a * a + b * b);
+	    var c = mx.c;
+	    return Math.sqrt(a * a + c * c);
 	} else throw new TypeError('not a scale ' + this.rawNode);
     },
     
