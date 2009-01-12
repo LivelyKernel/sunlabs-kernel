@@ -1828,7 +1828,7 @@ Widget.subclass('Component', {
 SelectionMorph.subclass('UserFrameMorph', {
     
     removeWhenEmpty: false,
-    
+	
     reshape: function($super, partName, newPoint, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
@@ -1891,21 +1891,33 @@ SelectionMorph.subclass('UserFrameMorph', {
     
     handleCollapseFor: function(fabrikMorph) {
         // remove morphs and connectors
-        fabrikMorph.component.connectors.each(function(ea) { fabrikMorph.removeMorph(ea.morph) } );
+        fabrikMorph.component.connectors.each(function(ea) { 
+			fabrikMorph.removeMorph(ea.morph);
+			if (ea instanceof PinConnector) // sometimes there is garbage in this list 
+				fabrikMorph.hiddenContainer.addMorph(ea.morph);
+		});
         var compMorphs = fabrikMorph.component.components.collect(function(ea) { return ea.panel });
         var morphsToHide = this.selectedMorphs ?
             compMorphs.reject(function(ea) { return this.selectedMorphs.include(ea) }.bind(this)) :
             compMorphs;
-        morphsToHide.each(function(ea) { fabrikMorph.removeMorph(ea) });
-        
+        morphsToHide.each(function(ea) { 
+			fabrikMorph.removeMorph(ea);
+			if (ea)
+				fabrikMorph.hiddenContainer.addMorph(ea);
+		});
         // we move the fabrikMorph to where this selection currently is, the selectedMorphs have to be moved in the other direction
         this.positionDelta = this.getPosition();
         fabrikMorph.positionAndExtentChange(fabrikMorph.getPosition().addPt(this.positionDelta), this.getExtent());
         this.selectedMorphs.each(function(ea) {
-            ea.component.pinHandles.each(function(pin) { ea.removeMorph(pin.morph) });
+            ea.component.pinHandles.each(function(pin) { 
+				ea.removeMorph(pin.morph);
+				pin.morph.storedPosition = pin.morph.getPosition();
+				fabrikMorph.hiddenContainer.addMorph(pin.morph); 
+			});
             ea.moveBy(this.positionDelta.negated());
         }.bind(this));
         
+		fabrikMorph.hiddenContainer.addMorph(this); 
         fabrikMorph.removeMorph(this);
     },
     
@@ -1918,7 +1930,10 @@ SelectionMorph.subclass('UserFrameMorph', {
         morphsToShow.each(function(ea) { fabrikMorph.addMorph(ea) });
         
         this.selectedMorphs.each(function(ea) {
-            ea.component.pinHandles.each(function(pin) { ea.addMorph(pin.morph) })
+            ea.component.pinHandles.each(function(pin) { 
+				ea.addMorph(pin.morph);
+				pin.morph.setPosition(pin.morph.storedPosition);
+			});
             this.positionDelta && ea.moveBy(this.positionDelta);
         }.bind(this));
                 
@@ -1934,6 +1949,8 @@ ComponentMorph.subclass('FabrikMorph', {
     
     initialize: function($super, bounds) {
         $super(bounds);
+		this.hiddenContainer = new ClipMorph(rect(pt(0,0),pt(1,1)));
+		this.addMorphBack(this.hiddenContainer);
     },
     
     automaticLayout: function() {
@@ -2032,8 +2049,8 @@ ComponentMorph.subclass('FabrikMorph', {
         if (this.currentSelection) {
             this.currentSelection.handleCollapseFor(this);
         } else {
-            this.component.components.each(function(ea) { this.removeMorph(ea.panel) }.bind(this));
-            this.component.connectors.each(function(ea) { this.removeMorph(ea.morph) }.bind(this));
+            this.component.components.each(function(ea) { this.removeMorph(ea.panel); this.hiddenContainer.addMorph(ea.panel)}.bind(this));
+            this.component.connectors.each(function(ea) { this.removeMorph(ea.morph); this.hiddenContainer.addMorph(ea.morph)}.bind(this));
             this.positionAndExtentChange(this.collapsedPosition || this.getPosition(),
                                          this.collapsedExtent || this.component.defaultCollapsedExtent);
         }
