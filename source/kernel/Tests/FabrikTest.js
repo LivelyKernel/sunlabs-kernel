@@ -2469,7 +2469,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         
         //this.showMyWorld(world);    
     },
-    
+
 	testLoadFabrikWithTextComponent: function() {
         // generate with textmate replace: "(<.*>$)" with: "'$1' +"
 		// this is too much information for a simple TextComponent
@@ -2636,6 +2636,9 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
 		} catch (e){ this.assert(false, "auto converting to text failed: " + e)};
 
 	},
+	
+	
+	
 
 	testLoadFabrikWithTextComponentRealWorld: function() {
         // generate with textmate replace: "(<.*>$)" with: "'$1' +"
@@ -3035,6 +3038,27 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         
         // console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
     },
+
+    testSerializeWebRequestComponent: function() {
+        var fabrik = new FabrikComponent();
+        var webComponent = new WebRequestComponent();
+
+        webComponent.formalModel.setURL("Hello World")
+        fabrik.plugin(webComponent);
+
+        fabrik.buildView(pt(400, 400));
+        fabrik.panel.automaticLayout();
+
+        this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
+        fabrik.panel.setPosition(pt(100,100));
+
+        var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+
+        // console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
+    },
+
+
+
 });
 
 

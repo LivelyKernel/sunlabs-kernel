@@ -890,7 +890,7 @@ Widget.subclass('PinHandle', {
     
     detectConnectorWith: function(otherPin) {
         return this.connectors.detect(function(ea) {
-            return ea.toPin == otherPin;
+            return ea && ea.toPin == otherPin;
         });
     },
 
@@ -2517,11 +2517,19 @@ Component.subclass('WebRequestComponent', {
         this.addFieldAndPinHandle("URL");
         this.addFieldAndPinHandle("ResponseText");
         this.addFieldAndPinHandle("ResponseXML");
-        
-        this.formalModel.addObserver({onURLUpdate: function(url) { this.makeRequest() }.bind(this)});
-        this.formalModel.addObserver({onResponseTextUpdate: function() { console.log('getting response...') }});
+        this.setupObserver();
     },
-    
+
+    setupObserver: function() {
+        this.formalModel.addObserver({onURLUpdate: function(url) { this.makeRequest() }.bind(this)});
+        this.formalModel.addObserver({onResponseTextUpdate: function() { console.log('getting response...') }});	
+	},
+
+	onDeserialize: function() {
+		this.setupObserver();
+		// this.formalModel.addObserver(this.morph, {URL: '!Text'});
+	},
+
     buildView: function($super, optExtent) {
         $super(optExtent);
 
@@ -2545,11 +2553,11 @@ Component.subclass('WebRequestComponent', {
     },
     
     makeRequest: function() {
-        if (!this.getURL()) return;
-        console.log('making reqest to: ' + this.getURL());
+        if (!this.formalModel.getURL()) return;
+        console.log('making reqest to: ' + this.formalModel.getURL());
         
         try {
-            var url = new URL(this.getURL());
+            var url = new URL(this.formalModel.getURL());
         } catch(e) {
             console.log('Invalid URL!');
             return // invalid url, we do not proceed
@@ -2557,10 +2565,10 @@ Component.subclass('WebRequestComponent', {
         // var x = new Resource(this.formalModel.newRelay({URL: '-URL', ContentText: '+ResponseText', ContentDocument: '+ResponseXML'}));
         
         var x = new Resource(Record.newPlainInstance({URL: url, ContentText: '', ContentDocument: null}));
-        x.formalModel.addObserver({onContentTextUpdate: function(response) { this.setResponseText(response) }.bind(this)});
+        x.formalModel.addObserver({onContentTextUpdate: function(response) { this.formalModel.setResponseText(response) }.bind(this)});
         x.formalModel.addObserver({onContentDocumentUpdate: function(response) {
                 var elem = document.importNode(response.documentElement, true);
-                this.setResponseXML(FabrikConverter.xmlToStringArray(elem));
+                this.formalModel.setResponseXML(FabrikConverter.xmlToStringArray(elem));
         }.bind(this)});
         x.fetch();
     }
