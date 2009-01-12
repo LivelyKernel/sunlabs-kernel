@@ -1007,7 +1007,8 @@ Morph.subclass('ConnectorMorph', {
     },
     
     onDeserialize: function() {
-        this.setupArrowHeadUpdating();        
+        this.setupArrowHeadUpdating();
+        this.updateArrow();
     },
 
 	handlesMouseDown: Functions.True,
