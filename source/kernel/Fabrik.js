@@ -1372,9 +1372,8 @@ BoxMorph.subclass('ComponentMorph', {
     addTextPane: function() {
         var minHeight = 70;
         var morph = newTextPane(this.getBoundsAndShrinkIfNecessary(minHeight), "------");
-        morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
-            morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
-        };
+		morph.adoptToBoundsLayout = 'layoutRelativeExtent';
+		// FIXME closure assignment does not serialize
         morph.innerMorph().saveContents = morph.innerMorph().saveContents.wrap(function(proceed, contentString) {    
             this.setText(contentString, true /*force new value*/);
         });
@@ -1400,6 +1399,7 @@ BoxMorph.subclass('ComponentMorph', {
         if (!label) label = "------";
         var minHeight = 15;
         var morph = new TextMorph(this.getBoundsAndShrinkIfNecessary(minHeight),label).beLabel();
+		// FIXME closure assignment does not serialize
         morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
             morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
         };
@@ -1409,6 +1409,7 @@ BoxMorph.subclass('ComponentMorph', {
     addListPane: function() {
         var minHeight = 80;
         var morph = newRealListPane(this.getBoundsAndShrinkIfNecessary(minHeight));
+		// FIXME closure assignment does not serialize
         morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
             morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
             morph.setPosition(morph.getPosition().addPt(ownerPositionDelta));
@@ -1432,6 +1433,7 @@ BoxMorph.subclass('ComponentMorph', {
     addLabeledText: function(label) {
         var minHeight = 80;
         var morph = new LabeledTextMorph(this.getBoundsAndShrinkIfNecessary(minHeight), label , '-----');
+		// FIXME closure assignment does not serialize
         morph.reshape = morph.reshape.wrap(function(proceed, partName, newPoint, lastCall) {
             try {
                 return proceed(partName, newPoint, lastCall);
@@ -1457,6 +1459,7 @@ BoxMorph.subclass('ComponentMorph', {
     addButton: function(buttonLabel) {
         var height = 22;
         var morph = new ButtonMorph(this.getBoundsAndShrinkIfNecessary(height));
+		// FIXME closure assignment does not serialize
         morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
             morph.setPosition(morph.getPosition().addPt(pt(0, ownerExtentDelta.y)));
             morph.setExtent(morph.getExtent().addPt(pt(ownerExtentDelta.x, 0)));
@@ -1514,13 +1517,23 @@ BoxMorph.subclass('ComponentMorph', {
         $super(newExt);
     },
 
-    adoptSubmorphsToNewExtent: function (priorPosition, priorExtent, newPosition, newExtent) {
+	adoptSubmorphsToNewExtent: function (priorPosition, priorExtent, newPosition, newExtent) {
         var positionDelta = newPosition.subPt(priorPosition);
         var extentDelta = newExtent.subPt(priorExtent);
         var scaleDelta = newExtent.scaleByPt(priorExtent.invertedSafely());
-        this.submorphs.select(function(ea) { return ea.adoptToBoundsChange }).each(function(morph) {
+        this.submorphs.select(function(ea) { return ea.adoptToBoundsChange || ea.adoptToBoundsLayout}).each(function(morph) {
             // console.log("adopting to bounds change: " + morph);
-            morph.adoptToBoundsChange(positionDelta, extentDelta, scaleDelta, rect(newPosition, newExtent));
+			// test for not serializable method or closure
+			if (morph.adoptToBoundsChange) { 
+				morph.adoptToBoundsChange(positionDelta, extentDelta, scaleDelta, rect(newPosition, newExtent))
+			} else {
+				// look for layout function in a more declarative style
+				var func = AdoptToBoundsChangeFunctions.prototype[morph.adoptToBoundsLayout];
+				if(!func) {
+					throw new Error("AdoptToBoundsChangeFunctions Error: could not find layout function: " + morph.adoptToBoundsLayout)
+				};
+				func.apply(this, [morph, positionDelta, extentDelta, scaleDelta, rect(newPosition, newExtent)]);
+			}
         });
     },
 
@@ -2098,6 +2111,7 @@ ComponentMorph.subclass('FabrikMorph', {
         // debugger;
         var window = new WindowMorph(this, this.component.viewTitle, false);
         window.suppressHandles = true;
+		// FIXME closure assignment does not serialize
         this.reshape = this.reshape.wrap(function(proceed, partName, newPoint, lastCall) {
             var result = proceed(partName, newPoint, lastCall);
             var windowdBnds = window.bounds().topLeft().extent(this.shape.bounds().extent().addXY(0, window.titleBar.innerBounds().height));
@@ -2106,7 +2120,7 @@ ComponentMorph.subclass('FabrikMorph', {
             window.adjustForNewBounds();
         return result;
         });
-        
+        // FIXME closure assignment does not serialize
         this.collapseToggle = this.collapseToggle.wrap(function(proceed, val) {
             proceed(val);
             window.setExtent(this.getExtent().addXY(0, window.titleBar.innerBounds().height));
@@ -2569,6 +2583,7 @@ Component.subclass('ImageComponent', {
 
         var url = this.getURL() || 'http://livelykernel.sunlabs.com/favicon.ico';
         this.morph = new ImageMorph(this.panel.getBoundsAndShrinkIfNecessary(80), url);
+		// FIXME closure assignment does not serialize
         this.morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta, scaleDelta) {
             this.morph.setExtent(this.morph.getExtent().addPt(ownerExtentDelta));
             this.morph.image.scaleBy(Math.max(scaleDelta.x, scaleDelta.y) || 1);
@@ -2795,6 +2810,13 @@ Object.subclass('FlowLayout', {
         if (bounds.height > this.maxHeight) this.maxHeight = bounds.height;
     }
 
+});
+
+// make Roberts functional layouting serializeable with just one more layer of indirection
+Object.subclass("AdoptToBoundsChangeFunctions", {
+	layoutRelativeExtent: function(morph, ownerPositionDelta, ownerExtentDelta) {
+		morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
+	},
 });
 
 /* Very simple XML converter */
