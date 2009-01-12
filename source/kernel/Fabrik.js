@@ -1399,21 +1399,14 @@ BoxMorph.subclass('ComponentMorph', {
         if (!label) label = "------";
         var minHeight = 15;
         var morph = new TextMorph(this.getBoundsAndShrinkIfNecessary(minHeight),label).beLabel();
-		// FIXME closure assignment does not serialize
-        morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
-            morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
-        };
+		morph.adoptToBoundsLayout = 'layoutRelativeExtent';
         return this.addMorph(morph, 'label');
     },
     
     addListPane: function() {
         var minHeight = 80;
         var morph = newRealListPane(this.getBoundsAndShrinkIfNecessary(minHeight));
-		// FIXME closure assignment does not serialize
-        morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
-            morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
-            morph.setPosition(morph.getPosition().addPt(ownerPositionDelta));
-        };
+		morph.adoptToBoundsLayout = 'layoutRelativeExtentAndPosition';
         var spec = {fontSize: 12, borderWidth: 0, /*opacity: 0.75,*/ borderRadius: 3};
         morph.innerMorph().applyStyle(spec); 
         spec.fill = null;
@@ -1456,6 +1449,8 @@ BoxMorph.subclass('ComponentMorph', {
         return this.addMorph(morph, 'labeledText');
     },
     
+
+	// not used any more besides the test?
     addButton: function(buttonLabel) {
         var height = 22;
         var morph = new ButtonMorph(this.getBoundsAndShrinkIfNecessary(height));
@@ -2817,6 +2812,11 @@ Object.subclass("AdoptToBoundsChangeFunctions", {
 	layoutRelativeExtent: function(morph, ownerPositionDelta, ownerExtentDelta) {
 		morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
 	},
+	
+	layoutRelativeExtentAndPosition: function(morph, ownerPositionDelta, ownerExtentDelta) {
+        morph.setExtent(morph.getExtent().addPt(ownerExtentDelta));
+        morph.setPosition(morph.getPosition().addPt(ownerPositionDelta));
+    }
 });
 
 /* Very simple XML converter */
