@@ -3608,7 +3608,7 @@ Morph.subclass("lively.Examples.canvascape.MiniMapMorph", {
 ClipMorph.subclass("lively.Examples.canvascape.CanvasScapeMorph", {
     
     initialize: function($super, rect) {
-        $super(new lively.scene.Rectangle(rect));
+        $super(rect);
         console.log("init"); 
         this.setFill(Color.veryLightGray);
         this.initParameters();
