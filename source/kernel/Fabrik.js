@@ -2044,8 +2044,12 @@ ComponentMorph.subclass('FabrikMorph', {
         this.collapseHalo.setLabel('uncollapse');
         this.uncollapsedExtent = this.getExtent();
         this.uncollapsedPosition = this.getPosition();
-        this.setFill(Color.gray);
+		this.oldFill= this.getFill();
+        this.setFill(Color.gray.darker());
         
+		if (this.dimMorph)
+			this.dimMorph.remove();
+		
         if (this.currentSelection) {
             this.currentSelection.handleCollapseFor(this);
         } else {
@@ -2060,7 +2064,7 @@ ComponentMorph.subclass('FabrikMorph', {
         console.log('uncollapse fabrik');
         this.isCollapsed = false;
         this.collapseHalo.setLabel('collapse');
-        this.setFill(Color.blue.lighter());
+        this.setFill(this.oldFill || Color.gray);
         
         if (this.currentSelection) {
             this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
@@ -2071,8 +2075,13 @@ ComponentMorph.subclass('FabrikMorph', {
             this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
             this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
         };
-        
-        this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this) );
+
+		this.dimMorph = Morph.makeRectangle(rect(pt(0,0), this.owner.getExtent()));
+		this.dimMorph.applyStyle({fill: Color.gray, fillOpacity: 0.7});
+        this.owner.addMorphFront(this.dimMorph);
+		this.owner.addMorphFront(this);
+
+        this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this) );	
     },
     
     minExtent: function() {

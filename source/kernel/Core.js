@@ -3656,8 +3656,8 @@ PasteUpMorph.subclass("WorldMorph", {
 			helpText:	 { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
 			// fabrik:		{ borderColor: Color.gray.lighter(), borderWidth: 2, borderRadius: 3,
 			//					   fill: Color.gray, opacity: 1}
-			fabrik:		 { borderColor: Color.blue, borderWidth: 1.5 , borderRadius: 3,
-						   fill: Color.blue.lighter(), opacity: 0.8}
+			fabrik:		 { borderColor: Color.gray.darker(), borderWidth: 1.0 , borderRadius: 2,
+						   fill: Color.gray, opacity: 1}
 		},
 	
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
