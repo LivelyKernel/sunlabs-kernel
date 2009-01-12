@@ -1075,7 +1075,6 @@ lively.data.Wrapper.subclass('Morph', {
 
     // prototype vars
     rotation: 0.0,
-    scale: 1.0,
     scalePoint: pt(1,1),
 
     style: {},
@@ -1113,7 +1112,7 @@ lively.data.Wrapper.subclass('Morph', {
 	this.internalInitialize(NodeFactory.create("g"), true);
 	dbgOn(!shape.bounds);
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
-	this.scale = 1/this.fisheyeScale;
+	if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
 	this.origin = shape.origin();
 	shape.translateBy(this.origin.negated());
 	this.initializePersistentState(shape);
@@ -1994,10 +1993,8 @@ Morph.addMethods({
 	this.origin = tfm.getTranslation();
 	this.rotation = tfm.getRotation().toRadians();
 	this.scalePoint = tfm.getScalePoint();
-	this.scale = this.scalePoint.x;  //***remove
 	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
-	if (this.fisheyeScale != 1) this.scale = this.scale/this.fisheyeScale;  //***remove
-	if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1/this.fisheyeScale);
+	if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
 	this.transformChanged();
     },
 
@@ -2057,14 +2054,13 @@ Morph.addMethods({
     }.wrap(Morph.onLayoutChange('rotation')),
     
     setScale: function(scale/*:float*/) {
-	this.scale = scale;
-	this.scalePoint = pt(scale, scale)
-	// layoutChanged will cause this.transformChanged();
-    }.wrap(Morph.onLayoutChange('scale')),
+	// While scalePoint carries both x- and y-scaling,
+	//    getScale() and setScale() allow the use of simple, er, scalars
+	this.setScalePoint = pt(scale, scale)
+    },
 
     setScalePoint: function(sp) {
 	this.scalePoint = sp;
-	this.scale = sp.x;  // ***remove
 	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('scale')),
 
@@ -2073,8 +2069,14 @@ Morph.addMethods({
     },
 
     getRotation: function() { 
-	return this.getTransform().getRotation().toRadians(); 
-    },
+	// Note: the actual transform disambiguates scale and rotation as though scale.x > 0
+	var rot = this.getTransform().getRotation().toRadians(); 
+	if (this.scalePoint.x >= 0) return rot;
+
+	// if scale.x is negative, then we have to decode the difference
+	if (rot < 0) return rot + Math.PI;
+	return rot - Math.PI;
+	},
 
     getScale: function() {
 	return this.getTransform().getScale(); 
@@ -2136,14 +2138,12 @@ Morph.addMethods({
     },
 
     // toggle fisheye effect on/off
-    toggleFisheye: function() {
+    toggleFisheye: function() { 
 	// if fisheye is true, we need to scale the morph to original size
 	if (this.fishEye) {
-	    this.scale = this.getScale()/this.fisheyeScale;
+	    this.setScale(this.getScale() / this.fisheyeScale);
 	    this.setFisheyeScale(1.0);
-	    this.changed();
 	}
-
 	// toggle fisheye
 	this.fishEye = !this.fishEye;
     },
