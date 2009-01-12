@@ -689,9 +689,20 @@ Morph.subclass('PinMorph', {
     },
 
     getHelpText: function() {
-        return this.pinHandle.getName() + "\n" + this.pinHandle.getValue();
+		var valueHelpText = this.pinHandle.getValue();
+		if (valueHelpText == "[object Object]")
+			valueHelpText = this.prettyPrintObject(valueHelpText);
+        return this.pinHandle.getName() + "\n" + valueHelpText;
     },
     
+	prettyPrintObject: function(obj) {
+		var result = "{"
+		Object.keys(obj).each(function(ea) {
+			result = result + ea + ": " + (obj[ea]).toString().truncate(20) +"\n";
+		});
+		return result + "}"
+	},
+
     acceptsDropping: function($super, evt) {
         return $super(evt)
     },
@@ -732,7 +743,16 @@ Morph.subclass('PinMorph', {
         var newPos = scaledPos.subPt(center);
         // console.log("newPos: " + newPos);
         this.setPosition(newPos);
-    }
+    },
+
+	morphMenu: function($super, evt) { 
+		var menu = $super(evt);
+		
+		menu.addItem(["inspect value", function() {
+			new SimpleInspector(this.pinHandle.getValue()).open();
+		}.bind(this)]);
+		return menu;
+	}
     
 });
     
@@ -1826,8 +1846,13 @@ Widget.subclass('Component', {
 });
 
 SelectionMorph.subclass('UserFrameMorph', {
-    
+
     removeWhenEmpty: false,
+
+	initialize: function($super, viewPort, defaultworldOrNull) {
+		$super(viewPort, defaultworldOrNull);
+		this.closeAllToDnD();    
+	},
 	
     reshape: function($super, partName, newPoint, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
@@ -1878,7 +1903,7 @@ SelectionMorph.subclass('UserFrameMorph', {
     
     okToBeGrabbedBy: function(evt) {
         // this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
-        return this;
+        return null;
     },
     
     createHandle: function(hand) {
@@ -2015,7 +2040,7 @@ ComponentMorph.subclass('FabrikMorph', {
     
     onMouseDown: function ($super, evt) {
         console.log('making selection');
-        if (!this.isCollapsed) this.makeSelection(evt); 
+        if (evt.isMetaDown() && !this.isCollapsed) this.makeSelection(evt); 
         return true;
     },
 
@@ -2076,8 +2101,10 @@ ComponentMorph.subclass('FabrikMorph', {
             this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
         };
 
+		// insert a dim morph behind the uncollapsed fabrik morph
 		this.dimMorph = Morph.makeRectangle(rect(pt(0,0), this.owner.getExtent()));
 		this.dimMorph.applyStyle({fill: Color.gray, fillOpacity: 0.7});
+		this.dimMorph.ignoreEvents();
         this.owner.addMorphFront(this.dimMorph);
 		this.owner.addMorphFront(this);
 
