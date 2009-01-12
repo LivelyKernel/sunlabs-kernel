@@ -3603,62 +3603,62 @@ PasteUpMorph.subclass("WorldMorph", {
                            fill: {$:"RadialGradient", stops: [{$:"Stop", offset: 0, color: Color.yellow.lighter(2)}, 
 							      {$:"Stop", offset: 1, color: Color.yellow}]}
 			 },
-	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
+            panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
             link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
-	    fabrik:      { borderColor: Color.red, borderWidth: 2, borderRadius: 0, fill: Color.blue.lighter(), opacity: 1}
+            helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
+            fabrik:      { borderColor: Color.red, borderWidth: 2, borderRadius: 0, fill: Color.blue.lighter(), opacity: 1}
         },
 
-        lively: { // This is to be the style we like to show for our personality
-            styleName: 'lively',
-	    
-	    raisedBorder: { // conenience grouping
-		//		borderWidth: 2,
-		borderColor: {$:"LinearGradient", 
-			      stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
-				      {$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
-			      vector: lively.paint.LinearGradient.SouthEast
-			     }
-	    },
-	    
-            titleBar: { 
-		borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                fill: {$:"LinearGradient", 
-		       stops:[ {$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
-			       {$:"Stop", offset: 0.5, color: Color.primary.blue},
-			       {$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
-		       vector: lively.paint.LinearGradient.SouthNorth }
-	    },
-	    
-            slider: { 
-		borderColor: Color.black, borderWidth: 1, 
-		fill: {$: "LinearGradient", 
-		       stops: [ {$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
-				{$:"Stop", offset: 1, color: Color.primary.blue}] }
-	    },
-            button: { 
-		borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
-                fill: {$:"LinearGradient", 
-		       stops: [ {$:"Stop", offset:0, color:Color.darkGray}, 
-				{$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
-		       vector: lively.paint.LinearGradient.SouthNorth }
-	    },
-	    widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
-                           fill: Color.blue.lighter(), opacity: 0.4},
-            clock: { 
-		borderColor: Color.black, borderWidth: 4,
-                fill: {$:"RadialGradient", 
-		       stops: [ {$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
-			        {$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
-	    },
-	    panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
-            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
-            // fabrik:      { borderColor: Color.gray.lighter(), borderWidth: 2, borderRadius: 3,
-            //                     fill: Color.gray, opacity: 1}
-            fabrik:      { borderColor: Color.blue, borderWidth: 1.5 , borderRadius: 3,
-                           fill: Color.blue.lighter(), opacity: 0.8}
-        },
+		lively: { // This is to be the style we like to show for our personality
+			styleName: 'lively',
+		
+			raisedBorder: { // conenience grouping
+			//		borderWidth: 2,
+			borderColor: {$:"LinearGradient", 
+				stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
+					{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
+					vector: lively.paint.LinearGradient.SouthEast
+				}
+			},
+		
+			titleBar: { 
+			borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
+				fill: {$:"LinearGradient", 
+				stops:[ {$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
+					{$:"Stop", offset: 0.5, color: Color.primary.blue},
+					{$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
+				vector: lively.paint.LinearGradient.SouthNorth }
+			},
+		
+			slider: { 
+			borderColor: Color.black, borderWidth: 1, 
+				fill: {$: "LinearGradient", 
+				stops: [ {$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
+					{$:"Stop", offset: 1, color: Color.primary.blue}] }
+			},
+			button: { 
+			borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
+				fill: {$:"LinearGradient", 
+				stops: [ {$:"Stop", offset:0, color:Color.darkGray}, 
+						 {$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
+				vector: lively.paint.LinearGradient.SouthNorth }
+			},
+			widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
+						   fill: Color.blue.lighter(), opacity: 0.4},
+			clock: { 
+			borderColor: Color.black, borderWidth: 4,
+			fill: {$:"RadialGradient", 
+			stops: [{$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
+				{$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
+			},
+			panel:		 { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
+			link:		 { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
+			helpText:	 { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
+			// fabrik:		{ borderColor: Color.gray.lighter(), borderWidth: 2, borderRadius: 3,
+			//					   fill: Color.gray, opacity: 1}
+			fabrik:		 { borderColor: Color.blue, borderWidth: 1.5 , borderRadius: 3,
+						   fill: Color.blue.lighter(), opacity: 0.8}
+		},
 	
         turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
             styleName: 'turquoise',
