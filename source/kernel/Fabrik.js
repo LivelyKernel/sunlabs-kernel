@@ -2181,6 +2181,7 @@ ComponentMorph.subclass('FabrikMorph', {
     
     // considers windowMorph when exsiting
     positionAndExtentChange: function(pos, ext) {
+		// console.log("")
 		if (this.owner instanceof WindowMorph) {
 			this.owner.setExtent(ext);
 	    } else {
@@ -2197,12 +2198,25 @@ ComponentMorph.subclass('FabrikMorph', {
         if (this.isFramed()) return;
         var window = new WindowMorph(this, this.component.viewTitle, false);
         window.suppressHandles = true;
+
         // undo closeAllToDnD
         this.openDnD();
         this.openInWindow = window;
         return window;
     },
-    
+
+	reshape: function($super, partName, newPoint, lastCall) {
+		var result = $super(partName, newPoint, lastCall);
+		if (this.isFramed()) {
+			var window = this.owner;
+			var windowdBnds = window.bounds().topLeft().extent(this.shape.bounds().extent().addXY(0, window.titleBar.innerBounds().height));
+			// window.setExtent(windowdBnds.extent());
+			window.setBounds(windowdBnds);
+			window.adjustForNewBounds();
+		};
+		return result;
+	},
+	
     unframed: function() {
         if (!this.isFramed()) return;
         this.owner.remove();
