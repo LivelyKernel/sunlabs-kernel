@@ -117,6 +117,15 @@ TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
         owner.replaceChild(newCanvas, oldCanvas);     
     },
 
+	fileContent: function(fileName) {
+		var dir = new FileDirectory(URL.source);
+		return dir.fileContent(fileName);
+	},
+	
+	loadWorldFromFile: function(fileName) {
+		return this.loadWorldFromSource(this.fileContent(fileName));
+	},
+	
     loadWorldFromSource: function(xmlString) {
         var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
         this.doc = xml;   
