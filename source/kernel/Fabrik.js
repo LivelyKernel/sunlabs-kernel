@@ -1,4 +1,3 @@
-
 /*
  * Copyright � 2006-2008 Sun Microsystems, Inc.
  * All rights reserved.  Use is subject to license terms.
@@ -2092,7 +2091,7 @@ ComponentMorph.subclass('FabrikMorph', {
         this.uncollapsedExtent = this.getExtent();
         this.uncollapsedPosition = this.getPosition();
 		this.oldFill= this.getFill();
-        this.setFill(Color.gray.darker());
+        this.setFill(this.collapsedFill || Color.gray.darker());
         
 		if (this.dimMorph)
 			this.dimMorph.remove();
@@ -2125,8 +2124,9 @@ ComponentMorph.subclass('FabrikMorph', {
         // console.log('uncollapse fabrik');
         this.isCollapsed = false;
         this.collapseHalo.setLabel('collapse');
+		this.collapsedFill = this.getFill(); 
         this.setFill(this.oldFill || Color.gray);
-        
+
         if (this.currentSelection) {
             this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
             this.currentSelection.handleUncollapseFor(this);
