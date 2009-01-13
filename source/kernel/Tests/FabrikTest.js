@@ -150,7 +150,7 @@ FabrikTestCase.subclass('FabrikComponentConnectionTest', {
         this.assertUnconnectable(this.fabrikComponent, component);
     },
     
-    testConnectComponentsInInnerFabriks : function() {
+    testConnectComponentsInInnerFabriks: function() {
         var innerFabrik1 = new FabrikComponent();
         var innerFabrik2 = new FabrikComponent();
         this.fabrikComponent.plugin(innerFabrik1);
@@ -163,7 +163,7 @@ FabrikTestCase.subclass('FabrikComponentConnectionTest', {
         this.assertUnconnectable(component2, component1);
     },
     
-    testConnectComponentsInInnerFabriks : function() {
+    testConnectComponentsInInnerFabriks: function() {
         var component = new Component();
         this.fabrikComponent.plugin(component);
         var pin = this.fabrikComponent.addPin('Test');
