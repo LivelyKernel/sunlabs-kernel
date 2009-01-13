@@ -1937,9 +1937,12 @@ SelectionMorph.subclass('UserFrameMorph', {
             compMorphs;
         morphsToHide.each(function(ea) { 
 			fabrikMorph.removeMorph(ea);
+			if (ea.dimMorph)
+				ea.dimMorph.remove();
 			if (ea)
 				fabrikMorph.hiddenContainer.addMorph(ea);
 		});
+		
         // we move the fabrikMorph to where this selection currently is, the selectedMorphs have to be moved in the other direction
         this.positionDelta = this.getPosition();
         fabrikMorph.positionAndExtentChange(fabrikMorph.getPosition().addPt(this.positionDelta), this.getExtent());
@@ -1963,7 +1966,7 @@ SelectionMorph.subclass('UserFrameMorph', {
             compMorphs.reject(function(ea) { return this.selectedMorphs.include(ea) }.bind(this)) :
             compMorphs;
         morphsToShow.each(function(ea) { fabrikMorph.addMorph(ea) });
-        
+
         this.selectedMorphs.each(function(ea) {
             ea.component.pinHandles.each(function(pin) { 
 				ea.addMorph(pin.morph);
@@ -1973,6 +1976,7 @@ SelectionMorph.subclass('UserFrameMorph', {
         }.bind(this));
                 
         fabrikMorph.addMorph(this);
+
     }
 
 });
@@ -2068,13 +2072,17 @@ ComponentMorph.subclass('FabrikMorph', {
             this.uncollapse()
         else 
             this.collapse();
-        this.updateHaloItemPositions();
-        if (this.isFramed())
-            this.setExtent(this.getExtent().addPt(this.owner.titleBar.getExtent().withX(0)));
+		this.updateAfterCollapse();
     },
+	
+	updateAfterCollapse: function() {
+		this.updateHaloItemPositions();
+        if (this.isFramed())
+           	this.setExtent(this.getExtent().addPt(this.owner.titleBar.getExtent().withX(0)));
+	},
     
     collapse: function() {
-        console.log('collapse fabrik');
+        // console.log('collapse fabrik');
         this.isCollapsed = true;
         this.collapseHalo.setLabel('uncollapse');
         this.uncollapsedExtent = this.getExtent();
@@ -2084,19 +2092,33 @@ ComponentMorph.subclass('FabrikMorph', {
         
 		if (this.dimMorph)
 			this.dimMorph.remove();
+			
+		// close uncollapsed subfabriks before collapsing me
+		this.component.components.each(function(ea) { 
+			if (ea.panel.dimMorph)
+				ea.panel.dimMorph.remove();
+			if (ea.panel.isCollapsed == false) {
+				console.log("collapse " + ea);
+			 	ea.panel.collapseToggle(true);
+			};
+		});
 		
         if (this.currentSelection) {
             this.currentSelection.handleCollapseFor(this);
         } else {
-            this.component.components.each(function(ea) { this.removeMorph(ea.panel); this.hiddenContainer.addMorph(ea.panel)}.bind(this));
-            this.component.connectors.each(function(ea) { this.removeMorph(ea.morph); this.hiddenContainer.addMorph(ea.morph)}.bind(this));
+            this.component.components.each(function(ea) { 
+				this.removeMorph(ea.panel); 
+				this.hiddenContainer.addMorph(ea.panel)}.bind(this));
+            this.component.connectors.each(function(ea) { 
+				this.removeMorph(ea.morph); 
+				this.hiddenContainer.addMorph(ea.morph)}.bind(this));
             this.positionAndExtentChange(this.collapsedPosition || this.getPosition(),
                                          this.collapsedExtent || this.component.defaultCollapsedExtent);
         }
     },
     
     uncollapse: function() {
-        console.log('uncollapse fabrik');
+        // console.log('uncollapse fabrik');
         this.isCollapsed = false;
         this.collapseHalo.setLabel('collapse');
         this.setFill(this.oldFill || Color.gray);
@@ -2108,16 +2130,20 @@ ComponentMorph.subclass('FabrikMorph', {
             this.collapsedExtent = this.getExtent();
             this.collapsedPosition = this.getPosition();
             this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
+			// console.log("set position: " + this.uncollapsedPosition);
+			// this.setPosition(this.uncollapsedPosition);
             this.component.components.each(function(ea) { this.addMorph(ea.panel) }.bind(this));
         };
 
 		// insert a dim morph behind the uncollapsed fabrik morph
-		this.dimMorph = Morph.makeRectangle(rect(pt(0,0), this.owner.getExtent()));
-		this.dimMorph.applyStyle({fill: Color.gray, fillOpacity: 0.7});
-		this.dimMorph.ignoreEvents();
-        this.owner.addMorphFront(this.dimMorph);
-		this.owner.addMorphFront(this);
-
+		if (!this.isFramed()) {
+			this.dimMorph = Morph.makeRectangle(rect(pt(0,0), this.owner.getExtent()));
+			this.dimMorph.applyStyle({fill: Color.gray, fillOpacity: 0.7});
+			this.dimMorph.ignoreEvents();
+        	this.owner.addMorphFront(this.dimMorph);
+			this.owner.addMorphFront(this);
+		};
+		
         this.component.connectors.each(function(ea) { this.addMorph(ea.morph); ea.updateView(); }.bind(this) );	
     },
     
@@ -2155,9 +2181,12 @@ ComponentMorph.subclass('FabrikMorph', {
     
     // considers windowMorph when exsiting
     positionAndExtentChange: function(pos, ext) {
-        var morphToModify = this.owner instanceof WindowMorph ? this.owner : this;
-        morphToModify.setPosition(pos);
-        morphToModify.setExtent(ext);
+		if (this.owner instanceof WindowMorph) {
+			this.owner.setExtent(ext);
+	    } else {
+			this.setExtent(ext);
+			this.setPosition(pos);
+		}
     },
     
     isFramed: function() {
@@ -2166,28 +2195,11 @@ ComponentMorph.subclass('FabrikMorph', {
     
     framed: function() {
         if (this.isFramed()) return;
-        // debugger;
         var window = new WindowMorph(this, this.component.viewTitle, false);
         window.suppressHandles = true;
-		// FIXME closure assignment does not serialize
-        this.reshape = this.reshape.wrap(function(proceed, partName, newPoint, lastCall) {
-            var result = proceed(partName, newPoint, lastCall);
-            var windowdBnds = window.bounds().topLeft().extent(this.shape.bounds().extent().addXY(0, window.titleBar.innerBounds().height));
-            // window.setExtent(windowdBnds.extent());
-            window.setBounds(windowdBnds);
-            window.adjustForNewBounds();
-        return result;
-        });
-        // FIXME closure assignment does not serialize
-        this.collapseToggle = this.collapseToggle.wrap(function(proceed, val) {
-            proceed(val);
-            window.setExtent(this.getExtent().addXY(0, window.titleBar.innerBounds().height));
-            window.adjustForNewBounds();
-        });
         // undo closeAllToDnD
         this.openDnD();
         this.openInWindow = window;
-        // this.component.fabrik = null;
         return window;
     },
     
