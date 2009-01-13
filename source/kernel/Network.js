@@ -746,15 +746,15 @@ Object.subclass('SVNVersionInfo', {
 	// documentation: 'This object wraps svn infos from report or propfind requests',
 
     initialize: function(rev, dateOrString, author) {
-        this.rev = rev,
-		if (Object.isString(dateOrString)) {
-			this.date = this.parseUTCDateString(dateOrString);
-		} else if (dateOrString instanceof Date) {
-			this.date = dateOrString;
-		} else { 
-			this.date = new Date();
-		}
-		this.author = author ? author : '(no author)';
+        this.rev = rev;
+	if (Object.isString(dateOrString)) {
+	    this.date = this.parseUTCDateString(dateOrString);
+	} else if (dateOrString instanceof Date) {
+	    this.date = dateOrString;
+	} else { 
+	    this.date = new Date();
+	}
+	this.author = author ? author : '(no author)';
     },
     
     parseUTCDateString: function(dateString) {
