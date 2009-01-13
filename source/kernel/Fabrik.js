@@ -1607,8 +1607,12 @@ BoxMorph.subclass('ComponentMorph', {
         //this.closeHalo.setPosition(pt(this.getExtent().x - 0, -20));
     },
     
+	isUserMode: function() {
+		return (this.owner instanceof FabrikMorph) && this.owner.isCollapsed
+	},
+
     showHalos: function() {
-        if (this.halos) {
+        if (this.halos && !this.isUserMode()) {
             if (this.handObserver) return; // we are not finished yet
             var self = this;
             this.addMorph(this.halos);
