@@ -560,7 +560,7 @@ TestCase.subclass('ComponentTest', {
         this.assertEqual(comp.pinHandles.length, 1);
         this.assertEqual(comp.pinHandles[0].getName(), fieldName);
     },
-        
+      
     testPinInputModifiesComponentModel: function() {
         var comp = this.component;
         comp.addFieldAndPinHandle('Test');
@@ -678,7 +678,16 @@ TestCase.subclass('ComponentTest', {
         wasCalled = false;
         comp.formalModel.setTest(content);
         this.assert(wasCalled, "not called the third time");
-    }
+    },
+
+
+	testGetFieldNames: function() {
+		var comp = this.component;
+		this.assertEqualState(comp.getFieldNames(), ["Name"], "default fields are wrong");
+		comp.addField('MyField');
+		comp.addFieldAndPinHandle('MyFieldWithPin');
+		this.assertEqualState(comp.getFieldNames(), ['MyField', 'MyFieldWithPin', "Name"], "wrong fields....");
+	},
     
 });
 
@@ -1759,8 +1768,10 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         this.assertEqual(func1.formalModel.getFunctionBody(), "input + input", "wrong FunctionBody content"); 
 
 		func1.formalModel.setInput("Hello");
-		this.assertEqual(func1.formalModel.getResult(), "HelloHello", "func1 did not evaluate and produce result")
+		this.assertEqual(func1.formalModel.getResult(), "HelloHello", "func1 did not evaluate and produce result");
 
+		this.assert(func1.getResult, "getResult accessor is missing");
+		this.assert(func1.setResult, "setResult accessor is missing");
     },
 
     testLoadFabrik: function() {

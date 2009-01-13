@@ -1710,6 +1710,16 @@ Widget.subclass('Component', {
                 
         this.pinHandles = [];
     },
+	
+	getFieldNames: function() {
+		return Object.keys(this.formalModel.definition)
+	},
+	
+	onDeserialize: function() {
+		this.getFieldNames().each(function(ea) {
+			this.pvtCreateAccessorsForField(ea);
+		}, this);
+	},
     
     buildView: function(optExtent) {
         var bounds = optExtent && optExtent.extentAsRectangle();
@@ -2344,11 +2354,12 @@ Component.subclass('TextComponent', {
         this.addFieldAndPinHandle('Text', {to: String});
     },
 
-    onDeserialize: function() {
-	// because the coercion is a function and the function is stored in a closure we have to build the setters here again 
-	var oldText = this.formalModel.getText();
-	this.addField('Text', {to: String}) 
-	this.formalModel.setText(oldText)
+    onDeserialize: function($super) {
+		$super();
+		// because the coercion is a function and the function is stored in a closure we have to build the setters here again 
+		var oldText = this.formalModel.getText();
+		this.addField('Text', {to: String}) 
+		this.formalModel.setText(oldText)
     },
 
 
@@ -2410,7 +2421,8 @@ Component.subclass('FunctionComponent', {
         this.setupAutomaticExecution();
     },
         
-	onDeserialize: function() {
+	onDeserialize: function($super) {
+		$super();
 		this.setupAutomaticExecution();
 		var self = this;
 		// TODO: this is only a hack to get the bar green! This whole updating should probably be implemented with Relays
@@ -2578,7 +2590,8 @@ Component.subclass('WebRequestComponent', {
         this.formalModel.addObserver({onResponseTextUpdate: function() { console.log('getting response...') }});	
 	},
 
-	onDeserialize: function() {
+	onDeserialize: function($super) {
+		$super();
 		this.setupObserver();
 		// this.formalModel.addObserver(this.morph, {URL: '!Text'});
 	},
@@ -2664,6 +2677,11 @@ Component.subclass('TextListComponent', {
         this.setList([]);
         this.setupListEnhancement();
     },
+
+	onDeserialize: function($super) {
+		$super();
+		this.setupListEnhancement();
+	},
 
     buildView: function($super, optExtent) {
         $super(optExtent);
