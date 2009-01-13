@@ -580,7 +580,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
                 .collect(function(ea) { return new ide.ClassFragmentNode(ea, browser) });
            case "functions":
             return this.target.flattened()
-                .select(function(ea) { return ea.type === 'staticFuncDef' || ea.type === 'executedFuncDef' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
+                .select(function(ea) { return ea.type === 'staticFuncDef' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
                 // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
                 .collect(function(ea) { return new ide.FunctionFragmentNode(ea, browser) });
            case "objects":
@@ -1171,7 +1171,7 @@ CodeParser.subclass('JsParser', {
 
     ometaRules: [/*'blankLine',*/ 'comment',
                'klassDef', 'objectDef', 'klassExtensionDef',
-               'functionDef', 'staticFuncDef', 'executedFuncDef', 'methodModificationDef',
+               'functionDef', 'staticFuncDef', 'methodModificationDef',
                'unknown'],
     
     parseClass: function() {
@@ -1231,7 +1231,7 @@ CodeParser.subclass('JsParser', {
         if (/^[\s]*Object\.extend.*$/.test(this.currentLine) || /^.*\.addMethods\(.*$/.test(this.currentLine))
                 return 'klassExtensionDef';
         // if (/^[\s]*\(function.*/.test(this.currentLine))
-        //         return 'executedFuncDef';
+        //         return 'funcitonDef';
         return null;
     },
 

@@ -71,10 +71,9 @@ ometa LKFileParser <: Parser {
     /* functions */
     basicFunction = "function" spaces (name:n | empty) chunk('(', ')') spaces chunk('{', '}') -> n,
     func = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction -> fn,
-    functionDef = pos:p func:fn defEnd
+    functionDef = pos:p ( func:fn | '(' func:fn ')' ) somethingRelated defEnd
 -> { $elf._fragment(fn, 'functionDef', p, $elf.pos()-1) },
-    executedFuncDef = stackSize:s pos:p '(' basicFunction:fn ')' somethingRelated defEnd ?(s == $elf.stack.length)
--> { $elf._fragment(fn, 'executedFuncDef', p, $elf.pos()-1) },
+    
     staticFuncDef = pos:p namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' spaces basicFunction defEnd
 -> {
 	$elf._fragment(nsArr.last(), 'staticFuncDef', p, $elf.pos()-1, null, {klassName: nsArr.slice(0,nsArr.length-1).join('.')})

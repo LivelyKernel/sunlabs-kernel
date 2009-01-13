@@ -291,7 +291,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseExecutedFunction: function() { // (function() {...});
         var src = '(function testModuleLoad() {\n\t\tvar modules = Global.subNamespaces(true);\n\t}).delay(5);';
         this.sut.src = src;
-        var descriptor = this.sut.callOMeta('executedFuncDef');
+        var descriptor = this.sut.callOMeta('functionDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'testModuleLoad');
         this.assertIdentity(descriptor.startIndex, 0);
