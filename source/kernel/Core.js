@@ -2055,10 +2055,10 @@ Morph.addMethods({
     setScale: function(scale/*:float*/) {
 	// While scalePoint carries both x- and y-scaling,
 	//    getScale() and setScale() allow the use of simple, er, scalars
-	this.setScalePoint = pt(scale, scale)
+	this.scalePoint = pt(scale, scale)
     },
 
-    setScalePoint: function(sp) {
+    setScalePoint: function(sp) { 
 	this.scalePoint = sp;
 	// layoutChanged will cause this.transformChanged();
     }.wrap(Morph.onLayoutChange('scale')),
