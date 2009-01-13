@@ -301,7 +301,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseStaticFunctions: function() {  // Klass.method = function() {...};
         var src = 'thisModule.ScriptEnvironment.open = function() {};'
         this.sut.src = src;
-        var descriptor = this.sut.callOMeta('staticFuncDef');
+        var descriptor = this.sut.callOMeta('staticProperty');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'open');
         this.assertEqual(descriptor.klassName, 'thisModule.ScriptEnvironment');
@@ -799,7 +799,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
            moduleDef: foo.js (0-277 in foo.js, starting at line 1, 4 subElements)
 			klassDef: ClassA (55-123 in foo.js, starting at line 2, 1 subElements)
 			protoDef: m1 (84-119 in foo.js, starting at line 3, 0 subElements)
-			staticFuncDef: m3 (124-155 in foo.js, starting at line 8, 0 subElements)
+			staticProperty: m3 (124-155 in foo.js, starting at line 8, 0 subElements)
 			functionDef: abc (156-179 in foo.js, starting at line 9, 0 subElements)
 			klassDef: ClassB (180-257 in foo.js, starting at line 10, 2 subElements)
 			protoDef: m2 (209-230 in foo.js, starting at line 11, 0 subElements)
@@ -954,7 +954,18 @@ dbgOn(true)
 		this.assert(!fileString.include(src), 'filestring includes fragments sourceCode');
 		this.assertEqual(expectedLength, fileString.length, 'strange length');
 	},
-   
+
+	testAddSibling: function() {
+			var classFragment = this.fragmentNamed('ClassA');
+			var oldNoOfSubelements = classFragment.findOwnerFragment().subElements().length;
+			var src = 'Object.subclass(\'ClassC\', {});\n'
+			var newClassFragment = classFragment.addSibling(src);
+			this.assertEqual(newClassFragment.getSourceCode(), src);
+			this.assertEqual(newClassFragment.startIndex, classFragment.stopIndex+1, 'newcCassFrag1 start');
+			var newNoOfSubelements = newClassFragment.findOwnerFragment().subElements().length;
+			this.assertEqual(oldNoOfSubelements, newNoOfSubelements-1, 'no of subelems');
+	},
+
 });
 
 thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTests', {

@@ -544,6 +544,13 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 	menuSpec: function($super) {
 		var spec = $super();
 		var node = this;
+		spec.push(['add sibling below', function() {
+			var world = WorldMorph.current();
+			world.prompt('Enter source code', function(input) {
+				node.target.addSibling(input);
+				node.browser.allChanged();
+			});
+		}]);
 		spec.push(['remove', function() {
 			node.target.remove();
 			node.browser.allChanged() }]);
@@ -580,7 +587,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
                 .collect(function(ea) { return new ide.ClassFragmentNode(ea, browser) });
            case "functions":
             return this.target.flattened()
-                .select(function(ea) { return ea.type === 'staticFuncDef' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
+                .select(function(ea) { return ea.type === 'staticProperty' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
                 // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
                 .collect(function(ea) { return new ide.FunctionFragmentNode(ea, browser) });
            case "objects":
@@ -1171,7 +1178,7 @@ CodeParser.subclass('JsParser', {
 
     ometaRules: [/*'blankLine',*/ 'comment',
                'klassDef', 'objectDef', 'klassExtensionDef',
-               'functionDef', 'staticFuncDef', 'methodModificationDef',
+               'functionDef', 'staticProperty', 'methodModificationDef',
                'unknown'],
     
     parseClass: function() {
@@ -1521,6 +1528,7 @@ Object.subclass('lively.ide.FileFragment', {
         this.getSourceControl().putSourceCodeFor(this, newFileString);
         
         this.updateIndices(newString, newMe);
+		return newMe;
     },
 
 	buildNewFileString: function(newString) {
@@ -1651,7 +1659,21 @@ ide.FileFragment.addMethods({
 			browser.inPaneSelectNodeNamed('Pane3', this.name);
 		}
 		return browser;
-	}
+	},
+
+	addSibling: function(newSrc) {
+		if (!this.getSourceCode().endsWith('\n'))
+			newSrc = '\n' + newSrc;
+		if (!newSrc.endsWith('\n'))
+			newSrc += '\n';
+		var owner = this.findOwnerFragment();
+		var ownerSrc = owner.getSourceCode();
+		var stopIndexInOwner = this.stopIndex - owner.startIndex;
+		var newOwnerSrc = ownerSrc.slice(0, stopIndexInOwner+1) + newSrc + ownerSrc.slice(stopIndexInOwner+1);
+		var newOwner = owner.putSourceCode(newOwnerSrc);
+		var sibling = newOwner.subElements().detect(function(ea) { return ea.startIndex == this.stopIndex+1 }, this);
+		return sibling;
+	},
 });
 
 ide.FileFragment.addMethods({

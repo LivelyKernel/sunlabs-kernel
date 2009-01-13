@@ -1479,7 +1479,9 @@ WidgetModel.subclass('ChangeList', {
         if (end >= 0) firstLine = firstLine.substring(0,end+1);
         var type = item.type ? item.type + ':' : '';
         var klass = item.className ? item.className + '>>' : '';
-        return item.fileName.concat(":", lineStr, ": ", type, klass, firstLine);
+		if (!item.fileName)
+			return lineStr.concat(": ", type, klass, firstLine);
+		return item.fileName.concat(":", lineStr, ": ", type, klass, firstLine);
     },
 
     getChangeItemText: function() {
