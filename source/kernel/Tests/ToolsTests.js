@@ -1116,6 +1116,9 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.ConvertFileFragmen
 		var frag = this.fragmentNamed('ClassA');
 		var change = frag.asChange();
 		this.assert(change.isClassChange, 'is not a class change');
+		this.assertEqual(change.subElements().length, 1, 'subelements?');
+		this.assert(change.subElements()[0].isProtoChange, 'subelements[0]?');
+		this.assertEqual(change.subElements()[0].getName(), 'm1', 'subelements[0] name?');
 	},
 
 });

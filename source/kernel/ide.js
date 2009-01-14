@@ -877,7 +877,7 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 	},
 
 	asString: function() {
-		return 'Load all modules'
+		return 'Load all'
 	},
 
 	trigger: function() {
@@ -897,7 +897,7 @@ ide.BrowserCommand.subclass('lively.ide.ShowLineNumbersCommand', {
 	},
 
 	asString: function() {
-		return 'Toggle LineNo'
+		return 'LineNo'
 	},
 
 	trigger: function() {
@@ -930,12 +930,28 @@ ide.BrowserCommand.subclass('lively.ide.EvaluateCommand', {
 	},
 
 	asString: function() {
-		if (this.browser.evaluate) return 'Turn eval off';
-		return 'Turn eval on'
+		if (this.browser.evaluate) return 'Eval on';
+		return 'Eval off'
 	},
 
 	trigger: function() {
 		this.browser.evaluate = !this.browser.evaluate;
+	}
+
+});
+ide.BrowserCommand.subclass('lively.ide.ChangesGotoChangeSetCommand', {
+
+	wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		if (this.browser.changesGotoChangeSet) return 'To ChangeSet';
+		return 'To files'
+	},
+
+	trigger: function() {
+		this.browser.changesGotoChangeSet = !this.browser.changesGotoChangeSet;
 	}
 
 });
@@ -1678,12 +1694,23 @@ ide.FileFragment.addMethods({
 
 ide.FileFragment.addMethods({
 
+	getName: function() {
+		return this.name;
+	},
+
 	asChange: function() {
 		// FIXMEEEEE!!! subclassing! Unified hierarchy
+		var change;
 		if (this.type === 'klassDef') {
-			return ClassChange.create(this.name, this.superclassName);
+			change = ClassChange.create(this.getName(), this.superclassName);
+			this.subElements().forEach(function(ea) { change.addSubElement(ea.asChange()) });
+		} else if (this.type === 'protoDef') {
+			var src = this.getSourceCode().match(/.*:\s+((\s|.)*)/)[1];
+			if (src.endsWith(','))
+				src = src.substr(0,src.length-1);
+			change = ProtoChange.create(this.getName(), src, this.className);
 		}
-
+		if (change) return change;
 		throw dbgOn(new Error(this.type + ' is not yet supported to be converted to a Change'));
 	}
 });
@@ -1710,7 +1737,7 @@ Object.subclass('Change', {
 		this.xmlElement = xmlElement;
 	},
 
-	asXMLElement: function() {
+	getXMLElement: function() {
 		return this.xmlElement;
 	},
 
@@ -1732,6 +1759,11 @@ Object.subclass('Change', {
 	getDefinition: function() {
 		return this.xmlElement.textContent;
 	},
+addSubElement: function(change) {
+		this.xmlElement.appendChild(change.getXMLElement());
+		return change;
+	},
+
 
 	remove: function() {
 		var elem = this.xmlElement;
@@ -1808,7 +1840,7 @@ Change.subclass('ChangeSet', {
 
 	addChange: function(change) {
 		var doc = this.xmlElement.ownerDocument;
-		this.xmlElement.appendChild(doc.importNode(change.asXMLElement(), true));
+		this.xmlElement.appendChild(doc.importNode(change.getXMLElement(), true));
 		return change;
 	},
 
