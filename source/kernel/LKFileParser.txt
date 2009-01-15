@@ -75,11 +75,11 @@ ometa LKFileParser <: Parser {
 -> { $elf._fragment(fn, 'functionDef', p, $elf.pos()-1) },
     
     staticProperty = pos:p namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' somethingBigRelated defEnd
--> { $elf._fragment(nsArr.last(), 'staticProperty', p, $elf.pos()-1, null, {klassName: nsArr.slice(0,nsArr.length-1).join('.')}) },
+-> { $elf._fragment(nsArr.last(), 'staticProperty', p, $elf.pos()-1, null, {klassName: nsArr.slice(0,nsArr.length-1).join('.'), _isStatic: true}) },
     
 	/* methods */
     methodModificationDef = pos:p nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
--> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {klassName: spec.before}) },
+-> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {klassName: spec.before, _isStatic: false}) },
     
     /* properties */
     
@@ -87,11 +87,13 @@ ometa LKFileParser <: Parser {
 -> { if ($elf.stack.length !== s) {
 		throw new Error('sth wrong with the stack: ' + $elf.stack + ' expected length: ' + s + ' actual length: ' + $elf.stack.length);
 	};
-	$elf._fragment(pName, 'protoDef', p, $elf.pos()-1)
+	$elf._fragment(pName, 'protoDef', p, $elf.pos()-1, null, {_isStatic: false})
 },
+propertyDef = (protoDef | methodModificationDef | staticProperty): spec -> {spec.type = 'propertyDef'; spec},
+
                                     
     /* class stuff */
-	classElems = '{'  (spaces protoDef:pD spaces -> pD)*:a '}'	-> a,
+	classElems = '{'  (spaces propertyDef:pD spaces -> pD)*:a '}'	-> a,
 	restKlassDef = ',' spaces classElems:descriptors										-> { {classElems: descriptors} }
 						| ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 						| ',' klassName:trait																	-> { {trait: trait, classElems: []} }
@@ -108,17 +110,18 @@ ometa LKFileParser <: Parser {
 							spec.classElems,
 							{trait: spec.trait, superclassName: sName})
 					},
-    basicKlassExt       = "Object.extend" '(' klass:n restKlassDef:spec ')'
-                            -> { spec.classElems.forEach(function(ea) { ea.className = n }); {name: n, trait: spec.trait, subElements: spec.classElems } }
-                        | (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
-                            -> { clElems.forEach(function(ea) { ea.className = n }); {name: n, subElements: clElems } },
+    basicKlassExt = "Object.extend" '(' klass:n restKlassDef:spec ')'
+-> { spec.classElems.forEach(function(ea) { ea.className = n; ea._isStatic = true }); {name: n, trait: spec.trait, subElements: spec.classElems } }
+| (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
+-> { clElems.forEach(function(ea) { ea.className = n; ea._isStatic = false }); {name: n, subElements: clElems } },
     klassExtensionDef   = pos:p basicKlassExt:spec defEnd
                         -> { $elf._fragment(spec.name + ' (extension)', 'klassExtensionDef', p, $elf.pos()-1, spec.subElements, {trait: spec.trait}) },
     
     /* 'object' stuff */
-    restObjDef          = classElems:propsAndMethodDescrs spaces -> propsAndMethodDescrs,
-    objectDef           = pos:p ( "var" spaces namespaceId:o | namespaceId:o) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
-                        -> { $elf._fragment(o, 'objectDef', p, $elf.pos()-1, propsAndMethodDescrs) },
+    restObjDef = classElems:propsAndMethodDescrs spaces
+-> { propsAndMethodDescrs.forEach(function(ea) { ea._isStatic = true }); propsAndMethodDescrs },
+    objectDef = pos:p ( "var" spaces namespaceId:o | namespaceId:o) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
+-> { $elf._fragment(o, 'objectDef', p, $elf.pos()-1, propsAndMethodDescrs) },
     
     /* ometa stuff */
     ometaParameter = ':' name:n spaces       -> n,

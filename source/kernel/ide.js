@@ -587,12 +587,12 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
                 .collect(function(ea) { return new ide.ClassFragmentNode(ea, browser) });
            case "functions":
             return this.target.flattened()
-                .select(function(ea) { return ea.type === 'staticProperty' || ea.type === 'methodModificationDef' || ea.type === 'functionDef' })
+                .select(function(ea) { return ea.type === 'functionDef' })
                 // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
                 .collect(function(ea) { return new ide.FunctionFragmentNode(ea, browser) });
            case "objects":
-            return this.target.flattened()
-               .select(function(ea) { return ea.type === 'objectDef' || ea.type === 'unknown' || ea.type === 'moduleDef' || ea.type === 'usingDef'})
+            return this.target.subElements()
+               .select(function(ea) { return ea.type === 'objectDef' || ea.type === 'propertyDef' || ea.type === 'unknown' || ea.type === 'moduleDef' || ea.type === 'usingDef'})
                // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
                .collect(function(ea) { return new ide.ObjectFragmentNode(ea, browser) });
            default: return ['Huh']
@@ -712,7 +712,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
         var classFragment = this.target;
         var browser = this.browser;
         return classFragment.subElements()
-            .select(function(ea) { return ea.type === 'protoDef'})
+            .select(function(ea) { return ea.type === 'propertyDef' })
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
     },
@@ -748,7 +748,7 @@ ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
         var obj = this.target;
         var browser = this.browser;
         return obj.subElements()
-            .select(function(ea) { return ea.type === 'protoDef'})
+            .select(function(ea) { return ea.type === 'propertyDef' })
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
             .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
     },
@@ -802,8 +802,14 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 		}
 		console.log('Successfully evaluated #' + methodName);
         return true;
-    }
+    },
 
+asString: function($super) {
+	var string = $super();
+	if (this.target.isStatic instanceof Function)
+		string +=  this.target.isStatic() ? ' (static)' : ' (proto)';
+	return string;
+},
 });
  
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
@@ -1189,12 +1195,11 @@ Object.subclass('CodeParser', {
 
 CodeParser.subclass('JsParser', {
     
-    debugMode: true,
+    debugMode: false,
 
     ometaRules: [/*'blankLine',*/ 'comment',
-               'klassDef', 'objectDef', 'klassExtensionDef',
-               'functionDef', 'staticProperty', 'methodModificationDef',
-               'unknown'],
+               'klassDef', 'objectDef', 'klassExtensionDef', 'propertyDef',
+               'functionDef', 'unknown'],
     
     parseClass: function() {
         return this.callOMeta("klassDef");
@@ -1646,6 +1651,10 @@ Object.subclass('lively.ide.FileFragment', {
 		// FIXME!!!
 		return JsParser.prototype.findLineNo(this.getFileString().split(/[\n\r]/), this.stopIndex);
 	},
+isStatic: function() { // makes only sense for propertyDefs
+	return this._isStatic; // FIXME
+},
+
     
     toString: function() {
         return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
@@ -1667,7 +1676,7 @@ ide.FileFragment.addMethods({
 		if (this.type === 'klassDef') {
 			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
 			browser.inPaneSelectNodeNamed('Pane2', this.name);
-		} else if (this.type === 'protoDef') {
+		} else if (this.type === 'propertyDef') {
 			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
 			browser.inPaneSelectNodeNamed('Pane2', this.className);
 			browser.inPaneSelectNodeNamed('Pane3', this.name);
@@ -1702,7 +1711,7 @@ ide.FileFragment.addMethods({
 		if (this.type === 'klassDef') {
 			change = ClassChange.create(this.getName(), this.superclassName);
 			this.subElements().forEach(function(ea) { change.addSubElement(ea.asChange()) });
-		} else if (this.type === 'protoDef') {
+		} else if (this.type === 'propertyDef' && !this.isStatic()) {
 			var src = this.getSourceCode().match(/.*:\s+((\s|.)*)/)[1];
 			if (src.endsWith(','))
 				src = src.substr(0,src.length-1);
