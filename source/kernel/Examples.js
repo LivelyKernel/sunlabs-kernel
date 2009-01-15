@@ -202,6 +202,7 @@ Morph.subclass("SymmetryMorph", {
 		this.addMorph(this.other);
 	this.clipMorph1 = new ClipMorph(this.bounds().bottomLeft().extent(pt(r/2, r)));
 	this.other.addMorph(this.clipMorph1);
+
 	this.clipMorph1.setPosition(pt(0, 0));
 	var segment = this.pattern.copy(new Copier());
 	segment.owner = null;  // suppress relocation
@@ -215,15 +216,30 @@ Morph.subclass("SymmetryMorph", {
 	segment2.rotateBy(Math.PI/this.nFold);
 
 	// Make this do nFold copies, then rotate master nFold/2 (later reflect) then do another set of nFold
-	//for (var i=0; i<this.nFold*2; i+=2) {
-	for (var i=0; i<this.nFold*2; i++) {
+	for (var i=0; i<this.nFold; i++) {
 		var segment = this.other.copy(new Copier());
 		segment.owner = null;  // suppress relocation
 		this.displayMorph.addMorph(segment);
 		segment.setPosition(pt(-r/2, 0));
 		segment.moveOriginBy(pt(r/2, 0));
-		segment.rotateBy(Math.PI/this.nFold*i);
+		segment.rotateBy(Math.PI*2/this.nFold*i);
 		}
+
+ 	var refl = this.other.copy(new Copier());
+	refl.owner = null;  // suppress relocation
+	this.other.owner.addMorph(refl);
+	refl.setScalePoint(pt(-1, 1));
+
+	// Make this do nFold copies, then rotate master nFold/2 (later reflect) then do another set of nFold
+	for (var i=0; i<this.nFold; i++) {
+		var segment = refl.copy(new Copier());
+		segment.owner = null;  // suppress relocation
+		this.displayMorph.addMorph(segment);
+		segment.setPosition(pt(-r/2, 0));
+		segment.moveOriginBy(pt(r/2, 0));
+		segment.rotateBy(Math.PI*2/this.nFold*i);
+		}
+	refl.remove()
 	}    
 });
 
