@@ -896,7 +896,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
 	testReparseCompleteFileFrag: function() {
 		var src = '\nfunction abc() { 1+2 }\n\n';
 		var fileName = 'bar.js';
-		var frag = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, src.length-1, 1, fileName, [], this.db);
+		var frag = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, src.length-1, fileName, [], this.db);
 		var result = frag.reparse(src);
 		this.assertEqual(frag.type, result.type);
 		this.assert(result.subElements().length > 0);
@@ -965,6 +965,13 @@ dbgOn(true)
 			var newNoOfSubelements = newClassFragment.findOwnerFragment().subElements().length;
 			this.assertEqual(oldNoOfSubelements, newNoOfSubelements-1, 'no of subelems');
 	},
+testExtensionSubElementsAreStaticProperties: function() {
+	var src = 'Object.extend(Bla, {\nm1: function() {\n 1+2\n },\n x: 1\n});';
+	var root = this.db.parseJs('dummy', src);
+	y=root;
+	console.log('hey:-)')
+},
+
 
 });
 
@@ -1243,6 +1250,12 @@ m.openInWorld();';
 		var cs = ChangeSet.current();
 		cs.addChange(c1);
 		cs.addChange(c2);
+	},
+});
+TestCase.subclass('lively.Tests.ToolsTests.CodeEntityTests', {
+
+	testWrapsFileFragment: function() {
+		
 	},
 });
 

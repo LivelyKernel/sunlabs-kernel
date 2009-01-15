@@ -1095,7 +1095,7 @@ Object.subclass('CodeParser', {
 		if (!responsible && lastAdded === descr) responsible = this.changeList;
 		if (!responsible) throw new Error('Couldn\'t find last added descriptor');
 		responsible.pop();
-		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1, this.findLineNo(this.lines, this.ptr), this.fileName);
+		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1, this.fileName);
 		responsible.push(errorDescr);
 		this.ptr = errorDescr.stopIndex + 1;
 	},
@@ -1156,7 +1156,6 @@ Object.subclass('CodeParser', {
         this.doForAllDescriptors(descr, function(d) {
             d.startIndex += startPos;
             d.stopIndex += startPos;
-            d.lineNo = this.findLineNo(this.lines, d.startIndex);
             d.fileName = this.fileName;
         });
         // ----------------
@@ -1190,7 +1189,7 @@ Object.subclass('CodeParser', {
 
 CodeParser.subclass('JsParser', {
     
-    debugMode: false,
+    debugMode: true,
 
     ometaRules: [/*'blankLine',*/ 'comment',
                'klassDef', 'objectDef', 'klassExtensionDef',
@@ -1206,7 +1205,7 @@ CodeParser.subclass('JsParser', {
         if (!match) return null;
 		if (this.debugMode)
 			console.log('Found module start in line ' +  this.currentLineNo());
-        var descr = new ide.FileFragment(match[1], 'moduleDef', this.ptr, null, this.currentLineNo(), this.fileName);
+        var descr = new ide.FileFragment(match[1], 'moduleDef', this.ptr, null, this.fileName);
         this.ptr += match[0].length + 1;
         return descr;
     },
@@ -1216,7 +1215,7 @@ CodeParser.subclass('JsParser', {
         if (!match) return null;
 		if (this.debugMode)
 			console.log('Found using start in line ' +  this.currentLineNo());
-        var descr = new ide.FileFragment(match[1], 'usingDef', this.ptr, null, this.currentLineNo(), this.fileName);
+        var descr = new ide.FileFragment(match[1], 'usingDef', this.ptr, null, this.fileName);
         this.ptr += match[0].length + 1;
         return descr;
     },
@@ -1366,13 +1365,13 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
         if (firstRealFragment.type === 'moduleDef')
             root = firstRealFragment;
         else
-            root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, null, fileName, fileFragments, this);
+            root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString.length-1, fileName, fileFragments, this);
         return root;
 	},
 
 	parseOmeta: function(fileName, fileString) {
 		var fileFragments = new OMetaParser().parseSource(fileString, {fileName: fileName});
-        var root = new lively.ide.FileFragment(fileName, 'ometaGrammar', 0, fileString.length-1, null, fileName, fileFragments, this);
+        var root = new lively.ide.FileFragment(fileName, 'ometaGrammar', 0, fileString.length-1, fileName, fileFragments, this);
         return root;
 	},
 
@@ -1457,18 +1456,25 @@ ide.startSourceControl = function() {
     tools.SourceControl.preLoad();
 	return tools.SourceControl;
 };
- 
+
+Object.subclass('lively.ide.CodeEntity', {
+
+	documentation: 'Generalizes modifying, removing and versioning FileFragments and Changes',
+
+	getDefinition: Functions.Null
+
+});
+
 // ===========================================================================
 // FileFragments, another SourceCodeDescriptor
 // ===========================================================================
 Object.subclass('lively.ide.FileFragment', {
  
-    initialize: function(name, type, startIndex, stopIndex, lineNo, fileName, subElems, srcCtrl) {
+    initialize: function(name, type, startIndex, stopIndex, fileName, subElems, srcCtrl) {
         this.name = name;
         this.type = type;
         this.startIndex = startIndex;
         this.stopIndex = stopIndex;
-        this.lineNo = lineNo;   // FIXME make virtual
         this.fileName = fileName;
         this._subElements = subElems || [];
         this.sourceControl = srcCtrl;
@@ -1496,7 +1502,7 @@ Object.subclass('lively.ide.FileFragment', {
     },
  
     checkConsistency: function() {
-        this.fragmentsOfOwnFile().any(function(ea) { // Just a quick check if fragments are ok...
+        this.fragmentsOfOwnFile().forEach(function(ea) { // Just a quick check if fragments are ok...
             if (this.flattened().include(ea)) return;
             if ((this.startIndex < ea.startIndex && ea.startIndex < this.stopIndex)
                     || (this.startIndex < ea.stopIndex && ea.stopIndex < this.stopIndex))
@@ -1559,27 +1565,19 @@ Object.subclass('lively.ide.FileFragment', {
 		var newFileString = this.buildNewFileString(newSource);
 		newFileString = newFileString.slice(0,this.startIndex + newSource.length)
 
-		// FIXME time to cleanup!!!
-		var parser;
-		if (this.type === 'ometaDef' || this.type === 'ometaRuleDef') {
-			parser = new OMetaParser();
-			parser.ptr = this.startIndex;
-        	parser.src = newFileString;
-        	parser.lines = newFileString.split(/[\n\r]/);
-        	parser.fileName = this.fileName;
-        	return parser.parseWithOMeta(this.type);
-		}
-
 		if (this.type === 'moduleDef' || this.type === 'completeFileDef')
             return this.sourceControl.parseCompleteFile(this.fileName, newFileString);
- 
-		parser = new JsParser();
+
+		// FIXME time to cleanup!!!
+		var parser = (this.type === 'ometaDef' || this.type === 'ometaRuleDef') ?
+			new OMetaParser() :
+			new JsParser();
+
         parser.ptr = this.startIndex;
         parser.src = newFileString;
         parser.lines = newFileString.split(/[\n\r]/);
         parser.fileName = this.fileName;
-		parser.ometaRules = [this.type];
-		return parser.parseWithOMeta();
+		return parser.parseWithOMeta(this.type);
     },
 
     updateIndices: function(newSource, newMe) {
@@ -1651,7 +1649,7 @@ Object.subclass('lively.ide.FileFragment', {
     
     toString: function() {
         return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
-            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.lineNo, this.subElements().length);
+            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.startLine(), this.subElements().length);
     },
  
     inspect: function() {
@@ -1718,8 +1716,8 @@ ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 
 	isError: true,
 
-	initialize: function($super, fileString, name, type, startI, stopI, lineNo, fileName, subElems, srcCtrl) {
-		$super(name, type, startI, stopI, lineNo, fileName, subElems, srcCtrl);
+	initialize: function($super, fileString, name, type, startI, stopI, fileName, subElems, srcCtrl) {
+		$super(name, type, startI, stopI, fileName, subElems, srcCtrl);
 		this.fileString = fileString;
     },
 
@@ -1732,6 +1730,8 @@ ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 // Change/ChangeSet and lkml handling
 // ===========================================================================
 Object.subclass('Change', {
+
+	documentation: 'Wraps around XML elements which represent code entities',
 
 	initialize: function(xmlElement) {
 		this.xmlElement = xmlElement;

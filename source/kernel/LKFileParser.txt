@@ -91,7 +91,7 @@ ometa LKFileParser <: Parser {
 },
                                     
     /* class stuff */
-	classElems = '{' (spaces protoDef:pD spaces -> pD)*:a '}'	-> a,
+	classElems = '{'  (spaces protoDef:pD spaces -> pD)*:a '}'	-> a,
 	restKlassDef = ',' spaces classElems:descriptors										-> { {classElems: descriptors} }
 						| ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 						| ',' klassName:trait																	-> { {trait: trait, classElems: []} }
@@ -144,9 +144,9 @@ LKFileParser.stack = [];
 LKFileParser._manualFail = function() { throw Global.fail };
 LKFileParser._fragment = function(name, type, startIndex, stopIndex, subElems, custom) {
     var klass = lively.ide.FileFragment; // to convince ometa, fix needed here
-    var f = new klass(name, type, startIndex, stopIndex, null, null, subElems);
-    if (!custom) return f;
-    Object.extend(f, custom);
-    return f;
+    var ff = new klass(name, type, startIndex, stopIndex, null, subElems);
+    if (custom)
+		Object.extend(ff, custom);
+    return ff;
 };
 LKFileParser;
