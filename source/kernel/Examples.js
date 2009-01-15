@@ -165,10 +165,10 @@ Morph.subclass("ClockMorph", {
 Morph.subclass("SymmetryMorph", {
 
     initialize: function($super, size, nFold) { 
-		//  WorldMorph.current().addMorph(new SymmetryMorph(200, 8)) 
+		//  WorldMorph.current().addMorph(new SymmetryMorph(300, 7)) 
 		//  this.updateDisplayMorph(); 
 		//  this.startStepping(1000, "updateDisplayMorph"); 
-        $super(new lively.scene.Rectangle(new Rectangle(4*size, size/2, size, 2*size + 30)));
+        $super(new lively.scene.Rectangle(new Rectangle(2*size, size/2, size, 2*size + 30)));
 		this.setFill(Color.white);
 		this.setBorderWidth(1);
 		this.radius = size;
@@ -176,6 +176,10 @@ Morph.subclass("SymmetryMorph", {
 		this.pattern = this.addMorph(Morph.makeRectangle(new Rectangle(0, 0, size, size)));
 		this.pattern.setFill(Color.lightGray.lighter());
    },
+
+onDeserialize: function() {
+	this.updateDisplayMorph();
+	},
 
     updateDisplayMorph: function() { 
 	var r = this.radius;
