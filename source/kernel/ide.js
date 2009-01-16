@@ -817,11 +817,25 @@ ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 	menuSpec: ide.ClassElemFragmentNode.prototype.menuSpec, // FIXME
 
 });
+ide.BrowserNode.subclass('lively.ide.ChangeNode', {
+
+	documentation: 'Abstract node for Changes/ChangeSet nodes',
+
+	menuSpec: function() {
+		var spec = [];
+		var node = this;
+		spec.push(['remove', function() {
+			node.target.remove();
+			node.browser.allChanged() }]);
+		return spec;
+	},
+
+});
 
 // ===========================================================================
 // Browsing ChangeSets
 // ===========================================================================
-ide.BrowserNode.subclass('lively.ide.ChangeSetNode', {
+ide.ChangeNode.subclass('lively.ide.ChangeSetNode', {
 
     childNodes: function() {
 		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
@@ -846,7 +860,7 @@ ide.BrowserNode.subclass('lively.ide.ChangeSetNode', {
 
 });
 
-ide.BrowserNode.subclass('lively.ide.ChangeSetClassNode', {
+ide.ChangeNode.subclass('lively.ide.ChangeSetClassNode', {
 	asString: function() {
 		return this.target.getName();
 	},
@@ -858,7 +872,7 @@ ide.BrowserNode.subclass('lively.ide.ChangeSetClassNode', {
 	},
 });
 
-ide.BrowserNode.subclass('lively.ide.ChangeSetClassElemNode', {
+ide.ChangeNode.subclass('lively.ide.ChangeSetClassElemNode', {
 	asString: function() {
 		return this.target.getName();
 	},
@@ -867,7 +881,7 @@ ide.BrowserNode.subclass('lively.ide.ChangeSetClassElemNode', {
 	},
 });
 
-ide.BrowserNode.subclass('lively.ide.ChangeSetDoitNode', {
+ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
 	asString: function() {
 		return this.target.getName();
 	},

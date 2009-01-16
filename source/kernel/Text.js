@@ -1142,6 +1142,8 @@ subMenuItems: function($super, evt) {
 		["color (o)", this.colorSelection.bind(this)],
 		["make link (u)", this.linkifySelection.bind(this)],
 		["help", this.doHelp.bind(this)],
+		["add as doit to current ChangeSet", function() {
+			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString())) }],
 		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
 		["evaluate as Lively markup", function() { 
 			var importer = new Importer();
