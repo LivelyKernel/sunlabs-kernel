@@ -302,7 +302,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         var descriptor = this.sut.callOMeta('propertyDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'open');
-        this.assertEqual(descriptor.klassName, 'thisModule.ScriptEnvironment');
+        this.assertEqual(descriptor.className, 'thisModule.ScriptEnvironment');
 		this.assert(descriptor.isStatic());
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
@@ -315,7 +315,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         var descriptor = this.sut.callOMeta('propertyDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'morphMenu');
-        this.assertEqual(descriptor.klassName, 'Morph');
+        this.assertEqual(descriptor.className, 'Morph');
 		this.assert(!descriptor.isStatic());
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
@@ -830,8 +830,13 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
 		WorldMorph.prototype.alert = this.oldAlert;
 	},
 
-	fragmentNamed: function(name) {
-		return this.root.flattened().detect(function(ea) { return ea.name == name});
+	fragmentNamed: function(name, optFilter) {
+		return this.root.flattened().detect(function(ea) {
+			var select = ea.name == name;
+			if (optFilter)
+				select = select && optFilter(ea)
+			return select;
+		});
 	},
 
        testCorrectNumberOfFragments: function() {
@@ -1131,7 +1136,24 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.ConvertFileFragmen
 	},
 
 });
+thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.PopulateChangeSetFromFFsTest', {
 
+	documentation: 'Changes to FileFragments can create new Changes in the current ChangeSet',
+
+	testChangeFromMethofFF: function() {
+		var fragment = this.fragmentNamed('m1', function(ff) { return ff.type == 'propertyDef' });
+		this.assertEqual(fragment.className, 'ClassA');
+		var newSrc = 'function(a) {1}';
+		var name = 'm1';
+		var complNewSrc = name + ':' + newSrc + ',';
+		var change = fragment.saveAsChange(complNewSrc);
+		this.assert(change.isProtoChange);
+		// problem: new fragment has no source (tries to get source from non-modified file string)
+		//this.assertEqual(change.getDefinition(), newSrc);
+		//this.assertEqual(change.getName(), name);
+	},
+
+});
 lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
 
 	setUp: function($super) {

@@ -75,11 +75,11 @@ ometa LKFileParser <: Parser {
 -> { $elf._fragment(fn, 'functionDef', p, $elf.pos()-1) },
     
     staticProperty = pos:p namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' somethingBigRelated defEnd
--> { $elf._fragment(nsArr.last(), 'staticProperty', p, $elf.pos()-1, null, {klassName: nsArr.slice(0,nsArr.length-1).join('.'), _isStatic: true}) },
+-> { $elf._fragment(nsArr.last(), 'staticProperty', p, $elf.pos()-1, null, {className: nsArr.slice(0,nsArr.length-1).join('.'), _isStatic: true}) },
     
 	/* methods */
     methodModificationDef = pos:p nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
--> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {klassName: spec.before, _isStatic: false}) },
+-> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {className: spec.before, _isStatic: false}) },
     
     /* properties */
     

@@ -1305,12 +1305,9 @@ CodeParser.subclass('OMetaParser', {
 	ometaRules: ['ometaDef', 'unknown'],
 
 	parseNextPart: function() {
-		var descr;
-		if (descr = this.parseWithOMeta(this.giveHint())) {
-			this.changeList.push(descr);
-			return descr;
-		}
-		
+		var descr = this.parseWithOMeta(this.giveHint());
+		if (descr)
+			return this.changeList.push(descr);
 		throw new Error('Could not parse ' + this.currentLine + ' ...');
 	}
 	
@@ -1533,23 +1530,8 @@ Object.subclass('lively.ide.FileFragment', {
     putSourceCode: function(newString) {
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
 
-        var newMe = this.reparse(newString);
-		if (!newMe) dbgOn(true);
-
-        if (newMe && this.startIndex !== newMe.startIndex)
-            throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
-		if (newMe && (this.type == 'completeFileDef' || this.type == 'moduleDef')
-			 && (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
-			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
-		}
-		if (!newMe || newMe.type !== this.type) {
-			newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
-			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
-				this.name, this.type, newMe.type, newMe.stopLine());
-			console.warn(msg);
-			WorldMorph.current().alert(msg);
-			return;
-		}
+		var newMe = this.reparseAndCheck(newString);
+		if (!newMe) return null;
 
 		var newFileString = this.buildNewFileString(newString);
         this.getSourceControl().putSourceCodeFor(this, newFileString);
@@ -1582,8 +1564,36 @@ Object.subclass('lively.ide.FileFragment', {
         parser.src = newFileString;
         parser.lines = newFileString.split(/[\n\r]/);
         parser.fileName = this.fileName;
-		return parser.parseWithOMeta(this.type);
+		
+		var newFragment = parser.parseWithOMeta(this.type);
+		newFragment && newFragment.flattened().forEach(function(ea) {
+			ea.sourceControl = this.sourceControl;
+		}, this);
+		return newFragment;
     },
+reparseAndCheck: function(newString) {
+		var newMe = this.reparse(newString);
+		
+		if (!newMe) dbgOn(true);
+
+		if (newMe && this.startIndex !== newMe.startIndex)
+            throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
+		if (newMe && (this.type == 'completeFileDef' || this.type == 'moduleDef')
+			 && (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
+			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
+		}
+		if (!newMe || newMe.type !== this.type) {
+			newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
+			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
+				this.name, this.type, newMe.type, newMe.stopLine());
+			console.warn(msg);
+			WorldMorph.current().alert(msg);
+			return null;
+		}
+
+		return newMe;
+	},
+
 
     updateIndices: function(newSource, newMe) {
         this.checkConsistency();
@@ -1604,7 +1614,6 @@ Object.subclass('lively.ide.FileFragment', {
  
 		this.name = newMe.name; // for renaming
         this._subElements = newMe.subElements();
-		newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
     },
     
     getSourceControl: function() {
@@ -1708,6 +1717,7 @@ ide.FileFragment.addMethods({
 	asChange: function() {
 		// FIXMEEEEE!!! subclassing! Unified hierarchy
 		var change;
+		console.log(Strings.format('Converting %s (%s) to change', this.type, this.getSourceCode()));
 		if (this.type === 'klassDef') {
 			change = ClassChange.create(this.getName(), this.superclassName);
 			this.subElements().forEach(function(ea) { change.addSubElement(ea.asChange()) });
@@ -1719,7 +1729,14 @@ ide.FileFragment.addMethods({
 		}
 		if (change) return change;
 		throw dbgOn(new Error(this.type + ' is not yet supported to be converted to a Change'));
-	}
+	},
+
+	saveAsChange: function(newSrc) { // similar to putSourceCode but creates change instead of modifying src
+		var newMe = this.reparseAndCheck(newSrc);
+		if (!newMe) return null;
+		return newMe.asChange();
+	},
+
 });
 ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 
