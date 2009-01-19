@@ -410,7 +410,7 @@ TestCase.subclass('lively.Tests.LKWikiTest.InteractiveAuthorizationTest', {
 
 	documentation: 'Implements interactive tests for testing authorization server settings.',
 
-	baseUrl: new URL('http://localhost/testsvn/repo1/test/'),
+	baseUrl: URL.source.getDirectory(), //new URL('http://localhost/testsvn/repo1/test/'),
 
 	runAll: function(optTestRunner) {
 	    var startTime = (new Date()).getTime();
