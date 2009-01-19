@@ -164,21 +164,31 @@ Morph.subclass("ClockMorph", {
 
 Morph.subclass("SymmetryMorph", {
 
-    initialize: function($super, size, nFold) { 
+    initialize: function($super, size, nFold) {
 		//  WorldMorph.current().addMorph(new SymmetryMorph(300, 7)) 
-		//  this.updateDisplayMorph(); 
-		//  this.startStepping(1000, "updateDisplayMorph"); 
-        $super(new lively.scene.Rectangle(new Rectangle(2*size, size/2, size, 2*size + 30)));
+        $super(new lively.scene.Rectangle(new Rectangle((5/2)*size, size/4, size, 2*size + 30)));
 		this.setFill(Color.white);
 		this.setBorderWidth(1);
 		this.radius = size;
 		this.nFold = nFold;  // Will be 360/nFold segments, as half that many reflected pairs
 		this.pattern = this.addMorph(Morph.makeRectangle(new Rectangle(0, 0, size, size)));
 		this.pattern.setFill(Color.lightGray.lighter());
+		this.needsUpdate = false;
+		var superLayoutChanged = this.pattern.layoutChanged;
+		this.pattern.layoutChanged = function(argIfAny) {  // Override to update whenever pattern changes
+			var result = superLayoutChanged.call(this.pattern,argIfAny);
+			this.needsUpdate = true;  // Can't call update directly due to current recursive problem
+			return result;
+			}.bind(this);
+		//this.startStepping(250, "doUpdateIfNeeded"); //not in world yet
    },
 
 onDeserialize: function() {
 	this.updateDisplayMorph();
+	},
+doUpdateIfNeeded: function() {
+	if (this.needsUpdate) this.updateDisplayMorph();
+	this.needsUpdate = false;
 	},
 
     updateDisplayMorph: function() { 
@@ -219,24 +229,14 @@ onDeserialize: function() {
 	this.clipMorph1.addMorph(segment2);
 	segment2.rotateBy(Math.PI/this.nFold);
 
-	// Make this do nFold copies, then rotate master nFold/2 (later reflect) then do another set of nFold
-	for (var i=0; i<this.nFold; i++) {
-		var segment = this.other.copy(new Copier());
-		segment.owner = null;  // suppress relocation
-		this.displayMorph.addMorph(segment);
-		segment.setPosition(pt(-r/2, 0));
-		segment.moveOriginBy(pt(r/2, 0));
-		segment.rotateBy(Math.PI*2/this.nFold*i);
-		}
-
  	var refl = this.other.copy(new Copier());
 	refl.owner = null;  // suppress relocation
 	this.other.owner.addMorph(refl);
 	refl.setScalePoint(pt(-1, 1));
 
-	// Make this do nFold copies, then rotate master nFold/2 (later reflect) then do another set of nFold
-	for (var i=0; i<this.nFold; i++) {
-		var segment = refl.copy(new Copier());
+	// Make this do nFold copies, then nFold more reflections
+	for (var i=0; i<this.nFold*2; i++) {
+		var segment = (i < this.nFold ? this.other : refl).copy(new Copier());
 		segment.owner = null;  // suppress relocation
 		this.displayMorph.addMorph(segment);
 		segment.setPosition(pt(-r/2, 0));

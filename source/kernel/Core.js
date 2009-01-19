@@ -1625,7 +1625,7 @@ Object.subclass('LayoutManager', {
 
     removeMorph: function(supermorph, submorph) {
 	// new behavior:
-	submorph.layoutChanged();
+	supermorph.layoutChanged();
     },
 
 
