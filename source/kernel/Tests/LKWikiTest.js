@@ -404,6 +404,151 @@ TestCase.subclass('lively.Tests.LKWikiTest.FileDirectoryTest', {
     },
     
 });
+TestCase.subclass('lively.Tests.LKWikiTest.InteractiveAuthorizationTest', {
+
+	shouldRun: false,
+
+	documentation: 'Implements interactive tests for testing authorization server settings.',
+
+	baseUrl: new URL('http://localhost/testsvn/repo1/test/'),
+
+	runAll: function(optTestRunner) {
+	    var startTime = (new Date()).getTime();
+		this.runList = this.allTestSelectors();
+		this.runTest(this.runList.shift(), optTestRunner);
+		//this.result.setTimeToRun(this.name(), (new Date()).getTime() - startTime);
+	},
+
+	runTest: function($super, selector, optTestRunner) { // to make tests run asynch
+		var test = this;
+		var cb = function() {
+			var cb2 = function() {
+				$super(selector);
+				optTestRunner && optTestRunner.setResultOf(test);
+				if (test.runList && test.runList.length > 0) 
+					test.runTest(test.runList.shift(), optTestRunner);
+			};
+			test.login(cb2);
+		};
+		console.log('Running test '  + selector);
+//		cb();
+		WorldMorph.current().confirm('Running test ' + selector + '. Please login.', cb);
+	},
+
+	login: function(callback) { // interactive test, lez the user login, then run callback
+		var test = this;
+		var cb = function() {
+			console.log('----- Logged in for ' + test.currentSelector);
+			callback && callback();
+		}
+		this.tryPut('auth', true, cb, '');
+	},
+
+	logout: function() {
+		this.tryPut('logout', false, function() {console.log('----- Logged out')}, '');
+	},
+
+	makeResource: function(url, optCallback) {
+		var test = this;
+		var resource = new Resource(Record.newPlainInstance({URL: url.toString(), ContentText: null}));
+		resource.setRequestStatus = function(status) {
+			console.log('got status: ' + status.code());
+			if (status.exception)
+				WorldMorph.current().alert("exception " + status.exception + " accessing\n" + url);
+			if (status.code() == 401) test.wasAllowed = false;
+			else test.wasAllowed = true;
+			optCallback && optCallback();
+		};
+		return resource;
+	},
+
+	tryPut: function(filename, notSync, optCallback, optContent) {
+		// if optContent is undefined just write the original contents of the resource
+		var url = this.baseUrl.withFilename(filename);
+		var content = optContent ?
+			optContent :
+			this.makeResource(url).fetch(true).getResponseText();
+		this.wasAllowed = null;
+		this.makeResource(url, optCallback).store(content, !notSync);
+	},
+
+	tearDown: function() {
+		this.logout();
+	},
+
+	testLogout: function() {
+		this.logout();
+		this.tryPut('auth', false, null, '');
+		this.assert(this.wasAllowed === false, 'logout isn\'t working');
+	},
+
+/*	testUserWriteAcess: function() {
+		this.tryPut('123test123.xhtml');
+		this.assert(this.wasAllowed === true, 'xhtml');
+		// not allowed
+		this.tryPut('index.xhtml');
+		this.assert(this.wasAllowed === false, 'index');
+		this.tryPut('example.xhtml');
+		this.assert(this.wasAllowed === false, 'example');
+		this.login(); this.tryPut('livelyTest.xhtml');
+		this.assert(this.wasAllowed === false, 'lively*');
+		this.login(); this.tryPut('non-test.xhtml');
+		this.assert(this.wasAllowed === false, 'non-*xhtml');
+		this.login(); this.tryPut('Core.js');
+		this.assert(this.wasAllowed === false, 'js');
+		this.login(); this.tryPut('livelyTest.js');
+		this.assert(this.wasAllowed === false, 'lively*js');
+	}, */
+
+	testUserWriteAcess1: function() {
+		this.tryPut('123test123.xhtml');
+		this.assert(this.wasAllowed === true, 'xhtml');
+	},
+
+	testUserWriteAcess2: function() {
+		this.tryPut('index.xhtml');
+		this.assert(this.wasAllowed === false, 'index');
+	},
+
+	testUserWriteAcess3: function() {
+		this.tryPut('example.xhtml');
+		this.assert(this.wasAllowed === false, 'example');
+	},
+
+	testUserWriteAcess4: function() {
+		this.tryPut('livelyTest.xhtml');
+		this.assert(this.wasAllowed === false, 'lively*');
+	},
+
+	testUserWriteAcess5: function() {
+		this.tryPut('non-test.xhtml');
+		this.assert(this.wasAllowed === false, 'non-*xhtml');
+	},
+
+	testUserWriteAcess6: function() {
+		this.tryPut('Core.js');
+		this.assert(this.wasAllowed === false, 'js');
+	},
+
+	testUserWriteAcess7: function() {
+		this.tryPut('livelyTest.js');
+		this.assert(this.wasAllowed === false, 'lively*js');
+	},
+
+	testAdminWriteAccess: function() {
+		this.tryPut('index.xhtml');
+		this.assert(this.wasAllowed === true);
+		this.tryPut('example.xhtml');
+		this.assert(this.wasAllowed === true);
+		this.tryPut('livelyTest.xhtml');
+		this.assert(this.wasAllowed === true);
+		this.tryPut('non-test.xhtml');
+		this.assert(this.wasAllowed === true);
+		this.tryPut('Core.js');
+		this.assert(this.wasAllowed === true);
+	},
+
+});
 
 TestCase.subclass('lively.Tests.LKWikiTest.WikiPatcherTest', {
     

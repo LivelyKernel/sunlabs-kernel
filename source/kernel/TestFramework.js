@@ -46,6 +46,7 @@ Object.subclass('TestCase', {
 	    if (!this.shouldRun) return;
 		this.log('Running test: ' + aSelector);
 		try {
+			this.currentSelector = aSelector;
 			this.setUp();
 			this[aSelector]();
 			this.result.addSuccess(this.constructor.type, aSelector);
@@ -298,7 +299,7 @@ Widget.subclass('TestRunner', {
 		var testClassName = this.getSelectedTestClass();
 		if (!testClassName) return;
 		var testCase = new (Class.forName(testClassName))();
-		testCase.runAll();
+		testCase.runAll(this);
 		this.setResultOf(testCase);
 	},
 	
@@ -324,7 +325,7 @@ Widget.subclass('TestRunner', {
 		    };
 		    counter += 1;
 		};
-		testSuite.runAll();
+		testSuite.runAll(this);
 		testSuite.runFinished = function() {
 	        self.setResultOf(testSuite);
 		};
