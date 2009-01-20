@@ -135,8 +135,9 @@ Widget.subclass('SimpleBrowser', {
     getClassPaneMenu: function() {
         var items = [];
         var className = this.getModelValue("getClassName");
+dbgOn(true);
         if (className != null) {
-            var theClass = Global[className];
+            var theClass = Class.forName(className);
             items.push(['make a new subclass', 
                     function() { WorldMorph.current().prompt("name of subclass", this.makeSubclass.bind(this));}.bind(this)]);
             if (theClass.prototype != null) {
@@ -172,7 +173,7 @@ Widget.subclass('SimpleBrowser', {
     },
     makeSubclass: function(subName) {
         var className = this.getModelValue("getClassName");
-        var theClass = Global[className];
+        var theClass = Class.forName(className);
 	theClass.subclass(subName, {});
 	// Need to regenerate the class list and select the new sub
         this.getModel().setClassList(this.listClasses());
