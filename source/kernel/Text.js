@@ -1926,6 +1926,21 @@ subMenuItems: function($super, evt) {
 			});
 		});
 	},
+	
+	doInspect: function() {
+		console.log("do inspect")
+		var strToEval = this.getSelectionString(); 
+		if (strToEval.length == 0)
+			strToEval = this.pvtCurrentLineString();
+		try {
+			var inspectee = this.tryBoundEval(strToEval);
+		} catch (e) {
+			"eval error in doInspect " + e
+		};
+		if (inspectee)
+			new SimpleInspector(inspectee).openIn(this.world(), this.world().hands.first().getPosition())
+	},
+	
     doDoit: function() {
         var strToEval = this.getSelectionString(); 
         if (strToEval.length == 0)
@@ -1975,6 +1990,10 @@ subMenuItems: function($super, evt) {
     processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
 	var key = evt.getKeyChar();
 	// console.log('command ' + key);
+    switch (key) {
+		case "I": { this.doInspect(); return true; } // Inspect
+	};
+
 	if (key) key = key.toLowerCase();
         switch (key) {
 	case "a": { this.doSelectAll(true); return true; } // SelectAll
