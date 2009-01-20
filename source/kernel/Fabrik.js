@@ -2677,6 +2677,11 @@ Component.subclass('ImageComponent', {
         this.addFieldAndPinHandle("URL");
     },
     
+	onDeserialize: function($super) {
+		$super();
+		this.formalModel.addObserver(this.morph, {URL: '!URL'});
+	},
+
     buildView: function($super, optExtent) {
         $super(optExtent);
 
@@ -2689,8 +2694,9 @@ Component.subclass('ImageComponent', {
         }.bind(this);
         this.morph.openForDragAndDrop = false;
         this.morph.okToBeGrabbedBy = function() { return this.panel }.bind(this);
-        this.formalModel.addObserver(this.morph, {URL: '!URL'});
         this.panel.addMorph(this.morph, 'image');
+
+        this.formalModel.addObserver(this.morph, {URL: '!URL'});
         
         // this.setupHandles();
         return this.panel;

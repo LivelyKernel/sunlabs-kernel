@@ -216,7 +216,7 @@ BoxMorph.subclass("ImageMorph", {
         switch (node.localName) {
         case "image":
         case "use":
-           this.image = new Image(importer, node);
+           this.image = new lively.scene.Image(importer, node);
            return true;
         default:
             console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
