@@ -250,7 +250,14 @@ BoxMorph.subclass("ImageMorph", {
         if (aspect == p.getURL) {
 	    this.onURLUpdate(this.getURL());
 	}
-    }
+    },
+
+	moveOriginBy: function($super, delta) {
+		$super(delta);
+		if (!this.image) return;
+		this.image.setLengthTrait("x", (this.image.getLengthTrait("x") || 0) - delta.x);
+		this.image.setLengthTrait("y", (this.image.getLengthTrait("y") || 0) - delta.y);
+    },
 
 });
 
