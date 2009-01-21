@@ -1146,7 +1146,7 @@ subMenuItems: function($super, evt) {
 			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(), 'preamble'));
 			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["add as postscript to current ChangeSet", function() {
-			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(), 'postscript'));
+			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(),  'postscript'));
 			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
 		["evaluate as Lively markup", function() { 
@@ -1994,8 +1994,10 @@ subMenuItems: function($super, evt) {
     processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
 	var key = evt.getKeyChar();
 	// console.log('command ' + key);
-    switch (key) {
-		case "I": { this.doInspect(); return true; } // Inspect
+
+	// ARRGH FIXME
+	if (key == 'I' && evt.isShiftDown()) {
+		this.doInspect(); return true; // Inspect
 	};
 
 	if (key) key = key.toLowerCase();
