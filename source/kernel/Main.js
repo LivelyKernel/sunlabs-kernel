@@ -476,10 +476,17 @@ function main() {
     var importer = new Importer();
     if (documentHasSerializedMorphs(document)) {
         require(Config.modulesOnWorldLoad).toRun(function() {
-            var world = importer.loadWorldContents(document);    
+			var changes = ChangeSet.fromWorld(document.documentElement);
+			var preamble, postscript;
+			changes && changes.subElements().forEach(function(ea) {
+				if (ea.getName() == 'preamble') preamble = ea;
+				if (ea.getName() == 'postscript') postscript = ea;
+			});
+			if (preamble && !Config.skipChanges) preamble.evaluate();
+			var world = importer.loadWorldContents(document);
             world.displayOnCanvas(canvas);
             console.log("world is " + world);
-			if (world.changes) world.changes.evaluate(); // Run what is in the ChangeSet
+			if (postscript && !Config.skipChanges) postscript.evaluate();
             if (Config.showWikiNavigator) {
                 require('LKWiki.js').toRun(function() {
                     //just a quick hack...

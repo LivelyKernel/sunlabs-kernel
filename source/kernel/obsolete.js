@@ -1251,11 +1251,8 @@ Morph.addMethods({
 		break;
 	    case "code":
 		if (!Config.skipChanges) { // Can be blocked by URL param 
+			// changes are just deserialized, not evaled, this happens in main... FIXME
 		    this.changes = ChangeSet.fromWorld(this);
-		    // this.changes.evaluateAll(); 
-		    // FIXME probably wrong order, should be at the end of deserialization
-		    new BasicCodeMarkupParser().parseDocumentElement(def, true);
-		    console.log("Successfully evalled " + this.changes);
 		}
 		break;
 	    default:

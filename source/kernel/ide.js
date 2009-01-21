@@ -1850,8 +1850,7 @@ Change.subclass('ChangeSet', {
 		this.name = optName || '';
 	},
 
-	initializeFromWorld: function(world) {
-		var node = world.getDefsNode();
+	initializeFromWorldNode: function(node) {
 		if (!this.reconstructFrom(node))
 			this.addHookTo(node);
 		return this;
@@ -1955,8 +1954,9 @@ Change.subclass('ChangeSet', {
 
 Object.extend(ChangeSet, {
 
-	fromWorld: function(world) {
-		return new ChangeSet('ChangeSet for World').initializeFromWorld(world);
+	fromWorld: function(worldOrNode) {
+		var node = worldOrNode instanceof WorldMorph ? worldOrNode.getDefsNode() : worldOrNode;
+		return new ChangeSet('ChangeSet for World').initializeFromWorldNode(node);
 	},
 
 	fromFile: function(fileName, fileString) {
@@ -2125,8 +2125,10 @@ Object.extend(DoitChange, {
 
 	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'doit' },
 
-	create: function(source) {
-		var element = stringToXML('<doit name="aDoit"><![CDATA[' + source + ']]></doit>');
+	create: function(source, optName) {
+		var element = LivelyNS.create('doit');
+		element.setAttributeNS(null, 'name', optName || 'aDoit');
+		element.textContent = source;
 		return new DoitChange(element);
 	},
 

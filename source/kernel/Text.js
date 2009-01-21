@@ -1142,8 +1142,12 @@ subMenuItems: function($super, evt) {
 		["color (o)", this.colorSelection.bind(this)],
 		["make link (u)", this.linkifySelection.bind(this)],
 		["help", this.doHelp.bind(this)],
-		["add as doit to current ChangeSet", function() {
-			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString())) }],
+		["add as preamble to current ChangeSet", function() {
+			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(), 'preamble'));
+			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
+		["add as postscript to current ChangeSet", function() {
+			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(),  'postscript'));
+			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
 		["evaluate as Lively markup", function() { 
 			var importer = new Importer();

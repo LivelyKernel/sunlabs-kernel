@@ -783,9 +783,10 @@ Object.subclass('FileDirectory', {
         this.writeAsync = false;
     },
 
-    fileContent: function(localname, revision) {
+    fileContent: function(localname, revision, contentType) {
         var url = this.url.withFilename(localname);
         var resource = new SVNResource(this.url.toString(), Record.newPlainInstance({URL: url.toString(), ContentText: null}));
+		resource.contentType = contentType;
         resource.fetch(true, null, revision);
         return resource.getContentText();
     },
@@ -819,9 +820,10 @@ Object.subclass('FileDirectory', {
             return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
         },
         
-        writeFileNamed: function(localname, content) {
+        writeFileNamed: function(localname, content, contentType) {
             var url = this.url.withFilename(localname);
             var resource = new Resource(Record.newPlainInstance({URL: url}));
+			resource.contentType = contentType;
             if(this.writeAsync)
                 return resource.store(content, false);
             else
@@ -841,11 +843,11 @@ Object.subclass('FileDirectory', {
         return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
     },
 
-    copyFileNamed: function(srcFileName, optRev, destUrl, optNewFileName) {
+    copyFileNamed: function(srcFileName, optRev, destUrl, optNewFileName, contentType) {
         console.log('Copy file ' + srcFileName);
         if (!optNewFileName) optNewFileName = srcFileName;
         var otherDir = new FileDirectory(destUrl);
-        otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName, optRev));
+        otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName, optRev, contentType), contentType);
     },
     
     copyAllFiles: function(destUrl, selectFunc, optRev) {
