@@ -1146,7 +1146,7 @@ subMenuItems: function($super, evt) {
 			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(), 'preamble'));
 			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["add as postscript to current ChangeSet", function() {
-			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(),  'postscript'));
+			ChangeSet.current().addChange(DoitChange.create(this.getSelectionString(), 'postscript'));
 			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
 		["evaluate as Lively markup", function() { 
