@@ -471,6 +471,16 @@ TestCase.subclass('lively.Tests.LKWikiTest.InteractiveAuthorizationTest', {
 		this.wasAllowed = null;
 		this.makeResource(url, optCallback).store(content, !notSync);
 	},
+cleanup: function() {
+	var cb = function() {
+		var dir = new FileDirectory(this.baseUrl);
+		['123test123.xhtml', 'livelyTest.xhtml', 'non-test.xhtml', 'livelyTest.js'].forEach(function(ea) {
+			dir.deleteFileNamed(ea);
+		}};
+	};
+	this.login(cb);
+},
+
 
 	tearDown: function() {
 		this.logout();
