@@ -164,7 +164,7 @@ Morph.subclass("ClockMorph", {
 
 Morph.subclass("SymmetryMorph", {
 
-    initialize: function($super, size, nFold) {
+    initialize: function($super, size, nFold) { 
 		//  WorldMorph.current().addMorph(new SymmetryMorph(300, 7)) 
         $super(new lively.scene.Rectangle(new Rectangle((5/2)*size, size/4, size, 2*size + 30)));
 		this.setFill(Color.white);
