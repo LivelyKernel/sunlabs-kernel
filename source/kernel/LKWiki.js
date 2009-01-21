@@ -247,6 +247,24 @@ Widget.subclass('WikiNavigator', {
 	    this.prepareForSaving();
         return this.svnResource.store(Exporter.shrinkWrapMorph(WorldMorph.current()), true).getStatus();
 	},
+
+	interactiveSaveWorld: function() {
+		var world = WorldMorph.current();
+		var anotherSave = function() {
+			var status = this.doSave();
+			if (status.isSuccess()) {
+				console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
+			} else {
+				console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
+				this.createWikiNavigatorButton();
+				// FISXME CLEANUP
+				WorldMorph.current().addMorph(this.btn);
+				this.btn.startStepping(1000, "positionInLowerLeftCorner");
+			}
+		};
+		if (this.worldExists())
+			world.confirm(this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
+	},
 	
 	saveWorld: function(value) {
 	    if (!value) return;
@@ -344,8 +362,8 @@ Widget.subclass('WikiNavigator', {
         return this.model.getURL().toString().include("wiki");
 	},
 	
-    worldExists: function() {
-        return new NetRequest().beSync().get(this.model.getURL()).getStatus().isSuccess();
+    worldExists: function(optURL) {
+        return new NetRequest().beSync().get(optURL || this.model.getURL()).getStatus().isSuccess();
     }
 });
 
@@ -360,7 +378,13 @@ Object.extend(WikiNavigator, {
         WorldMorph.current().addMorph(nav.btn);
         nav.btn.startStepping(1000, "positionInLowerLeftCorner");
         WikiNavigator.current = nav;
-    }
+    },
+	fileNameToURL: function(fileName) {
+		if (!fileName) return null;
+		if (!fileName.endsWith('.xhtml')) 
+	    	fileName += ".xhtml";
+		return URL.source.withFilename(fileName);
+	},
 });
 
 Dialog.subclass('WikiLinkDialog', {
