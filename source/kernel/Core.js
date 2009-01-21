@@ -1090,7 +1090,7 @@ lively.data.Wrapper.subclass('Morph', {
     layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
-    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
+    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds', 'owner'],
     isEpimorph: false, // temporary additional morph that goes away quickly, not included in bounds
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
@@ -1170,7 +1170,7 @@ lively.data.Wrapper.subclass('Morph', {
 		&& other.hasOwnProperty(p) 
 		&& !this.noShallowCopyProperties.include(p)) {
 		if (other[p] instanceof Morph) {
-		    var replacement = (p === "owner") ? null : copier.lookup(other[p].id());
+		    var replacement = copier.lookup(other[p].id());
 		    this[p] = replacement || other[p];
 		    // an instance field points to a submorph, so copy
 		    // should point to a copy of the submorph
