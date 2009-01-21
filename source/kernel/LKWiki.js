@@ -256,11 +256,10 @@ Widget.subclass('WikiNavigator', {
 				console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
 			} else {
 				console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
-				this.createWikiNavigatorButton();
-				// FISXME CLEANUP
-				WorldMorph.current().addMorph(this.btn);
-				this.btn.startStepping(1000, "positionInLowerLeftCorner");
 			}
+			this.createWikiNavigatorButton();
+			WorldMorph.current().addMorph(this.btn);
+			this.btn.startStepping(1000, "positionInLowerLeftCorner");
 		}.bind(this);
 		if (this.worldExists())
 			world.confirm(this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
