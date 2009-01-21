@@ -261,7 +261,7 @@ Widget.subclass('WikiNavigator', {
 				WorldMorph.current().addMorph(this.btn);
 				this.btn.startStepping(1000, "positionInLowerLeftCorner");
 			}
-		};
+		}.bind(this);
 		if (this.worldExists())
 			world.confirm(this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
 	},
