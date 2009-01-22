@@ -3894,7 +3894,8 @@ PasteUpMorph.subclass("WorldMorph", {
                     world.addMorph(m); }); }],
             ["Kaleidoscope", function(evt) {
                 require('Examples.js').toRun(function() {
-					WorldMorph.current().addMorph(new SymmetryMorph(300, 7)); }) } ],
+					var kal = WorldMorph.current().addMorph(new SymmetryMorph(300, 7)); 
+					kal.startUp(); }) } ],
 			["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
 		    GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],

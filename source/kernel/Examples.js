@@ -174,15 +174,23 @@ Morph.subclass("SymmetryMorph", {
 		this.pattern = this.addMorph(Morph.makeRectangle(new Rectangle(0, 0, size, size)));
 		this.pattern.setFill(Color.lightGray.lighter());
 		var superLayoutChanged = this.pattern.layoutChanged;
+		this.needsUpdate = false;
 		this.pattern.layoutChanged = function(argIfAny) {  // Override to update whenever pattern changes
-			var result = superLayoutChanged.call(this.pattern,argIfAny);
-			this.updateDisplayMorph();
-			return result;
+			this.needsUpdate = true;
+			return superLayoutChanged.call(this.pattern,argIfAny);
 			}.bind(this);
 		//this.startStepping(250, "doUpdateIfNeeded"); //not in world yet
    },
 
 onDeserialize: function() {
+	this.updateDisplayMorph();
+	},
+updateIfNeeded: function() { 
+	if (this.needsUpdate) this.updateDisplayMorph();
+	this.needsUpdate = false;
+	},
+startUp: function() {
+	this.startStepping(250, "updateIfNeeded");
 	this.updateDisplayMorph();
 	},
 
