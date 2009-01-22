@@ -3502,12 +3502,14 @@ Model.subclass('SyntheticModel', {
 Morph.addMethods({
     
     exportLinkedFile: function(filename) {
+	var url;
 	if (WikiNavigator && WikiNavigator.current) {
 		var nav = new WikiNavigator(WikiNavigator.fileNameToURL(filename));
 		nav.interactiveSaveWorld();
-		return nav.model.getURL();
+		url = nav.model.getURL();
+	} else {
+		url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
 	}
-	var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
 	if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
 	return url;
     }

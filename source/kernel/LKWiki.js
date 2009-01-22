@@ -263,6 +263,8 @@ Widget.subclass('WikiNavigator', {
 		}.bind(this);
 		if (this.worldExists())
 			world.confirm(this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
+	else
+		anotherSave();
 	},
 	
 	saveWorld: function(value) {
