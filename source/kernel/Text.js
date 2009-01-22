@@ -1609,23 +1609,24 @@ subMenuItems: function($super, evt) {
 	    this.lastFindLoc = this.selectionRange[0] + replacement.length;
 	}
 	
+	if (strStyle || repStyle) { // Splice the style array if any
+	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
+	    if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
+	    var beforeStyle = strStyle.slice(0, this.selectionRange[0]);
+	    var afterStyle = strStyle.slice(this.selectionRange[1]+1, oldLength);
+	    this.textStyle = beforeStyle.concat(repStyle).concat(afterStyle);
+	    // console.log("replaceSel; textStyle = " + this.textStyle);
+	}		
+	if (this.textStyle && this.textStyle.values.all(function(ea) {return !ea})) this.textStyle = null;
+
 	// Splice the textString
 	var before = this.textString.substring(0,this.selectionRange[0]); 
-        var after = this.textString.substring(this.selectionRange[1]+1, oldLength);
+	var after = this.textString.substring(this.selectionRange[1]+1, oldLength);
 	this.setTextString(before.concat(replacement.asString(),after), delayComposition, justMoreTyping);
         if(this.selectionRange[0] == -1 && this.selectionRange[1] == -1) {
             this.setSelectionRange(0,0); // symthom fix of typing into an "very emty" string
         };
 	
-	if (strStyle || repStyle) { // Splice the style array if any
-	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
-	    if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
-	    
-	    before = strStyle.slice(0, this.selectionRange[0]);
-	    after = strStyle.slice(this.selectionRange[1]+1, oldLength);
-	    this.textStyle = before.concat(repStyle).concat(after);
-	    // console.log("replaceSel; textStyle = " + this.textStyle);
-	}		
         // Compute new selection, and display if not delayed
 	var selectionIndex = this.selectionRange[0] + replacement.length;
 	if (delayComposition) this.selectionRange = [selectionIndex, selectionIndex-1];
@@ -1959,6 +1960,7 @@ subMenuItems: function($super, evt) {
 	this.setNullSelectionAt(this.selectionRange[1] + 1);
 	var prevSelection = this.selectionRange[0];
 	var result = "" + this.tryBoundEval(strToEval);
+	isPrintIt=true;
 	this.replaceSelectionWith(" " + result, false);
 	this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
     },
