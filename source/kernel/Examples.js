@@ -173,11 +173,10 @@ Morph.subclass("SymmetryMorph", {
 		this.nFold = nFold;  // Will be 360/nFold segments, as half that many reflected pairs
 		this.pattern = this.addMorph(Morph.makeRectangle(new Rectangle(0, 0, size, size)));
 		this.pattern.setFill(Color.lightGray.lighter());
-		this.needsUpdate = false;
 		var superLayoutChanged = this.pattern.layoutChanged;
 		this.pattern.layoutChanged = function(argIfAny) {  // Override to update whenever pattern changes
 			var result = superLayoutChanged.call(this.pattern,argIfAny);
-			this.needsUpdate = true;  // Can't call update directly due to current recursive problem
+			this.updateDisplayMorph();
 			return result;
 			}.bind(this);
 		//this.startStepping(250, "doUpdateIfNeeded"); //not in world yet
@@ -186,10 +185,7 @@ Morph.subclass("SymmetryMorph", {
 onDeserialize: function() {
 	this.updateDisplayMorph();
 	},
-doUpdateIfNeeded: function() {
-	if (this.needsUpdate) this.updateDisplayMorph();
-	this.needsUpdate = false;
-	},
+
 
     updateDisplayMorph: function() { 
 	var r = this.radius;
