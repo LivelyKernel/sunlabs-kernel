@@ -478,7 +478,7 @@ TestCase.subclass('lively.Tests.LKWikiTest.InteractiveAuthorizationTest', {
 			['123test123.xhtml', 'livelyTest.xhtml', 'non-test.xhtml', 'livelyTest.js'].forEach(function(ea) {
 				dir.deleteFileNamed(ea);
 			});
-		};
+		}.bind(this);
 		this.login(cb);
 	},
 
