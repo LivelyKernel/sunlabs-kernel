@@ -3892,10 +3892,12 @@ PasteUpMorph.subclass("WorldMorph", {
                     var m = new PianoKeyboard(evt.point());
                     m.scaleBy(1.5);  m.rotateBy(-Math.PI*2/12);
                     world.addMorph(m); }); }],
-            ["Layout Demo", function(evt) {
+            ["Kaleidoscope", function(evt) {
+                require('Examples.js').toRun(function() {
+					WorldMorph.current().addMorph(new SymmetryMorph(300, 7)); }) } ],
+			["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
-		    GridLayoutMorph.demo(evt.hand.world(), evt.point());
-		}); }],
+		    GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
 	    ["Effects demo (FF only)", function(evt) {
 		require('demofx.js').toRun(Functions.Empty); }]
         ];
