@@ -888,6 +888,20 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
 	sourceString: function() {
 		return this.target.getDefinition();
 	},
+saveSource: function(newSource) {
+		this.target.setDefinition(newSource);
+		this.savedSource = this.target.getDefinition();
+        return true;
+    },
+evalSource: function(newSource) {
+		if (!this.browser.evaluate) return false;
+		if (this.target.getDefinition() !== newSource)
+			throw dbgOn(new Error('Inconsistency while evaluating and saving?'));
+		this.target.evaluate();
+        return true;
+    },
+
+
 });
 
 ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
@@ -1799,6 +1813,10 @@ Object.subclass('Change', {
 	getDefinition: function() {
 		return this.xmlElement.textContent;
 	},
+setDefinition: function(src) {
+	this.getXMLElement().textContent = src;
+},
+
 addSubElement: function(change) {
 		this.xmlElement.appendChild(change.getXMLElement());
 		return change;
@@ -2112,7 +2130,13 @@ Change.subclass('DoitChange', {
 	isDoitChange: true,
 
 	evaluate: function() {
-		return eval(this.getDefinition());
+		var result;
+		try {
+			result = eval(this.getDefinition())
+		} catch(e) {
+			console.log('Error evaluating ' + this.getName() + ': ' + e);
+		}
+		return result;
 	},
 
 });

@@ -1115,6 +1115,15 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 		this.assertEqual(change.getDefinition(), src);
 		this.assertEqual(change.getClassName(), className);
 	},
+
+	testSetNewDoitDef: function() {
+		var oldSrc = '1+2+3';
+		var change = DoitChange.create(oldSrc);
+		this.assertEqual(change.getDefinition(), oldSrc);
+		var newSrc = '4+5+6';
+		change.setDefinition(newSrc);
+		this.assertEqual(change.getDefinition(), newSrc);
+	},
 	
 });
 
