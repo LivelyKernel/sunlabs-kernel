@@ -821,7 +821,7 @@ using().run(function() { // begin scoping function
 	    this.ticks += (new Date().getTime() - this.callTime);
 	    currentContext = this.caller;
 	},
-	each: function(funcToCall, level, sortFunc) {
+	each: function(funcToCall, level, sortFunc) { 
 	    // Recursive tree visit with callees order parameter (eg, tallies, ticks, alpha)
 	    if (level == null) level = 0;
 	    funcToCall(this, level);
@@ -830,8 +830,8 @@ using().run(function() { // begin scoping function
 	    if(sortedCallees.length == 0) return;
 	    // Default is to sort by tallies, and then by ticks if they are equal (often 0)
 	    sortedCallees.sort(sortFunc || function(a, b) {
-		if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
-		return (a.tally > b. tally) ? -1 : 1});
+		if(a.ticks == b.ticks) return (a.tally > b.tally) ? -1 : (a.tally < b.tally) ? 1 : 0; 
+		return (a.ticks > b. ticks) ? -1 : 1});
 	    sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
 	},
 	fullString: function() {

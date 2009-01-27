@@ -146,15 +146,11 @@ Morph.subclass("ClockMorph", {
     },
 
     setHands: function() {
-        var currentDate = new Date();
-        var offset;
-        if (this.timeZoneOffset === undefined)
-            offset = -1 * currentDate.getTimezoneOffset() / 60;
-        else
-            offset = this.timeZoneOffset;
-        var second = currentDate.getUTCSeconds();
-        var minute = currentDate.getUTCMinutes() + second/60;
-        var hour = currentDate.getUTCHours() + offset + minute/60;
+        var timeNow = new Date();
+        var offset = this.timeZoneOffset  || ( -1 * timeNow.getTimezoneOffset() / 60);
+        var second = timeNow.getUTCSeconds();
+        var minute = timeNow.getUTCMinutes() + second/60;
+        var hour = timeNow.getUTCHours() + offset + minute/60;
         this.hours.setRotation(hour/12*2*Math.PI);
         this.minutes.setRotation(minute/60*2*Math.PI);
         this.seconds.setRotation(second/60*2*Math.PI); 

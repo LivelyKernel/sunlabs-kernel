@@ -1488,8 +1488,9 @@ subMenuItems: function($super, evt) {
     },
 
     onMouseDown: function(evt) {
-		if (this.mouseIsOverALink(evt)) {
-			this.doLinkThing(evt);
+		var link = this.linkUnderMouse(evt);
+		if (link) {
+			this.doLinkThing(evt, link);
 			return true;
 		}
 		this.isSelecting = true;
@@ -1507,24 +1508,24 @@ subMenuItems: function($super, evt) {
 
     onMouseMove: function($super, evt) {  
         if (this.isSelecting) return this.extendSelectionEvt(evt);
-	if (this.mouseIsOverALink(evt)) evt.hand.lookLinky();
+	if (this.linkUnderMouse(evt)) evt.hand.lookLinky();
 		else evt.hand.lookNormal();
         return $super(evt);        
     },
 
-    mouseIsOverALink: function(evt) {  
-        if (!this.textStyle) return false;
-	var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-        return (this.textStyle.valueAt(charIx).link) != null;        
+    
+	linkUnderMouse: function(evt) {  
+		// Return null or a link encoded in the text
+		if (!this.textStyle) return null;
+		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+		return this.textStyle.valueAt(charIx).link;       
     },
-    doLinkThing: function(evt) {  
+    doLinkThing: function(evt, link) { 
         // Later this should set a flag like isSelecting, so that we can highlight the 
 	// link during mouseDown and then act on mouseUp.
-	// Fo now, we just act on mouseDown
+	// For now, we just act on mouseDown
         evt.hand.lookNormal();
-        var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-        var link = this.textStyle.valueAt(charIx).link;
-        if (!link) return;
+		evt.hand.setMouseFocus(null);
 
         // add require to LKWiki.js here
         var wikiNav = new WikiNavigator(new URL(link));
