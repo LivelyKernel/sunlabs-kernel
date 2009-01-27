@@ -178,7 +178,9 @@ Object.subclass('fx.util.KeyAdapter', {
 Object.subclass('fx.Frame', {
     initialize: function(width, height, applet) {
 	this.frame = applet || new Packages.javax.swing.JFrame();
-	this.frame.setSize(width, height);
+	this.frame = applet ? applet.getPlatformApplet() :  new Packages.javax.swing.JFrame();
+	if (!applet)
+	    this.frame.setSize(width, height);
 	this.panel = new Packages.com.sun.scenario.scenegraph.JSGPanel();
 	this.panel.setBackground(fx.Color.white);
 	this.panel.setPreferredSize(new Packages.java.awt.Dimension(width, height));
