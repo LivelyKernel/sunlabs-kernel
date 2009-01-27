@@ -1526,6 +1526,7 @@ subMenuItems: function($super, evt) {
 	// For now, we just act on mouseDown
         evt.hand.lookNormal();
 		evt.hand.setMouseFocus(null);
+		evt.stop();  // else weird things happen when return from this link by browser back button
 
         // add require to LKWiki.js here
         var wikiNav = new WikiNavigator(new URL(link));
