@@ -51,8 +51,8 @@ Object.extend(fx, {
     Font: Packages.java.awt.Font,
     Path: Packages.java.awt.geom.GeneralPath,
     Color: Packages.java.awt.Color,
-    LinearGradient: Packages.java.awt.LinearGradientPaint,
-    RadialGradient: Packages.java.awt.RadialGradientPaint,
+    LinearGradient: Packages.com.sun.javafx.scene.paint.LinearGradientPaint,
+    RadialGradient: Packages.com.sun.javafx.scene.paint.RadialGradientPaint,
     Timer: Packages.javax.swing.Timer,
 });
 
