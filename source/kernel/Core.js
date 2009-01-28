@@ -4515,8 +4515,7 @@ Morph.subclass("HandMorph", {
 	// Run profile during handling of this event
 	this.profileArmed = null;  // Only this once
 	var result;
-	this.traceOptions = {threshold: 2};
-	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this), this.traceOptions);
+	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this), this.traceOptions );
 	return result;
     },
 

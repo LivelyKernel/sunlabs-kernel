@@ -834,11 +834,25 @@ using().run(function() { // begin scoping function
 		return (a.tally > b. tally) ? -1 : 1});
 	    sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
 	},
-	fullString: function(options) { 
-	    var str = "Execution profile (#calls / #ticks)\n";
+	fullString: function(options) {   
+	    var totalTicks = 0;
+	    Properties.forEachOwn(this.callees, function(meth, node) { totalTicks += node.ticks; })
+		if (!options.threshold) options.threshold = (totalTicks/100).roundTo(1);
+	    var sortFunction = function(a, b) {
+			if(a.ticks == b.ticks) return (a.tally > b.tally) ? -1 : (a.tally < b.tally) ? 1 : 0; 
+			return (a.ticks > b. ticks) ? -1 : 1;
+		}
+	    if (options.sortBy == 'tally') sortFunction = function(a, b) {
+				if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
+				return (a.tally > b. tally) ? -1 : 1
+			};
+		var str = "Execution profile (#ticks / #calls)\n";
+		str += "    options specified:  " ;
+	    Properties.forEachOwn(options, function(name, value) { str += name + "=" + value + ";  "} );
+		str += "\n";
 	    this.each(function(each, level) {
-			if (!options || !options.threshold || (each.ticks >= options.threshold)) str += (this.dashes(level) + each + "\n");
-		}.bind(this), 0, null);
+			if (each.ticks >= options.threshold) str += (this.dashes(level) + each + "\n");
+			}.bind(this), 0, null);
 	    return str;
 	},
 	toString: function() {
