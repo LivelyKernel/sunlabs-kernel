@@ -4507,7 +4507,7 @@ Morph.subclass("HandMorph", {
 	this.lastMouseEvent = last;  // Restore -- necess??
     },
 
-    handleMouseEvent: function HandMorph$handleMouseEvent(evt) { 
+    handleMouseEvent: function HandMorph$handleMouseEvent(evt) {
 	if(!Config.debugExtras || !this.profileArmed || this.profileArmed != evt.type) {
 		// Profile not armed or event doesnt match
 		return this.reallyHandleMouseEvent(evt);
@@ -4515,7 +4515,8 @@ Morph.subclass("HandMorph", {
 	// Run profile during handling of this event
 	this.profileArmed = null;  // Only this once
 	var result;
-	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this));
+	this.traceOptions = {threshold: 2};
+	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this), this.traceOptions);
 	return result;
     },
 

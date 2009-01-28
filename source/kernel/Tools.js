@@ -830,17 +830,19 @@ using().run(function() { // begin scoping function
 	    if(sortedCallees.length == 0) return;
 	    // Default is to sort by tallies, and then by ticks if they are equal (often 0)
 	    sortedCallees.sort(sortFunc || function(a, b) {
-		if(a.ticks == b.ticks) return (a.tally > b.tally) ? -1 : (a.tally < b.tally) ? 1 : 0; 
-		return (a.ticks > b. ticks) ? -1 : 1});
+		if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
+		return (a.tally > b. tally) ? -1 : 1});
 	    sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
 	},
-	fullString: function() {
+	fullString: function(options) { 
 	    var str = "Execution profile (#calls / #ticks)\n";
-	    this.each(function(each, level) { str += (this.dashes(level) + each + "\n"); }.bind(this), 0, null);
+	    this.each(function(each, level) {
+			if (!options || !options.threshold || (each.ticks >= options.threshold)) str += (this.dashes(level) + each + "\n");
+		}.bind(this), 0, null);
 	    return str;
 	},
 	toString: function() {
-	    return '(' + this.tally.toString() + ' / ' + this.ticks.toString() + ') ' + this.method.qualifiedMethodName();
+	    return '(' + this.ticks.toString() + ' / ' + this.tally.toString() + ') ' + this.method.qualifiedMethodName();
 	}
     });
     
@@ -899,20 +901,21 @@ using().run(function() { // begin scoping function
             }
         },
 
-        testTrace: function() {
-	    this.trace(function () { for (var i=0; i<10; i++) RunArray.test([3, 1, 4, 1, 5, 9]); });
+        testTrace: function(options) { // lively.lang.Execution.testTrace( {repeat: 10} )  
+	    this.trace( RunArray.test.curry([3, 1, 4, 1, 5, 9]), options);
 	},
 	
-        trace: function(method) {
-	    // Note: trace returns the trace root, not the value of the traced method
-	    // If you need the return value, you'll need to store it elsewhwere from the method
-	    var traceRoot = new TracerTreeNode(currentContext, method);
+        trace: function(method, options) {  
+		// options = { printToConsole: false, repeat: 1, threshold: 0 }
+	    if (!options) options = {};
+		var traceRoot = new TracerTreeNode(currentContext, method);
 	    currentContext = traceRoot;
-	    result = method.call(this);
+		for (var i=1; i <= (options.repeat || 1); i++)  result = method.call(this);
 	    currentContext = traceRoot.caller;
 	    traceRoot.caller = null;
-	    console.log(traceRoot.fullString());
-	    return traceRoot;
+	    if (options.printToConsole) console.log(traceRoot.fullString(options));
+			else WorldMorph.current().addTextWindow(traceRoot.fullString(options));
+	    return result;
 	},
 	
         installStackTracers: function(remove) {
