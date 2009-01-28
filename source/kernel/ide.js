@@ -793,7 +793,11 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 		}
 		var methodName = this.target.name;
 		var methodString = this.target.getSourceCode();
-		var def = className + ".addMethods({\n" + methodString +'\n});';
+		var def;
+		if (this.target.isStatic)
+			def = 'Object.extend(' + className + ', {\n' + methodString +'\n});';
+		else
+			def = className + ".addMethods({\n" + methodString +'\n});';
 		try {
 			eval(def);
 		} catch (er) {
