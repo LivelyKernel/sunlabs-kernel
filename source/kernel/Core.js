@@ -3898,16 +3898,18 @@ PasteUpMorph.subclass("WorldMorph", {
 					kal.startUp(); }) } ],
 			["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
-		    GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
-	    ["Effects demo (FF only)", function(evt) {
-		require('demofx.js').toRun(Functions.Empty); }]
+					GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
+			["Effects demo (FF only)", function(evt) { require('demofx.js').toRun(Functions.Empty); }]
         ];
         var toolMenuItems = [
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["SystemBrowser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
             ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
-            ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
+			["Enable profiling", function() {
+					Config.debugExtras = true;
+					lively.lang.Execution.installStackTracers(); }],
+            ["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
             ["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world, evt.point()) }) }],
             ["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().openIn(world, evt.point()); }) }],
     	    ["Call Stack Viewer", function(evt) { 
@@ -3920,20 +3922,32 @@ PasteUpMorph.subclass("WorldMorph", {
                 var m = world.addMorph(new EllipseMakerMorph(evt.point()));
                 m.startSteppingScripts(); }],
     	    ["XHTML Browser", function(evt) { 
-    		var xeno = new XenoBrowserWidget('sample.xhtml');
-    		xeno.openIn(world, evt.point()); 
-    	    }],
+				var xeno = new XenoBrowserWidget('sample.xhtml');
+				xeno.openIn(world, evt.point()); }],
 			["Viewer for latest file changes", function(evt) {
 			var cb = function(input) {
 				require('lively.LKWiki').toRun(function(u,m) {
 					var url = new URL(input);
 					console.log(url);
 					new LatestWikiChangesList(url).openIn(world, evt.point());
-				})
-			}
+				}); }
 			world.prompt('Url to observe', cb, URL.source.getDirectory().toString()); 
     	    }]
         ];
+		if (Config.debugExtras) { var index = -1;
+			for (var i=0; i<toolMenuItems.length; i++) if (toolMenuItems[i][0] == "Enable profiling") index = i;
+			if (index >= 0) toolMenuItems.splice(index, 1,
+				["-----"],
+				["Profiling help", function(evt) { this.openURLasText( URL.common.project.withRelativePath(
+					"/index.fcgi/wiki/ProfilingHelp?format=txt"), "Profiling help"); }],
+				["Arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }],
+				["Arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }],
+				["Disable profiling", function() {
+					Config.debugExtras = false;
+					lively.lang.Execution.installStackTracers("uninstall");  }],
+				["-----"]
+			);
+		};
         var scriptingMenuItems = [
             ["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world, evt.point()); }) }],
             ["Fabrik Component Box", function(evt) { require('Fabrik.js').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
@@ -4515,7 +4529,7 @@ Morph.subclass("HandMorph", {
 	// Run profile during handling of this event
 	this.profileArmed = null;  // Only this once
 	var result;
-	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this), this.traceOptions );
+	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this), this.profilingOptions );
 	return result;
     },
 

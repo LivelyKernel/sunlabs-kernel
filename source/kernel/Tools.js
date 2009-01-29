@@ -834,29 +834,31 @@ using().run(function() { // begin scoping function
 		return (a.tally > b. tally) ? -1 : 1});
 	    sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
 	},
-	fullString: function(options) {   
+	fullString: function(options) {  
 	    var totalTicks = 0;
 	    Properties.forEachOwn(this.callees, function(meth, node) { totalTicks += node.ticks; })
-		if (!options.threshold) options.threshold = (totalTicks/100).roundTo(1);
+		var major = (options.sortBy == "tally") ? "tally" : "ticks";
+		var minor = (major == "tally") ? "ticks" : "tally";
+		var threshold = options.threshold;
+		if (!threshold && threshold !== 0)  threshold = major == "ticks" ? (totalTicks/100).roundTo(1) : 0;
+		
 	    var sortFunction = function(a, b) {
-			if(a.ticks == b.ticks) return (a.tally > b.tally) ? -1 : (a.tally < b.tally) ? 1 : 0; 
-			return (a.ticks > b. ticks) ? -1 : 1;
+			if(a[major] == b[major]) return (a[minor] > b[minor]) ? -1 : (a[minor] < b[minor]) ? 1 : 0; 
+			return (a[major] > b[major]) ? -1 : 1;
 		}
-	    if (options.sortBy == 'tally') sortFunction = function(a, b) {
-				if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
-				return (a.tally > b. tally) ? -1 : 1
-			};
-		var str = "Execution profile (#ticks / #calls)\n";
-		str += "    options specified:  " ;
-	    Properties.forEachOwn(options, function(name, value) { str += name + "=" + value + ";  "} );
-		str += "\n";
+		var str = "Execution profile (" + major + " / " + minor + ")\n";
+		str += "    options specified = {" ;
+		str += " repeat: "  + (options.repeat || 1);
+		str += ", sortBy: " + '"' + major + '"' ;
+		str += ", threshold: " + threshold + " }\n" ;
 	    this.each(function(each, level) {
-			if (each.ticks >= options.threshold) str += (this.dashes(level) + each + "\n");
+			if (each.ticks >= threshold) str += (this.dashes(level) + each.toString(major, minor) + "\n");
 			}.bind(this), 0, null);
 	    return str;
 	},
-	toString: function() {
-	    return '(' + this.ticks.toString() + ' / ' + this.tally.toString() + ') ' + this.method.qualifiedMethodName();
+	toString: function(major, minor) {
+	    if(!major) {major = "ticks";  minor = "tally"};
+		return '(' + this[major].toString() + ' / ' + this[minor].toString() + ') ' + this.method.qualifiedMethodName();
 	}
     });
     
