@@ -828,11 +828,8 @@ using().run(function() { // begin scoping function
 	    var sortedCallees = [];
 	    Properties.forEachOwn(this.callees, function(meth, node) { sortedCallees.push(node); })
 	    if(sortedCallees.length == 0) return;
-	    // Default is to sort by tallies, and then by ticks if they are equal (often 0)
-	    sortedCallees.sort(sortFunc || function(a, b) {
-		if(a.tally == b.tally) return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0; 
-		return (a.tally > b. tally) ? -1 : 1});
-	    sortedCallees.each(function(node) { node.each(funcToCall, level+1, sortFunc); });
+	    sortedCallees.sort(sortFunc);
+	    sortedCallees.forEach(function(node) { node.each(funcToCall, level+1, sortFunc); });
 	},
 	fullString: function(options) {  
 	    var totalTicks = 0;
@@ -851,9 +848,9 @@ using().run(function() { // begin scoping function
 		str += " repeat: "  + (options.repeat || 1);
 		str += ", sortBy: " + '"' + major + '"' ;
 		str += ", threshold: " + threshold + " }\n" ;
-	    this.each(function(each, level) {
-			if (each.ticks >= threshold) str += (this.dashes(level) + each.toString(major, minor) + "\n");
-			}.bind(this), 0, null);
+	    this.each(function(node, level, sortFunc) {
+			if (node.ticks >= threshold) str += (this.dashes(level) + node.toString(major, minor) + "\n");
+			}.bind(this), 0, sortFunction);
 	    return str;
 	},
 	toString: function(major, minor) {
