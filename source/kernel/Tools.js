@@ -843,19 +843,43 @@ using().run(function() { // begin scoping function
 			if(a[major] == b[major]) return (a[minor] > b[minor]) ? -1 : (a[minor] < b[minor]) ? 1 : 0; 
 			return (a[major] > b[major]) ? -1 : 1;
 		}
-		var str = "Execution profile (" + major + " / " + minor + ")\n";
+		var str = "Execution profile (" + major + " / " + minor + "):\n";
 		str += "    options specified = {" ;
 		str += " repeat: "  + (options.repeat || 1);
 		str += ", sortBy: " + '"' + major + '"' ;
 		str += ", threshold: " + threshold + " }\n" ;
-	    this.each(function(node, level, sortFunc) {
+		var leafCounts = {};
+
+	    // Print the call tree, and build the dictionary of leaf counts...
+		this.each(function(node, level, sortFunc) {
 			if (node.ticks >= threshold) str += (this.dashes(level) + node.toString(major, minor) + "\n");
+			if (leafCounts[node.method] == null) leafCounts[node.method] =
+				{methodName: node.method.qualifiedMethodName(), tallies: 0, ticks: 0};
+			var leafCount = leafCounts[node.method];
+				leafCount.tallies += node.tally;
+				leafCount.ticks += node.ticksInMethod();
 			}.bind(this), 0, sortFunction);
+
+		str += "\nLeaf nodes sorted by ticks within that method (ticks / tallies):\n" ;
+	    var sortedLeaves = [];
+	    Properties.forEachOwn(leafCounts, function(meth, count) { sortedLeaves.push(count); })
+	    if (sortedLeaves.length == 0) return;
+	    sortedLeaves.sort(function (a, b) { return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0 } );
+		sortedLeaves.forEach( function (count) {
+			if (count.ticks >= threshold/4)  str += "(" + count.ticks + " / " + count.tallies + ") " + count.methodName + "\n"; 
+		});
+		
 	    return str;
 	},
 	toString: function(major, minor) {
 	    if(!major) {major = "ticks";  minor = "tally"};
 		return '(' + this[major].toString() + ' / ' + this[minor].toString() + ') ' + this.method.qualifiedMethodName();
+	},
+ticksInMethod: function() {
+		var localTicks = this.ticks;
+		// subtract ticks of callees to get net ticks in this method
+	    Properties.forEachOwn(this.callees, function(meth, node) { localTicks -= node.ticks; })
+		return localTicks;
 	}
     });
     
