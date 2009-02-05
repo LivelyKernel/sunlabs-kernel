@@ -191,6 +191,41 @@ TestCase.subclass('TextMorphTest', {
     
 });
 
+TestCase.subclass('AImageMorphTest', {
+
+	setUp: function() {
+		this.m = new ImageMorph(rect(pt(0,0),pt(100,100)),"Resources/images/Halloween4.jpg");
+        this.m.openInWorld();
+		this.dontRemove = false;
+	},
+
+	testSetExtent: function() {
+		
+		this.assertEqual(this.m.image.getWidth(), 100, "initial extent is false");
+		this.m.setExtent(pt(200,200));
+		// should this work?
+		// this.assertEqual(this.m.image.getWidth(), 200, "extent did not get updated false");
+    },
+
+	testSetImageWidth: function() {
+		this.m.image.setWidth(200);
+		this.assertEqual(this.m.image.getWidth(), 200);
+    },
+
+	testSetImageHeight: function() {
+		this.m.image.setHeight(200);
+		this.assertEqual(this.m.image.getHeight(), 200);
+    },
+
+    tearDown: function() {
+		if (this.dontRemove) {
+			this.m.requestKeyboardFocus(WorldMorph.current().firstHand());
+			return;
+		}
+        this.m.remove();
+    },
+});
+
 TestCase.subclass('PinMorphInteractionTest', {
 
     testHandleMouseEventPinMorph: function() {

@@ -1516,6 +1516,14 @@ this.Node.subclass('lively.scene.Image', {
 	return lively.data.Length.parse((optArg || this.rawNode).getAttributeNS(null, "height"));
     },
 
+	setWidth: function(width) {
+		this.rawNode.setAttributeNS(null,"width", width);
+	},
+	
+	setHeight: function(height) {
+		this.rawNode.setAttributeNS(null, "height", height);
+	},
+
     reload: function() {
 	if (this.rawNode.localName == "image")  {
 	    XLinkNS.setHref(this.rawNode, this.getURL() + "?" + new Date());
@@ -1542,15 +1550,18 @@ this.Node.subclass('lively.scene.Image', {
 	}
     },
 
+
+
     loadImage: function(href, width, height) {
+
 	if (this.rawNode && this.rawNode.localName == "image") {
 	    XLinkNS.setHref(this.rawNode, href);
 	    return null;
 	} else {
 	    var useDesperateSerializationHack = !Config.suppressImageElementSerializationHack;
 	    if (useDesperateSerializationHack) {
-		width = width || this.getWidth();
-		height = height || this.getHeight();
+			width = width || this.getWidth();
+			height = height || this.getHeight();
 		
 		// this desperate measure appears to be necessary to work
 		// around Safari's serialization issues.  Note that
@@ -1560,7 +1571,6 @@ this.Node.subclass('lively.scene.Image', {
 		var xml = Strings.format('<image xmlns="http://www.w3.org/2000/svg" ' 
 		    + 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
 		    + ' width="%s" height="%s" xlink:href="%s"/>', width, height, href);
-		
 		this.rawNode = new Importer().parse(xml);
 	    } else {
 		

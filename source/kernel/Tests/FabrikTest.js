@@ -2000,6 +2000,18 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         // console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
     },
 
+	testSerializeAndDeserializeFabrikClockMorph: function() {
+		var clock = new FabrikClockMorph(pt(100,100), 50);
+        this.worldMorph.addMorphFrontOrBack(clock, true, true);
+		
+		
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		var string = Exporter.stringify(doc);
+		
+		var world2 = this.loadWorldFromSource(string);
+		
+		
+	}
 
 
 });

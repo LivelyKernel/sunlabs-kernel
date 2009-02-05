@@ -2679,7 +2679,7 @@ Component.subclass('ImageComponent', {
     
 	onDeserialize: function($super) {
 		$super();
-		this.formalModel.addObserver(this.morph, {URL: '!URL'});
+		this.setupTransientView();
 	},
 
     buildView: function($super, optExtent) {
@@ -2687,20 +2687,28 @@ Component.subclass('ImageComponent', {
 
         var url = this.getURL() || 'http://livelykernel.sunlabs.com/favicon.ico';
         this.morph = new ImageMorph(this.panel.getBoundsAndShrinkIfNecessary(80), url);
-		// FIXME closure assignment does not serialize
-        this.morph.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta, scaleDelta) {
-            this.morph.setExtent(this.morph.getExtent().addPt(ownerExtentDelta));
-            this.morph.image.scaleBy(Math.max(scaleDelta.x, scaleDelta.y) || 1);
-        }.bind(this);
+		this.morph.adoptToBoundsLayout = 'layoutRelativeExtent';
         this.morph.openForDragAndDrop = false;
-        this.morph.okToBeGrabbedBy = function() { return this.panel }.bind(this);
-        this.panel.addMorph(this.morph, 'image');
-
-        this.formalModel.addObserver(this.morph, {URL: '!URL'});
+		this.morph.suppressHandles = true;
+		this.morph.setFill(null);
         
-        // this.setupHandles();
+        this.panel.addMorph(this.morph, 'image');
+		this.setupTransientView();
+
         return this.panel;
-    }
+    },
+	
+	setupTransientView: function() {
+        this.formalModel.addObserver(this.morph, {URL: '!URL'});
+		this.morph.okToBeGrabbedBy = function() { return this.panel }.bind(this);
+		var self = this;
+		this.morph.setExtent = this.morph.setExtent.wrap(function(proceed, extent) {
+			proceed(extent);
+			self.morph.image.setWidth(extent.x);
+			self.morph.image.setHeight(extent.y);
+		});
+	},
+
 });
 
 Component.subclass('TextListComponent', {
@@ -2985,11 +2993,15 @@ Morph.subclass("FabrikClockMorph", {
 		this.onMinutesUpdate = Functions.Null;
 		this.onSecondsUpdate = Functions.Null;
 		this.onHoursUpdate = Functions.Null;
-		var model = Record.newPlainInstance({Minutes: null, Seconds: null, Hours: null});
-        this.relayToModel(model, {Minutes: "Minutes", Seconds: "Seconds", Hours: "Hours"});
+		var model = Record.newNodeInstance({Minutes: null, Seconds: null, Hours: null});
+		this.relayToModel(model, {Minutes: "Minutes", Seconds: "Seconds", Hours: "Hours"});
+
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
 		this.timeZoneOffset = timeZoneOffset;
         return this;
+
+		this.model = model;
+		this.rawNode.appendChild(model.rawNode);
     },
 
     makeNewFace: function(items) {
