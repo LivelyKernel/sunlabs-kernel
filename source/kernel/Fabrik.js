@@ -2979,41 +2979,57 @@ Global.FabrikConverter = {
     }
 };
 
+
 /*
  * Extending ClockMorph for PluggableComponent
  */
+Widget.subclass("FabrikClockWidget", {
+	
+	initialize: function($super) {
+		$super();
+		this.formalModel = Record.newNodeInstance({Minutes: null, Seconds: null, Hours: null});
+		this.ownModel(this.formalModel);
+	},
+	
+	buildView: function(extent) {
+		this.morph = new FabrikClockMorph(pt(0,0), 50, 0, this.formalModel);
+		this.morph.ownerWidget = this;
+		return this.morph
+	}
+});
+
 Morph.subclass("FabrikClockMorph", {
     openForDragAndDrop: false,
 	styleClass: ['clock', 'raisedBorder'],
 	fomals: ["Minutes", "Seconds", "Hours"],
 
-    initialize: function($super, position, radius, timeZoneOffset) {
+    initialize: function($super, position, radius, timeZoneOffset, model) {
         $super(new lively.scene.Ellipse(position, radius));
 		this.applyLinkedStyles();
-		this.onMinutesUpdate = Functions.Null;
-		this.onSecondsUpdate = Functions.Null;
-		this.onHoursUpdate = Functions.Null;
-		var model = Record.newNodeInstance({Minutes: null, Seconds: null, Hours: null});
-		this.relayToModel(model, {Minutes: "Minutes", Seconds: "Seconds", Hours: "Hours"});
-
+		if (!model) {
+			model = Record.newNodeInstance({Minutes: null, Seconds: null, Hours: null});
+		};
+		//this.relayToModel(model, {Minutes: "Minutes", Seconds: "Seconds", Hours: "Hours"});
+		this.formalModel = model;
+		this.connectModel(model.newRelay({Minutes: "Minutes", Seconds: "Seconds", Hours: "Hours"}));
         this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
 		this.timeZoneOffset = timeZoneOffset;
         return this;
-
-		this.model = model;
-		this.rawNode.appendChild(model.rawNode);
     },
+
+	onMinutesUpdate: Functions.Null,
+	onSecondsUpdate: Functions.Null,
+	onHoursUpdate: Functions.Null,
 
     makeNewFace: function(items) {
         var bnds = this.innerBounds();
         var radius = bnds.width/2;
         var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
 
-   for (var i = 0; i < items.length; i++) {
+   		for (var i = 0; i < items.length; i++) {
             //var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)).addXY(labelSize/2, 0));
-	    var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)));
-	    
-	    this.addMorph(TextMorph.makeLabel(items[i],{fontSize: 8}).centerAt(labelPosition));
+	    	var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)));
+	    	this.addMorph(TextMorph.makeLabel(items[i],{fontSize: 8}).centerAt(labelPosition));
         }
 
         this.hours = this.addMorph(Morph.makePolygon([pt(-2.5, 0), pt(0, -radius*0.50), pt(2.5, 0)], 0, null, Color.blue));
@@ -3032,6 +3048,7 @@ Morph.subclass("FabrikClockMorph", {
     },
 
     updateHands: function() {
+		console.log("update hands");
 		var currentDate = new Date();
         var offset;
         if (this.timeZoneOffset === undefined)

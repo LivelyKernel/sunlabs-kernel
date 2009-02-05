@@ -3883,8 +3883,11 @@ PasteUpMorph.subclass("WorldMorph", {
                 m.startSteppingScripts(); }],
             ["FabrikClock", function(evt) {
 		require('Fabrik.js').toRun(function() {
-                    var m = world.addMorph(new FabrikClockMorph(evt.point(), 50));
-                    m.startSteppingScripts(); }); }],
+                    var clock = new FabrikClockWidget();
+					var morph = clock.buildView();
+					world.addMorph(morph);
+					morph.setPosition(evt.point());
+                    morph.startSteppingScripts(); }); }],
             ["Text Window", function(evt) {
 		WorldMorph.current().addTextWindow("Editable text"); }],
             ["Piano Keyboard", function(evt) {

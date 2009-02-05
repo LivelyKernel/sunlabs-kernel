@@ -2000,16 +2000,26 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
         // console.log(Exporter.stringify(doc.getElementById(fabrik.panel.id())));
     },
 
-	testSerializeAndDeserializeFabrikClockMorph: function() {
-		var clock = new FabrikClockMorph(pt(100,100), 50);
-        this.worldMorph.addMorphFrontOrBack(clock, true, true);
+	testSerializeAndDeserializeFabrikClockWidget: function() {
+		var clock = new FabrikClockWidget();
+		
+        this.worldMorph.addMorphFrontOrBack(clock.buildView(), true, true);
 		
 		
 		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
 		var string = Exporter.stringify(doc);
 		
-		var world2 = this.loadWorldFromSource(string);
+		console.log(string);
 		
+		var world2 = this.loadWorldFromSource(string);
+		var morph2 = world2.submorphs.first();
+		this.assert(morph2 instanceof FabrikClockMorph, "morph is no clock morph");
+		
+		var widget2 = morph2.ownerWidget;
+		
+		this.assert(widget2 instanceof FabrikClockWidget, "widget is no clock widget");
+				
+		this.assert(morph2.getModel(), "clock has no model");
 		
 	}
 
