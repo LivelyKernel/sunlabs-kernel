@@ -109,27 +109,25 @@ Morph.subclass("ClockMorph", {
     openForDragAndDrop: false,
     styleClass: ['clock', 'raisedBorder'],
 
-    initialize: function($super, position, radius, timeZoneOffset) {
+    initialize: function($super, position, radius, timeZoneOffset, hour12or24, roman) {
         $super(new lively.scene.Ellipse(position, radius));
         this.applyLinkedStyles();
-        this.makeNewFace(['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI']);  // Roman
         this.timeZoneOffset = timeZoneOffset;
-        return this;
+		this.nHours = hour12or24 || 12
+        this.makeNewFace(roman);  // Roman
     },
 
-    makeNewFace: function(items) {
-	
-        var bnds = this.innerBounds();
+    makeNewFace: function(useRoman) { 
+        this.removeAllMorphs();
+		var bnds = this.innerBounds();
         var radius = bnds.width/2;
-        var labelSize = Math.max(Math.floor(0.04 * (bnds.width + bnds.height)), 2); // room to center with default inset
-	
-        for (var i = 0; i < items.length; i++) {
-            //var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)).addXY(labelSize/2, 0));
-	    var labelPosition = bnds.center().addPt(Point.polar(radius*0.85, ((i/items.length - 0.25)*Math.PI*2)));
-	    
-	    this.addMorph(TextMorph.makeLabel(items[i],{fontSize: 8}).centerAt(labelPosition));
+		var fontSize = (this.nHours == 12) ? (useRoman ? 8 : 9) : 6;
+        for (var i = 0; i < this.nHours; i++) {
+			var labelPosition = bnds.center().addXY(0, -1).addPt(Point.polar(radius*0.85, (this.angleForHour(i))));
+	    	var labelNo = (i == 0 && (this.nHours == 12 || useRoman)) ? this.nHours : i;
+			var label = (useRoman && this.nHours == 12) ? ["XII", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI"][i] : labelNo.toString();
+			this.addMorph(TextMorph.makeLabel(label,{fontSize: fontSize}).centerAt(labelPosition));
         }
-	
         this.hours = this.addMorph(Morph.makePolygon([pt(-2.5, 0), pt(0, -radius*0.50), pt(2.5, 0)], 0, null, Color.blue));
         this.minutes = this.addMorph(Morph.makePolygon([pt(-2, 0), pt(0, -radius*0.70), pt(2, 0)], 0, null, Color.blue));
         this.seconds = this.addMorph(Morph.makePolygon([pt(-1.5, radius*0.25), pt(0, -radius*0.85), pt(1.5, radius*0.25)], 0, null, Color.red));
@@ -138,6 +136,12 @@ Morph.subclass("ClockMorph", {
         this.setHands();
         this.changed(); 
     },
+angleForHour: function(hr) {
+	    	var angle12 = (this.nHours == 12) ? -0.25 : 0.25;  // Offset of 12 oclock from zero degrees (east)
+			return ( hr / this.nHours + angle12)*Math.PI*2;
+    },
+
+
 
     reshape: Functions.Null,
     
@@ -145,13 +149,14 @@ Morph.subclass("ClockMorph", {
         this.startStepping(1000, "setHands"); // once per second
     },
 
-    setHands: function() {
+    setHands: function() { 
         var timeNow = new Date();
-        var offset = this.timeZoneOffset  || ( -1 * timeNow.getTimezoneOffset() / 60);
+        var offset = this.timeZoneOffset  ||  - timeNow.getTimezoneOffset() / 60;
+		offset += (this.nHours == 12) ? 3 : 6;  // compensate for angle of 12
         var second = timeNow.getUTCSeconds();
         var minute = timeNow.getUTCMinutes() + second/60;
         var hour = timeNow.getUTCHours() + offset + minute/60;
-        this.hours.setRotation(hour/12*2*Math.PI);
+        this.hours.setRotation(this.angleForHour(hour));
         this.minutes.setRotation(minute/60*2*Math.PI);
         this.seconds.setRotation(second/60*2*Math.PI); 
     }
