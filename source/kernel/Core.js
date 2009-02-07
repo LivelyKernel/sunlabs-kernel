@@ -1825,7 +1825,7 @@ Morph.addMethods({
 
 
     insertMorph: function(m, isFront) { // low level, more like Node.insertBefore?
-	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode.nextSibling :
+	var insertionPt = this.submorphs.length == 0 ? null : // if no submorphs, append to nodes
 	    isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
 	// the last one, so drawn last, so front
 	this.rawNode.insertBefore(m.rawNode, insertionPt);
