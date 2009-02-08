@@ -340,9 +340,52 @@ Widget.subclass('WikiNavigator', {
         this.svnResource.formalModel.addObserver({onMetadataUpdate: function() {
             this.model.setVersions(this.svnResource.getMetadata());
         }.bind(this)});
-	    this.svnResource.fetchHeadRevision();
-        
+	    this.svnResource.fetchHeadRevision();     
 	},
+
+// -------------
+	registerUser: function(username, pwd, name, email, successCb, failureCb) {
+	// This functions uses the trac installation at livelykernel.sunlabs.com to create
+	// a new user account on the server. This happens in two steps:
+	// 1. a GET request from http://livelykernel.sunlabs.com/index.fcgi/register is made.
+	// This is necessary to get a session id and a form token from trac (required for next step).
+	// 2. a POST request with the user data, the session id, and the form token is made (the correct
+	// setup of the header is important) to run a cgi script on the server which calls the htpasswd command
+	var pwdConfirm = pwd;
+	var url = new URL('http://livelykernel.sunlabs.com/index.fcgi/register');
+	var getReq = new NetRequest({
+		setStatus: "register",
+		model: {register: function() {
+			var header = getReq.transport.getResponseHeader('Set-Cookie');
+			var formToken = header.match(/.*trac_form_token=([0-9a-z]+);.*/)[1]
+			var session = header.match(/.*trac_session=([0-9a-z]+);.*/)[1];
+
+			var postReq = new NetRequest({
+				setStatus: "result",
+				model: {result: function() {
+					postReq.getResponseText().match(/.*Another account with that name already exists.*/) ?
+						failureCb() :
+						successCb();
+				}}
+			});
+
+			postReq.setRequestHeaders({
+				"Cookie": 'trac_form_token=' + formToken + '; trac_session=' + session,
+				'Cache-Control': 'max-age=0',
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Accept': 'text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5'
+			});		
+			
+			var postData = Strings.format('__FORM_TOKEN=%s&action=create&user=%s&password=%s&password_confirm=%s&name=%s&email=%s',
+				formToken, username, pwd, pwdConfirm, name, email)
+			postReq.post(url, postData);
+		}}
+	});
+
+	getReq.setRequestHeaders({"Cookie": '' }); // Cookie must be empty to get new session and form token from trac
+	getReq.get(url);
+},
+// -------------
 		
 	createWikiNavigatorButton: function() {
 	    var btn =  new TextMorph(new Rectangle(0,0,80,50), 'Wiki control');
@@ -614,6 +657,86 @@ Widget.subclass('LatestWikiChangesList', {
 	},
 	
 	onVersionListUpdate: Functions.Null,
+
+});
+Dialog.subclass('UserRegistrationDialog', {
+
+	formals: ["+Username", "+Password", "+PasswordConfirmed", "+Fullname", "+Email", "-Cancelled", "-Confirmed"],
+    initialViewExtent: pt(350, 150),
+
+    initialize: function($super, plug) {
+		if (!plug) {
+			var model = Record.newPlainInstance({Username: null, Password: null, PasswordConfirmed: null, Fullname: null, Email: null, Cancelled: null, Confirmed: null});
+			plug = Relay.newInstance({Cancelled: '-Cancelled', Confirmed: '-Confirmed'}, model);
+		}
+		$super(plug);
+    },
+
+    openIn: function($super, world, position) {
+	    var view = $super(world, position);
+        world.firstHand().setKeyboardFocus(view.targetMorph.submorphs[1]);
+	    return view;
+    },
+    
+    buildView: function(extent, model) {
+        var panel = new PanelMorph(extent);
+        this.panel = panel;
+        panel.linkToStyles(["panel"]);
+
+		var height = 20;
+		var mid = extent.x/2;
+		var startPos = pt(this.inset, this.inset);
+
+		this.buildLabelAndTextInput('Username:', 'Username', startPos, mid, height);
+		startPos = startPos.addXY(0, height + this.inset);
+		this.buildLabelAndTextInput('Password:', 'Password', startPos, mid, height);
+		startPos = startPos.addXY(0, height + this.inset);
+		//this.buildLabelAndTextInput('Repeat Password:', 'PasswordConfirmed', startPos, mid, height);
+		//startPos = startPos.addXY(0, height + this.inset);
+		this.buildLabelAndTextInput('email:', 'Email', startPos, mid, height);
+		startPos = startPos.addXY(0, height + this.inset*2);
+
+		var r = new Rectangle(mid - 55 - this.inset/2, startPos.y, 55, 30);
+        var yesButton = panel.addMorph(new ButtonMorph(r)).setLabel("Confirm");
+        yesButton.connectModel(this.getModel().newRelay({Value: 'Confirmed'}));
+
+		r = new Rectangle(mid + this.inset/2, startPos.y, 55, 30);
+        var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
+        noButton.connectModel(this.getModel().newRelay({Value: 'Cancelled'}));
+        
+        return panel;
+    },
+
+buildLabelAndTextInput: function(label, modelField, startPos, mid, height) {
+		var r = new Rectangle(startPos.x, startPos.y, mid, height);
+		this.panel.addMorph(new TextMorph(r, label).beLabel());
+
+		r = new Rectangle(mid, startPos.y, mid-this.inset, height);
+		var input = this.panel.addMorph(new TextMorph(r));
+		input.autoAccept = true;
+		input.connectModel(this.getModel().newRelay({Text: modelField}));
+},
+onCancelledUpdate: function(val) {
+	if (val) return; // Btn down
+	this.removeTopLevel();
+},
+onConfirmedUpdate: function(val) {
+	if (val) return; // Btn down
+	var w = WorldMorph.current();
+	if (!WikiNavigator || !WikiNavigator.current) {
+		w.alert('We are not in the wiki!');
+		this.removeTopLevel();
+		return;
+	}
+	var m = this.getModel();
+	if (!m.getUsername() || !m.getPassword()) {
+		w.alert('Enter username and password!');
+		return;
+	}
+	WikiNavigator.current.registerUser(m.getUsername(), m.getPassword(), m.getFullname(), m.getEmail());
+	console.log('test');
+},
+
 
 });
 
