@@ -412,11 +412,10 @@ Widget.subclass('WikiNavigator', {
 });
 
 Object.extend(WikiNavigator, {
-    enableWikiNavigator: function(force) {
+    enableWikiNavigator: function(force, optUrl) {
         if (!force && WikiNavigator.current) return;
         if (WikiNavigator.current && WikiNavigator.current.btn) WikiNavigator.current.btn.remove();
-        var nav = new WikiNavigator(URL.source);
-        // var nav = new WikiNavigator('http://localhost/livelyBranch/proxy/wiki/test/blabla');
+        var nav = new WikiNavigator(optUrl || URL.source);
         if (!nav.isActive()) return;
         nav.createWikiNavigatorButton();
         WorldMorph.current().addMorph(nav.btn);
@@ -428,6 +427,11 @@ Object.extend(WikiNavigator, {
 		if (!fileName.endsWith('.xhtml')) 
 	    	fileName += ".xhtml";
 		return URL.source.withFilename(fileName);
+	},
+	test: function() {
+		var url = new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/index.xhtml');
+		WikiNavigator.enableWikiNavigator(true, url);
+		return WikiNavigator.current;
 	},
 });
 
