@@ -911,6 +911,7 @@ BoxMorph.subclass("TextMorph", {
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
         this.textSelection = this.addMorphBack(new TextSelectionMorph());
+		this.rawNode.insertBefore(this.textSelection.rawNode, this.shape.rawNode.nextSibling);
     },
 
     restoreFromSubnode: function($super, importer, rawNode) {
