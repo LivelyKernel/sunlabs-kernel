@@ -193,21 +193,47 @@ Widget.subclass('WikiNavigator', {
 	buildView: function(extent) {
 	    var panel = PanelMorph.makePanedPanel(extent, [
 			['saveContentButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.2, 0.1, 0.6)],
-			['versionList', newTextListPane, new Rectangle(0.25, 0.2, 0.55, 0.6)]
+			//['lockButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.5, 0.1, 0.3)],
+			['registerButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.85, 0.2, 0.1, 0.3)],
+			['loginButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.85, 0.5, 0.1, 0.3)],
+			['versionList', newTextListPane, new Rectangle(0.15, 0.2, 0.7, 0.6)],
 		]);
 
         // delete panel when moving the mouse away from it
         panel.onMouseOut = panel.onMouseOut.wrap(function(proceed, evt) {
-            if (this.submorphs.any(function(ea) { return ea.fullContainsWorldPoint(evt.point()) })) return;
-            this.remove();
+			if (this.submorphs.any(function(ea) { return ea.fullContainsWorldPoint(evt.point()) })) return;
+			this.remove();
         });
-        
+
+		var self = this;
+		var btnAction = function(func) {
+			return {setValue: 'btn', model: {btn: function(btnVal) { if (!btnVal) func.apply(self) }}}
+		};
+
 		var saveContentButton = panel.saveContentButton;
 		saveContentButton.setLabel("Save");
-		saveContentButton.connectModel({model: this, setValue: "saveWorld"});
+		saveContentButton.connectModel(btnAction(this.saveWorld));
+
+		var registerButton = panel.registerButton;
+		registerButton.setLabel("Register");
+		registerButton.connectModel(btnAction(function() {
+			console.log(this);
+			panel.remove(); new UserRegistrationDialog().open();
+		}));
+
+		var loginButton = panel.loginButton;
+		loginButton.setLabel("Login");
+		loginButton.connectModel(btnAction(function() {panel.remove(); this.login()}));
+
+		/*
+		var lockButton = panel.lockButton;
+		lockButton.setLabel("Lock");
+		//saveContentButton.connectModel({model: this, setValue: "saveWorld"});
+		*/
 		
 /*****/
         var versionList = panel.versionList;
+		versionList.applyStyle({borderWidth:1, borderColor:Color.black})
         // FIXME This is for value conversion. Much better is using conversion method support of relay (see below)
         var convertSVNMetadataToStrings = function(data) { return data.collect(function(ea) { return ea.toString() }) };
         versionList.innerMorph().setList = versionList.innerMorph().setList.wrap(function(proceed, values) {
@@ -217,7 +243,7 @@ Widget.subclass('WikiNavigator', {
         versionList.innerMorph().onListUpdate = versionList.innerMorph().onListUpdate.wrap(function(proceed, values) {
             console.log("wrapped onListUpdate");
             proceed(convertSVNMetadataToStrings(values));
-        });      
+        });
         versionList.connectModel(this.model.newRelay({List: "Versions", Selection: "Version"}), true /* kickstart if morph was deleted*/);
         //When using conversion methods this.model.setVersions no longer triggers the onListUpdate... why?
         // Relay.create({List: {mode: '', name: 'Versions', from: Number, to: String}})
@@ -267,8 +293,7 @@ Widget.subclass('WikiNavigator', {
 		anotherSave();
 	},
 	
-	saveWorld: function(value) {
-	    if (!value) return;
+	saveWorld: function() {
 	    var status = this.doSave();
     	if (status.isSuccess()) {
     	    console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
@@ -385,6 +410,12 @@ Widget.subclass('WikiNavigator', {
 	getReq.setRequestHeaders({"Cookie": '' }); // Cookie must be empty to get new session and form token from trac
 	getReq.get(url);
 },
+login: function() {
+	// Just do a write, if the server allow authenticated users write access,
+	// a browser login popup should appear
+	new NetRequest().put(this.model.getURL().withFilename('auth'));
+},
+
 // -------------
 		
 	createWikiNavigatorButton: function() {
