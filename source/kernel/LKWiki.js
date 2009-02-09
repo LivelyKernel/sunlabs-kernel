@@ -278,43 +278,37 @@ Widget.subclass('WikiNavigator', {
 		var world = WorldMorph.current();
 		var anotherSave = function() {
 			var status = this.doSave();
-			if (status.isSuccess()) {
-				console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
-			} else {
-				console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
-			}
-			this.createWikiNavigatorButton();
-			WorldMorph.current().addMorph(this.btn);
-			this.btn.startStepping(1000, "positionInLowerLeftCorner");
+			console.log(Strings.format('%s saving world at %s to wiki',
+				status.isSuccess() ? "Success" : "Failure",
+				this.model.getURL().toString()));
+			WikiNavigator.enableWikiNavigator(true, this.model.getURL());
 		}.bind(this);
 		if (this.worldExists())
 			world.confirm(this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
-	else
-		anotherSave();
+		else
+			anotherSave();
 	},
 	
 	saveWorld: function() {
 	    var status = this.doSave();
+		var msg = ' saving world at ' + this.model.getURL().toString() + '. Status: ' + status.code();
     	if (status.isSuccess()) {
-    	    console.log("success saving world at " + this.model.getURL().toString() + ", to wiki. Status: " + status.code());
+    	    console.log('Success' + msg);
             this.navigateToUrl();
     	} else {
-    	    console.log("Failure saving world at " + this.model.getURL().toString() + ", to wiki");
-    	    this.createWikiNavigatorButton();
-    	    // FISXME CLEANUP
-    	    WorldMorph.current().addMorph(this.btn);
-            this.btn.startStepping(1000, "positionInLowerLeftCorner");
+    	    console.log('Failure' + msg);
+			WikiNavigator.enableWikiNavigator(true, this.model.getURL());
     	}
 	},
 	
 	askToNavigateToUrl: function(world) {    
-        if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway
+	if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway
 
-        var msg = 'Go to ' + this.model.getURL() + ' ?';
-        var label1 = this.worldExists() ? 'Save and follow link' : 'Save, create, follow link';
-        var label2 = this.worldExists() ? 'Just follow link' : 'Create and follow link';
+	var msg = 'Go to ' + this.model.getURL() + ' ?';
+	var label1 = this.worldExists() ? 'Save and follow link' : 'Save, create, follow link';
+	var label2 = this.worldExists() ? 'Just follow link' : 'Create and follow link';
         
-             var model = Record.newPlainInstance({
+	var model = Record.newPlainInstance({
                  Button1: null, Button2: null, Message: msg, LabelButton1: label1, LabelButton2: label2 });
              model.addObserver({
                  onButton1Update: function(value) {
@@ -336,7 +330,7 @@ Widget.subclass('WikiNavigator', {
                  Button1: "+Button1", Button2: "+Button2", Message: "-Message",
                  LabelButton1: "-LabelButton1", LabelButton2: "-LabelButton2"}));
              dialog.openIn(world, world.positionForNewMorph());
-             return dialog;
+			return dialog;
     },
 	    
 	navigateToUrl: function() {
@@ -438,7 +432,8 @@ login: function() {
 	},
 	
     worldExists: function(optURL) {
-        return new NetRequest().beSync().get(optURL || this.model.getURL()).getStatus().isSuccess();
+		var url = optURL || this.model.getURL();
+        return new NetRequest().beSync().get(url).getStatus().isSuccess();
     }
 });
 

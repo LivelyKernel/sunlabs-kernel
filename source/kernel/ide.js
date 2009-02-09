@@ -247,43 +247,43 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	allChanged: function(keepUnsavedChanges, changedNode) {
 
 		// optimization: if no node looks like the changed node in my browser do nothing
-		if (changedNode)
-			if (this.allNodes().every(function(ea) { return !changedNode.hasSimilarTarget(ea) }))
-				return;
-
+		if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
+			return;
+		//dbgOn(true);
 	      // FIXME remove duplication
         var oldN1 = this.getPane1Selection();
         var oldN2 = this.getPane2Selection();
         var oldN3 = this.getPane3Selection();
 
-		var src;
-		if (keepUnsavedChanges && this.hasUnsavedChanges())
-			src = this.panel.sourcePane.innerMorph().textString;
+		var src = keepUnsavedChanges &&
+						this.hasUnsavedChanges() &&
+						this.panel.sourcePane.innerMorph().textString;
 
-        this.start();
-        if (oldN1) {
-            var newN1 = this.nodesInPane('Pane1').detect(function(ea) { return ea.target === oldN1.target });
-			if (!newN1) newN1 = this.nodesInPane('Pane1').detect(function(ea) { return ea.asString() === oldN1.asString() });
-			if (newN1) newN1.mode = oldN1.mode;
-            this.setPane1Selection(newN1, true);
-        }
-        if (oldN2) {
-            var newN2 = this.nodesInPane('Pane2').detect(function(ea) { return ea.target === oldN2.target });
-			if (!newN2) newN2 = this.nodesInPane('Pane2').detect(function(ea) { return ea.asString() === oldN2.asString() });
-			if (newN2) newN2.mode = oldN2.mode;
-            this.setPane2Selection(newN2, true);
-        }	
-        if (oldN3) {
-            var newN3 = this.nodesInPane('Pane3').detect(function(ea) { return ea.target === oldN3.target });
-			if (!newN3) newN3 = this.nodesInPane('Pane3').detect(function(ea) { return ea.asString() === oldN3.asString() });
-			if (newN3) newN3.mode = oldN3.mode;
-            this.setPane3Selection(newN3, true);
-        }
+		if (this.hasUnsavedChanges())
+			this.setSourceString(this.emptyText);
+					
+		var revertStateOfPane = function(paneName, oldNode) {
+			if (!oldNode) return;
+			var nodes = this.nodesInPane(paneName);
+			var newNode = nodes.detect(function(ea) {return ea && ea.target === oldNode.target});
+			if (!newNode)
+				newNode = nodes.detect(function(ea) {return ea && ea.asString() === oldNode.asString()});
+			if (newNode)
+				newNode.mode = oldNode.mode;
+            this['set' + paneName + 'Selection'](newNode, true);
+		}.bind(this);
+		
+		this.start(); // select rootNode and generate new subnodes
 
-		if (src) {
-			this.setSourceString(src);
-			this.panel.sourcePane.innerMorph().showChangeClue(); // FIXME
-		}
+		revertStateOfPane('Pane1', oldN1);
+		revertStateOfPane('Pane2', oldN2);
+		revertStateOfPane('Pane3', oldN3);
+
+		if (!src) return;
+		//this.setSourceString(src);
+		var text = this.panel.sourcePane.innerMorph();
+		text.textString = src; text.changed()
+		text.showChangeClue(); // FIXME
 	},
 
     nodeChanged: function(node) {
