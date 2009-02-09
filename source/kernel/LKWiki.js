@@ -383,8 +383,8 @@ Widget.subclass('WikiNavigator', {
 				setStatus: "result",
 				model: {result: function() {
 					postReq.getResponseText().match(/.*Another account with that name already exists.*/) ?
-						failureCb() :
-						successCb();
+						failureCb && failureCb() :
+						successCb && successCb();
 				}}
 			});
 
@@ -763,7 +763,10 @@ onConfirmedUpdate: function(val) {
 		w.alert('Enter username and password!');
 		return;
 	}
-	WikiNavigator.current.registerUser(m.getUsername(), m.getPassword(), m.getFullname(), m.getEmail());
+	WikiNavigator.current.registerUser(m.getUsername(), m.getPassword(), m.getFullname(), m.getEmail(),
+		function() {w.alert('Successfully registered as ' + m.getUsername())},
+		function() {w.alert('User ' + m.getUsername() + ' already exists!')}
+	);
 	console.log('test');
 },
 
