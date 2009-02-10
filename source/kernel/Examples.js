@@ -165,22 +165,27 @@ angleForHour: function(hr) {
 
 Morph.subclass("SymmetryMorph", {
 
-    initialize: function($super, size, nFold) { 
+    initialize: function($super, size, nFold) {
 		//  WorldMorph.current().addMorph(new SymmetryMorph(300, 7)) 
-        $super(new lively.scene.Rectangle(new Rectangle((5/2)*size, size/4, size, 2*size + 30)));
+		// TO DO...
+		// Show line for triangular border but don't copy
+		// add menu for remove or clear and choose no. of slices
+		// put panel in a window and intercept remove to clean up
+		// Make stylePanel do layoutChanged for color changes
+		// Implement drag in morph menu 
+
+        $super(new lively.scene.Rectangle(new Rectangle(2*size+20, size, size, size)));
 		this.setFill(Color.white);
 		this.setBorderWidth(1);
 		this.radius = size;
-		this.nFold = nFold;  // Will be 360/nFold segments, as half that many reflected pairs
-		this.pattern = this.addMorph(Morph.makeRectangle(new Rectangle(0, 0, size, size)));
-		this.pattern.setFill(Color.lightGray.lighter());
-		var superLayoutChanged = this.pattern.layoutChanged;
+		this.nFold = nFold;  // Will be nFold*2 segments, as half are reflections
+		this.superLayoutChanged = this.layoutChanged;
 		this.needsUpdate = false;
-		this.pattern.layoutChanged = function(argIfAny) {  // Override to update whenever pattern changes
+		this.layoutChanged = function(argIfAny) {  // Override to update whenever content changes
 			this.needsUpdate = true;
-			return superLayoutChanged.call(this.pattern,argIfAny);
+			return this.superLayoutChanged(argIfAny);
 			}.bind(this);
-		//this.startStepping(250, "doUpdateIfNeeded"); //not in world yet
+		//this.startStepping(250, "updateIfNeeded"); //not in world yet
    },
 
 onDeserialize: function() {
@@ -198,59 +203,41 @@ startUp: function() {
 
     updateDisplayMorph: function() { 
 	var r = this.radius;
-	if (!this.displayMorph) { 
-		this.displayMorph = Morph.makeCircle(pt(r+10, r+10), r+10);
-		this.world().addMorph(this.displayMorph);
-		}
+	var pi = Math.PI;
+	var theta = pi / this.nFold;
+	var vertices = [ pt(0, 0), Point.polar(r, pi/2 - theta), Point.polar(r, pi/2) ];
+
+	if (!this.displayMorph || !this.displayMorph.owner) { 
+		this.displayMorph = Morph.makeCircle(pt(r+10, r+5), r+5);
+		this.world().addMorph(this.displayMorph); }
 	this.displayMorph.withAllSubmorphsDo(function() {this.stopStepping(); });
 	this.displayMorph.removeAllMorphs();
+	if (!this.guideLine) this.guideLine = this.addMorph(Morph.makeLine(vertices, 1, Color.gray));
 
-	if (this.clipMorph2) {
-		this.clipMorph2.withAllSubmorphsDo(function() {this.stopStepping(); });
-		this.clipMorph2.remove();
-		}
-	if (this.other) {
-		this.other.withAllSubmorphsDo(function() {this.stopStepping(); });
-		this.other.remove();
-		}
-	this.clipMorph2 = new ClipMorph(this.pattern.bounds().bottomLeft().extent(pt(r/2, r)));
-	this.addMorph(this.clipMorph2);
-	this.other = Morph.makeRectangle(this.clipMorph2.bounds().topRight().extent(pt(r/2, r)));
-		this.other.setFill(null);
-		this.other.setBorderWidth(0);
-		this.addMorph(this.other);
-	this.clipMorph1 = new ClipMorph(this.bounds().bottomLeft().extent(pt(r/2, r)));
-	this.other.addMorph(this.clipMorph1);
+	var slice = Morph.makePolygon(vertices, 0, null, this.getFill());
+	this.displayMorph.addMorph(slice);
+	slice.beClipMorph();
 
-	this.clipMorph1.setPosition(pt(0, 0));
-	var segment = this.pattern.copy(new Copier());
-	segment.owner = null;  // suppress relocation
-	segment.setPosition(pt(-r/3, 0));
-	this.clipMorph2.addMorph(segment);
-	this.clipMorph1.removeAllMorphs();
-	var segment2 = this.clipMorph2.copy(new Copier());
-	segment2.owner = null;  // suppress relocation
-	segment2.setPosition(pt(r/2, 0));
-	this.clipMorph1.addMorph(segment2);
-	segment2.rotateBy(Math.PI/this.nFold);
+	this.submorphs.forEach( function(morph) {
+		if (morph instanceof Morph && morph !== this.guideLine)
+			{var m = morph.duplicate(); 
+			m.owner = null;  // to preserve transformation
+			slice.addMorph(m); }
+		}); 
 
- 	var refl = this.other.copy(new Copier());
-	refl.owner = null;  // suppress relocation
-	this.other.owner.addMorph(refl);
-	refl.setScalePoint(pt(-1, 1));
+	var reflection = slice.duplicate();
+	reflection.setScalePoint(pt(-1, 1));
+	this.displayMorph.addMorph(reflection);
 
-	// Make this do nFold copies, then nFold more reflections
-	for (var i=0; i<this.nFold*2; i++) {
-		var segment = (i < this.nFold ? this.other : refl).copy(new Copier());
-		segment.owner = null;  // suppress relocation
-		this.displayMorph.addMorph(segment);
-		segment.setPosition(pt(-r/2, 0));
-		segment.moveOriginBy(pt(r/2, 0));
-		segment.rotateBy(Math.PI*2/this.nFold*i);
-		}
-	refl.remove()
-	}    
-});
+	// Make nFold copies of the slice and its reflection
+	for (var i=1; i<=this.nFold-1; i++) {
+		[ slice, reflection ].forEach( function (segment) {
+			var copy = segment.duplicate();
+			copy.rotateBy(theta*2*i);
+			this.displayMorph.addMorph(copy);
+		}.bind(this));
+	}
+	}});
 
 
 // ===========================================================================

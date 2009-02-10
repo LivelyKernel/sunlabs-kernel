@@ -1124,6 +1124,12 @@ lively.data.Wrapper.subclass('Morph', {
 	//  with the same shape and shape attributes as this
 	return new Morph(this.shape.copy()); 
     },
+duplicate: function () { 
+	// Return a full copy of this morph and its submorphs, with owner == null
+	var copy = this.copy(new Copier());
+	copy.owner = null;
+	return copy;
+    },
 
     initializePersistentState: function(shape) {
 	// a rect shape by default, will change later
@@ -2089,8 +2095,19 @@ Morph.addMethods({
 	this.setRotation(this.getRotation()+delta);
     },
 
-    scaleBy: function(delta) {
-	this.setScale(this.getScale()*delta);
+    scaleBy: function(factor) {
+	// Perform a linear scaling (based on x scale) by the given factor
+	this.setScale(this.getScale()*factor);
+    },
+beClipMorph: function() {
+	// For simple morphs (rectangles, ellipses, polygons) this will cause all submorphs
+	// to be clipped to the shape of this morph.
+	// Note: the bounds function should probably be copied from ClipMorph as
+	//		part of this mutation
+	var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
+	this.clip = new lively.scene.Clip(this.shape);
+	defs.appendChild(this.clip.rawNode);
+	this.clip.applyTo(this);
     },
 
     throb: function() {
@@ -2509,6 +2526,7 @@ Morph.addMethods({
 	    ["remove", this.remove],
 	    ["drill", this.showOwnerChain.curry(evt)],
 	    ["grab", this.pickMeUp.curry(evt)],
+	    ["drag", this.dragMe.curry(evt)],
 	    ["edit style", function() { new StylePanel(this).open()}],
 	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
 	    ["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
@@ -2592,7 +2610,18 @@ subMenuItems: function(evt) {
 	menu.open(evt);
     },
 
-    putMeInAWindow: function(loc) {
+    dragMe: function(evt) {
+	var offset = this.getPosition().subPt(this.owner.localize(evt.point()));
+	var mouseRelay= {
+		captureMouseEvent: function(e) { 
+			if (e.type == "MouseMove")  this.setPosition(this.owner.localize(e.hand.getPosition()).addPt(offset));
+			if (e.type == "MouseDown" || e.type == "MouseUp")  e.hand.setMouseFocus(null); 
+			}.bind(this),
+		};
+	evt.hand.setMouseFocus(mouseRelay);
+    },
+
+putMeInAWindow: function(loc) {
 	var c = this.immediateContainer();
 	var w = this.world();
 	var wm = new WindowMorph(this.windowContent(), this.windowTitle());
@@ -2838,6 +2867,12 @@ Morph.addMethods({
 	// ignore null values
 	this.activeScripts.select(function (ea) { return ea }).invoke('stop', this.world());
 	this.activeScripts = null;
+    },
+stopSteppingScriptNamed: function(sName) {
+	if (!this.activeScripts) return;
+	this.activeScripts.select(function (ea) { return ea.scriptName == sName }).invoke('stop', this.world());
+	this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
+	if (this.activeScripts.length == 0) this.activeScripts = null;
     },
 
     startStepping: function(stepTime, scriptName, argIfAny) {
