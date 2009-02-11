@@ -207,7 +207,8 @@ setNFold: function(n) {
 		this.world().addMorph(this.displayMorph); }
 	this.displayMorph.withAllSubmorphsDo(function() {this.stopStepping(); });
 	this.displayMorph.removeAllMorphs();
-	if (! this.guideLine) this.guideLine = this.addMorph(Morph.makeLine(vertices, 1, Color.gray));
+	if (! this.guideLine) { this.guideLine = this.addMorph(Morph.makeLine(vertices, 1, Color.gray));
+			this.guideLine.ignoreEvents(); }
 
 	// Make a clipping slice and copy morphs from the master (this) into it
 	var slice = this.displayMorph.addMorph(Morph.makePolygon(vertices, 0, null, this.getFill()));
