@@ -654,6 +654,7 @@ Resource.subclass('SVNResource', {
     },
 	
     fetchHeadRevision: function(optSync) {
+	this.setHeadRevision(null); // maybe there is a new one
 	var req = new NetRequest({model: this, setResponseXML: "pvtSetHeadRevFromDoc",
 				setStatus: "setRequestStatus"});
 	if (optSync) req.beSync();

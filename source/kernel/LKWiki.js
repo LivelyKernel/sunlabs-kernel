@@ -358,13 +358,17 @@ Widget.subclass('WikiNavigator', {
 	
 	findVersions: function() {
 	    if (this.model.getVersions().length == 0) this.model.setVersions(['Please wait, fetching version infos...']);
-	    this.svnResource.formalModel.addObserver({onHeadRevisionUpdate: function(headRevision) {
-            this.svnResource.fetchMetadata(false, null, headRevision);
-        }.bind(this)});
-        this.svnResource.formalModel.addObserver({onMetadataUpdate: function() {
-            this.model.setVersions(this.svnResource.getMetadata());
-        }.bind(this)});
-	    this.svnResource.fetchHeadRevision();     
+		if (!this.svnResource.wasWrapped) {
+			this.svnResource.wasWrapped = true;
+			this.svnResource.formalModel.addObserver({onHeadRevisionUpdate: function(headRevision) {
+				if (!headRevision) return;
+				this.svnResource.fetchMetadata(false, null, headRevision);
+			}.bind(this)});
+			this.svnResource.formalModel.addObserver({onMetadataUpdate: function() {
+				this.model.setVersions(this.svnResource.getMetadata());
+			}.bind(this)});
+		};
+	    this.svnResource.fetchHeadRevision();
 	},
 
 // -------------
