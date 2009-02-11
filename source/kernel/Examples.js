@@ -167,26 +167,22 @@ Morph.subclass("SymmetryMorph", {
 
     initialize: function($super, size, nFold) {
 		//  WorldMorph.current().addMorph(new SymmetryMorph(300, 7)) 
-		// TO DO...
-		// Show line for triangular border but don't copy
-		// add menu for remove or clear and choose no. of slices
-		// put panel in a window and intercept remove to clean up
-		// Make stylePanel do layoutChanged for color changes
-		// Implement drag in morph menu 
 
         $super(new lively.scene.Rectangle(new Rectangle(2*size+20, size, size, size)));
-		this.setFill(Color.white);
-		this.setBorderWidth(1);
+		this.setFill(Color.blue.lighter());
 		this.radius = size;
-		this.nFold = nFold;  // Will be nFold*2 segments, as half are reflections
+		this.menu = new MenuMorph([]);
+		for (var i=2; i<=17; i++) this.menu.addItem([i.toString(), this, 'setNFold', i]);
+		this.menu.openIn(this, pt(175,20), true, "Add or edit shapes in wedge at left.\n" +
+			"Choose number of segments below..."); 
+
 		this.superLayoutChanged = this.layoutChanged;
-		this.needsUpdate = false;
 		this.layoutChanged = function(argIfAny) {  // Override to update whenever content changes
 			this.needsUpdate = true;
 			return this.superLayoutChanged(argIfAny);
 			}.bind(this);
-		//this.startStepping(250, "updateIfNeeded"); //not in world yet
-   },
+		this.setNFold(nFold);
+  },
 
 onDeserialize: function() {
 	this.updateDisplayMorph();
@@ -197,8 +193,14 @@ updateIfNeeded: function() {
 	},
 startUp: function() {
 	this.startStepping(250, "updateIfNeeded");
-	this.updateDisplayMorph();
 	},
+setNFold: function(n) {
+	this.nFold = n;
+	if (this.guideLine) this.guideLine.remove(); 
+	this.guideLine = null;  // will update the guideline
+	this.needsUpdate = true;
+	},
+
 
 
     updateDisplayMorph: function() { 
@@ -207,37 +209,35 @@ startUp: function() {
 	var theta = pi / this.nFold;
 	var vertices = [ pt(0, 0), Point.polar(r, pi/2 - theta), Point.polar(r, pi/2) ];
 
+	// Build a new kaleidoscope disk at start or after removal
 	if (!this.displayMorph || !this.displayMorph.owner) { 
-		this.displayMorph = Morph.makeCircle(pt(r+10, r+5), r+5);
+		this.displayMorph = Morph.makeCircle(pt(r+10, r+10), r);
+		this.displayMorph.setFill(null);
 		this.world().addMorph(this.displayMorph); }
 	this.displayMorph.withAllSubmorphsDo(function() {this.stopStepping(); });
 	this.displayMorph.removeAllMorphs();
-	if (!this.guideLine) this.guideLine = this.addMorph(Morph.makeLine(vertices, 1, Color.gray));
+	if (! this.guideLine) this.guideLine = this.addMorph(Morph.makeLine(vertices, 1, Color.gray));
 
-	var slice = Morph.makePolygon(vertices, 0, null, this.getFill());
-	this.displayMorph.addMorph(slice);
+	// Make a clipping slice and copy morphs from the master (this) into it
+	var slice = this.displayMorph.addMorph(Morph.makePolygon(vertices, 0, null, this.getFill()));
 	slice.beClipMorph();
-
 	this.submorphs.forEach( function(morph) {
-		if (morph instanceof Morph && morph !== this.guideLine)
-			{var m = morph.duplicate(); 
-			m.owner = null;  // to preserve transformation
-			slice.addMorph(m); }
-		}); 
+		if (!(morph instanceof SchedulableAction) && morph !== this.guideLine && morph !== this.menu)
+			slice.addMorph(morph.duplicate());
+		}.bind(this)); 
 
-	var reflection = slice.duplicate();
+	// Make a reflected slice and then copy both slices with rotation
+	var reflection = this.displayMorph.addMorph(slice.duplicate());
 	reflection.setScalePoint(pt(-1, 1));
-	this.displayMorph.addMorph(reflection);
-
-	// Make nFold copies of the slice and its reflection
 	for (var i=1; i<=this.nFold-1; i++) {
 		[ slice, reflection ].forEach( function (segment) {
 			var copy = segment.duplicate();
 			copy.rotateBy(theta*2*i);
 			this.displayMorph.addMorph(copy);
-		}.bind(this));
+		}.bind(this)); }
+	this.addMorph(this.menu); //keeps it on top
 	}
-	}});
+});
 
 
 // ===========================================================================

@@ -402,6 +402,7 @@ Widget.subclass('StylePanel', {
     initialize: function($super, targetMorph) {
         $super();
         this.targetMorph = targetMorph;
+		this.sendLayoutChanged = true;  // force propagation of changes
         var spec = targetMorph.makeStyleSpec();
 	this.actualModel = Record.newPlainInstance({
 	    BorderWidth: spec.borderWidth,
@@ -428,17 +429,19 @@ Widget.subclass('StylePanel', {
 
     onBorderWidthUpdate: function(w) {
         this.targetMorph.setBorderWidth(w.roundTo(0.1));
+    	if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
+
+
 
     onBorderColorUpdate: function(c) { // Maybe add a little color swatch in the view
         this.targetMorph.setBorderColor(c);
+	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
     
     onBorderRadiusUpdate: function(r) {
-        //var w = this.targetMorph.getBorderWidth();
         this.targetMorph.shapeRoundEdgesBy(r.roundTo(1));
-        //this.targetMorph.setBorderWidth(0);  // Force an update (!)
-        //this.targetMorph.setBorderWidth(w);
+	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
 
     onFillTypeUpdate: function(type) { this.fillType = type; this.setFill(); },
@@ -463,30 +466,36 @@ Widget.subclass('StylePanel', {
 	
         if (this.fillType == 'radial gradient')
             this.targetMorph.setFill(new gfx.RadialGradient([new gfx.Stop(0, this.color1), new gfx.Stop(1, this.color2)]));
-    },
+    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
     
     
     onFillOpacityUpdate: function(op) {
 	var value = op.roundTo(0.01);
         this.targetMorph.setFillOpacity(value);
         this.actualModel.setStrokeOpacity(value); // Stroke opacity is linked to fill
+    	if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
 
     onStrokeOpacityUpdate: function(op) {
         var value = op.roundTo(0.01);
         this.targetMorph.setStrokeOpacity(value);
+	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
 
     onTextColorUpdate: function(c) { // Maybe add a little color swatch in the view
         this.targetMorph.setTextColor(c);
+	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
 
     onFontFamilyUpdate: function(familyName) {
         this.targetMorph.setFontFamily(familyName);
+	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
     
     onFontSizeUpdate: function(fontSize) {
         this.targetMorph.setFontSize(Number(fontSize));
+	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
     },
 
     needsControlFor: function(methodName) {
