@@ -316,7 +316,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 
 	inPaneSelectNodeNamed: function(paneName,  nodeName) {
 			var nodes = this['get' + paneName + 'Content']();
-			var wanted = nodes.detect(function(ea) { return ea.string.include(nodeName) });
+			var wanted = nodes.detect(function(ea) { return ea && ea.string.include(nodeName) });
 			if (!wanted) return null;
 			var list = this.panel[paneName].innerMorph();
 			var i = list.itemList.indexOf(wanted);

@@ -282,11 +282,12 @@ Widget.subclass('WikiNavigator', {
 	interactiveSaveWorld: function() {
 		var world = WorldMorph.current();
 		var anotherSave = function() {
-			var status = this.doSave();
+			var status = this.doSave(true);
 			console.log(Strings.format('%s saving world at %s to wiki',
 				status.isSuccess() ? "Success" : "Failure",
 				this.model.getURL().toString()));
 			WikiNavigator.enableWikiNavigator(true, this.model.getURL());
+			if (status.code() === 412) this.askToOverwrite();
 		}.bind(this);
 		if (this.worldExists())
 			world.confirm(this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
@@ -295,7 +296,7 @@ Widget.subclass('WikiNavigator', {
 	},
 	
 	saveWorld: function() {
-	    var status = this.doSave();
+	    var status = this.doSave(true);
 		var msg = ' saving world at ' + this.model.getURL().toString() + '. Status: ' + status.code();
     	if (status.isSuccess()) {
     	    console.log('Success' + msg);
@@ -303,8 +304,18 @@ Widget.subclass('WikiNavigator', {
     	} else {
     	    console.log('Failure' + msg);
 			WikiNavigator.enableWikiNavigator(true, this.model.getURL());
+			if (status.code() === 412) this.askToOverwrite(true);
     	}
 	},
+askToOverwrite: function(moveToUrl) {
+	WorldMorph.current().confirm('World was saved elsewhere. Overwrite?', function() {
+		console.log(status.code());
+		var status = this.doSave();
+		if (status.isSuccess() && moveToUrl)
+			this.navigateToUrl();
+	}.bind(this));
+},
+
 	
 	askToNavigateToUrl: function(world) {    
 	if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway

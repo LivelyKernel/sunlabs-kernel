@@ -441,6 +441,8 @@ NetRequestReporterTrait = {
 	    } else if (status.code() == 401) {
 		world.alert("not authorized to access\n" + request); 
 		// should try to authorize
+		} else if (status.code() == 412) {
+		console.log("the resource was changed elsewhere\n" + request); 
 	    } else {
 		world.alert("failure to\n" + request + "\ncode " + status.code());
 	    }
