@@ -276,7 +276,7 @@ Widget.subclass('WikiNavigator', {
 		this.prepareForSaving();
 		var worldDoc = Exporter.shrinkWrapMorph(WorldMorph.current()); // why not this.world()?
 		var myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null;
-		return this.svnResource.store(worldDoc, true, myRevision).getStatus();
+		return this.svnResource.store(worldDoc, true, null, myRevision).getStatus();
 	},
 
 	interactiveSaveWorld: function() {
