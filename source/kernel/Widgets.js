@@ -155,7 +155,19 @@ BoxMorph.subclass('ButtonMorph', {
 	this.label = TextMorph.makeLabel(txt).centerAt(this.innerBounds().center());
         this.addMorph(this.label);
         return this;
-    }
+    },
+
+	buttonAction: function(funcOrSelector, target) {
+		this.connectModel({
+			setValue: 'action',
+			model: {action: function(btnVal) {
+				if (btnVal) return;
+				Object.isString(funcOrSelector) ?
+					target[funcOrSelector]() :
+					funcOrSelector.apply(target);
+			}}
+		});
+	}
 
 });
 

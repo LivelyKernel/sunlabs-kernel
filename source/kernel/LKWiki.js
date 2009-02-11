@@ -614,7 +614,7 @@ Widget.subclass('LatestWikiChangesList', {
 
 	defaultFilter: /^.*xhtml$/,
 
-	maxListLength: 20,
+	maxListLength: 50,
 
 	initialize: function(url) {
 		var model = Record.newPlainInstance({URL: url, DirectoryContent: [], Filter: this.defaultFilter, VersionList: [], VersionSelection: null});
@@ -632,14 +632,14 @@ Widget.subclass('LatestWikiChangesList', {
 
 		var m;
 		var model = this.getModel();
-
+		
 		m = panel.refreshButton;
 		m.setLabel("Refresh");
-		m.connectModel({model: this, setValue: "refresh"});
+		m.buttonAction(this.refresh, this);
 
 		m = panel.filterButton;
 		m.setLabel("Filename filter");
-		m.connectModel({model: this, setValue: "filterDialog"});
+		m.buttonAction('filterDialog', this);
 
 		m = panel.versionList;
 		m.connectModel(model.newRelay({List: "-VersionList", Selection: "+VersionSelection"}));
@@ -688,13 +688,11 @@ Widget.subclass('LatestWikiChangesList', {
 		};
 	},
 
-	refresh: function(btnVal) {
-		if (btnVal) return;
+	refresh: function() {
 		this.searchForNewestFiles();
 	},
 	
-	filterDialog: function(btnVal) {
-		if (btnVal) return;
+	filterDialog: function() {
 		var world = WorldMorph.current();
 		var cb = function(input) {
 			var regexp;
