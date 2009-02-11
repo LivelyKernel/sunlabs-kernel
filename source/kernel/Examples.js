@@ -167,26 +167,20 @@ Morph.subclass("SymmetryMorph", {
 
     initialize: function($super, size, nFold) {
 		//  WorldMorph.current().addMorph(new SymmetryMorph(300, 7)) 
-
-        $super(new lively.scene.Rectangle(new Rectangle(2*size+20, size, size, size)));
+       $super(new lively.scene.Rectangle(new Rectangle(2*size+20, size, size, size)));
 		this.setFill(Color.blue.lighter());
 		this.radius = size;
 		this.menu = new MenuMorph([]);
 		for (var i=2; i<=17; i++) this.menu.addItem([i.toString(), this, 'setNFold', i]);
 		this.menu.openIn(this, pt(175,20), true, "Add or edit shapes in wedge at left.\n" +
 			"Choose number of segments below..."); 
-
-		this.superLayoutChanged = this.layoutChanged;
-		this.layoutChanged = function(argIfAny) {  // Override to update whenever content changes
-			this.needsUpdate = true;
-			return this.superLayoutChanged(argIfAny);
-			}.bind(this);
 		this.setNFold(nFold);
   },
-
-onDeserialize: function() {
-	this.updateDisplayMorph();
+layoutChanged: function($super, argIfAny) {  // Override to update whenever content changes
+		this.needsUpdate = true;
+		return $super(argIfAny);
 	},
+
 updateIfNeeded: function() { 
 	if (this.needsUpdate) this.updateDisplayMorph();
 	this.needsUpdate = false;
@@ -200,9 +194,6 @@ setNFold: function(n) {
 	this.guideLine = null;  // will update the guideline
 	this.needsUpdate = true;
 	},
-
-
-
     updateDisplayMorph: function() { 
 	var r = this.radius;
 	var pi = Math.PI;
