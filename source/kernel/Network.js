@@ -681,7 +681,8 @@ store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
 		//determine local path of resource
 		var local = new URL(this.getURL()).relativePathFrom(new URL(this.repoUrl));
 		local = local.slice(1); // remove leading slash
-		Object.extend(headers, {'If': optHeadRev.toString() + '//' + local});
+		var ifHeader = Strings.format('(["%s//%s"])', optHeadRev, local);
+		Object.extend(headers, {'If': ifHeader});
 	}
 	return $super(content, optSync, headers);
 },
