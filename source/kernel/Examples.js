@@ -181,9 +181,10 @@ layoutChanged: function($super, argIfAny) {  // Override to update whenever cont
 		return $super(argIfAny);
 	},
 
-updateIfNeeded: function() { 
-	if (this.needsUpdate) this.updateDisplayMorph();
-	this.needsUpdate = false;
+updateIfNeeded: function() {
+	if (this.needsUpdate && !(this.owner instanceof HandMorph)) 
+		{this.updateDisplayMorph();
+		this.needsUpdate = false; }
 	},
 startUp: function() {
 	this.startStepping(250, "updateIfNeeded");
