@@ -177,15 +177,18 @@ Widget.subclass('WikiNavigator', {
             return /(.*wiki).*/.exec(URL.source.getDirectory().toString())[1];
     },
    
-    initialize: function($super, url, world) {
+    initialize: function($super, url, world, rev) {
 		$super(null);
 		if (!world) world = WorldMorph.current();
 		this.world = world;
-		url = new URL(url);
-		this.model = Record.newPlainInstance({Versions: [], Version: null, URL: url.notSvnVersioned().withoutQuery() });
-		this.model.addObserver(this, { Version: "!Version" });
-		
-		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: this.model.getURL().toString(), HeadRevision: null, Metadata: null}));
+		url = new URL(url).notSvnVersioned().withoutQuery();
+		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: url.toString(), HeadRevision: null, Metadata: null}));
+		if (!rev) {
+			this.svnResource.fetchHeadRevision(true);
+			rev = this.svnResource.getHeadRevision();
+		}
+		this.model = Record.newPlainInstance({Versions: [], Version: null, URL: url, OriginalRevision: rev});
+		this.model.addObserver(this, {Version: "!Version"});
 		
 		return this;
 	},
@@ -269,9 +272,11 @@ Widget.subclass('WikiNavigator', {
         // if (this.btn) this.btn.remove();
 	},
 	
-	doSave: function() {
-	    this.prepareForSaving();
-        return this.svnResource.store(Exporter.shrinkWrapMorph(WorldMorph.current()), true).getStatus();
+	doSave: function(doNotOverwrite) {
+		this.prepareForSaving();
+		var worldDoc = Exporter.shrinkWrapMorph(WorldMorph.current()); // why not this.world()?
+		var myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null;
+		return this.svnResource.store(worldDoc, true, myRevision).getStatus();
 	},
 
 	interactiveSaveWorld: function() {
@@ -439,9 +444,13 @@ login: function() {
 
 Object.extend(WikiNavigator, {
     enableWikiNavigator: function(force, optUrl) {
-        if (!force && WikiNavigator.current) return;
-        if (WikiNavigator.current && WikiNavigator.current.btn) WikiNavigator.current.btn.remove();
-        var nav = new WikiNavigator(optUrl || URL.source);
+		var old = WikiNavigator.current;
+        if (!force && old) return;
+		if (old && old.btn) old.btn.remove();
+		var url = optUrl || URL.source;
+		var nav = old ?
+			new WikiNavigator(url, old.world, old.model.getOriginalRevision()) :
+			new WikiNavigator(url);
         if (!nav.isActive()) return;
         nav.createWikiNavigatorButton();
         WorldMorph.current().addMorph(nav.btn);
@@ -455,7 +464,7 @@ Object.extend(WikiNavigator, {
 		return URL.source.withFilename(fileName);
 	},
 	test: function() {
-		var url = new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/index.xhtml');
+		var url = new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/test.txt');
 		WikiNavigator.enableWikiNavigator(true, url);
 		return WikiNavigator.current;
 	},

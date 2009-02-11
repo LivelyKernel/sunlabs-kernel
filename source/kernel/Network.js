@@ -672,6 +672,19 @@ Resource.subclass('SVNResource', {
 	};
 	return req;
     },
+store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
+	// if optHeadRev is not undefined than the store will only succeed
+	// if the head revision of the resource is really optHeadRev
+	if (optHeadRev) {
+		var headers = optRequestHeaders ? optRequestHeaders : {};
+		//determine local path of resource
+		var local = new URL(this.getURL()).relativePathFrom(this.repoUrl);
+		local = local.slice(1); // remove leading slash
+		Object.extend(headers, {'If': optHeadRev.toString() + '//' + local});
+	}
+	return $super(content, optSync, headers);
+},
+
     
     fetchProperties: function($super, destModel, optSync, optRequestHeaders, rev) {
         var req;
