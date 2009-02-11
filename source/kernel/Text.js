@@ -1538,7 +1538,7 @@ subMenuItems: function($super, evt) {
                     Config.askBeforeQuit = false;
                     window.location.assign(link + '?' + new Date().getTime());
                 }.bind(this));
-        else wikiNav.askToNavigateToUrl(this.world());
+        else wikiNav.askToSaveAndNavigateToUrl(this.world());
     },
     
     onMouseUp: function(evt) {

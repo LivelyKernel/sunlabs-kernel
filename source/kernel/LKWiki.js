@@ -315,9 +315,16 @@ askToOverwrite: function(moveToUrl) {
 			this.navigateToUrl();
 	}.bind(this));
 },
+askToNavigateToUrl: function(url) {
+	WorldMorph.current().confirm('Navigate to ' + url.toString() + '?', function(response) {
+		if (!response) return;
+		this.navigateToUrl(url);
+	}.bind(this));
+},
+
 
 	
-	askToNavigateToUrl: function(world) {    
+	askToSaveAndNavigateToUrl: function(world) {    
 	if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway
 
 	var msg = 'Go to ' + this.model.getURL() + ' ?';
@@ -349,9 +356,10 @@ askToOverwrite: function(moveToUrl) {
 			return dialog;
     },
 	    
-	navigateToUrl: function() {
+	navigateToUrl: function(url) {
 	    Config.askBeforeQuit = false;
-	    window.location.assign(this.model.getURL().toString() + '?' + new Date().getTime());
+		if (!url) url = this.model.getURL();
+	    window.location.assign(url.toString() + '?' + new Date().getTime());
 	},
 	
 	onVersionUpdate: function(versionString) {
@@ -657,7 +665,6 @@ Widget.subclass('LatestWikiChangesList', {
 	
 	onDirectoryContentUpdate: function(colItems) {
 		this.notify('Please wait, fetching version infos');
-		// TODO -- Use filter here!
 		colItems = colItems.select(function(ea) { return ea.shortName().match(this.getFilter()) }, this);
 		var t = new Date();
 		var list = colItems
@@ -673,7 +680,12 @@ Widget.subclass('LatestWikiChangesList', {
 		return {
 			isListItem: true,
 			string: colItem.shortName() + ' (' + versionInfo.rev + ' -- ' + versionInfo.author + ')',
-			value: {colItem: colItem, versionInfo: versionInfo}};
+			value: {
+				colItem: colItem,
+				versionInfo: versionInfo,
+				urlString: this.getURL().toString() + colItem.shortName()
+			}
+		};
 	},
 
 	refresh: function(btnVal) {
@@ -700,14 +712,12 @@ Widget.subclass('LatestWikiChangesList', {
 	onFilterUpdate: Functions.Null,
 	
 	onVersionSelectionUpdate: function(listItem) {
-		console.log('new sel');
 		world = WorldMorph.current();
-		var url = this.getURL().toString() + listItem.colItem.shortName();
-		world.confirm('Navigate to ' + url + '?', function(response) {
-			if (!response) return;
-			Config.askBeforeQuit = false;
-			window.location.assign(url + '?' + new Date().getTime());
-		});
+		if (WikiNavigator && WikiNavigator.current) {
+			WikiNavigator.current.askToNavigateToUrl(listItem.urlString);
+			return;
+		}
+		console.warn('No WikiNavigator active');
 	},
 	
 	onVersionListUpdate: Functions.Null,
