@@ -1531,7 +1531,7 @@ subMenuItems: function($super, evt) {
 		evt.stop();  // else weird things happen when return from this link by browser back button
 
         // add require to LKWiki.js here
-        var wikiNav = new WikiNavigator(new URL(link));
+        var wikiNav = new WikiNavigator(new URL(link), null, -1 /*FIXME don't ask for the headrevision*/);
         if (!wikiNav.isActive())
             this.world().confirm("Please confirm link to " + link,
                 function (answer) {

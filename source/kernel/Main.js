@@ -208,11 +208,6 @@ function populateWorldWithExamples(world) {
         });
     }
 
-    if (Config.showWikiNavigator)
-        require('LKWiki.js').toRun(function() {
-            WikiNavigator.enableWikiNavigator();
-        });
-
     if (Config.showFabrikComponentBox)
         require('Fabrik.js').toRun(function() { Fabrik.openComponentBox() });
     if (Config.showFahrenheitCelsiusExample)

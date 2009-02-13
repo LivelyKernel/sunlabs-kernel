@@ -3539,7 +3539,7 @@ Morph.addMethods({
     exportLinkedFile: function(filename) {
 	var url;
 	if (WikiNavigator && WikiNavigator.current) {
-		var nav = new WikiNavigator(WikiNavigator.fileNameToURL(filename));
+		var nav = new WikiNavigator(WikiNavigator.fileNameToURL(filename), null, -1 /*don't ask for the headrevision*/);
 		nav.interactiveSaveWorld();
 		url = nav.model.getURL();
 	} else {
