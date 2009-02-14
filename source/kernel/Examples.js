@@ -206,7 +206,6 @@ setNFold: function(n) {
 		this.displayMorph = Morph.makeCircle(pt(r+10, r+10), r);
 		this.displayMorph.setFill(null);
 		this.world().addMorph(this.displayMorph); }
-	this.displayMorph.withAllSubmorphsDo(function() {this.stopStepping(); });
 	this.displayMorph.removeAllMorphs();
 	if (! this.guideLine) { this.guideLine = this.addMorph(Morph.makeLine(vertices, 1, Color.gray));
 			this.guideLine.ignoreEvents(); }
@@ -215,8 +214,10 @@ setNFold: function(n) {
 	var slice = this.displayMorph.addMorph(Morph.makePolygon(vertices, 0, null, this.getFill()));
 	slice.beClipMorph();
 	this.submorphs.forEach( function(morph) {
-		if (!(morph instanceof SchedulableAction) && morph !== this.guideLine && morph !== this.menu)
-			slice.addMorph(morph.duplicate());
+		if (!(morph instanceof SchedulableAction) && morph !== this.guideLine && morph !== this.menu) {
+			var cpy = slice.addMorph(morph.duplicate());
+			// Don't step the copies -- they'll step anyway because of the master
+			cpy.withAllSubmorphsDo(function() {this.stopStepping(); }); }
 		}.bind(this)); 
 
 	// Make a reflected slice and then copy both slices with rotation
