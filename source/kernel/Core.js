@@ -4769,7 +4769,7 @@ Morph.subclass("HandMorph", {
             grabbedMorph.copyToHand(this);
             return;
         }
-        if (evt.isCommandKey() || evt.isRightMouseButtonDown()) {
+        if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) {
             grabbedMorph.showMorphMenu(evt);
             return;
         }
