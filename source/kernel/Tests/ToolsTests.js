@@ -1321,4 +1321,24 @@ TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     }
 })
     
+TestCase.subclass('lively.Tests.ToolsTests.MouseEventTest', {
+
+	testMouseEvents: function() {
+		var mouseWatcher = Morph.makeRectangle(0,0,100,20);
+		mouseWatcher.setFill(Color.red);
+
+        mouseWatcher.takesMouseFocus = Functions.True;
+		mouseWatcher.handlesMouseDown = Functions.True;
+        mouseWatcher.onMouseDown = function(evt) {
+                console.log('CLICK');
+				console.log(evt.rawEvent.button)
+				if (evt.rawEvent.ctrlKey) console.log('Ctrl key pressed');
+				evt.stop();
+        }
+
+        mouseWatcher.openInWorld();
+        //keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
+		WorldMorph.current().hands.first().setKeyboardFocus(mouseWatcher);
+    }
+});
 })

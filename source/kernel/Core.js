@@ -550,6 +550,18 @@ var Event = (function() {
 	    // likely origin of event, obvious for mouse events, the hand's position for
 	    // keyboard events
 	    return this.mousePoint || this.hand.getPosition();
+	},
+	
+	isLeftMouseButtonDown: function() {
+		return this.rawEvent.button === 0;
+	},
+	
+	isMiddleMouseButtonDown: function() {
+		return this.rawEvent.button === 1;
+	},
+	
+	isRightMouseButtonDown: function() {
+		return this.rawEvent.button === 2;
 	}
 
     });
@@ -603,6 +615,8 @@ var Event = (function() {
     var canvas = Global.document.getElementById("canvas");
     canvas.addEventListener("dragstart", disabler, true);
     canvas.addEventListener("selectstart", disabler, true);
+	if (Config.suppressDefaultMouseBehavior)
+		Global.document.oncontextmenu = Functions.False
 })();
 
 
@@ -2516,7 +2530,7 @@ Morph.addMethods({
 	return [];  // Overridden by, eg, TextMorph
     },
 
-    showMorphMenu: function(evt) { 
+    showMorphMenu: function(evt) {
 	var menu = this.morphMenu(evt);
 	menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
     },
@@ -3590,7 +3604,7 @@ Morph.subclass("PasteUpMorph", {
 	if (m == null) { 
             this.makeSelection(evt); 
             return true; 
-        } else if (!evt.isCommandKey()) {
+        } else if (!evt.isCommandKey() && evt.isLeftMouseButtonDown()) {
             if (m === this.world()) { 
                 this.makeSelection(evt); 
                 return true; 
@@ -4755,7 +4769,7 @@ Morph.subclass("HandMorph", {
             grabbedMorph.copyToHand(this);
             return;
         }
-        if (evt.isCommandKey()) {
+        if (evt.isCommandKey() || evt.isRightMouseButtonDown()) {
             grabbedMorph.showMorphMenu(evt);
             return;
         }

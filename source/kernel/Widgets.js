@@ -63,7 +63,7 @@ BoxMorph.subclass('ButtonMorph', {
     },
 
 
-    handlesMouseDown: function(evt) { return !evt.isCommandKey(); },
+    handlesMouseDown: function(evt) { return !evt.isCommandKey() && evt.isLeftMouseButtonDown() },
     
     onMouseDown: function(evt) {
         this.requestKeyboardFocus(evt.hand);
@@ -2178,9 +2178,7 @@ BoxMorph.subclass("ColorPickerMorph", {
         return this.colorWheelCache = Color.wheelHsb(n,338,1,1);
     },
 
-    handlesMouseDown: function(evt) { 
-        return !evt.isCommandKey();
-    },
+    handlesMouseDown: function(evt) { return !evt.isCommandKey() && evt.isLeftMouseButtonDown() },
 
     onMouseDown: function(evt) {
         return this.onMouseMove(evt);

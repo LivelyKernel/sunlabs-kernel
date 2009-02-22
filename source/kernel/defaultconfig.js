@@ -152,8 +152,10 @@ var Config = {
     // some widgets self connect to a private model on startup, but it doesn't
     // seem necessary, turn on to override
     selfConnect: false,
-    suppressClipboardHack: false
-    
+    suppressClipboardHack: false,
+
+	// e.g. don't open standard Brwser menu on right
+    suppressDefaultMouseBehavior: UserAgent.canExtendBrowserObjects
 }
 
 // These various overrides of the above have been moved here from main.js
