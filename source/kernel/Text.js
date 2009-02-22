@@ -1484,7 +1484,7 @@ subMenuItems: function($super, evt) {
     // TextMorph mouse event functions 
     handlesMouseDown: function(evt) {
         // Do selecting if click is in selectable area
-        if (evt.isCommandKey() || evt.isRightMoseButtonDown()) return false;
+        if (evt.isCommandKey() || evt.isRightMouseButtonDown()) return false;
         var selectableArea = this.openForDragAndDrop ? this.innerBounds() : this.shape.bounds();
 	return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
     },
