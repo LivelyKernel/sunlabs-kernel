@@ -4021,11 +4021,9 @@ PasteUpMorph.subclass("WorldMorph", {
         ];
         var helpMenuItems = [
 	    ["Model documentation", function(evt) {
-		this.openURLasText( URL.common.project.withRelativePath(
-			"/index.fcgi/wiki/NewModelProposal?format=txt"), "Model documentation"); }],
+		this.openURLasText(new URL("http://livelykernel.sunlabs.com/index.fcgi/wiki/NewModelProposal?format=txt"), "Model documentation"); }],
 	    ["Command key help", function(evt) {
-		this.openURLasText( URL.common.project.withRelativePath(
-			"/index.fcgi/wiki/CommandKeyHelp?format=txt"), "Command key help"); }]
+		this.openURLasText(new URL("http://livelykernel.sunlabs.com/index.fcgi/wiki/CommandKeyHelp?format=txt"), "Command key help"); }]
         ];
 	return [
             ['Simple morphs', morphItems],
