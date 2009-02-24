@@ -585,7 +585,8 @@ var Class = {
 	Class.addMixin(cls, Relay.newDelegationMixin(spec).prototype);
     },
     
-    addMixin: function(cls, source) { // FIXME: do the extra processing like addMethods does
+    addMixin: function(cls, source) {
+	var spec = {};
 	for (var prop in source) {
 	    var value = source[prop];
 	    switch (prop) {
@@ -594,9 +595,10 @@ var Class = {
 		break;
 	    default:
 		if (cls.prototype[prop] === undefined) // do not override existing values!
-		    cls.prototype[prop] = value;
+			spec[prop] = value;
 	    }
 	}
+	cls.addMethods(spec);
     }
 
 };
@@ -1384,7 +1386,7 @@ Object.extend(Record, {
 				var method = dep[updateName];
 				// console.log('updating  ' + updateName + ' in ' + Object.keys(dep));
 				// "force" should not be propageted
-				method.call(dep, coercedValue, rec);
+				method.call(dep, coercedValue, optSource || rec /*rk: why pass rec in ?*/);
             }
         }
     },

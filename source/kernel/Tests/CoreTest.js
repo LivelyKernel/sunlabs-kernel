@@ -5,7 +5,7 @@ module('lively.Tests.CoreTest').requires('lively.TestFramework').toRun(function(
  * @class ConnectModelTest
  * Tests for understanding Record, Relay and View Behavior
  */
-TestCase.subclass('Alively.Tests.CoreTest.ConnectModelTest', {
+TestCase.subclass('lively.Tests.CoreTest.ConnectModelTest', {
 
     testAddObserver: function() {
         var formalModel = Record.newPlainInstance({MyValue: "Hello World"});
@@ -55,6 +55,25 @@ TestCase.subclass('Alively.Tests.CoreTest.ConnectModelTest', {
 		formalModel1.setMyValue1(value);
 		this.assertEqual(formalModel2.getMyValue2(), value, "value2 was not update after setting value1");
 	},
+
+});
+TestCase.subclass('lively.Tests.CoreTest.TestModel', {
+
+	testSetterSource: function() {
+	var calls = 0; var test = this;
+	var m1 = Record.newPlainInstance({MyValue: 0});
+	var m2 = Record.newPlainInstance({MyValue: 1});
+	var obj = {onOtherValueUpdate: function(v, source) { test.localFunc(v, source) }};
+	Object.extend(obj, ViewTrait);
+	obj.relayToModel(m1, {OtherValue: "MyValue"});
+	obj.relayToModel(m2, {OtherValue: "MyValue"});
+
+	this.localFunc = function(v, source) { calls++; test.assertIdentity(m1, source) };
+	m1.setMyValue(2);
+	this.localFunc = function(v, source) { calls++; test.assertIdentity(m2, source) };
+	m2.setMyValue(3);
+	this.assertEqual(calls, 2);
+},
 
 });
 

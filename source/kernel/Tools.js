@@ -311,15 +311,18 @@ Widget.subclass('SimpleInspector', {
     },
     
     onPropTextUpdate: function(input, source) {
-	if (source === this) return;
+		if (source === this) return;
         var propName = this.getPropName();
         if (propName) {
-	    var target = this.getInspectee();
-	    try {
-		var result = (interactiveEval.bind(this.target))(input);
-	    } catch (er) { throw dbgOn(er); }
-			console.log("disabled inspector set " + propName + " from " + target[propName] + " to " + result)
-            // target[propName] = result;
+			var target = this.getInspectee();
+			try {
+				var result = (interactiveEval.bind(this.target))(input);
+			} catch (er) {
+				throw dbgOn(er);
+			};
+			if (!result) { console.log('no changes in inspector'); return; }
+			console.log("inspector set " + propName + " from " + target[propName] + " to " + result)
+			target[propName] = result;
         }
     },
 
@@ -329,7 +332,7 @@ Widget.subclass('SimpleInspector', {
 
     onPropNameUpdate: function(propName) {
         var prop = this.propValue(propName);
-	if (prop == null) {
+		if (prop == null) {
             this.setPropText("----");
         } else {
             this.setPropText(Strings.withDecimalPrecision(Object.inspect(prop), 2));
@@ -363,7 +366,7 @@ Widget.subclass('SimpleInspector', {
 	
 	var model = this.getModel();
 	
-        panel.leftPane.relayToModel(model, {List: "-PropList", Selection: "+PropName", Menu: "-PropMenu"});
+	panel.leftPane.relayToModel(model, {List: "-PropList", Selection: "+PropName", Menu: "-PropMenu"});
 	
 	panel.rightPane.relayToModel(model, {Text: "PropText", DoitContext: "-Inspectee"});
 
