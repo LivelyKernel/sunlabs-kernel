@@ -3553,9 +3553,9 @@ Morph.addMethods({
     exportLinkedFile: function(filename) {
 	var url;
 	if (WikiNavigator && WikiNavigator.current) {
-		var nav = new WikiNavigator(WikiNavigator.fileNameToURL(filename), null, -1 /*don't ask for the headrevision*/);
-		nav.interactiveSaveWorld();
-		url = nav.model.getURL();
+		var nav = WikiNavigator.current;
+		url = WikiNavigator.fileNameToURL(filename);
+		nav.interactiveSaveWorld(url);
 	} else {
 		url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
 	}

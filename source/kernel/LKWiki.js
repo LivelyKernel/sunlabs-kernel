@@ -272,25 +272,30 @@ Widget.subclass('WikiNavigator', {
         // if (this.btn) this.btn.remove();
 	},
 	
-	doSave: function(doNotOverwrite) {
+	doSave: function(doNotOverwrite, optUrl) {
 		this.prepareForSaving();
 		var worldDoc = Exporter.shrinkWrapMorph(WorldMorph.current()); // why not this.world()?
 		var myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null;
-		return this.svnResource.store(worldDoc, true, null, myRevision).getStatus();
+		if (optUrl) { // save page elsewhere
+			var svnR = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: optUrl.toString(), HeadRevision: null, Metadata: null}));
+			return svnR.store(worldDoc, true).getStatus();
+		} else {
+			return this.svnResource.store(worldDoc, true, null, myRevision).getStatus();
+		}		
 	},
 
-	interactiveSaveWorld: function() {
+	interactiveSaveWorld: function(optUrl) {
 		var world = WorldMorph.current();
 		var anotherSave = function() {
-			var status = this.doSave(true);
+			var status = this.doSave(true, optUrl);
 			console.log(Strings.format('%s saving world at %s to wiki',
 				status.isSuccess() ? "Success" : "Failure",
 				this.model.getURL().toString()));
 			WikiNavigator.enableWikiNavigator(true, this.model.getURL());
-			if (status.code() === 412) this.askToOverwrite();
+			if (status.code() === 412) this.askToOverwrite(optUrl);
 		}.bind(this);
 		if (this.worldExists())
-			world.confirm(this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
+			world.confirm(optUrl.toString() || this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
 		else
 			anotherSave();
 	},
