@@ -290,7 +290,9 @@ Object.subclass('lively.data.Wrapper', {
                         var cls = Class.forName(family);
                         if (!cls) throw new Error('uknown type ' + family);
                         this[name] = cls.fromLiteral(JSON.unserialize(value));
-                    } else {
+                    } else if (value === 'NaN') {
+						this[name] = NaN; // JSON doesn't unserializes NaN
+					} else {
                         this[name] = JSON.unserialize(value);
                     }
                 }
