@@ -286,16 +286,16 @@ Widget.subclass('WikiNavigator', {
 
 	interactiveSaveWorld: function(optUrl) {
 		var world = WorldMorph.current();
+		var url = optUrl || this.model.getURL();
 		var anotherSave = function() {
 			var status = this.doSave(true, optUrl);
 			console.log(Strings.format('%s saving world at %s to wiki',
-				status.isSuccess() ? "Success" : "Failure",
-				this.model.getURL().toString()));
+				status.isSuccess() ? "Success" : "Failure", url.toString()));
 			WikiNavigator.enableWikiNavigator(true, this.model.getURL());
-			if (status.code() === 412) this.askToOverwrite(optUrl);
+			if (status.code() === 412) this.askToOverwrite(url);
 		}.bind(this);
-		if (this.worldExists())
-			world.confirm(optUrl.toString() || this.model.getURL().toString() + ' already exists! Overwrite?', anotherSave);
+		if (this.worldExists(optUrl))
+			world.confirm(url.toString() + ' already exists! Overwrite?', anotherSave);
 		else
 			anotherSave();
 	},
@@ -312,12 +312,12 @@ Widget.subclass('WikiNavigator', {
 			if (status.code() === 412) this.askToOverwrite(true);
     	}
 	},
-askToOverwrite: function(moveToUrl) {
+askToOverwrite: function(optUrl, gotoUrl) {
 	WorldMorph.current().confirm('World was saved elsewhere. Overwrite?', function() {
-		var status = this.doSave();
+		var status = this.doSave(false, optUrl);
 		console.log(status.code());
-		if (status.isSuccess() && moveToUrl)
-			this.navigateToUrl();
+		if (status.isSuccess() && gotoUrl)
+			this.navigateToUrl(optUrl);
 	}.bind(this));
 },
 askToNavigateToUrl: function(url) {
