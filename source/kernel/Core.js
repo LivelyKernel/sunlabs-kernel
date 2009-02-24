@@ -5185,7 +5185,7 @@ LinkMorph.subclass('ExternalLinkMorph', {
      // FIXME for compatibility, load jQuery for some interactive conveniences
 	// ECMAScript 3rd edition, section 12.4: 
 	// “Note that an ExpressionStatement cannot start with an opening curly brace because that might make it ambiguous with a Block.“
-	text = '(' + text + ')'; // workaround for that issue
+	//text = '(' + text + ')'; // workaround for that issue
 	return eval(text);
  }
 
