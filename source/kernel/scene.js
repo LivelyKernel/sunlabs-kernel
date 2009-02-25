@@ -1472,9 +1472,13 @@ Object.extend(this.Group, {
     }
 });
 
+this.Node.subclass('lively.scene.Image');
+	
+this.Image.addProperties({ 
+    Opacity: { name: "opacity", from: Number, to: String, byDefault: 1.0}
+}, Config.useStyling ? lively.data.StyleRecord : lively.data.DOMRecord);
 
-
-this.Node.subclass('lively.scene.Image', {
+this.Image.addMethods({
     description: "Primitive wrapper around images",
     
     initialize: function(url, width, height) {

@@ -271,6 +271,9 @@ BoxMorph.subclass("ImageMorph", {
 		this.image.setLengthTrait("y", (this.image.getLengthTrait("y") || 0) - delta.y);
     },
 
+	setOpacity: function(op) { this.image.setOpacity(op); },
+	getOpacity: function(op) { return this.image.getOpacity(op); },
+
 });
 
 ButtonMorph.subclass("ImageButtonMorph", {
