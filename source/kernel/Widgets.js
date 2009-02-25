@@ -2302,6 +2302,9 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
     documentation: "Nonvisual component of a widget",
     useLightFrame: false,
     
+	noShallowCopyProperties: ['id', 'rawNode',  'formalModel', 'actualModel'],
+
+
     getViewTitle: function() { // a string or a TextMorph
         return this.viewTitle;
     },
@@ -2439,7 +2442,23 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
             var n = helperNodes[i];
             n.parentNode.removeChild(n);
         }
-    }
+    },
+
+	copyFrom: function($super, copier, other) {
+		$super(copier, other);
+		LivelyNS.setType(this.rawNode, this.getType());
+    	this.setId(this.newId());
+		copier.addMapping(other.id(), this); 
+		
+		copier.smartCopyProperty("formalModel", this, other);
+		copier.smartCopyProperty("actualModel", this, other);
+		if (this.actualModel)
+			this.ownModel(this.actualModel);
+	
+		copier.shallowCopyProperties(this, other);
+		
+		return this;
+	}
 });
 
 Widget.subclass('Dialog', {

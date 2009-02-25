@@ -1818,6 +1818,7 @@ subMenuItems: function($super, evt) {
                 this.doPaste();
             }.bind(this);
         	buffer.focus();
+			evt.letItFallThrough = true;
         	return true;
         };
         if (evt.getKeyChar().toLowerCase() === "c" || evt.getKeyCode() === 3) {
@@ -1825,6 +1826,7 @@ subMenuItems: function($super, evt) {
 			buffer.textContent = TextMorph.clipboardString;
 			buffer.select();
         	buffer.focus();
+			evt.letItFallThrough = true;
         	return true;
         };
         if (evt.getKeyChar().toLowerCase() === "x" || evt.getKeyCode() === 24) {
@@ -1832,6 +1834,7 @@ subMenuItems: function($super, evt) {
 			buffer.textContent = TextMorph.clipboardString;
 			buffer.select();
         	buffer.focus();
+			evt.letItFallThrough = true;
         	return true;
         };
 		console.log('Clipboard action not successful');

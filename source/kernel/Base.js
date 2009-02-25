@@ -1541,6 +1541,11 @@ Object.extend(Relay, {
 	var klass = Relay.subclass();
 	var def = {
 	    definition: Object.clone(args), // how the relay was constructed
+	    copy: function(copier) {
+			var result =  Relay.create(this.definition);
+			copier.shallowCopyProperty("delegatee", result, this);
+			return result
+	    },
 	    toString: function() {
 		return "#<Relay{" + String(JSON.serialize(args)) + "}>";
 	    }
@@ -1619,7 +1624,6 @@ Object.extend(Relay, {
     }
 
 });
-
 
 namespace('lively');
 
@@ -2213,6 +2217,8 @@ namespace('lively.data');
 
 Record.subclass('lively.data.DOMRecord', {
     description: "base class for records backed by a DOM Node",
+	noShallowCopyProperties: ['id', 'rawNode'],
+
     initialize: function($super, store, argSpec) {
 	$super(store, argSpec);
 	this.setId(this.newId());
@@ -2246,7 +2252,18 @@ Record.subclass('lively.data.DOMRecord', {
     
     removeRecordField: function(name) {
 	return this.rawNode.removeAttributeNS(null, name);
-    }
+    },
+
+	copyFrom: function(copier, other) {
+		console.log("COPY DOM RECORD")
+		if (other.rawNode) this.rawNode = other.rawNode.cloneNode(true);
+		this.setId(this.newId());
+		copier.addMapping(other.id(), this);
+
+		copier.shallowCopyProperties(this, other);
+		
+		return this; 
+    },
 
 });
 
@@ -2300,6 +2317,8 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 	}
     },
 
+	
+
     deserialize: function(importer, rawNode) {
 	this.rawNode = rawNode;
 	
@@ -2312,7 +2331,17 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 	    this[child.getAttributeNS(null, "name") + "$Element"] = child;
         }, this);
     },
-    
+
+    copyFrom: function($super, copier, other) {
+		$super(copier, other);
+		this.constructor.addMethods(Record.extendRecordClass(other.definition));
+		$A(this.rawNode.getElementsByTagName("field")).forEach(function(child) {
+		    this[child.getAttributeNS(null, "name") + "$Element"] = child;
+	    }, this);
+		return this; 
+    },
+
+
     updateDefintionNode: function() {
         var definitionNode = this.rawNode.getElementsByTagName("definition")[0];
         definitionNode.removeChild(definitionNode.firstChild);

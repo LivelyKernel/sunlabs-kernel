@@ -769,8 +769,50 @@ Object.subclass('Copier', {
 
     lookup: function(oldId) {
 	return this.wrapperMap[oldId];
-    }
+    },
+	
+	lookUpOrCopy: function(original) {
+		var replacement = this.lookup(original.id());
+		if (!replacement) {
+		   	var replacement = original.copy(this);
+			this.addMapping(original.id(), replacement);
+		};
+		return replacement
+	},
 
+
+	shallowCopyProperties: function(wrapper, other) {	
+		for (var p in other) {
+		    this.shallowCopyProperty(p, wrapper, other)
+		} 
+	},	
+
+	shallowCopyProperty: function(property, wrapper, other) {
+	    if (!(other[property] instanceof Function) 
+			&& other.hasOwnProperty(property) 
+			&& other.noShallowCopyProperties
+			&& !other.noShallowCopyProperties.include(property)) {
+			if (other[property] instanceof lively.data.Wrapper) {
+			    var replacement = this.lookup(other[property].id());
+			    wrapper[property] = replacement || other[property];
+			} else  {			
+				wrapper[property] = other[property];
+			}
+	    }
+	},
+	
+	smartCopyProperty: function(property, wrapper, other) {
+		// console.log("smartCopyProperty " + property + " " + wrapper + " from: " + other)
+		var original = other[property];
+		if (original) {
+			if (Object.isArray(original)) {
+				wrapper[property] = original.collect(function each(ea) { 
+					return this.lookUpOrCopy(ea)}, this);
+			} else {			
+				wrapper[property] = this.lookUpOrCopy(original)
+			};
+		};
+	}
 }); 
 
 // 'dummy' copier for simple objects
@@ -1170,12 +1212,14 @@ duplicate: function () {
     },
     
     copyFrom: function(copier, other) {
+		console.log("COPY MORPH")
 	this.internalInitialize(other.rawNode.cloneNode(false), true);
 	
 	this.pvtSetTransform(this.getTransform());
 
 	this.initializePersistentState(other.shape.copy(copier));
 
+	
 	if (other.hasSubmorphs()) { // deep copy of submorphs
 	    other.submorphs.forEach(function each(m) { 
 		var copy = m.copy(copier);
@@ -1203,6 +1247,14 @@ duplicate: function () {
 	    }
 	} // shallow copy by default, note that arrays of Morphs are not handled
 	
+	// try to be clever with Relays
+	if(other.formalModel && (this.formalModel.delegate instanceof Record)) {
+		var replaceModel = copier.lookup(other.getModel().id());
+		if (replaceModel) {
+			this.connectModel(replaceModel.newRelay(this.formalModel.definition));
+		}
+	};
+
 
 	this.internalSetShape(other.shape.copy());
 	this.origin = other.origin.copy();

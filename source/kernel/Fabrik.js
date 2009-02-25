@@ -537,6 +537,7 @@ Morph.subclass('PinMorph', {
     
     isPinMorph: true,
     style: {fill: Color.green, opacity: 0.5, borderWidth: 1, borderColor: Color.black},
+	noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['pinHandle']),
     
     initialize: function ($super){
         $super(new lively.scene.Ellipse(pt( 0, 0), 10));
@@ -557,6 +558,15 @@ Morph.subclass('PinMorph', {
         this.ownerWidget = pinHandle;
     },
     
+	copyFrom: function($super, copier, other) {
+		$super(copier, other);
+		
+		copier.smartCopyProperty("pinHandle", this, other);
+        this.ownerWidget = this.pinHandle;
+		
+		return this;
+	},
+
      /* Drag and Drop of Pin */        
     addMorph: function($super, morph) {
         if (!morph.pinHandle || !morph.pinHandle.isFakeHandle) return;
@@ -645,7 +655,7 @@ Morph.subclass('PinMorph', {
 
     updatePosition: function(evt) {
         // console.log("update position" + this.getPosition());
-        if (!this.pinHandle) return;
+        if (!this.pinHandle || !this.pinHandle.connectors) return;
         this.pinHandle.connectors.each(function(ea){ ea.updateView() });
     },    
 
@@ -762,6 +772,8 @@ Widget.subclass('PinHandle', {
     
     isPinHandle: true,
 
+	noShallowCopyProperties: Widget.prototype.noShallowCopyProperties.concat(['morph', 'connectors']),
+
     initialize: function($super, component, pinName) {
         $super();
         
@@ -775,6 +787,16 @@ Widget.subclass('PinHandle', {
         this.component = component;
         this.connectors = [];            
     },
+
+	copyFrom: function($super, copier, other) {
+		$super(copier, other);
+			
+		copier.smartCopyProperty("morph", this, other);
+		copier.smartCopyProperty("connectors", this, other);
+			
+		return this; 
+    },	
+
     
     getName: function() {
         return this.formalModel.getName();
@@ -994,7 +1016,8 @@ ComponentModel = {
 Morph.subclass('ConnectorMorph', {
     
     isConnectorMorph: true,
-    
+	noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['pinConnector']),
+
     initialize: function($super, verts, lineWidth, lineColor, pinConnector) {
         if (!verts) verts = [pt(0,0), pt(100,100)];
         if (!lineWidth) lineWidth = 1;  
@@ -1029,6 +1052,13 @@ Morph.subclass('ConnectorMorph', {
         this.setupArrowHeadUpdating();
         this.updateArrow();
     },
+
+	copyFrom: function($super, copier, other) {
+		$super(copier, other);
+		copier.smartCopyProperty("pinConnector", this, other);
+		return this; 
+    },	
+
 
 	handlesMouseDown: Functions.True,
     
@@ -1183,7 +1213,9 @@ Morph.subclass('ConnectorMorph', {
 });
 
 Widget.subclass('PinConnector', {
-    
+
+	noShallowCopyProperties: Widget.prototype.noShallowCopyProperties.concat(['morph']),
+ 	    
     initialize: function($super, fromPinHandle, toPinHandle) {
         $super();
         
@@ -1232,8 +1264,27 @@ Widget.subclass('PinConnector', {
         }
     },
 
+	copyFrom: function($super, copier, other) {
+		console.log("COPY CONNECTOR")
+		$super(copier, other);
+		
+		//copier.smartCopyProperty("morph", this, other);
+
+		console.log("COPY TO")		
+		copier.shallowCopyProperty("toPin", this, other);	
+		console.log("toPin: " + other.toPin);
+		console.log("COPY FROM")		
+		copier.shallowCopyProperty("fromPin", this, other);
+		console.log("fromPin: " + other.fromPin);
+		
+		return this; 
+    },	
+
+
+
     // FIXME do we need this anymore? Can be directly called from pinMorph?... ?
     updateView: function(varname, source) {
+	  	if (!this.fromPin || !this.toPin) return; // fragile state during copying
         if (!this.fromPin.morph || !this.toPin.morph) return; // nothing to update from.... 
         if (!this.morph) this.buildView();
         this.morph.updateView(varname, source);
@@ -1271,6 +1322,9 @@ BoxMorph.subclass('ComponentMorph', {
     
     padding: Rectangle.inset(7),
     defaultExtent: pt(180,100),
+ 	noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['component', 'ownerWidget', 'formalModel']),
+
+	/* initialization */
 
     initialize: function($super, bounds) {
         bounds = bounds || this.defaultExtent.extentAsRectangle();
@@ -1288,11 +1342,6 @@ BoxMorph.subclass('ComponentMorph', {
         return this;
     },
     
-	onDeserialize: function() {
-		this.setupHalos();
-		this.setupMousOverWrappingForHalos(this);
-	},
-
     setComponent: function(component) {
         this.component = component;
         this.formalModel = component.getModel()
@@ -1305,7 +1354,53 @@ BoxMorph.subclass('ComponentMorph', {
         this.setupHalos();
         this.updateHaloItemPositions();        
     },
+
+
+	/* Copy & Serialization */
+
+	onDeserialize: function() {
+		this.setupHalos();
+		this.setupMousOverWrappingForHalos(this);
+	},
+
+	copyFrom: function($super, copier, other) {
+		copier.addMapping(other.id(), this);
+		// copy model first, because the view references the model
+		copier.smartCopyProperty("component", this, other);	
+		copier.smartCopyProperty("formalModel", this, other);
+		
+		$super(copier, other);
+
+		copier.smartCopyProperty("ownerWidget", this, other);	
+		
+			
+		return this; 
+    },	
+	
+	
+
+	/* Tests */
+	
+	isFramed: Functions.False,
+	
+	isUserMode: function() {
+		return (this.owner instanceof FabrikMorph) && this.owner.isCollapsed
+	},
+	
+	/* Accessors */
+
+	allPinMorphs: function() {
+       return this.submorphs.select(function(ea){return ea.isPinMorph})
+    },
     
+    allConnectors: function() {
+        return this.allPinMorphs().inject([], function(all, ea){
+            return all.concat(ea.pinHandle.connectors)
+        })
+    },
+	    
+	/* basic */
+
     changed: function($super) {
         $super();
         if (!this.component) return;
@@ -1316,7 +1411,15 @@ BoxMorph.subclass('ComponentMorph', {
             this.component.pinHandles.each(function(ea) { ea.morph && ea.morph.updatePosition() });
         };
     },
-    
+
+	remove: function($super) {
+        $super();
+        this.allConnectors().each(function(ea){ ea.remove() });
+        this.component.remove();
+    },
+
+    /* context menu */
+
     morphMenu: function($super, evt) { 
         var menu = $super(evt);
         var self = this;
@@ -1327,11 +1430,7 @@ BoxMorph.subclass('ComponentMorph', {
         return menu;
     },
     
-    okToBeGrabbedBy: function(evt) {
-        return this; 
-    },
-    
-    
+
     // addMorph and layout logic
     addMorph: function($super, morph, accessorname) {
         // FIXME: cleanup
@@ -1372,6 +1471,8 @@ BoxMorph.subclass('ComponentMorph', {
         morph.withAllSubmorphsDo(wrapMouseOver);		
 	},
     
+	/* Content Creation Helper  */
+
     getBoundsAndShrinkIfNecessary: function(minHeight) {
         // assume that we have all the space
         var topLeft = pt(this.padding.left(), this.padding.top());
@@ -1483,6 +1584,8 @@ BoxMorph.subclass('ComponentMorph', {
         return this.addMorph(morph, 'button');
     },
 
+	/* resize */
+	
     minExtent: function() { return pt(50,25) },
     
     /* reshape changes the bounds of the morph and its shape but makes it not smaller than minExtent()
@@ -1531,6 +1634,13 @@ BoxMorph.subclass('ComponentMorph', {
         $super(newExt);
     },
 
+    adjustForNewBounds: function($super) {
+        this.fullBounds = null;
+        $super();
+    },
+
+	/* rk's do it yourself layout algorithm */
+
 	adoptSubmorphsToNewExtent: function (priorPosition, priorExtent, newPosition, newExtent) {
         var positionDelta = newPosition.subPt(priorPosition);
         var extentDelta = newExtent.subPt(priorExtent);
@@ -1550,6 +1660,8 @@ BoxMorph.subclass('ComponentMorph', {
 			}
         });
     },
+
+	/* Menu */
 
     setupMenu: function() {
         this.menuButton = new ButtonMorph(new Rectangle(0, -20, 40, 20));
@@ -1571,6 +1683,8 @@ BoxMorph.subclass('ComponentMorph', {
         this.componentMenu = new MenuMorph(this.getMenuItems(), this);
         this.componentMenu.openIn(this, this.menuButton.getPosition());
     },
+
+	/* Halos */
 
     setupHalos: function() {
         this.halos = Morph.makeRectangle(0, 0, 100, 100);
@@ -1606,10 +1720,6 @@ BoxMorph.subclass('ComponentMorph', {
         //this.closeHalo.setPosition(pt(this.getExtent().x - 0, -20));
     },
     
-	isUserMode: function() {
-		return (this.owner instanceof FabrikMorph) && this.owner.isCollapsed
-	},
-
     showHalos: function() {
         if (this.halos && !this.isUserMode()) {
             if (this.handObserver) return; // we are not finished yet
@@ -1657,42 +1767,94 @@ BoxMorph.subclass('ComponentMorph', {
         }.bind(this);
         grabHalo.connectModel(Relay.newInstance({Value: '=grabbed'}, {grabbed: grabFunction}));
     },
-    
+
+	/* Events */
+
     handlesMouseDown: Functions.True,
-    
-    onMouseOver: function() {
+	takesKeyboardFocus: Functions.True,	 
+	okToBeGrabbedBy: function(evt) {
+        return this; 
+    },
+	
+	onMouseOver: function() {
         this.showHalos();
     },
     
     onMouseDown: function ($super, evt) {
         console.log('making selection');
         $super(evt);
+		evt.hand.setKeyboardFocus(this);
         return true;
     },
-    
-    allPinMorphs: function() {
-       return this.submorphs.select(function(ea){return ea.isPinMorph})
+
+	onKeyPress: function(evt) {
+        console.log("onKeyPress " + this + " ---  " + evt )
+
+		if (evt.letItFallThrough != true && this.tryClipboardAction(evt)) {
+			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
+			return;
+		};
+		
+		return false;
     },
-    
-    allConnectors: function() {
-        return this.allPinMorphs().inject([], function(all, ea){
-            return all.concat(ea.pinHandle.connectors)
-        })
+	
+    tryClipboardAction: function(evt) {
+        // Copy and Paste Hack that works in Webkit/Safari
+        if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
+        var buffer = ClipboardHack.ensurePasteBuffer();
+        if(!buffer) return false;
+        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
+            buffer.onpaste = function() {
+                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
+                this.doPaste();
+            }.bind(this);
+        	buffer.focus();
+        	return true;
+        };
+        if (evt.getKeyChar().toLowerCase() === "c" || evt.getKeyCode() === 3) {
+			this.doCopy();
+			buffer.textContent = TextMorph.clipboardString;
+			buffer.select();
+        	buffer.focus();
+        	return true;
+        };
+        if (evt.getKeyChar().toLowerCase() === "x" || evt.getKeyCode() === 24) {
+			this.doCut();
+			buffer.textContent = TextMorph.clipboardString;
+			buffer.select();
+        	buffer.focus();
+        	return true;
+        };
+		console.log('Clipboard action not successful');
+		return false;
     },
-    
-    remove: function($super) {
-        $super();
-        this.allConnectors().each(function(ea){ ea.remove() });
-        this.component.remove();
+
+	/* Actions */
+
+	doCopy: function() {
+		TextMorph.clipboardString = this.component.copyAsXMLString();; 
+	},
+	
+	doPaste: function() {
+
+	},
+	
+	doCut: function() {
+		
+	},
+
+	copyToHand: function( hand) {
+		var copy = this.copy(new Copier());
+		
+		console.log('copied %s', copy);
+		copy.owner = null; // so following addMorph will just leave the tfm alone
+		this.owner.addMorph(copy); // set up owner as the original parent so that...        
+
+		hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
+		hand.showAsGrabbed(copy);
+		// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
     },
-    
-    adjustForNewBounds: function($super) {
-        this.fullBounds = null;
-        $super();
-    },
-    
-    isFramed: Functions.False,
-  
+
 });
 
 /*
@@ -1704,6 +1866,8 @@ BoxMorph.subclass('ComponentMorph', {
 Widget.subclass('Component', {
     
     morphClass: ComponentMorph,
+
+	noShallowCopyProperties: ['id', 'rawNode',  'formalModel', 'actualModel', 'pinHandles', 'panel'],
     
     initialize: function($super) {
         $super();
@@ -1854,8 +2018,29 @@ Widget.subclass('Component', {
     
     remove: function() {
         if (this.fabrik) this.fabrik.unplug(this);
-    }
-        
+    },
+
+	copyAsXMLString: function() {
+		return new ComponentCopier().copyAsXMLString(this)
+	},
+	
+	
+	// inspired from Morph.copyFrom
+	copyFrom: function($super, copier, other) {
+		console.log("COPY COMPONENT")
+		$super(copier, other);
+		
+		copier.smartCopyProperty("panel", this, other);
+		copier.smartCopyProperty("pinHandles", this, other);
+
+		copier.shallowCopyProperties(this, other);
+
+		// if (this.panel) this.panel.owner = null;
+		// this.fabrik = null;
+
+		return this; 
+    },
+
 });
 
 SelectionMorph.subclass('UserFrameMorph', {
@@ -2056,8 +2241,8 @@ ComponentMorph.subclass('FabrikMorph', {
     // handlesMouseDown: Functions.True,
     
     onMouseDown: function ($super, evt) {
-        console.log('making selection');
-        if (evt.isMetaDown() && !this.isCollapsed) this.makeSelection(evt); 
+		$super(evt);
+	    if (evt.isMetaDown() && !this.isCollapsed) this.makeSelection(evt); 
         return true;
     },
 
@@ -2228,7 +2413,18 @@ ComponentMorph.subclass('FabrikMorph', {
         this.reshape = this.constructor.prototype.reshape.bind(this);
         this.collapseToggle = this.constructor.prototype.collapseToggle.bind(this);
         return this;
-    }
+    },
+
+	doPaste: function() {
+		if (TextMorph.clipboardString) {
+			// should we test before if it is the right content?
+			var components = this.component.pasteComponentFromXMLString(TextMorph.clipboardString)
+			components.each(function(ea) {
+				var insertPosition = this.component.panel.localize(WorldMorph.current().hands.first().getPosition());
+				// ea.panel.setPosition(insertPosition);
+			}, this);
+		}
+	},
 
 });
 
@@ -2331,7 +2527,60 @@ Component.subclass('FabrikComponent', {
         var window = world.addMorph(morph.framed());
         window.setPosition(location || morph.getPosition());
         return window;
-    }
+    },
+
+
+	pasteComponentFromXMLString: function(componentMorphsAsXmlString) {
+		var copier = new ComponentCopier();
+		return copier.pasteComponentFromXMLStringIntoFabrik(componentMorphsAsXmlString, this);
+	}
+
+});
+
+Object.subclass('ComponentCopier', {
+
+	
+	copyAsXMLString: function(component) {
+		var copy = 	component.panel.copy(new Copier());
+		var doc = this.createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		worldNode.appendChild(copy.rawNode);
+		var exporter = new Exporter(copy);
+		var helpers = exporter.extendForSerialization();
+		var result = Exporter.stringify(copy.rawNode);
+		exporter.removeHelperNodes(helpers);
+		return result
+	},
+	
+	createBaseDocument: function(source) {
+		return new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?>' +
+			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+                '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
+                    '<rect x="0" y="0" width="800" height="600"/>' +          
+                    source  +
+                '</g>'+ 
+            '</svg>', "text/xml");
+	},
+
+	loadMorphsWithWorldTrunkFromSource: function(source) {
+    	var xml = this.createBaseDocument(source);
+		var world = new Importer().loadWorldContents(xml);
+		// inspect(world)
+		return world.submorphs
+    },
+	
+	pasteComponentFromXMLStringIntoFabrik: function(componentMorphsAsXmlString, fabrik) {
+		var morphs = this.loadMorphsWithWorldTrunkFromSource(componentMorphsAsXmlString);
+		var components = morphs.collect(function(ea) {
+			console.log("paste "+ ea)
+			return ea.component}).select(function(ea) {return ea});
+		components.each(function(ea){
+			// Fixme: clone first?
+			fabrik.plugin(ea);
+		})
+		return components
+	}
+	
 });
 
 Component.subclass('PluggableComponent', {
@@ -2368,6 +2617,11 @@ ComponentMorph.subclass('TextComponentMorph', {
         evalHalo.connectModel({model: this, setValue: "onAcceptPressed"});
         evalHalo.getHelpText = function(){return "accept text in component [alt+s]"}
     },  
+
+	copyFrom: function($super, copier, other) {
+		$super(copier, other);
+		return this;
+	},
     
     onAcceptPressed: function(value) {
         this.text.doSave()
@@ -2391,7 +2645,6 @@ Component.subclass('TextComponent', {
 		this.addField('Text', {to: String}) 
 		this.formalModel.setText(oldText)
     },
-
 
     buildView: function($super) {
         $super();
@@ -3125,6 +3378,12 @@ newFakeMouseEvent = function(point) {
     evt.hand = WorldMorph.current().hands.first();
     if (point) evt.mousePoint = point;
     return evt;
+};
+
+// Helper method with GUI stuff, so it can't go into Helper.js
+Global.inspect = function(inspectee) {
+	var world = WorldMorph.current();
+	new SimpleInspector(inspectee).openIn(world, world.hands.first().getPosition());
 };
 
 console.log('loaded Fabrik.js');

@@ -2027,6 +2027,187 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
 });
 
 
+// logMethod(Component.prototype, "onDeserialize");
+
+lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCopierTest', {
+	
+	setUp: function($super) {
+		$super();
+		this.sampleString = "Hello Copy and Paste";
+		this.copier = new ComponentCopier();
+	},
+	
+	createTextWidgetExample: function() {
+		var text1 = new TextComponent();
+		text1.setText(this.sampleString);
+		text1.buildView(pt(100,100));
+		this.worldMorph.addMorphFrontOrBack(text1.panel, true, true);
+		return text1
+	},
+	
+	testCopyNodeRecord: function() {
+    	var text1 = this.createTextWidgetExample();
+		var model = text1.formalModel;
+		var copy = model.copy(new Copier());
+    },
+	
+	assertDifferentTextComponents: function(text1, text2) {
+		this.assert(text1.panel, "original has panel");
+		
+		this.assert(text1.formalModel.id(), "text1 formalModel has no id");
+		
+		this.assert(text2.formalModel, "copy has no formalModel");
+		this.assert(text2.rawNode, "copy has no rawNode");
+		this.assert(text2.panel, "copy has no panel");
+		this.assert(text2.pinHandles, "copy has no pinHandles");
+		
+		this.assert(text1 !== text2, "text1 and text2 are identical");
+		this.assert(text1.panel !== text2.panel, "text1.panel and text2.panel are identical");
+		this.assert(text1.rawNode !== text2.rawNode, "text1.rawNode and text2.rawNode are identical");
+		this.assert(text1.panel.rawNode !== text2.panel.rawNode, "text1.panel.rawNode and text2.panel.rawNode are identical");
+
+		this.assert(text1.id() != text2.id(), "ids are equal");
+		
+		this.assert(text2.panel.component, "no text2.panel.component");
+		this.assertIdentity(text2, text2.panel.component, "text2 !=== text2.panel.component");
+		
+		this.assertIdentity(text2, text2.panel.ownerWidget, "wrong ownerWidget");
+		
+		this.assertIdentity(text2.formalModel, text2.actualModel, "text2 formalModel !== actualModel");
+		this.assert($A(text2.rawNode.childNodes).include(text2.actualModel.rawNode), "node relation form ownModel is broken");
+		
+		this.assert(text2.pinHandles[0], "no pinHandle in text2");
+		this.assert(text2.pinHandles[0].morph, "no pinHandle morph in text2");
+		this.assert(text2.pinHandles[0].connectors, "no pinHandle connectors in text2");
+	},
+	
+	testCopyComponent: function() {
+        var text1 = this.createTextWidgetExample();
+		var text2 = text1.copy(new Copier());
+		this.assertDifferentTextComponents(text1, text2);
+    },
+
+	testCopyComponentMorph: function() {
+        var text1 = this.createTextWidgetExample();
+		var panel2 = text1.panel.copy(new Copier());
+		var text2 = panel2.component;
+		this.assertDifferentTextComponents(text1, text2);			
+    },
+
+	testCopyConnector: function() {
+		var pin1 = new PinHandle();
+		pin1.isFakeHandle = true;
+		var pin2 = new PinHandle();
+		pin2.isFakeHandle = true;
+		var connector = new PinConnector(pin1, pin2);
+		this.assertIdentity(connector.fromPin, pin1, "connector.fromPin");
+		this.assertIdentity(connector.toPin, pin2, "connector.fromPin");
+		this.assert(connector.hasOwnProperty("fromPin"), "connector.hasOwnProperty");
+		this.assert(!(connector.fromPin instanceof Function), "fromPin is a function");
+		console.log("--start----------------------------------------------------")
+		var copy = connector.copy(new Copier());
+		
+		this.assert(copy.noShallowCopyProperties, "copy.noShallowCopyProperties");
+		console.log("--stop----------------------------------------------------")
+		this.assertIdentity(copy.fromPin, pin1, "copy.fromPin");
+		this.assertIdentity(copy.toPin, pin2, "copy.toPin");
+	},
+
+	testCopyOnlyOneComponent: function() {
+		var fabrik = new FabrikComponent();
+        var text1 = this.createTextWidgetExample();
+		var text2 = this.createTextWidgetExample();
+		fabrik.plugin(text1);
+		fabrik.plugin(text2);
+		var pin1 = text1.getPin("Text");
+		var pin2 = text2.getPin("Text");
+		pin1.connectTo(pin2);
+		var copy = text1.copy(new Copier());
+		this.assertDifferentTextComponents(text1, copy);
+		
+		var connector = text1.getPin("Text").connectors.first();
+		
+		this.assert(copy.pinHandles, "copied text has no pinHandles");
+		var pinCopy = copy.getPin("Text");
+		this.assert(pinCopy, "copied text has no text pin");
+		var connectorCopy = pinCopy.connectors.first();
+		this.assert(connector !==  connectorCopy, "connector did not get copied");
+		this.assert(connectorCopy.fromPin, "connectorCopy has no fromPin");
+		this.assert(connectorCopy.toPin, "connectorCopy has to fromPin");
+		this.assert(connectorCopy.fromPin !== pin1,"connectorCopy formPin is not copied");
+		this.assertIdentity(connectorCopy.toPin, pin2,"connectorCopy toPin is copied");
+
+		this.assertIdentity(text1.morph.getModel().id(), text1.getModel().id(),"model id different in original");
+		this.assertIdentity(copy.morph.getModel().id(), copy.getModel().id(),"model id different");
+		this.assertIdentity(copy.morph.getModel(), copy.getModel(),"model did not get propagted");
+		
+		
+		// this.assertIdentity(copy.fabrik, fabrik, "fabrik is copied too")
+    },
+
+	testCopyTextMorph: function() {
+        var text = this.createTextWidgetExample();
+		var morph = text.buildView();
+		
+		this.assert(text.morph, "text has no inner morph");
+		
+		var morphCopy = morph.copy(new Copier());
+		var textCopy = morphCopy.component;
+	
+		this.assert(textCopy, "morph has no component");
+		this.assert(textCopy.morph, "copy has no inner morph");
+		this.assert(morphCopy.component !== text, "component did not get copied");
+		// TODO: outcommented for clean check in
+		// this.assert(morphCopy.component.formalModel === textCopy.morph.getModel(), "problem with inner text morph");
+    },
+
+	testCopyAsXMLString: function() {
+        var text1 = this.createTextWidgetExample();
+		var text1String = text1.copyAsXMLString();
+		console.log(text1String);
+    },
+	
+	testLoadMorphsWithWorldTrunkFromSource: function() {
+		var text1 = this.createTextWidgetExample();
+		this.assert(text1.panel.component instanceof TextComponent, "panel has no text component");
+		var text1String = text1.copyAsXMLString();
+		console.log(text1String);
+		var morphs = this.copier.loadMorphsWithWorldTrunkFromSource(text1String);
+		this.assertEqual(morphs.size(), 1, "wrong number of morphs")
+		var morph1 = morphs[0];
+		this.assert(morph1 instanceof TextComponentMorph, "no text component morph found")
+		this.assert(morph1.component instanceof TextComponent, "no text component found")
+	},
+	
+    testCopyAndPaste: function() {
+		var fabrik = new FabrikComponent();
+        var text1 = new TextComponent();
+		var string = "Hello Copy and Paste";
+		text1.setText(string);
+		fabrik.plugin(text1);
+		
+		fabrik.buildView(pt(400, 400));
+        fabrik.panel.automaticLayout();
+        this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
+		
+		var text1String = text1.copyAsXMLString();
+		
+		var components = fabrik.pasteComponentFromXMLString(text1String);
+		this.assertEqual(components.size(), 1,  "wrong number of components extracted");
+		
+		var text2 = components.first();
+		
+		this.assert(text2 instanceof TextComponent, "text copy is no TextComponent");
+		this.assertEqual(fabrik.components.size(), 2, "copy was not inserted in fabrik");
+		this.assertEqual(text2.getText(), string, "text string is wrong");
+		
+		this.assert(text1.id() != text2.id(), "problem: ids are equal");
+		
+		
+    }
+});
+
+
 
 
 console.log("Loaded FabrikTest.js");

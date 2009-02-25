@@ -309,7 +309,7 @@ Widget.subclass('SimpleInspector', {
 						       if (!name) return;
 						       new SimpleInspector(this.propValue(name)).open()}.bind(this)]]}));
     },
-    
+   
     onPropTextUpdate: function(input, source) {
 		if (source === this) return;
         var propName = this.getPropName();
@@ -320,6 +320,7 @@ Widget.subclass('SimpleInspector', {
 			} catch (er) {
 				throw dbgOn(er);
 			};
+			// and what if the value is false?
 			if (!result) { console.log('no changes in inspector'); return; }
 			console.log("inspector set " + propName + " from " + target[propName] + " to " + result)
 			target[propName] = result;
