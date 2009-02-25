@@ -313,7 +313,7 @@ Widget.subclass('WikiNavigator', {
     	}
 	},
 askToOverwrite: function(optUrl, gotoUrl) {
-	WorldMorph.current().confirm('World was saved elsewhere. Overwrite?', function() {
+	WorldMorph.current().confirm('A newer version of the world was created by another user. Overwrite?', function() {
 		var status = this.doSave(false, optUrl);
 		console.log(status.code());
 		if (status.isSuccess() && gotoUrl)
