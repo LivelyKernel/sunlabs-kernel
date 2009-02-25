@@ -3604,7 +3604,7 @@ Morph.addMethods({
     
     exportLinkedFile: function(filename) {
 	var url;
-	if (WikiNavigator && WikiNavigator.current) {
+	if (Global["WikiNavigator"] && WikiNavigator.current) {
 		var nav = WikiNavigator.current;
 		url = WikiNavigator.fileNameToURL(filename);
 		nav.interactiveSaveWorld(url);
