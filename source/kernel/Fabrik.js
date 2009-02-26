@@ -656,7 +656,7 @@ Morph.subclass('PinMorph', {
     updatePosition: function(evt) {
         // console.log("update position" + this.getPosition());
         if (!this.pinHandle || !this.pinHandle.connectors) return;
-        this.pinHandle.connectors.each(function(ea){ ea.updateView() });
+        this.pinHandle.connectors.each(function(ea){ ea && ea.updateView() });
     },    
 
     snapToPointInside: function(point) {
@@ -1439,7 +1439,9 @@ BoxMorph.subclass('ComponentMorph', {
             $super(morph);
             this.setExtent(morph.getExtent().addPt(pt(this.padding.left() * 2, this.padding.top() * 2)));
             morph.setPosition(this.padding.topLeft());
-            this.component.adoptToModel(morph.formalModel);
+			// why is here plugable component logic in the ComponentMorph? (jl)
+			if (this.component.adoptToModel)
+            	this.component.adoptToModel(morph.formalModel);
             return morph;
         };
 
@@ -1844,8 +1846,11 @@ BoxMorph.subclass('ComponentMorph', {
 	},
 
 	copyToHand: function( hand) {
-		var copy = this.copy(new Copier());
 		
+		var componentCopy = this.component.copy(new Copier());
+		var copy = componentCopy.panel;
+		
+		// var copy = this.copy(new Copier());
 		console.log('copied %s', copy);
 		copy.owner = null; // so following addMorph will just leave the tfm alone
 		this.owner.addMorph(copy); // set up owner as the original parent so that...        
@@ -1853,6 +1858,9 @@ BoxMorph.subclass('ComponentMorph', {
 		hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
 		hand.showAsGrabbed(copy);
 		// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
+		
+		
+		
     },
 
 });
@@ -1991,9 +1999,12 @@ Widget.subclass('Component', {
     addTextMorphForFieldNamed: function(fieldName) {
         if (!this.panel) throw new Error('Adding morph before base morph (panel exists)');
         this.morph = this.panel.addTextPane().innerMorph();
-        this.morph.formalModel = this.formalModel.newRelay({Text: fieldName});
-        var spec = {}; spec[fieldName] = '!Text';
-        this.formalModel.addObserver(this.morph, spec);
+
+        // this.morph.formalModel = this.formalModel.newRelay({Text: fieldName});
+        // var spec = {}; spec[fieldName] = '!Text';
+ 		// this.formalModel.addObserver(this.morph, spec);
+
+		this.morph.connectModel(this.formalModel.newRelay({Text: fieldName}));
 		// this.morph.connectModel(this.formalModel, {Text: fieldName});
         return this.morph
     },
@@ -2571,12 +2582,19 @@ Object.subclass('ComponentCopier', {
 	
 	pasteComponentFromXMLStringIntoFabrik: function(componentMorphsAsXmlString, fabrik) {
 		var morphs = this.loadMorphsWithWorldTrunkFromSource(componentMorphsAsXmlString);
+		console.log("paste: " + componentMorphsAsXmlString)
 		var components = morphs.collect(function(ea) {
-			console.log("paste "+ ea)
 			return ea.component}).select(function(ea) {return ea});
 		components.each(function(ea){
 			// Fixme: clone first?
+			// TEST TEST TEST
+			console.log("text: "+ ea.getText());
+			var oldText = ea.getText();
 			fabrik.plugin(ea);
+			ea.panel.setFill(Color.red);
+			ea.setText("");
+			ea.setText(oldText);
+			ea.panel.setPosition(ea.panel.localize(WorldMorph.current().hands.first().getPosition()));
 		})
 		return components
 	}

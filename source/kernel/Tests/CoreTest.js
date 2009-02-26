@@ -206,8 +206,29 @@ TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
 		this.assert(morphCopy.formalModel, " morph copy has no formalModel");
 		this.assertIdentity(morphCopy.getModel(), modelCopy, "morphCopy model (" + morphCopy.formalModel + ") is not modelCopy ");
 		
+		this.assert(morphCopy.getActualModel().id() != morph.getActualModel().id(), "copy model has same id");
+		
+		// this.assertEqual(morph.rawNode.childNodes.length, morphCopy.rawNode.childNodes.length, "number of raw childNodes changed");
 
+		// this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");
+	
 	},
+
+	testCopyTextMorph: function() {
+		var morph = new TextMorph(new Rectangle(0, 0, 0, 0));
+		var morphCopy = morph.copy(new Copier());
+		this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");		
+	},
+
+	testMorphWithSubnode: function() {
+		var morph = Morph.makeRectangle(new Rectangle(0, 0, 10, 10));
+		morph.innerMorph = Morph.makeRectangle(new Rectangle(0, 0, 10, 10));
+		morph.addMorph(morph.innerMorph);
+		var morphCopy = morph.copy(new Copier());
+		this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");
+		inspect(morphCopy);
+	},
+
 
 
 });

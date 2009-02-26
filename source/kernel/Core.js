@@ -1211,74 +1211,92 @@ duplicate: function () {
 	// some of this stuff may become persistent
     },
     
-    copyFrom: function(copier, other) {
-		console.log("COPY MORPH")
-	this.internalInitialize(other.rawNode.cloneNode(false), true);
+	copySubmorphsFrom: function(copier, other) {
+		if (other.hasSubmorphs()) { // deep copy of submorphs
+			other.submorphs.forEach(function each(m) { 
+				var copy = m.copy(copier);
+				copier.addMapping(m.id(), copy);
+				copy.owner = null;	// Makes correct transfer of transform in next addMorph
+				this.addMorph(copy);
+			}, this);
+		}
+	},
 	
-	this.pvtSetTransform(this.getTransform());
+	copyAttributesFrom: function(copier, other) {
+		for (var p in other) {
+			if (!(other[p] instanceof Function) 
+				&& other.hasOwnProperty(p) 
+				&& !this.noShallowCopyProperties.include(p)) {
+				if (other[p] instanceof Morph) {
+					var replacement = (p === "owner") ? null : copier.lookup(other[p].id());
+					if (replacement !== this[p] && this.submorphs.include(this[p])) {
+						// when the morph is replaced from the attribute it probably should also removed from the submorphs
+						// this should fix the problem with node creation in initializePersistentState
+						this.removeMorph(this[p]);					
+					}
+					this[p] = replacement || other[p];
+					if(replacement)
+						console.log("found no replacement for: " + other[p].id());
+					console.log("replace '"+ p +"' with morph: " + this[p].id())
+					// an instance field points to a submorph, so copy
+					// should point to a copy of the submorph
+				} else if (other[p] instanceof lively.scene.Image) {
+					this[p] = other[p].copy(copier);
+					this.addWrapper(this[p]);
+				} else if (!(other[p] instanceof lively.paint.Gradient)) {					
+					this[p] = other[p];
+				} 
+			}
+		} // shallow copy by default, note that arrays of Morphs are not handled
+	},
 
-	this.initializePersistentState(other.shape.copy(copier));
+	copyActiveScriptsFrom: function(copier, other) {
+		if (other.activeScripts != null) { 
+			for (var i = 0; i < other.activeScripts.length; i++) {
+				var a = other.activeScripts[i];
+				// Copy all reflexive scripts (messages to self)
+				if (a.actor === other) {
+					this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
+					// Note -- may want to startStepping other as well so they are sync'd
+				}
+			}
+		}
+	},
 
-	
-	if (other.hasSubmorphs()) { // deep copy of submorphs
-	    other.submorphs.forEach(function each(m) { 
-		var copy = m.copy(copier);
-		copier.addMapping(m.id(), copy);
-		copy.owner = null;  // Makes correct transfer of transform in next addMorph
-		this.addMorph(copy);
-	    }, this);
-	}
+	copyModelFrom: function(copier, other) {
+		// try to be clever with Relays
+		if(other.formalModel && (this.formalModel.delegate instanceof Record)) {
+			var replaceModel = copier.lookup(other.getModel().id());
+			if (replaceModel) {
+					this.connectModel(replaceModel.newRelay(this.formalModel.definition));
+			}
+		};
+	},
 
-	for (var p in other) {
-	    if (!(other[p] instanceof Function) 
-		&& other.hasOwnProperty(p) 
-		&& !this.noShallowCopyProperties.include(p)) {
-		if (other[p] instanceof Morph) {
-		    var replacement = (p === "owner") ? null : copier.lookup(other[p].id());
-		    this[p] = replacement || other[p];
-		    // an instance field points to a submorph, so copy
-		    // should point to a copy of the submorph
-		} else if (other[p] instanceof lively.scene.Image) {
-		    this[p] = other[p].copy(copier);
-		    this.addWrapper(this[p]);
-		} else if (!(other[p] instanceof lively.paint.Gradient)) {		    
-		    this[p] = other[p];
+	copyFrom: function(copier, other) {
+		this.internalInitialize(other.rawNode.cloneNode(false), true);
+		this.pvtSetTransform(this.getTransform());
+		
+		// creates new childNodes of rawNode, that may not be wanted
+		this.initializePersistentState(other.shape.copy(copier));
+
+		this.copySubmorphsFrom(copier, other);
+		this.copyAttributesFrom(copier, other);
+		this.copyModelFrom(copier, other);
+
+		this.internalSetShape(other.shape.copy());
+		this.origin = other.origin.copy();
+
+		if (other.pvtCachedTransform) { 
+			this.pvtCachedTransform = other.pvtCachedTransform.copy();
 		} 
-	    }
-	} // shallow copy by default, note that arrays of Morphs are not handled
-	
-	// try to be clever with Relays
-	if(other.formalModel && (this.formalModel.delegate instanceof Record)) {
-		var replaceModel = copier.lookup(other.getModel().id());
-		if (replaceModel) {
-			this.connectModel(replaceModel.newRelay(this.formalModel.definition));
-		}
-	};
+		
+		this.initializeTransientState();
+		this.copyActiveScriptsFrom(copier, other)
 
-
-	this.internalSetShape(other.shape.copy());
-	this.origin = other.origin.copy();
-
-	if (other.pvtCachedTransform) { 
-	    this.pvtCachedTransform = other.pvtCachedTransform.copy();
-	} 
-	
-	this.initializeTransientState();
-
-	if (other.activeScripts != null) { 
-	    for (var i = 0; i < other.activeScripts.length; i++) {
-		var a = other.activeScripts[i];
-		// Copy all reflexive scripts (messages to self)
-		if (a.actor === other) {
-		    this.startStepping(a.stepTime, a.scriptName, a.argIfAny);
-		    // Note -- may want to startStepping other as well so they are sync'd
-		}
-	    }
-	} 
-
-	this.layoutChanged();
-	return this; 
-    },
+		this.layoutChanged();
+		return this; 
+	},
 
     deserialize: function($super, importer, rawNode) {
 	// FIXME what if id is not unique?

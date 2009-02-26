@@ -2066,6 +2066,11 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assert(text1.rawNode !== text2.rawNode, "text1.rawNode and text2.rawNode are identical");
 		this.assert(text1.panel.rawNode !== text2.panel.rawNode, "text1.panel.rawNode and text2.panel.rawNode are identical");
 
+		this.assert(text1.rawNode.childNodes.length == text2.rawNode.childNodes.length, "textX.rawNode.childNodes got messed up");
+		this.assert(text1.panel.rawNode.childNodes.length == text2.panel.rawNode.childNodes.length, "textX.panel.rawNode.childNodes got messed up");
+		this.assert(text1.morph.rawNode.childNodes.length == text2.morph.rawNode.childNodes.length, "textX.morph.rawNode.childNodes got messed up");
+
+
 		this.assert(text1.id() != text2.id(), "ids are equal");
 		
 		this.assert(text2.panel.component, "no text2.panel.component");
@@ -2091,7 +2096,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
         var text1 = this.createTextWidgetExample();
 		var panel2 = text1.panel.copy(new Copier());
 		var text2 = panel2.component;
-		this.assertDifferentTextComponents(text1, text2);			
+		this.assertDifferentTextComponents(text1, text2);
     },
 
 	testCopyConnector: function() {
@@ -2145,21 +2150,44 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		// this.assertIdentity(copy.fabrik, fabrik, "fabrik is copied too")
     },
 
+
+	testCopyTextMorphComponent: function() {
+        var text = this.createTextWidgetExample();
+		var morph = text.buildView();
+		
+		this.assert(text.morph, "text has no inner morph");
+		
+		var copier = new Copier();
+		var textCopy = text.copy(copier);
+			
+		this.assert(textCopy, "morph has no component");
+		this.assert(textCopy.morph, "copy has no inner morph");
+
+		var morphCopy = textCopy.panel;
+
+		this.assert(morphCopy.component !== text, "component did not get copied");
+		this.assert(morphCopy.component.formalModel === morphCopy.getModel(), "problem with text morph model");
+		this.assert(morphCopy.component.formalModel === textCopy.panel.getModel(), "problem with inner text morph model");
+    },
+
 	testCopyTextMorph: function() {
         var text = this.createTextWidgetExample();
 		var morph = text.buildView();
 		
 		this.assert(text.morph, "text has no inner morph");
 		
-		var morphCopy = morph.copy(new Copier());
+		var copier = new Copier();
+		
+		var morphCopy = morph.copy(copier);
 		var textCopy = morphCopy.component;
 	
 		this.assert(textCopy, "morph has no component");
-		this.assert(textCopy.morph, "copy has no inner morph");
+		this.assert(textCopy.panel, "copy has no inner morph");
 		this.assert(morphCopy.component !== text, "component did not get copied");
-		// TODO: outcommented for clean check in
-		// this.assert(morphCopy.component.formalModel === textCopy.morph.getModel(), "problem with inner text morph");
+		this.assert(morphCopy.component.formalModel === morphCopy.getModel(), "problem with text morph model");
+		this.assert(morphCopy.component.formalModel === textCopy.panel.getModel(), "problem with inner text morph model");
     },
+
 
 	testCopyAsXMLString: function() {
         var text1 = this.createTextWidgetExample();

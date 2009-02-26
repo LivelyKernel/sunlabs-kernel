@@ -2328,9 +2328,15 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 	return world.addFramedMorph(view, this.getViewTitle(), optLoc, this.useLightFrame);
     },
     
-    ownModel: function(model) {
-	this.actualModel = model;
-	this.rawNode.appendChild(model.rawNode);
+	ownModel: function(model) {
+		this.actualModel = model;
+		// get rid of old model rawNodes
+		$A(this.rawNode.childNodes).each(function(ea){
+			if(ea.tagName == "record") {
+				this.rawNode.removeChild(ea);
+			}
+		}, this)
+		this.rawNode.appendChild(model.rawNode);
     },
 
     open: function() { // call interactively
