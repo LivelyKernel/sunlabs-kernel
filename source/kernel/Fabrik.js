@@ -1606,7 +1606,7 @@ BoxMorph.subclass('ComponentMorph', {
         
         // overwrite reshape ... move stuff there or in Morph/WindowMorph? Behavior should be correct for most morphs...
         // FIXME move as much as possible from shape.reshape into this!
-        this.shape.reshape = function(partName, newPoint, lastCall) {
+     	this.shape.reshape = function(partName, newPoint, lastCall) {
             var bnds = this.bounds();
             var userRect = this.bounds().withPartNamed(partName, newPoint);
             // do not flip the bounds
@@ -1631,7 +1631,7 @@ BoxMorph.subclass('ComponentMorph', {
         var retval = $super(partName, newPoint, lastCall);
         this.adoptSubmorphsToNewExtent(priorPosition,priorExtent, this.getPosition(), this.getExtent().subPt(insetPt))
         this.setPosition(this.getPosition().addPt(deltaPos));
-    return retval;
+    	return retval;
     },
     
     setExtent: function($super, newExt) {
@@ -2551,6 +2551,7 @@ Object.subclass('ComponentCopier', {
 	copyAsXMLString: function(component) {
 		var componentCopy = component.copy(new Copier());
 		var copy = componentCopy.panel;
+		copy.halos.remove();
 		
 		var doc = this.createBaseDocument();
 		var worldNode = doc.childNodes[0].childNodes[0];

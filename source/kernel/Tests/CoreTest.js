@@ -220,13 +220,23 @@ TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
 		this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");		
 	},
 
+	testCopyClipMorph: function() {
+		var clipMorph = new ClipMorph(new Rectangle(10, 10, 50, 50));
+		var morph = Morph.makeRectangle(new Rectangle(25, 25, 100, 100));
+		clipMorph.addMorph(morph);
+		var clipCopy = clipMorph.copy(new Copier());
+		var morphCopy = clipCopy.submorphs[0];
+		this.assert(clipCopy.clip !== clipMorph.clip, "clip is the same");
+		
+		
+	},
+
 	testMorphWithSubnode: function() {
 		var morph = Morph.makeRectangle(new Rectangle(0, 0, 10, 10));
 		morph.innerMorph = Morph.makeRectangle(new Rectangle(0, 0, 10, 10));
 		morph.addMorph(morph.innerMorph);
 		var morphCopy = morph.copy(new Copier());
 		this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");
-		inspect(morphCopy);
 	},
 
 

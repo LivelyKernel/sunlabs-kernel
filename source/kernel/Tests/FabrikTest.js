@@ -2275,6 +2275,14 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		
 		this.assertEqualState(text1.panel.getExtent(), text2.panel.getExtent(), "extent get lost after plugin");
 		this.assertEqual(text2.morph.getText(), string, "extent get lost after plugin");
+		
+
+		var components2 = fabrik.pasteComponentFromXMLString(text1String);
+		var text3 = components2.first();
+
+		var textselection2 = text2.morph.submorphs[0];
+		var textselection3 = text3.morph.submorphs[0];		
+		this.assert(textselection2.shape !== textselection3.shape, "problem: textselections are identical");
     }
 });
 
