@@ -774,6 +774,7 @@ Object.subclass('Copier', {
 	lookUpOrCopy: function(original) {
 		var replacement = this.lookup(original.id());
 		if (!replacement) {
+			console.log("lookUpOrCopy: no replacement found for " + original.id());
 		   	var replacement = original.copy(this);
 			this.addMapping(original.id(), replacement);
 		};
@@ -1275,6 +1276,8 @@ duplicate: function () {
 
 	copyFrom: function(copier, other) {
 		this.internalInitialize(other.rawNode.cloneNode(false), true);
+		copier.addMapping(other.id(), this);
+		
 		this.pvtSetTransform(this.getTransform());
 		
 		// creates new childNodes of rawNode, that may not be wanted

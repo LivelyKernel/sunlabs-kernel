@@ -559,6 +559,7 @@ Morph.subclass('PinMorph', {
     },
     
 	copyFrom: function($super, copier, other) {
+		// console.log("copy PinMorph from:" + other.id())
 		$super(copier, other);
 		
 		copier.smartCopyProperty("pinHandle", this, other);
@@ -789,8 +790,10 @@ Widget.subclass('PinHandle', {
     },
 
 	copyFrom: function($super, copier, other) {
+		// console.log("copy PinHandle from:" + other.id())
 		$super(copier, other);
 			
+		//copier.smartCopyProperty("morph", this, other);
 		copier.smartCopyProperty("morph", this, other);
 		copier.smartCopyProperty("connectors", this, other);
 			
@@ -1406,7 +1409,7 @@ BoxMorph.subclass('ComponentMorph', {
         if (!this.component) return;
         // update the position of the pins
         var newPos = this.getGlobalTransform().transformPoint(pt(0,0));
-        if (!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) {
+        if ((!this.pvtOldPosition || !this.pvtOldPosition.eqPt(newPos)) && this.component.pinHandles) {
             this.pvtOldPosition = newPos;
             this.component.pinHandles.each(function(ea) { ea.morph && ea.morph.updatePosition() });
         };
@@ -1834,7 +1837,7 @@ BoxMorph.subclass('ComponentMorph', {
 	/* Actions */
 
 	doCopy: function() {
-		TextMorph.clipboardString = this.component.copyAsXMLString();; 
+		TextMorph.clipboardString = this.component.copyAsXMLString(); 
 	},
 	
 	doPaste: function() {
@@ -1849,7 +1852,8 @@ BoxMorph.subclass('ComponentMorph', {
 		
 		var componentCopy = this.component.copy(new Copier());
 		var copy = componentCopy.panel;
-		
+
+				
 		// var copy = this.copy(new Copier());
 		console.log('copied %s', copy);
 		copy.owner = null; // so following addMorph will just leave the tfm alone
@@ -2235,14 +2239,7 @@ ComponentMorph.subclass('FabrikMorph', {
     }, 
     
     addMorphForComponent: function(component) {
-        // wouldnt it be better to do:
-        // this.addMorph(component.morph || component.buildView());
-        // or
-        // if (component.morph && this.submorphs.include(component.morph)) return;
-        // this.addMorph(component.morph || component.buildView());
-        // ?
-        if (component.morph) return; // Morph is already there... 
-        this.addMorph(component.buildView());
+    	this.addMorph(component.panel || component.buildView());
     },
 
     okToBeGrabbedBy: function(evt) {
@@ -2552,7 +2549,9 @@ Object.subclass('ComponentCopier', {
 
 	
 	copyAsXMLString: function(component) {
-		var copy = 	component.panel.copy(new Copier());
+		var componentCopy = component.copy(new Copier());
+		var copy = componentCopy.panel;
+		
 		var doc = this.createBaseDocument();
 		var worldNode = doc.childNodes[0].childNodes[0];
 		worldNode.appendChild(copy.rawNode);
@@ -2582,19 +2581,16 @@ Object.subclass('ComponentCopier', {
 	
 	pasteComponentFromXMLStringIntoFabrik: function(componentMorphsAsXmlString, fabrik) {
 		var morphs = this.loadMorphsWithWorldTrunkFromSource(componentMorphsAsXmlString);
-		console.log("paste: " + componentMorphsAsXmlString)
+		// console.log("paste: " + componentMorphsAsXmlString)
 		var components = morphs.collect(function(ea) {
 			return ea.component}).select(function(ea) {return ea});
 		components.each(function(ea){
-			// Fixme: clone first?
-			// TEST TEST TEST
-			console.log("text: "+ ea.getText());
-			var oldText = ea.getText();
 			fabrik.plugin(ea);
 			ea.panel.setFill(Color.red);
-			ea.setText("");
-			ea.setText(oldText);
-			ea.panel.setPosition(ea.panel.localize(WorldMorph.current().hands.first().getPosition()));
+			ea.panel.setPosition(fabrik.panel.localize(WorldMorph.current().hands.first().getPosition()));
+			if (!fabrik.morph.submorphs.include(ea.panel)) {
+				console.log("ERROR: pasted component did not get added to fabrik");
+			}
 		})
 		return components
 	}
@@ -2701,6 +2697,8 @@ ComponentMorph.subclass('FunctionComponentMorph', {
     
     setupTextField: function() {
         var self = this;
+		if (!this.functionBodyMorph)
+			return;
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
             var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval);
             console.log("eval: " + source)          

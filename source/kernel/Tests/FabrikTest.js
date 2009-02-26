@@ -2045,6 +2045,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		return text1
 	},
 	
+	
 	testCopyNodeRecord: function() {
     	var text1 = this.createTextWidgetExample();
 		var model = text1.formalModel;
@@ -2084,6 +2085,9 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assert(text2.pinHandles[0], "no pinHandle in text2");
 		this.assert(text2.pinHandles[0].morph, "no pinHandle morph in text2");
 		this.assert(text2.pinHandles[0].connectors, "no pinHandle connectors in text2");
+		
+		this.assertEqualState(text1.panel.bounds(), text2.panel.bounds(),  "bounds are note equal");
+		
 	},
 	
 	testCopyComponent: function() {
@@ -2170,6 +2174,17 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assert(morphCopy.component.formalModel === textCopy.panel.getModel(), "problem with inner text morph model");
     },
 
+
+	testCopyFunctionComponent: function() {
+		var fabrik = new FabrikComponent();
+        var func1 = new FunctionComponent();
+		func1.setFunctionBody("return input + input");
+		fabrik.plugin(func1);
+		fabrik.buildView();
+		var func2 = func1.copy(new Copier());
+		fabrik.plugin(func2);
+    },
+
 	testCopyTextMorph: function() {
         var text = this.createTextWidgetExample();
 		var morph = text.buildView();
@@ -2187,6 +2202,25 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assert(morphCopy.component.formalModel === morphCopy.getModel(), "problem with text morph model");
 		this.assert(morphCopy.component.formalModel === textCopy.panel.getModel(), "problem with inner text morph model");
     },
+
+
+	testCopyPinMorph: function() {
+        var pin = new PinHandle();
+		pin.isFakeHandle = true;
+		pin.buildView();
+		var morphCopy = pin.morph.copy(new Copier());	
+		this.assertIdentity(morphCopy, morphCopy.pinHandle.morph, "morph reference got wrong")
+    },
+
+	testCopyPinHandle: function() {
+        var pin = new PinHandle();
+		pin.isFakeHandle = true;
+		pin.buildView();
+		var pinCopy = pin.copy(new Copier());
+		var morphCopy = pinCopy.morph	
+		this.assertIdentity(morphCopy, morphCopy.pinHandle.morph, "morph reference got wrong")
+    },
+
 
 
 	testCopyAsXMLString: function() {
@@ -2213,8 +2247,10 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		var string = "Hello Copy and Paste";
 		text1.setText(string);
 		fabrik.plugin(text1);
-		
 		fabrik.buildView(pt(400, 400));
+		text1.panel.setExtent(pt(50,100));
+		
+		
         fabrik.panel.automaticLayout();
         this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
 		
@@ -2230,8 +2266,15 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assertEqual(text2.getText(), string, "text string is wrong");
 		
 		this.assert(text1.id() != text2.id(), "problem: ids are equal");
+				
+		this.assertEqual(text1.panel.getExtent(), text2.panel.getExtent() , "extent get lost");
 		
+		fabrik.plugin(text1);
 		
+		CopiedText = text2; // DEBUG
+		
+		this.assertEqualState(text1.panel.getExtent(), text2.panel.getExtent(), "extent get lost after plugin");
+		this.assertEqual(text2.morph.getText(), string, "extent get lost after plugin");
     }
 });
 
