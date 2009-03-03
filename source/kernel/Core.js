@@ -3862,7 +3862,7 @@ PasteUpMorph.subclass("WorldMorph", {
         $super();
         this.hands = [];
         this.setDisplayTheme(this.displayThemes['lively']);
-		this.withAllSubmorphsDo( function() { this.transformChanged(); });  // Force installation of transforms
+		this.withAllSubmorphsDo( function() { this.layoutChanged(); });  // Force installation of transforms
 
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
