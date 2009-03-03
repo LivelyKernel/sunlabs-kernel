@@ -2258,18 +2258,27 @@ BoxMorph.subclass('XenoMorph', {
         $super();
         var bounds = this.shape.bounds();
 	console.log("bounds " + bounds + " vs " + bounds.width + "," + bounds.height);
-        this.foRawNode.setAttributeNS(null, "width", bounds.width);
+        //this.foRawNode.setAttributeNS(null, "width", bounds.width);
         //this.foRawNode.setAttributeNS(null, "height", bounds.height);
+		//this.foRawNode.width = bounds.width;
+		//this.foRawNode.height = bounds.height;
     }
 
 });
 
 XenoMorph.subclass('VideoMorph', {
 	
-	initialize: function($super, bounds, url) { 
+	useExperimentalRotation: false,
+
+	initialize: function($super, bounds) { 
         $super(bounds || new Rectangle(0,0,100,100));
-		if (url) this.addVideo(url);
+		this.applyStyle({fillOpacity: 0.6, borderColor: Color.black, borderWidth: 1});
     },
+openExample: function() {
+	this.embedVideo('<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>');
+	this.openInWorld();
+},
+
 
 	interactivelyEmbedVideo: function() {
 		var w = WorldMorph.current();
@@ -2288,29 +2297,22 @@ XenoMorph.subclass('VideoMorph', {
 		this.setExtent(extent);
 	},
 	
-	addVideo: function(url) {
-		// FIXME this is a hack
-		// http://vimeo.com/moogaloop.swf?clip_id=3038424&amp;amp;server=vimeo.com&amp;amp;show_title=1&amp;amp;show_byline=1&amp;amp;show_portrait=0&amp;amp;color=&amp;amp;fullscreen=1
-		var p = stringToXML('<p>' + '<object width="' + this.getExtent().x + '" height="' + this.getExtent().y + '">' +
-		'		<param name="allowfullscreen" value="true" />' +
-		'		<param name="allowscriptaccess" value="always" />' +
-		'		<param name="movie" value="' + url.toString() + '" />' +
-		'		<embed src="' + url.toString() + '" type="application/x-shockwave-flash" allowfullscreen="true" allowscriptaccess="always" width="' + this.getExtent().x + '" height="' + this.getExtent().y + '" />' +
-		'	</object>' + '</p>');
-	},
+	
 objectNodeFromTemplate: function(url, extent) {
 	url = url.toString().replace(/&/g, "&amp;");
-	var string = '<p xmlns="http://www.w3.org/1999/xhtml">' + 
-		//'<object type="application/x-shockwave-flash" width="'
-		//	+ extent.x + '" height="' + extent.y + '" data="' + url + '">' +
-		'<object type="application/x-shockwave-flash" style="width:'
-			+ extent.x + 'px; height:' + extent.y + 'px;" data="' + url + '">' +
+	var string = '<body xmlns="http://www.w3.org/1999/xhtml">' + 
+		'<object type="application/x-shockwave-flash" data="' + url + '">' +
+		/*'<object type="application/x-shockwave-flash" style="width:'
+			+ extent.x + 'px; height:' + extent.y + 'px;" data="' + url + '">' +*/
 		'<param name="movie" value="' + url + '" />' +
-		'</object>' + '</p>';
+		'</object>' + '</body>';
 	var node = document.adoptNode(stringToXML(string));
-	this.objectNode=node.firstChild;
 	return node;
 },
+objectNode: function() {
+	return  this.foRawNode.firstChild.firstChild;
+},
+
 extractURL: function(htmlString) {
 	var regex = /[a-zA-Z]+:\/\/(?:[a-zA-Z0-9\.=&\?]+\/?)+/;
 	var result = htmlString.match(regex);
@@ -2331,24 +2333,150 @@ extractExtent: function(htmlString) {
 	adjustForNewBounds: function ($super) {
         // Compute scales of old submorph extents in priorExtent, then scale up to new extent
         $super();
-        var newExtent = this.innerBounds().extent();
-		var extentQuery = new Query('descendant::*[@[width] != ""]');
-		
-		//this.objectNode.setAttribute('width', newExtent.x);
-		//this.objectNode.setAttribute('height', newExtent.y);
-		this.objectNode.style.width = '' + newExtent.x + 'px';
-		this.objectNode.style.height = '' + newExtent.y + 'px';
-		/*extentQuery.findAll(x.foRawNode).forEach(function(ea) {
-			
-		});*/
-		console.log(newExtent);
-	//         var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
-	// this.submorphs.forEach(function(sub) {
-	//     sub.setPosition(sub.getPosition().scaleByPt(scalePt));
-	//             sub.setExtent(sub.getExtent().scaleByPt(scalePt));
-	// });
-	// this.priorExtent = newExtent;
-    }
+		this.updateCSS();
+    },
+onMouseMove: function($super, evt, hasFocus) {
+	if (this.getVideoBounds().containsPoint(evt.point())) return;
+	$super(evt, hasFocus);
+	this.updateCSS();
+},
+updateCSS: function() {
+	var videoBnds = this.getVideoBounds();	
+	if (this.useExperimentalRotation) {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx; -webkit-transform-origin: %spx %spx; -webkit-transform: rotate(%sdeg)",
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height,
+			videoBnds.x,
+			videoBnds.y,
+			this.getRotation()*180/Math.PI
+	));
+	} else {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;",
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height
+	));
+	}
+},{
+	var videoBnds = this.getVideoBounds();	
+	if (this.useExperimentalRotation) {
+	} else {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height
+	));
+	}
+},{
+	var videoBnds = this.getVideoBounds();
+	
+	if (this.useExperimentalRotation) {
+	} else {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height
+	));
+	}
+},{
+	var videoBnds = this.getVideoBounds();
+	
+	if (this.useExperimentalRotation) {
+	this.objectNode().setAttributeNS(null, 'style',
+	} else {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height
+	));
+	}
+},{
+	var videoBnds = this.getVideoBounds();
+	
+	if (this.useExperimentalRotation) {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; translateX: %spx; translateY: %spx; width: %spx; height: %spx; 	-webkit-transform-origin: %spx %spx; -webkit-transform: rotate(%sdeg)",
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height,
+			videoBnds.x,
+			videoBnds.y,
+			this.getRotation()*180/Math.PI
+	));
+	} else {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height
+	));
+	}
+},{
+	var videoBnds = this.getVideoBounds();
+	
+	if (this.useExperimentalRotation) {
+		this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; translateX:%spx; translateY:%spx; width: %spx; height: %spx; 	-webkit-transform-origin: %spx %spx; -webkit-transform: rotate(%sdeg)",
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height,
+			videoBnds.x,
+			videoBnds.y,
+			this.getRotation()*180/Math.PI
+	));
+	} else {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height
+	));
+	}
+},{
+	var videoBnds = this.getVideoBounds();
+	
+	if (this.useExperimentalRotation) {
+		this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx; 	-webkit-transform-origin: %spx %spx; -webkit-transform: rotate(%sdeg)",
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height,
+			videoBnds.x,
+			videoBnds.y,
+			this.getRotation()*180/Math.PI
+	));
+	} else {
+	this.objectNode().setAttributeNS(null, 'style',
+		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
+			videoBnds.x,
+			videoBnds.y,
+			videoBnds.width,
+			videoBnds.height
+	));
+	}
+},
+getVideoBounds: function() {
+	var margin = 20;
+	return this.innerBounds().insetBy(margin).translatedBy(this.getPosition());
+},
+
+
 
 });
 
