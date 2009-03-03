@@ -2227,7 +2227,8 @@ BoxMorph.subclass('XenoMorph', {
                               width: bounds.width,
                               height: bounds.height });
 
-        this.foRawNode.appendChild(document.createTextNode("no content, load an URL"));
+        //this.foRawNode.appendChild(document.createTextNode("no content, load an URL"));
+		this.foRawNode.appendChild(NodeFactory.createNS(null, 'input', {type: 'text', name: '?', size: 20}));
         this.addNonMorph(this.foRawNode);
 	
     },
@@ -2263,7 +2264,93 @@ BoxMorph.subclass('XenoMorph', {
 
 });
 
+XenoMorph.subclass('VideoMorph', {
+	
+	initialize: function($super, bounds, url) { 
+        $super(bounds || new Rectangle(0,0,100,100));
+		if (url) this.addVideo(url);
+    },
 
+	interactivelyEmbedVideo: function() {
+		var w = WorldMorph.current();
+		w.prompt('Paste HTML below.', this.embedVideo.bind(this));
+	},
+	
+	embedVideo: function(stringifiedHTML) {
+		if (!stringifiedHTML) return;
+		console.log('Embedding video...');
+		this.foRawNode.removeChild(this.foRawNode.firstChild);
+		stringifiedHTML = stringifiedHTML.replace(/[\n\r]/, ' ');
+		var url = this.extractURL(stringifiedHTML);
+		var extent = this.extractExtent(stringifiedHTML);
+		var node = this.objectNodeFromTemplate(url, extent);
+		this.foRawNode.appendChild(node);
+		this.setExtent(extent);
+	},
+	
+	addVideo: function(url) {
+		// FIXME this is a hack
+		// http://vimeo.com/moogaloop.swf?clip_id=3038424&amp;amp;server=vimeo.com&amp;amp;show_title=1&amp;amp;show_byline=1&amp;amp;show_portrait=0&amp;amp;color=&amp;amp;fullscreen=1
+		var p = stringToXML('<p>' + '<object width="' + this.getExtent().x + '" height="' + this.getExtent().y + '">' +
+		'		<param name="allowfullscreen" value="true" />' +
+		'		<param name="allowscriptaccess" value="always" />' +
+		'		<param name="movie" value="' + url.toString() + '" />' +
+		'		<embed src="' + url.toString() + '" type="application/x-shockwave-flash" allowfullscreen="true" allowscriptaccess="always" width="' + this.getExtent().x + '" height="' + this.getExtent().y + '" />' +
+		'	</object>' + '</p>');
+	},
+objectNodeFromTemplate: function(url, extent) {
+	url = url.toString().replace(/&/g, "&amp;");
+	var string = '<p xmlns="http://www.w3.org/1999/xhtml">' + 
+		//'<object type="application/x-shockwave-flash" width="'
+		//	+ extent.x + '" height="' + extent.y + '" data="' + url + '">' +
+		'<object type="application/x-shockwave-flash" style="width:'
+			+ extent.x + 'px; height:' + extent.y + 'px;" data="' + url + '">' +
+		'<param name="movie" value="' + url + '" />' +
+		'</object>' + '</p>';
+	var node = document.adoptNode(stringToXML(string));
+	this.objectNode=node.firstChild;
+	return node;
+},
+extractURL: function(htmlString) {
+	var regex = /[a-zA-Z]+:\/\/(?:[a-zA-Z0-9\.=&\?]+\/?)+/;
+	var result = htmlString.match(regex);
+	return result && result[0];
+},
+extractExtent: function(htmlString) {
+	var regex = /.*width[=:]"([0-9]+)".*height[=:]"([0-9]+)".*/;
+	var result = htmlString.match(regex);
+	var extent = result && pt(Number(result[1]), Number(result[2]));
+	return extent;
+},
+
+
+
+	
+	handlesMouseDown: Functions.True, // Flash takes care
+	
+	adjustForNewBounds: function ($super) {
+        // Compute scales of old submorph extents in priorExtent, then scale up to new extent
+        $super();
+        var newExtent = this.innerBounds().extent();
+		var extentQuery = new Query('descendant::*[@[width] != ""]');
+		
+		//this.objectNode.setAttribute('width', newExtent.x);
+		//this.objectNode.setAttribute('height', newExtent.y);
+		this.objectNode.style.width = '' + newExtent.x + 'px';
+		this.objectNode.style.height = '' + newExtent.y + 'px';
+		/*extentQuery.findAll(x.foRawNode).forEach(function(ea) {
+			
+		});*/
+		console.log(newExtent);
+	//         var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
+	// this.submorphs.forEach(function(sub) {
+	//     sub.setPosition(sub.getPosition().scaleByPt(scalePt));
+	//             sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+	// });
+	// this.priorExtent = newExtent;
+    }
+
+});
 
 // most likely deprecated, should use Widget, which is a view.
 Model.subclass('WidgetModel', {

@@ -266,6 +266,25 @@ TestCase.subclass('PinMorphInteractionTest', {
 
 
 });
+TestCase.subclass('VideoMorphTest', {
+
+	sourceFromYoutube: function() {
+		return '<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>';
+	},
+
+	testExtractURLFromVideoEmbedCode: function() {
+	var sut = new VideoMorph();
+	var result = sut.extractURL(this.sourceFromYoutube());
+	this.assertEqual(result, "http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1");
+},
+testExtractExtent: function() {
+	var sut = new VideoMorph();
+	var result = sut.extractExtent(this.sourceFromYoutube());
+	this.assertEqual(result.x, 425);
+	this.assertEqual(result.y, 344);
+},
+
+});
 
 // logMethod(Morph.prototype, "morphToGrabOrReceive");
 // logMethod(Morph.prototype, "onMouseOut");

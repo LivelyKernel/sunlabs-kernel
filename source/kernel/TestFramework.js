@@ -591,7 +591,7 @@ Global.inspectObj = SimpleInspector.inspectObj;
 
 Global.printError = function printError(e) {
    var s = "";
-   for(i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
+   for (i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
    return s
 }
 

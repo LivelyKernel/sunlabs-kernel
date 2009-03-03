@@ -282,7 +282,13 @@ Object.subclass('lively.data.Wrapper', {
             var ref = LivelyNS.getAttribute(node, "ref");
             if (ref) {
                 importer.addPatchSite(this, name, ref);
-            } else {
+			} else if (node.getAttributeNS(null, 'isNode') !== '') {
+				// we have a normal node, nothing to deserialize but reassign
+				var realNode = node.firstChild;
+				node.removeChild(realNode);
+				this[name] = realNode;
+				this.addNonMorph(realNode);
+			} else {
                 var value = node.textContent;
                 if (value) {
                     var family = LivelyNS.getAttribute(node, "family");
