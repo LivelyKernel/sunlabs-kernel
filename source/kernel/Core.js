@@ -3134,7 +3134,7 @@ Morph.addMethods({
 
     },
 
-    layoutChanged: function Morph$layoutChanged() {
+    layoutChanged: function Morph$layoutChanged() { 
 	// layoutChanged() is called whenever the cached fullBounds may have changed
 	// It invalidates the cache, which will be recomputed when bounds() is called
 	// Naturally it must be propagated up its owner chain.
@@ -3142,6 +3142,7 @@ Morph.addMethods({
 	// KP: the following may or may not be necessary:
 	this.transformChanged(); // DI: why is this here?
 	
+	if(! this.fullBounds) return;
 	this.fullBounds = null;
 	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
 	    this.owner.layoutChanged();
@@ -3861,6 +3862,7 @@ PasteUpMorph.subclass("WorldMorph", {
         $super();
         this.hands = [];
         this.setDisplayTheme(this.displayThemes['lively']);
+		this.withAllSubmorphsDo( function() { this.transformChanged(); });  // Force installation of transforms
 
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
         this.lastStepTime = (new Date()).getTime();
