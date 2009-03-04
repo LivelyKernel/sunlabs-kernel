@@ -2340,6 +2340,7 @@ onMouseMove: function($super, evt, hasFocus) {
 	$super(evt, hasFocus);
 	this.updateCSS();
 },
+
 updateCSS: function() {
 	var videoBnds = this.getVideoBounds();	
 	if (this.useExperimentalRotation) {
@@ -2362,115 +2363,8 @@ updateCSS: function() {
 			videoBnds.height
 	));
 	}
-},{
-	var videoBnds = this.getVideoBounds();	
-	if (this.useExperimentalRotation) {
-	} else {
-	this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height
-	));
-	}
-},{
-	var videoBnds = this.getVideoBounds();
-	
-	if (this.useExperimentalRotation) {
-	} else {
-	this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height
-	));
-	}
-},{
-	var videoBnds = this.getVideoBounds();
-	
-	if (this.useExperimentalRotation) {
-	this.objectNode().setAttributeNS(null, 'style',
-	} else {
-	this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height
-	));
-	}
-},{
-	var videoBnds = this.getVideoBounds();
-	
-	if (this.useExperimentalRotation) {
-	this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; translateX: %spx; translateY: %spx; width: %spx; height: %spx; 	-webkit-transform-origin: %spx %spx; -webkit-transform: rotate(%sdeg)",
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height,
-			videoBnds.x,
-			videoBnds.y,
-			this.getRotation()*180/Math.PI
-	));
-	} else {
-	this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height
-	));
-	}
-},{
-	var videoBnds = this.getVideoBounds();
-	
-	if (this.useExperimentalRotation) {
-		this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; translateX:%spx; translateY:%spx; width: %spx; height: %spx; 	-webkit-transform-origin: %spx %spx; -webkit-transform: rotate(%sdeg)",
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height,
-			videoBnds.x,
-			videoBnds.y,
-			this.getRotation()*180/Math.PI
-	));
-	} else {
-	this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height
-	));
-	}
-},{
-	var videoBnds = this.getVideoBounds();
-	
-	if (this.useExperimentalRotation) {
-		this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx; 	-webkit-transform-origin: %spx %spx; -webkit-transform: rotate(%sdeg)",
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height,
-			videoBnds.x,
-			videoBnds.y,
-			this.getRotation()*180/Math.PI
-	));
-	} else {
-	this.objectNode().setAttributeNS(null, 'style',
-		Strings.format("position:absolute; left:%spx; top:%spx; width: %spx; height: %spx;
-			videoBnds.x,
-			videoBnds.y,
-			videoBnds.width,
-			videoBnds.height
-	));
-	}
 },
+
 getVideoBounds: function() {
 	var margin = 20;
 	return this.innerBounds().insetBy(margin).translatedBy(this.getPosition());
