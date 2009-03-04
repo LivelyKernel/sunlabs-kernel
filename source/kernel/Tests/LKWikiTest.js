@@ -560,6 +560,73 @@ TestCase.subclass('lively.Tests.LKWikiTest.InteractiveAuthorizationTest', {
 	},
 
 });
+TestCase.subclass('lively.Tests.LKWikiTest.WikiNetworkAnalyzerTest', {
+
+	sampleDocument: function() {
+		return stringToXML('<?xml version="1.0" encoding="utf-8"?>' + '\n' +
+'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"' + '\n' +
+'"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">' + '\n' + '\n' +
+'<html xmlns="http://www.w3.org/1999/xhtml">' + '\n' + '\n' +
+'<head> <title>Sun Labs Lively Kernel</title> </head>' + '\n' +
+'<body style="margin:0px">' + '\n' +
+'<!-- <link rel="stylesheet" type="text/css" href="style.css"/> -->' + '\n' +
+'<svg id="canvas" width="100%" height="100%"' + '\n' +
+'     xmlns="http://www.w3.org/2000/svg" ' + '\n' +
+'     xmlns:lively="http://www.experimentalstuff.com/Lively"' + '\n' +
+'     xmlns:xlink="http://www.w3.org/1999/xlink"' + '\n' +
+'     xmlns:xhtml="http://www.w3.org/1999/xhtml"' + '\n' +
+'     xml:space="preserve"' + '\n' +
+'     zoomAndPan="disable">' + '\n' +
+'<title>Lively Kernel canvas</title>' + '\n' +
+'<defs>' + '\n' + '\n' +
+'</defs>' + '\n' + '\n' +
+'<field name="test"><![CDATA[{"runs":[33,18,13,33,17,15,18,20,17,17,16,16,8,14,8,19],"values":[' + '\n' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/lively-wiki/test1.xhtml"},' + '\n' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/lively-wiki/test1.xhtml"},' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/lively-wiki/test2.xhtml"},' + '\n' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/"}]}]]></field>' + '\n' + '\n' +
+'<field name="url" family="URL"><![CDATA[{"protocol":"http:","hostname":"livelykernel.sunlabs.com","pathname":"/repository/lively-wiki/test3.xhtml","constructor":null,"splitter":null,"pathSplitter":null,"initialize":null,"inspect":null,"toString":null,"fullPath":null,"isLeaf":null,"dirname":null,"filename":null,"getDirectory":null,"withPath":null,"withRelativePath":null,"withFilename":null,"toQueryString":null,"withQuery":null,"withoutQuery":null,"eq":null,"relativePathFrom":null,"svnWorkspacePath":null,"svnVersioned":null,"notSvnVersioned":null,"toLiteral":null}]]></field>' + '\n' + '\n' +
+'</svg>' + '\n' + '\n' +
+'</body>' + '\n' +
+'</html>');
+	},
+
+setUp: function() {
+	this.doc = this.sampleDocument();
+	this.repoUrl = new URL("http://livelykernel.sunlabs.com/repository/lively-wiki/");
+	this.linksOfSampleDoc = [this.createWorldProxyFor('test1.xhtml'),
+										this.createWorldProxyFor('test2.xhtml'),
+										this.createWorldProxyFor('test3.xhtml')];
+},
+
+createWorldProxyFor: function(worldName) {
+	return new WikiWorldProxy(this.repoUrl.withFilename(worldName), this.repoUrl);
+},
+
+testExtractLinks: function() {
+	var doc = this.sampleDocument();
+	var expected = this.linksOfSampleDoc.collect(function(ea) {return ea.getURL() });
+	var sut = new WikiNetworkAnalyzer(this.repoUrl);
+	var result = sut.extractLinksFromDocument(doc);
+	this.assertEqual(result.length, expected.length);
+	this.assertEqualState(result, expected);
+},
+
+
+
+testAddLinks: function() {
+	var worldProxy = this.createWorldProxyFor('bla');
+	var sut = new WikiNetworkAnalyzer(this.repoUrl);
+	x = worldProxy;
+	this.assertEqual(worldProxy.getLinkProxies().length, 0);
+	sut.addLinksOfWorld(worldProxy, this.sampleDocument());
+	y=sut;
+	this.assertEqual(sut.worldProxies.length, this.linksOfSampleDoc.length + 1);
+	this.assertEqualState(this.linksOfSampleDoc, worldProxy.getLinkProxies());
+},
+
+
+});
 
 TestCase.subclass('lively.Tests.LKWikiTest.WikiPatcherTest', {
     

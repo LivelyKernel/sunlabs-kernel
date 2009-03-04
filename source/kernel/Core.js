@@ -4023,6 +4023,11 @@ PasteUpMorph.subclass("WorldMorph", {
                 require('Examples.js').toRun(function() {
 					var kal = WorldMorph.current().addMorph(new SymmetryMorph(300, 7)); 
 					kal.startUp(); }) } ],
+			["Video Morph", function(evt) {
+				var v = new VideoMorph();
+				v.setPosition(evt.point());
+				v.openInWorld();
+				v.interactivelyEmbedVideo(); }],
 			["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
 					GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
