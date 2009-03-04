@@ -1611,8 +1611,8 @@ this.Node.subclass('lively.scene.Clip', {
 	this.rawNode = rawNode;
 	//FIXME remap the id?
         if (!rawNode) {
-            // throw new Error("deserializing Clip withour rawNode");
-            console.log("Error: deserializing Clip withour rawNode");
+            // throw new Error("deserializing Clip without rawNode");
+            console.log("Error: deserializing Clip without rawNode");
             return
         };
 	var node = rawNode.firstChild; // really firstElement, allow for whitespace

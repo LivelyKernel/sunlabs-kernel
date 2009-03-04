@@ -2271,11 +2271,12 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		
 		fabrik.plugin(text1);
 		
-		CopiedText = text2; // DEBUG
-		
 		this.assertEqualState(text1.panel.getExtent(), text2.panel.getExtent(), "extent get lost after plugin");
 		this.assertEqual(text2.morph.getText(), string, "extent get lost after plugin");
-		
+
+		var clipMorph = text2.morph.owner; 
+		this.assert(clipMorph.clip.rawNode, "clipMorph clip has no rawNode");
+	
 
 		var components2 = fabrik.pasteComponentFromXMLString(text1String);
 		var text3 = components2.first();

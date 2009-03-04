@@ -1345,11 +1345,22 @@ duplicate: function () {
 	// Override me
     },
 
+	restoreFromDefsNode: function(importer, node) {
+	    // the only one handled here "code"
+		var codeNodes = [];
+    	if (!Config.skipChanges) { // Can be blocked by URL param 
+        	var codes = node.getElementsByTagName("code");
+        	for (var j = 0; j < codes.length; j++) { codeNodes.push(codes.item(j)) };
+			if (codeNodes.length > 1) console.warn('More than one code node');
+			if (codeNodes.length > 0) this.changes = ChangeSet.fromWorld(this);
+			// ChangeSet of World gets evaluated in main
+    	}
+	},
+
     restoreFromSubnodes: function(importer) {
         //  wade through the children
         var children = [];
         var helperNodes = [];
-        var codeNodes = [];
         
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
             if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE) {
@@ -1419,15 +1430,8 @@ duplicate: function () {
                 }
                 break;
             }
-                
-            case "defs": { // the only one handled here "code"
-                if (!Config.skipChanges) { // Can be blocked by URL param 
-                    var codes = node.getElementsByTagName("code");
-                    for (var j = 0; j < codes.length; j++) { codeNodes.push(codes.item(j)) };
-					if (codeNodes.length > 1) console.warn('More than one code node');
-					if (codeNodes.length > 0) this.changes = ChangeSet.fromWorld(this);
-					// ChangeSet of World gets evaluated in main
-                }
+            case "defs": { 
+				this.restoreFromDefsNode(importer, node);
                 break;
             }
             default: {

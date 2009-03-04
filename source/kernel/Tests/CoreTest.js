@@ -227,7 +227,7 @@ TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
 		var clipCopy = clipMorph.copy(new Copier());
 		var morphCopy = clipCopy.submorphs[0];
 		this.assert(clipCopy.clip !== clipMorph.clip, "clip is the same");
-		
+		this.assert(clipCopy.clip.rawNode, "clip has no rawNode");
 		
 	},
 

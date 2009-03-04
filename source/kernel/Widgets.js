@@ -320,17 +320,16 @@ BoxMorph.subclass("ClipMorph", {
 		defs.appendChild(this.clip.rawNode);
 		this.clip.applyTo(this);		
 	},
-
-    restoreFromSubnode: function($super, importer, node) {
-	$super(importer, node);
-	if (node.localName == 'defs') {
+	
+	
+	restoreFromDefsNode: function($super, importer, node) {
+		$super(importer, node);
 	    var clips = node.getElementsByTagName('clipPath');
 	    if (clips.length > 0) {
-		this.clip = new lively.scene.Clip(importer, clips.item(0));
- 		this.clip.applyTo(this);
+			this.clip = new lively.scene.Clip(importer, clips.item(0));
+ 			this.clip.applyTo(this);
+			importer.addMapping(this.clip.id(), this.clip);
 	    }
-	    return true;
-	} else return false;
     },
 
     setBounds: function($super, bnds) { // this reshapes
