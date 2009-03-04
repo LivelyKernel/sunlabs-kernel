@@ -271,12 +271,22 @@ TestCase.subclass('VideoMorphTest', {
 	sourceFromYoutube: function() {
 		return '<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>';
 	},
+sourceFromVimeo: function() {
+		return '<object width="400" height="544"><param name="allowfullscreen" value="true" /><param name="allowscriptaccess" value="always" /><param name="movie" value="http://vimeo.com/moogaloop.swf?clip_id=3038424&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1" /><embed src="http://vimeo.com/moogaloop.swf?clip_id=3038424&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1" type="application/x-shockwave-flash" allowfullscreen="true" allowscriptaccess="always" width="400" height="544"></embed></object><br /><a href="http://vimeo.com/3038424">Sun Lively Kernel on iPhone (simulator)</a> from <a href="http://vimeo.com/user825365">Steve Lloyd</a> on <a href="http://vimeo.com">Vimeo</a>';
+	},
+
 
 	testExtractURLFromVideoEmbedCode: function() {
 	var sut = new VideoMorph();
 	var result = sut.extractURL(this.sourceFromYoutube());
 	this.assertEqual(result, "http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1");
 },
+testExtractURLFromVideoEmbedCode2: function() {
+	var sut = new VideoMorph();
+	var result = sut.extractURL(this.sourceFromVimeo());
+	this.assertEqual(result, "http://vimeo.com/moogaloop.swf?clip_id=3038424&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1");
+},
+
 testExtractExtent: function() {
 	var sut = new VideoMorph();
 	var result = sut.extractExtent(this.sourceFromYoutube());
