@@ -1693,8 +1693,11 @@ Morph.subclass("MenuMorph", {
         if (index === null) return;
         this.listMorph.highlightItem(evt, index, false);
         
-        this.submenuItems().without(this.items[index]).invoke('closeMenu');
-        this.items[index].isSubMenuItem && !this.items[index].menu && this.items[index].showMenu(evt, this);
+        var item = this.items[index];
+		this.submenuItems().without(item).invoke('closeMenu');
+        if (! item.isSubMenuItem) return;
+		if (! item.menu) item.showMenu(evt, this);
+			else if (item.menu.handOverMenu(evt.hand)) item.menu.setMouseFocus(evt);
         
     },
     

@@ -4597,8 +4597,8 @@ Morph.subclass("HandMorph", {
     },
 
     setMouseFocus: function(morphOrNull) {
-        // console.log('setMouseFocus: ' + morphOrNull);
-        this.mouseFocus = morphOrNull;
+        //console.log('setMouseFocus: ' + morphOrNull);
+    this.mouseFocus = morphOrNull;
 	this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
 	this.mouseFocusChanges_ ++;
     },
