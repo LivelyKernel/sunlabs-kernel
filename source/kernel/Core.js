@@ -772,9 +772,11 @@ Object.subclass('Copier', {
     },
 	
 	lookUpOrCopy: function(original) {
+		if (!original) 
+			return null;
 		var replacement = this.lookup(original.id());
 		if (!replacement) {
-			console.log("lookUpOrCopy: no replacement found for " + original.id());
+			// console.log("lookUpOrCopy: no replacement found for " + original.id());
 		   	var replacement = original.copy(this);
 			this.addMapping(original.id(), replacement);
 		};
@@ -1213,14 +1215,22 @@ duplicate: function () {
     },
     
 	copySubmorphsFrom: function(copier, other) {
+			
+		// console.log("copy submorphs from " + other);
 		if (other.hasSubmorphs()) { // deep copy of submorphs
-			other.submorphs.forEach(function each(m) { 
+			other.submorphs.forEach(function each(m) {
+				if (m.isEpimorph || m.ignoreWhenCopying) {
+					// console.log("ignore " + m)
+					return; // ignore temp morphs
+				};
 				var copy = m.copy(copier);
 				copier.addMapping(m.id(), copy);
 				copy.owner = null;	// Makes correct transfer of transform in next addMorph
 				this.addMorph(copy);
+				if (copy.owner !== this)
+					console.log("ERROR could not add: " + copy + " to " + this)
 			}, this);
-		}
+		};
 	},
 	
 	copyAttributesFrom: function(copier, other) {
@@ -1236,9 +1246,9 @@ duplicate: function () {
 						this.removeMorph(this[p]);					
 					}
 					this[p] = replacement || other[p];
-					if(replacement)
-						console.log("found no replacement for: " + other[p].id());
-					console.log("replace '"+ p +"' with morph: " + this[p].id())
+					// if(replacement)
+					//	console.log("found no replacement for: " + other[p].id());
+					// console.log("replace '"+ p +"' with morph: " + this[p].id())
 					// an instance field points to a submorph, so copy
 					// should point to a copy of the submorph
 				} else if (other[p] instanceof lively.scene.Image) {
@@ -3099,7 +3109,8 @@ Morph.addMethods({
     localize: function(pt) {
 	if (pt == null) console.log('null pt');   
 	if (this.world() == null) {
-	    console.log('null this.world()');   
+ 	    console.log('ERROR in '+  this.id() +' localize: '+ pt + ' this.world() is null');   
+		printStack();
 	    return pt;
 	}
 	return pt.matrixTransform(this.world().transformToMorph(this));
@@ -5377,6 +5388,8 @@ ClipboardHack = {
 		return buffer;
    }
 }
+
+
 
 console.log('loaded Core.js');
 

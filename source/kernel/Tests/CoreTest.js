@@ -217,7 +217,8 @@ TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
 	testCopyTextMorph: function() {
 		var morph = new TextMorph(new Rectangle(0, 0, 0, 0));
 		var morphCopy = morph.copy(new Copier());
-		this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");		
+		// we don't copy selection any more...
+		// this.assertEqual(morphCopy.rawNode.childNodes.length, morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");		
 	},
 
 	testCopyClipMorph: function() {
@@ -242,6 +243,16 @@ TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
 
 
 });
+
+
+
+
+// logMethod(Morph.prototype, 'copyFrom'); 
+
+
+// logMethod(Morph.prototype, 'removeMorph');
+// logMethod(Morph.prototype,  'removeRawNode');
+
 
 console.log('loaded CoreTest.js');
 

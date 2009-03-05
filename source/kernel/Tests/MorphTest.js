@@ -321,7 +321,7 @@ testExtractExtent: function() {
 
 
 //logMethod(Morph.prototype, "morphToGrabOrReceive");
-//logMethod(Morph.prototype, "onMouseDown");
+// logMethod(Morph.prototype, "onMouseDown");
 //logMethod(HandMorph.prototype, "reallyHandleMouseEvent");
 
 }) // end of module

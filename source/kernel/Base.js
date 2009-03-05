@@ -2255,7 +2255,7 @@ Record.subclass('lively.data.DOMRecord', {
     },
 
 	copyFrom: function(copier, other) {
-		console.log("COPY DOM RECORD")
+		// console.log("COPY DOM RECORD")
 		if (other.rawNode) this.rawNode = other.rawNode.cloneNode(true);
 		this.setId(this.newId());
 		copier.addMapping(other.id(), this);

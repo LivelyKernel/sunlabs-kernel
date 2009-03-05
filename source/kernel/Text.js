@@ -878,7 +878,7 @@ BoxMorph.subclass("TextMorph", {
     maxSafeSize: 20000, 
     tabWidth: 4,
     tabsAsSpaces: true,
-    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['textContent', 'lines']),
+    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['textContent', 'lines', 'textSelection']),
     locale: Locale,
     acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
     autoAccept: false,
@@ -910,10 +910,14 @@ BoxMorph.subclass("TextMorph", {
         this.resetRendering();
         // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
 	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
-        this.textSelection = this.addMorphBack(new TextSelectionMorph());
-	// The TextSelection must be beneath the Text, shift rawNode around
-	this.rawNode.insertBefore(this.textSelection.rawNode, this.shape.rawNode.nextSibling);
+        this.initializeTextSelection();
     },
+
+	initializeTextSelection: function() {
+		this.textSelection = this.addMorphBack(new TextSelectionMorph());
+		// The TextSelection must be beneath the Text, shift rawNode around
+		this.rawNode.insertBefore(this.textSelection.rawNode, this.shape.rawNode.nextSibling);
+	},
 
     restoreFromSubnode: function($super, importer, rawNode) {
 	if ($super(importer, rawNode)) return true;
@@ -1388,11 +1392,29 @@ subMenuItems: function($super, evt) {
 
     showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
     
+	getTextSelection: function() {
+		if (!this.textSelection) {
+			this.initializeTextSelection();
+		}
+		return this.textSelection
+	},
+
+	undrawSelection: function() {
+		if (!this.textSelection) {
+			return
+		} else {
+			this.textSelection.undraw();
+		}
+	},
+
     drawSelection: function(noScroll) { // should really be called buildSelection now
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
             return;
         }
-        this.textSelection.undraw();
+
+		this.undrawSelection();
+        var selection = this.getTextSelection();
+		
 
         var jRect;
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
@@ -1423,18 +1445,18 @@ subMenuItems: function($super, evt) {
         }
     
         if (this.lineNo(r2) == this.lineNo(r1)) {
-            this.textSelection.addRectangle(r1.union(r2));
+            selection.addRectangle(r1.union(r2));
         } else { // Selection is on two or more lines
             var localBounds = this.shape.bounds();
 	    var padding = this.padding;
             r1 = r1.withBottomRight(pt(localBounds.maxX() - padding.left(), r1.maxY()));
             r2 = r2.withBottomLeft(pt(localBounds.x + padding.left(), r2.maxY()));
-            this.textSelection.addRectangle(r1);
-            this.textSelection.addRectangle(r2);
+            selection.addRectangle(r1);
+            selection.addRectangle(r2);
         
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
-                this.textSelection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
+                selection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
             }
         }
 		// scrolling here can cause circularity with bounds calc
@@ -1676,7 +1698,7 @@ subMenuItems: function($super, evt) {
 
     onBlur: function($super, hand) {
         $super(hand);
-        if (!this.showsSelectionWithoutFocus()) this.textSelection.undraw();
+		if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
     },
 
 	onKeyDown: function(evt) {
@@ -2141,6 +2163,7 @@ TextMorph.addMethods({ // change clue additions
 		this.changeClue.setBorderWidth(0);
 		this.changeClue.setFill(Color.red);
 		this.changeClue.ignoreEvents();
+		this.changeClue.ignoreWhenCopying = true;
 	},
 
 	showChangeClue: function() {

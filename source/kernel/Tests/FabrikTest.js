@@ -1009,10 +1009,10 @@ TestCase.subclass('PinConnectorTest', {
     setUp: function() {
         this.comp1 = new Component();
         this.comp1.addField("Field1");
-        this.pin1 = this.comp1.addPinHandle("Field1");
+        this.pin1 = this.comp1.addPin("Field1");
         this.comp2 = new Component();
         this.comp2.addField("Field2");
-        this.pin2 = this.comp2.addPinHandle("Field2");
+        this.pin2 = this.comp2.addPin("Field2");
     },
     
     testIsConnectedTo: function() {
@@ -2004,8 +2004,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
 		var clock = new FabrikClockWidget();
 		
         this.worldMorph.addMorphFrontOrBack(clock.buildView(), true, true);
-		
-		
+				
 		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
 		var string = Exporter.stringify(doc);
 		
@@ -2045,7 +2044,6 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		return text1
 	},
 	
-	
 	testCopyNodeRecord: function() {
     	var text1 = this.createTextWidgetExample();
 		var model = text1.formalModel;
@@ -2067,9 +2065,13 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assert(text1.rawNode !== text2.rawNode, "text1.rawNode and text2.rawNode are identical");
 		this.assert(text1.panel.rawNode !== text2.panel.rawNode, "text1.panel.rawNode and text2.panel.rawNode are identical");
 
-		this.assert(text1.rawNode.childNodes.length == text2.rawNode.childNodes.length, "textX.rawNode.childNodes got messed up");
-		this.assert(text1.panel.rawNode.childNodes.length == text2.panel.rawNode.childNodes.length, "textX.panel.rawNode.childNodes got messed up");
-		this.assert(text1.morph.rawNode.childNodes.length == text2.morph.rawNode.childNodes.length, "textX.morph.rawNode.childNodes got messed up");
+        this.assertEqual(text1.rawNode.childNodes.length, 
+			text2.rawNode.childNodes.length, "textX.rawNode.childNodes got messed up");
+		this.assertEqual(text1.panel.rawNode.childNodes.length, 
+			text2.panel.rawNode.childNodes.length, "textX.panel.rawNode.childNodes got messed up");
+		
+		// temporal morphs are stripped so this is not valid any more
+		// this.assertEqual(text1.morph.rawNode.childNodes.length, text2.morph.rawNode.childNodes.length, "textX.morph.rawNode.childNodes got messed up");
 
 
 		this.assert(text1.id() != text2.id(), "ids are equal");
@@ -2181,8 +2183,43 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		func1.setFunctionBody("return input + input");
 		fabrik.plugin(func1);
 		fabrik.buildView();
+			
 		var func2 = func1.copy(new Copier());
 		fabrik.plugin(func2);
+		this.assert(func2.panel.functionBodyMorph, "func2 morph has no functionBodyMorph");		
+    },
+
+
+	testCopySubmorphsFromFunctionComponentMorph: function() {
+        var func1 = new FunctionComponent();
+		func1.buildView();
+		var tempMorph =  new FunctionComponentMorph();
+		tempMorph.copySubmorphsFrom(new Copier(), func1.panel);
+		this.assertEqual(tempMorph.submorphs.length, 4, "copySubmorphsFrom failed")	
+    },
+
+	testCopyFromFunctionComponentMorph: function() {
+        var func1 = new FunctionComponent();
+		func1.buildView();
+		var tempMorph = Morph.makeRectangle(new Rectangle(0,0,100,100));
+		tempMorph.copyFrom(new Copier(), func1.panel);
+		this.assertEqual(tempMorph.submorphs.length, 4, "copySubmorphsFrom failed")
+    },
+
+	testCopyFromFunctionComponentMorph2: function() {
+        var func1 = new FunctionComponent();
+		func1.buildView();
+		var tempMorph = new FunctionComponentMorph();
+		tempMorph.copyFrom(new Copier(), func1.panel);
+		this.assertEqual(tempMorph.submorphs.length, 4, "copySubmorphsFrom failed")
+    },
+
+
+	testCopyFunctionComponentMorph: function() {
+        var func1 = new FunctionComponent();
+		func1.buildView();
+		var tempMorph = func1.panel.copy(new Copier());
+		this.assertEqual(tempMorph.submorphs.length, 4, "copySubmorphsFrom failed")
     },
 
 	testCopyTextMorph: function() {
@@ -2280,15 +2317,8 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 
 		var components2 = fabrik.pasteComponentFromXMLString(text1String);
 		var text3 = components2.first();
-
-		var textselection2 = text2.morph.submorphs[0];
-		var textselection3 = text3.morph.submorphs[0];		
-		this.assert(textselection2.shape !== textselection3.shape, "problem: textselections are identical");
     }
 });
-
-
-
 
 console.log("Loaded FabrikTest.js");
 

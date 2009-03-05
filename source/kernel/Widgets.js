@@ -947,7 +947,7 @@ TextMorph.subclass("CheapListMorph", {
 
     drawSelection: function($super) {
         if (this.hasNullSelection()) { // Null sel in a list is blank
-            this.textSelection.undraw();
+            this.getTextSelection().undraw();
         } else $super();
     },
 
@@ -2100,7 +2100,6 @@ BoxMorph.subclass("ScrollPane", {
         }
         this.scrollBar.setBounds(barBnds);
     }
-
 });
 
 Global.newListPane = function(initialBounds) {
@@ -2578,6 +2577,7 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 			this.ownModel(this.actualModel);
 	
 		copier.shallowCopyProperties(this, other);
+
 		
 		return this;
 	}

@@ -793,10 +793,8 @@ Widget.subclass('PinHandle', {
 		// console.log("copy PinHandle from:" + other.id())
 		$super(copier, other);
 			
-		//copier.smartCopyProperty("morph", this, other);
 		copier.smartCopyProperty("morph", this, other);
 		copier.smartCopyProperty("connectors", this, other);
-			
 		return this; 
     },	
 
@@ -1325,7 +1323,7 @@ BoxMorph.subclass('ComponentMorph', {
     
     padding: Rectangle.inset(7),
     defaultExtent: pt(180,100),
- 	noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['component', 'ownerWidget', 'formalModel']),
+ 	noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['halos', 'component', 'ownerWidget', 'formalModel']),
 
 	/* initialization */
 
@@ -1368,10 +1366,11 @@ BoxMorph.subclass('ComponentMorph', {
 
 	copyFrom: function($super, copier, other) {
 		copier.addMapping(other.id(), this);
+		
 		// copy model first, because the view references the model
 		copier.smartCopyProperty("component", this, other);	
 		copier.smartCopyProperty("formalModel", this, other);
-		
+			
 		$super(copier, other);
 
 		copier.smartCopyProperty("ownerWidget", this, other);	
@@ -1436,20 +1435,11 @@ BoxMorph.subclass('ComponentMorph', {
 
     // addMorph and layout logic
     addMorph: function($super, morph, accessorname) {
-        // FIXME: cleanup
-        if (morph.formalModel) {
-            this.submorphs.each(function(ea) { ea.remove() });
-            $super(morph);
-            this.setExtent(morph.getExtent().addPt(pt(this.padding.left() * 2, this.padding.top() * 2)));
-            morph.setPosition(this.padding.topLeft());
-			// why is here plugable component logic in the ComponentMorph? (jl)
-			if (this.component.adoptToModel)
-            	this.component.adoptToModel(morph.formalModel);
-            return morph;
-        };
-
-        if (morph.isPinMorph) this.addMorphFront(morph)
-        else this.addMorphBack(morph);
+	
+        if (morph.isPinMorph) 
+			this.addMorphFront(morph)
+        else 
+			this.addMorphBack(morph);
 
         morph.closeDnD();
         morph.closeAllToDnD();
@@ -1693,7 +1683,8 @@ BoxMorph.subclass('ComponentMorph', {
 
     setupHalos: function() {
         this.halos = Morph.makeRectangle(0, 0, 100, 100);
-        // to be replace by some general layout mechanism ... aber kloar
+		this.halos.ignoreWhenCopying = true;
+	    // to be replace by some general layout mechanism ... aber kloar
         var self = this;
         this.halos.setExtent(this.getExtent());
         this.halos.adoptToBoundsChange = function(ownerPositionDelta, ownerExtentDelta) {
@@ -1726,7 +1717,9 @@ BoxMorph.subclass('ComponentMorph', {
     },
     
     showHalos: function() {
-        if (this.halos && !this.isUserMode()) {
+		if (!this.halos)
+			this.setupHalos();
+        if (!this.isUserMode()) {
             if (this.handObserver) return; // we are not finished yet
             var self = this;
             this.addMorph(this.halos);
@@ -1880,7 +1873,7 @@ Widget.subclass('Component', {
     morphClass: ComponentMorph,
 
 	noShallowCopyProperties: ['id', 'rawNode',  'formalModel', 'actualModel', 'pinHandles', 'panel'],
-    
+
     initialize: function($super) {
         $super();
         this.formalModel = ComponentModel.newModel({Name: "NoName"});
@@ -1892,6 +1885,10 @@ Widget.subclass('Component', {
 	
 	getFieldNames: function() {
 		return Object.keys(this.formalModel.definition)
+	},
+	
+	getSmartCopyProperties: function() {
+		return this.smartCopyProperties
 	},
 	
 	onDeserialize: function() {
@@ -1942,11 +1939,7 @@ Widget.subclass('Component', {
         };
     },
     
-    // deprecated, use addPin
-    addPinHandle: function(pinName) {
-        return this.addPin(pinName);
-    },
-    
+   
     addPin: function(pinName, optCoercionSpec, force) {
         // FIXME: Rewrite test that field exists
         if (!this["get" + pinName]) this.addField(pinName, optCoercionSpec, force);
@@ -2003,13 +1996,7 @@ Widget.subclass('Component', {
     addTextMorphForFieldNamed: function(fieldName) {
         if (!this.panel) throw new Error('Adding morph before base morph (panel exists)');
         this.morph = this.panel.addTextPane().innerMorph();
-
-        // this.morph.formalModel = this.formalModel.newRelay({Text: fieldName});
-        // var spec = {}; spec[fieldName] = '!Text';
- 		// this.formalModel.addObserver(this.morph, spec);
-
 		this.morph.connectModel(this.formalModel.newRelay({Text: fieldName}));
-		// this.morph.connectModel(this.formalModel, {Text: fieldName});
         return this.morph
     },
     
@@ -2042,7 +2029,7 @@ Widget.subclass('Component', {
 	
 	// inspired from Morph.copyFrom
 	copyFrom: function($super, copier, other) {
-		console.log("COPY COMPONENT")
+		// console.log("COPY COMPONENT")
 		$super(copier, other);
 		
 		copier.smartCopyProperty("panel", this, other);
@@ -2550,9 +2537,7 @@ Object.subclass('ComponentCopier', {
 	
 	copyAsXMLString: function(component) {
 		var componentCopy = component.copy(new Copier());
-		var copy = componentCopy.panel;
-		copy.halos.remove();
-		
+		var copy = componentCopy.panel;		
 		var doc = this.createBaseDocument();
 		var worldNode = doc.childNodes[0].childNodes[0];
 		worldNode.appendChild(copy.rawNode);
@@ -2585,11 +2570,12 @@ Object.subclass('ComponentCopier', {
 		// console.log("paste: " + componentMorphsAsXmlString)
 		var components = morphs.collect(function(ea) {
 			return ea.component}).select(function(ea) {return ea});
-		components.each(function(ea){
-			fabrik.plugin(ea);
-			ea.panel.setFill(Color.red);
-			ea.panel.setPosition(fabrik.panel.localize(WorldMorph.current().hands.first().getPosition()));
-			if (!fabrik.morph.submorphs.include(ea.panel)) {
+		var copier = new Copier();
+		components.each(function(ea) {
+			var comp = ea.copy(copier);
+			fabrik.plugin(comp);
+			comp.panel.setPosition(fabrik.panel.localize(WorldMorph.current().hands.first().getPosition()));
+			if (!fabrik.morph.submorphs.include(comp.panel)) {
 				console.log("ERROR: pasted component did not get added to fabrik");
 			}
 		})
@@ -2598,8 +2584,30 @@ Object.subclass('ComponentCopier', {
 	
 });
 
+ComponentMorph.subclass('PluggableComponentMorph', {
+
+    addMorph: function($super, morph, accessorname) {
+        if (morph.formalModel) {
+            this.submorphs.each(function(ea) { ea.remove() });
+            $super(morph, accessorname);
+            this.setExtent(morph.getExtent().addPt(pt(this.padding.left() * 2, this.padding.top() * 2)));
+            morph.setPosition(this.padding.topLeft());
+			// why is here plugable component logic in the ComponentMorph? (jl)
+			if (this.component && this.component.adoptToModel)
+            	this.component.adoptToModel(morph.formalModel);
+            return morph;
+        } else {
+			return $super(morph, accessorname);
+		}
+    },
+	
+});
+
+
 Component.subclass('PluggableComponent', {
     
+	morphClass: PluggableComponentMorph,
+
     buildView: function($super, extent) {
         $super(extent);
         this.morph.openDnD();
@@ -2610,8 +2618,10 @@ Component.subclass('PluggableComponent', {
         this.formalModel = model;
         var fieldNames = this.getFieldNamesFromModel(model);
         fieldNames.each(function(ea) {
-            this.pvtCreateAccessorsForField(ea);
-            this.addPinHandle(ea);
+			if (!this.getPin(ea)) {
+            	this.pvtCreateAccessorsForField(ea);
+            	this.addPin(ea);
+			}
         }, this);
         this.setupHandles();
     },
@@ -2632,12 +2642,7 @@ ComponentMorph.subclass('TextComponentMorph', {
         evalHalo.connectModel({model: this, setValue: "onAcceptPressed"});
         evalHalo.getHelpText = function(){return "accept text in component [alt+s]"}
     },  
-
-	copyFrom: function($super, copier, other) {
-		$super(copier, other);
-		return this;
-	},
-    
+   
     onAcceptPressed: function(value) {
         this.text.doSave()
     },    
@@ -2670,19 +2675,22 @@ Component.subclass('TextComponent', {
 
 ComponentMorph.subclass('FunctionComponentMorph', {
 
+	smartCopyProperties: ['pinHandles', 'panel'],
+
     setupWithComponent: function($super) {
         $super();
         var label = this.addLabel();
         label.connectModel(this.component.formalModel.newRelay({Text: "-FunctionHeader"}), true);        
-        this.functionBodyMorph = this.component.addTextMorphForFieldNamed('FunctionBody');
+        this.functionBodyMorph = this.addTextPane().innerMorph();
+		this.functionBodyMorph.connectModel(this.component.formalModel.newRelay({Text: "FunctionBody"}));
+  		this.component.morph = this.functionBodyMorph; 
     },
 
 	onDeserialize: function($super) {
 		$super();
 		this.setupTextField();
 	},
-
-
+	
     setupHaloItems: function($super) {
         $super();
          var inputHalo = this.addHaloItem("+input", new Rectangle(0,0,45,20),

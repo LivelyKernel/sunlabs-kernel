@@ -127,7 +127,7 @@ Widget.subclass('SimpleBrowser', {
         m = panel.rightPane;
         m.connectModel({model: model, getList: "getMethodList", setSelection: "setMethodName"});
         m = panel.bottomPane;
-        m.innerMorph().textSelection.borderRadius = 0;
+        m.innerMorph().getTextSelection().borderRadius = 0;
         m.connectModel({model: model, getText: "getMethodString", setText: "setMethodString", getMenu: "default"});
         return panel;
     },
@@ -1635,7 +1635,7 @@ WidgetModel.subclass('ChangeList', {
 		}.bind(this));
 
         m = panel.bottomPane;
-        m.innerMorph().textSelection.borderRadius = 0;
+        m.innerMorph().getTextSelection().borderRadius = 0;
         m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString", getMenu: "default"});
         return panel;
     },

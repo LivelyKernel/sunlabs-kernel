@@ -43,13 +43,15 @@ TestCase.subclass('ClassTest', {
 	testSuperMethodsAreAssignedCorrectly: function() {
 	    var className = 'DummyTestSuperMethods';
 	    this.assert(!Global[className], 'Test already there');
+		f1 = function ($super) { 1; };
+	
 	    Object.subclass(className, {
-            a: function($super) { 1 },
-            b: function($super) { 2 }
+            a: f1,
+            b: function($super) { 2; }
         });
         var aSource = Global[className].prototype.a.toString();
         delete Global[className];
-        this.assertEqual(aSource, 'function ($super) { 1 }');
+        this.assertEqual(aSource, f1.toString());
 	}
 });
 
