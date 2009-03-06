@@ -498,6 +498,8 @@ BoxMorph.subclass("SelectionMorph", {
     style: {borderWidth: 1, borderColor: Color.blue, fill: Color.secondary.blue, fillOpacity: 0.1 },
 
     removeWhenEmpty: true,
+
+	takesKeyboardFocus: Functions.True, 
     
     initialize: function($super, viewPort, defaultworldOrNull) {
         $super(viewPort);
@@ -518,7 +520,7 @@ BoxMorph.subclass("SelectionMorph", {
     reshape: function($super, partName, newPoint, lastCall) {
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
-	var result;
+        var result;
         if (this.initialSelection) {
             var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
             if (selRect.width*selRect.height > 30) {
@@ -536,8 +538,14 @@ BoxMorph.subclass("SelectionMorph", {
         this.selectedMorphs.reverse();
             
         if (lastCall) this.initialSelection = false;
-        if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) this.remove();
-	return result;
+        if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) {
+            this.remove();
+        };
+        var world = this.world();
+        if (world) {
+            world.firstHand().setKeyboardFocus(this);
+        };  
+        return result;
     },
 
     morphMenu: function($super, evt) { 
@@ -712,7 +720,61 @@ BoxMorph.subclass("SelectionMorph", {
     okToBeGrabbedBy: function(evt) {
         this.selectedMorphs.forEach( function(m) { evt.hand.addMorphAsGrabbed(m); });
         return this;
-    }
+    },
+
+	onKeyPress: function(evt) {
+        console.log("SelectionMorph onKeyPress " + this + " ---  " + evt )
+
+		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
+			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
+			return;
+		};
+		
+		return false;
+    },
+	
+	/* Actions */
+
+	
+	copyAsXMLString: function() {
+		if (this.selectedMorphs.length == 0) {
+			return 
+		};
+		
+		var copier = new Copier();
+		var doc = new ComponentCopier().createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		
+		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
+		container.isSelectionContainer = true;
+				
+		this.selectedMorphs.each(function(ea) {
+			container.addMorph(ea.copy(copier));
+		})
+
+		worldNode.appendChild(container.rawNode);
+		var exporter = new Exporter(container);
+		var helpers = exporter.extendForSerialization();
+		var result = Exporter.stringify(container.rawNode);
+		exporter.removeHelperNodes(helpers);
+	
+		return result
+	},
+
+	doCopy: function() {
+		console.log("doCopy: Copy selection to system clipboard is not implemented yet.");
+		var source = this.copyAsXMLString();
+		console.log(source);
+		TextMorph.clipboardString = source;
+	},
+	
+	doPaste: function() {
+
+	},
+	
+	doCut: function() {
+		
+	},
     
 });
 

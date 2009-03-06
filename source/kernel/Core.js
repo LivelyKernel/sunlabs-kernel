@@ -5375,7 +5375,7 @@ BoxMorph.subclass('ContainerMorph', {
 
 
 ClipboardHack = {
-    ensurePasteBuffer: function() {
+	ensurePasteBuffer: function() {
 		var buffer = document.getElementById("copypastebuffer");
 		if (buffer) return buffer;
 		buffer = document.createElement("textarea");
@@ -5386,7 +5386,39 @@ ClipboardHack = {
 		buffer.textContent = "NoText";
 		document.body.appendChild(buffer);
 		return buffer;
-   }
+	},
+
+	tryClipboardAction: function(evt, target) {
+        // Copy and Paste Hack that works in Webkit/Safari
+        if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
+        var buffer = ClipboardHack.ensurePasteBuffer();
+        if(!buffer) return false;
+        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
+            buffer.onpaste = function() {
+                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
+                if(target.doPaste) target.doPaste();
+            };
+        	buffer.focus();
+        	return true;
+        };
+        if (evt.getKeyChar().toLowerCase() === "c" || evt.getKeyCode() === 3) {
+			if(target.doCopy) target.doCopy();
+			buffer.textContent = TextMorph.clipboardString;
+			buffer.select();
+        	buffer.focus();
+        	return true;
+        };
+        if (evt.getKeyChar().toLowerCase() === "x" || evt.getKeyCode() === 24) {
+			if (target.doCut) target.doCut();
+			buffer.textContent = TextMorph.clipboardString;
+			buffer.select();
+        	buffer.focus();
+        	return true;
+        };
+		console.log('Clipboard action not successful');
+		return false;
+    },
+
 }
 
 

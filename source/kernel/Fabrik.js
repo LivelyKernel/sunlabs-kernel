@@ -1789,7 +1789,7 @@ BoxMorph.subclass('ComponentMorph', {
 	onKeyPress: function(evt) {
         console.log("onKeyPress " + this + " ---  " + evt )
 
-		if (evt.letItFallThrough != true && this.tryClipboardAction(evt)) {
+		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
 			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
 			return;
 		};
@@ -1797,37 +1797,6 @@ BoxMorph.subclass('ComponentMorph', {
 		return false;
     },
 	
-    tryClipboardAction: function(evt) {
-        // Copy and Paste Hack that works in Webkit/Safari
-        if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
-        var buffer = ClipboardHack.ensurePasteBuffer();
-        if(!buffer) return false;
-        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
-            buffer.onpaste = function() {
-                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
-                this.doPaste();
-            }.bind(this);
-        	buffer.focus();
-        	return true;
-        };
-        if (evt.getKeyChar().toLowerCase() === "c" || evt.getKeyCode() === 3) {
-			this.doCopy();
-			buffer.textContent = TextMorph.clipboardString;
-			buffer.select();
-        	buffer.focus();
-        	return true;
-        };
-        if (evt.getKeyChar().toLowerCase() === "x" || evt.getKeyCode() === 24) {
-			this.doCut();
-			buffer.textContent = TextMorph.clipboardString;
-			buffer.select();
-        	buffer.focus();
-        	return true;
-        };
-		console.log('Clipboard action not successful');
-		return false;
-    },
-
 	/* Actions */
 
 	doCopy: function() {
@@ -2056,7 +2025,8 @@ SelectionMorph.subclass('UserFrameMorph', {
 
 	initialize: function($super, viewPort, defaultworldOrNull) {
 		$super(viewPort, defaultworldOrNull);
-		this.closeAllToDnD();    
+		this.closeAllToDnD();
+		this.setFill(Color.gray); 
 	},
 	
     reshape: function($super, partName, newPoint, lastCall) {
@@ -2103,17 +2073,19 @@ SelectionMorph.subclass('UserFrameMorph', {
         // this.selectedMorphs.invoke('remove');
         // this.owner.removeMorph(this); // FIXME
         Morph.prototype.remove.call(this);
-        if (this.fabrik) this.fabrik.currentSelection = null
+        if (this.fabrik) this.fabrik.userFrame = null
     },
     
     okToBeGrabbedBy: function(evt) {
         // this.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); } );
         return null;
     },
-    
+
+   
     createHandle: function(hand) {
         var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, hand, this, "bottomRight");
         handle.setExtent(pt(5, 5));
+		handle.mode = 'reshape';
         this.addMorph(handle);
         hand.setMouseFocus(handle);
         return handle;
@@ -2242,18 +2214,45 @@ ComponentMorph.subclass('FabrikMorph', {
     
     onMouseDown: function ($super, evt) {
 		$super(evt);
-	    if (evt.isMetaDown() && !this.isCollapsed) this.makeSelection(evt); 
+		if(this.isCollapsed) return true;
+		
+	    if (evt.isMetaDown() ) { 
+			this.makeUserFrame(evt);
+		} else {
+			this.makeSelection(evt); 
+		}
+		
         return true;
     },
 
-    makeSelection: function(evt) {  //default behavior is to grab a submorph
-        if (this.currentSelection != null) this.currentSelection.remove();
+    makeUserFrame: function(evt) {  //default behavior is to grab a submorph
+        if (this.userFrame != null) this.userFrame.remove();
         var frame = new UserFrameMorph(this.localize(evt.point()).asRectangle());
         frame.fabrik = this;
-        this.currentSelection = this.addMorph(frame);
-        return frame.createHandle(evt.hand);
+        this.userFrame = this.addMorph(frame);
+		this.userFrame.createHandle(evt.hand)
+
+
+    	// var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, this.userFrame, "bottomRight");
+    	// 	handle.setExtent(pt(0, 0));
+    	// 	handle.mode = 'reshape';
+    	//         this.userFrame.addMorph(handle);
+    	//         evt.hand.setMouseFocus(handle);
     },
-    
+
+    makeSelection: function(evt) {  //default behavior is to grab a submorph
+        if (this.currentSelection != null) this.currentSelection.removeOnlyIt();
+        var m = new SelectionMorph(this.localize(evt.point()).asRectangle());
+        this.addMorph(m);
+        this.currentSelection = m;
+        var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, m, "bottomRight");
+		handle.setExtent(pt(0, 0));
+		handle.mode = 'reshape';
+        m.addMorph(handle);
+        evt.hand.setMouseFocus(handle);
+		// evt.hand.setKeyboardFocus(handle);
+    },
+
     collapseToggle: function(value) {
         if (!value) return; // FIXME value from button click... ignore!
         if (this.isCollapsed) 
@@ -2291,8 +2290,8 @@ ComponentMorph.subclass('FabrikMorph', {
 			};
 		});
 		
-        if (this.currentSelection) {
-            this.currentSelection.handleCollapseFor(this);
+        if (this.userFrame) {
+            this.userFrame.handleCollapseFor(this);
         } else {
             this.component.components.each(function(ea) { 
 				this.removeMorph(ea.panel); 
@@ -2312,9 +2311,9 @@ ComponentMorph.subclass('FabrikMorph', {
 		this.collapsedFill = this.getFill(); 
         this.setFill(this.oldFill || Color.gray);
 
-        if (this.currentSelection) {
+        if (this.userFrame) {
             this.positionAndExtentChange(this.uncollapsedPosition || this.getPosition(), this.uncollapsedExtent || this.component.defaultViewExtent);
-            this.currentSelection.handleUncollapseFor(this);
+            this.userFrame.handleUncollapseFor(this);
         } else {
             this.collapsedExtent = this.getExtent();
             this.collapsedPosition = this.getPosition();
@@ -2571,15 +2570,32 @@ Object.subclass('ComponentCopier', {
     },
 	
 	pasteComponentFromXMLStringIntoFabrik: function(componentMorphsAsXmlString, fabrik) {
+		console.log("pasteComponentFromXMLStringIntoFabrik")
+		
 		var morphs = this.loadMorphsWithWorldTrunkFromSource(componentMorphsAsXmlString);
-		// console.log("paste: " + componentMorphsAsXmlString)
+		
+		if (morphs.length == 0)
+			return;
+		
+		// unpack potential selection morph
+		if(morphs[0].isSelectionContainer) {
+			console.log("unpack potential selection morph")
+			morphs = morphs[0].submorphs
+		};
+		
+		console.log("try to paste  " + morphs.length + " morphs")
 		var components = morphs.collect(function(ea) {
 			return ea.component}).select(function(ea) {return ea});
 		var copier = new Copier();
+		console.log("try to paste  " + components.length + " components")
+		
+		var offset = pt(50,50); 
+		// fabrik.panel.localize(WorldMorph.current().hands.first().getPosition())
 		components.each(function(ea) {
 			var comp = ea.copy(copier);
+			var oldPos = comp.panel.getPosition();
 			fabrik.plugin(comp);
-			comp.panel.setPosition(fabrik.panel.localize(WorldMorph.current().hands.first().getPosition()));
+			comp.panel.setPosition(oldPos.addPt(offset));
 			if (!fabrik.morph.submorphs.include(comp.panel)) {
 				console.log("ERROR: pasted component did not get added to fabrik");
 			}

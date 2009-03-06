@@ -546,8 +546,6 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
 		//console.log(Exporter.stringify(widgetNode));
     },
     
-
-
 	testSerializeDynamicFieldObserver: function() {
 		var widget = new DummyWidget();
 		var observerMorph = new TextMorph();
@@ -577,6 +575,20 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
 
 		// console.log(Exporter.stringify(doc));
 		// console.log(Exporter.stringify(widgetNode));
+	},
+	
+	
+	testCopySelectionAsXML: function() {
+		var selection = new SelectionMorph(new Rectangle(0,0,100,100));
+		var m1 = Morph.newRectangle(new Rectangle(10,10,20,20));
+		var m2 = Morph.newRectangle(new Rectangle(30,30,50,50));
+		selection.selectedMorphs = [m1, m2];
+		
+		var string = selection.copyAsXMLString();
+		
+		console.log(string);
+		this.assert(false);
+		
 	}
     
     

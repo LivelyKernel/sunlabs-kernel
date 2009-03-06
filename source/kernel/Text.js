@@ -1812,8 +1812,11 @@ subMenuItems: function($super, evt) {
     onKeyPress: function(evt) {
         if (!this.acceptInput) return true;
 
-		if (this.tryClipboardAction(evt)) return;
-
+		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
+			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
+			return;
+		};	
+		
         // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
         if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
             //AltGr pressed
@@ -1827,40 +1830,6 @@ subMenuItems: function($super, evt) {
 	    return true;
         }
 	return false;
-    },
-    
-    tryClipboardAction: function(evt) {
-        // Copy and Paste Hack that works in Webkit/Safari
-        if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
-        var buffer = ClipboardHack.ensurePasteBuffer();
-        if(!buffer) return false;
-        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
-            buffer.onpaste = function() {
-                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
-                this.doPaste();
-            }.bind(this);
-        	buffer.focus();
-			evt.letItFallThrough = true;
-        	return true;
-        };
-        if (evt.getKeyChar().toLowerCase() === "c" || evt.getKeyCode() === 3) {
-			this.doCopy();
-			buffer.textContent = TextMorph.clipboardString;
-			buffer.select();
-        	buffer.focus();
-			evt.letItFallThrough = true;
-        	return true;
-        };
-        if (evt.getKeyChar().toLowerCase() === "x" || evt.getKeyCode() === 24) {
-			this.doCut();
-			buffer.textContent = TextMorph.clipboardString;
-			buffer.select();
-        	buffer.focus();
-			evt.letItFallThrough = true;
-        	return true;
-        };
-		console.log('Clipboard action not successful');
-		return false;
     },
     
     replaceSelectionfromKeyboard: function(replacement) {
