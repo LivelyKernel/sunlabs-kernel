@@ -191,7 +191,7 @@ TestCase.subclass('TextMorphTest', {
     
 });
 
-TestCase.subclass('AImageMorphTest', {
+TestCase.subclass('ImageMorphTest', {
 
 	setUp: function() {
 		this.m = new ImageMorph(rect(pt(0,0),pt(100,100)),"Resources/images/Halloween4.jpg");
@@ -225,6 +225,31 @@ TestCase.subclass('AImageMorphTest', {
         this.m.remove();
     },
 });
+
+TestCase.subclass('AScrollPaneTest', {
+
+
+	testDisableScrollBar: function() {
+		var scrollPane = Global.newTextListPane(new Rectangle(0,0,100,100));
+		var scrollBar = scrollPane.scrollBar;
+		scrollPane.disableScrollBar();
+		this.assert(!scrollBar.owner, "scrollBar is still open");
+		this.assert(!scrollPane.scrollBar, "scrollBar is still referenced");
+    },
+
+	testEnableScrollBar: function() {
+		var scrollPane = Global.newTextListPane(new Rectangle(0,0,100,100));
+		scrollPane.disableScrollBar();
+		scrollPane.enableScrollBar();
+		this.assert(scrollPane.scrollBar, "scrollBar is not referenced");
+		this.assert(scrollPane.scrollBar.owner, "scrollBar is not open");
+    },
+
+
+});
+
+
+
 
 TestCase.subclass('PinMorphInteractionTest', {
 
@@ -266,6 +291,7 @@ TestCase.subclass('PinMorphInteractionTest', {
 
 
 });
+
 TestCase.subclass('VideoMorphTest', {
 
 	sourceFromYoutube: function() {

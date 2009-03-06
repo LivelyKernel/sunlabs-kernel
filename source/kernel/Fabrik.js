@@ -1487,6 +1487,8 @@ BoxMorph.subclass('ComponentMorph', {
     addTextPane: function() {
         var minHeight = 70;
         var morph = newTextPane(this.getBoundsAndShrinkIfNecessary(minHeight), "------");
+		morph.disableScrollBar();
+
 		morph.adoptToBoundsLayout = 'layoutRelativeExtent';
 		// FIXME closure assignment does not serialize
         morph.innerMorph().saveContents = morph.innerMorph().saveContents.wrap(function(proceed, contentString) {    
@@ -1494,7 +1496,6 @@ BoxMorph.subclass('ComponentMorph', {
         });
         var spec = {fontSize: 12, borderWidth: 0, /*opacity: 0.9,*/ borderRadius: 3};
         morph.submorphs[0].applyStyle(spec); 
-        morph.submorphs[1].applyStyle(spec);
         spec.fill = null;
         morph.innerMorph().applyStyle(spec); 
         spec.borderWidth = 1;
@@ -1891,11 +1892,37 @@ Widget.subclass('Component', {
 		return this.smartCopyProperties
 	},
 	
-	onDeserialize: function() {
+	createFieldAccessors: function() {
 		this.getFieldNames().each(function(ea) {
 			this.pvtCreateAccessorsForField(ea);
 		}, this);
 	},
+	
+	onDeserialize: function() {
+		this.createFieldAccessors();
+	},
+	
+	copyAsXMLString: function() {
+		return new ComponentCopier().copyAsXMLString(this)
+	},
+	
+	
+	// inspired from Morph.copyFrom
+	copyFrom: function($super, copier, other) {
+		// console.log("COPY COMPONENT")
+		$super(copier, other);
+		
+		copier.smartCopyProperty("panel", this, other);
+		copier.smartCopyProperty("pinHandles", this, other);
+
+		copier.shallowCopyProperties(this, other);
+		this.createFieldAccessors();
+
+		// if (this.panel) this.panel.owner = null;
+		// this.fabrik = null;
+
+		return this; 
+    },
     
     buildView: function(optExtent) {
         var bounds = optExtent && optExtent.extentAsRectangle();
@@ -2021,28 +2048,6 @@ Widget.subclass('Component', {
     remove: function() {
         if (this.fabrik) this.fabrik.unplug(this);
     },
-
-	copyAsXMLString: function() {
-		return new ComponentCopier().copyAsXMLString(this)
-	},
-	
-	
-	// inspired from Morph.copyFrom
-	copyFrom: function($super, copier, other) {
-		// console.log("COPY COMPONENT")
-		$super(copier, other);
-		
-		copier.smartCopyProperty("panel", this, other);
-		copier.smartCopyProperty("pinHandles", this, other);
-
-		copier.shallowCopyProperties(this, other);
-
-		// if (this.panel) this.panel.owner = null;
-		// this.fabrik = null;
-
-		return this; 
-    },
-
 });
 
 SelectionMorph.subclass('UserFrameMorph', {
@@ -2731,12 +2736,21 @@ Component.subclass('FunctionComponent', {
         
 	onDeserialize: function($super) {
 		$super();
+		this.setupTransitendBehavior();
+	},
+
+	copyFrom: function($super, copier, other) {
+		$super(copier, other);
+		this.setupTransitendBehavior();
+		return this; 
+    },
+
+	setupTransitendBehavior: function() {
 		this.setupAutomaticExecution();
-		var self = this;
 		// TODO: this is only a hack to get the bar green! This whole updating should probably be implemented with Relays
 		this.inputPins().each(function(inputPin) {
 			this.generateInputPinObserverFor(inputPin.getName())
-		}, this);
+		}, this);	
 	},
 
     buildView: function($super, extent) {

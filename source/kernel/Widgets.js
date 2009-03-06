@@ -1939,8 +1939,7 @@ BoxMorph.subclass("ScrollPane", {
     initialize: function($super, morphToClip, initialBounds) {
         $super(initialBounds);
 
-        var bnds = this.innerBounds();
-        var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
+		var clipR = this.calcClipR();
         morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
         // Make a clipMorph with the content (morphToClip) embedded in it
         this.clipMorph = this.addMorph(new ClipMorph(clipR));    
@@ -1950,9 +1949,9 @@ BoxMorph.subclass("ScrollPane", {
         morphToClip.setPosition(clipR.topLeft());
         this.clipMorph.addMorph(morphToClip);
 	
-        // Add a scrollbar
-        this.scrollBar = this.addMorph(new SliderMorph(bnds.withTopLeft(clipR.topRight())));
-	this.scrollBar.connectModel(new (this.ScrollBarFormalRelay)(this));
+	
+		this.showScrollBar = true;
+       	this.initializeScrollBar();
 	
         // suppress handles throughout
         [this, this.clipMorph, morphToClip, this.scrollBar].forEach(function(m) {m.suppressHandles = true});
@@ -1960,10 +1959,44 @@ BoxMorph.subclass("ScrollPane", {
 	
         return this;
     },
-    
+
+	calcClipR: function() {
+		var bnds = this.innerBounds();
+		return bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
+	},
+
+	initializeScrollBar: function() {
+		if (this.showScrollBar) {
+			var morph = new SliderMorph(this.innerBounds().withTopLeft(this.calcClipR().topRight()))
+        	this.scrollBar = this.addMorph(morph);
+			this.scrollBar.connectModel(new (this.ScrollBarFormalRelay)(this));
+		}
+	},
+
+	getScrollBar: function() {
+		if (!this.scrollBar) {
+			this.initializeScrollBar();
+		};
+		return this.scrollBar
+	},
+	
+	disableScrollBar: function() {
+		if (this.scrollBar) {
+			this.scrollBar.remove();
+			this.showScrollBar = false;
+			delete this.scrollBar;
+			this.adjustForNewBounds();
+		}
+	},
+
+	enableScrollBar: function() {
+		this.showScrollBar = true;
+		this.initializeScrollBar();
+	},
+
     onDeserialize: function() { // FIXME duplication between here and initialize
         if (this.scrollBar && this.ScrollBarFormalRelay) 
-	    this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
+	    	this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
         if (this.menuButton)
             this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
     },
@@ -2015,10 +2048,10 @@ BoxMorph.subclass("ScrollPane", {
         }
 	
         if (this.scrollBar) {
-            this.menuButton.setPosition(this.scrollBar.getPosition());
-            this.menuButton.setFill(this.scrollBar.getFill());
-            this.scrollBar.setBounds(this.scrollBar.bounds().withTopLeft(
-            this.scrollBar.bounds().topLeft().addXY(0, w)));
+            this.menuButton.setPosition(this.getScrollBar().getPosition());
+            this.menuButton.setFill(this.getScrollBar().getFill());
+            this.getScrollBar().setBounds(this.getScrollBar().bounds().withTopLeft(
+            this.getScrollBar().bounds().topLeft().addXY(0, w)));
         }
         this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
     },
@@ -2050,7 +2083,8 @@ BoxMorph.subclass("ScrollPane", {
         var ht = this.innerMorph().bounds().height;
         var slideRoom = ht - this.bounds().height;
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
-        this.scrollBar.adjustForNewBounds();
+		if (this.scrollBar)
+        	this.getScrollBar().adjustForNewBounds();
 	//console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
     },
 
@@ -2060,38 +2094,45 @@ BoxMorph.subclass("ScrollPane", {
     
     scrollToTop: function() {
         this.setScrollPosition(0);
-        this.scrollBar.adjustForNewBounds(); 
+		if (this.scrollBar)
+        	this.getScrollBar().adjustForNewBounds(); 
     },
 
     scrollToBottom: function() {
         this.setScrollPosition(1);
-        this.scrollBar.adjustForNewBounds(); 
+		if (this.scrollBar)
+        	this.getScrollBar().adjustForNewBounds(); 
     },
 
     scrollRectIntoView: function(r) {
         var im = this.innerMorph();
         if (!r || !im) return;
         var bnds = this.innerBounds();
-        var yToView = r.y + im.getPosition().y;  // scroll down if above top
+		var yToView = r.y + im.getPosition().y;  // scroll down if above top
         if (yToView < bnds.y) {
             im.moveBy(pt(0, bnds.y - yToView));
-            this.scrollBar.adjustForNewBounds();
+			if (this.scrollBar)
+            	this.getScrollBar().adjustForNewBounds();
             return;
         }
         var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
         var tweak = 5;  // otherwise it doesnt scroll up enough to look good
         if (yToView > bnds.maxY() - tweak) {
             im.moveBy(pt(0, bnds.maxY() - tweak - yToView))
-            this.scrollBar.adjustForNewBounds();
+            if (this.scrollBar)
+				this.getScrollBar().adjustForNewBounds();
         }
     },
     
     adjustForNewBounds: function ($super) {
         // Compute new bounds for clipMorph and scrollBar
         $super();
-        if (!this.clipMorph || !this.scrollBar) return;
-        var bnds = this.innerBounds();
-        var clipR = bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
+        if (!this.clipMorph) return;
+        var bnds = this.innerBounds();    	
+  		var clipR = bnds.insetBy(1);
+		if (this.scrollBar) {
+			clipR = this.calcClipR();
+		};
         this.clipMorph.setExtent(clipR.extent());
         this.innerMorph().setExtent(clipR.extent());
         var barBnds = bnds.withTopLeft(clipR.topRight());
@@ -2101,7 +2142,8 @@ BoxMorph.subclass("ScrollPane", {
             //this.menuButton.setBounds(barBnds.topLeft().extent(pt(w, w)));
             barBnds = barBnds.withTopLeft(barBnds.topLeft().addXY(0, w));
         }
-        this.scrollBar.setBounds(barBnds);
+		if (this.scrollBar)
+        	this.getScrollBar().setBounds(barBnds);
     }
 });
 

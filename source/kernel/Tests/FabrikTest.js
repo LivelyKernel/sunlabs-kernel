@@ -2187,6 +2187,15 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		var func2 = func1.copy(new Copier());
 		fabrik.plugin(func2);
 		this.assert(func2.panel.functionBodyMorph, "func2 morph has no functionBodyMorph");		
+
+	
+		this.assert(func1.setInput, "func1 has no field accessors");		
+		this.assert(func2.setInput, "func2 has no field accessors");		
+
+		
+		func2.setInput("Test");
+		this.assertEqual(func2.getResult(), "TestTest", "func2 does not evaluate");
+		
     },
 
 
@@ -2228,8 +2237,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		
 		this.assert(text.morph, "text has no inner morph");
 		
-		var copier = new Copier();
-		
+		var copier = new Copier();		
 		var morphCopy = morph.copy(copier);
 		var textCopy = morphCopy.component;
 	
@@ -2239,7 +2247,6 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assert(morphCopy.component.formalModel === morphCopy.getModel(), "problem with text morph model");
 		this.assert(morphCopy.component.formalModel === textCopy.panel.getModel(), "problem with inner text morph model");
     },
-
 
 	testCopyPinMorph: function() {
         var pin = new PinHandle();
@@ -2257,8 +2264,6 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		var morphCopy = pinCopy.morph	
 		this.assertIdentity(morphCopy, morphCopy.pinHandle.morph, "morph reference got wrong")
     },
-
-
 
 	testCopyAsXMLString: function() {
         var text1 = this.createTextWidgetExample();
@@ -2286,7 +2291,6 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		fabrik.plugin(text1);
 		fabrik.buildView(pt(400, 400));
 		text1.panel.setExtent(pt(50,100));
-		
 		
         fabrik.panel.automaticLayout();
         this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
