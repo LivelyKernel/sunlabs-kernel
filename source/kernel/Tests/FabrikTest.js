@@ -284,10 +284,10 @@ FabrikTestCase.subclass('UserFrameTest', {
     
     testAddUserframe: function() {
         var fab = this.fabrikComponent;
-        var handle = fab.morph.makeSelection(newFakeMouseEvent(pt(20,20)));
+        var handle = fab.morph.makeUserFrame(newFakeMouseEvent(pt(20,20)));
         handle.onMouseUp(newFakeMouseEvent(pt(80,80))); // simulate a mouse move
-        this.assert(fab.morph.currentSelection, 'No selection made');
-        this.assertEqual(fab.morph.currentSelection.getExtent(), pt(60,60), 'Selection has wrong size');
+        this.assert(fab.morph.userFrame, 'No selection made');
+        this.assertEqual(fab.morph.userFrame.getExtent(), pt(60,60), 'Selection has wrong size');
     },
     
     testSelectComponents: function() {
@@ -298,9 +298,9 @@ FabrikTestCase.subclass('UserFrameTest', {
         comp1.panel.setExtent(pt(50,50));
         comp2.panel.setPosition(pt(60,60));
         comp2.panel.setExtent(pt(50,50));
-        var handle = fab.morph.makeSelection(newFakeMouseEvent(pt(20,20)));
+        var handle = fab.morph.makeUserFrame(newFakeMouseEvent(pt(20,20)));
         handle.onMouseUp(newFakeMouseEvent(pt(80,80))); // simulate a mouse move
-        var sel = fab.morph.currentSelection;
+        var sel = fab.morph.userFrame;
         // debugger;
         this.assertEqual(sel.selectedMorphs.length, 1, 'no selection?');
         this.assert(sel.selectedMorphs.include(comp1.panel), 'wrong selection');
@@ -310,9 +310,9 @@ FabrikTestCase.subclass('UserFrameTest', {
         var fab = this.fabrikComponent;
         var comp1 = this.components[0];
         var comp2 = this.components[1];
-        var handle = fab.morph.makeSelection(newFakeMouseEvent(pt(20,20)));
+        var handle = fab.morph.makeUserFrame(newFakeMouseEvent(pt(20,20)));
         handle.onMouseUp(newFakeMouseEvent(pt(80,80)));
-        var sel = fab.morph.currentSelection;
+        var sel = fab.morph.userFrame;
         // remove this assignment when the test above run
         sel.selectedMorphs = [comp1.panel];
         fab.morph.collapse();

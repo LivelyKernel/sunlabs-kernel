@@ -2230,9 +2230,9 @@ ComponentMorph.subclass('FabrikMorph', {
         var frame = new UserFrameMorph(this.localize(evt.point()).asRectangle());
         frame.fabrik = this;
         this.userFrame = this.addMorph(frame);
-		this.userFrame.createHandle(evt.hand)
+		var handle = this.userFrame.createHandle(evt.hand)
 
-
+		return handle // for tests...ßßß
     	// var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, this.userFrame, "bottomRight");
     	// 	handle.setExtent(pt(0, 0));
     	// 	handle.mode = 'reshape';
@@ -2425,6 +2425,18 @@ ComponentMorph.subclass('FabrikMorph', {
 		}
 	},
 
+	/* Maintance Helper Scripts */
+	disableAllScrollBars: function() {
+		this.submorphs.each(function(cm){ cm.submorphs.each(function(ea){
+			if (ea.disableScrollBar) ea.disableScrollBar()
+		})})
+	},
+
+	enableAllScrollBars: function() {
+		this.submorphs.each(function(cm){ cm.submorphs.each(function(ea){
+			if (ea.enableScrollBar) ea.enableScrollBar()
+		})})
+	}
 });
 
 /*
