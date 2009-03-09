@@ -77,6 +77,7 @@ function populateSlideWorld(world) {
 	
 	if (Config.showStar && Config.spinningStar) {  // Make the star spin as a test of stepping
             widget.startStepping(60, "rotateBy", 0.1);
+	    if (world !== WorldMorph.current()) widget.suspendActiveScripts();
 	}
     }
 

@@ -447,7 +447,7 @@ var Event = (function() {
 	    if (isMouse(rawEvent)) {
 		var x = rawEvent.pageX || rawEvent.clientX;
 		var y = rawEvent.pageY || rawEvent.clientY;
-		var topElement = this.canvas().parentNode;
+		var topElement = this.canvas(); // ***DI: was  this.canvas().parentNode;
 
 		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
 		// assume the parent node of Canvas has the same bounds as Canvas
