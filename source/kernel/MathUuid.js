@@ -48,6 +48,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
  *   >>> Math.uuid(8, 16) // 8 character ID (base=16)
  *   "098F4D35"
  */
+
 Math.uuid = (function() {
   // Private array of chars to use
   var CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split(''); 
@@ -81,5 +82,6 @@ Math.uuid = (function() {
   };
 })();
 
-// Deprecated - only here for backward compatability
-var randomUUID = Math.uuid;
+
+console.log('loaded Math.uuid.js');
+
