@@ -1668,6 +1668,13 @@ Object.subclass("Point", {
     withX: function(x) { return pt(x, this.y); },
     withY: function(y) { return pt(this.x, y); },
 
+	normalized: function() {
+		var r = this.r();
+		return pt(this.x / r, this.y / r);
+	},
+
+	dotProduct: function(p) { return this.x * p.x + this.y * p.y },
+
     minPt: function(p, acc) { 
 	if (!acc) acc = new Point(0, 0); 
 	acc.x = Math.min(this.x, p.x); 
@@ -1733,6 +1740,22 @@ Object.subclass("Point", {
     theta: function() { return Math.atan2(this.y,this.x); },
 
     copy: function() { return new Point(this.x, this.y); }
+});
+Point.addMethods({
+
+	fastR: function() {	
+		var a = this.x*this.x+this.y*this.y;
+		var x = 17;
+		for (var i = 0; i < 6; i++)
+			x = (x+a/x)/2;
+		return x;
+	},
+fastNormalized: function() {
+	var r = this.fastR();
+	return pt(this.x / r, this.y / r);
+},
+
+
 });
 
 Object.extend(Point, {
@@ -1835,6 +1858,10 @@ Rectangle.addMethods({
     closestPointToPt: function(p) { // Assume p lies outside me; return a point on my perimeter
 	return pt(Math.min(Math.max(this.x, p.x), this.maxX()),
 		  Math.min(Math.max(this.y, p.y), this.maxY())); 
+    },
+
+	randomPoint: function() { // return a some point from inside me
+		return Point.random(pt(this.width, this.height)).addPt(this.topLeft());
     },
 
     translatedBy: function(d) {
