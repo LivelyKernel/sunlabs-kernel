@@ -2223,6 +2223,8 @@ beClipMorph: function() {
 	return this.align(this.bounds().center(), p); 
     },
 
+	getCenter: function() { return this.bounds().center() },
+
     moveOriginBy: function(delta) {
 	// This method changes the origin (and thus center of rotation) without changing any other effect
 	// To center a rectangular morph, use m.moveOriginBy(m.innerBounds().center())
@@ -4857,6 +4859,10 @@ Morph.subclass("HandMorph", {
     },
 
     grabMorph: function(grabbedMorph, evt) { 
+		if (evt.isShiftDown() && evt.isAltDown()) {
+			grabbedMorph.dragMe(evt);
+			return;
+		}
         if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.copySubmorphsOnGrab == true)) {
             if (!grabbedMorph.okToDuplicate()) return;
             grabbedMorph.copyToHand(this);
