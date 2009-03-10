@@ -410,7 +410,7 @@
                 </widget>
                 <field name="pvtOldPosition" family="Point"><![CDATA[{"x":20,"y":20}]]></field>
             </g>
-            <g type="ConnectorMorph" id="661:ConnectorMorph" transform="translate(0,0)">
+            <g type="lively.Fabrik.ConnectorMorph" id="661:lively.Fabrik.ConnectorMorph" transform="translate(0,0)">
                 <polyline points="20,69 20,189" stroke-width="4" stroke="rgb(0,0,204)"/>
                 <g type="ArrowHeadMorph" id="662:ArrowHeadMorph" transform="translate(20,189) rotate(90)" pointer-events="none">
                     <g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" fill-opacity="0" stroke-opacity="0"/>
@@ -437,11 +437,11 @@
                     <field name="toPin" ref="540:PinHandle"/>
                     <field name="isBidirectional">false</field>
                     <field name="fabrik" ref="532:FabrikComponent"/>
-                    <field name="morph" ref="661:ConnectorMorph"/>
+                    <field name="morph" ref="661:lively.Fabrik.ConnectorMorph"/>
                 </widget>
                 <field name="connector" ref="660:PinConnector"/>
             </g>
-            <g type="ConnectorMorph" id="665:ConnectorMorph" transform="translate(0,0)">
+            <g type="lively.Fabrik.ConnectorMorph" id="665:lively.Fabrik.ConnectorMorph" transform="translate(0,0)">
                 <polyline points="20,69 20,310" stroke-width="4" stroke="rgb(0,0,204)"/>
                 <g type="ArrowHeadMorph" id="666:ArrowHeadMorph" transform="translate(20,310) rotate(90)" pointer-events="none">
                     <g transform="matrix(1.000000 0.000000 0.000000 1.000000 0.000000 0.000000)" fill-opacity="0" stroke-opacity="0"/>
@@ -468,7 +468,7 @@
                     <field name="toPin" ref="546:PinHandle"/>
                     <field name="isBidirectional">false</field>
                     <field name="fabrik" ref="532:FabrikComponent"/>
-                    <field name="morph" ref="665:ConnectorMorph"/>
+                    <field name="morph" ref="665:lively.Fabrik.ConnectorMorph"/>
                 </widget>
                 <field name="connector" ref="664:PinConnector"/>
             </g>

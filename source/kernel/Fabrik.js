@@ -138,7 +138,7 @@ Global.Fabrik = {
     },
     
     openConnectorMorphExample: function() {
-        var c = new ConnectorMorph();
+        var c = new lively.Fabrik.ConnectorMorph();
         
         var m1 = Morph.makeRectangle(100,100,30,30);
         var m2 = Morph.makeRectangle(200,200, 30,30);
@@ -184,7 +184,7 @@ Global.Fabrik = {
      */
     addConvenienceFunctions: function() {
         Global.allFabrikClassNames = function() {
-            return ["FabrikMorph", "FabrikComponent", "ComponentModel", "PinMorph", "PinHandle", "ConnectorMorph", 
+            return ["FabrikMorph", "FabrikComponent", "ComponentModel", "PinMorph", "PinHandle", "lively.Fabrik.ConnectorMorph", 
                 "Component",  "TextComponent", "FunctionComponent", "ComponentBox", "PointSnapper", "FlowLayout"]
         };
         Global.allClassNames = function() {
@@ -965,48 +965,6 @@ Widget.subclass('PinHandle', {
     
 });
 
-Morph.subclass('ArrowHeadMorph', {
-     
-    initialize: function($super, lineWidth, lineColor, fill, length, width) {
-        $super(new lively.scene.Group());
-        
-        /* FIXME
-         * Morph abuse!
-         */
-        this.setFillOpacity(0);
-        this.setStrokeOpacity(0);
-
-        lineWidth = lineWidth || 1;
-        lineColor = lineColor || Color.black;
-        fill = fill || Color.black;
-        length = length || 16;
-        width = width || 12;
-
-        var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
-        var poly = new lively.scene.Polygon(verts);
-        // FIXME: positioning hack, remove the following
-        this.head = this.addMorph(new Morph(poly));
-        this.head.applyStyle({fill: fill, borderWidth: 1, borderColor: lineColor});
-        
-        this.setPosition(this.head.getPosition());
-        this.setExtent(this.head.getExtent());
-        this.ignoreEvents();
-        this.head.ignoreEvents();
-        
-        // this.head.setFillOpacity(0.7);
-        // this.head.setStrokeOpacity(0.7);
-        
-        return this;
-    },
-    
-    pointFromTo: function(from, to) {
-        var dir = (to.subPt(from)).theta()
-        this.setRotation(dir)
-        this.setPosition(to);
-    }
-
-});
-
 ComponentModel = {
     newModel: function(optSpec) {
         // FIXME Why isnt this handled at a central point?????
@@ -1014,7 +972,7 @@ ComponentModel = {
     }
 };
 
-Morph.subclass('ConnectorMorph', {
+Morph.subclass('lively.Fabrik.ConnectorMorph', {
     
     isConnectorMorph: true,
 	noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['pinConnector']),
@@ -1242,7 +1200,7 @@ Widget.subclass('PinConnector', {
   
     // just for make things work ...
     buildView: function() {
-        this.morph = new ConnectorMorph(null, 4, Color.blue, this);
+        this.morph = new lively.Fabrik.ConnectorMorph(null, 4, Color.blue, this);
         if (!this.fromPin.morph) throw new Error("fromPin.morph is nil");
         if (!this.toPin.morph) throw new Error("toPin.morph is nil");
         this.morph.setStartHandle(this.fromPin.morph);

@@ -3575,5 +3575,134 @@ Object.extend(PieMenuMorph, {
     }
 });
 
+Morph.subclass('ArrowHeadMorph', {
+     
+    initialize: function($super, lineWidth, lineColor, fill, length, width) {
+        $super(new lively.scene.Group());
+        
+        /* FIXME
+         * Morph abuse!
+		 * rk: Morph rape!! ;-)
+         */
+        this.setFillOpacity(0);
+        this.setStrokeOpacity(0);
+
+        lineWidth = lineWidth || 1;
+        lineColor = lineColor || Color.black;
+        fill = fill || Color.black;
+        length = length || 16;
+        width = width || 12;
+
+        var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
+        var poly = new lively.scene.Polygon(verts);
+        // FIXME: positioning hack, remove the following
+        this.head = this.addMorph(new Morph(poly));
+        this.head.applyStyle({fill: fill, borderWidth: 1, borderColor: lineColor});
+        
+        this.setPosition(this.head.getPosition());
+        this.setExtent(this.head.getExtent());
+        this.ignoreEvents();
+        this.head.ignoreEvents();
+        
+        // this.head.setFillOpacity(0.7);
+        // this.head.setStrokeOpacity(0.7);
+        
+        return this;
+    },
+    
+    pointFromTo: function(from, to) {
+        var dir = (to.subPt(from)).theta()
+        this.setRotation(dir)
+        this.setPosition(to);
+    }
+
+});
+
+Morph.subclass('ConnectorMorph', {
+
+	suppressHandles: true,
+
+	style: {borderColor: Color.rgb(230,230,230), borderWidth: 1},
+	
+	initialize: function($super, morph1, morph2) {
+		var vertices = [morph1.getCenter(), morph2.getCenter()];
+		vertices.invoke('subPt', vertices[0]);
+		$super(new lively.scene.Polyline(vertices));
+
+		// ArrowHeadMorph needs cleanup
+		this.arrow = this.addMorph(new ArrowHeadMorph(null,null, null, 30, 8));
+		this.arrow.head.applyStyle({borderWidth: 0, fill: Color.white});
+
+		this.setStartMorph(morph1);
+		this.setEndMorph(morph2);
+	},
+	onDeserialize: function() {
+		this.setStartMorph(this.startMorph);
+		this.setEndMorph(this.endMorph);
+	},
+	getStartMorph: function() { return this.startMorph },
+	getEndMorph: function() { return this.endMorph },
+	setStartMorph: function(morph) {
+		this.startMorph = morph;
+		if (morph) this.register(morph, 'Start');
+	},	
+	setEndMorph: function(morph) {	
+		this.endMorph = morph;
+		if (morph) this.register(morph, 'End');
+	},
+	getStartPos: function() { return this.shape.vertices().first() },
+	getEndPos: function() { return this.shape.vertices().last() },
+	setStartPos: function(p) {
+		var v = this.shape.vertices(); v[0] = p; this.setVertices(v);
+	},
+	setEndPos: function(p) {
+		var v = this.shape.vertices(); v[v.length-1] = p; this.setVertices(v);
+	},
+	
+	register: function(morph, startOrEnd) {
+		var con = this;
+		morph.changed = morph.changed.wrap(function (proceed) {
+			proceed();
+			con.updatePos(startOrEnd);
+		});
+		con.updatePos(startOrEnd); // kickstart
+	},
+	unregister: function(startOrEnd) {
+		var getMorphSelector = 'get' + startOrEnd + 'Morph';
+		var morph = this[getMorphSelector]();
+		if (morph.rebuildChangeMethod)
+			morph.rebuildChangeMethod();
+		else
+			morph.changed = morph.constructor.prototype.changed;
+		console.log('unregistered ' + startOrEnd);
+	},
+
+	updatePos: function(startOrEnd) {
+		/*if (!this.getStartMorph() || !this.getEndMorph())
+			return;
+		var center = this.getStartMorph().getCenter();
+		if (startOrEnd == 'Start')
+			this.setStartPos(center);
+		this.setEndPos(this.getEndMorph().bounds().closestPointToPt(center));
+		this.arrow && this.arrow.pointFromTo(this.getStartPos(), this.getEndPos());*/
+
+		var getMorphSelector = 'get' + startOrEnd + 'Morph';
+		var setPosSelector = 'set' + startOrEnd + 'Pos';
+		var morph = this[getMorphSelector]();
+		this[setPosSelector](morph.getCenter());
+		this.arrow && this.arrow.pointFromTo(this.getStartPos(), this.getEndPos());
+
+	},
+	toString: function() {
+		return Strings.format("#<ConnectorMorph:%s->%s>", this.getStartMorph(), this.getEndMorph());
+	},
+	remove: function($super) {
+		$super();
+		this.unregister('Start');
+		this.unregister('End');
+	},
+
+});
+	
 }.logCompletion('loaded Widgets.js')); // end using
 

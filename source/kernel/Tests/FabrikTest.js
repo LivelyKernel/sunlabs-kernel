@@ -918,7 +918,7 @@ TestCase.subclass('TextComponentTest', {
 TestCase.subclass('ConnectorMorphTest', {
     
 	setUp: function() {
-        this.componentConnector = new ConnectorMorph();
+        this.componentConnector = new lively.Fabrik.ConnectorMorph();
         this.point1 = pt(100,100);
         this.point2 = pt(200,200);
 		this.morphsToClose = [];
@@ -966,7 +966,7 @@ TestCase.subclass('ConnectorMorphTest', {
     },
     
 	createConnectorMock: function(start, end) {
-		var c = new ConnectorMorph();
+		var c = new lively.Fabrik.ConnectorMorph();
 		// center the connection point
         m1 = Morph.makeRectangle(start.x - 5 ,start.y -5 ,10,10);
         m1.getGlobalPinPosition = function(){return this.getPosition().addPt(pt(5,5))};
