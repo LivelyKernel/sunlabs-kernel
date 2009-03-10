@@ -3703,6 +3703,182 @@ Morph.subclass('ConnectorMorph', {
 	},
 
 });
+
+Morph.subclass('NodeMorph', {
+
+	maxDist: 180 ,
+	minDist: 90 ,
+	step: 15,
+	minStepLength: 0,
+	findOtherMorphsDelay: 35,
+	
+	suppressHandles: true,
+
+	initialize: function($super, bounds) {
+		$super(new lively.scene.Rectangle(bounds));
+		//$super(new lively.scene.Ellipse(bounds.center(), (bounds.width+bounds.height)/2));
+		var gradient = new lively.paint.LinearGradient([
+				new lively.paint.Stop(0.2, Color.lightGray), 
+				new lively.paint.Stop(1, Color.darkGray)]);
+		//this.applyStyle({fill: gradient});
+		this.applyStyle({fill: Color.white});
+		this.applyStyle({fill: null});
+		this.connections = [];
+		this.connectionsPointingToMe = [];
+		this.energy=1;
+	},
+	onDeserialize: function($super) {
+		this.activeBoundsOfWorld = null;
+	},
+	configure: function(spec) {
+		for (name in spec) this[name] = spec[name];
+	},
+	forceOfMorphs: function(morphs) {
+		var avg = pt(0,0);
+		this.cachedNodes=[];
+		for (var i=0; i<morphs.length; i++) {
+			var ea = morphs[i];
+			var d = this.getCenter().subPt(ea.getCenter());
+			var dist = d.fastR();
+			var isConnected = this.isConnectedTo(ea) || ea.isConnectedTo(this);
+			if (!isConnected && dist > this.maxDist + 150*this.energy)
+				continue;
+			this.cachedNodes.push(ea);
+			avg = avg.addPt(this.forceOfMorph(ea, d, dist, isConnected));
+		}
+		if (avg.eqPt(pt(0,0))) return avg;
+		return Point.polar(this.energy*this.step, avg.theta());
+	},
+	forceOfMorph: function(morph, vector /*between centers of me and morph*/, dist /*of vector*/, isConnected) {
+		// effect positive --> push away, negative -> attract
+		if (dist == 0) return pt(0,0); var effect;
+		if (dist < this.minDist) {
+			//effect = this.minDist/dist;
+			effect = 1;
+		} else if (isConnected) {
+			if (dist <= this.maxDist) return pt(0,0);
+			effect = -1;
+		} else {
+			if (dist >= this.maxDist) return pt(0,0);
+			effect = 1;
+		}
+		return vector.fastNormalized().scaleBy(effect);
+	},
+	makeStep: function() {
+		if (this.energy == 0) return;
+		var nodes = this.cachedNodes;
+		if (!this.calls || this.calls % this.findOtherMorphsDelay == 0) {
+		 	this.cachedNodes = this.findNodeMorphs();
+			this.calls = 1;
+
+			if (this.connectedNodes().length == 0) {
+				this.minDist = 20;
+				this.maxDist = 50;
+			} else {
+				this.minDist = this.constructor.prototype.minDist;
+				this.maxDist = this.constructor.prototype.maxDist;
+			}
+		}
+		this.calls++;
+		var v = this.forceOfMorphs(this.cachedNodes);
+		if (!v.x || !v.y /*|| v.fastR() <= this.minStepLength*/) return;
+		this.moveBy(v);
+		this.ensureToStayInWorldBounds();
+	},
+	findNodeMorphs: function() {
+		return NodeMorph.all().without(this);
+	},
+	ensureToStayInWorldBounds: function() {
+		if (!this.activeBoundsOfWorld)
+			this.activeBoundsOfWorld = pt(document.body.clientWidth, document.body.clientHeight).subPt(this.getExtent()).extentAsRectangle();
+		//this.activeBoundsOfWorld =  pt(1051.9,584.5).extentAsRectangle();
+		if (!this.activeBoundsOfWorld.containsPoint(this.getPosition()))
+			this.setPosition(this.activeBoundsOfWorld.closestPointToPt(this.getPosition()));
+	},
+	startSteppingScripts: function(ms, random) {
+		var timing = ms || 1000;
+		if (random) {
+			var getRandomNumber = function(max) { return Math.floor(Math.random()*max+1)-1};
+			timing = timing + getRandomNumber(200);
+		}
+        this.startStepping(timing, "makeStep");
+    },
+	connectTo: function(otherNode) {
+		this.connectedNodesCache = null;
+		var con = new ConnectorMorph(this, otherNode);
+		var w = WorldMorph.current();
+		if (this.ownerChain().include(w))
+			w.addMorphBack(con);
+		this.connections.push(con);
+		otherNode.connectionsPointingToMe.push(con);
+		return con;
+	},
+	disconnect: function(node) {
+		this.connectedNodesCache = null;
+		var c = this.connections.detect(function(ea) { return ea.getEndMorph() == node });
+		if (!c) {
+			console.warn('Trying to disconnect nodes but couldn\'t find connection!');
+			return;
+		}
+		c.remove();
+		this.connections = this.connections.without(c);
+	},
+	connectedNodes: function() {
+		if (!this.connectedNodesCache)
+			this.connectedNodesCache = this.connections.collect(function(ea) { return ea.getEndMorph() });
+		return this.connectedNodesCache
+	},
+	isConnectedTo: function(otherNode) {
+		return this.connectedNodes().indexOf(otherNode) != -1;
+	},
+	remove: function($super) {
+		$super();
+		this.connectionsPointingToMe.forEach(function(ea) { ea.getStartMorph().disconnect(this) }, this);
+		this.connections.invoke('remove');
+	},
+	rebuildChangeMethod: function() {
+		this.changed = this.constructor.prototype.changed;
+		this.connections.forEach(function(ea) {ea.register(this, 'Start')}, this);
+	},
+	addLabel: function(text) {
+		if (!this.label)
+			this.label = this.addMorph(new TextMorph(new Rectangle(0,0,this.getExtent().x,10)));
+		this.label.textString = text;
+		this.label.beLabel();
+		this.label.setFontSize(9); this.label.applyStyle({fill: Color.white, borderRadius: 10});
+		this.setExtent(this.label.getExtent().addXY(0,5));
+		this.label.centerAt(this.innerBounds().center());
+	},
+});
+
+Object.extend(NodeMorph, {
+	all: function() {
+		return WorldMorph.current().submorphs.select(function(ea) { return ea instanceof NodeMorph });
+	},
+	buildEnergySlider: function() {
+		var slider = new NodeEnergySlider(); // FIXME somehow a addObserver does not deserialize so have to subclass
+		slider.openInWorld();
+	}
+});
+
+SliderMorph.subclass('NodeEnergySlider', {
+	initialize: function($super, optB) {
+		$super(optB || new Rectangle(0,0,200,30));
+	},
+	onValueUpdate: function($super, value) {
+		$super(value);
+		var energy = value*2;
+		console.log('Node Energy: ' + energy);
+		NodeMorph.all().forEach(function(ea) { ea.energy = energy });
+	},
+	onDeserialize: function($super) {
+		$super();
+		// slider deserialization seems to be broken...
+		var b = this.bounds();
+		this.owner.addMorph(new NodeEnergySlider(b));
+		this.remove();
+	},
+});
 	
 }.logCompletion('loaded Widgets.js')); // end using
 
