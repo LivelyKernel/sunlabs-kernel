@@ -44,10 +44,14 @@ Object.subclass('lively.data.Wrapper', {
 	return null;
     },
 
-    newId: (function() { 
+    newId: (function() {
+	// this may be a Problem, after deserializing and when copy and pasting... 
 	var wrapperCounter = 0;
 	return function() {
-	    return ++ wrapperCounter;
+		if (Math.uuid)
+			return Math.uuid(); // so use (pseudo) uuids when available
+	    else
+			return ++ wrapperCounter;
 	}
     })(),
 
@@ -1602,9 +1606,15 @@ this.Image.addMethods({
 this.Node.subclass('lively.scene.Clip', {
     documentation: "currently wrapper around SVG clipPath",
     initialize: function(shape) {
-	this.rawNode = NodeFactory.create('clipPath');
-	this.setId(String(this.constructor.clipCounter ++));
-	this.setClipShape(shape);
+		this.rawNode = NodeFactory.create('clipPath');
+		if (Math.uuid) {
+			newId =  Math.uuid(); // so use (pseudo) uuids when available
+		} else {
+			// bug, when there are clips which are not created in this session
+			newId =  ++ this.constructor.clipCounter;
+		}
+		this.setId(String(newId));
+		this.setClipShape(shape);
     },
 
     deserialize: function(importer, rawNode) {

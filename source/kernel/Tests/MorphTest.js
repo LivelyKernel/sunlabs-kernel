@@ -228,7 +228,6 @@ TestCase.subclass('ImageMorphTest', {
 
 TestCase.subclass('AScrollPaneTest', {
 
-
 	testDisableScrollBar: function() {
 		var scrollPane = Global.newTextListPane(new Rectangle(0,0,100,100));
 		var scrollBar = scrollPane.scrollBar;
@@ -244,7 +243,6 @@ TestCase.subclass('AScrollPaneTest', {
 		this.assert(scrollPane.scrollBar, "scrollBar is not referenced");
 		this.assert(scrollPane.scrollBar.owner, "scrollBar is not open");
     },
-
 
 });
 

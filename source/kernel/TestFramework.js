@@ -155,6 +155,7 @@ Object.subclass('TestCase', {
 	
 });
 
+
 Object.subclass('TestSuite', {
 	initialize: function() {
 		this.result = new TestResult();
