@@ -1614,7 +1614,7 @@ jQuery.extend({
 							// Grab the tag name being searched for
 							var tag = m[1] == "#" && m[3] ? m[3] : m[1] != "" || m[0] == "" ? "*" : m[2];
 
-							// Handle IE7 being really dumb about <object>s
+							// Handle IE7 mishandling of <object>s
 							if ( tag == "*" && ret[i].nodeName.toLowerCase() == "object" )
 								tag = "param";
 

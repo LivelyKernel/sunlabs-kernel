@@ -578,7 +578,7 @@ Morph.subclass('PinMorph', {
         var fakePin = morph.pinHandle;
         fakePin.connectors.first().remove();
         
-        // FIXME only kludge for connect problem, use double dispatch
+        // FIXME only workaround for connect problem, use double dispatch
         fakePin.originPin.connectTo(this.pinHandle);
                 
         this.removeMorph(morph);
@@ -645,7 +645,7 @@ Morph.subclass('PinMorph', {
 
     // PinPosition relative to the Fabrik Morph
     getPinPosition: function() {
-        // FIXME kludge
+        // FIXME should be cleaned up
         if (this.pinHandle.component instanceof FabrikComponent)
             return this.pinHandle.component.morph.localize(this.getGlobalPinPosition());
         if (this.pinHandle.component.fabrik)

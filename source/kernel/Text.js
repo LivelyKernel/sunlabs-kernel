@@ -658,8 +658,7 @@ Object.subclass('lively.Text.TextLine', {
     },
 
     adjustAfterComposition: function(textString, compositionWidth) {
-	// This serves to clean up some cruft tht should not be there anyway
-	// But it now also serves to align the text after composition
+	// Align the text after composition
 	var deltaX = 0;
 	var paddingX = 0;
 	var spaceRemaining = 0;

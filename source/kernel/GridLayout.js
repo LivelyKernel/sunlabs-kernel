@@ -134,7 +134,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	$super();
     }, 
     
-    // remove all the cruft we added to this morph
+    // remove all the properties we added to this morph
     removeMorph: function($super, m) {
 	console.log("removing morph: " + m);
 	if ($super(m)) {
@@ -288,7 +288,7 @@ BoxMorph.subclass('GridLayoutMorph', {
 	var maxX = this.cols[end];
 	this.cols.length=end+1;
 	
-	// this is really dumb for now
+	// this is really simple for now
 	
 	if (this.showGrid) {
 	    this.showGridLines(false);
