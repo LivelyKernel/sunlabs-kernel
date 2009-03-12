@@ -68,7 +68,7 @@ Object.freeze = function(object) {
 };
 
 
-// boodman/crockford delegation
+// boodman/crockford style delegation
 Object.beget = function(object, properties) {
     function Delegate(){};
     Delegate.prototype = object;
