@@ -893,6 +893,15 @@ Copier.subclass('Importer', {
 	}
     },
 
+	resizeCanvasToFitWorld: function(world) {
+		console.log('Resizing SVG canvas');
+		var canvas = world.rawNode.parentNode;
+		if (canvas.clientWidth != world.bounds().width)
+			canvas.setAttribute("width", world.bounds().width);
+		if (canvas.clientHeight != world.bounds().height)
+			canvas.setAttribute("height", world.bounds().height);
+	},
+	
     startScripts: function(world) {
 	this.verbose && console.log("start scripts %s in %s", this.scripts, world);
 	// sometimes there are null values in this.scripts. Filter them out
@@ -950,6 +959,8 @@ Copier.subclass('Importer', {
     },
 
     finishImport: function(world) {
+	if (Config.resizeScreenToWorldBounds)
+		this.resizeCanvasToFitWorld(world);
 	this.patchReferences();
 	this.hookupModels();
 	this.runDeserializationHooks();
@@ -1045,13 +1056,14 @@ Copier.subclass('Importer', {
 	
 	if (!(0 in morphs)) 
 	    return null;
+
+	var canvas = this.canvas(doc);
 	
 	if (morphs[0] instanceof WorldMorph) {
-	    world = morphs[0];
+	    world = morphs[0];	
 	    if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
 	} else {
 	    // no world, create one and add all the serialized morphs to it.
-	    var canvas = this.canvas(doc);
 	    world = new WorldMorph(canvas);
 	    // this adds a the WorldMorph's <g> at the end of the list
 	    canvas.appendChild(world.rawNode);
@@ -1059,7 +1071,7 @@ Copier.subclass('Importer', {
 	    morphs.clone().forEach(function(m) { world.addMorph(m); });
 	}
 	this.finishImport(world);
-
+	
 	return world;
     }
 

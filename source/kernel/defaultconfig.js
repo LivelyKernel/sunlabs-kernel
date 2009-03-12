@@ -155,7 +155,9 @@ var Config = {
     suppressClipboardHack: false,
 
 	// e.g. don't open standard Brwser menu on right
-    suppressDefaultMouseBehavior: UserAgent.canExtendBrowserObjects
+    suppressDefaultMouseBehavior: UserAgent.canExtendBrowserObjects,
+
+	Config.resizeScreenToWorldBounds = true
 }
 
 // These various overrides of the above have been moved here from main.js
@@ -222,4 +224,4 @@ Config.ballonHelpDelay = 1000; // Default
 
 Config.loadTests = [] //  e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 
-Config.modulesOnWorldLoad = ["Fabrik.js", 'TileScripting.js', 'ide.js'/*FIXME for ChangeSet*/ /*, 'LKWiki.js'*/]
+Config.modulesOnWorldLoad = ["Fabrik.js", 'TileScripting.js', 'ide.js'/*FIXME for ChangeSet*/]
