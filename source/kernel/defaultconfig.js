@@ -157,7 +157,7 @@ var Config = {
 	// e.g. don't open standard Brwser menu on right
     suppressDefaultMouseBehavior: UserAgent.canExtendBrowserObjects,
 
-    resizeScreenToWorldBounds: true
+    resizeScreenToWorldBounds: false
 }
 
 // These various overrides of the above have been moved here from main.js

@@ -959,8 +959,12 @@ Copier.subclass('Importer', {
     },
 
     finishImport: function(world) {
-	if (Config.resizeScreenToWorldBounds)
-		this.resizeCanvasToFitWorld(world);
+	if (Config.resizeScreenToWorldBounds) {
+		// when called without delay the call to canvas.clientWidth/Height
+		// causes the simple subworld to disappear
+		// (call toRemoveo 'early', SVG not yet initialized?)
+		this.resizeCanvasToFitWorld.curry(world).delay(2);
+	}
 	this.patchReferences();
 	this.hookupModels();
 	this.runDeserializationHooks();
