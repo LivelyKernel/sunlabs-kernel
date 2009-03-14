@@ -2178,6 +2178,7 @@ this.Gradient.subclass("lively.paint.LinearGradient", {
 	$super(NodeFactory.create("linearGradient",
 				  {x1: vector.x, y1: vector.y, 
 				   x2: vector.maxX(), y2: vector.maxY()})); 
+	this.vector = vector;  // cache for access without rawNode
 	this.setStops(stopSpec);
 	return this;
     },
