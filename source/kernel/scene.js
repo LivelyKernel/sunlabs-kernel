@@ -260,7 +260,7 @@ Object.subclass('lively.data.Wrapper', {
 		if (lively.data.Wrapper.dictionary = Global.document.getElementById("SystemDictionary"))
 			return lively.data.Wrapper.dictionary;
 		var canvas = Global.document.getElementById("canvas");
-		lively.data.Wrapper.dictionary =  canvas.appendChild(NodeFactory.create("defs"));
+		lively.data.Wrapper.dictionary =  canvas.appendChild(Global.document.createElement("defs"));
 		lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary");
 		return lively.data.Wrapper.dictionary;
     },
@@ -497,12 +497,12 @@ this.Node.addMethods({
         if (this._fill || this._fill === null)
 			return this._fill;
 		var attr = this.rawNode.getAttribute('fill');
-		if (!attr) { console.log('Didn\'t found fill for ' + this); return null; };
+	        if (!attr) { false && console.log("Didn't find fill for " + this); return null; };
 		var rawFill = lively.data.FragmentURI.getElement(attr);
-		if (!rawFill) { console.log('Didn\'t found fill for ' + this); return null; };
+		if (!rawFill) { false && console.log("Didn't find fill for " + this); return null; };
 		var klass = lively.data.Wrapper.getEncodedType(rawFill);
 		klass = Class.forName(klass) || Class.forName('lively.paint.' + klass);
-		if (!klass) { console.log('Didn\'t found fill for ' + this); return null; };
+		if (!klass) { false && console.log("Didn't find fill for " + this); return null; };
 		var importer = new Importer();
 		//dbgOn(true);
 		this._fill = new klass(importer, rawFill);
