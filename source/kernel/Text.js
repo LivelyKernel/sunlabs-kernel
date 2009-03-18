@@ -287,7 +287,8 @@ lively.data.Wrapper.subclass('TextWord', {
 	// compose a word between startLeftX and rightX, stopping if the width or string width is exceeded
 	// return true if we bumped into the width limit while composing
 
-	this.bounds = new Rectangle(startLeftX, topLeftY, undefined, textLine.currentFont.getSize());
+	this.font = textLine.currentFont;  // Cache for canvas display
+	this.bounds = new Rectangle(startLeftX, topLeftY, undefined, this.font.getSize());
         var leftX = startLeftX;
 	
         // get the character bounds until it hits the right side of the compositionWidth
