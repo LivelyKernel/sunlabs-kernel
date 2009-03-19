@@ -9,7 +9,6 @@
 //	Possibly related: spinning star changes speed after a few world changes
 //
 //	Artifacts at edge of clipping regions
-//	Need to paint world once on entry when using damage
 //	Font changes not shown correctly on canvas
 //	Asteroids not clipped when window collapsed
 //	Check triangle clipping in kaleidoscope
@@ -44,6 +43,9 @@ Morph.addMethods({  // Canvas Display
 	this.drawSubmorphsOn(graphicContext, clipRect)
 	graphicContext.restore(); },
     drawOn: function(graphicContext, bnds) {
+	if (this.isClipMorph) {  // Check for clipping behavior
+		this.shape.setPath(graphicContext, bnds);
+		graphicContext.clip(); }
 	this.shape.drawOn(graphicContext, bnds);
 	},
     drawSubmorphsOn: function(graphicContext, clipRect) {
@@ -109,14 +111,9 @@ ImageMorph.addMethods({  // Canvas Display
 */ //End of non-working ImageMorph method
 
 ClipMorph.addMethods({  // Canvas Display
+	// Note also the conditional clause in Morph.drawOn()
     invalidRect: function($super, rect) { // limit damage report to clipped region
-	if (this.shape instanceof lively.scene.Rectangle) $super(rect.intersection(this.innerBounds()));
-		else $super(rect);
-	},
-    drawOn: function($super, graphicContext, bnds) {
-	this.shape.setPath(graphicContext, bnds);
-	graphicContext.clip();
-	$super(graphicContext, bnds);
+	$super(rect.intersection(this.innerBounds()));
 	}
 });
 

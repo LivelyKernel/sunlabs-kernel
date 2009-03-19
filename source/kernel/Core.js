@@ -1988,6 +1988,7 @@ Morph.addMethods({
     removeAllMorphs: function() {
 	this.submorphs.invoke('removeRawNode');
 	this.submorphs.clear();
+	this.changed();
 	this.layoutChanged(); 
     },
 
@@ -1999,6 +2000,7 @@ Morph.addMethods({
 	if (!this.owner) return null;  // already removed
 
 	this.stopStepping();
+	this.changed();
 	this.owner.removeMorph(this);
 
 	return this;
@@ -2216,7 +2218,7 @@ Morph.addMethods({
 	// Perform a linear scaling (based on x scale) by the given factor
 	this.setScale(this.getScale()*factor);
     },
-beClipMorph: function() {
+    beClipMorph: function() {
 	// For simple morphs (rectangles, ellipses, polygons) this will cause all submorphs
 	// to be clipped to the shape of this morph.
 	// Note: the bounds function should probably be copied from ClipMorph as
@@ -2225,6 +2227,7 @@ beClipMorph: function() {
 	this.clip = new lively.scene.Clip(this.shape);
 	defs.appendChild(this.clip.rawNode);
 	this.clip.applyTo(this);
+	this.isClipMorph = true;
     },
 
     throb: function() {

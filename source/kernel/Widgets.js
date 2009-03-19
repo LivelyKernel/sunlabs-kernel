@@ -312,6 +312,7 @@ BoxMorph.subclass("ClipMorph", {
     initialize: function($super, initialBounds) {
 		$super(initialBounds);
 		this.setupClipNode();
+		this.isClipMorph = true;
     },
 
 	setupClipNode: function() {
