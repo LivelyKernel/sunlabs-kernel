@@ -29,7 +29,7 @@ Morph.addMethods({  // Damage propagation
 Morph.addMethods({  // Canvas Display
     fullDrawOn: function(graphicContext, clipRect) {
 	// Display this morph and all of its submorphs (back to front)
-	if (!(clipRect.intersects(this.bounds()))) return;
+	if (! this.isVisible() || !(clipRect.intersects(this.bounds()))) return;
         var bnds = this.innerBounds();
 	graphicContext.save();
 	graphicContext.translate(this.origin.x, this.origin.y);
