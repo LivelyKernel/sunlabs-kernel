@@ -69,7 +69,7 @@ TextMorph.addMethods({  // Canvas Display
 		if (font.style.indexOf("bold") >= 0) styleString += "bold ";
 		if (font.style.indexOf("italic") >= 0) styleString += "italic ";
 	var fontString = (font.size*0.75).toString() + "pt " + styleString + font.family;
-	console.log ("fontString = " + fontString);
+	//console.log ("fontString = " + fontString);
 	return fontString; },
     drawTextOn: function(graphicContext, bnds, clipRect) {
 	if (this.lines == null) return;
@@ -99,13 +99,33 @@ TextMorph.addMethods({  // Canvas Display
 	}
 });
 
-/* This doesn't work yet...
-ImageMorph.addMethods({  // Canvas Display
-    drawOn: function(graphicContext, bnds) {
-	graphicContext.drawImage(this.image, bnds.x, bnds.y);
-	}
+lively.scene.Image.addMethods({
+    // monkey patch
+    loadImage: function(href, width, height) {
+	this.rawNode = Global.document.createElement("img");
+	width && this.rawNode.setAttribute("width", width);
+	height && this.rawNode.setAttribute("height", height);
+	this.rawNode.setAttribute("src", href);
+	return this.rawNode;
+    }
+    
 });
-*/ //End of non-working ImageMorph method
+    
+ImageMorph.addMethods({  // Canvas Display
+
+    drawOn: function(graphicContext, bnds) {
+	var rawImage = this.image.rawNode;
+	if (rawImage && rawImage.tagName === 'img') {
+	    console.log([rawImage.width, bnds.width, rawImage.height, bnds.height]);
+	    try {
+		graphicContext.drawImage(rawImage, bnds.x, bnds.y, 
+					 Math.min(rawImage.width, bnds.width), Math.min(rawImage.height, bnds.height));
+	    } catch (e) {
+		console.log('whoops, ' + e);
+	    }
+	}
+    }
+});
 
 ClipMorph.addMethods({  // Canvas Display
 	// Note also the conditional clause in Morph.drawOn()
