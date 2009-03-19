@@ -1564,20 +1564,26 @@ Morph.addMethods({
 
     setFill: function(fill) {
 	this.shape.setFill(fill);
+	this.changed();
     },
 
     getFill: function() {
 	return this.shape.getFill();
     },
 
-    setBorderColor: function(newColor) { this.shape.setStroke(newColor); },
+    setBorderColor: function(newColor) {
+	this.shape.setStroke(newColor);
+	// this.changed();
+	},
 
     getBorderColor: function() {
 	return new Color(Importer.marker, this.shape.getStroke());
     },
 
     setBorderWidth: function(newWidth) {
+	// this.changed();
 	this.shape.setStrokeWidth(newWidth); 
+	// this.changed();
     },
     
     getBorderWidth: function() {
@@ -1586,6 +1592,7 @@ Morph.addMethods({
 
     shapeRoundEdgesBy: function(r) {
 	this.shape.roundEdgesBy(r);
+	this.changed();
     },
 
     setFillOpacity: function(op) { this.shape.setFillOpacity(op); },
@@ -3050,7 +3057,6 @@ Morph.addMethods({
 	if (this.fullBounds != null) return this.fullBounds;
 
 	var tfm = this.getTransform();
-	//var fullBounds = tfm.transformRectToRect(this.localBorderBounds());
 	var fullBounds = this.localBorderBounds(tfm);
 
 	var subBounds = this.submorphBounds(ignoreTransients);
@@ -3093,7 +3099,7 @@ Morph.addMethods({
 	var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
 	
 	// double border margin for polylines to account for elbow protrusions
-	bounds.expandBy(this.getBorderWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
+	bounds = bounds.expandBy(this.getBorderWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
 	return bounds;
     },
     

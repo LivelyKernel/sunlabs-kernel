@@ -8,11 +8,8 @@
 //		this is a pre-existing condition revealed by damage display
 //	Possibly related: spinning star changes speed after a few world changes
 //
-//	Artifacts at edge of clipping regions
 //	Font changes not shown correctly on canvas
 //	Asteroids not clipped when window collapsed
-//	Check triangle clipping in kaleidoscope
-//	setFill of engine cylinders doesn't register damage
 //	Display of Images not yet working.
 //	Morphs dragged through worm-holes get coords offset by current location
 //	Simple example morphs world needs to be rebuilt, since serialized form not available
