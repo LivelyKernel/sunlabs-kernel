@@ -1715,7 +1715,6 @@ getScalePoint: function() {
     },
 
     
-
     isTranslation: function() {
 	return this.matrix_.type === SVGTransform.SVG_TRANSFORM_TRANSLATE;
     },
@@ -1769,24 +1768,26 @@ getScalePoint: function() {
 	return p.matrixTransform(this, acc);
     },
 
+    matrixTransformForMinMax: function(pt, minPt, maxPt) {
+	var x = this.a * pt.x + this.c * pt.y + this.e;
+	var y = this.b * pt.x + this.d * pt.y + this.f;
+	if (x > maxPt.x) maxPt.x = x;
+	if (y > maxPt.y) maxPt.y = y;
+	if (x < minPt.x) minPt.x = x;
+	if (y < minPt.y) minPt.y = y;
+    },
+
     transformRectToRect: function(r) {
-	var p = this.transformPoint(r.topLeft());
-	var min = p.copy();
-	var max = p.copy();
+	// This gets called a lot from invalidRect, so it has been optimized a bit
+	var minPt = pt(Infinity, Infinity);
+	var maxPt = pt(-Infinity, -Infinity);
+	this.matrixTransformForMinMax(r.topLeft(), minPt, maxPt);
+	this.matrixTransformForMinMax(r.bottomRight(), minPt, maxPt);
+	if (this.isTranslation()) return rect(minPt, maxPt);
 
-	p = this.transformPoint(r.topRight(), p);
-	min = min.minPt(p, min);
-	max = max.maxPt(p, max);
-
-	p = this.transformPoint(r.bottomRight(), p);
-	min = min.minPt(p, min);
-	max = max.maxPt(p, max);
-
-	p = this.transformPoint(r.bottomLeft(), p);
-	min = min.minPt(p, min);
-	max = max.maxPt(p, max);
-
-	return rect(min, max);
+	this.matrixTransformForMinMax(r.topRight(), minPt, maxPt);
+	this.matrixTransformForMinMax(r.bottomLeft(), minPt, maxPt);
+	return rect(minPt, maxPt);
     },
 
     copy: function() {
