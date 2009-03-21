@@ -969,47 +969,54 @@ ticksInMethod: function() {
 	},
 	
         installStackTracers: function(remove) {
-	    console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
-            remove = (remove == "uninstall");  // call with this string to uninstall
-            Class.withAllClassNames(Global, function(cName) { 
+	console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
+	remove = (remove == "uninstall");  // call with this string to uninstall
+	var allClasses = Global.classes(true);
+	allClasses.forEach(function(theClass) {
+		var cName = theClass.type || theClass.name;
 		if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
-                if (cName == 'Global' || cName == 'Object') return;
-                var theClass = Class.forName(cName);
-                var methodNames = theClass.localFunctionNames();
+		if (theClass === Global || theClass == Object) return;
+		var methodNames = theClass.localFunctionNames();
 		
-                // Replace all methods of this class with a wrapped version
+		// Replace all methods of this class with a wrapped version
 		for (var mi = 0; mi < methodNames.length; mi++) {
-                    var mName = methodNames[mi];
-                    var originalMethod = theClass.prototype[mName];
+			var mName = methodNames[mi];
+			var originalMethod = theClass.prototype[mName];
 		    // Put names on the original methods 
-                    originalMethod.declaredClass = cName;
-                    originalMethod.methodName = mName;
-                    // Now replace each method with a wrapper function (or remove it)
-                    if (!Class.isClass(originalMethod)) {  // leave the constructor alone and other classes alone
-			if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
-			else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
-		    }
-                }
+			originalMethod.declaredClass = cName;
+			originalMethod.methodName = mName;
+			// Now replace each method with a wrapper function (or remove it)
+			if (!Class.isClass(originalMethod)) {  // leave the constructor alone and other classes alone
+				if (!remove)
+					theClass.prototype[mName] = originalMethod.tracingWrapper();
+				else
+					if (originalMethod.originalFunction)
+						theClass.prototype[mName] = originalMethod.originalFunction;
+			}
+		}
 		// Do the same for class methods (need to clean this up)
 		var classFns = []; 
 		for (var p in theClass) {
-		    if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
-			classFns.push(p);
+			if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
+				classFns.push(p);
 		}
-                for (var mi = 0; mi < classFns.length; mi++) {
-                    var mName = classFns[mi];
-                    var originalMethod = theClass[mName];
-		    // Put names on the original methods 
-                    originalMethod.declaredClass = cName;
-                    originalMethod.methodName = mName;
-                    // Now replace each method with a wrapper function (or remove it)
-                    if (!Class.isClass(originalMethod)) { // leave the constructor alone and other classes alone
-			if(!remove) theClass[mName] = originalMethod.tracingWrapper();
-			else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
-		    }
-                }
-            });
-        },
+		for (var mi = 0; mi < classFns.length; mi++) {
+			var mName = classFns[mi];
+			var originalMethod = theClass[mName];
+			// Put names on the original methods 
+			originalMethod.declaredClass = cName;
+			originalMethod.methodName = mName;
+			// Now replace each method with a wrapper function (or remove it)
+			if (!Class.isClass(originalMethod)) { // leave the constructor alone and other classes alone
+				if (!remove)
+					theClass[mName] = originalMethod.tracingWrapper();
+				else
+					if (originalMethod.originalFunction)
+						theClass[mName] = originalMethod.originalFunction;
+			}
+		}
+	});		// end forEach
+},
         tallyLOC: function() {
             console.log("Tallying lines of code by decompilation");
             var classNames = [];
@@ -1033,9 +1040,24 @@ ticksInMethod: function() {
                 console.log(cName + " " + loc);
                 // tallies += cName + " " + loc.toString() + "\n";
             }
-        }
+        },
     });
     
+Object.subclass('InspectHelper', {
+    inspect: function(obj,selector){
+        if (!Morph.prototype.initialize.originalFunction) // poor test
+            return; // no tracers installed
+    	var openTracer = function(contextNode){
+    		var dbgObj = {classname: this.constructor.type, selector: 'inspect', err:{stack:contextNode}};
+    		new ErrorStackViewer(dbgObj).open();
+    	}.bind(this);
+    	return {inspectMe: true, message: 'opening StackInspector', openTracer: openTracer}
+    },
+});
+Global.halt = function() {
+    new InspectHelper().inspect();
+}
+
     Object.extend(Function.prototype, {
 	
         tracingWrapper: function () {
@@ -1046,14 +1068,15 @@ ticksInMethod: function() {
 		try {
 			currentContext.traceCall(originalFunction, this, arguments);
 			var result = originalFunction.apply(this, arguments); 
+            if (result && result.inspectMe === true)
+                result.openTracer(currentContext);
 			currentContext.traceReturn(originalFunction);
 			return result;
 		} catch(e) {
 		    console.log('got error:' + e.message);
 		    if (!e.stack) console.log('caller ' + currentContext.caller);
-		    
 		    if (!e.stack) e.stack = currentContext.copyMe();
-		    throw e;
+			throw e;
 		};
             };
             traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy

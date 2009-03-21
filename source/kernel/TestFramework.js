@@ -452,7 +452,7 @@ Widget.subclass('ErrorStackViewer', {
 		    if(! testFailedObj.err.stack.each)
 		        console.log("ErrorStackViewer: don't know what to do with" +testFailedObj.err.stack )
 		    else
-		        testFailedObj.err.stack.each(function(currentNode, c) { list.push(c) });
+		        testFailedObj.err.stack.each(function(currentNode, c) { list.push(c.copyMe()) });
 		};
 		this.formalModel = Record.newInstance(
 			{StackList: {}, MethodSource: {}, ArgumentsList: {}, SelectedCaller: {}},
@@ -523,8 +523,14 @@ Widget.subclass('ErrorStackViewer', {
 	},
 	
 	setCaller: function(callerString) {
+		if (!callerString) return;
 		var i = this.getCallerList().indexOf(callerString);
 		var contextNode = this.formalModel.getStackList()[i];
+		if (!contextNode) {
+			this.formalModel.setMethodSource('Error: Can\'t find contextNode in stack!');
+			this.methodSource.updateView("getMethodSource");
+			return;
+		}
 		this.formalModel.setSelectedCaller(contextNode);
 		this.formalModel.setMethodSource(contextNode.method.inspectFull());
 		this.methodSource.updateView("getMethodSource");
