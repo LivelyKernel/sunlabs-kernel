@@ -1993,9 +1993,9 @@ Morph.addMethods({
     },
 
     removeAllMorphs: function() {
+	this.changed();
 	this.submorphs.invoke('removeRawNode');
 	this.submorphs.clear();
-	this.changed();
 	this.layoutChanged(); 
     },
 

@@ -1838,8 +1838,13 @@ Rectangle.addMethods({
     constrainPt: function(pt) { return pt.maxPt(this.topLeft()).minPt(this.bottomRight()); },
 
     intersection: function(r) {
-	return rect(this.topLeft().maxPt(r.topLeft()),this.bottomRight().minPt(r.bottomRight())); 
-    },
+	// return rect(this.topLeft().maxPt(r.topLeft()),this.bottomRight().minPt(r.bottomRight())); 
+    var nx = Math.max(this.x, r.x);
+    var ny = Math.max(this.y, r.y);
+	var nw = Math.min(this.x + this.width, r.x + r.width) - nx;
+	var nh = Math.min(this.y + this.height, r.y + r.height) - ny;
+	return new Rectangle(nx, ny, nw, nh);
+	},
 
     intersects: function(r) { return this.intersection(r).isNonEmpty(); },  // not the fastest
 
@@ -1847,7 +1852,7 @@ Rectangle.addMethods({
 	return rect(this.topLeft().minPt(r.topLeft()),this.bottomRight().maxPt(r.bottomRight())); 
     },
 
-    isNonEmpty: function(rect) { return this.topLeft().lessPt(this.bottomRight()); },
+    isNonEmpty: function(rect) { return this.width > 0 && this.height > 0; },
 
     dist: function(r) { // dist between two rects
 	var p1 = this.closestPointToPt(r.center()); 

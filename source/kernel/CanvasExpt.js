@@ -8,9 +8,6 @@
 //		this is a pre-existing condition revealed by damage display
 //	Possibly related: spinning star changes speed after a few world changes
 //
-//	Font changes not shown correctly on canvas
-//	Asteroids not clipped when window collapsed
-//	Display of Images not yet working.
 //	Morphs dragged through worm-holes get coords offset by current location
 //	Simple example morphs world needs to be rebuilt, since serialized form not available
 //	And, er, of course we need to replace XML serialization be, eg, JSON etc.
@@ -65,10 +62,10 @@ TextMorph.addMethods({  // Canvas Display
 		this.submorphs[i].fullDrawOn(graphicContext, clipRect);
 	this.drawTextOn(graphicContext, clipRect); },
     fontString: function(font) {
-	var styleString = " ";
-		if (font.style.indexOf("bold") >= 0) styleString += "bold ";
-		if (font.style.indexOf("italic") >= 0) styleString += "italic ";
-	var fontString = (font.size*0.75).toString() + "pt " + styleString + font.family;
+	var fontString = "";
+		if (font.style.indexOf("bold") >= 0) fontString += "bold ";
+		if (font.style.indexOf("italic") >= 0) fontString += "italic ";
+	fontString += (font.size*0.75).toString() + "pt " + font.family;
 	//console.log ("fontString = " + fontString);
 	return fontString; },
     drawTextOn: function(graphicContext, bnds, clipRect) {
@@ -155,8 +152,9 @@ WorldMorph.addMethods({  // World
 	var canvas = document.getElementById('lively.canvas');
 	if (!canvas || !canvas.getContext) return;
 	var ctx = canvas.getContext("2d");
-	ctx.font = "9pt Helvetica";  // our current default
-	ctx.fillStyle = 'gray'; ctx.fillRect (10, 10, 20, 20);
+	ctx.fillStyle = 'black'; ctx.fillRect (10, 10, 10, 10);
+	ctx.font = "bold italic 9pt Helvetica";  // our current default
+	ctx.fillText("Canvas Test", 30, 20);  // test
 	ctx.strokeStyle = 'black';
 	
 	if (useDamageRectangles || showDamageRectangles) {
