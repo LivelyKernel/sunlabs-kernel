@@ -973,7 +973,9 @@ ticksInMethod: function() {
 	remove = (remove == "uninstall");  // call with this string to uninstall
 	var allClasses = Global.classes(true);
 	allClasses.forEach(function(theClass) {
-		var cName = theClass.type || theClass.name;
+		var cName = theClass.type || // LK class
+			theClass.name || // system class
+			theClass.toString().match(/function\s([a-zA-Z0-9]+)\(\).*/)[1]; // if class does not support name
 		if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
 		if (theClass === Global || theClass == Object) return;
 		var methodNames = theClass.localFunctionNames();
