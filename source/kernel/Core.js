@@ -4751,7 +4751,7 @@ Morph.subclass("HandMorph", {
         }
 
         this.mouseButtonPressed = (evt.type == "MouseDown"); 
-        this.setBorderWidth(this.mouseButtonPressed ? 3 : 1);
+        this.setBorderWidth(this.mouseButtonPressed ? 2 : 1);
         evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 	
         if (this.mouseFocus != null) {
