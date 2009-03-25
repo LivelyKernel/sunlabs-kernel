@@ -68,14 +68,15 @@ TextMorph.addMethods({  // Canvas Display
 	fontString += (font.size*0.75).toString() + "pt " + font.family;
 	//console.log ("fontString = " + fontString);
 	return fontString; },
-    drawTextOn: function(graphicContext, bnds, clipRect) {
+    drawTextOn: function(ctx, bnds, clipRect) {
+	if (!ctx.fillText) return;
 	if (this.lines == null) return;
 	// Still need to intersect clipRect with line rects for performance
         var bnds = this.innerBounds();
-	graphicContext.textBaseline = 'top';
-	graphicContext.fillStyle = this.shape.canvasFillFor(this.textColor);
+	ctx.textBaseline = 'top';
+	ctx.fillStyle = this.shape.canvasFillFor(this.textColor);
 	var currentFont = this.font;
-	graphicContext.font = this.fontString(this.font);
+	ctx.font = this.fontString(this.font);
 	//console.log(graphicContext.font);
 	//console.log();
 	for (var i=0; i<this.lines.length; i++) {
@@ -87,9 +88,9 @@ TextMorph.addMethods({  // Canvas Display
 			if (!word.isWhite) {
 				if (word.font && word.font !== currentFont) {
 					currentFont = word.font;
-					graphicContext.font = this.fontString(currentFont);
+					ctx.font = this.fontString(currentFont);
 				}
-				graphicContext.fillText(slice, word.bounds.x, word.bounds.y-2);  // *** why -2? Fix me
+				ctx.fillText(slice, word.bounds.x, word.bounds.y-2);  // *** why -2? Fix me
 			}
 		}
 	}
@@ -154,7 +155,7 @@ WorldMorph.addMethods({  // World
 	var ctx = canvas.getContext("2d");
 	ctx.fillStyle = 'black'; ctx.fillRect (10, 10, 10, 10);
 	ctx.font = "bold italic 9pt Helvetica";  // our current default
-	ctx.fillText("Canvas Test", 30, 20);  // test
+	if (ctx.fillText) ctx.fillText("Canvas Test", 30, 20);  // test
 	ctx.strokeStyle = 'black';
 	
 	if (useDamageRectangles || showDamageRectangles) {
