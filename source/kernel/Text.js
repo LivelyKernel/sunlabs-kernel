@@ -2209,7 +2209,7 @@ TextMorph.addMethods({
             this.world().changed(); 
             return; // Hack for browser demo
         } else if (!this.autoAccept) {
-            this.setText(contentString);
+            this.setText(contentString, true);
        }
     },
     acceptChanges: function() {    
