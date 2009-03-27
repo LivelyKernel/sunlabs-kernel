@@ -177,10 +177,10 @@ lively.data.Wrapper.subclass('lively.storage.CollectionItem', {
 	asSVNVersionInfo: function() {
 		var r = this.rawNode;
 		// FIXME cleanup --> SVNResource>>pvtSetMetadataDoc
-		return new SVNVersionInfo(
-			Number(r.getElementsByTagName('version-name')[0].textContent),
-			new Date(r.getElementsByTagName('getlastmodified')[0].textContent),
-			r.getElementsByTagName('creator-displayname')[0].textContent);
+		return new SVNVersionInfo({
+			rev: Number(r.getElementsByTagName('version-name')[0].textContent),
+			date: new Date(r.getElementsByTagName('getlastmodified')[0].textContent),
+			author: r.getElementsByTagName('creator-displayname')[0].textContent});
 	},
 
 });
