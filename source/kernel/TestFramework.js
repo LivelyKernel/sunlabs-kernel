@@ -406,6 +406,10 @@ Widget.subclass('TestRunner', {
 		model.setFailure = model.setFailure.wrap(function(proceed, failureDescription) {
 			// FIXME: put his in testResult
 			proceed(failureDescription);
+			if (!self.testObject) {
+			    console.log('could not find my testObject :-(');
+			    return;
+			}
 			var i = self.testObject.result.failureList().indexOf(failureDescription);
 			self.openErrorStackViewer(self.testObject.result.failed[i]);
 		});

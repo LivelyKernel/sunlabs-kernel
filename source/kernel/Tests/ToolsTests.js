@@ -1292,7 +1292,7 @@ testPropertyFFToChange: function() {
 	var s = 'initialStyle: {borderWidth: 0, fillOpacity: .5, fill: Color.veryLightGray},';
 	var f = this.jsParser.parseNonFile(s);
 	var c = f.asChange();
-	this.assertEqual(c.getSourceCode(), s);
+	this.assertEqual(c.asJs(), s);
 },
 
 testProtoChangeAsJs: function() {
