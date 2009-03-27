@@ -58,4 +58,46 @@ function run() {
     //    load('../fx/browser.js');
 }
 
-run();
+//run();
+
+function run2() {
+    print('applet is ' + applet + ' in ' + window);
+    var panel = new Packages.com.sun.scenario.scenegraph.JSGPanel();    
+
+    applet.setContentPane(panel);
+    fxSceneGraphTest(panel);
+    try{
+	load('../kernel/rhino-compat.js');
+	
+	load('../kernel/lang.js');
+	load('../kernel/JSON.js');
+	load('../kernel/miniprototype.js'); 
+	load('../kernel/defaultconfig.js');
+	// our local config
+	Config.useTransformAPI = false;
+	Config.useGetTransformToElement = false;
+	Config.logDnD = true;
+	//Config.fakeFontMetrics = false;
+	//Config.fontMetricsFromSVG = true;
+	load('../kernel/Base.js');
+	load('dom/mico.js');
+	load('dom/dom2-core.js');
+	load('dom/dom2-events.js');
+	load('dom/dom2-html.js');
+	//load('dom/svg1.1.js');
+	window.location = {};
+	load('dom/index.xhtml.js');
+	
+	load('../kernel/jquery.js');
+	print('jquery loaded');
+	print('jquery ' + $('body').size() +  ' keys ' + Object.keys($('body')));
+	print('jquery ' + $('svg'));
+	
+    } catch (er) {
+	print('problem with jquery ' + er);
+    }
+    //applet.load('../fx/demo.js');
+    //applet.setContentPane(browser.panel);
+
+}
+    run2();
