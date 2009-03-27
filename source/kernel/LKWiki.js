@@ -1103,7 +1103,6 @@ NodeMorph.subclass('WikiWorldNodeMorph', {
 
 	initialize: function($super, url, optNewTime) {
 		$super(new Rectangle(0,0, 20,20));
-		this.applyStyle({fill: null});
 		this.url = url;
 		var name = this.getWikiWorldProxy().localName();
 		if (name.endsWith('.xhtml'))
@@ -1112,11 +1111,11 @@ NodeMorph.subclass('WikiWorldNodeMorph', {
 		this.shouldCreateLinks = true;
 		this.lastUpdated = 0;
 		// ----
-		var oldFill = this.label.getFill();
-		this.label.applyStyle({fill: Color.red.lighter()});
-		(function showNormal() {this.label.applyStyle({fill: oldFill})}.bind(this)).delay(optNewTime || 30);
-		// ---- setup connection to proxy
-		//this.manuallyUpdateLinks();
+        var oldBorderColor = this.label.getBorderColor();
+        this.label.applyStyle({borderColor: Color.green, borderWidth: 2});
+        (function showNormal() { this.label.applyStyle({fill: oldBorderColor})}.bind(this)).delay(optNewTime || 60);
+        //---- setup connection to proxy
+        this.manuallyUpdateLinks();
 	},
 
 	onDeserialize: function($super) {
@@ -1140,16 +1139,20 @@ initUpdateLinks: function() {
 
 onLinksUpdate: function(linkProxies) {
 	this.addNewLinks(linkProxies);
-	this.removeOldLinks(linkProxies);
+	//this.removeOldLinks(linkProxies);
 },
 onExistingUpdate: function(exists) {
 	if (!this.label) return;
-	if (!exists)
-		this.label.applyStyle({borderWidth: 1, borderColor: Color.red, fontSize: 8});
-	else
-		this.label.applyStyle({borderWidth: 0, fontSize: 9});
+    // if (!exists)
+    //  this.label.applyStyle({fill: Color.yellow, fillOpacity: 0.5, fontSize: 8});
+    // else
+    //  this.label.applyStyle({fill: Color.white, fillOpacity: 1, fontSize: 9});
 },
 onVersionsUpdate: function(versions) {
+    // if (versions.length == 0 && this.url.hostname == this.getWikiWorldProxy().getRepoURL().hostname)
+    //     this.onExistingUpdate(false);
+    // else
+    //     this.onExistingUpdate(true);
 	if (versions.length > 0 && versions.first().rev != this.lastUpdatedRev) {
 		this.lastUpdatedRev = versions.first().rev;
 		this.initUpdateLinks(); // hmmm
@@ -1169,14 +1172,22 @@ onVersionsUpdate: function(versions) {
 		
 	var oneDay = 1000*60*60*24;
 	var timeDiff = new Date() - versions.first().date;
-	if (timeDiff < oneDay)
+	this.myTimeDiff = timeDiff/oneDay;
+	/*if (timeDiff < oneDay)
 		newStyle.textColor = Color.black;
 	else if (timeDiff < oneDay*3)
 		newStyle.textColor = Color.gray.darker(3);
 	else if (timeDiff < oneDay*7)
 		newStyle.textColor = Color.gray.darker(2);
 	else //if (timeDiff < oneDay*14)
-		newStyle.textColor = Color.gray.darker();
+		newStyle.textColor = Color.gray.darker();*/
+	var days = 60;
+	if (timeDiff > days*oneDay) {
+		newStyle.fill = NodeStyle.node.fill;
+	} else {
+		var saturation = timeDiff/(days*oneDay);
+		newStyle.fill = new Color(1,saturation,saturation);
+	}
 		
 	this.label.applyStyle(newStyle);
 },
@@ -1232,7 +1243,7 @@ connectTo: function($super, otherNode) {
     var con = $super(otherNode);
     
     var oldColor = con.getBorderColor()
-    con.setCustomColor(Color.red.lighter());
+    con.setCustomColor(Color.red);
 	(function showNormal() {con.setCustomColor(oldColor)}).delay(40);
 	
     return con;
@@ -1285,10 +1296,9 @@ Object.extend(WikiWorldNodeMorph, {
 		 			filename.endsWith('.lkml') ||
 					filename.endsWith('.jsp') ||
 					filename.startsWith('._') ||
-		 			filename == 'auth' || filename == 'logout' )
+		 			filename == 'auth' || filename == 'logout' ||
+		 			ea.getURL().hostname != 'livelykernel.sunlabs.com')
 		 			continue;
-		 	if (ea.getURL().toString() == 'http://livelykernel.sunlabs.com/repository/lively-wiki/test2.xhtmltest2.xhtml')
-		 	    dbgOn(true);
 			//console.log('Create for ' + ea.getURL());
 			WikiWorldNodeMorph.create(ea.getURL());
 			//(function() {WikiWorldNodeMorph.create(ea.getURL())}).delay(Math.floor(Math.random()*40));

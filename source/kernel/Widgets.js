@@ -3783,6 +3783,16 @@ Object.extend(PieMenuMorph, {
     }
 });
 
+(function setUpNodeStyle() {
+    var mainFill = Color.white;
+    var mainBorderColor = Color.gray.darker();
+    var mainConnectorColor = mainBorderColor;
+    Global.NodeStyle = {
+        connector: {fill: mainConnectorColor, borderWidth: 1, borderColor: mainConnectorColor},
+        node: {fontSize: 9, fill: mainFill, borderRadius: 10, borderWidth: 1, borderColor: mainBorderColor}
+    }
+})()
+
 Morph.subclass('ArrowHeadMorph', {
      
     initialize: function($super, lineWidth, lineColor, fill, length, width) {
@@ -3805,7 +3815,7 @@ Morph.subclass('ArrowHeadMorph', {
         var poly = new lively.scene.Polygon(verts);
         // FIXME: positioning hack, remove the following
         this.head = this.addMorph(new Morph(poly));
-        this.head.applyStyle({fill: fill, borderWidth: 1, borderColor: lineColor});
+        this.head.applyStyle(NodeStyle.connector);
         
         this.setPosition(this.head.getPosition());
         this.setExtent(this.head.getExtent());
@@ -3830,7 +3840,7 @@ Morph.subclass('ConnectorMorph', {
 
 	suppressHandles: true,
 
-	style: {borderColor: Color.rgb(230,230,230), borderWidth: 1},
+	style: NodeStyle.connector,//{borderColor: Color.rgb(230,230,230), borderWidth: 1},
 	
 	initialize: function($super, morph1, morph2) {
 		var vertices = [morph1.getCenter(), morph2.getCenter()];
@@ -3839,7 +3849,7 @@ Morph.subclass('ConnectorMorph', {
 
 		// ArrowHeadMorph needs cleanup
 		this.arrow = this.addMorph(new ArrowHeadMorph(null,null, null, 30, 8));
-		this.arrow.head.applyStyle({borderWidth: 0, fill: Color.white});
+		this.arrow.head.applyStyle(NodeStyle.connector);
 
 		this.setStartMorph(morph1);
 		this.setEndMorph(morph2);
@@ -3920,21 +3930,21 @@ setCustomColor: function(color) {
 Morph.subclass('NodeMorph', {
 
 	maxDist: 200 ,
-	minDist: 140 ,
+	minDist: 155 ,
 	step: 15,
 	minStepLength: 0,
-	findOtherMorphsDelay: 25,
+	findOtherMorphsDelay: 10,
 	
 	suppressHandles: true,
 
 	initialize: function($super, bounds) {
 		$super(new lively.scene.Rectangle(bounds));
 		//$super(new lively.scene.Ellipse(bounds.center(), (bounds.width+bounds.height)/2));
-		var gradient = new lively.paint.LinearGradient([
-				new lively.paint.Stop(0.2, Color.lightGray), 
-				new lively.paint.Stop(1, Color.darkGray)]);
+		//var gradient = new lively.paint.LinearGradient([
+		//		new lively.paint.Stop(0.2, Color.lightGray), 
+		//		new lively.paint.Stop(1, Color.darkGray)]);
 		//this.applyStyle({fill: gradient});
-		this.applyStyle({fill: Color.white});
+		//this.applyStyle({fill: Color.white});
 		this.applyStyle({fill: null});
 		this.connections = [];
 		this.connectionsPointingToMe = [];
@@ -4070,7 +4080,8 @@ connectedNodesPointingToMe: function() {
 			this.label = this.addMorph(new TextMorph(new Rectangle(0,0,this.getExtent().x,10)));
 		this.label.textString = text;
 		this.label.beLabel();
-		this.label.setFontSize(9); this.label.applyStyle({fill: Color.white, borderRadius: 10});
+//		this.label.setFontSize(9); this.label.applyStyle({fill: Color.white, borderRadius: 10, borderWidth: 1, borderColor: Color.gray.darker()});
+        this.label.applyStyle(NodeStyle.node);
 		this.setExtent(this.label.getExtent().addXY(0,5));
 		this.label.centerAt(this.innerBounds().center());
 	},
