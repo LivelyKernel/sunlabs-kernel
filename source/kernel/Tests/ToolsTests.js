@@ -860,11 +860,21 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
         this.root = db.addModule('foo.js', src);
 		this.db = db;
 		this.src = src;
-
+		this.jsParser = new JsParser();
 		// we don't want to see alert
 		this.oldAlert = WorldMorph.prototype.alert;
 		WorldMorph.prototype.alert = Functions.Null;
    },
+setUpAlternateSource: function() {
+    var src = 'Object.subclass("Dummy1", {});\n'+
+        'Object.subclass("Dummy", {\ntest1: 1,\ntest2: 2,\n\ntest2: 2,\n});';
+    var db = this.db;
+    db.cachedFullText['foo2.js'] = src;
+    db.putSourceCodeFor = function(fileFragment, newFileString) { db.cachedFullText['foo2.js'] = newFileString };
+    this.root = db.addModule('foo2.js', src);
+	this.src = src;
+},
+
    
 	tearDown: function($super) {
 		$super();
@@ -1019,6 +1029,80 @@ testExtensionSubElementsAreStaticProperties: function() {
 	y=root;
 	console.log('hey:-)')
 },
+testAddSibling2: function() {
+	var fragment = this.fragmentNamed('m2');
+	var next = this.fragmentNamed('m1');
+	var owner = this.fragmentNamed('ClassA');
+	var expectedLength = owner.getFileString().length + fragment.getSourceCode().length;
+	next.addSibling(fragment.getSourceCode());
+	var string = owner.getFileString();
+	this.assertEqual(expectedLength+2, string.length, 'strange length');
+	this.assertEqual(owner.subElements().length, 2);
+	this.assertEqual(owner.subElements()[1].getSourceCode(), fragment.getSourceCode());
+},
+testFindOwnerWhenSubelementsChange: function() {
+	var fragment = this.fragmentNamed('m1');
+	var owner = this.fragmentNamed('ClassA');
+	this.assertEqual(fragment.findOwnerFragment(), owner, 1);
+	owner.reparse(owner.getSourceCode());
+	this.assertEqual(fragment.findOwnerFragment(), owner, 2);
+},
+
+testFindOwnerWithSimilarFragment: function() {
+	this.setUpAlternateSource();
+    var fragment = this.fragmentNamed('Dummy');
+    this.assertEqual(fragment.subElements().length, 3);
+    var f1 = fragment.subElements()[1];
+    var f2 = fragment.subElements()[2];
+    this.assertEqual(f1.getSourceCode(), f2.getSourceCode());
+    this.assertEqual(f1.startIndex, 68, 1); this.assertEqual(f1.stopIndex, 76, 2);
+    this.assertEqual(f2.startIndex, 79, 3); this.assertEqual(f2.stopIndex, 87, 4);
+    
+    this.assertEqual(fragment.sourceCodeWithout(f2), 'Object.subclass("Dummy", {\ntest1: 1,\ntest2: 2,\n\n\n});');
+    this.assertEqual(fragment.sourceCodeWithout(f1), 'Object.subclass("Dummy", {\ntest1: 1,\n\n\ntest2: 2,\n});');
+},
+testMoveFragment: function() {
+	this.setUpAlternateSource();
+    o = this.fragmentNamed('Dummy');
+    var f = o.subElements()[2];
+	f.moveTo(o.subElements()[0].startIndex);
+newO = this.fragmentNamed('Dummy');
+	this.assertEqual(f.getSourceCode(), newO.subElements()[0].getSourceCode(), 1);
+	this.assertEqual(f.getSourceCode(), 'test2: 2,', 2);
+	//this.assert(newO.eq(o), 6);
+	this.assert(f.findOwnerFragment().eq(newO), 3);
+	this.assert(f.eq(newO.subElements()[0]), 4);
+	this.assertEqual(newO.getSourceCode(), 'Object.subclass("Dummy", {\ntest2: 2,test1: 1,\ntest2: 2,\n\n\n});', 5);
+},
+testMoveFragment2: function() {
+	this.setUpAlternateSource();
+	var targetIndex = this.src.indexOf('}'); // Dummy1
+	var f = this.fragmentNamed('test2'); // first one
+	f.moveTo(targetIndex);
+	this.assertEqual(f.getSourceCode(), 'test2: 2,', 1);
+	this.assertEqual(f.getFileString(), 'Object.subclass("Dummy1", {test2: 2,});\n'+
+        'Object.subclass("Dummy", {\ntest1: 1,\n\n\ntest2: 2,\n});');
+},
+
+
+
+testEq1: function() {
+	var f = this.fragmentNamed('m2');
+	this.assert(f.eq(f), 1);
+	var f1 = this.jsParser.parseNonFile('m2: function() { bla bla }');
+	var f2 = this.jsParser.parseNonFile('m2: function() { bla bla }');
+	this.assert(f1.eq(f2), 2);
+	f1.type = 'unknown';
+	this.assert(!f1.eq(f2), 3);
+	f1.type = f2.type;
+	f1._fallbackSrc = 'x' + f1._fallbackSrc;
+	this.assert(!f1.eq(f2), 4);
+	f1._fallbackSrc = f2._fallbackSrc;
+	f1.startIndex++;
+	this.assert(!f1.eq(f2), 5);
+},
+
+
 
 
 });

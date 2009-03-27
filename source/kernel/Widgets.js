@@ -895,8 +895,6 @@ Object.extend(PanelMorph, {
 
 });
 
-Morph.subclass('DragWrapper');
-
 TextMorph.subclass("CheapListMorph", {
     
     style: { borderColor: Color.black, borderWidth: 1 },
@@ -1114,7 +1112,6 @@ BoxMorph.subclass("TextListMorph", {
     formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
     defaultCapacity: 50,
     highlightItemsOnMove: false,
-dragEnabled: true,
 
     layoutManager: new VerticalLayout(), // singleton is OK
     
@@ -1190,21 +1187,11 @@ dragEnabled: true,
 	var index = this.submorphs.indexOf(target);
 	this.highlightItem(evt, index, true);
 	evt.hand.setMouseFocus(this); // to get moves
-	if (this.dragEnabled)
-		this.dragItem = this.itemList[index];
-    },
-onMouseUp: function(evt) {
-	if (this.dragEnabled)
-		this.dragItem = null;
-},
 
+    },
 
     onMouseMove: function(evt) {
          // console.log("%s got evt %s", this.getType(),  evt);
-		if (this.dragEnabled && !this.isDragging && this.dragItem && evt.point().dist(evt.priorPoint) > 15) {
-			this.dragSelection(evt);
-			return;
-		}
          if (!this.highlightItemsOnMove) return;
          var target = this.morphToReceiveEvent(evt);
          var index = this.submorphs.indexOf(target);
@@ -1309,7 +1296,8 @@ onMouseUp: function(evt) {
         this.itemList = newList;
         this.removeAllMorphs();
         this.generateSubmorphs(newList);
-        this.setSelectionToMatch(priorItem);
+        if (!this.setSelectionToMatch(priorItem))
+			this.selectLineAt(-1, true);
         this.resetScrollPane();
         // this.emitSelection(); 
     },
@@ -1397,18 +1385,6 @@ onMouseUp: function(evt) {
         return true;
     },
 
-dragSelection: function(evt) {
-	console.log('start dragging');
-	if (!this.dragItem) {
-		console.log('got no item to drag!');
-		return;
-	}
-	this.isDragging = true;
-	var newList = this.itemList.without(this.dragItem);
-	this.setList(newList); this.updateList(newList); //?
-	this.dragItem = null;
-	evt.hand.grabMorph(Morph.makeRectangle(new Rectangle(0,0,100,100)), evt);
-},
 });
 
 // it should be the other way round...
@@ -1483,6 +1459,169 @@ TextListMorph.subclass("ListMorph", {
         $super(newList);
         this.suppressSelectionOnUpdate || this.selectLineAt(this.selectedLineNo);
     }
+});
+
+Morph.subclass('DragWrapper', {
+
+	initialize: function($super, draggedObject, source, index, evt) {
+		$super(new lively.scene.Rectangle(new Rectangle(0,0,100,100)));
+		this.applyStyle({borderWidth: 0, fill: null});
+		this.draggedObject = draggedObject;
+		this.source = source;
+		this.index=index;
+		this.labelMe();
+		this.startObservingMouseMoves(evt);
+	},
+labelMe: function() {
+	var label = new TextMorph(new Rectangle(0,0,100,100));
+	if (Object.isString(this.draggedObject))
+		label.textString = this.draggedObject;
+	else if (this.draggedObject.string)
+		label.textString = this.draggedObject.string;
+	else
+		label.textString = 'unknown';
+	label.beLabel();
+	label.setFill(Color.white);
+	this.addMorph(label);
+	label.centerAt(this.getPosition());
+},
+
+dropMeOnMorph: function(morph) {    
+	var pos = this.owner.getPosition();
+	var evt = newFakeMouseEvent(pos);
+	morph = this.lookForBestReceiver(evt) || morph;
+
+
+	this.remove();
+	this.stopObservingMouseMoves();
+dbgOn(true);
+	if (this.highlighted) {
+console.log('highlighted becomes normal');
+			this.highlighted.becomeNormal();
+	}
+
+	this.source.isDragging = false;
+	console.log('Asking ' + morph + ' if it wants ' + this.draggedItem + '(' + pos + ')');
+	if (morph.acceptsDropOf && morph.acceptsDropOf(this.draggedObject)) {
+		console.log('Yes :-)');
+		morph.acceptDrop(this.draggedObject, evt);
+	} else {
+		console.log('No :-(')
+		this.returnDraggedToSource();
+	}
+},
+returnDraggedToSource: function() {
+	this.source.draggedComesHome(this.draggedObject, this.index);
+},
+lookForBestReceiver: function(evt) {
+	return evt.hand.world().morphToGrabOrReceive(evt);
+},
+startObservingMouseMoves: function(evt) {
+	this.startEvent = evt;
+	var wrapper=this;
+	wrapper.highlighted = null;
+	evt.hand.handleMouseEvent = evt.hand.handleMouseEvent.wrap(function(proceed, evt) {
+		wrapper.highlighted && wrapper.highlighted.becomeNormal();
+		var m = wrapper.lookForBestReceiver(evt);
+		var oldColor = m.getBorderColor();
+		var oldWidth = m.getBorderWidth();
+		wrapper.highlighted = {becomeNormal: function() {			
+			var x=m;
+			console.log('resetting' + x);
+			x.setBorderColor(oldColor);
+			x.setBorderWidth(oldWidth); //wrapper.highlighted=null;
+		}}
+            m.setBorderColor(Color.red);
+            m.setBorderWidth(3);
+		return proceed(evt);
+	})
+},
+
+stopObservingMouseMoves: function() {
+	if (!this.startEvent) return;
+	this.startEvent.hand.handleMouseEvent = this.startEvent.hand.constructor.prototype.handleMouseEvent;
+},
+
+});
+
+ListMorph.subclass('DragnDropListMorph', {
+    
+    dragEnabled: true,
+
+    onMouseDown: function($super, evt) {
+        $super(evt);
+		var target = this.morphToReceiveEvent(evt);
+		var index = this.submorphs.indexOf(target);
+        if (this.dragEnabled)
+    		this.dragItem = this.itemList[index];    
+    },
+
+    onMouseUp: function(evt) {
+    	if (this.dragEnabled)
+    		this.dragItem = null;
+    },
+
+    onMouseMove: function($super, evt) {
+    	if (this.dragEnabled && !this.isDragging && this.dragItem && evt.point().dist(evt.priorPoint) > 8) {
+    		this.dragSelection(evt);
+    		return;
+    	}
+    	$super(evt);
+	},
+    
+    dragSelection: function(evt) {
+    	console.log('start dragging');
+		var item = this.dragItem;
+		this.dragItem = null;
+    	if (!item) {
+    		console.log('got no item to drag!');
+    		return;
+    	}
+    	this.isDragging = true;
+		var index = this.itemList.indexOf(item);
+    	var newList = this.itemList.without(item);
+    	this.setList(newList, true); //this.updateList(newList); //?
+		if (item.onDrag) item.onDrag();
+		evt.hand.grabMorph(new DragWrapper(item, this, index, evt), evt);
+},
+draggedComesHome: function(item, index) {
+	this.setList(this.listWith(item, index), true);
+},
+listWith: function(item, index) {
+	var list = this.itemList;
+	if (index in list)
+		return list.slice(0,index).concat([item]).concat(list.slice(index, list.length));
+	return list.concat[item];
+},
+
+acceptsDropOf: function(item) {
+	return Object.isString(item) || item.isListItem
+},
+acceptDrop: function(item, evt) {
+	var target = this.morphToReceiveEvent(evt);
+	var index = this.submorphs.indexOf(target);
+	console.log(index);
+	var otherItem = this.itemList[index];
+	this.setList(this.listWith(item, index), true);
+	if (item.onDrop) item.onDrop(otherItem);
+	console.log('Drop accepted!')
+},
+    
+});
+
+Morph.addMethods({
+    acceptsDropOf: function(item) {
+        var h = this.mouseHandler;
+        if (h && h.target)
+    		return h.target.acceptsDropOf(item);
+    	return false;
+    },
+    
+    acceptDrop: function(item, evt) {
+		console.log('relaying drop to: ' + this.mouseHandler.target);
+        this.mouseHandler.target.acceptDrop(item,evt);
+    },
+    
 });
 
 PseudoMorph.subclass('MenuItem', {

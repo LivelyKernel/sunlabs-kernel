@@ -145,6 +145,14 @@ Global.range = function(begin, end) {
     return result;
 };
 
+Global.newFakeMouseEvent = function(point) {
+    var rawEvent = {type: "mousemove", pageX: 100, pageY: 100, altKey: false, shiftKey: false, metaKey: false}; 
+    var evt = new Event(rawEvent);
+    evt.hand = WorldMorph.current().hands.first();
+    if (point) evt.mousePoint = point;
+    return evt;
+};
+
 // -------      ----------------
 // ---- very simple layouters
 Object.subclass('Layout', {
@@ -392,8 +400,8 @@ Widget.subclass('DragAndDropListTester', {
 	extent = extent || pt(400,400);
 
 	var panel = PanelMorph.makePanedPanel(extent, [
-            ['pane1', newRealListPane, new Rectangle(0, 0, 0.5, 0.8)],
-            ['pane2', newRealListPane, new Rectangle(0.5, 0, 0.5, 0.8)],
+            ['pane1', newDragnDropListPane, new Rectangle(0, 0, 0.5, 0.8)],
+            ['pane2', newDragnDropListPane, new Rectangle(0.5, 0, 0.5, 0.8)],
 			['statusPane', newTextPane, new Rectangle(0, 0.8, 1, 0.2)]
 	]);
 

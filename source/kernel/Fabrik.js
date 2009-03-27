@@ -3410,14 +3410,6 @@ function debugFunction(func) {
     };
 };
 
-newFakeMouseEvent = function(point) {
-    var rawEvent = {type: "mousemove", pageX: 100, pageY: 100, altKey: false, shiftKey: false, metaKey: false}; 
-    var evt = new Event(rawEvent);
-    evt.hand = WorldMorph.current().hands.first();
-    if (point) evt.mousePoint = point;
-    return evt;
-};
-
 // Helper method with GUI stuff, so it can't go into Helper.js
 Global.inspect = function(inspectee) {
 	var world = WorldMorph.current();

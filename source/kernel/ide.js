@@ -33,7 +33,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
         // create empty onUpdate functions
         var panes = this.allPaneNames;
         panes.forEach(function(ea) {
-            this['on' + ea + 'ContentUpdate'] = Functions.Null;
             this['on' + ea + 'MenuUpdate'] = Functions.Null;
 			this['on' + ea + 'FiltersUpdate'] = Functions.Null;
         }, this);
@@ -63,9 +62,9 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.start();
  
         var panel = PanelMorph.makePanedPanel(extent, [
-            ['Pane1', newRealListPane, new Rectangle(0, 0, 0.3, 0.40)],
-            ['Pane2', newRealListPane, new Rectangle(0.3, 0, 0.35, 0.45)], //['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
-            ['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+            ['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.40)],
+            ['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)], //['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
+            ['Pane3', newDragnDropListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
             ['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
             //['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
         ]);
@@ -203,6 +202,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
         return siblings.without(node);
     },
 
+
+
     nodesInPane: function(paneName) { // panes have listItems, no nodes
              var listItems = this['get' + paneName + 'Content']();
              if (!listItems) return [];
@@ -303,6 +304,19 @@ Widget.subclass('lively.ide.BasicBrowser', {
     hasUnsavedChanges: function() {
         return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
     },
+onPane1ContentUpdate: function() {
+},
+onPane2ContentUpdate: function() {
+},
+
+onPane3ContentUpdate: function(items, source) {
+ if (source !== this.panel.Pane3.innerMorph())
+     return;
+ // handle drag and drop of items
+ console.log('Got ' + items);
+},
+
+
     
 	allChanged: function(keepUnsavedChanges, changedNode) {
 		// optimization: if no node looks like the changed node in my browser do nothing
@@ -323,7 +337,9 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		var revertStateOfPane = function(paneName, oldNode) {
 			if (!oldNode) return;
 			var nodes = this.nodesInPane(paneName);
-			var newNode = nodes.detect(function(ea) {return ea && ea.target === oldNode.target});
+			var newNode = nodes.detect(function(ea) {
+			    return ea && ea.target && (ea.target == oldNode.target || (ea.target.eq && ea.target.eq(oldNode.target)))
+			});
 			if (!newNode)
 				newNode = nodes.detect(function(ea) {return ea && ea.asString() === oldNode.asString()});
             this['set' + paneName + 'Selection'](newNode, true);
@@ -408,6 +424,8 @@ Object.subclass('lively.ide.BrowserNode', {
         if (!(this.browser instanceof ide.SystemBrowser)) throw dbgOn(new Error('No browser when tried siblingNodes'));
         return this.browser.siblingsFor(this);
     },
+
+
  
     childNodes: function() {
         return []
@@ -417,7 +435,15 @@ Object.subclass('lively.ide.BrowserNode', {
         return 'no name for node of type ' + this.constructor.type;
     },
 asListItem: function() {
-	return {isListItem: true, string: this.asString(), value: this};
+	//FIXME make class listitem
+	var node = this;
+	return {
+		isListItem: true,
+		string: this.asString(),
+		value: this,
+		onDrop: function(item) { node.onDrop( item && item.value) },	//convert to node
+		onDrag: function() { node.onDrag() },
+	};
 },
 
  
@@ -478,7 +504,19 @@ asListItem: function() {
 
 	signalTextChange: function() {
         this.browser.textChanged(this);
-    }
+    },
+    
+onDrag: function() {
+    console.log(this.asString() + 'was dragged');
+},
+onDrop: function(nodeDroppedOntoOrNull) {
+    console.log(this.asString() + 'was dropped');
+},
+handleDrop: function(nodeDroppedOntoMe) {
+	// for double dispatch
+	return false;
+},
+
  
 });
 
@@ -606,7 +644,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 		};
 		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
 		return nodes;
-	}
+	},
 });
  
 ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
@@ -633,8 +671,8 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
     },
 
 	menuSpec: function($super) {
-		var spec = $super();
-		var node = this;
+	var spec = $super();
+	var node = this;
 		spec.push(['add sibling below', function() {
 			var world = WorldMorph.current();
 			world.prompt('Enter source code', function(input) {
@@ -653,6 +691,20 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 			return this.target.getSourceControl();
 		return tools.SourceControl;
 },
+onDrop: function(other) {
+	console.log(' Moving ' + this.target + ' to ' + other.target);
+	if (other.handleDrop(this))
+		this.target.remove();
+	else
+		this.target.moveTo(other.target.stopIndex+1);
+	this.signalChange();
+},
+onDrag: function() {
+    // onDrop does all the work
+},
+
+
+
 });
 
 ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should be module node
@@ -820,6 +872,17 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
 		return menu;
 	} 
 
+handleDrop: function(nodeDroppedOntoMe) {
+	if (!(nodeDroppedOntoMe instanceof lively.ide.ClassElemFragmentNode))
+		return false;
+	console.log('Adding' + nodeDroppedOntoMe.asString() + ' to ' + this.asString());
+	if (this.target.subElements().length == 0) {
+		console.log('FIXME: adding nodes to empty classes!');
+		return
+	}
+	this.target.subElements().last().addSibling(nodeDroppedOntoMe.target.getSourceCode());
+	return true;
+},
 });
  
 ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
@@ -967,7 +1030,7 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetClassNode', {
 	
 	childNodes: function() {
 		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
-	},    
+	}, 
 	
 });
 
@@ -1704,6 +1767,16 @@ Object.subclass('lively.ide.FileFragment', {
         this._subElements = subElems || [];
         this.sourceControl = srcCtrl;
     },
+eq: function(other) {
+	if (this == other) return true;
+	return this.name == other.name &&
+		this.startIndex == other.startIndex &&
+		this.stopIndex == other.stopIndex &&
+		this.type == other.type &&
+		this.fileName == other.fileName &&
+		this.getSourceCode() == other.getSourceCode();
+},
+
     
     subElements: function(depth) {
     	if (!depth || depth === 1)
@@ -1711,14 +1784,17 @@ Object.subclass('lively.ide.FileFragment', {
     	return this._subElements.inject(this._subElements, function(all, ea) { return all.concat(ea.subElements(depth-1)) });
     },
     fragmentsOfOwnFile: function() {
-        return this.getSourceControl().rootFragmentForModule(this.fileName).flattened().without(this);
+        return this.getSourceControl().rootFragmentForModule(this.fileName)
+			.flattened()
+			.reject(function(ea) { return ea.eq(this) }, this);
     },
     
 	findOwnerFragment: function() {
 		if (!this.fileName) throw dbgOn(new Error('no fileName for fragment ' + this));
+		var self = this;
 		return this.getSourceControl().modules[this.fileName].flattened().detect(function(ea) {
-			return ea.subElements().include(this);
-		}, this);
+			return ea.subElements().any(function(subElem) { return self.eq(subElem) });
+		});
 	},
 
     flattened: function() {
@@ -1729,7 +1805,7 @@ Object.subclass('lively.ide.FileFragment', {
  
     checkConsistency: function() {
         this.fragmentsOfOwnFile().forEach(function(ea) { // Just a quick check if fragments are ok...
-            if (this.flattened().include(ea)) return;
+            if (this.flattened().any(function(ea) {return ea.eq(this)}, this)) return;
             if ((this.startIndex < ea.startIndex && ea.startIndex < this.stopIndex)
                     || (this.startIndex < ea.stopIndex && ea.stopIndex < this.stopIndex))
                 throw new Error('Malformed fragment: ' + ea.name + ' ' + ea.type);
@@ -1847,23 +1923,44 @@ reparseAndCheck: function(newString) {
     },
 
 	sourceCodeWithout: function(childFrag) {
-		if (!this.flattened().include(childFrag)) throw dbgOn(new Error('Fragment' + childFrag + ' isn\'t in my (' + this + ') subelements!'));
+		if (!this.flattened().any(function(ea) {return ea.eq(childFrag)}))
+			throw dbgOn(new Error('Fragment' + childFrag + ' isn\'t in my (' + this + ') subelements!'));
 		var mySource = this.getSourceCode();
 		var childSource = childFrag.getSourceCode();
-		var start = mySource.indexOf(childSource);
+		var start = childFrag.startIndex - this.startIndex;
 		if (start === -1) throw dbgOn(new Error('Cannot find source of ' + childFrag));
 		var end = start + childSource.length;
 		var newSource = mySource.slice(0, start) + mySource.slice(end);
 		return newSource;
 	},
-
+    
 	remove: function() {
 		var owner = this.findOwnerFragment();
 		if (!owner) throw dbgOn(new Error('Cannot find owner of fragment ' + this));
 		var newSource = owner.sourceCodeWithout(this);
-		owner._subElements = owner.subElements().without(this);
+		owner._subElements = owner.subElements().reject(function(ea) {return ea.eq(this)}, this)
 		owner.putSourceCode(newSource);
 	},
+moveTo: function(index) {
+	console.log('Moving from ' + this.startIndex + ' to ' + index)
+	var mySrc = this.getSourceCode();
+	var myOwner = this.findOwnerFragment();
+	step1 = myOwner.sourceCodeWithout(this);
+	myOwner = myOwner.putSourceCode(step1);
+//-------
+	if (index > this.startIndex)
+		index -= mySrc.length;
+	this.startIndex = index; this.stopIndex = index + mySrc.length - 1;
+//-------
+	var target = myOwner.fragmentsOfOwnFile().detect(function(ea) {
+		return ea.startIndex <= index && ea.stopIndex >= index});
+	var targetSrc = target.getSourceCode();
+	var local = index - target.startIndex;
+	step2 = targetSrc.slice(0,local) + mySrc + targetSrc.slice(local, targetSrc.length);
+	target.putSourceCode(step2);
+	return this;
+},
+
 
     getFileString: function() {
 		if (!this.fileName && this._fallbackSrc)
