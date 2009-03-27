@@ -19,10 +19,11 @@ Widget.subclass('lively.ide.BasicBrowser', {
     initialViewExtent: pt(620, 450),
     emptyText: '-----',
     allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
-    formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer", "Pane1Menu",
-              "Pane2Content", "Pane2Selection", "Pane2Choicer", "Pane2Menu",
-              "Pane3Content", "Pane3Selection", "Pane3Choicer", "Pane3Menu",
-              "SourceString", "StatusMessage", "Filters"],
+    filterPlaces: ['Root', 'Pane1', 'Pane2', 'Pane3'],
+    formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer", "Pane1Menu", "Pane1Filters",
+              "Pane2Content", "Pane2Selection", "Pane2Choicer", "Pane2Menu", "Pane2Filters",
+              "Pane3Content", "Pane3Selection", "Pane3Choicer", "Pane3Menu", "Pane3Filters",
+              "SourceString", "StatusMessage", "RootFilters"],
     commands: function() {
         return ide.BrowserCommand.allSubclasses().collect(function(ea) { return new ea(this) }, this);
     },
@@ -30,24 +31,29 @@ Widget.subclass('lively.ide.BasicBrowser', {
     initialize: function($super) { 
         $super();
         // create empty onUpdate functions
-        var paneNames = ['Pane1', 'Pane2', 'Pane3'];
-        paneNames.forEach(function(ea) {
+        var panes = this.allPaneNames;
+        panes.forEach(function(ea) {
             this['on' + ea + 'ContentUpdate'] = Functions.Null;
             this['on' + ea + 'MenuUpdate'] = Functions.Null;
+			this['on' + ea + 'FiltersUpdate'] = Functions.Null;
         }, this);
         this.onStatusMessageUpdate = Functions.Null;
+		this.onRootFiltersUpdate = Functions.Null;
         
         //create a model and relay for connecting the additional components later on
         var model = Record.newPlainInstance((function(){
 				return this.formals.inject({}, function(spec, ea){spec[ea]=null; return spec})}.bind(this))());
-        var spec = {SourceString: "SourceString", StatusMessage: "StatusMessage", Filters: "Filters"};
-        paneNames.forEach(function(ea) {
+        var spec = {SourceString: "SourceString", StatusMessage: "StatusMessage", RootFilters: "RootFilters"};
+        panes.forEach(function(ea) {
             spec[ea + 'Content'] = ea + 'Content';
             spec[ea + 'Selection'] = ea + 'Selection';
             spec[ea + 'Menu'] = ea + 'Menu';
+			spec[ea + 'Filters'] = ea + 'Filters';
         });
         this.relayToModel(model, spec);
-		this.setFilters([new lively.ide.NodeFilter() /*identity filter*/]);
+		this.filterPlaces.forEach(function(ea) {  /*identity filter*/	
+			this['set' + ea + 'Filters']([new lively.ide.NodeFilter()]);
+		}, this)
     },
  
     buildView: function (extent) {
@@ -167,7 +173,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	},
 
     start: function() {
-        this.setPane1Content(this.rootNode().childNodes().invoke('asListItem'));
+        this.setPane1Content(this.childsFilteredAndAsListItems(this.rootNode(), this.getRootFilters()));
 		this.mySourceControl().registerBrowser(this);
     },
 
@@ -209,27 +215,29 @@ Widget.subclass('lively.ide.BasicBrowser', {
             return listItems.collect(function(ea) { return ea.value })    
     },
     
-    filterChildNodesOf: function(node) {
-    	return this.getFilters().inject(node.childNodes(), function(nodes, filter) {
+    filterChildNodesOf: function(node, filters) {
+    	return filters.inject(node.childNodes(), function(nodes, filter) {
     		return filter.apply(nodes)
     	});
     },
-    childsOfSelectionFilteredAndAsListItems: function(paneName) {
-    	return 	this.filterChildNodesOfSelectionIn(paneName).collect(function(ea) { return ea.asListItem() });
-    },
-childsFilteredAndAsListItems: function(node) {
-    	return 	this.filterChildNodesOf(node).collect(function(ea) { return ea.asListItem() });
+    
+    childsFilteredAndAsListItems: function(node, filters) {
+    	return 	this.filterChildNodesOf(node, filters).collect(function(ea) { return ea.asListItem() });
     },
 
-    installFilter: function(filter) {
-    	this.setFilters(this.getFilters().concat([filter]).uniq());
+    installFilter: function(filter, paneName) {
+		var getter = 'get' + paneName + 'Filters';
+		var setter = 'set' + paneName + 'Filters';
+    	this[setter](this[getter]().concat([filter]).uniq());
     },
-    uninstallFilters: function(testFunc) {
+    uninstallFilters: function(testFunc, paneName) {
     	// testFunc returns true if the filter should be removed
-    	this.setFilters(this.getFilters().reject(testFunc));
+		var getter = 'get' + paneName + 'Filters';
+		var setter = 'set' + paneName + 'Filters';
+    	this[setter](this[getter]().reject(testFunc));
     },
 
-    onFiltersUpdate: function(filters) {},
+    
     
 	paneNameOfNode: function(node) {
     	return this.allPaneNames.detect(function(ea) { return this.nodesInPane(ea).include(node) }, this);
@@ -253,7 +261,7 @@ childsFilteredAndAsListItems: function(node) {
             this.hideButtons(null, this.panel.Pane1, 'Pane1')
             return
         };
-		this.setPane2Content(this.childsFilteredAndAsListItems(node));
+		this.setPane2Content(this.childsFilteredAndAsListItems(node, this.getPane1Filters()));
         this.setPane1Menu(node.menuSpec());
        	this.setSourceString(node.sourceString());
 		this.updateTitle();
@@ -267,7 +275,7 @@ childsFilteredAndAsListItems: function(node) {
             this.hideButtons(null, this.panel.Pane2, 'Pane2')
             return
         }
-        this.setPane3Content(this.childsFilteredAndAsListItems(node));
+        this.setPane3Content(this.childsFilteredAndAsListItems(node, this.getPane2Filters()));
         this.setPane2Menu(node.menuSpec());
         this.setSourceString(node.sourceString());
 		this.updateTitle();
@@ -1052,14 +1060,17 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 	trigger: function() {
 		var filter = this.filter;
 		var b = this.browser;
-		this.browserIsSorting() ?
-			b.uninstallFilters(function(f) { return f === filter }) :
-			b.installFilter(filter);
+		var isSorting = this.browserIsSorting()
+		b.filterPlaces.forEach(function(ea) {
+			isSorting ?
+				b.uninstallFilters(function(f) { return f === filter }, ea) :
+				b.installFilter(filter, ea);
+		});
 		b.allChanged();
 	},
 
 	browserIsSorting: function() {
-		return this.browser.getFilters().include(this.filter);
+		return this.browser.getPane1Filters().include(this.filter);
 	},
 
 });

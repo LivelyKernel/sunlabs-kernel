@@ -58,27 +58,23 @@ testFilterChildNodes: function() {
 	var testFilterClass = lively.ide.NodeFilter.subclass('lively.Tests.ToolsTest.TestFilter', {
 		apply: function(nodes) { return nodes.select(function(ea) {return ea.shouldAppear}) }
 	});
-	browser.installFilter(new testFilterClass());
-dbgOn(true);
-	var result = browser.filterChildNodesOf(browser.rootNode());
+	var result = browser.filterChildNodesOf(browser.rootNode(), [new testFilterClass()]);
 	this.assertEqual(result.length, 1);
 	this.assertIdentity(result[0], node1);
 },
 testUninstallFilter: function() {
 	var browser = this.browser;
-	browser.installFilter(new lively.ide.NodeFilter());
-	this.assert(browser.getFilters().length > 0);
-	browser.uninstallFilters(function(filter) { return filter instanceof lively.ide.NodeFilter })
-	this.assertEqual(browser.getFilters().length, 0);
+	browser.installFilter(new lively.ide.NodeFilter(), 'Pane1');
+	this.assert(browser.getPane1Filters().length > 0);
+	browser.uninstallFilters(function(filter) { return filter instanceof lively.ide.NodeFilter }, 'Pane1')
+	this.assertEqual(browser.getPane1Filters().length, 0);
 },
 testSortFilter: function() {
-	var browser = this.browser;
-	browser.installFilter(new lively.ide.SortFilter());
-	var n1 = this.createMockNode(browser, null, null, 'c');
-	var n2 = this.createMockNode(browser, null, null, 'a');
-	var n3 = this.createMockNode(browser, null, null, 'b');
-	browser.rootNode().children = [n1, n2, n3];
-	var result = browser.filterChildNodesOf(browser.rootNode());
+	var filter = new lively.ide.SortFilter();
+	var n1 = this.createMockNode(null, null, null, 'c');
+	var n2 = this.createMockNode(null, null, null, 'a');
+	var n3 = this.createMockNode(null, null, null, 'b');
+	var result = filter.apply([n1, n2, n3]);
 	this.assertEqual(result.length, 3);
 	this.assertIdentity(result[0], n2);
 	this.assertIdentity(result[1], n3);
