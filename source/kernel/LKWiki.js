@@ -598,7 +598,8 @@ PanelMorph.subclass('LatestWikiChangesListPanel', {
 
 	documentation: 'Just a hack for deserializing my widget',
 
-    onDeserialize: function() {
+	onDeserialize: function($super) {
+	//	$super();
         // FIXME
 		var widget = new LatestWikiChangesList(URL.source.getDirectory())
         this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
@@ -809,5 +810,499 @@ onConfirmedUpdate: function(val) {
 
 
 });
+Object.subclass('WikiNetworkAnalyzer', {
+
+	initialize: function(wikiURL) {
+		this.url = wikiURL;
+		this.worldProxies = [];
+	},
+
+getWorldProxies: function() { return this.worldProxies },
+
+findOrCreateProxy: function(url) {
+	var wp = this.worldProxies.detect(function(proxy) { return proxy.getURL().toString() == url.toString() });
+	if (wp) return wp;
+	wp = new WikiWorldProxy(url, this.url);
+	this.worldProxies.push(wp);
+	return wp;
+},
+makeSVNResource: function(url) {
+	return new SVNResource(this.url,
+		Record.newPlainInstance({URL: url.toString(), HeadRevision: null, Metadata: null}));
+},
+
+fetchProxies: function(startRev, endRev, optCb) {
+	if (!endRev)
+		endRev = this.getWorldProxies().inject(0, function(rev, ea) {
+		    if (ea.getVersions().length == 0) return rev;
+			return Math.max(rev, ea.getVersions().first().rev);
+		});
+	// -------
+	var r = this.makeSVNResource(this.url, this.url);
+	var analyzer = this;
+	r.getModel().addObserver({onHeadRevisionUpdate: function(headRevision) {
+		if (!headRevision) return;
+		if (headRevision == endRev) return;
+		console.log('Looking for new versions between revs: ' + headRevision + '-' + (endRev+1));
+		r.fetchMetadata(false, {"Depth":1} /*not working?*/, headRevision, endRev + 1, 1/*own depth*/);
+	}});
+	r.getModel().addObserver({onMetadataUpdate: function(metadata) {
+		analyzer.scanLogAndCreateProxies(metadata);
+		optCb && optCb();
+	}});
+	r.setRequestStatus = Functions.Null;
+	if (startRev)
+		r.setHeadRevision(startRev)
+	else
+		r.fetchHeadRevision();
+},
+
+
+scanLogAndCreateProxies: function(versionInfos) {
+	var dict = versionInfos.inject({}, function(urlDict, ea) {
+		if (!ea.url) return urlDict;
+		if (!urlDict[ea.url]) urlDict[ea.url] = [];
+		urlDict[ea.url].push(ea);
+		return urlDict;
+	});
+
+	for (url in dict) {
+		var wp = this.findOrCreateProxy(new URL(url));
+		var newVersions = dict[url];
+		/*if (wp.getVersions().length == 0 && newVersions.length == 0)
+			continue;
+		if (wp.getVersions().length == newVersions.length &&
+			wp.getVersions().first().rev == newVersions.first().rev)
+				continue;*/
+		// console.log(wp.getVersions().first().rev + ' vs. ' + newVersions.first().rev);
+		if (wp.getVersions().length == 0) {
+			wp.setVersions(newVersions);
+			continue;
+		}
+		if (newVersions.last().rev > wp.getVersions().first().rev) {
+			wp.setVersions(newVersions.concat(wp.getVersions()));
+			continue;
+		}
+		newVersions = newVersions.inject(wp.getVersions(), function(all, ea) {
+			if (all.detect(function(existing) { return existing.rev == ea.rev }))
+				return all;
+			return [ea].concat(all);
+		});
+		newVersions = newVersions.sort(function(a,b) { return b.rev-a.rev });
+		wp.setVersions(newVersions);
+	}
+},
+
+fetchVersionsOfWorld: function(worldProxy) {
+	var r = this.makeSVNResource(worldProxy.getURL());
+	r.getModel().addObserver({onHeadRevisionUpdate: function(headRevision) {
+		if (!headRevision) return;
+		r.fetchMetadata(false, null, headRevision);
+	}});
+	r.getModel().addObserver({onMetadataUpdate: function() {
+		worldProxy.setVersions(r.getMetadata());
+	}});
+	r.setRequestStatus = Functions.Null;
+    r.fetchHeadRevision();
+},
+
+fetchFileList: function(callback) {
+	var url = this.url;
+	var model = Record.newPlainInstance({DirectoryList: [], RootNode: url});
+	model.addObserver(
+		{onDirectoryListUpdate: function(urls) {
+			urls = urls
+				//.collect(function(ea) { url.withFilename(ea.shortName()) })
+				.select(function(ea) { return ea.isLeaf() });
+			callback(urls);
+			}},
+		{DirectoryList: '!DirectoryList'});
+	var fetcher = new lively.storage.WebFile(model);
+	fetcher.fetchContent(url);
+},
+
+// ------------ move to worldproxy ----------------------
+extractLinksFromDocument: function(doc) {
+	return new LinkExtractor().extractLinksFromDocument(doc);
+},
+
+findOrCreateProxiesForLinksIn: function(worldDocument) {
+	return this.extractLinksFromDocument(worldDocument).collect(function(linkUrl) {
+		return this.findOrCreateProxy(linkUrl);
+	}, this);
+},
+
+fetchLinksOfWorld: function(worldProxy, optCb /*not needed anymore?!*/) {
+		var r = new Resource(Record.newPlainInstance({URL: worldProxy.getURL().toString(), ContentDocument: null}));
+	r.getModel().addObserver({onContentDocumentUpdate: function(doc) {
+		if (!doc) { console.log('No doc??!'); return; }
+		worldProxy.setExisting(true);
+		this.addLinksOfWorld(worldProxy, doc);
+		optCb && optCb(this);
+	}.bind(this)});
+	r.setRequestStatus = function(status) { if (status.code() >= 300) worldProxy.setExisting(false); }; // ignore errors
+	r.fetch();
+},
+addLinksOfWorld: function(worldProxy, worldDoc) {
+	if (!this.worldProxies.include(worldProxy)) this.worldProxies.push(worldProxy);
+	worldProxy.setLinks(this.findOrCreateProxiesForLinksIn(worldDoc));
+},
+toExpression: function() {
+	// it is enough to serialize the proxies, I don't have state
+	return this.getWorldProxies().inject('', function(expression, ea) { return expression + '\n' + ea.toExpression() });
+},
+writeStateToFile: function() {
+	var url = URL.source.withFilename('CachedWorldMetaData');
+	new NetRequest().put(url, this.toExpression());
+},
+readStateFromFile: function(optCb) {
+	var url = URL.source.withFilename('CachedWorldMetaData');
+	var r = new NetRequest({
+		setStatus: "read",
+		model: {read: function() { eval(r.getResponseText()); optCb && optCb() }}});
+	r.get(url);
+},
+
+
+
+
+});
+
+Object.extend(WikiNetworkAnalyzer, {
+	forRepo: function(repoUrl) {
+		var instance = new WikiNetworkAnalyzer(repoUrl);
+		if (WikiNetworkAnalyzer.instances) {
+			instance = WikiNetworkAnalyzer.instances.detect(function(ea) {
+				return ea.url.toString() == repoUrl.toString()
+			});
+			if (instance)
+				return instance
+			instance = new WikiNetworkAnalyzer(repoUrl);
+			WikiNetworkAnalyzer.instances.push(instance)
+			return instance
+		}
+		instance = new WikiNetworkAnalyzer(repoUrl);
+		WikiNetworkAnalyzer.instances = [instance];
+		return  instance;
+	},
+startUp: function(url) {
+	var a = WikiNetworkAnalyzer.forRepo(url);
+	var afterReading = function() {
+		WikiWorldNodeMorph.lookForNewFiles();
+		NodeMorph.all().forEach(function(ea) { ea.manuallyUpdateVersions() });
+		(function() { WikiNetworkAnalyzer.startUpdateLoop(url); }).delay(0);
+	}
+	a.readStateFromFile(afterReading);
+},
+
+	startUpdateLoop: function(repoUrl) {
+		// FIXME use SchedulableAction!
+		console.log('Updating for news from wiki...');
+		Global.window.setInterval(function() {WikiNetworkAnalyzer.updateOnce(repoUrl)}, 1000*6);
+	},
+	
+	updateOnce: function(repoUrl) {
+		var a = WikiNetworkAnalyzer.forRepo(repoUrl);
+		var worldCount = a.getWorldProxies().length;
+		// look for new versions in repo, create proxies if a new world was created
+		// and update existing proxies
+		var cb = function() {
+			if (a.getWorldProxies().length == worldCount) return;
+			WikiWorldNodeMorph.lookForNewFiles(a.getWorldProxies().slice(worldCount));
+		}
+		a.fetchProxies(null, null, cb);
+		
+		// proxies and NodeMorphs are seperated, inform morphs
+		// that new worlds were created
+		
+	}
+});
+
+Object.subclass('LinkExtractor', {
+
+	documentation: 'Extracts Link URLs from a document',
+
+	urlRegex: /([^"']["'](http[\:a-zA-Z0-9\/\.\-]+)["'])+/g,
+	correctedUrlRegex: /.*(http[\:a-zA-Z0-9\/\.\-]+).*/,
+	textQuery: new Query('/descendant::*/text()'),
+	urlQuery: new Query("/descendant::*[@family='URL']"),
+
+extractLinksFromDocument: function(doc) {
+	var strings = this.textQuery.findAll(doc).inject([], function(all, ea) {
+		return all.concat(this.extractLinksFromString(ea));
+	}, this);
+	strings = strings.concat(this.urlQuery.findAll(doc).collect(function(ea) {
+		return this.extractLinkFromUrlNode(ea);
+	}, this));
+	if (this.url)
+		strings = strings.select(function(ea) { return ea.startsWith(this.url.toString()) }, this);
+	var result = strings.uniq().collect(function(ea) { return new URL(ea) }).select(function(ea) { return ea.isLeaf() });
+	//console.log('Extracted: ' + result);
+	return result;
+},
+extractLinksFromString: function(string) {
+	var urls = string.textContent.match(this.urlRegex);
+	if (!urls) return [];
+	var correctedUrls = urls.collect(function(ea) { return ea.match(this.correctedUrlRegex)[1] }, this);
+	return correctedUrls.uniq();
+},
+extractLinkFromUrlNode: function(node) {
+	return Class.forName('URL').fromLiteral(JSON.unserialize(node.textContent)).toString();
+},
+
+});
+
+Widget.subclass('WikiWorldProxy', {
+formals: ["URL", "RepoURL", "Links", "Existing", "Versions"],
+initialize: function(url, repourl) {
+	var model = Record.newPlainInstance({URL: url, RepoURL: repourl, Links: [], Existing: true /*always be optimistic*/, Versions: []});
+	this.relayToModel(model, {URL: "URL", RepoURL: "RepoURL", Links: "Links", Existing: "Existing", Versions: "Versions"});
+},
+findLinksToOtherWorlds: function() {
+	var analyzer = WikiNetworkAnalyzer.forRepo(this.getRepoURL());
+	analyzer.fetchLinksOfWorld(this);
+},
+findVersions: function() {
+	var analyzer = WikiNetworkAnalyzer.forRepo(this.getRepoURL());
+	analyzer.fetchVersionsOfWorld(this);
+},
+onLinksUpdate: function(links) {},
+onExistingUpdate: function(exists) {},
+onVersionsUpdate: function(versions) {},
+getNamesOfLinkedWorlds: function(worldProxies) {
+	return this.getLinks().collect(function(ea) { return ea.localName() });
+},
+localName: function() {
+	if (!this.getURL())
+		return 'No URL for WorldProxy!';
+	return this.getURL().filename();
+},
+toString: function() {
+	return Strings.format("#<WikiWorldProxy:%s>", this.localName());
+},
+id: function() {
+	return this.getURL().toString();
+},
+toExpression: function() {
+	var urls = this.getLinks().collect(function(ea) { return ea.getURL().toString() });
+	return Strings.format('var a = WikiNetworkAnalyzer.forRepo(%s);' +
+		'var wp = a.findOrCreateProxy(%s);' +
+		'wp.setExisting(%s); wp.setVersions(%s);' + 
+		'wp.setLinks(%s.collect(function(ea) {return a.findOrCreateProxy(new URL(ea)) }));' +
+		'wp;',
+		toExpression(this.getRepoURL()),
+		toExpression(this.getURL()),
+		toExpression(this.getExisting()),
+		toExpression(this.getVersions()),
+		toExpression(urls));
+},
+
+});
+
+NodeMorph.subclass('WikiWorldNodeMorph', {
+
+	initialize: function($super, url, optNewTime) {
+		$super(new Rectangle(0,0, 20,20));
+		this.applyStyle({fill: null});
+		this.url = url;
+		var name = this.getWikiWorldProxy().localName();
+		if (name.endsWith('.xhtml'))
+			name = name.substr(0, name.length-'.xhtml'.length);
+		this.addLabel(name);
+		this.shouldCreateLinks = true;
+		this.lastUpdated = 0;
+		// ----
+		var oldFill = this.label.getFill();
+		this.label.applyStyle({fill: Color.red.lighter()});
+		(function showNormal() {this.label.applyStyle({fill: oldFill})}.bind(this)).delay(optNewTime || 30);
+		// ---- setup connection to proxy
+		//this.manuallyUpdateLinks();
+	},
+
+	onDeserialize: function($super) {
+		$super();
+		//this.initUpdateLinks();
+	},
+	
+	getWikiWorldProxy: function() {
+		if (this.wikiWorldProxy)
+			return this.wikiWorldProxy;
+		var repoUrl = this.url.getDirectory();
+		this.wikiWorldProxy = WikiNetworkAnalyzer.forRepo(repoUrl).findOrCreateProxy(this.url);
+		this.wikiWorldProxy.getModel().addObserver(this, {Links: "!Links", Existing: "!Existing", Versions: "!Versions"});
+		return this.wikiWorldProxy;
+	},
+initUpdateLinks: function() {
+	this.lastUpdated = new Date();
+	this.getWikiWorldProxy().findLinksToOtherWorlds();
+	//this.getWikiWorldProxy().findVersions();
+},
+
+onLinksUpdate: function(linkProxies) {
+	this.addNewLinks(linkProxies);
+	this.removeOldLinks(linkProxies);
+},
+onExistingUpdate: function(exists) {
+	if (!this.label) return;
+	if (!exists)
+		this.label.applyStyle({borderWidth: 1, borderColor: Color.red, fontSize: 8});
+	else
+		this.label.applyStyle({borderWidth: 0, fontSize: 9});
+},
+onVersionsUpdate: function(versions) {
+	if (versions.length > 0 && versions.first().rev != this.lastUpdatedRev) {
+		this.lastUpdatedRev = versions.first().rev;
+		this.initUpdateLinks(); // hmmm
+	}
+	if (!this.label || versions.length == 0) return;
+	var newStyle = {};
+	if (versions.length > 100) 
+		newStyle.fontSize = 14;
+	else if (versions.length > 50)
+		newStyle.fontSize = 12;
+	else if (versions.length > 20)
+		newStyle.fontSize = 11;
+	else if (versions.length > 8)
+		newStyle.fontSize = 10;
+	else
+		newStyle.fontSize = 9;
+		
+	var oneDay = 1000*60*60*24;
+	var timeDiff = new Date() - versions.first().date;
+	if (timeDiff < oneDay)
+		newStyle.textColor = Color.black;
+	else if (timeDiff < oneDay*3)
+		newStyle.textColor = Color.gray.darker(3);
+	else if (timeDiff < oneDay*7)
+		newStyle.textColor = Color.gray.darker(2);
+	else //if (timeDiff < oneDay*14)
+		newStyle.textColor = Color.gray.darker();
+		
+	this.label.applyStyle(newStyle);
+},
+manuallyUpdateLinks: function() {
+	this.onLinksUpdate(this.getWikiWorldProxy().getLinks());
+},
+manuallyUpdateVersions: function() {
+	this.onVersionsUpdate(this.getWikiWorldProxy().getVersions());
+},
+
+
+addNewLinks: function(linkProxies) {
+	linkProxies.forEach(function(ea) {
+		if (ea === this.getWikiWorldProxy())
+			return;
+		var node = this.findNodeForProxy(ea);
+		if (!node) {
+			if (!this.shouldCreateLinks) return;
+			node = WikiWorldNodeMorph.create(ea.getURL());
+		}
+		if (this.isConnectedTo(node))
+			return; // nothing to do
+		this.connectTo(node);
+	}, this);
+},
+removeOldLinks: function(currentLinkProxies) {
+	this.connectedNodes().forEach(function(node) {
+		if (!node.url) return;
+		if (currentLinkProxies.detect(function(proxy) { return proxy.getURL().toString() == node.url.toString() }))
+			return; // proxy found, everything ok
+		this.disconnect(node);
+	}, this);
+},
+findNodeForProxy: function(proxy) {
+	return this.findNodeMorphs().detect(function(ea) {
+		return ea.getWikiWorldProxy && ea.getWikiWorldProxy() === proxy
+	})
+},
+
+makeStep: function($super) {
+	$super();
+	// if (this.energy == 0) {
+	// 	this.lastUpdated = new Date(); // so that when energy is increased not all notes fetch new ones at once
+	// 	return;
+	// }
+	// if (!this.lastUpdated || new Date() - this.lastUpdated > this.newUpdateIn) {
+	// 	this.newUpdateIn = 2*60*1000 /*2 min*/ + Math.floor(Math.random()*1000*60) /*varies 1 min*/
+	// 	this.initUpdateLinks();
+	// }
+},
+
+connectTo: function($super, otherNode) {
+    var con = $super(otherNode);
+    
+    var oldColor = con.getBorderColor()
+    con.setCustomColor(Color.red.lighter());
+	(function showNormal() {con.setCustomColor(oldColor)}).delay(40);
+	
+    return con;
+},
+
+getHelpText: function() {
+	var text = this.getWikiWorldProxy().localName();
+	var versions = this.getWikiWorldProxy().getVersions();
+	var url = this.getWikiWorldProxy().getURL();
+	if (versions && versions.length > 0) {
+		text += Strings.format('\nlast author: %s\nlast edit: %s (%s)\n%s versions\n%s',
+			versions.first().author, versions.first().date, versions.first().change, versions.length, url);
+	} else {
+		text += '\n' + url;
+	}
+		
+	return text;
+},
+});
+
+Object.extend(WikiWorldNodeMorph, {
+	create: function(url) {
+		var w = WorldMorph.current();
+		var exisiting = w.submorphs.detect(function(ea) {
+			return ea instanceof WikiWorldNodeMorph && ea.url.toString() == url.toString()
+		});
+		if (exisiting) return exisiting;
+		var m = new WikiWorldNodeMorph(url, 40);
+		m.openInWorld();
+		m.startSteppingScripts(300, true);
+		m.setPosition(WorldMorph.current().bounds().randomPoint());
+		m.manuallyUpdateVersions();
+		m.continouslyTryToPlaceNearConnectedNodes();
+		return m;
+	},
+	lookForNewFiles: function(optProxies) {
+		var repourl=new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/');
+		var proxies = optProxies || WikiNetworkAnalyzer.forRepo(repourl).getWorldProxies();
+		console.log('looking/creating nodes for ' + proxies.length + ' proxies');
+		for (var i = 0; i < proxies.length; i++) {
+			var ea = proxies[i];
+			var versions = ea.getVersions();
+			if (versions.length == 0) continue; // why are there proxies with zero versions??
+			if (versions.first().change.endsWith('deleted')) // FIXME, as Version directly
+				continue;
+			var filename = ea.getURL().filename();
+			if (filename.endsWith('.js') ||
+		 			filename.endsWith('.txt') ||
+		 			filename.endsWith('.htpasswd') ||
+		 			filename.endsWith('.lkml') ||
+					filename.endsWith('.jsp') ||
+					filename.startsWith('._') ||
+		 			filename == 'auth' || filename == 'logout' )
+		 			continue;
+		 	if (ea.getURL().toString() == 'http://livelykernel.sunlabs.com/repository/lively-wiki/test2.xhtmltest2.xhtml')
+		 	    dbgOn(true);
+			//console.log('Create for ' + ea.getURL());
+			WikiWorldNodeMorph.create(ea.getURL());
+			//(function() {WikiWorldNodeMorph.create(ea.getURL())}).delay(Math.floor(Math.random()*40));
+		};
+		// 		(function() {WikiWorldNodeMorph.create(ea)}).delay(Math.floor(Math.random()*180));
+		// WikiNetworkAnalyzer.forRepo(repourl).fetchFileList(cb);
+	},
+});
+
+function discoverNew() {
+WikiWorldNodeMorph.lookForNewFiles();
+console.log('Looking for new worlds...');
+discoverNew.delay(60*2);
+}
+//discoverNew.delay(50);
 
 }) // end of module

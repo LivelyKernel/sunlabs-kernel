@@ -40,11 +40,13 @@ thisModule.createReportResponse = function() {
 			'<D:comment>Autoversioning commit:  a non-deltaV client made a change to /abc</D:comment>' +
 			'<S:revprop name="svn:autoversioned">*</S:revprop>' +
 			'<S:date>2008-08-08T23:03:01.342813Z</S:date>' +
+			'<S:modified-path>/abc</S:modified-path>' +
 		'</S:log-item>' +
 		'<S:log-item>' +
 			'<D:version-name>18</D:version-name>' +
 			'<D:comment></D:comment>' +
 			'<S:date>2008-08-08T22:37:07.441511Z</S:date>' +
+			'<S:added-path>/abc</S:added-path>' +
 		'</S:log-item>' +
 	'</S:log-report>';
 	return new DOMParser().parseFromString(xmlString, "text/xml")
@@ -130,11 +132,9 @@ TestCase.subclass('lively.Tests.LKWikiTest.SVNResourceTest', {
 	testFetchMetadata: function() {
 		var startRev = 76;
 		var wasRequested = false;
-		var expectedRequestContent = '<S:log-report xmlns:S="svn:">' + 
-	    	'<S:start-revision>' + startRev + '</S:start-revision>' + '<S:end-revision>0</S:end-revision>' +
-			'<S:all-revprops/>' + '<S:path/>' + '</S:log-report>';
-		var expectedData = [{rev: 75, date: new Date(2008, 8, 8, 23, 3, 1), author: '(no author)'},
-							{rev: 18, date: new Date(2008, 8, 8, 22, 37, 7), author: '(no author)'}];
+		var expectedRequestContent =  '<S:log-report xmlns:S="svn:" xmlns:D="DAV:">' + '<S:start-revision>76</S:start-revision>' + '<S:end-revision>0</S:end-revision>' + '<S:discover-changed-paths/>' + '<S:path></S:path>' + '<S:all-revprops/>' + '</S:log-report>';
+		var expectedData = [{rev: 75, date: new Date(2008, 7, 8, 23, 3, 1), author: '(no author)'},
+							{rev: 18, date: new Date(2008, 7, 8, 22, 37, 7), author: '(no author)'}];
 		var test = this;
 		thisModule.MockNetRequest.prototype.request = function(method, url, content) {
 			test.assertEqual(method, 'REPORT');
@@ -151,7 +151,13 @@ TestCase.subclass('lively.Tests.LKWikiTest.SVNResourceTest', {
 		
 		this.svnResource.fetchMetadata(true, null, startRev);
 		this.assert(wasRequested, 'request() should be called');
-		this.assertEqualState(expectedData, this.svnResource.getMetadata(), 'Metadata is not correct');
+		var result = this.svnResource.getMetadata();
+		this.assertEqual(expectedData[0].rev, result[0].rev, 'Metadata is not correct');
+		this.assertEqual(expectedData[0].date.toString(), result[0].date.toString(), 'Metadata is not correct');
+		this.assertEqual(expectedData[0].author, result[0].author, 'Metadata is not correct');
+		this.assertEqual(expectedData[1].rev, result[1].rev, 'Metadata is not correct');
+		this.assertEqual(expectedData[1].date.toString(), result[1].date.toString(), 'Metadata is not correct');
+		this.assertEqual(expectedData[1].author, result[1].author, 'Metadata is not correct');
 	},
 	
     // testListDirectory: function() {
@@ -193,7 +199,7 @@ TestCase.subclass('lively.Tests.LKWikiTest.SVNResourceTest', {
 
 TestCase.subclass('lively.Tests.LKWikiTest.SVNVersionInfoTest', {
     testParseUTCDate: function() {
-        var sut = new SVNVersionInfo(0, '', null);
+        var sut = new SVNVersionInfo({rev: 0, date: '', author: null});
         var dateString = '2008-08-08T23:03:01.342813Z';
         var result = sut.parseUTCDateString(dateString);
         var expected = new Date(2008, 8, 8, 23, 3, 1);
@@ -201,16 +207,24 @@ TestCase.subclass('lively.Tests.LKWikiTest.SVNVersionInfoTest', {
     },
     
     testToString: function() {
-        var sut = new SVNVersionInfo(75, '2008-08-08T23:03:01.342813Z', null);
+        var sut = new SVNVersionInfo({rev: 75, date: '2008-08-08T23:03:01.342813Z', author: null});
 		this.assert(sut.toString().match(/(no author).*Fri Aug 08 2008, Revision 75/));
 
         // see SVNVersionInfo.toString()
         // this.assert(sut.toString().orig === sut, 'vers info string has not pointer to original');
-    }
+    },
+
+testSerializeToNode: function() {
+	var sut = new SVNVersionInfo({rev: 75, date: '2008-08-08T23:03:01.342813Z', author: 'test', url: new URL('http://path/to/nowhere'), change: 'modified'});
+	var newSVNInfo = eval(sut.toExpression());
+	this.assertEqualState(sut, newSVNInfo);
+},
 });
 
 TestCase.subclass('lively.Tests.LKWikiTest.WikiNavigatorTest', {
-    	
+    
+	shouldRun: false, // WikiNavigator already makes request on creation...
+	
     testIsActiveForWikiUrls: function() {
         var nav = new WikiNavigator('http://localhost/lively/proxy/wiki/test.xhtml');
         this.assert(nav.isActive(), 'Navigator did not recognize wiki url');
@@ -559,6 +573,197 @@ TestCase.subclass('lively.Tests.LKWikiTest.InteractiveAuthorizationTest', {
 		this.assert(this.wasAllowed === true);
 	},
 
+});
+TestCase.subclass('lively.Tests.LKWikiTest.WikiNetworkAnalyzerTest', {
+
+	sampleDocument: function() {
+		return stringToXML('<?xml version="1.0" encoding="utf-8"?>' + '\n' +
+'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"' + '\n' +
+'"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">' + '\n' + '\n' +
+'<html xmlns="http://www.w3.org/1999/xhtml">' + '\n' + '\n' +
+'<head> <title>Sun Labs Lively Kernel</title> </head>' + '\n' +
+'<body style="margin:0px">' + '\n' +
+'<!-- <link rel="stylesheet" type="text/css" href="style.css"/> -->' + '\n' +
+'<svg id="canvas" width="100%" height="100%"' + '\n' +
+'     xmlns="http://www.w3.org/2000/svg" ' + '\n' +
+'     xmlns:lively="http://www.experimentalstuff.com/Lively"' + '\n' +
+'     xmlns:xlink="http://www.w3.org/1999/xlink"' + '\n' +
+'     xmlns:xhtml="http://www.w3.org/1999/xhtml"' + '\n' +
+'     xml:space="preserve"' + '\n' +
+'     zoomAndPan="disable">' + '\n' +
+'<title>Lively Kernel canvas</title>' + '\n' +
+'<defs>' + '\n' + '\n' +
+'</defs>' + '\n' + '\n' +
+'<field name="test"><![CDATA[{"runs":[33,18,13,33,17,15,18,20,17,17,16,16,8,14,8,19],"values":[' + '\n' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/non-existing/test1.xhtml"},' + '\n' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/non-existing/test1.xhtml"},' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/non-existing/test2.xhtml"},' + '\n' +
+'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/"}]}]]></field>' + '\n' + '\n' +
+'<field name="url" family="URL"><![CDATA[{"protocol":"http:","hostname":"livelykernel.sunlabs.com","pathname":"/repository/non-existing/test3.xhtml","constructor":null,"splitter":null,"pathSplitter":null,"initialize":null,"inspect":null,"toString":null,"fullPath":null,"isLeaf":null,"dirname":null,"filename":null,"getDirectory":null,"withPath":null,"withRelativePath":null,"withFilename":null,"toQueryString":null,"withQuery":null,"withoutQuery":null,"eq":null,"relativePathFrom":null,"svnWorkspacePath":null,"svnVersioned":null,"notSvnVersioned":null,"toLiteral":null}]]></field>' + '\n' + '\n' +
+'</svg>' + '\n' + '\n' +
+'</body>' + '\n' +
+'</html>');
+	},
+
+setUp: function() {
+	this.doc = this.sampleDocument();
+	this.repoUrl = new URL("http://livelykernel.sunlabs.com/repository/non-existing/");
+	this.linksOfSampleDoc = [this.createWorldProxyFor('test1.xhtml'),
+										this.createWorldProxyFor('test2.xhtml'),
+										this.createWorldProxyFor('test3.xhtml')];
+},
+tearDown: function($super) {
+	$super(); WikiNetworkAnalyzer.instances = []
+},
+
+
+createWorldProxyFor: function(worldName) {
+	return new WikiWorldProxy(this.repoUrl.withFilename(worldName), this.repoUrl);
+},
+logReport: function() {
+	return stringToXML('<?xml version="1.0" encoding="utf-8"?>' + '\n' +
+'<S:log-report xmlns:S="svn:" xmlns:D="DAV:">' + '\n' +
+
+'<S:log-item>' + '\n' +
+'<D:version-name>358</D:version-name>' + '\n' +
+'<D:comment>Autoversioning commit:  a non-deltaV client made a change to' + '\n' +
+'/folder1/f1.txt</D:comment>' + '\n' +
+'<D:creator-displayname>robert</D:creator-displayname>' + '\n' +
+'<S:date>2008-09-12T13:32:18.491198Z</S:date>' + '\n' +
+'<S:added-path>/folder1/f1.txt</S:added-path>' + '\n' +
+'</S:log-item>' + '\n' +
+
+'<S:log-item>' + '\n' +
+'<D:version-name>357</D:version-name>' + '\n' +
+'<D:comment>Autoversioning commit:  a non-deltaV client made a change to' + '\n' +
+'/folder1/f2.txt</D:comment>' + '\n' +
+'<D:creator-displayname>robert</D:creator-displayname>' + '\n' +
+'<S:date>2008-09-12T13:32:18.364685Z</S:date>' + '\n' +
+'<S:added-path>/folder1/f2.txt</S:added-path>' + '\n' +
+'</S:log-item>' + '\n' +
+
+'<S:log-item>' + '\n' +
+'<D:version-name>356</D:version-name>' + '\n' +
+'<D:comment>Autoversioning commit:  a non-deltaV client made a change to' + '\n' +
+'/folder1/f1.txt</D:comment>' + '\n' +
+'<D:creator-displayname>robert</D:creator-displayname>' + '\n' +
+'<S:date>2008-09-12T13:32:18.232343Z</S:date>' + '\n' +
+'<S:added-path>/folder1/f1.txt</S:added-path>' + '\n' +
+
+'</S:log-report>');
+},
+logReport2: function() {
+	return stringToXML('<?xml version="1.0" encoding="utf-8"?>' + '\n' +
+'<S:log-report xmlns:S="svn:" xmlns:D="DAV:">' + '\n' +
+
+'<S:log-item>' + '\n' +
+'<D:version-name>401</D:version-name>' + '\n' +
+'<D:comment>Autoversioning commit:  a non-deltaV client made a change to' + '\n' +
+'/folder1/f1.txt</D:comment>' + '\n' +
+'<D:creator-displayname>robert</D:creator-displayname>' + '\n' +
+'<S:date>2008-09-12T13:32:18.491198Z</S:date>' + '\n' +
+'<S:added-path>/folder1/f2.txt</S:added-path>' + '\n' +
+'</S:log-item>' + '\n' +
+
+'<S:log-item>' + '\n' +
+'<D:version-name>402</D:version-name>' + '\n' +
+'<D:comment>Autoversioning commit:  a non-deltaV client made a change to' + '\n' +
+'/folder1/f2.txt</D:comment>' + '\n' +
+'<D:creator-displayname>robert</D:creator-displayname>' + '\n' +
+'<S:date>2008-09-12T13:32:18.364685Z</S:date>' + '\n' +
+'<S:added-path>/folder1/f2.txt</S:added-path>' + '\n' +
+'</S:log-item>' + '\n' +
+
+'</S:log-report>');
+},
+useMockResource: function(analyzer, config) {
+	analyzer.makeSVNResource = analyzer.constructor.prototype.makeSVNResource.wrap(function(proceed, repoUrl, url) {
+		var r = proceed(repoUrl, url);
+		r.fetchHeadRevision = function() { r.getModel().setHeadRevision(config.headRevision) };
+		r.fetchMetadata = function() { r.pvtScanLogReportForVersionInfos(config.metadata) };
+		return r;
+	})
+},
+
+
+
+
+testExtractLinks: function() {
+	var doc = this.sampleDocument();
+	var expected = this.linksOfSampleDoc.collect(function(ea) {return ea.getURL() });
+	var sut = new WikiNetworkAnalyzer(this.repoUrl);
+	var result = sut.extractLinksFromDocument(doc);
+	this.assertEqual(result.length, expected.length);
+	this.assertEqualState(result, expected);
+},
+
+
+
+testAddLinks: function() {
+	var worldProxy = this.createWorldProxyFor('bla');
+	var sut = new WikiNetworkAnalyzer(this.repoUrl);
+	this.assertEqual(worldProxy.getLinks().length, 0);
+	sut.addLinksOfWorld(worldProxy, this.sampleDocument());
+	this.assertEqual(sut.worldProxies.length, this.linksOfSampleDoc.length + 1);
+	this.assertEqualState(
+		this.linksOfSampleDoc.collect(function(ea) {return ea.localName()}),
+		worldProxy.getLinks().collect(function(ea) {return ea.localName()}));
+},
+testScanLogAndCreateProxies: function() {
+	var sut = new WikiNetworkAnalyzer(this.repoUrl);
+	this.useMockResource(sut, {headRevision: 400, metadata: this.logReport()});
+	this.assertEqual(sut.getWorldProxies().length, 0, 'Proxies exsiting?');
+	sut.fetchProxies();
+	this.assertEqual(sut.getWorldProxies().length, 2, 'Couldn\'t create proxies?');
+	var wp1 = sut.getWorldProxies().detect(function(ea) { return ea.localName() == 'f1.txt' });
+	var wp2 = sut.getWorldProxies().detect(function(ea) { return ea.localName() == 'f2.txt' })
+	this.assertEqual(wp1.getVersions().length, 2);
+	this.assertEqual(wp2.getVersions().length, 1);
+},
+testAppendLogInformation: function() {
+	var sut = new WikiNetworkAnalyzer(this.repoUrl);
+	this.useMockResource(sut, {headRevision: 400, metadata: this.logReport()});
+	sut.fetchProxies();
+	sut.fetchProxies(); // dont add doubled
+	var wp1 = sut.getWorldProxies().detect(function(ea) { return ea.localName() == 'f1.txt' });
+	var wp2 = sut.getWorldProxies().detect(function(ea) { return ea.localName() == 'f2.txt' })
+	this.assertEqual(wp1.getVersions().length, 2);
+	this.assertEqual(wp2.getVersions().length, 1);
+	this.useMockResource(sut, {headRevision: 415, metadata: this.logReport2()});
+	sut.fetchProxies();
+	this.assertEqual(wp2.getVersions().length, 3);
+},
+
+
+
+
+});
+TestCase.subclass('lively.Tests.LKWikiTest.SerializerTest', {
+
+	testSerializeAndDeserializeBasicObjects: function() {
+		var basic = {
+			'Number(3)': 				3,
+			'Number(3.4)': 			3.4,
+			'String("bla")': 			'bla',
+			'[]': 								[],
+			'[Number(1000)]': 	[1000],
+			'ExpressionSerializer.object={}':								{},
+			'ExpressionSerializer.object={"a":Number(1),}':		{a:1},
+			'ExpressionSerializer.object={"a+2":Number(3),}': {"a+2": 3},
+			'ExpressionSerializer.func=function a() {}': 		function a() {},
+
+		};
+		var sut = new ExpressionSerializer();
+		for (var expr in basic) {
+			this.assertEqual(sut.serialize(basic[expr]), expr, 'serializing ' + expr);
+		}
+		for (var expr in basic) {
+			if (Object.isFunction(basic[expr]))
+				this.assertEqual(eval(expr).toString(), basic[expr].toString(), 'deserializing ' + expr);
+			else
+				this.assertEqualState(eval(expr), basic[expr], 'deserializing ' + expr);
+		}
+	},
 });
 
 TestCase.subclass('lively.Tests.LKWikiTest.WikiPatcherTest', {

@@ -94,6 +94,10 @@ function logCallHelper(from, methodName, args, indent) {
         args.collect(function(ea) { return ea.toString() }).join(', '));
 };
 
+Global.toExpression = function toExpression(obj) {
+	return new ExpressionSerializer().serialize(obj);
+};
+
 
 Global.logMethod = function(obj, methodName) {
     obj[methodName] = obj[methodName].wrap(function(proceed) {
@@ -372,6 +376,43 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
 			}},
         ]
     }
+});
+Object.subclass('ExpressionSerializer', {
+
+	serialize: function(value) {
+		 switch (typeof value) {
+			case 'string': return 'String("' + value + '")';
+			case 'number': return 'Number(' + value + ')';
+			case 'boolean': return 'Boolean(' + value + ')';
+			case 'undefined': return 'undefined';
+			case 'function': return 'ExpressionSerializer.func=' + value.toString();
+			default: break;
+		}
+		if (value.toExpression)
+			return value.toExpression();
+		if (Object.isArray(value)) {
+			if (value.length == 0) return '[]';
+			var result = '[';
+			for (var i = 0; i<value.length; i++)
+				result += this.serialize(value[i]) + ',';
+			result = result.slice(0,result.length-1);
+			return result + ']';
+		}
+		if (value === null) return 'null';
+		if (value.constructor === Object) {
+			var startEval = 'ExpressionSerializer.object=';
+			var result = '{'; 
+			for (var name in value) {
+				result += '"' + name + '":' + this.serialize(value[name]) + ',';
+			}
+			return startEval + result + '}';
+		}
+		if (value.constructor === Date) 
+			return 'new Date("' + value.toString() + '")';
+		if (Object.isElement(value))
+			return 'stringToXML(\'' + Exporter.stringify(value) + '\')';
+		return '/*cannot serialize ' + value.constructor.toString() + '*/';
+	},
 });
 
 console.log('Helper.js is loaded');
