@@ -296,6 +296,10 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
     var args = $A(arguments);
     return module(getUniqueName()).requires(Object.isArray(args[0]) ? args[0] : args);
 };
+function load(moduleName) {
+	// Asynchronous! Do not assume that module is loaded directly after calling.
+	require(moduleName).toRun(function() {});
+};
 
 
 // ===========================================================================
