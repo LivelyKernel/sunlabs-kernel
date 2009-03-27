@@ -377,6 +377,74 @@ BoxMorph.subclass('lively.Helper.ToolDock', {
         ]
     }
 });
+Widget.subclass('DragAndDropListTester', {
+	formals: ["List1", "List2"],
+
+	initialize: function($super) {
+		$super();
+		var model = Record.newPlainInstance(
+			{List1: null, List1Selection: null, List2: null, List2Selection: null});
+		this.relayToModel(model,
+			{List1: "List1", List1Selection: "List1Selection", List2: "List2", List2Selection: "List2Selection"});
+	},
+
+	buildView: function(extent) {
+	extent = extent || pt(400,400);
+
+	var panel = PanelMorph.makePanedPanel(extent, [
+            ['pane1', newRealListPane, new Rectangle(0, 0, 0.5, 0.8)],
+            ['pane2', newRealListPane, new Rectangle(0.5, 0, 0.5, 0.8)],
+			['statusPane', newTextPane, new Rectangle(0, 0.8, 1, 0.2)]
+	]);
+
+	var model = this.getModel();
+	var m;
+
+	m = panel.pane1;
+	m.connectModel(model.newRelay({List: "List1", Selection: "+List1Selection"}, true));
+
+	m = panel.pane2;
+	m.connectModel(model.newRelay({List: "List2", Selection: "+List2Selection"}, true));
+
+//	m.statusPane;
+//	m.connectModel(model.newRelay({Text: "List2Selection"}, true));
+
+	this.example();
+
+	return panel;
+},
+onList1Update: function(list, source) {
+	console.log('Updated List1: ' + list + ' from' + source);
+},
+onList2Update: function(list, source) {
+	console.log('Updated List2: ' + list + ' from' + source);
+},
+
+
+onList1SelectionUpdate: function(sel) {
+	console.log('Updated Selection1: ' + sel);
+},
+
+onList2SelectionUpdate: function(sel) {
+	console.log('Updated Selection2: ' + sel);
+},
+example: function() {
+	this.addExamplesInList1();
+	this.addExamplesInList2();
+},
+
+addExamplesInList1: function() {
+	var items = [{a: 1}, {a: 2}, {a: 3}, {a: 4}];
+	this.setList1(items.collect(function(ea) { return {isListItem: true, string: ea.a.toString(), value: ea }}));
+},
+addExamplesInList2: function() {
+	var items = [{b: 7}, {b: 8}, {b: 9}, {b: 10}];
+	this.setList2(items.collect(function(ea) { return {isListItem: true, string: ea.b.toString(), value: ea }}));
+},
+
+
+
+});
 Object.subclass('ExpressionSerializer', {
 
 	serialize: function(value) {

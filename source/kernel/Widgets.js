@@ -863,7 +863,7 @@ BoxMorph.subclass('PanelMorph', {
     updateView: function(aspect, controller) {
         var plug = this.modelPlug;
         if (!plug) return;
-        
+
         if (aspect == plug.getVisible || aspect == 'all') {
 	    this.onVisibleUpdate(this.getModelValue('getVisible', true));
         }
@@ -894,6 +894,8 @@ Object.extend(PanelMorph, {
     }
 
 });
+
+Morph.subclass('DragWrapper');
 
 TextMorph.subclass("CheapListMorph", {
     
@@ -1112,6 +1114,8 @@ BoxMorph.subclass("TextListMorph", {
     formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
     defaultCapacity: 50,
     highlightItemsOnMove: false,
+dragEnabled: true,
+
     layoutManager: new VerticalLayout(), // singleton is OK
     
     initialize: function($super, initialBounds, itemList, optPadding, optTextStyle) {
@@ -1186,10 +1190,21 @@ BoxMorph.subclass("TextListMorph", {
 	var index = this.submorphs.indexOf(target);
 	this.highlightItem(evt, index, true);
 	evt.hand.setMouseFocus(this); // to get moves
+	if (this.dragEnabled)
+		this.dragItem = this.itemList[index];
     },
+onMouseUp: function(evt) {
+	if (this.dragEnabled)
+		this.dragItem = null;
+},
+
 
     onMouseMove: function(evt) {
          // console.log("%s got evt %s", this.getType(),  evt);
+		if (this.dragEnabled && !this.isDragging && this.dragItem && evt.point().dist(evt.priorPoint) > 15) {
+			this.dragSelection(evt);
+			return;
+		}
          if (!this.highlightItemsOnMove) return;
          var target = this.morphToReceiveEvent(evt);
          var index = this.submorphs.indexOf(target);
@@ -1380,8 +1395,20 @@ BoxMorph.subclass("TextListMorph", {
         if (toBottom) sp.scrollToBottom();
         else sp.scrollToTop();
         return true;
-    }
+    },
 
+dragSelection: function(evt) {
+	console.log('start dragging');
+	if (!this.dragItem) {
+		console.log('got no item to drag!');
+		return;
+	}
+	this.isDragging = true;
+	var newList = this.itemList.without(this.dragItem);
+	this.setList(newList); this.updateList(newList); //?
+	this.dragItem = null;
+	evt.hand.grabMorph(Morph.makeRectangle(new Rectangle(0,0,100,100)), evt);
+},
 });
 
 // it should be the other way round...
@@ -2257,6 +2284,10 @@ Global.newTextListPane = function(initialBounds) {
 
 Global.newRealListPane = function(initialBounds, suppressSelectionOnUpdate) {
     return new ScrollPane(new ListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
+};
+
+Global.newDragnDropListPane = function(initialBounds, suppressSelectionOnUpdate) {
+    return new ScrollPane(new DragnDropListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
 };
 
 Global.newTextPane = function(initialBounds, defaultText) {
