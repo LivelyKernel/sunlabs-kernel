@@ -21,27 +21,72 @@ thisModule.removeDummyNamespace = function() {
 TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
 
 	setUp: function() {
-		var mockNodeClass = lively.ide.BrowserNode.subclass('lively.Tests.ToolsTests.MockNode', {
-			initialize: function($super, target, browser, c) { $super(target, browser); this.children = c || [] },
-			childNodes: function() { return this.children; }
-		});
 		var browser = new lively.ide.BasicBrowser();
-		this.createNode = function(children, target) { return new mockNodeClass(target, browser, children) };
-		var root = this.createNode();
+		var root = this.createMockNode(browser);
 		browser.rootNode = function() { return root };
 		this.browser = browser;
 	},
+mockNodeClass: lively.ide.BrowserNode.subclass('lively.Tests.ToolsTests.MockNode', {
+			initialize: function($super, target, browser, c) { $super(target, browser); this.children = c || [] },
+			childNodes: function() { return this.children; }
+		}),
+createMockNode: function(browser, children, target, name) {
+	var node = new this.mockNodeClass(target, browser, children);
+	if (name)
+		node.asString = function() { return name}
+	return node;
+},
+
+
 
 	testSelectNodeInFirstPane: function() {
 		var browser = this.browser;
-		var node1 = this.createNode();
-		var node2 = this.createNode();
+		var node1 = this.createMockNode(browser);
+		var node2 = this.createMockNode(browser);
 		browser.rootNode().children = [node1, node2];
 		browser.buildView();
 		this.assertEqual(browser.nodesInPane('Pane1').length, 2);
 		browser.selectNode(node1);
 		this.assertIdentity(node1, browser.selectedNode());
 	},
+testFilterChildNodes: function() {
+	var browser = this.browser;
+	var node1 = this.createMockNode(browser);
+	var node2 = this.createMockNode(browser);
+	node1.shouldAppear = true; node2.shouldAppear = false;
+	browser.rootNode().children = [node1, node2];
+	var testFilterClass = lively.ide.NodeFilter.subclass('lively.Tests.ToolsTest.TestFilter', {
+		apply: function(nodes) { return nodes.select(function(ea) {return ea.shouldAppear}) }
+	});
+	browser.installFilter(new testFilterClass());
+dbgOn(true);
+	var result = browser.filterChildNodesOf(browser.rootNode());
+	this.assertEqual(result.length, 1);
+	this.assertIdentity(result[0], node1);
+},
+testUninstallFilter: function() {
+	var browser = this.browser;
+	browser.installFilter(new lively.ide.NodeFilter());
+	this.assert(browser.getFilters().length > 0);
+	browser.uninstallFilters(function(filter) { return filter instanceof lively.ide.NodeFilter })
+	this.assertEqual(browser.getFilters().length, 0);
+},
+testSortFilter: function() {
+	var browser = this.browser;
+	browser.installFilter(new lively.ide.SortFilter());
+	var n1 = this.createMockNode(browser, null, null, 'c');
+	var n2 = this.createMockNode(browser, null, null, 'a');
+	var n3 = this.createMockNode(browser, null, null, 'b');
+	browser.rootNode().children = [n1, n2, n3];
+	var result = browser.filterChildNodesOf(browser.rootNode());
+	this.assertEqual(result.length, 3);
+	this.assertIdentity(result[0], n2);
+	this.assertIdentity(result[1], n3);
+	this.assertIdentity(result[2], n1);
+},
+
+
+
 });
 
 TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {

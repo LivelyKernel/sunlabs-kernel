@@ -1321,7 +1321,7 @@ BoxMorph.subclass("TextListMorph", {
     },
 
     onSelectionUpdate: function(selection) {
-	console.log("got selection "  + selection);
+        console.log("got selection " + selection);
         this.setSelectionToMatch(selection);
     },
 
@@ -1387,6 +1387,8 @@ BoxMorph.subclass("TextListMorph", {
 // it should be the other way round...
 TextListMorph.subclass("ListMorph", {
 
+    documentation: 'Can handle list items, not only strings. {isListItem: true, string: string, value: object}',
+    
     initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
         $super(initialBounds, itemList, optPadding, optTextStyle)
         this.suppressSelectionOnUpdate = suppressSelectionOnUpdate;
@@ -1416,17 +1418,39 @@ TextListMorph.subclass("ListMorph", {
 
         this.selectedLineNo = lineNo;
 
-        var selectionContent = null;
+        var selectionContent = null; 
         if (lineNo in this.submorphs) {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill();
             item.setFill(TextSelectionMorph.prototype.style.fill);
             selectionContent = this.itemList[lineNo];
-            if (selectionContent.isListItem) selectionContent = selectionContent.value;
+            if (selectionContent.isListItem) {
+				selectionContent = selectionContent.value;
+			}
             this.scrollItemIntoView(item);
         }
         shouldUpdateModel && this.setSelection(selectionContent, true);
     },
+    
+    onSelectionUpdate: function($super, selection) {
+        if (!selection) {
+            this.selectLineAt(-1);
+            return;
+        }
+        if (!Object.isString(selection)) {
+            var item = this.itemList.detect(function(ea) { return ea.value === selection });
+            if (item)
+                this.selectLineAt(this.itemList.indexOf(item));
+            return
+        }
+        $super(selection);
+    },
+    
+    setSelectionToMatch: function($super, item) {
+        if (!item) return false;
+        return $super(item.isListItem ? item.string : item);
+    },
+    
     
     updateList: function($super, newList) {
         $super(newList);
@@ -3818,7 +3842,7 @@ Morph.subclass('NodeMorph', {
 			this.setPosition(this.activeBoundsOfWorld.closestPointToPt(this.getPosition()));
 	},
 	startSteppingScripts: function(ms, random) {
-		var timing = ms || 1000;
+		var timing = 10 //ms || 1000;
 		if (random) {
 			var getRandomNumber = function(max) { return Math.floor(Math.random()*max+1)-1};
 			timing = timing + getRandomNumber(200);

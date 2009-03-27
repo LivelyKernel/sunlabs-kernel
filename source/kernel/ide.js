@@ -16,17 +16,17 @@ module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js',
 Widget.subclass('lively.ide.BasicBrowser', {
  
     documentation: 'Abstract widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
-
-	emptyText: '-----',
-
-	allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
-
     initialViewExtent: pt(620, 450),
+    emptyText: '-----',
+    allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
     formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer", "Pane1Menu",
               "Pane2Content", "Pane2Selection", "Pane2Choicer", "Pane2Menu",
               "Pane3Content", "Pane3Selection", "Pane3Choicer", "Pane3Menu",
-              "SourceString", "StatusMessage"],
- 
+              "SourceString", "StatusMessage", "Filters"],
+    commands: function() {
+        return ide.BrowserCommand.allSubclasses().collect(function(ea) { return new ea(this) }, this);
+    },
+    
     initialize: function($super) { 
         $super();
         // create empty onUpdate functions
@@ -38,47 +38,16 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.onStatusMessageUpdate = Functions.Null;
         
         //create a model and relay for connecting the additional components later on
-        var model = Record.newPlainInstance((function(){var x={};this.formals.each(function(ea){x[ea]=null});return x}.bind(this))());
-        var spec = {SourceString: "SourceString", StatusMessage: "StatusMessage"};
+        var model = Record.newPlainInstance((function(){
+				return this.formals.inject({}, function(spec, ea){spec[ea]=null; return spec})}.bind(this))());
+        var spec = {SourceString: "SourceString", StatusMessage: "StatusMessage", Filters: "Filters"};
         paneNames.forEach(function(ea) {
             spec[ea + 'Content'] = ea + 'Content';
             spec[ea + 'Selection'] = ea + 'Selection';
             spec[ea + 'Menu'] = ea + 'Menu';
         });
         this.relayToModel(model, spec);
-    },
- 
-	mySourceControl: function() {
-		var ctrl = lively.Tools.SourceControl;
-		if (!ctrl) throw dbgOn(new Error('Browser has no SourceControl!'));
-		return ctrl;
-	},
-
-    rootNode: function() {
-        throw dbgOn(new Error('To be implemented from subclass'));
-    },
- 
-	selectedNode: function() {
-		return this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
-	},
-
-	selectNode: function(node) {
-		var paneName = this.paneNameOfNode(node);
-		if (!paneName) return;
-		this.inPaneSelectNodeNamed(paneName, node.asString());
-	},
-
-	allNodes: function() {
-		return this.allPaneNames.collect(function(ea) { return this.nodesInPane(ea) }, this).flatten();
-	},
-
-	paneNameOfNode: function(node) {
-    	return this.allPaneNames.detect(function(ea) { return this.nodesInPane(ea).include(node) }, this);
-	},
-
-    start: function() {
-        this.setPane1Content(this.rootNode().childNodesAsListItems());
-		this.mySourceControl().registerBrowser(this);
+		this.setFilters([new lively.ide.NodeFilter() /*identity filter*/]);
     },
  
     buildView: function (extent) {
@@ -101,7 +70,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         function setupListPanes(paneName) {
             var morph = panel[paneName];
             morph.connectModel(model.newRelay({List:        ("-" + paneName + "Content"),
-                                               Selection:   ('+' + paneName + 'Selection'),
+                                               Selection:   (      paneName + 'Selection'),
                                                Menu:        ("-" + paneName + "Menu")}), true);
             morph.withAllSubmorphsDo(function() {            
                 this.onMouseOver = function(evt) { browser.showButtons(evt, morph, paneName) };
@@ -124,7 +93,24 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	    this.panel = panel;
         return panel;
     },
- 
+
+	buildCommandButtons: function(morph) {
+		var cmds = this.commands().select(function(ea) { return ea.wantsButton() });
+		if (cmds.length === 0) return;
+
+        var height = 20;
+        var width = morph.getExtent().x / cmds.length
+        var y = morph.getExtent().y * 0.5 - height;
+
+        var btns = cmds.forEach(function(cmd, i) {
+            var btn = new ButtonMorph(new Rectangle(i*width, y, width, height));
+			btn.setLabel(cmd.asString());
+			var btnModel = {action: function(val) { if (!val) cmd.trigger(); btn.setLabel(cmd.asString()); }};
+			btn.connectModel({model: btnModel, setValue: 'action'});
+			morph.addMorph(btn);
+        })
+	},
+
     showButtons: function(evt, morph, paneName) {
         var browser = this;
         var node = browser['get' + paneName + 'Selection']();
@@ -173,7 +159,92 @@ Widget.subclass('lively.ide.BasicBrowser', {
         //     return
         // btns.each(function(ea) { ea.remove() })
     },
+    
+	mySourceControl: function() {
+		var ctrl = lively.Tools.SourceControl;
+		if (!ctrl) throw dbgOn(new Error('Browser has no SourceControl!'));
+		return ctrl;
+	},
+
+    start: function() {
+        this.setPane1Content(this.rootNode().childNodes().invoke('asListItem'));
+		this.mySourceControl().registerBrowser(this);
+    },
+
+    rootNode: function() {
+        throw dbgOn(new Error('To be implemented from subclass'));
+    },
  
+	selectedNode: function() {
+		return this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
+	},
+
+	selectNode: function(node) {
+		var paneName = this.paneNameOfNode(node);
+		if (!paneName) return;
+		this.inPaneSelectNodeNamed(paneName, node.asString());
+	},
+
+	allNodes: function() {
+		return this.allPaneNames.collect(function(ea) { return this.nodesInPane(ea) }, this).flatten();
+	},
+
+    siblingsFor: function(node) {
+        var siblings = this.allPaneNames
+             .collect(function(ea) { return this.nodesInPane(ea) }, this)
+             .detect(function(ea) { return ea.include(node) });
+        if (!siblings) return [];
+        return siblings.without(node);
+    },
+
+    nodesInPane: function(paneName) { // panes have listItems, no nodes
+             var listItems = this['get' + paneName + 'Content']();
+             if (!listItems) return [];
+             if (!listItems.collect) {
+    			console.log('Weird bug: listItems: ' + listItems + ' has no collect in pane ' + paneName);
+    			Global.y = listItems;
+    			dbgOn(true);
+    			return [];
+    		}
+            return listItems.collect(function(ea) { return ea.value })    
+    },
+    
+    filterChildNodesOf: function(node) {
+    	return this.getFilters().inject(node.childNodes(), function(nodes, filter) {
+    		return filter.apply(nodes)
+    	});
+    },
+    childsOfSelectionFilteredAndAsListItems: function(paneName) {
+    	return 	this.filterChildNodesOfSelectionIn(paneName).collect(function(ea) { return ea.asListItem() });
+    },
+childsFilteredAndAsListItems: function(node) {
+    	return 	this.filterChildNodesOf(node).collect(function(ea) { return ea.asListItem() });
+    },
+
+    installFilter: function(filter) {
+    	this.setFilters(this.getFilters().concat([filter]).uniq());
+    },
+    uninstallFilters: function(testFunc) {
+    	// testFunc returns true if the filter should be removed
+    	this.setFilters(this.getFilters().reject(testFunc));
+    },
+
+    onFiltersUpdate: function(filters) {},
+    
+	paneNameOfNode: function(node) {
+    	return this.allPaneNames.detect(function(ea) { return this.nodesInPane(ea).include(node) }, this);
+	},
+ 
+ 	inPaneSelectNodeNamed: function(paneName,  nodeName) {
+			var nodes = this['get' + paneName + 'Content']();
+			var wanted = nodes.detect(function(ea) { return ea && ea.string.include(nodeName) });
+			if (!wanted) return null;
+			var list = this.panel[paneName].innerMorph();
+			var i = list.itemList.indexOf(wanted);
+			list.selectLineAt(i, true /*should update*/);
+			return wanted;
+	},
+	
     onPane1SelectionUpdate: function(node) {
         this.setStatusMessage('');
         this.setPane2Selection(null, true);
@@ -182,7 +253,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
             this.hideButtons(null, this.panel.Pane1, 'Pane1')
             return
         };
-        this.setPane2Content(node.childNodesAsListItems());
+		this.setPane2Content(this.childsFilteredAndAsListItems(node));
         this.setPane1Menu(node.menuSpec());
        	this.setSourceString(node.sourceString());
 		this.updateTitle();
@@ -196,7 +267,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
             this.hideButtons(null, this.panel.Pane2, 'Pane2')
             return
         }
-        this.setPane3Content(node.childNodesAsListItems());
+        this.setPane3Content(this.childsFilteredAndAsListItems(node));
         this.setPane2Menu(node.menuSpec());
         this.setSourceString(node.sourceString());
 		this.updateTitle();
@@ -220,36 +291,15 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.nodeChanged(this.selectedNode());
     },
 
-    nodesInPane: function(paneName) { // panes have listItems, no nodes
-             var listItems = this['get' + paneName + 'Content']();
-             if (!listItems) return [];
-             if (!listItems.collect) {
-    			console.log('Weird bug: listItems: ' + listItems + ' has no collect in pane ' + paneName);
-    			Global.y = listItems;
-    			dbgOn(true);
-    			return [];
-    		}
-            return listItems.collect(function(ea) { return ea.value })    
-        },
-    
-    siblingsFor: function(node) {
-        var siblings = this.allPaneNames
-             .collect(function(ea) { return this.nodesInPane(ea) }, this)
-             .detect(function(ea) { return ea.include(node) });
-        if (!siblings) return [];
-        return siblings.without(node);
-    },
-    
     hasUnsavedChanges: function() {
         return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
     },
     
 	allChanged: function(keepUnsavedChanges, changedNode) {
-
 		// optimization: if no node looks like the changed node in my browser do nothing
 		if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
 			return;
-		//dbgOn(true);
+		dbgOn(true); 
 	      // FIXME remove duplication
         var oldN1 = this.getPane1Selection();
         var oldN2 = this.getPane2Selection();
@@ -314,38 +364,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		window.setTitle(title);
 	},
 
-	inPaneSelectNodeNamed: function(paneName,  nodeName) {
-			var nodes = this['get' + paneName + 'Content']();
-			var wanted = nodes.detect(function(ea) { return ea && ea.string.include(nodeName) });
-			if (!wanted) return null;
-			var list = this.panel[paneName].innerMorph();
-			var i = list.itemList.indexOf(wanted);
-			list.selectLineAt(i, true /*should update*/);
-			return wanted;
-	},
-
-	commands: function() {
-		var cmdClasses = ide.BrowserCommand.allSubclasses();
-		return cmdClasses.collect(function(ea) { return new ea(this) }, this);
-	},
-
-	buildCommandButtons: function(morph) {
-		var cmds = this.commands().select(function(ea) { return ea.wantsButton() });
-		if (cmds.length === 0) return;
-
-        var height = 20;
-        var width = morph.getExtent().x / cmds.length
-        var y = morph.getExtent().y * 0.5 - height;
-
-        var btns = cmds.forEach(function(cmd, i) {
-            var btn = new ButtonMorph(new Rectangle(i*width, y, width, height));
-			btn.setLabel(cmd.asString());
-			var btnModel = {action: function(val) { if (!val) cmd.trigger(); btn.setLabel(cmd.asString()); }};
-			btn.connectModel({model: btnModel, setValue: 'action'});
-			morph.addMorph(btn);
-        })
-	},
-
 });
  
 Object.subclass('lively.ide.BrowserNode', {
@@ -366,21 +384,13 @@ Object.subclass('lively.ide.BrowserNode', {
         return []
     },
  
-    childNodesAsListItems: function() {
-        var items = this.childNodes().collect(function(ea) {
-            return {isListItem: true, string: ea.asString(), value: ea}
-        });
-		if (!this.browser.alphabetize) return items;
-		return items.sort(function(a,b) {
-			if (a.string.toLowerCase() < b.string.toLowerCase()) return -1;
-			if (a.string.toLowerCase() > b.string.toLowerCase()) return 1;
-			return 0;
-		});
-    },
- 
     asString: function() {
         return 'no name for node of type ' + this.constructor.type;
     },
+asListItem: function() {
+	return {isListItem: true, string: this.asString(), value: this};
+},
+
  
     sourceString: function() {
         return '-----'
@@ -453,6 +463,40 @@ Object.subclass('lively.ide.BrowserCommand', {
 
 	trigger: function() {}
 
+});
+Object.subclass('lively.ide.NodeFilter', {
+	apply: function(nodes) { return nodes }
+});
+lively.ide.NodeFilter.subclass('lively.ide.SortFilter', {
+	apply: function(nodes) {
+	return nodes.sort(function(a,b) {
+		if (a.asString().toLowerCase() < b.asString().toLowerCase()) return -1;
+		if (a.asString().toLowerCase() > b.asString().toLowerCase()) return 1;
+		return 0;
+	});
+}
+});
+lively.ide.NodeFilter.subclass('lively.ide.ClassFunctionObjectFilter', {
+	
+	mode: null, // 'classes', 'functions', 'objects'
+
+	modeClasses: {
+		classes: lively.ide.ClassFragmentNode,
+		functions: lively.ide.FunctionFragmentNode,
+		objects: lively.ide.ObjectFragmentNode
+	},
+
+	apply: function(nodes) {
+		if (!this.mode) return nodes;
+    //  nodes.inject({special: [], other: []}, )
+    //  var classesFunctionsObjects = [];
+    //  var other = 1;
+    // return nodes.sort(function(a,b) {
+    //  if (a.asString().toLowerCase() < b.asString().toLowerCase()) return -1;
+    //  if (a.asString().toLowerCase() > b.asString().toLowerCase()) return 1;
+    //  return 0;
+    // });
+}
 });
 
  
@@ -600,18 +644,17 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     },
  
     buttonSpecs: function() {
-		var browser = this.browser;
-		var myPane = browser.paneNameOfNode(this);
-        return [
-            {label: 'classes',action: function() {
-                browser.nodesInPane(myPane).each(function(ea) { ea.mode = 'classes' }) 
-            }},
-            {label: 'functions', action: function() {
-                browser.nodesInPane(myPane).each(function(ea) { ea.mode = 'functions' })
-            }},
-            {label: 'objects', action: function() {
-                browser.nodesInPane(myPane).each(function(ea) { ea.mode = 'objects' })
-            }}
+		var node = this;
+		var myPane = node.browser.paneNameOfNode(this);
+		var setMode = function(mode) {
+			node.browser.nodesInPane(myPane)
+				.select(function(ea) { return ea.constructor === node.constructor })
+				.each(function(ea) { ea.mode = mode })
+		}
+		return [
+            {label: 'classes',action: setMode.curry('classes')},
+            {label: 'functions', action: setMode.curry('functions')},
+            {label: 'objects', action: setMode.curry('objects')}
         ]
     },
     
@@ -846,9 +889,7 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetNode', {
 		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
 	},
  
-    buttonSpecs: function() {
-        return []
-    },
+    buttonSpecs: lively.ide.CompleteFileFragmentNode.prototype.buttonSpecs,
     
     sourceString: function($super) {
 		return '';
@@ -981,7 +1022,7 @@ ide.BrowserCommand.subclass('lively.ide.EvaluateCommand', {
 ide.BrowserCommand.subclass('lively.ide.ChangesGotoChangeSetCommand', {
 
 	wantsButton: function() {
-		return true;
+		return false;//true;
 	},
 
 	asString: function() {
@@ -997,19 +1038,29 @@ ide.BrowserCommand.subclass('lively.ide.ChangesGotoChangeSetCommand', {
 
 ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 
+	filter: new lively.ide.SortFilter(),
+
 	wantsButton: function() {
 		return true;
 	},
 
 	asString: function() {
-		if (this.browser.alphabetize) return 'Unsort';
+		if (this.browserIsSorting()) return 'Unsort';
 		return 'Sort'
 	},
 
 	trigger: function() {
-		this.browser.alphabetize = !this.browser.alphabetize;
-		this.browser.allChanged();
-	}
+		var filter = this.filter;
+		var b = this.browser;
+		this.browserIsSorting() ?
+			b.uninstallFilters(function(f) { return f === filter }) :
+			b.installFilter(filter);
+		b.allChanged();
+	},
+
+	browserIsSorting: function() {
+		return this.browser.getFilters().include(this.filter);
+	},
 
 });
 
