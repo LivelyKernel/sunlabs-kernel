@@ -1165,6 +1165,19 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 		change.setDefinition(newSrc);
 		this.assertEqual(change.getDefinition(), newSrc);
 	},
+testSetXMLElement: function() {
+	// ensure that ne is placed at the same pos as old
+	dbgOn(true);
+	var classChange = ClassChange.create('TestClass', 'Object');
+	var proto1 = new ProtoChange.create('test1', '123');
+	var proto2 = new ProtoChange.create('test2', '456');
+	classChange.addSubElements([proto1, proto2]);
+	var proto3 = new ProtoChange.create('test3', '789');
+	proto1.setXMLElement(proto3.getXMLElement());
+	this.assertEqual(proto1.getDefinition(), '789', 'def is wrong');
+	this.assertIdentity(classChange.subElements()[0].getName(), 'test3', 'proto1 not at old pos');
+},
+
 	
 });
 
@@ -1209,31 +1222,13 @@ testClassChangeAsJs: function() {
 	result = classC.asJs();
 	this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {\n' +
 		'test1: function() {1},\ntest2: function() {2},\n});');
-var convertedBack = this.jsParser.parseNonFile(result);
-convertedBack.asChange();
-x=convertedBack;
+	var convertedBack = this.jsParser.parseNonFile(result);
+	var newChange = convertedBack.asChange();
+	this.assertEqual(newChange.subElements().length, 2);
 },
 
 
 
-
-});
-thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.PopulateChangeSetFromFFsTest', {
-
-	documentation: 'Changes to FileFragments can create new Changes in the current ChangeSet',
-
-	testChangeFromMethofFF: function() {
-		var fragment = this.fragmentNamed('m1', function(ff) { return ff.type == 'propertyDef' });
-		this.assertEqual(fragment.className, 'ClassA');
-		var newSrc = 'function(a) {1}';
-		var name = 'm1';
-		var complNewSrc = name + ':' + newSrc + ',';
-		var change = fragment.saveAsChange(complNewSrc);
-		this.assert(change.isProtoChange);
-		// problem: new fragment has no source (tries to get source from non-modified file string)
-		//this.assertEqual(change.getDefinition(), newSrc);
-		//this.assertEqual(change.getName(), name);
-	},
 
 });
 lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
@@ -1348,6 +1343,24 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		cs.remove();
 		this.assertEqual(cs.subElements().length, 0);
 	},
+testStartUpEvaluating: function() {
+	lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
+	lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
+	lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun = false;
+	var newChange1 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
+	var newChange2 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
+	var cs = ChangeSet.fromWorld(this.worldMorph);
+	cs.addSubElements([newChange1, newChange2]);
+	var init = cs.subElementNamed(cs.initializerName);
+	init.setDefinition('lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun = true');
+	cs.evaluateAllButInitializer();
+	this.assert(lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
+	this.assert(lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
+	this.assert(!lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 1');
+	cs.evaluateInitializer();
+	this.assert(lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 2');
+},
+
 
 	xtestReal: function() {
 		var src1 = 'var extent = pt(200,200);\n\

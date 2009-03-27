@@ -252,7 +252,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	},
 	
     onPane1SelectionUpdate: function(node) {
-        this.setStatusMessage('');
         this.setPane2Selection(null, true);
         this.setPane2Content([this.emptyText]);
         if (!node) {
@@ -269,7 +268,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
  
     onPane2SelectionUpdate: function(node) {
-        this.setStatusMessage('');
         this.setPane3Selection(null);
         this.setPane3Content([this.emptyText]);        
         if (!node) {
@@ -285,7 +283,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
  
     onPane3SelectionUpdate: function(node) {
-        this.setStatusMessage('');
         if (!node) {
             this.hideButtons(null, this.panel.Pane3, 'Pane3')
             return
@@ -380,6 +377,20 @@ commandMenuSpec: function(pane) {
 		result.push(['-------']);
 	return result;
 },
+setStatusMessage: function(msg, color, delay) {
+	var s = this.panel.sourcePane;	
+	if (!this._statusMorph) {
+		this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
+		this._statusMorph.applyStyle({borderWidth: 0})
+	}
+	var statusMorph = this._statusMorph;
+	statusMorph.textString = msg;
+	s.addMorph(statusMorph);
+	statusMorph.setTextColor(color || Color.black);
+	statusMorph.centerAt(s.innerBounds().center());
+	(function() { statusMorph.remove() }).delay(delay || 2);
+},
+
 
 
 });
@@ -425,14 +436,20 @@ asListItem: function() {
 	},
 
     newSource: function(newSource) {
-        // throw dbgOn(new Error("Shouldn't try to eval and save things now..."));
         if (!this.saveSource(newSource, tools.SourceControl))
             console.log('couldn\'t save');
-		if (!this.evalSource(newSource)) {
-            console.log('couldn\'t eval');
-        }
-		this.browser.signalNewSource(this);
-    },
+	var msgSpec;
+	try {
+		var success = this.evalSource(newSource);
+		msgSpec = success ?
+			{msg: 'Successfully evaluated ' + this.target.getName(), color: Color.green} :
+			{msg: 'Eval disabled for' + this.target.getName(), color: Color.black}
+	} catch(e) {
+		msgSpec = {msg: 'Error evaluating ' + this.target.getName() + ': ' + e, color: Color.red, delay: 5}
+	}
+	this.statusMessage(msgSpec.msg, msgSpec.color, msgSpec.delay); 
+	this.browser.signalNewSource(this);
+},
  
     evalSource: function(newSource) {
         return false;
@@ -450,9 +467,9 @@ asListItem: function() {
         return [];
     },
     
-    statusMessage: function(string) {
+    statusMessage: function(string, optColor, optDelay) {
 		console.log('Browser statusMessage: ' + string);
-        this.browser && this.browser.setStatusMessage(string);
+        this.browser && this.browser.setStatusMessage(string, optColor, optDelay);
     },
     
     signalChange: function() {
@@ -659,7 +676,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 				return ide.FunctionFragmentNode; 
 			return ide.ObjectFragmentNode;
 		}
-		return this.target.flattened().collect(function(ea) {
+		return this.target.subElements(2).collect(function(ea) {
 			return new (typeToClass(ea.type))(ea, browser);
 		})
     },
@@ -863,12 +880,12 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 			def = 'Object.extend(' + className + ', {\n' + methodString +'\n});';
 		else
 			def = className + ".addMethods({\n" + methodString +'\n});';
-		console.log('Eval: ' + def);
+		// console.log('Eval: ' + def);
 		try {
 			eval(def);
 		} catch (er) {
 			console.log("error evaluating method " + methodString + ': ' + er);
-			return false;
+			throw(er)
 		}
 		console.log('Successfully evaluated #' + methodName);
         return true;
@@ -973,7 +990,7 @@ evalSource: function(newSource) {
 		if (this.target.getDefinition() !== newSource)
 			throw dbgOn(new Error('Inconsistency while evaluating and saving?'));
 		this.target.evaluate();
-        return true;
+		return true
     },
 
 
@@ -1688,10 +1705,11 @@ Object.subclass('lively.ide.FileFragment', {
         this.sourceControl = srcCtrl;
     },
     
-	subElements: function() {
-		return this._subElements;
-	},
-
+    subElements: function(depth) {
+    	if (!depth || depth === 1)
+    		return this._subElements; 
+    	return this._subElements.inject(this._subElements, function(all, ea) { return all.concat(ea.subElements(depth-1)) });
+    },
     fragmentsOfOwnFile: function() {
         return this.getSourceControl().rootFragmentForModule(this.fileName).flattened().without(this);
     },
@@ -1975,14 +1993,13 @@ Object.subclass('Change', {
 	},
 setXMLElement: function(newElement) {
 	var p = this.getXMLElement().parentNode;
+	var oldElement = this.getXMLElement()
 	if (!p) return;
-	var sibling = this.getXMLElement().nextSibling;
-	p.removeChild(this.getXMLElement());
-	newElement = p.ownerDocument.adoptNode(newElement);
-	if (sibling)
-		p.insertBefore(newElement, sibling);
-	else
-		p.appendChild(sibling);
+	if (p.ownerDocument)
+		newElement = p.ownerDocument.adoptNode(newElement);
+	p.insertBefore(newElement, oldElement);
+	p.removeChild(oldElement);
+	this.xmlElement = newElement;
 },
 
 
@@ -2009,7 +2026,10 @@ setDefinition: function(src) {
 },
 
 addSubElement: function(change) {
-		this.xmlElement.appendChild(change.getXMLElement());
+		var doc = this.xmlElement.ownerDocument;
+		var newElem = doc ? doc.importNode(change.getXMLElement(), true) : change.getXMLElement();
+		this.xmlElement.appendChild(newElem);
+		change.xmlElement = newElem;
 		return change;
 	},
 addSubElements: function(elems) { elems.forEach(function(ea) { this.addSubElement(ea) }, this) },
@@ -2054,6 +2074,8 @@ Change.addMethods({
 
 Change.subclass('ChangeSet', {
 
+	initializerName: 'initializer',
+
     initialize: function(optName) {
 		// Keep track of an ordered list of Changes
 		this.changes = []; // necessary? xmlElement should be enough...
@@ -2089,9 +2111,7 @@ Change.subclass('ChangeSet', {
 	},
 
 	addChange: function(change) {
-		var doc = this.xmlElement.ownerDocument;
-		this.xmlElement.appendChild(doc.importNode(change.getXMLElement(), true));
-		return change;
+		this.addSubElement(change);
 	},
 
 	subElements: function() {
@@ -2172,14 +2192,22 @@ addOrChangeElementNamed: function(name, source) {
 subElementNamed: function(name) {
 	return this.subElements().detect(function(ea) { return ea.getName() == name });
 },
-ensureHasPreambleAndPostScript: function() {
-	var preamble = this.subElementNamed('preamble');
-	if (!preamble)
-		this.addOrChangeElementNamed('preamble', '// preamble');
-	var postscript = this.subElementNamed('postscript');
-	if (!postscript)
-		this.addOrChangeElementNamed('postscript', '// postscript');
+ensureHasInitializeScript: function() {
+	var initializer = this.subElementNamed(this.initializerName);
+	if (initializer) return;
+	var content = '// this script is evaluated on world load';
+	this.addOrChangeElementNamed(this.initializerName, content);
 },
+evaluateAllButInitializer: function() {
+	this.subElements()
+		.reject(function(ea) { return ea.getName() == this.initializerName}, this)
+		.forEach(function(ea) { ea.evaluate() });
+},
+evaluateInitializer: function() {
+	this.subElementNamed(this.initializerName).evaluate();
+},
+
+
 
 
 
@@ -2194,7 +2222,7 @@ Object.extend(ChangeSet, {
 	fromWorld: function(worldOrNode) {
 		var node = worldOrNode instanceof WorldMorph ? worldOrNode.getDefsNode() : worldOrNode;
 		var cs = new ChangeSet('Local code').initializeFromWorldNode(node);
-		cs.ensureHasPreambleAndPostScript();
+		cs.ensureHasInitializeScript();
 		return cs;
 	},
 
