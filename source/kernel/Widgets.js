@@ -3672,6 +3672,11 @@ Morph.subclass('ConnectorMorph', {
 	setEndPos: function(p) {
 		var v = this.shape.vertices(); v[v.length-1] = p; this.setVertices(v);
 	},
+setCustomColor: function(color) {
+	this.applyStyle({borderColor: color});
+	this.arrow.head.applyStyle({fill: color});
+},
+
 	
 	register: function(morph, startOrEnd) {
 		var con = this;
@@ -3720,11 +3725,11 @@ Morph.subclass('ConnectorMorph', {
 
 Morph.subclass('NodeMorph', {
 
-	maxDist: 180 ,
-	minDist: 90 ,
+	maxDist: 200 ,
+	minDist: 140 ,
 	step: 15,
 	minStepLength: 0,
-	findOtherMorphsDelay: 35,
+	findOtherMorphsDelay: 25,
 	
 	suppressHandles: true,
 
@@ -3803,9 +3808,12 @@ Morph.subclass('NodeMorph', {
 		return NodeMorph.all().without(this);
 	},
 	ensureToStayInWorldBounds: function() {
-		if (!this.activeBoundsOfWorld)
-			this.activeBoundsOfWorld = pt(document.body.clientWidth, document.body.clientHeight).subPt(this.getExtent()).extentAsRectangle();
+		if (!this.activeBoundsOfWorld) {
+			// World bounds are sometimes wrong??? Use canvas ...
+			var canvas = Global.document.getElementById('canvas');
+			this.activeBoundsOfWorld = pt(canvas.clientWidth, canvas.clientHeight).subPt(this.getExtent()).extentAsRectangle();
 		//this.activeBoundsOfWorld =  pt(1051.9,584.5).extentAsRectangle();
+		}
 		if (!this.activeBoundsOfWorld.containsPoint(this.getPosition()))
 			this.setPosition(this.activeBoundsOfWorld.closestPointToPt(this.getPosition()));
 	},
@@ -3842,6 +3850,14 @@ Morph.subclass('NodeMorph', {
 			this.connectedNodesCache = this.connections.collect(function(ea) { return ea.getEndMorph() });
 		return this.connectedNodesCache
 	},
+allConnectedNodes: function() {
+		return this.connectedNodes().concat(this.connectedNodesPointingToMe());
+	},
+connectedNodesPointingToMe: function() {
+		return this.connectionsPointingToMe.collect(function(ea) { return ea.getStartMorph() });
+	},
+
+
 	isConnectedTo: function(otherNode) {
 		return this.connectedNodes().indexOf(otherNode) != -1;
 	},
@@ -3853,6 +3869,7 @@ Morph.subclass('NodeMorph', {
 	rebuildChangeMethod: function() {
 		this.changed = this.constructor.prototype.changed;
 		this.connections.forEach(function(ea) {ea.register(this, 'Start')}, this);
+		this.connectionsPointingToMe.forEach(function(ea) {ea.register(this, 'End')}, this);
 	},
 	addLabel: function(text) {
 		if (!this.label)
@@ -3863,6 +3880,29 @@ Morph.subclass('NodeMorph', {
 		this.setExtent(this.label.getExtent().addXY(0,5));
 		this.label.centerAt(this.innerBounds().center());
 	},
+placeNearConnectedNode: function() {
+	if (this.allConnectedNodes().length == 0) return;
+	var other = this.allConnectedNodes().first();
+	var newPos = other.bounds().expandBy(other.maxDist).randomPoint();
+	this.centerAt(newPos);
+},
+continouslyTryToPlaceNearConnectedNodes: function() {
+	var tries = 5;
+	var self = this;
+	var tryPlace = function() {
+		if (self.allConnectedNodes().length > 0) {
+			self.placeNearConnectedNode();
+			return;
+		}
+		if (tries > 0) {
+			tries--;
+			tryPlace.delay(1);
+		}
+	};
+	tryPlace();
+},
+
+
 });
 
 Object.extend(NodeMorph, {
