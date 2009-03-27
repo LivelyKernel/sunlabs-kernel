@@ -3994,7 +3994,7 @@ Morph.subclass('NodeMorph', {
 		}
 		this.calls++;
 		var v = this.forceOfMorphs(this.cachedNodes);
-		if (!v.x || !v.y /*|| v.fastR() <= this.minStepLength*/) return;
+		if (!v.x || !v.y /*|| v.fastR() <= this.minStepLength*/) return; // what about v.x/y === 0 ???
 		this.moveBy(v);
 		this.ensureToStayInWorldBounds();
 	},
