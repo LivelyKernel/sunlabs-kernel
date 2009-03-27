@@ -747,10 +747,10 @@ TestCase.subclass('lively.Tests.LKWikiTest.SerializerTest', {
 			'String("bla")': 			'bla',
 			'[]': 								[],
 			'[Number(1000)]': 	[1000],
-			'ExpressionSerializer.object={}':								{},
-			'ExpressionSerializer.object={"a":Number(1),}':		{a:1},
-			'ExpressionSerializer.object={"a+2":Number(3),}': {"a+2": 3},
-			'ExpressionSerializer.func=function a() \n{\n}': 		function a() {},
+			'ExpressionSerializer.object={}':									{},
+			'ExpressionSerializer.object={"a":Number(1),}':			{a:1},
+			'ExpressionSerializer.object={"a+2":Number(3),}': 	{"a+2": 3},
+			'ExpressionSerializer.func=function a() {}': 				function a() {},
 
 		};
 		var sut = new ExpressionSerializer();

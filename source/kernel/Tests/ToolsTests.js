@@ -1168,7 +1168,7 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 	
 });
 
-thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.ConvertFileFragmentsToChangesTests', {
+thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.ChangesConversionTest', {
 
 	setUp: function($super) {
 		$super();
@@ -1184,6 +1184,38 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.ConvertFileFragmen
 		this.assert(change.subElements()[0].isProtoChange, 'subelements[0]?');
 		this.assertEqual(change.subElements()[0].getName(), 'm1', 'subelements[0] name?');
 	},
+testConvertMethodFFToProtoChange: function() {
+	var f = this.fragmentNamed('m1');
+	this.assertEqual(f.type, 'propertyDef');
+	var result = f.asChange();
+	this.assert(result.isProtoChange, 'no protoChange');
+	this.assertEqual(result.getDefinition(), 'function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}');
+},
+testProtoChangeAsJs: function() {
+	var protoC = ProtoChange.create('test', 'function(a,b) {\n 1+2}', 'Dummy');
+	var result = protoC.asJs();
+	this.assertEqual(result, 'test: function(a,b) {\n 1+2},');
+	var convertedBack = this.jsParser.parseNonFile(result);
+
+	convertedBack.asChange();
+},
+testClassChangeAsJs: function() {
+	var classC = ClassChange.create('TestClass', 'SuperTestClass');
+	var result = classC.asJs();
+	this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {});');
+	var protoC1 = ProtoChange.create('test1', 'function() {1}', 'TestClass');
+	var protoC2 = ProtoChange.create('test2', 'function() {2}', 'TestClass');
+	classC.addSubElements([protoC1, protoC2]);
+	result = classC.asJs();
+	this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {\n' +
+		'test1: function() {1},\ntest2: function() {2},\n});');
+var convertedBack = this.jsParser.parseNonFile(result);
+convertedBack.asChange();
+x=convertedBack;
+},
+
+
+
 
 });
 thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.PopulateChangeSetFromFFsTest', {
@@ -1231,11 +1263,12 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var cs = ChangeSet.fromWorld(this.worldMorph);
 		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
 		var change = this.parser.createChange(xml);
+		var length = cs.subElements().length;
 		cs.addChange(change);
 		var result = cs.subElements();
-		this.assertEqual(result.length, 1);
-		this.assert(result[0].isClassChange);
-		this.assertEqual(result[0].getName(), change.getName());
+		this.assertEqual(result.length, length+1);
+		this.assert(result.last().isClassChange);
+		this.assertEqual(result.last().getName(), change.getName());
 	},
 
 	testAddedChangeSetGetsSerialized: function() {
@@ -1250,8 +1283,8 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var worldNode = doc.getElementById(world.id());
 		var codeNode = worldNode.getElementsByTagName('code')[0];
 		this.assert(codeNode, 'node codeNode');
-		this.assertEqual(codeNode.childNodes.length, 1);
-		var newChange = this.parser.createChange(codeNode.childNodes[0]);
+		this.assert(codeNode.childNodes.length > 1);
+		var newChange = this.parser.createChange($A(codeNode.childNodes).last());
 		this.assert(newChange);
 		this.assertEqual(newChange.getName(), change.getName());
 	},
@@ -1263,12 +1296,13 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
 		var change = this.parser.createChange(xml);
 		cs.addChange(change);
+		var length = cs.subElements().length;
 		// serialize a bit
 		var doc = Exporter.shrinkWrapMorph(world);
 		var newWorld = new Importer().loadWorldContents(doc);
 		var newCs = ChangeSet.fromWorld(newWorld);
-		this.assertEqual(newCs.subElements().length, 1);
-		this.assertEqual(newCs.subElements()[0].getName(), change.getName());
+		this.assertEqual(newCs.subElements().length, length);
+		this.assertEqual(newCs.subElements().last().getName(), change.getName());
 	},
 
 	testEvalChangeSet: function() {
@@ -1288,18 +1322,20 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		var change = DoitChange.create('1+2');
 		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
 		var cs = ChangeSet.fromWorld(this.worldMorph);
+		var length = cs.subElements().length;
 		cs.addChange(change);
 		cs.removeChangeNamed('aDoit');
-		this.assertEqual(cs.subElements().length, 0);
+		this.assertEqual(cs.subElements().length, length);
 	},
 
 	testRemoveChangeAtIndex: function() {
 		var change = DoitChange.create('1+2');
 		this.assertEqual(change.getName(), 'aDoit', 'change has no name');
 		var cs = ChangeSet.fromWorld(this.worldMorph);
+		var length = cs.subElements().length;
 		cs.addChange(change);
-		cs.removeChangeAt(0);
-		this.assertEqual(cs.subElements().length, 0);
+		cs.removeChangeAt(cs.subElements().length - 1);
+		this.assertEqual(cs.subElements().length, length);
 	},
 
 	testRemoveAllChanges: function() {

@@ -1163,15 +1163,11 @@ subMenuItems: function($super, evt) {
 		["help", this.doHelp.bind(this)],
 		["add as preamble to current ChangeSet", function() {
 			var cs = ChangeSet.current();
-			var prev = cs.subElements().detect(function(ea) { ea.getName() === 'preamble'});
-			prev && prev.remove();
-			cs.addChange(DoitChange.create(this.getSelectionString(), 'preamble'));
+			cs.addOrChangePreamble(this.getSelectionString());
 			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["add as postscript to current ChangeSet", function() {
 			var cs = ChangeSet.current();
-			var prev = cs.subElements().detect(function(ea) { ea.getName() === 'postscript'});
-			prev && prev.remove();
-			cs.addChange(DoitChange.create(this.getSelectionString(),  'postscript'));
+			cs.addOrChangePostscript(this.getSelectionString());
 			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
 		["evaluate as Lively markup", function() { 

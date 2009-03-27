@@ -81,8 +81,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
             morph.withAllSubmorphsDo(function() {            
                 this.onMouseOver = function(evt) { browser.showButtons(evt, morph, paneName) };
                 this.onMouseDown = this.onMouseDown.wrap(function(proceed, evt) {
+					browser.showButtons(evt, morph, paneName);
                     proceed(evt);
-                    browser.showButtons(evt, morph, paneName);
                 });
                 this.onMouseOut = function(evt) { browser.hideButtons(evt, morph, paneName) };
             })
@@ -208,8 +208,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
              if (!listItems) return [];
              if (!listItems.collect) {
     			console.log('Weird bug: listItems: ' + listItems + ' has no collect in pane ' + paneName);
-    			Global.y = listItems;
-    			dbgOn(true);
     			return [];
     		}
             return listItems.collect(function(ea) { return ea.value })    
@@ -262,9 +260,12 @@ Widget.subclass('lively.ide.BasicBrowser', {
             return
         };
 		this.setPane2Content(this.childsFilteredAndAsListItems(node, this.getPane1Filters()));
-        this.setPane1Menu(node.menuSpec());
        	this.setSourceString(node.sourceString());
 		this.updateTitle();
+
+        this.setPane1Menu(this.commandMenuSpec('Pane1').concat(node.menuSpec()));
+		this.setPane2Menu(this.commandMenuSpec('Pane2'));
+		this.setPane3Menu(this.commandMenuSpec('Pane3'));
     },
  
     onPane2SelectionUpdate: function(node) {
@@ -276,9 +277,11 @@ Widget.subclass('lively.ide.BasicBrowser', {
             return
         }
         this.setPane3Content(this.childsFilteredAndAsListItems(node, this.getPane2Filters()));
-        this.setPane2Menu(node.menuSpec());
         this.setSourceString(node.sourceString());
 		this.updateTitle();
+
+		this.setPane2Menu(this.commandMenuSpec('Pane2').concat(node.menuSpec()));
+		this.setPane3Menu(this.commandMenuSpec('Pane3'));
     },
  
     onPane3SelectionUpdate: function(node) {
@@ -287,9 +290,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
             this.hideButtons(null, this.panel.Pane3, 'Pane3')
             return
         }
-        this.setPane3Menu(node.menuSpec());
         this.setSourceString(node.sourceString());
 		this.updateTitle();
+
+		this.setPane3Menu(this.commandMenuSpec('Pane3').concat(node.menuSpec()));
     },
  
     onSourceStringUpdate: function(methodString) {
@@ -307,7 +311,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		// optimization: if no node looks like the changed node in my browser do nothing
 		if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
 			return;
-		dbgOn(true); 
 	      // FIXME remove duplication
         var oldN1 = this.getPane1Selection();
         var oldN2 = this.getPane2Selection();
@@ -326,8 +329,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
 			var newNode = nodes.detect(function(ea) {return ea && ea.target === oldNode.target});
 			if (!newNode)
 				newNode = nodes.detect(function(ea) {return ea && ea.asString() === oldNode.asString()});
-			if (newNode)
-				newNode.mode = oldNode.mode;
             this['set' + paneName + 'Selection'](newNode, true);
 		}.bind(this);
 		
@@ -371,6 +372,15 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		if (n3) title += ':' + n3.asString();
 		window.setTitle(title);
 	},
+commandMenuSpec: function(pane) {
+	var result = this.commands()
+		.select(function(ea) { return ea.wantsMenu() && ea.isActive(pane) })
+		.inject([], function(all, ea) { return all.concat(ea.trigger()) });
+	if (result.length > 0)
+		result.push(['-------']);
+	return result;
+},
+
 
 });
  
@@ -464,6 +474,14 @@ Object.subclass('lively.ide.BrowserCommand', {
 	wantsButton: function() {
 		return false;
 	},
+wantsMenu: function() {
+		return false;
+	},
+isActive: function() {
+		return false;
+	},
+
+
 
 	asString: function() {
 		return 'unnamed command'
@@ -484,27 +502,24 @@ lively.ide.NodeFilter.subclass('lively.ide.SortFilter', {
 	});
 }
 });
-lively.ide.NodeFilter.subclass('lively.ide.ClassFunctionObjectFilter', {
-	
-	mode: null, // 'classes', 'functions', 'objects'
+lively.ide.NodeFilter.subclass('lively.ide.NodeTypeFilter', {
 
-	modeClasses: {
-		classes: lively.ide.ClassFragmentNode,
-		functions: lively.ide.FunctionFragmentNode,
-		objects: lively.ide.ObjectFragmentNode
-	},
+	documentation: 'allows only nodes of the specified class',
+isNodeTypeFilter: true,
+
+
+	initialize: function(nodeClassToFilter) {
+		this.nodeClass = nodeClassToFilter;
+	},	
 
 	apply: function(nodes) {
-		if (!this.mode) return nodes;
-    //  nodes.inject({special: [], other: []}, )
-    //  var classesFunctionsObjects = [];
-    //  var other = 1;
-    // return nodes.sort(function(a,b) {
-    //  if (a.asString().toLowerCase() < b.asString().toLowerCase()) return -1;
-    //  if (a.asString().toLowerCase() > b.asString().toLowerCase()) return 1;
-    //  return 0;
-    // });
-}
+	    var k = this.nodeClass;
+		if (!k){
+			console.log('nodeTypeFilter has no class!!!');
+			return nodes;
+		}
+		return nodes.select(function(ea) { return ea.constructor === k || ea instanceof lively.ide.ChangeNode });
+	}
 });
 
  
@@ -515,6 +530,13 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', { // 123
  
     documentation: 'Browser for source code parsed from js files',
     viewTitle: "SystemBrowser",
+initialize: function($super) {
+	$super();
+	this.installFilter(new lively.ide.NodeTypeFilter(lively.ide.ClassFragmentNode), 'Pane1');
+},
+
+
+
  
     rootNode: function() {
         ide.startSourceControl();
@@ -565,7 +587,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser));
 			}
 		};
-		nodes.push(new ide.ChangeSetNode(ChangeSet.fromWorld(WorldMorph.current()), this.browser));
+		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
 		return nodes;
 	}
 });
@@ -622,7 +644,6 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 
     initialize: function($super, target, browser, moduleName) {
         $super(target, browser);
-        this.mode = 'classes';
         this.moduleName = moduleName;
 		this.showAll = false;
     },
@@ -631,39 +652,32 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
         var browser = this.browser;
         var completeFileFragment = this.target;
         if (!completeFileFragment) return [];
-        switch (this.mode) {
-           case "classes":
-            return this.target.flattened()
-                .select(function(ea) { return ea.type === 'klassDef' || ea.type === 'klassExtensionDef'})
-                // .sort(function(a,b) { return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-                .collect(function(ea) { return new ide.ClassFragmentNode(ea, browser) });
-           case "functions":
-            return this.target.flattened()
-                .select(function(ea) { return ea.type === 'functionDef' })
-                // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-                .collect(function(ea) { return new ide.FunctionFragmentNode(ea, browser) });
-           case "objects":
-            return this.target.subElements()
-               .select(function(ea) { return ea.type === 'objectDef' || ea.type === 'propertyDef' || ea.type === 'unknown' || ea.type === 'moduleDef' || ea.type === 'usingDef'})
-               // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-               .collect(function(ea) { return new ide.ObjectFragmentNode(ea, browser) });
-           default: return ['Huh']
-        }
+		var typeToClass = function(type) {
+			if (type === 'klassDef' || type === 'klassExtensionDef')
+				return ide.ClassFragmentNode;
+			if (type === 'functionDef')
+				return ide.FunctionFragmentNode; 
+			return ide.ObjectFragmentNode;
+		}
+		return this.target.flattened().collect(function(ea) {
+			return new (typeToClass(ea.type))(ea, browser);
+		})
     },
  
     buttonSpecs: function() {
-		var node = this;
-		var myPane = node.browser.paneNameOfNode(this);
-		var setMode = function(mode) {
-			node.browser.nodesInPane(myPane)
-				.select(function(ea) { return ea.constructor === node.constructor })
-				.each(function(ea) { ea.mode = mode })
+		var pane = this.browser.paneNameOfNode(this);
+		var b = this.browser;
+		var f = b['get'+pane+'Filters']().detect(function(ea) { return ea.isNodeTypeFilter });
+		if (!f) {
+
+			f = new lively.ide.NodeTypeFilter(lively.ide.ClassFragmentNode);
+			b.installFilter(f, pane);
+			console.log('instaling filter.......');
 		}
-		return [
-            {label: 'classes',action: setMode.curry('classes')},
-            {label: 'functions', action: setMode.curry('functions')},
-            {label: 'objects', action: setMode.curry('objects')}
-        ]
+		var configFilter = function(klass) {f.nodeClass = klass}
+        return [{label: 'classes', action: configFilter.curry(lively.ide.ClassFragmentNode)},
+                    {label: 'functions', action: configFilter.curry(lively.ide.FunctionFragmentNode)},
+                    {label: 'objects', action: configFilter.curry(lively.ide.ObjectFragmentNode)}];
     },
     
     menuSpec: function($super) {
@@ -876,6 +890,10 @@ ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 ide.BrowserNode.subclass('lively.ide.ChangeNode', {
 
 	documentation: 'Abstract node for Changes/ChangeSet nodes',
+asString: function() {
+		return this.target.getName();
+	},
+
 
 	menuSpec: function() {
 		var spec = [];
@@ -885,6 +903,18 @@ ide.BrowserNode.subclass('lively.ide.ChangeNode', {
 			node.browser.allChanged() }]);
 		return spec;
 	},
+sourceString: function() {
+		return this.target.asJs();
+	},
+
+saveSource: function(newSource) {
+		var fragment = new JsParser().parseNonFile(newSource);
+		var change = fragment.asChange();
+		this.target.setXMLElement(change.getXMLElement());
+		this.savedSource = this.target.asJs();
+        return true;
+    },
+
 
 });
 
@@ -912,41 +942,32 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetNode', {
 		return this.target.name;
 	},
 
+
+
 });
 
 ide.ChangeNode.subclass('lively.ide.ChangeSetClassNode', {
-	asString: function() {
-		return this.target.getName();
-	},
+	
 	childNodes: function() {
 		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
 	},    
-	sourceString: function() {
-		return this.target.getDefinition();
-	},
+	
 });
 
-ide.ChangeNode.subclass('lively.ide.ChangeSetClassElemNode', {
-	asString: function() {
-		return this.target.getName();
-	},
-	sourceString: function() {
-		return this.target.getDefinition();
-	},
-});
+ide.ChangeNode.subclass('lively.ide.ChangeSetClassElemNode');
 
 ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
-	asString: function() {
-		return this.target.getName();
-	},
+	
 	sourceString: function() {
 		return this.target.getDefinition();
 	},
+
 saveSource: function(newSource) {
 		this.target.setDefinition(newSource);
 		this.savedSource = this.target.getDefinition();
         return true;
     },
+
 evalSource: function(newSource) {
 		if (!this.browser.evaluate) return false;
 		if (this.target.getDefinition() !== newSource)
@@ -1074,6 +1095,90 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 	},
 
 });
+ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
+
+	wantsMenu: function() {
+		return true;
+	},
+
+	isActive: function(pane) {
+		return this.browser.getPane1Selection() instanceof lively.ide.ChangeSetNode
+			&& pane == 'Pane2';
+	},
+
+
+	trigger: function() {
+		var cmd = this;
+		return [['add class', cmd.addClass.bind(this)], ['add doit', cmd.addDoit.bind(this)]];
+	},
+addClass: function() {
+	var b = this.browser;
+	var w = WorldMorph.current();
+	ownerNode = b.getPane1Selection(); // should be node of changeset
+	var cs = ownerNode.target;
+
+	var createChange = function(className, superClassName) {
+		var change = ClassChange.create(className, superClassName);
+		cs.addSubElement(change);
+		b.allChanged();
+	}
+
+	w.prompt('Enter class name', function(n1) {
+		w.prompt('Enter super class name', function(n2) {
+			createChange(n1, n2);
+		})			
+	});
+},
+addDoit: function() {
+	var b = this.browser;
+	var w = WorldMorph.current();
+	ownerNode = b.getPane1Selection(); // should be node of changeset
+	var cs = ownerNode.target;
+
+	var createChange = function(className, superClassName) {
+		var change = DoitChange.create('// empty doit');
+		cs.addSubElement(change);
+		b.allChanged();
+	}
+	createChange();
+},
+
+
+});
+lively.ide.BrowserCommand.subclass('lively.ide.ClassChangeMenuCommand', {
+
+	wantsMenu: function() {
+		return true;
+	},
+
+	isActive: function(pane) {
+		return this.browser.getPane2Selection() instanceof lively.ide.ChangeSetClassNode
+			&& pane == 'Pane3';
+	},
+
+
+	trigger: function() {
+		var cmd = this;
+		return [['add method', cmd.addMethod.bind(this)]];
+	},
+addMethod: function() {
+	var b = this.browser;
+	var w = WorldMorph.current();
+	ownerNode = b.getPane2Selection(); // should be class change node
+	var classChange = ownerNode.target;
+
+	var createChange = function(methodName) {
+		var change = ProtoChange.create(methodName, 'function() {}');
+		classChange.addSubElement(change);
+		b.allChanged();
+	}
+
+	w.prompt('Enter method name', function(n1) {
+		createChange(n1);
+	});
+},
+
+});
 
 
 // ===========================================================================
@@ -1187,6 +1292,12 @@ Object.subclass('CodeParser', {
  
         return this.changeList;
     },
+parseNonFile: function(source) {
+	var result = this.parseSource(source).first();
+	this.doForAllDescriptors(result, function(d) { d._fallbackSrc = source });
+	return result;
+},
+
 
 	couldNotGoForward: function(descr, specialDescr) {
 		dbgOn(true);
@@ -1608,7 +1719,6 @@ Object.subclass('lively.ide.FileFragment', {
     },
     
     getSourceCode: function() {
-        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
         return this.getFileString().substring(this.startIndex, this.stopIndex+1);
     },
  
@@ -1738,8 +1848,10 @@ reparseAndCheck: function(newString) {
 	},
 
     getFileString: function() {
+		if (!this.fileName && this._fallbackSrc)
+			return this._fallbackSrc;
         if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
-        return this.getSourceControl().getCachedText(this.fileName);
+		return  this.getSourceControl().getCachedText(this.fileName);
     },
     
     newChangeList: function() {
@@ -1861,6 +1973,18 @@ Object.subclass('Change', {
 	getXMLElement: function() {
 		return this.xmlElement;
 	},
+setXMLElement: function(newElement) {
+	var p = this.getXMLElement().parentNode;
+	if (!p) return;
+	var sibling = this.getXMLElement().nextSibling;
+	p.removeChild(this.getXMLElement());
+	newElement = p.ownerDocument.adoptNode(newElement);
+	if (sibling)
+		p.insertBefore(newElement, sibling);
+	else
+		p.appendChild(sibling);
+},
+
 
 	getParser: function() {
 		return new AnotherCodeMarkupParser();
@@ -1888,6 +2012,8 @@ addSubElement: function(change) {
 		this.xmlElement.appendChild(change.getXMLElement());
 		return change;
 	},
+addSubElements: function(elems) { elems.forEach(function(ea) { this.addSubElement(ea) }, this) },
+
 
 
 	remove: function() {
@@ -1980,7 +2106,7 @@ Change.subclass('ChangeSet', {
     },
 
 	removeChangeNamed: function(name) {
-		var change = this.subElements().detect(function(ea) { return ea.getName() === name});
+		var change = this.subElementNamed(name);
 		if (!change) return null;
 		change.remove();
 		return change;
@@ -2033,7 +2159,33 @@ Change.subclass('ChangeSet', {
 	if(item.type == 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
 	if(item.type == 'subclass') eval(item.className + '.subclass("' + item.subName + '", {})');
 	if(item.type == 'doit') eval(item.doitString);
-    }
+    },
+addOrChangeElementNamed: function(name, source) {
+	var prev = this.subElements().detect(function(ea) { ea.getName() == name});
+	if (prev) {
+		prev.setDefinition(source);
+		return;
+	}
+	this.addChange(DoitChange.create(source, name));
+},
+
+subElementNamed: function(name) {
+	return this.subElements().detect(function(ea) { return ea.getName() == name });
+},
+ensureHasPreambleAndPostScript: function() {
+	var preamble = this.subElementNamed('preamble');
+	if (!preamble)
+		this.addOrChangeElementNamed('preamble', '// preamble');
+	var postscript = this.subElementNamed('postscript');
+	if (!postscript)
+		this.addOrChangeElementNamed('postscript', '// postscript');
+},
+
+
+
+});
+ChangeSet.addMethods({
+	asNode: function(browser) { return new lively.ide.ChangeSetNode(this, browser) }
 });
 
 
@@ -2041,7 +2193,9 @@ Object.extend(ChangeSet, {
 
 	fromWorld: function(worldOrNode) {
 		var node = worldOrNode instanceof WorldMorph ? worldOrNode.getDefsNode() : worldOrNode;
-		return new ChangeSet('ChangeSet for World').initializeFromWorldNode(node);
+		var cs = new ChangeSet('Local code').initializeFromWorldNode(node);
+		cs.ensureHasPreambleAndPostScript();
+		return cs;
 	},
 
 	fromFile: function(fileName, fileString) {
@@ -2097,6 +2251,14 @@ Change.subclass('ClassChange', {
 		this.getStaticChanges().concat(this.getProtoChanges()).forEach(function(ea) { ea.evaluate() });
 		return klass;
 	},
+asJs: function() {
+	var subElementString = '';
+	if (this.subElements().length > 0)
+		subElementString = '\n' + this.subElements().invoke('asJs').join('\n') + '\n';
+	return Strings.format('%s.subclass(\'%s\', {%s});',
+		this.getSuperclassName(), this.getName(), subElementString);
+},
+
 
 });
 
@@ -2134,6 +2296,10 @@ Change.subclass('ProtoChange', {
 		return this.getAttributeNamed('className')
 			|| this.getAttributeNamed('name', this.xmlElement.parentNode);
 	},
+asJs: function() {
+	return this.getName() + ': ' + this.getDefinition() + ',';
+},
+
 
 });
 
