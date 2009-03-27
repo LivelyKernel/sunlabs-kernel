@@ -182,8 +182,11 @@ Object.subclass('URL', {
     toLiteral: function() {
 	// URLs are literal
 	return Object.clone(this);
-    }
+    },
     
+toExpression: function() {
+	return 'new URL(JSON.unserialize(\'' + JSON.serialize(this) + '\'))';
+},
 });
 
 URL.fromLiteral = function(literal) {
@@ -422,6 +425,31 @@ View.subclass('NetRequest', {
     if (overwrite) this.setRequestHeaders({ "Overwrite" : 'T' });
 	return this.request("COPY", URL.makeProxied(url));
     },
+
+	lock: function(url, owner) {
+		this.setRequestHeaders({Timeout: 'Infinite, Second-30'});
+		var content = Strings.format('<?xml version="1.0" encoding="utf-8" ?> \n\
+		  <D:lockinfo xmlns:D=\'DAV:\'> \n\
+		    <D:lockscope><D:exclusive/></D:lockscope> \n\
+		    <D:locktype><D:write/></D:locktype> \n\
+			<D:owner>%s</D:owner> \n\
+		  </D:lockinfo>', owner || 'unknown user');
+		return this.request("LOCK", URL.makeProxied(url), content);
+	},
+unlock: function(url, lockToken, force) {
+		if (force) {
+			var req = new NetRequest().beSync().propfind(url);
+			var xml = req.getResponseXML() || stringToXML(req.getResponseText());
+			var q = new Query('/descendant::*/D:lockdiscovery/descendant::*/D:locktoken/D:href');
+			var tokenElement = q.findFirst(xml);
+			if (!tokenElement) // no lock token, assume that resource isn't locked
+				return req;
+			lockToken = tokenElement.textContent;
+		}
+		this.setRequestHeaders({'Lock-Token': '<' + lockToken + '>'});
+		return this.request("UNLOCK", URL.makeProxied(url));
+	},
+
     
     toString: function() {
 	return "#<NetRequest{"+ this.method + " " + this.url + "}>";
@@ -455,7 +483,9 @@ NetRequestReporterTrait = {
 		world.alert("not authorized to access\n" + request); 
 		// should try to authorize
 		} else if (status.code() == 412) {
-		console.log("the resource was changed elsewhere\n" + request); 
+		console.log("the resource was changed elsewhere\n" + request);
+		} else if (status.code() == 423) {
+		world.alert("the resource is locked\n" + request);
 	    } else {
 		world.alert("failure to\n" + request + "\ncode " + status.code());
 	    }
@@ -660,7 +690,7 @@ Resource.subclass('SVNResource', {
     formals: Resource.prototype.formals.concat(['Metadata', 'HeadRevision']),
     
     initialize: function($super, repoUrl, plug, contentType) {
-		this.repoUrl = repoUrl;
+		this.repoUrl = repoUrl.toString();
 		$super(plug, contentType);
     },
 	
@@ -716,18 +746,19 @@ store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
     	return req;
     },
 	
-    fetchMetadata: function(optSync, optRequestHeaders, startRev) {
+    fetchMetadata: function(optSync, optRequestHeaders, startRev, endRev, reportDepth) {
 	// get the whole history if startRev is undefined
 	// FIXME: in this case the getHeadRevision will be called synchronous
 	if (!startRev) {
 	    this.fetchHeadRevision(true);
 	    startRev = this.getHeadRevision();
 	}
-	var req = new NetRequest({model: this, setResponseXML: "pvtSetMetadataDoc",
+	this.reportDepth = reportDepth; // FISXME quick hack, needed in 'pvtScanLog...'
+	var req = new NetRequest({model: this, setResponseXML: "pvtScanLogReportForVersionInfos",
 	    setStatus: "setRequestStatus"});
 	if (optSync) req.beSync();
-	if (optRequestHeaders) this.setRequestHeaders(optRequestHeaders);
-	req.report(this.getURL(), this.pvtRequestMetadataXML(startRev));
+	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+	req.report(this.getURL(), this.pvtRequestMetadataXML(startRev, endRev));
 	return req;
     },
 	
@@ -740,27 +771,69 @@ store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
 	this.setHeadRevision(Number(revisionNode.textContent));
     },
 	
-    pvtSetMetadataDoc: function(xml) {
-	if (!xml) return;
-	var array = $A(xml.getElementsByTagName('log-item'));
-	var result = array.collect(function(ea) {
-	    return new SVNVersionInfo(Number(ea.getElementsByTagName('version-name')[0].textContent),
-    		                      ea.getElementsByTagName('date')[0].textContent,
-    		                      ea.getElementsByTagName('creator-displayname')[0] ?
-    		                        ea.getElementsByTagName('creator-displayname')[0].textContent :
-    		                        null);
+pvtScanLogReportForVersionInfos: function(logReport) {
+	// FIXME Refactor: method object?
+	var depth = this.reportDepth;
+	var logItemQ = new Query('//S:log-item');
+	var versionInfos = [];
+	//var repoUrl = new URL(this.repoUrl);
+    var repoUrl = this.repoUrl;
+	logItemQ.findAll(logReport).forEach(function(logElement) {
+		var spec = {};
+		$A(logElement.childNodes).forEach(function(logProp) {
+			switch(logProp.tagName) {
+				case 'D:version-name':
+					spec.rev = Number(logProp.textContent); break;
+				case 'D:creator-displayname':
+					spec.author = logProp.textContent; break;
+				case 'S:date':
+					spec.date = logProp.textContent; break;
+				case 'S:added-path':
+				case 'S:modified-path':
+				case 'S:deleted-path':
+				case 'S:replaced-path':
+					var relPath = logProp.textContent;
+					if (depth && relPath.split('/').length-1 > depth)
+						return;
+					//relPath = relPath.slice(1); // remove trailing /
+                    if (repoUrl.endsWith(relPath))
+                        spec.url = repoUrl; // hmmm???
+                    else
+					    spec.url = repoUrl.toString() + relPath.slice(1); 
+					console.log('Created spec.url:' + spec.url);
+					if (spec.change != null) {// was set before... assume only one change per rev
+						//	console.warn('multiple changes for one revision of ' + spec.url);
+						spec.url = null;
+						return;
+					}
+					spec.change = logProp.tagName.split('-').first();
+					break;
+				default:
+			}
+		});
+		if (!spec.url) return;
+		spec.url = new URL(spec.url);
+		versionInfos.push(new SVNVersionInfo(spec));
 	});
-	this.setMetadata(result);
-    },
+	// newest version first
+	versionInfos = versionInfos.sort(function(a,b) { return b.rev - a.rev });
+	this.setMetadata(versionInfos);
+},
+pvtScanLogReportForVersionInfosTrace: function(logReport) {
+	lively.lang.Execution.trace(this.pvtScanLogReportForVersionInfos.curry(logReport).bind(this));
+},
+
+
 	
-    pvtRequestMetadataXML: function(startRev) {
+    pvtRequestMetadataXML: function(startRev, endRev) {
 	return Strings.format(
-	    '<S:log-report xmlns:S="svn:">' + 
-	    	'<S:start-revision>%s</S:start-revision>' +
-	    	'<S:end-revision>0</S:end-revision>' +
-		'<S:all-revprops/>' +
-	    	'<S:path/>' +
-	    '</S:log-report>', startRev);
+		'<S:log-report xmlns:S="svn:" xmlns:D="DAV:">' + 
+			'<S:start-revision>%s</S:start-revision>' +
+			'<S:end-revision>%s</S:end-revision>' +
+			'<S:discover-changed-paths/>' +
+			'<S:path></S:path>' +
+			'<S:all-revprops/>' +
+		'</S:log-report>', startRev, endRev || 0);
     },
 	
     withBaselineUriDo: function(rev, doFunc) {
@@ -775,22 +848,31 @@ Object.subclass('SVNVersionInfo', {
 
 	// documentation: 'This object wraps svn infos from report or propfind requests',
 
-    initialize: function(rev, dateOrString, author) {
-        this.rev = rev;
-	if (Object.isString(dateOrString)) {
-	    this.date = this.parseUTCDateString(dateOrString);
-	} else if (dateOrString instanceof Date) {
-	    this.date = dateOrString;
-	} else { 
-	    this.date = new Date();
-	}
-	this.author = author ? author : '(no author)';
-    },
+    initialize: function(spec) {
+		// possible properties of spec:
+		// rev, date, author, url, change, content
+		for (name in spec) {
+			var val = spec[name];
+			if (name == 'date') {
+				if (Object.isString(val)) {
+					this.date = this.parseUTCDateString(val);
+				} else if (val instanceof Date) {
+					this.date = val;
+				}
+			} else {
+				this[name] = val;
+			}
+		}
+		if (!this.author)
+			this.author = '(no author)';
+		if (!this.date)
+			this.date = new Date();
+	},
     
     parseUTCDateString: function(dateString) {
         var yearElems = dateString.slice(0,10).split('-').collect(function(ea) {return Number(ea)});
         var timeElems = dateString.slice(11,19).split(':').collect(function(ea) {return Number(ea)});
-        return new Date(yearElems[0], yearElems[1] - 1, yearElems[2], timeElems[0], timeElems[1], timeElems[2])
+        return new Date(yearElems[0], yearElems[1]-1, yearElems[2], timeElems[0], timeElems[1], timeElems[2])
     },
     
     toString: function() {
@@ -802,7 +884,12 @@ Object.subclass('SVNVersionInfo', {
         
          return Strings.format('%s, %s, %s, Revision %s',
             this.author, this.date.toTimeString(), this.date.toDateString(), this.rev);
-    }
+    },
+toExpression: function() {
+	return Strings.format('new SVNVersionInfo({rev: %s, url: %s, date: %s, author: %s, change: %s})',
+		this.rev, toExpression(this.url), toExpression(this.date),
+		toExpression(this.author), toExpression(this.change));
+},
 });
 // TODO will be merged with Resource
 // TODO make async?
