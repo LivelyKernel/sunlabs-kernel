@@ -870,7 +870,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
 			var title = 'references of' + fragment.name;
 			new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]);
 		return menu;
-	} 
+	},
 
 handleDrop: function(nodeDroppedOntoMe) {
 	if (!(nodeDroppedOntoMe instanceof lively.ide.ClassElemFragmentNode))
