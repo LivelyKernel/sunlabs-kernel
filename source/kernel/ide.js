@@ -18,6 +18,15 @@ Widget.subclass('lively.ide.BasicBrowser', {
     documentation: 'Abstract widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
     initialViewExtent: pt(620, 450),
     emptyText: '-----',
+panelSpec: [
+['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.40)],
+['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)],
+//['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
+['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+//['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
+],
+
     allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
     filterPlaces: ['Root', 'Pane1', 'Pane2', 'Pane3'],
     formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer", "Pane1Menu", "Pane1Filters",
@@ -61,13 +70,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 
         this.start();
  
-        var panel = PanelMorph.makePanedPanel(extent, [
-            ['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.40)],
-            ['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)], //['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
-            ['Pane3', newDragnDropListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-            ['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
-            //['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
-        ]);
+        var panel = PanelMorph.makePanedPanel(extent, this.panelSpec);
  
         var model = this.getModel();
         var browser = this;
@@ -87,7 +90,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
             })
         }
  
-        ['Pane1', 'Pane2', 'Pane3'].each(function(ea) { setupListPanes(ea) });
+        this.allPaneNames.each(function(ea) { setupListPanes(ea) });
  
         panel.sourcePane.innerMorph().maxSafeSize = 2e6;
         panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
@@ -158,7 +161,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         if (!force && this['get' + paneName + 'Selection']() !== null) return;
         var btnHolder = morph.owner;
         var btns = btnHolder.submorphs.select(function(ea) { return ea['is' + paneName + 'BrowserButton'] });
-        btns.each(function(ea) { ea.remove() })
+        //btns.each(function(ea) { ea.remove() })
         // var btns = morph.submorphs.select(function(ea) { return ea.isBrowserButton });
         // if (btns.any(function(ea) { return ea.shape.containsPoint(ea.localize(evt.point())) }))
         //     return
@@ -213,6 +216,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
     		}
             return listItems.collect(function(ea) { return ea.value })    
     },
+selectionInPane: function(pane) {
+	return this['get'+pane+'Selection'](); 
+},
+
     
     filterChildNodesOf: function(node, filters) {
     	return filters.inject(node.childNodes(), function(nodes, filter) {
@@ -294,9 +301,11 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		this.setPane3Menu(this.commandMenuSpec('Pane3').concat(node.menuSpec()));
     },
  
-    onSourceStringUpdate: function(methodString) {
+    onSourceStringUpdate: function(methodString, source) {
         if (!methodString || methodString == this.emptyText) return;
-        if (this.selectedNode().sourceString() == methodString) return;
+        if (this.selectedNode().sourceString() == methodString &&
+			source !== this.panel.sourcePane.innerMorph())
+				return;
         this.selectedNode().newSource(methodString);
         this.nodeChanged(this.selectedNode());
     },
@@ -581,25 +590,23 @@ isNodeTypeFilter: true,
 // ===========================================================================
 // Browsing js files and OMeta
 // ===========================================================================
-ide.BasicBrowser.subclass('lively.ide.SystemBrowser', { // 123
- 
-    documentation: 'Browser for source code parsed from js files',
-    viewTitle: "SystemBrowser",
+ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
+
+documentation: 'Browser for source code parsed from js files',
+viewTitle: "SystemBrowser",
+
 initialize: function($super) {
 	$super();
 	this.installFilter(new lively.ide.NodeTypeFilter(lively.ide.ClassFragmentNode), 'Pane1');
 },
 
-
-
- 
-    rootNode: function() {
-        ide.startSourceControl();
-        if (!this._rootNode)
-            this._rootNode = new ide.SourceControlNode(tools.SourceControl, this);
-            // this._rootNode = new ide.EnvironmentNode(Global, this);
-        return this._rootNode;
-    },
+rootNode: function() {
+	ide.startSourceControl();
+	if (!this._rootNode)
+	this._rootNode = new ide.SourceControlNode(tools.SourceControl, this);
+	// this._rootNode = new ide.EnvironmentNode(Global, this);
+	return this._rootNode;
+},
  
 });
  
@@ -622,6 +629,30 @@ Object.extend(lively.ide.SystemBrowser, {
 	}
 	
 });
+ide.BasicBrowser.subclass('lively.ide.LocalCodeBrowser', {
+
+documentation: 'Browser for the local ChangeSet',
+panelSpec: [
+['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.5, 0.45)],
+['Pane2', newDragnDropListPane, new Rectangle(0.5, 0, 0.5, 0.45)],
+['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+],
+allPaneNames: ['Pane1', 'Pane2'],
+viewTitle: "LocalCodeBrowser",
+
+initialize: function($super) {
+	$super();
+	//this.installFilter(new lively.ide.NodeTypeFilter(lively.ide.ClassFragmentNode), 'Pane1');
+},
+
+rootNode: function() {
+	ide.startSourceControl();
+	if (!this._rootNode)
+		this._rootNode = ChangeSet.fromWorld(WorldMorph.current()).asNode(this);
+	return this._rootNode;
+},
+ 
+});
  
 ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
     
@@ -629,6 +660,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 
     childNodes: function() {
 		// js files + OMeta files (.txt) + lkml files + ChangeSet current
+		//if (this._childNodes) return this._childNodes; // optimization
 		var nodes = [];
 		var srcDb = this.target;
 		var allFiles = srcDb.allFiles();
@@ -643,6 +675,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 			}
 		};
 		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
+		this._childNodes = nodes;
 		return nodes;
 	},
 });
@@ -692,6 +725,7 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 		return tools.SourceControl;
 },
 onDrop: function(other) {
+	if (!other) return;
 	console.log(' Moving ' + this.target + ' to ' + other.target);
 	if (other.handleDrop(this))
 		this.target.remove();
@@ -994,6 +1028,33 @@ saveSource: function(newSource) {
 		this.savedSource = this.target.asJs();
         return true;
     },
+evalSource: function(newSource) {
+		if (!this.browser.evaluate) return false;
+		/*if (this.target.getDefinition() !== newSource)
+			throw dbgOn(new Error('Inconsistency while evaluating and saving?'));*/
+		this.target.evaluate();
+		return true
+    },
+onDrop: function(other) {
+	if (!other) return;
+	console.log(' Moving ' + this.target + ' to ' + other.target);
+	this.target.remove();
+	other.handleDrop(this);
+	this.signalChange();
+},
+onDrag: function() {
+    // onDrop does all the work
+},
+handleDrop: function(nodeDroppedOntoMe) {
+	if (!(nodeDroppedOntoMe instanceof lively.ide.ChangeNode))
+		return false;
+	this.target.addSubElement(nodeDroppedOntoMe.target);
+	return true;
+},
+
+
+
+
 
 
 });
@@ -1034,7 +1095,16 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetClassNode', {
 	
 });
 
-ide.ChangeNode.subclass('lively.ide.ChangeSetClassElemNode');
+ide.ChangeNode.subclass('lively.ide.ChangeSetClassElemNode', {
+
+handleDrop: function(nodeDroppedOntoMe) {
+	if (!(nodeDroppedOntoMe instanceof lively.ide.ChangeSetClassElemNode))
+		return false;
+	this.target.parent().addSubElement(nodeDroppedOntoMe.target, this.target);
+	return true;
+},
+
+});
 
 ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
 	
@@ -1048,13 +1118,7 @@ saveSource: function(newSource) {
         return true;
     },
 
-evalSource: function(newSource) {
-		if (!this.browser.evaluate) return false;
-		if (this.target.getDefinition() !== newSource)
-			throw dbgOn(new Error('Inconsistency while evaluating and saving?'));
-		this.target.evaluate();
-		return true
-    },
+
 
 
 });
@@ -1182,8 +1246,8 @@ ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
 	},
 
 	isActive: function(pane) {
-		return this.browser.getPane1Selection() instanceof lively.ide.ChangeSetNode
-			&& pane == 'Pane2';
+		return this.browser.selectionInPane('Pane1') instanceof lively.ide.ChangeSetNode && pane == 'Pane2' ||
+			this.browser instanceof lively.ide.LocalCodeBrowser && pane == 'Pane1';
 	},
 
 
@@ -1194,12 +1258,12 @@ ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
 addClass: function() {
 	var b = this.browser;
 	var w = WorldMorph.current();
-	ownerNode = b.getPane1Selection(); // should be node of changeset
-	var cs = ownerNode.target;
+	var cs = ChangeSet.current();
 
 	var createChange = function(className, superClassName) {
 		var change = ClassChange.create(className, superClassName);
 		cs.addSubElement(change);
+		if (b.evaluate) change.evaluate();
 		b.allChanged();
 	}
 
@@ -1211,13 +1275,11 @@ addClass: function() {
 },
 addDoit: function() {
 	var b = this.browser;
-	var w = WorldMorph.current();
-	ownerNode = b.getPane1Selection(); // should be node of changeset
-	var cs = ownerNode.target;
 
-	var createChange = function(className, superClassName) {
+	var createChange = function() {
 		var change = DoitChange.create('// empty doit');
-		cs.addSubElement(change);
+		ChangeSet.current().addSubElement(change);
+		if (b.evaluate) change.evaluate();
 		b.allChanged();
 	}
 	createChange();
@@ -1232,8 +1294,12 @@ lively.ide.BrowserCommand.subclass('lively.ide.ClassChangeMenuCommand', {
 	},
 
 	isActive: function(pane) {
-		return this.browser.getPane2Selection() instanceof lively.ide.ChangeSetClassNode
-			&& pane == 'Pane3';
+		var sel = this.browser.selectedNode();
+		var paneOfSel = this.browser.paneNameOfNode(sel);
+		var paneNoOfSel = Number(paneOfSel.substring('Pane'.length));
+		var nextPane = 'Pane' + (paneNoOfSel+1);
+		return  sel instanceof lively.ide.ChangeSetClassNode && pane == nextPane ||
+			sel instanceof lively.ide.ChangeSetClassElemNode && pane == paneOfSel;
 	},
 
 
@@ -1244,12 +1310,14 @@ lively.ide.BrowserCommand.subclass('lively.ide.ClassChangeMenuCommand', {
 addMethod: function() {
 	var b = this.browser;
 	var w = WorldMorph.current();
-	ownerNode = b.getPane2Selection(); // should be class change node
-	var classChange = ownerNode.target;
+	 classChange = b.selectedNode().target instanceof ClassChange ?
+			b.selectedNode().target : b.selectedNode().target.parent();
 
 	var createChange = function(methodName) {
 		var change = ProtoChange.create(methodName, 'function() {}');
 		classChange.addSubElement(change);
+		if (b.evaluate)
+			change.evaluate();
 		b.allChanged();
 	}
 
@@ -1769,6 +1837,7 @@ Object.subclass('lively.ide.FileFragment', {
     },
 eq: function(other) {
 	if (this == other) return true;
+	if (this.constructor != other.constructor) return false;
 	return this.name == other.name &&
 		this.startIndex == other.startIndex &&
 		this.stopIndex == other.stopIndex &&
@@ -2044,7 +2113,7 @@ ide.FileFragment.addMethods({
 			change = ClassChange.create(this.getName(), this.superclassName);
 			this.subElements().forEach(function(ea) { change.addSubElement(ea.asChange()) });
 		} else if (this.type === 'propertyDef' && !this.isStatic()) {
-			var src = this.getSourceCode().match(/.*:\s+((\s|.)*)/)[1];
+			var src = this.getSourceCode().match(/[a-zA-Z0-9]+:\s+((\s|.)*)/)[1];
 			if (src.endsWith(','))
 				src = src.substr(0,src.length-1);
 			change = ProtoChange.create(this.getName(), src, this.className);
@@ -2084,6 +2153,13 @@ Object.subclass('Change', {
 	initialize: function(xmlElement) {
 		this.xmlElement = xmlElement;
 	},
+eq: function(other) {
+	if (!other) return false;
+	if (this.constructor != other.constructor) return false;
+	if (this == other) return true;
+	return this.getXMLElement() == other.getXMLElement();
+},
+
 
 	getXMLElement: function() {
 		return this.xmlElement;
@@ -2122,10 +2198,13 @@ setDefinition: function(src) {
 	this.getXMLElement().textContent = src;
 },
 
-addSubElement: function(change) {
+addSubElement: function(change, insertBeforeChange) {
 		var doc = this.xmlElement.ownerDocument;
 		var newElem = doc ? doc.importNode(change.getXMLElement(), true) : change.getXMLElement();
-		this.xmlElement.appendChild(newElem);
+		if (insertBeforeChange)
+			this.xmlElement.insertBefore(newElem, insertBeforeChange.getXMLElement())
+		else
+			this.xmlElement.appendChild(newElem);
 		change.xmlElement = newElem;
 		return change;
 	},
@@ -2142,6 +2221,8 @@ addSubElements: function(elems) { elems.forEach(function(ea) { this.addSubElemen
 	subElements: function() {
 		return [];
 	},
+parent: function() { return  new ClassChange(this.getXMLElement().parentNode) },
+
 
 	evaluate: function() {
 		throw dbgOn(new Error('Overwrite me'));

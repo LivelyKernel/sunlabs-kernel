@@ -1265,7 +1265,7 @@ testSetXMLElement: function() {
 	
 });
 
-thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.ChangesConversionTest', {
+lively.Tests.ToolsTests.FileFragmentTest.subclass('lively.Tests.ToolsTests.ChangesConversionTest', {
 
 	setUp: function($super) {
 		$super();
@@ -1288,6 +1288,13 @@ testConvertMethodFFToProtoChange: function() {
 	this.assert(result.isProtoChange, 'no protoChange');
 	this.assertEqual(result.getDefinition(), 'function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}');
 },
+testPropertyFFToChange: function() {
+	var s = 'initialStyle: {borderWidth: 0, fillOpacity: .5, fill: Color.veryLightGray},';
+	var f = this.jsParser.parseNonFile(s);
+	var c = f.asChange();
+	this.assertEqual(c.getSourceCode(), s);
+},
+
 testProtoChangeAsJs: function() {
 	var protoC = ProtoChange.create('test', 'function(a,b) {\n 1+2}', 'Dummy');
 	var result = protoC.asJs();
