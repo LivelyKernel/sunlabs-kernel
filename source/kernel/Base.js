@@ -1,24 +1,13 @@
 /*
- * Copyright (c) 2006-2009 Sun Microsystems, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
+ * All rights reserved.  Use is subject to license terms.
+ * This distribution may include materials developed by third parties.
+ *  
+ * Sun, Sun Microsystems, the Sun logo, Java and JavaScript are trademarks
+ * or registered trademarks of Sun Microsystems, Inc. in the U.S. and
+ * other countries.
+ */ 
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
 
  (function() {
 // ES 3.1 proposed static functions
@@ -295,10 +284,6 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
     require.counter !== undefined ? require.counter++ : require.counter = 0;
     var args = $A(arguments);
     return module(getUniqueName()).requires(Object.isArray(args[0]) ? args[0] : args);
-};
-function load(moduleName) {
-	// Asynchronous! Do not assume that module is loaded directly after calling.
-	require(moduleName).toRun(function() {});
 };
 
 
@@ -967,9 +952,11 @@ Object.extend(Function.prototype, {
 
     inspect: function() {
 	// Print method name (if any) and the first 80 characters of the decompiled source (without 'function')
-	var methodBody = this.toString();
-	methodBody = methodBody.substring(8, 88) + (methodBody.length > 88 ? '...' : '');
-	return this.qualifiedMethodName() + methodBody;
+	var def = this.toString();
+	var i = def.indexOf('{');
+	var header = this.qualifiedMethodName() + def.substring(8, i);
+	var body = (def.substring(i, 88) + (def.length > 88 ? '...' : '')).replace(/\n/g, ' ');  // strip newlines
+	return header + body;
     },
 
     qualifiedMethodName: function() {

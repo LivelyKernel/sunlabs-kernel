@@ -1,24 +1,12 @@
 /*
- * Copyright (c) 2006-2009 Sun Microsystems, Inc.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
-
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+ * Copyright ï¿½ 2006-2008 Sun Microsystems, Inc.
+ * All rights reserved.  Use is subject to license terms.
+ * This distribution may include materials developed by third parties.
+ *  
+ * Sun, Sun Microsystems, the Sun logo, Java and JavaScript are trademarks
+ * or registered trademarks of Sun Microsystems, Inc. in the U.S. and
+ * other countries.
+ */ 
 
 /**
 * Core.js.  This file contains the core system definition
@@ -459,7 +447,7 @@ var Event = (function() {
 	    if (isMouse(rawEvent)) {
 		var x = rawEvent.pageX || rawEvent.clientX;
 		var y = rawEvent.pageY || rawEvent.clientY;
-		var topElement = this.canvas(); // ***DI: was  this.canvas().parentNode;
+		var topElement = this.canvas().parentNode; // ***DI: doesn't work if we are not top element;
 
 		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
 		// assume the parent node of Canvas has the same bounds as Canvas
@@ -908,10 +896,6 @@ Copier.subclass('Importer', {
 	resizeCanvasToFitWorld: function(world) {
 		console.log('Resizing SVG canvas');
 		var canvas = world.rawNode.parentNode;
-		if (!canvas) {
-			console.log('Couldn\'t resize canvas, canvas not found');
-			return;
-		}
 		if (canvas.clientWidth != world.bounds().width)
 			canvas.setAttribute("width", world.bounds().width);
 		if (canvas.clientHeight != world.bounds().height)
@@ -4094,7 +4078,6 @@ PasteUpMorph.subclass("WorldMorph", {
         var toolMenuItems = [
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["SystemBrowser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
-			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world, evt.point())})}],
             ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
 			["Enable profiling", function() {
