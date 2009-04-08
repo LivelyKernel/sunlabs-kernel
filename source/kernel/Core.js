@@ -1606,7 +1606,7 @@ Morph.addMethods({
     applyStyle: function(specs) { // note: use reflection instead?
 	for (var i = 0; i < arguments.length; i++) {
 	    var spec = arguments[i];
-	    dbgOn(!spec);
+	    if(!spec) return;  // dbgOn(!spec);
 	    if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
 	    if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
 	    if (spec.fill !== undefined) this.setFill(spec.fill);
@@ -1953,6 +1953,12 @@ Morph.addMethods({
 	this.layoutChanged();
     },
 
+    indexOfSubmorph: function(m) {
+		if (this.submorphs.length == 0) return -1;  // no submorphs at all
+		for (var i=0; i<this.submorphs.length; i++) 
+			if (this.submorphs[i] === m) return i;
+    	return -1;  // not there
+	},
 
     insertMorph: function(m, isFront) { // low level, more like Node.insertBefore?
 	var insertionPt = this.submorphs.length == 0 ? null : // if no submorphs, append to nodes
@@ -2004,9 +2010,10 @@ Morph.addMethods({
     },
 
     remove: function() {
+	// Note this is the only removal method that stops stepping fo the morph structure
 	if (!this.owner) return null;  // already removed
 
-	this.stopStepping();
+	this.stopAllStepping();
 	this.changed();
 	this.owner.removeMorph(this);
 
@@ -2051,6 +2058,13 @@ Morph.addMethods({
 
     world: function() {
 	return this.owner ? this.owner.world() : null;
+    },
+
+    validatedWorld: function() {
+	// Return the world that this morph is in, checking that it hasn't been removed
+	if (this.owner == null) return null;
+	if (this.owner.indexOfSubmorph(this) < 0) return null;
+	return this.owner.validatedWorld();
     },
 
     toString: function() {
@@ -2970,8 +2984,8 @@ Invocation.subclass('SchedulableAction', {
     },
 
     toString: function() {
-	return Strings.format("#<SchedulableAction[script=%s,arg=%s,stepTime=%s]>", 
-			      this.scriptName, this.argIfAny, this.stepTime);
+	return Strings.format("#<SchedulableAction[actor=%s,script=%s,arg=%s,stepTime=%s]>", 
+			      this.actor, this.scriptName, this.argIfAny, this.stepTime);
     },
 
     stop: function(world) {
@@ -3023,8 +3037,11 @@ stopSteppingScriptNamed: function(sName) {
 	// if we're deserializing the rawNode may already be in the markup
     },
 
+    stopAllStepping: function() {  // For me and all my submorphs 
+	this.withAllSubmorphsDo( function() { this.stopStepping(); });
+    },
 
-    suspendAllActiveScripts: function() {
+    suspendAllActiveScripts: function() {  // For me and all my submorphs
 	this.withAllSubmorphsDo( function() { this.suspendActiveScripts(); });
     },
 
@@ -3036,7 +3053,7 @@ stopSteppingScriptNamed: function(sName) {
     },
 
     resumeAllSuspendedScripts: function() {
-	var world = this.world();
+	var world = WorldMorph.current();
 	this.withAllSubmorphsDo( function() {
 	    if (this.suspendedScripts) {
 	    // ignore null values
@@ -4211,6 +4228,10 @@ PasteUpMorph.subclass("WorldMorph", {
         return this; 
     },
     
+    validatedWorld: function() { 
+        return this; 
+    },
+    
     firstHand: function() {
         return this.hands[0];
     },
@@ -4268,19 +4289,30 @@ PasteUpMorph.subclass("WorldMorph", {
 	var list = this.scheduledActions;  // shorthand
         for (var i = 0; i < list.length; i++) {
             var actn = list[i][1];
-            if (actn === action) {
-                list.splice(i, 1);
-                return; 
-            }
+            if (actn === action) { list.splice(i, 1); return;  }
         }
         // Never found that action to remove.  Note this is not an error if called
         // from startStepping just to get rid of previous version
         if (!fromStart) {
 	    console.log('failed to stopStepping ' + action);
+	    console.log('world = ' + Object.inspect(this));
+	    console.log('actors world = ' + Object.inspect(action.actor.world()));
 	    lively.lang.Execution.showStack();
 	}
     },
     
+    validateScheduler: function() {
+        // inspect an array of all the actions in the scheduler.  Note this
+        // is not the same as scheduledActions which is an array of tuples with times
+	var list = this.scheduledActions.clone();  // shorthand
+        for (var i = 0; i < list.length; i++) {
+            var actn = list[i][1];
+            if (actn.actor instanceof Morph && actn.actor.validatedWorld() !== this) {
+                this.stopSteppingFor(actn)
+            }
+        }
+    },
+
     inspectScheduledActions: function() {
         // inspect an array of all the actions in the scheduler.  Note this
         // is not the same as scheduledActions which is an array of tuples with times
@@ -4925,10 +4957,11 @@ Morph.subclass("HandMorph", {
 	if (receiver !== this.world()) this.unbundleCarriedSelection();
 	if (this.logDnD) console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
 	this.carriedMorphsDo( function(m) {
-            m.dropMeOnMorph(receiver);
-	    this.showAsUngrabbed(m);
+		m.dropMeOnMorph(receiver);
+		this.showAsUngrabbed(m);
 	});
-        this.removeAllMorphs() // remove any shadows or halos
+	this.shadowMorphsDo( function(m) { m.stopAllStepping(); });
+	this.removeAllMorphs() // remove any shadows or halos
     },
 
     carriedMorphsDo: function(func) {
@@ -4936,6 +4969,13 @@ Morph.subclass("HandMorph", {
 	// as opposed to, eg, halos or shadows
 	this.submorphs.clone().reverse().forEach(function(m) {
 	    if (!m.morphTrackedByHalo && !m.isHandMorphShadow) func.call(this, m);
+	}.bind(this));
+    },
+
+    shadowMorphsDo: function(func) { 
+	// Evaluate func for only those morphs that are shadows,
+	this.submorphs.clone().reverse().forEach(function(m) {
+	    if (m.isHandMorphShadow) func.call(this, m);
 	}.bind(this));
     },
 
@@ -5181,13 +5221,15 @@ Morph.subclass('LinkMorph', {
 
     enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
         carriedMorphs = [];
+
         // Save, and suspend stepping of, any carried morphs
         evt.hand.unbundleCarriedSelection();
         evt.hand.carriedMorphsDo( function (m) {
             m.suspendAllActiveScripts();
             carriedMorphs.splice(0, 0, m);
-	    evt.hand.showAsUngrabbed(m);
-            });
+			evt.hand.shadowMorphsDo( function(m) { m.stopAllStepping(); });
+	    	evt.hand.showAsUngrabbed(m);
+         });
 	evt.hand.removeAllMorphs();
         this.hideHelp();
         this.myWorld.changed();
@@ -5197,7 +5239,7 @@ Morph.subclass('LinkMorph', {
         oldWorld.hands.clone().forEach(function(hand) { 
             oldWorld.removeHand(hand);
         });
-        
+       
         if (Config.suspendScriptsOnWorldExit) {
             oldWorld.suspendAllActiveScripts();
         }
@@ -5214,7 +5256,7 @@ Morph.subclass('LinkMorph', {
             newWorld.remove();
         }
 
-        newWorld.displayOnCanvas(canvas); 
+        newWorld.displayOnCanvas(canvas);  // Becomes current at this point
 	
         if (Config.suspendScriptsOnWorldExit) { 
             newWorld.resumeAllSuspendedScripts();

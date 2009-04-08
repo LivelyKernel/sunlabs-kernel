@@ -43,7 +43,7 @@ Widget.subclass('TestWidget', {
     },
     
     buildView: function(extent) {
-        var panel = new PanelMorph(extent);
+	var panel = new PanelMorph(extent);
         // Make a fancy panel.  Note: Transparency does not
         // work with gradients or stipple patterns yet!
         panel.linkToStyles(['widgetPanel'], Config.useStyling);
@@ -4323,8 +4323,7 @@ BoxMorph.subclass("EngineMorph", {
 
         menu = new MenuMorph([
             ["sequential", this, 'setAlternateTiming', false],
-            ["alternate", this, 'setAlternateTiming', true]
-        ]);
+            ["alternate", this, 'setAlternateTiming', true] ]);
         menu.openIn(this, pt(300,440), true, "Ignition timing"); 
 
         this.addRunMenu();
@@ -4377,7 +4376,6 @@ BoxMorph.subclass("EngineMorph", {
         if (this.cylinders) this.cylinders.invoke('remove'); // remove any previous assemblies
 	if (this.connectingRods) this.connectingRods.invoke('remove');
 
-
         this.cylinders = []; // Note this is an array that points to various submorphs
 	this.connectingRods = [];
         for (var i=0; i<nCylinders; i++) {
@@ -4426,9 +4424,7 @@ BoxMorph.subclass("EngineMorph", {
     },
 
     nextStep: function() {
-        if (!this.running) {
-	    return;
-	}
+        if (!this.running) return;
         // Don't bother stepping if we are in a collapsed window
         if (this.immediateContainer() && !this.immediateContainer().contentIsVisible()) return;
         this.doStep();
