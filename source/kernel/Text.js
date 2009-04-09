@@ -1327,8 +1327,7 @@ subMenuItems: function($super, evt) {
 
     fitHeight: function() { //Returns true iff height changes
         // Wrap text to bounds width, and set height from total text height
-	if (this.textString.length <= 0) 
-	    return;
+	if (!this.textString || this.textString.length <= 0) return;
         var jRect = this.getCharBounds(this.textString.length - 1);
     
         if (jRect == null) { 

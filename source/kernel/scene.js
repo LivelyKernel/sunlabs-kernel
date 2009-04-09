@@ -272,7 +272,7 @@ Object.subclass('lively.data.Wrapper', {
 		if (lively.data.Wrapper.dictionary = Global.document.getElementById("SystemDictionary"))
 			return lively.data.Wrapper.dictionary;
 		var canvas = Global.document.getElementById("canvas");
-		lively.data.Wrapper.dictionary =  canvas.appendChild(Global.document.createElement("defs"));
+		lively.data.Wrapper.dictionary =  canvas.appendChild(NodeFactory.create("defs"));
 		lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary");
 		return lively.data.Wrapper.dictionary;
     },
