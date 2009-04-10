@@ -140,15 +140,13 @@ WorldMorph.addMethods({  // World
 	$super(ctx, clipRect);
 	var hands = this.hands;
 	for(var i=hands.length-1; i>=0; i--) { hands[i].fullDrawOn(ctx, clipRect); } },
-//
-    testCanvas: function() {
-//	*** Here is where we display the world on the canvas
-//	This is called after World.doOneCycle, and Hand.handleEvent
-	var useDamageRectangles = true;  // computes change rects, repaints only affected areas
+    repaintCanvas: function() {
+	// *** Here is where we display the world on the canvas
+	// This is called after World.doOneCycle, and Hand.handleEvent
 	var showDamageRectangles = false;  // shows change rects, but does full repaint to clear them
 
-	if (this !== WorldMorph.current()) { // still needed?
-		// console.log('inactive world');
+	if (this !== WorldMorph.current()) { // Might happen if doOneCycle in inactive world
+		console.log('inactive world');
 		return; }
 	var canvas = document.getElementById('lively.canvas');
 	if (!canvas || !canvas.getContext) return;
@@ -158,47 +156,43 @@ WorldMorph.addMethods({  // World
 	if (ctx.fillText) ctx.fillText("Canvas Test", 30, 20);  // test
 	ctx.strokeStyle = 'black';
 	
-	if (useDamageRectangles || showDamageRectangles) {
-		if (!this.damageManager) this.damageManager = new DamageManager();  // init
-		damageRects = this.damageManager.invalidRects;
-		this.damageManager.resetInvalidRects();
-	} else { damageRects = [canvas.bounds];
-	}
-	if (showDamageRectangles || !useDamageRectangles) {
-		// Complete redisplay (also needed to clear show-damage)
+	if (!this.damageManager) this.damageManager = new DamageManager();  // init
+	damageRects = this.damageManager.invalidRects;
+	this.damageManager.resetInvalidRects();
+
+	if (showDamageRectangles) {
+		// Complete redisplay needed to clear prior damage rects
 		canvas.width = canvas.width; // erase canvas
-		this.fullDrawOn(ctx, canvas.bounds);
+		this.fullDrawOn(ctx, this.bounds());
 	} else {
 		// Redisplay only damaged regions
 		for(var i=0; i<damageRects.length; i++) {
-			var rect = damageRects[i].expandBy(1);
+			var dr = damageRects[i].expandBy(1);
 			ctx.save();
-			lively.scene.Shape.prototype.setPath(ctx, rect);
+			// Note clipping routines only like integer coordinates...
+			dr = rect(dr.topLeft().roundTo(1), dr.bottomRight().roundTo(1));
+			lively.scene.Shape.prototype.setPath(ctx, dr);
 			ctx.clip();
-			this.fullDrawOn(ctx, rect);
+			this.fullDrawOn(ctx, dr);
 			ctx.restore(); }
 	}
 	if (showDamageRectangles) {
-		// draw boxes around each damaged region
+		// Draw boxes around each damaged region
 		ctx.strokeStyle = 'blue';
 		for(var i=0; i<damageRects.length; i++) {
-			var rect = damageRects[i];
-			ctx.strokeRect(rect.x, rect.y, rect.width, rect.height); }
+			var dr = damageRects[i];
+			ctx.strokeRect(dr.x, dr.y, dr.width, dr.height); }
 	}
 	},
-    realDisplayOnCanvas: WorldMorph.prototype.displayOnCanvas,
-    displayOnCanvas: function(notThis) {  // Patch in a full display
-	this.realDisplayOnCanvas(notThis);
-	var canvas = document.getElementById('lively.canvas');
+    displayOnCanvas: WorldMorph.prototype.displayOnCanvas.wrap(function(originalFunc, arg) {	originalFunc(arg);	var canvas = document.getElementById('lively.canvas');
 	if (!canvas || !canvas.getContext) return;
 	var ctx = canvas.getContext("2d");
 	this.fullDrawOn(ctx, this.innerBounds());
-	},
-    realDoOneCycle: WorldMorph.prototype.doOneCycle,
-    doOneCycle: function(world) {  // Patch in a call on testCanvas
-	this.testCanvas();
-	return this.realDoOneCycle(world);
-	}
+	}),
+    doOneCycle: WorldMorph.prototype.doOneCycle.wrap(function(originalFunc, arg) {
+	originalFunc(arg);
+	this.repaintCanvas();
+	})
 });
 
 HandMorph.addMethods({  // Canvas Display
@@ -220,13 +214,12 @@ HandMorph.addMethods({  // Canvas Display
 	Event.basicInputEvents.forEach(function(name) { 
             canvas.removeEventListener(name, this, this.handleOnCapture);}, this);
     },
-    realHandleEvent: HandMorph.prototype.handleEvent,
-    handleEvent: function(event) {  // Patch in a call on testCanvas
-        result = this.realHandleEvent(event);
-	var w=this.world()
-	if(w) w.testCanvas();
+    handleEvent: HandMorph.prototype.handleEvent.wrap(function(originalFunc, arg) {
+	var result = originalFunc(arg);
+	var w = this.world()
+	if (w) w.repaintCanvas();
 	return result;
-    }
+    })
 });
 
 Object.subclass('DamageManager', {  // Damage repair
@@ -364,17 +357,6 @@ lively.scene.Ellipse.addMethods({  // Ellipse as four quadratic Beziers
         graphicContext.bezierCurveTo(mX - hB, eY, aX, mY + vB, aX, mY);
         graphicContext.closePath();
     }
-});
-
-Event.addMethods({  // Tweak y-coordinates if negative (temporary)
-    realInitialize: Event.prototype.initialize,
-    initialize: function(rawEvent) {
-	this.realInitialize(rawEvent);
-	if (this.mousePoint && this.mousePoint.y < 0) {
-		var canvas = document.getElementById('lively.canvas');
-		var offset = canvas ? canvas.height : 0;
-		this.mousePoint = pt(this.mousePoint.x, this.mousePoint.y + offset); }
-	}
 });
 
 // Currently both Firefox and Webkit need these to run in cavas
