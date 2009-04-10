@@ -364,5 +364,5 @@ Config.useGetTransformToElement = false;
 Config.loadSerializedSubworlds = false;  //  Needed since canvas has no SVG deserializer
 
 
-console.log("***Scratch.js completed.");
+console.log("CanvasExpt.js completed.");
 
