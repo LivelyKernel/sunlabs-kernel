@@ -141,10 +141,9 @@ WorldMorph.addMethods({  // World
 	var hands = this.hands;
 	for(var i=hands.length-1; i>=0; i--) { hands[i].fullDrawOn(ctx, clipRect); } },
     repaintCanvas: function() {
-	// *** Here is where we display the world on the canvas
+	// --- Here is where we display the world on the canvas ---
 	// This is called after World.doOneCycle, and Hand.handleEvent
-	var showDamageRectangles = false;  // shows change rects, but does full repaint to clear them
-
+	// set this.showDamageRectangles to true to see damage rectangles in action
 	if (this !== WorldMorph.current()) { // Might happen if doOneCycle in inactive world
 		console.log('inactive world');
 		return; }
@@ -160,7 +159,7 @@ WorldMorph.addMethods({  // World
 	damageRects = this.damageManager.invalidRects;
 	this.damageManager.resetInvalidRects();
 
-	if (showDamageRectangles) {
+	if (this.showDamageRectangles) {
 		// Complete redisplay needed to clear prior damage rects
 		canvas.width = canvas.width; // erase canvas
 		this.fullDrawOn(ctx, this.bounds());
@@ -176,7 +175,7 @@ WorldMorph.addMethods({  // World
 			this.fullDrawOn(ctx, dr);
 			ctx.restore(); }
 	}
-	if (showDamageRectangles) {
+	if (this.showDamageRectangles) {
 		// Draw boxes around each damaged region
 		ctx.strokeStyle = 'blue';
 		for(var i=0; i<damageRects.length; i++) {
