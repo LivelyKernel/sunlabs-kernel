@@ -41,6 +41,8 @@ var UserAgent = (function() {
 
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
     var fireFoxVersion = window.navigator && window.navigator.userAgent.split("Firefox/")[1]; // may be undefined
+    if (fireFoxVersion == null)
+	fireFoxVersion = window.navigator && window.navigator.userAgent.split("Minefield/")[1];
 
     // Determines User Agent capabilities
     return {
@@ -111,7 +113,8 @@ var Config = {
     useTransformAPI: UserAgent.usableTransformAPI, 
 
     // Firefox 2 has known problems with getTransformToElement, detect it
-    useGetTransformToElement: !(UserAgent.fireFoxVersion && UserAgent.fireFoxVersion[0] == '2'),
+    useGetTransformToElement: !(UserAgent.fireFoxVersion &&
+	(UserAgent.fireFoxVersion[0] == '2' || UserAgent.fireFoxVersion[0] == '3')),
 
     // Enable drop shadows for objects (does not work well in most browsers)
     useDropShadow: UserAgent.usableDropShadow,
@@ -171,7 +174,13 @@ var Config = {
     suppressDefaultMouseBehavior: UserAgent.canExtendBrowserObjects,
 
     resizeScreenToWorldBounds: false
-}
+};
+
+// Note this patch fixes a problem with recent WebKit builds and Safari 4 beta
+// We should test for these versions, and drop this code when it's no longer needed
+// Thanks to Phil Weaver for tracking this down and suggesting this fix.
+String.fromCharCode = String.fromCharCode.wrap(
+	function(originalDef, charCode) {		if (charCode == 173) return '-';		return originalDef(charCode);});
 
 // These various overrides of the above have been moved here from main.js
 //	so that they can be overridden in localconfig.js

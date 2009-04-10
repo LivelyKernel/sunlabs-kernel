@@ -377,5 +377,11 @@ Event.addMethods({  // Tweak y-coordinates if negative (temporary)
 	}
 });
 
+// Currently both Firefox and Webkit need these to run in cavas
+Config.useTransformAPI = false;
+Config.useGetTransformToElement = false;
+Config.loadSerializedSubworlds = false;  //  Needed since canvas has no SVG deserializer
+
+
 console.log("***Scratch.js completed.");
 
