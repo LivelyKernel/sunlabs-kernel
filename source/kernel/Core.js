@@ -3292,7 +3292,14 @@ Object.extend(Morph, {
 	morph.setBorderColor(lineColor);
 	morph.setFill(fill || Color.blue);
 	return morph;
-	//return circle.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
+    },
+
+    makeEllipse: function(bounds, lineWidth, lineColor, fill) {
+	// make a circle first (a bit wasteful)
+	var morph = this.makeCircle(bounds.center(), 0, lineWidth, lineColor, fill);
+	morph.setBounds(bounds);
+	morph.moveOriginBy(morph.innerBounds().center())
+	return morph;
     },
 
     makeRectangle: function(/**/) {

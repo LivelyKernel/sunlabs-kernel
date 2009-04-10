@@ -88,7 +88,7 @@ function populateSlideWorld(world) {
 	
 	if (Config.showStar && Config.spinningStar) {  // Make the star spin as a test of stepping
             widget.startStepping(60, "rotateBy", 0.1);
-	    if (world !== WorldMorph.current()) widget.suspendActiveScripts();
+	    if (world !== WorldMorph.current()) world.suspendAllActiveScripts();
 	}
     }
 
@@ -105,13 +105,13 @@ function populateSlideWorld(world) {
         world.addMorph(widget);
 	
         // Create a sample ellipse
-        widget = Morph.makeCircle(loc.addPt(dx), widgetExtent);
-        widget.setFill(colors[1]);
+        widget = Morph.makeEllipse(loc.addPt(dx).extent(widgetExtent), 1, Color.black, colors[1]);
         world.addMorph(widget);
 	
         // Create a sample line
         loc = loc.addPt(dy);
-        widget = Morph.makeLine([loc.addXY(0,15),loc.addXY(70,15)], 2, Color.black);
+        widget = Morph.makeLine([pt(0,0), pt(70,0)], 2, Color.black);
+        widget.setPosition(loc.addXY(0,15));
         world.addMorph(widget);
 	
         // Create a sample polygon
@@ -120,7 +120,7 @@ function populateSlideWorld(world) {
         widget.setPosition(loc.addPt(dx));
         loc = loc.addPt(dy);    
 	
-        // Create sample text widgets
+        // Create sample text morphs
         if (Config.showTextSamples) {
             widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
             world.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));

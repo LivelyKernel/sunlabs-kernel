@@ -187,6 +187,7 @@ String.fromCharCode = String.fromCharCode.wrap(
 //	at some point we should refactor this file nicely.
 Config.showClock = true;
 Config.showStar = true;
+Config.spinningStar = true;
 Config.showHilbertFun = true;
 Config.showPenScript = true;
 Config.showTester = true;
