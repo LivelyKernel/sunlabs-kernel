@@ -1113,7 +1113,7 @@ NodeMorph.subclass('WikiWorldNodeMorph', {
 		// ----
         var oldBorderColor = this.label.getBorderColor();
         this.label.applyStyle({borderColor: Color.green, borderWidth: 2});
-        (function showNormal() { this.label.applyStyle({fill: oldBorderColor})}.bind(this)).delay(optNewTime || 60);
+        (function showNormal() { this.label.applyStyle({borderColor: oldBorderColor})}.bind(this)).delay(optNewTime || 60);
         //---- setup connection to proxy
         this.manuallyUpdateLinks();
 	},
@@ -1227,17 +1227,17 @@ findNodeForProxy: function(proxy) {
 	})
 },
 
-makeStep: function($super) {
-	$super();
-	// if (this.energy == 0) {
-	// 	this.lastUpdated = new Date(); // so that when energy is increased not all notes fetch new ones at once
-	// 	return;
-	// }
-	// if (!this.lastUpdated || new Date() - this.lastUpdated > this.newUpdateIn) {
-	// 	this.newUpdateIn = 2*60*1000 /*2 min*/ + Math.floor(Math.random()*1000*60) /*varies 1 min*/
-	// 	this.initUpdateLinks();
-	// }
-},
+// makeStep: function($super) {
+//  $super();
+//  // if (this.energy == 0) {
+//  //  this.lastUpdated = new Date(); // so that when energy is increased not all notes fetch new ones at once
+//  //  return;
+//  // }
+//  // if (!this.lastUpdated || new Date() - this.lastUpdated > this.newUpdateIn) {
+//  //  this.newUpdateIn = 2*60*1000 /*2 min*/ + Math.floor(Math.random()*1000*60) /*varies 1 min*/
+//  //  this.initUpdateLinks();
+//  // }
+// },
 
 connectTo: function($super, otherNode) {
     var con = $super(otherNode);
@@ -1298,7 +1298,7 @@ Object.extend(WikiWorldNodeMorph, {
 					filename.startsWith('._') ||
 		 			filename == 'auth' || filename == 'logout' ||
 		 			ea.getURL().hostname != 'livelykernel.sunlabs.com')
-		 			continue;
+		 			    continue;
 			//console.log('Create for ' + ea.getURL());
 			WikiWorldNodeMorph.create(ea.getURL());
 			//(function() {WikiWorldNodeMorph.create(ea.getURL())}).delay(Math.floor(Math.random()*40));

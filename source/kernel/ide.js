@@ -22,7 +22,7 @@ panelSpec: [
 ['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.40)],
 ['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)],
 //['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
-['Pane3', newRealListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+['Pane3', newDragnDropListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
 ['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
 //['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
 ],
