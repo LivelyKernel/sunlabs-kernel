@@ -668,7 +668,7 @@ this.Node.subclass('lively.scene.Shape', {
      fromLiteral: function(node, literal) {
 	 // axiliary
 	 if (literal.stroke !== undefined) node.setStroke(literal.stroke);
-	 node.setStrokeWidth(literal.strokeWidth === undefined ? 1 : literal.strokeWidth);
+	 node.setStrokeWidth(literal.strokeWidth === undefined ? 0 : literal.strokeWidth);
 	 if (literal.fill !== undefined) node.setFill(literal.fill);
 	 if (literal.fillOpacity !== undefined) node.setFillOpacity(literal.fillOpacity);
 	 if (literal.strokeLineCap !== undefined) node.setLineCap(literal.strokeLineCap);
