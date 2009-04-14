@@ -67,6 +67,8 @@ var UserAgent = (function() {
 	
         isMozilla: isMozilla,
 
+        isChrome: isChrome,
+
 	fireFoxVersion: fireFoxVersion ? fireFoxVersion.split('.') : null, 
 	
         isWindows: (window.navigator && window.navigator.platform == "Win32")
