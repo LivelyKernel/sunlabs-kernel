@@ -1582,7 +1582,8 @@ Morph.addMethods({
 
     setBorderWidth: function(newWidth) {
 	// this.changed();
-	this.shape.setStrokeWidth(newWidth); 
+	if (Config.chromeBorderPatch && newWidth == 0) this.shape.setStrokeWidth(0.01); 
+	else this.shape.setStrokeWidth(newWidth); 
 	// this.changed();
     },
     

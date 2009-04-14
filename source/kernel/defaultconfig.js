@@ -40,6 +40,7 @@ var UserAgent = (function() {
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
 
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
+    var isChrome = window.navigator && window.navigator.userAgent.indexOf("Chrome") > -1;
     var fireFoxVersion = window.navigator && window.navigator.userAgent.split("Firefox/")[1]; // may be undefined
     if (fireFoxVersion == null)
 	fireFoxVersion = window.navigator && window.navigator.userAgent.split("Minefield/")[1];
@@ -75,6 +76,9 @@ var UserAgent = (function() {
 
 // Determines runtime behavior based on UA capabilities and user choices (override in localconfig.js)
 var Config = {
+
+    // Temporary patch
+    chromeBorderPatch: UserAgent.isChrome,
 
     // Allows easy object duplication using the Shift key
     shiftDragForDup: true,
