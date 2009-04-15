@@ -499,17 +499,21 @@ function main() {
         })
         return;
     } else {
-        world = new WorldMorph(canvas); 
-        // Create an empty world
-        world.displayOnCanvas(canvas);
-        console.log("created empty world");
+    	world = new WorldMorph(canvas); 
+       	// Create an empty world
+       	world.displayOnCanvas(canvas);
+       	console.log("created empty world");
     }
 
     if(Config.useShadowMorphs) HandMorph.prototype.useShadowMorphs = true;
     // Populate the world with sample objects, widgets and applications
-    if (Config.skipAllExamples) return; // don't populate if we loaded up stuff from a container
-    else populateWorldWithExamples(world);
-
+    if (Config.skipAllExamples) {
+		return; // don't populate if we loaded up stuff from a container
+   	} else {
+		require(Config.modulesOnWorldLoad).toRun(function() {
+			populateWorldWithExamples(world);
+		});	
+	}
     if(Config.testTracing) lively.lang.Execution.testTrace();
 
 }

@@ -3,6 +3,11 @@ creating own tests. TestResult and TestSuite are used internally for running the
 TestRunner is a Widget which creates a standard xUnit TestRunner window. All tests of 
 the system can be run from it */
 
+/*
+ * Related Work:
+ * - http://www.cjohansen.no/en/javascript/test_driven_development_with_javascript_part_two
+ */
+
 module('lively.TestFramework').requires().toRun(function(thisModule) {
 
 Object.subclass('TestCase', {
@@ -217,7 +222,8 @@ Object.subclass('TestResult', {
 		this.failed.push({
 				classname: className,
 				selector: selector,
-				err: error});
+				err: error,
+				toString: function(){ return this.classname + "." + this.selector + " failed: " + this.err }});
 	},
 	
 	runs: function() {
@@ -579,15 +585,6 @@ Widget.subclass('ErrorStackViewer', {
 		return parameterString.split(", ").reject(function(ea) { return ea == '' });
 	}
 });
-
-// For convenience
-require('lively.Tools').toRun(function() {
-SimpleInspector.inspectObj = function(object) {
-    new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
-};
-Global.inspectObj = SimpleInspector.inspectObj;
-});
-
     
 /* 
  * *** Error properties for documentation: ***

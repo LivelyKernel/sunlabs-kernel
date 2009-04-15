@@ -406,6 +406,11 @@ Widget.subclass('SimpleInspector', {
     }
 
 });
+Object.extend(SimpleInspector, {
+	inspectObj: function(object) {
+    	new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
+	}
+});
 
 // ===========================================================================
 // Style Editor Panel

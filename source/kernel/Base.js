@@ -784,8 +784,8 @@ Namespace.addMethods({ // module specific, should be a subclass?
         else throw dbgOn(new Error('unknown namespaceIdentifier'));
 
         var baseUrl = document.baseURI;  // FIXME depends on 'Document'
-        var url = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1)
-        url += this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./, '/');
+        baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1)
+        var url = (lively.lang.Namespace.defaultBase || baseUrl) + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./, '/');
         if (!url.include('anonymous_module')) url += '.js';
 
         return url;
