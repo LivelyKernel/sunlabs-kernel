@@ -63,15 +63,7 @@ Widget.subclass('SimpleBrowser', {
             var methodName = this.getModelValue("getMethodName");
             var className = this.getModelValue("getClassName");
             var source = this.getMethodStringFor(className, methodName);    
-            if (Config.highlightSyntax)
-                require('Ometa.js').toRun(function() {
-                    source = new SyntaxHighlighter().highlightFunction(source);
-                    //FIXME for setting rich text, otherwise hard to implmenent currently
-                    var textMorph = this.getModel().dependents.detect(function(ea) { return ea instanceof TextMorph});
-                    textMorph.setRichText(source);
-                }.bind(this));
-            else this.setModelValue("setMethodString", source);
-            
+            this.setModelValue("setMethodString", source);
             break;
         case p.getMethodString:
             var className = this.getModelValue("getClassName");
