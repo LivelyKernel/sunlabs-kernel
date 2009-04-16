@@ -956,6 +956,10 @@ BoxMorph.subclass("TextMorph", {
 
     initialize: function($super, rect, textString, useChangeClue) {
         this.textString = textString || "";
+        // rk 4/16/09 added two lines below as a bugfix for searching code with alt+w
+        // in rev 2764 a changed call was added to setFill which causes an error
+        this.selectionRange = [0, -1]; // null or a pair of indices into textString
+        this.priorSelection = [0, -1];
         $super(rect);
         // KP: note layoutChanged will be called on addition to the tree
         // DI: ... and yet this seems necessary!
@@ -2096,6 +2100,10 @@ subMenuItems: function($super, evt) {
         var line = this.lines[lineNumber];
         return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));      
     },
+    
+    //     setFill: function(fill) {
+    // this.shape.setFill(fill);
+    //      },
 });
 
 TextMorph.addMethods({
