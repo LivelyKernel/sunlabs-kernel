@@ -1296,8 +1296,7 @@ BoxMorph.subclass("TextListMorph", {
         this.itemList = newList;
         this.removeAllMorphs();
         this.generateSubmorphs(newList);
-        if (!this.setSelectionToMatch(priorItem))
-			this.selectLineAt(-1, true);
+        this.setSelectionToMatch(priorItem)
         this.resetScrollPane();
         // this.emitSelection(); 
     },
@@ -1491,17 +1490,12 @@ dropMeOnMorph: function(morph) {
 	var evt = newFakeMouseEvent(pos);
 	morph = this.lookForBestReceiver(evt) || morph;
 
-
 	this.remove();
 	this.stopObservingMouseMoves();
-dbgOn(true);
-	if (this.highlighted) {
-console.log('highlighted becomes normal');
-			this.highlighted.becomeNormal();
-	}
+	if (this.highlighted) this.highlighted.becomeNormal();
 
 	this.source.isDragging = false;
-	console.log('Asking ' + morph + ' if it wants ' + this.draggedItem + '(' + pos + ')');
+	console.log('Asking ' + morph + ' if it wants ' + this.draggedObject + '(' + pos + ')');
 	if (morph.acceptsDropOf && morph.acceptsDropOf(this.draggedObject)) {
 		console.log('Yes :-)');
 		morph.acceptDrop(this.draggedObject, evt);
@@ -1527,7 +1521,6 @@ startObservingMouseMoves: function(evt) {
 		var oldWidth = m.getBorderWidth();
 		wrapper.highlighted = {becomeNormal: function() {			
 			var x=m;
-			console.log('resetting' + x);
 			x.setBorderColor(oldColor);
 			x.setBorderWidth(oldWidth); //wrapper.highlighted=null;
 		}}
@@ -1591,7 +1584,7 @@ listWith: function(item, index) {
 	var list = this.itemList;
 	if (index in list)
 		return list.slice(0,index).concat([item]).concat(list.slice(index, list.length));
-	return list.concat[item];
+	return list.concat([item]);
 },
 
 acceptsDropOf: function(item) {

@@ -330,7 +330,7 @@ TestCase.subclass('NodeMorphTest', {
 			this['node' + i] = m; 
 		}
 	},
-assertEqualPt: function(p1, p2) { // the optimized functions sometimes are not 100% precise
+assertEqualPt: function(p1, p2) { // sometimes the optimized functions are not 100% precise
 	this.assert(Math.abs(p1.x-p2.x) < 0.01, 'point.x! ' + p1.x + ' vs. ' + p2.x);
 	this.assert(Math.abs(p1.y-p2.y) < 0.01, 'point.y! '  + p1.y + ' vs. ' + p2.y);
 },
