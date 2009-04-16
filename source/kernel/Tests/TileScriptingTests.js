@@ -238,15 +238,17 @@ TestCase.subclass('LayoutTests', {
     assertSubmorphsDoNoOverlap: function(morph) {
         morph.submorphs.each(function(ea) {
             morph.submorphs.each(function(ea2) {
-                this.assert(ea === ea2 || !ea.bounds().containsRect(ea2.bounds()),
+                // cannot use simple bounds() anymore because of borderWidth since rev 2764
+                var rect1 = ea.shape.bounds().translatedBy(ea.getPosition());
+                var rect2 = ea2.shape.bounds().translatedBy(ea2.getPosition());
+                this.assert(ea === ea2 || !rect1.intersects(rect2),
                     ea.constructor.type + ' overlaps ' + ea2.constructor.type);
             }, this); 
         }, this);
-    },
-    
+    },    
     assertMorphsInsideBounds: function(morph) {
         morph.submorphs.each(function(ea) {
-            this.assert(morph.shape.bounds().containsRect(ea.bounds()), 'Morph: ' + ea + ' overlaps its ownerBounds!');
+            this.assert(morph.shape.bounds().containsRect(ea.shape.bounds()), 'Morph: ' + ea + ' overlaps its ownerBounds!');
         }, this)
     },
     
@@ -286,8 +288,8 @@ TestCase.subclass('LayoutTests', {
         sut.layout();
         this.assertLeft(morph1, morph2);
         this.assertEqual(sut.baseMorph.getExtent(), pt(60, 40));
-        this.assertSubmorphsDoNoOverlap(sut.baseMorph);
         this.assertMorphsInsideBounds(sut.baseMorph);
+        this.assertSubmorphsDoNoOverlap(sut.baseMorph);
         this.assertEqual(morph1.getPosition().y, 10);
     }
 })

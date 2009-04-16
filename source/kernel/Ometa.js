@@ -125,6 +125,7 @@ lively.Text.createText = function(str, style) {
     return new lively.Text.Text(str, style);
 };
 
+// Just a spike
 Object.subclass('SyntaxHighlighter', {
 
     parserSrcFileName: 'lk-js-parser.txt',

@@ -1213,13 +1213,21 @@ TestCase.subclass('PluggableConnectorTest', {
 TestCase.subclass('ComponentMorphTest', {
 
     assertSubmorphsFitIn: function(morph) {
-        this.assertEqual(morph.getExtent(), morph.bounds().extent(), 'morph overlaps!');
+        // necessary since localBorderBounds were changed
+        // and morph.getExtent() no onger equals morph.bounds().extent()
+        var borderOffset = 2*morph.getBorderWidth()/2*(morph.shape.hasElbowProtrusions ? 2 : 1)
+        this.assertEqual(
+            morph.getExtent().addXY(borderOffset,borderOffset),
+            morph.bounds().extent(), 'morph overlaps!');
     },
     
     assertSubmorphsDoNoOverlap: function(morph) {
         morph.submorphs.each(function(ea) {
             morph.submorphs.each(function(ea2) {
-                this.assert(ea === ea2 || !ea.bounds().containsRect(ea2.bounds()),
+                // cannot use simple bounds() anymore because of borderWidth since rev 2764
+                var rect1 = ea.shape.bounds().translatedBy(ea.getPosition());
+                var rect2 = ea2.shape.bounds().translatedBy(ea2.getPosition());
+                this.assert(ea === ea2 || !rect1.intersects(rect2),
                     ea.constructor.type + ' overlaps ' + ea2.constructor.type);
             }, this); 
         }, this);
