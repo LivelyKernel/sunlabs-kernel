@@ -186,7 +186,10 @@ var Config = {
 // We should test for these versions, and drop this code when it's no longer needed
 // Thanks to Phil Weaver for tracking this down and suggesting this fix.
 String.fromCharCode = String.fromCharCode.wrap(
-	function(originalDef, charCode) {		if (charCode == 173) return '-';		return originalDef(charCode);});
+	function(originalDef, charCode) {
+		if (charCode == 173) return '-';
+		return originalDef(charCode);
+});
 
 // These various overrides of the above have been moved here from main.js
 //	so that they can be overridden in localconfig.js
@@ -253,4 +256,4 @@ Config.ballonHelpDelay = 1000; // Default
 
 Config.loadTests = [] //  e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 
-Config.modulesOnWorldLoad = ["Fabrik.js", 'TileScripting.js', 'ide.js'/*FIXME for ChangeSet*/, 'LKWiki.js']
+Config.modulesOnWorldLoad = [/*"Fabrik.js", 'TileScripting.js',*/ 'ide.js'/*FIXME for ChangeSet*/, 'LKWiki.js']
