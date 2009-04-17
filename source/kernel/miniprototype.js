@@ -1258,7 +1258,8 @@ Object.extend(Number.prototype, (function() {
   }
 
   // function toJSON() {
-  //   return isFinite(this) ? this.toString() : 'null';
+  //   // return isFinite(this) ? this.toString() : 'null';
+  //   return this;
   // }
 
   function abs() {
@@ -1282,7 +1283,7 @@ Object.extend(Number.prototype, (function() {
     succ:           succ,
     times:          times,
     toPaddedString: toPaddedString,
-    toJSON:         toJSON,
+    // toJSON:         toJSON,
     abs:            abs,
     round:          round,
     ceil:           ceil,
