@@ -2190,6 +2190,10 @@ setXMLElement: function(newElement) {
 	getName: function() {
 		return this.getAttributeNamed('name');
 	},
+setName: function(newName) {
+	this.getXMLElement().setAttributeNS(null, 'name', newName);
+},
+
 
 	getDefinition: function() {
 		return this.xmlElement.textContent;
@@ -2384,6 +2388,12 @@ evaluateAllButInitializer: function() {
 evaluateInitializer: function() {
 	this.subElementNamed(this.initializerName).evaluate();
 },
+ensureCompatibility: function() {
+	var ps = this.subElementNamed('postscript');
+	if (!ps) return;
+	ps.setName(this.initializerName);
+},
+
 
 
 
@@ -2400,6 +2410,7 @@ Object.extend(ChangeSet, {
 	fromWorld: function(worldOrNode) {
 		var node = worldOrNode instanceof WorldMorph ? worldOrNode.getDefsNode() : worldOrNode;
 		var cs = new ChangeSet('Local code').initializeFromWorldNode(node);
+		cs.ensureCompatibility();
 		cs.ensureHasInitializeScript();
 		return cs;
 	},

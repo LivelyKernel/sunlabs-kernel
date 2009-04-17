@@ -1261,6 +1261,13 @@ testSetXMLElement: function() {
 	this.assertEqual(proto1.getDefinition(), '789', 'def is wrong');
 	this.assertIdentity(classChange.subElements()[0].getName(), 'test3', 'proto1 not at old pos');
 },
+testSetNewName: function() {
+		var change = DoitChange.create('123');
+		this.assertEqual(change.getName(), 'aDoit');
+		change.setName('myDoit');
+		this.assertEqual(change.getName(), 'myDoit');
+},
+
 
 	
 });
