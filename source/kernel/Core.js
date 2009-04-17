@@ -315,7 +315,7 @@ var Converter = {
 		throw new Error('Cannot store Document/DocumentType'); // to be removed
 	    default:
 		desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
-		desc.appendChild(propValue);
+		desc.appendChild(document.importNode(propValue, true));
 	    }
 	    return desc;
 	} 

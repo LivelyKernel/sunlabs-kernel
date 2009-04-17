@@ -1694,23 +1694,12 @@ TestCase.subclass('FabrikConverterTest', {
                         {string: '</forecast_information>', xml: this.xmlForcastInfo, js: {forecast_information: {city: "Berlin, Berlin", postal_code: "12685"}}, isJSONConformant: true}];
         this.assertEqualState(expected, result, 'error');
     },
-    
-    testCompatibilityOfConverterWhenWritingXML: function() {
-        var json = Converter.toJSONAttribute(this.xmlLeaf);
-        this.assertEqual(JSON.unserialize(unescape(json)), JSON.serialize({XML: Exporter.stringify(this.xmlLeaf)}), 'Converter did not convert xml to string');
-    },
-    
-    testCompatibilityOfConverterWhenWritingStringXMLArray: function() {
-        var json = Converter.toJSONAttribute(this.converter.xmlToStringArray(this.xmlForcastInfo));
-        console.log('Result: -------- ' + unescape(json));
-        // this.assertEqual(unescape(json), Exporter.stringify(this.xmlLeaf), 'Converter did not convert xml to string');
-    },
-    
+            
     testCompatibilityOfConverterWhenUnserializingXML: function() {
-        var json = Converter.toJSONAttribute(this.xmlForcastInfo);
-        var result = Converter.fromJSONAttribute(json);
+        var docNode = Converter.encodeProperty('test', this.xmlForcastInfo);
+        var result = docNode.firstChild;
         this.assert(result.isEqualNode, 'no xml');
-        this.assert(result.isEqualNode(this.xmlForcastInfo), 'wrong nodes');
+        this.assert(result.isEqualNode(document.adoptNode(this.xmlForcastInfo)), 'wrong nodes');
     },
     
     testStringArrayWithDeserializedXML: function() {

@@ -185,7 +185,10 @@ Object.subclass('URL', {
     },
     
 toExpression: function() {
-	return 'new URL(JSON.unserialize(\'' + JSON.serialize(this) + '\'))';
+	// this does not work with the new prototype.js (rev 2808) anymore
+	// return 'new URL(JSON.unserialize(\'' + JSON.serialize(this) + '\'))';
+	return Strings.format('new URL({protocol: "%s", hostname: "%s", pathname: "%s"})',
+		this.protocol, this.hostname, this.pathname);
 },
 });
 
