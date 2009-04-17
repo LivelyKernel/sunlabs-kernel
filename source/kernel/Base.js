@@ -798,7 +798,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
 
     informDependendModules: function() {
         if (!this.dependendModules) return;
-        var deps = this.dependendModules;
+        var deps = this.dependendModules.uniq();
         this.dependendModules = [];
         deps.each(function(ea) { ea.removeRequiredModule(this) }, this);
     },
@@ -812,7 +812,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
     
     removeRequiredModule: function(requiredModule) {
         if (this.pendingRequirements && !this.pendingRequirements.include(requiredModule))
-            throw dbgOn(new Error('requiredModule not there'));;
+            throw dbgOn(new Error('requiredModule not there'));
         this.pendingRequirements = this.pendingRequirements.without(requiredModule);
         if (!this.hasPendingRequirements()) {
             // console.log('no more requirements for ' + this.uri());
