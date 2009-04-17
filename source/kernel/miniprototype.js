@@ -165,28 +165,28 @@ var Class = (function() {
     }
   }
 
-  function toJSON(object) {
-    var type = typeof object;
-    switch (type) {
-      case 'undefined':
-      case 'function':
-      case 'unknown': return;
-      case 'boolean': return object.toString();
-    }
-
-    if (object === null) return 'null';
-    if (object.toJSON) return object.toJSON();
-    if (isElement(object)) return;
-
-    var results = [];
-    for (var property in object) {
-      var value = toJSON(object[property]);
-      if (!isUndefined(value))
-        results.push(property.toJSON() + ': ' + value);
-    }
-
-    return '{' + results.join(', ') + '}';
-  }
+  // function toJSON(object) {
+  //   var type = typeof object;
+  //   switch (type) {
+  //     case 'undefined':
+  //     case 'function':
+  //     case 'unknown': return;
+  //     case 'boolean': return object.toString();
+  //   }
+  // 
+  //   if (object === null) return 'null';
+  //   if (object.toJSON) return object.toJSON();
+  //   if (isElement(object)) return;
+  // 
+  //   var results = [];
+  //   for (var property in object) {
+  //     var value = toJSON(object[property]);
+  //     if (!isUndefined(value))
+  //       results.push(property.toJSON() + ': ' + value);
+  //   }
+  // 
+  //   return '{' + results.join(', ') + '}';
+  // }
 
   function toQueryString(object) {
     return $H(object).toQueryString();
@@ -246,7 +246,7 @@ var Class = (function() {
   extend(Object, {
     extend:        extend,
     inspect:       inspect,
-    toJSON:        toJSON,
+    // toJSON:        toJSON,
     toQueryString: toQueryString,
     toHTML:        toHTML,
     keys:          keys,
@@ -351,14 +351,14 @@ Object.extend(Function.prototype, (function() {
 })());
 
 
-Date.prototype.toJSON = function() {
-  return '"' + this.getUTCFullYear() + '-' +
-    (this.getUTCMonth() + 1).toPaddedString(2) + '-' +
-    this.getUTCDate().toPaddedString(2) + 'T' +
-    this.getUTCHours().toPaddedString(2) + ':' +
-    this.getUTCMinutes().toPaddedString(2) + ':' +
-    this.getUTCSeconds().toPaddedString(2) + 'Z"';
-};
+// Date.prototype.toJSON = function() {
+//   return '"' + this.getUTCFullYear() + '-' +
+//     (this.getUTCMonth() + 1).toPaddedString(2) + '-' +
+//     this.getUTCDate().toPaddedString(2) + 'T' +
+//     this.getUTCHours().toPaddedString(2) + ':' +
+//     this.getUTCMinutes().toPaddedString(2) + ':' +
+//     this.getUTCSeconds().toPaddedString(2) + 'Z"';
+// };
 
 
 RegExp.prototype.match = RegExp.prototype.test;
@@ -576,9 +576,9 @@ Object.extend(String.prototype, (function() {
     return "'" + escapedString.replace(/'/g, '\\\'') + "'";
   }
 
-  function toJSON() {
-    return this.inspect(true);
-  }
+  // function toJSON() {
+  //   return this.inspect(true);
+  // }
 
   function unfilterJSON(filter) {
     return this.sub(filter || Prototype.JSONFilter, '#{1}');
@@ -646,7 +646,7 @@ Object.extend(String.prototype, (function() {
     underscore:     underscore,
     dasherize:      dasherize,
     inspect:        inspect,
-    toJSON:         toJSON,
+    // toJSON:         toJSON,
     unfilterJSON:   unfilterJSON,
     isJSON:         isJSON,
     evalJSON:       evalJSON,
@@ -1053,14 +1053,14 @@ Array.from = $A;
     return '[' + this.map(Object.inspect).join(', ') + ']';
   }
 
-  function toJSON() {
-    var results = [];
-    this.each(function(object) {
-      var value = Object.toJSON(object);
-      if (!Object.isUndefined(value)) results.push(value);
-    });
-    return '[' + results.join(', ') + ']';
-  }
+  // function toJSON() {
+  //   var results = [];
+  //   this.each(function(object) {
+  //     var value = Object.toJSON(object);
+  //     if (!Object.isUndefined(value)) results.push(value);
+  //   });
+  //   return '[' + results.join(', ') + ']';
+  // }
 
   function indexOf(item, i) {
     i || (i = 0);
@@ -1111,7 +1111,7 @@ Array.from = $A;
     toArray:   clone,
     size:      size,
     inspect:   inspect,
-    toJSON:    toJSON
+    // toJSON:    toJSON
   });
 
   var CONCAT_ARGUMENTS_BUGGY = (function() {
@@ -1209,9 +1209,9 @@ var Hash = Class.create(Enumerable, (function() {
     }).join(', ') + '}>';
   }
 
-  function toJSON() {
-    return Object.toJSON(this.toObject());
-  }
+  // function toJSON() {
+  //   return Object.toJSON(this.toObject());
+  // }
 
   function clone() {
     return new Hash(this);
@@ -1232,7 +1232,7 @@ var Hash = Class.create(Enumerable, (function() {
     update:                 update,
     toQueryString:          toQueryString,
     inspect:                inspect,
-    toJSON:                 toJSON,
+    // toJSON:                 toJSON,
     clone:                  clone
   };
 })());
