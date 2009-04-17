@@ -1257,9 +1257,9 @@ Object.extend(Number.prototype, (function() {
     return '0'.times(length - string.length) + string;
   }
 
-  function toJSON() {
-    return isFinite(this) ? this.toString() : 'null';
-  }
+  // function toJSON() {
+  //   return isFinite(this) ? this.toString() : 'null';
+  // }
 
   function abs() {
     return Math.abs(this);
