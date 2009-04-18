@@ -472,6 +472,15 @@ function documentHasSerializedMorphs(doc) {
 	// nodes[0].getAttribute("type") == "WorldMorph"; // world is not always serialized
 }
 
+function setupCounter(doc) {
+	var maxCount = new Query('//*[@id]').findAll(doc).inject(0, function(max, ea) {
+		function getNumber(id) { return Number(id.split(':')[0]) }
+		var no =  getNumber(ea.getAttribute('id')) || 0
+		return Math.max(max, no);
+	});
+	lively.data.Wrapper.prototype.newId(maxCount);
+}
+
 function main() {
     var world = null;
     var canvas = Global.document.getElementById("canvas");
@@ -483,6 +492,7 @@ function main() {
     }
     var importer = new Importer();
     if (documentHasSerializedMorphs(document)) {
+		setupCounter(document);
         require(Config.modulesOnWorldLoad).toRun(function() {
 			var changes = !Config.skipChanges && ChangeSet.fromWorld(document.documentElement);
 			changes && changes.evaluateAllButInitializer();

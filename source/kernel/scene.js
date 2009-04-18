@@ -59,11 +59,12 @@ Object.subclass('lively.data.Wrapper', {
     newId: (function() {
 	// this may be a Problem, after deserializing and when copy and pasting... 
 	var wrapperCounter = 0;
-	return function() {
-		if (Math.uuid)
-			return Math.uuid(); // so use (pseudo) uuids when available
-	    else
-			return ++ wrapperCounter;
+	return function(optNewCounter) {
+		if (optNewCounter) {
+			wrapperCounter = optNewCounter;
+			return;
+		}
+		return Math.uuid ? Math.uuid() : ++wrapperCounter; // so use (pseudo) uuids when available
 	}
     })(),
 
