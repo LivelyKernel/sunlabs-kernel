@@ -485,11 +485,11 @@ function main() {
     if (documentHasSerializedMorphs(document)) {
         require(Config.modulesOnWorldLoad).toRun(function() {
 			var changes = !Config.skipChanges && ChangeSet.fromWorld(document.documentElement);
-			changes.evaluateAllButInitializer();
+			changes && changes.evaluateAllButInitializer();
 			var world = importer.loadWorldContents(document);
             world.displayOnCanvas(canvas);
             console.log("world is " + world);
-			changes.evaluateInitializer();
+			changes && changes.evaluateInitializer();
             if (Config.showWikiNavigator) {
                 require('LKWiki.js').toRun(function() {
                     //just a quick hack...
