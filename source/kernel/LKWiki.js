@@ -908,13 +908,15 @@ fetchVersionsOfWorld: function(worldProxy) {
 
 fetchFileList: function(callback) {
 	var url = this.url;
+	var self = this;
 	var model = Record.newPlainInstance({DirectoryList: [], RootNode: url});
 	model.addObserver(
 		{onDirectoryListUpdate: function(urls) {
 			urls = urls
 				//.collect(function(ea) { url.withFilename(ea.shortName()) })
 				.select(function(ea) { return ea.isLeaf() });
-			callback(urls);
+			var proxies = urls.collect(function(ea) { return self.findOrCreateProxy(ea) });
+			callback && callback(urls, proxies);
 			}},
 		{DirectoryList: '!DirectoryList'});
 	var fetcher = new lively.storage.WebFile(model);
@@ -1058,6 +1060,21 @@ initialize: function(url, repourl) {
 	var model = Record.newPlainInstance({URL: url, RepoURL: repourl, Links: [], Existing: true /*always be optimistic*/, Versions: []});
 	this.relayToModel(model, {URL: "URL", RepoURL: "RepoURL", Links: "Links", Existing: "Existing", Versions: "Versions"});
 },
+makeSVNResource: function() {
+	return new SVNResource(this.getRepoURL(),
+		Record.newPlainInstance({
+			URL: this.getURL().toString(),
+			ContentDocument: null,
+			HeadRevision: null,
+			Metadata: null}));
+},
+getDocument: function() {
+	var r = this.makeSVNResource();
+	r.fetch(true);
+	return r.getContentDocument();
+},
+
+
 findLinksToOtherWorlds: function() {
 	var analyzer = WikiNetworkAnalyzer.forRepo(this.getRepoURL());
 	analyzer.fetchLinksOfWorld(this);
@@ -1072,6 +1089,36 @@ onVersionsUpdate: function(versions) {},
 getNamesOfLinkedWorlds: function(worldProxies) {
 	return this.getLinks().collect(function(ea) { return ea.localName() });
 },
+getChangeSet: function() {
+	var doc = this.getDocument();
+	var worldElement = new Query('/descendant::*[@type="WorldMorph"]').findFirst(doc);
+	return ChangeSet.fromWorld(worldElement);
+},
+getDocumentOfChangeSet: function(cs) {
+	// in Webkit a ChangeSet still has an ownerDocument, in Safari not
+	var codeElem = cs.getXMLElement();
+    if (Exporter.stringify(codeElem.ownerDocument) !== '' &&
+			codeElem.ownerDocument.getElementById('canvas')) // brittle test...
+		return codeElem.ownerDocument;
+    var doc = this.getDocument();
+	// add current code element to doc
+	var oldCodeElem = doc.getElementsByTagName('code')[0]; //cs.nodeQuery.findFirst(doc);
+	if (!oldCodeElem)
+		throw dbgOn(new Error('Cannot find code element in document. World has no ChangeSet?'))
+	oldCodeElem.parentElement.replaceChild(
+		doc.importNode(codeElem, true), oldCodeElem);
+	return doc;
+},
+
+writeChangeSet: function(cs) {
+	var doc = this.getDocumentOfChangeSet(cs);
+	var content = Exporter.stringify(doc);
+	var r = this.makeSVNResource();
+	console.log('Writing ' + cs.getDefinition());
+	r.store(content);
+},
+
+
 localName: function() {
 	if (!this.getURL())
 		return 'No URL for WorldProxy!';

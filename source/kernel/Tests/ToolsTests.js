@@ -1141,6 +1141,12 @@ TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
 	tearDown: function() {
 		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
 	},
+testEquals: function() {
+	var c1 = DoitChange.create('1+2');
+	var c2 = DoitChange.create('1+2');
+	this.assert(c1.eq(c2), 'changes not equal');
+},
+
 
 	testCreateProtoMethodChange: function() {
 		var xml = stringToXML('<proto name="m1"><![CDATA[function(color) { 1+ 2 }]]></proto>');
@@ -1341,6 +1347,13 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests
 		$super();
 		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
 	},
+testEquals: function() {
+	var cs1 = ChangeSet.fromWorld(this.worldMorph);
+	cs1.addChange(DoitChange.create('1+2'));
+	var cs2 = ChangeSet.fromWorld(this.worldMorph);
+	this.assert(cs1.eq(cs2), 'changes not equal');
+},
+
 
 	testAddChangeSetToWorldPlusReconstruct: function() {
 		var world = this.worldMorph;

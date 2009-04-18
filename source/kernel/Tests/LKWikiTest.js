@@ -1,4 +1,4 @@
-module('lively.Tests.LKWikiTest').requires('lively.TestFramework', 'lively.LKWiki').toRun(function(thisModule, testModule, wikiModule) {
+module('lively.Tests.LKWikiTest').requires('lively.TestFramework', 'lively.LKWiki', 'lively.Tests.SerializationTests').toRun(function(thisModule, testModule, wikiModule) {
 
 thisModule.createPropfindResponse = function(filename, partOfRepoUrl, revisionNumber) {
 	/* e.g. fileName = 'abc', partOfRepoUrl = '/testsvn/repo1/' revisionNumber = 74 */
@@ -738,7 +738,48 @@ testAppendLogInformation: function() {
 
 
 });
-TestCase.subclass('lively.Tests.LKWikiTest.SerializerTest', {
+lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.LKWikiTest.WikiWorldProxyTest', {
+
+createProxy: function(spec) {
+	var url = new URL('http://dummy');
+	var p = new WikiWorldProxy(url.withFilename('test'), url);
+	for (name in spec)
+		p[name] = spec[name];
+	return p;
+},
+
+addChangeSetToWorld: function() {
+	var world = this.worldMorph;
+	var cs = ChangeSet.fromWorld(world);
+	var change = DoitChange.create('dummy');
+	cs.addChange(change);
+	// test if it works
+	var codeElement =  cs.nodeQuery.findFirst(this.dom);
+	this.assert(codeElement.childNodes.length > 0,
+		'Error in Setup: Cannot install ChangeSet in DummyWorld');
+	return cs;
+},
+testRetrieveChangeSet: function() {
+	var cs = this.addChangeSetToWorld();
+	var sut = this.createProxy({getDocument: function() { return this.dom }.bind(this)});
+	var result = sut.getChangeSet();
+	this.assert(cs.eq(result));
+},
+testConstructDocumentOfChangeSet: function() {
+	var cs = this.addChangeSetToWorld();
+	cs.xmlElement = stringToXML(Exporter.stringify(cs.xmlElement));
+	cs.addChange(DoitChange.create('test'));
+	var sut = this.createProxy({getDocument: function() { return this.dom }.bind(this)});
+	var result = sut.getDocumentOfChangeSet(cs);
+	this.assertEqual(
+		Exporter.stringify(cs.xmlElement),
+		Exporter.stringify(cs.nodeQuery.findFirst(result)),
+		'documents not equal? Got change CS into new doc?');
+},
+
+
+
+});TestCase.subclass('lively.Tests.LKWikiTest.SerializerTest', {
 
 	testSerializeAndDeserializeBasicObjects: function() {
 		var basic = {

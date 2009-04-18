@@ -4104,6 +4104,9 @@ PasteUpMorph.subclass("WorldMorph", {
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
             ["SystemBrowser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
             ["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world, evt.point())})}],
+			["Wiki code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {
+				var repo = new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/');
+				new ide.WikiCodeBrowser(repo).open()})}],
             ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
             ["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],    
 			["Enable profiling", function() {

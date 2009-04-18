@@ -640,15 +640,41 @@ panelSpec: [
 allPaneNames: ['Pane1', 'Pane2'],
 viewTitle: "LocalCodeBrowser",
 
-initialize: function($super) {
+initialize: function($super, optChangeSet) {
 	$super();
+	this.changeSet = optChangeSet || ChangeSet.fromWorld(WorldMorph.current());
 	//this.installFilter(new lively.ide.NodeTypeFilter(lively.ide.ClassFragmentNode), 'Pane1');
 },
 
 rootNode: function() {
 	ide.startSourceControl();
 	if (!this._rootNode)
-		this._rootNode = ChangeSet.fromWorld(WorldMorph.current()).asNode(this);
+		this._rootNode = this.changeSet.asNode(this);
+	return this._rootNode;
+},
+ 
+});
+ide.BasicBrowser.subclass('lively.ide.WikiCodeBrowser', {
+
+documentation: 'Browser for the local ChangeSet',
+panelSpec: [
+['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.45)],
+['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)],
+['Pane3', newDragnDropListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+],
+viewTitle: "WikiCodeBrowser",
+
+initialize: function($super, wikiUrl) {
+	$super();
+	this.wikiUrl = wikiUrl;
+	//this.installFilter(new lively.ide.NodeTypeFilter(lively.ide.ClassFragmentNode), 'Pane1');
+},
+
+rootNode: function() {
+	ide.startSourceControl();
+	if (!this._rootNode)
+		this._rootNode = new lively.ide.WikiCodeNode(WikiNetworkAnalyzer.forRepo(this.wikiUrl), this);
 	return this._rootNode;
 },
  
@@ -678,6 +704,43 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 		this._childNodes = nodes;
 		return nodes;
 	},
+});
+ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
+    
+	documentation: 'The rootNode which gets the code from worlds of a wiki',
+
+	initialize: function($super, target, browser) {
+		"console.assert(target instanceof WikiNetworkAnalyzer);"
+		$super(target, browser);
+		this.worldsWereFetched = false;
+    },
+    childNodes: function() {
+		if (this._childNodes)
+			return this._childNodes;
+		if (!this.worldsWereFetched)
+			this.updateWithWorlds();
+		var nodes = [];
+		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
+		var proxies = this.target.getWorldProxies().select(function(ea) {
+			return ea.localName().endsWith('xhtml')
+		});
+		nodes = nodes.concat(
+			proxies.collect(function(ea) {
+				return new lively.ide.RemoteChangeSetNode(null, this.browser, ea);
+		}, this));
+		this._childNodes = nodes;
+		return nodes;
+	},
+
+	updateWithWorlds: function(fileList) {
+		this.worldsWereFetched = true;
+		this._childNodes = null;
+		this.target.fetchFileList(function() {
+			this._childNodes = null;
+			this.signalChange();
+		}.bind(this));
+	},
+	
 });
  
 ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
@@ -1122,6 +1185,49 @@ saveSource: function(newSource) {
 
 
 });
+ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
+
+	initialize: function($super, target, browser, worldProxy) {
+		// target will become a ChangeSet when world is loaded but can now be undefined
+        $super(target, browser);
+        this.worldProxy = worldProxy;
+    },
+childNodes: function($super) {
+		if (!this.target)
+			this.worldProxyFetchChangeSet();
+		return $super();
+	},
+
+
+    sourceString: function($super) {
+		if (!this.target)
+			this.worldProxyFetchChangeSet();
+		return $super();
+    },
+    
+    asString: function() {
+	x=this.target;
+		return this.worldProxy.localName() + (this.target == null ? ' (not loaded)' :  '');
+	},
+menuSpec: function($super) {
+		var spec = [];
+		var node = this;
+		spec.push(['push changes back', function() {
+			node.pushChangesBack();
+		}]);
+		return $super().concat(spec);
+	},
+
+
+	worldProxyFetchChangeSet: function() {
+		this.target = this.worldProxy.getChangeSet();
+		this.signalChange();
+	},
+pushChangesBack: function() {
+	this.worldProxy.writeChangeSet(this.target);
+},
+
+});
 
 ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 
@@ -1255,10 +1361,18 @@ ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
 		var cmd = this;
 		return [['add class', cmd.addClass.bind(this)], ['add doit', cmd.addDoit.bind(this)]];
 	},
+getChangeSet: function() {
+	if (this.browser.selectionInPane('Pane1') instanceof lively.ide.ChangeSetNode)
+		return this.browser.selectionInPane('Pane1').target;
+	if (this.browser instanceof lively.ide.LocalCodeBrowser)
+		return ChangeSet.current();
+	throw new Error('Do not know which ChangeSet to choose for command');
+},
+
 addClass: function() {
 	var b = this.browser;
 	var w = WorldMorph.current();
-	var cs = ChangeSet.current();
+	var cs = this.getChangeSet();
 
 	var createChange = function(className, superClassName) {
 		var change = ClassChange.create(className, superClassName);
@@ -1275,10 +1389,11 @@ addClass: function() {
 },
 addDoit: function() {
 	var b = this.browser;
+	var node = this;
 
 	var createChange = function() {
 		var change = DoitChange.create('// empty doit');
-		ChangeSet.current().addSubElement(change);
+		node.getChangeSet().addSubElement(change);
 		if (b.evaluate) change.evaluate();
 		b.allChanged();
 	}
@@ -2157,7 +2272,7 @@ eq: function(other) {
 	if (!other) return false;
 	if (this.constructor != other.constructor) return false;
 	if (this == other) return true;
-	return this.getXMLElement() == other.getXMLElement();
+	return this.getXMLElement().isEqualNode(other.getXMLElement());
 },
 
 
@@ -2257,6 +2372,8 @@ Change.addMethods({
 Change.subclass('ChangeSet', {
 
 	initializerName: 'initializer',
+nodeQuery: new Query('//code'),
+
 
     initialize: function(optName) {
 		// Keep track of an ordered list of Changes
@@ -2306,6 +2423,8 @@ Change.subclass('ChangeSet', {
 	evaluate: function() {
 		this.subElements().forEach(function(item) { item.evaluate() });
     },
+
+
 
 	removeChangeNamed: function(name) {
 		var change = this.subElementNamed(name);
