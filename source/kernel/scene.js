@@ -1619,13 +1619,8 @@ this.Node.subclass('lively.scene.Clip', {
     documentation: "currently wrapper around SVG clipPath",
     initialize: function(shape) {
 		this.rawNode = NodeFactory.create('clipPath');
-		if (Math.uuid) {
-			newId =  Math.uuid(); // so use (pseudo) uuids when available
-		} else {
-			// bug, when there are clips which are not created in this session
-			newId =  ++ this.constructor.clipCounter;
-		}
-		this.setId(String(newId));
+		//var newId =  ++ this.constructor.clipCounter;
+		this.setId(String(this.newId()));
 		this.setClipShape(shape);
     },
 
