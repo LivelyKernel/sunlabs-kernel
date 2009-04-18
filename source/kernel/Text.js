@@ -1641,7 +1641,8 @@ subMenuItems: function($super, evt) {
         return new thisModule.Text(this.textString, this.textStyle); 
     },
 
-    replaceSelectionWith: function(replacement, delayComposition, justMoreTyping) {
+    replaceSelectionWith: function(replacement, delayComposition, justMoreTyping) { 
+	// Note:  -delayComposition- is now ignored everyhere
 	// Often called with only one arg for normal paste
         if (! this.acceptInput) return;
 	var strStyle = this.textStyle;
@@ -1671,12 +1672,11 @@ subMenuItems: function($super, evt) {
             this.setSelectionRange(0,0); // symthom fix of typing into an "very emty" string
         };
 	
-        // Compute new selection, and display if not delayed
+	// Compute new selection, and display
 	var selectionIndex = this.selectionRange[0] + replacement.length;
-	if (delayComposition) this.selectionRange = [selectionIndex, selectionIndex-1];
-	else this.setNullSelectionAt(selectionIndex); // this displays it as well
+	this.setNullSelectionAt(selectionIndex); 
 
-		this.showChangeClue();		
+	this.showChangeClue();		
     },
 
     setNullSelectionAt: function(charIx) { 
@@ -1845,31 +1845,14 @@ subMenuItems: function($super, evt) {
     },
     
     replaceSelectionfromKeyboard: function(replacement) {
-        // This special version of replaceSelectionWith carries out the replacement
-        // but postpones the necessary composition for some time (200 ms) later.
-        // Thus, if there is further keyboard input pending, it can get handled also
-        // without composition until there is an adequate pause.
-        // Note: If other events happen when composition has been postponed,
-        //    and this can be tested by if(this.delayedComposition),
-        //    then a call to composeAfterEdits() must be forced before handling them.
-        if (!this.acceptInput) return;
-        
-        this.replaceSelectionWith(replacement, true, this.typingHasBegun); // 2nd arg = true delays composition
+        if (!this.acceptInput) return;        
+        var justMoreTyping = this.typingHasBegun;  // will get reset by replaceSelection
 
-        if (this.typingHasBegun) {
-            this.charsTyped += replacement;
-        } else {  
-            this.charsTyped = replacement;
-        };
-        this.typingHasBegun = true;  // So undo will revert to first replacement
+		this.replaceSelectionWith(replacement, null, this.typingHasBegun); // 2nd arg ignored
 
-        // Bundle display of typing unless suppressed for reliablity or response in small text
-        if (Config.showAllTyping  || (Config.showMostTyping && this.textString.length<1000)) {
-            this.composeAfterEdits();
-        } else {
-            if(!this.delayedComposition) this.delayedComposition = new SchedulableAction(this, "composeAfterEdits", null, 0);
-            this.world().scheduleForLater(this.delayedComposition, 200, true); // will override a prior request
-        }
+        if (justMoreTyping)  this.charsTyped += replacement;
+        	else  this.charsTyped = replacement;
+        this.typingHasBegun = true;  // For undo and select-all commands        
     },
     
     doCut: function() {
@@ -2188,6 +2171,7 @@ TextMorph.addMethods({
 	this.emphasizeSelection(emph);
     },
     pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+	// Note:  -delayComposition- is now ignored everyhere
         replacement = replacement || "";    
 	if(!justMoreTyping) { 
             // Mark for undo, but not if continuation of type-in
@@ -2198,7 +2182,7 @@ TextMorph.addMethods({
 	// DI: Might want to put the maxSafeSize test in clients
 	dbgOn(!replacement.truncate);
         this.textString = replacement.truncate(this.maxSafeSize);
-        if (!delayComposition) this.composeAfterEdits();  // Typein wants lazy composition
+        this.composeAfterEdits();
     },
     
     composeAfterEdits: function() {
@@ -2206,7 +2190,6 @@ TextMorph.addMethods({
         this.layoutChanged(); 
         this.changed();
         this.drawSelection(); // some callers of pvtUpdate above may call setSelection again
-	this.delayedComposition = null;
     },
     
     saveContents: function(contentString) {    
@@ -2279,6 +2262,7 @@ TextMorph.addMethods({
     },
     
     setTextString: function(replacement, delayComposition, justMoreTyping) {
+	// Note:  -delayComposition- is now ignored everyhere
         if (Object.isString(replacement)) replacement = String(replacement); 
         if (this.autoAccept) this.setText(replacement);
         this.pvtUpdateTextString(replacement, delayComposition, justMoreTyping); 
