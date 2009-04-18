@@ -4102,7 +4102,7 @@ PasteUpMorph.subclass("WorldMorph", {
         ];
         var toolMenuItems = [
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
-            ["SystemBrowser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
+            ["System code browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
             ["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world, evt.point())})}],
 			["Wiki code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {
 				var repo = new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/');
