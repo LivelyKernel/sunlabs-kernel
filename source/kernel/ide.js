@@ -2373,7 +2373,7 @@ Change.subclass('ChangeSet', {
 
 	initializerName: 'initializer',
 nodeQuery: new Query('//code'),
-
+worldDefQuery: new Query('//code'),
 
     initialize: function(optName) {
 		// Keep track of an ordered list of Changes
@@ -2405,9 +2405,20 @@ nodeQuery: new Query('//code'),
 	},
 
 	addHookTo: function(node) {
+		defNode = this.findOrCreateDefNodeOfWorld(node);
 		this.xmlElement = LivelyNS.create("code");
-		node.appendChild(this.xmlElement);
+		defNode.appendChild(this.xmlElement);
 	},
+findOrCreateDefNodeOfWorld: function(doc) {
+	var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').findFirst(doc);
+	if (!defNode) {
+		var worldNode = new Query('.//*[@type="WorldMorph"]').findFirst(doc);
+		defNode = NodeFactory.create('defs');
+		worldNode.appendChild(defNode); // null Namespace?
+	}
+	return defNode;
+},
+
 
 	addChange: function(change) {
 		this.addSubElement(change);
@@ -2423,8 +2434,6 @@ nodeQuery: new Query('//code'),
 	evaluate: function() {
 		this.subElements().forEach(function(item) { item.evaluate() });
     },
-
-
 
 	removeChangeNamed: function(name) {
 		var change = this.subElementNamed(name);
@@ -2445,42 +2454,6 @@ nodeQuery: new Query('//code'),
 		this.subElements().invoke('remove');
 	},
 
-	/*************************************
-	   Everything below is deprecated
-	 *************************************/
-    logChange: function(item) {
-	// deprecated!!!
-	this.changes.push(item);
-	switch (item.type) {
-	case 'method':
-	    var classNode = this.xmlElement.appendChild(LivelyNS.create("class"));
-	    classNode.setAttributeNS(null, "name", item.className);
-	    var methodNode = classNode.appendChild(LivelyNS.create("proto"));
-	    methodNode.setAttributeNS(null, "name", item.methodName);
-	    methodNode.appendChild(NodeFactory.createCDATA(item.methodString));
-	    break;
-	case 'subclass':
-	    var classNode = this.xmlElement.appendChild(LivelyNS.create("class"));
-	    classNode.setAttributeNS(null, "name", item.subName);
-	    className.setAttributeNS(null, "super", item.className);
-	default:
-	    console.log('not yet handling type ' + item.type);
-	}
-    },
-    setChanges: function(arrayOfItems) {
-	this.changes = arrayOfItems;
-    },
-    evaluateAll_old: function() {
-	// FIXME: use markup parser instead?
-	this.changes.forEach(function(item) {this.evalItem(item)}, this);
-    },
-    evalItem: function(item) {
-	// FIXME: use markup parser instead?
-	console.log("ChangeSet evaluating a " + item.type + " def.");
-	if(item.type == 'method') eval(item.className + '.prototype.' + item.methodName + ' = ' + item.methodString);
-	if(item.type == 'subclass') eval(item.className + '.subclass("' + item.subName + '", {})');
-	if(item.type == 'doit') eval(item.doitString);
-    },
 addOrChangeElementNamed: function(name, source) {
 	var prev = this.subElements().detect(function(ea) { ea.getName() == name});
 	if (prev) {
@@ -2513,21 +2486,18 @@ ensureCompatibility: function() {
 	ps.setName(this.initializerName);
 },
 
-
-
-
-
-
 });
+
 ChangeSet.addMethods({
 	asNode: function(browser) { return new lively.ide.ChangeSetNode(this, browser) }
 });
 
-
 Object.extend(ChangeSet, {
 
 	fromWorld: function(worldOrNode) {
-		var node = worldOrNode instanceof WorldMorph ? worldOrNode.getDefsNode() : worldOrNode;
+		var node = worldOrNode instanceof WorldMorph ?
+			worldOrNode.getDefsNode() :
+			worldOrNode;
 		var cs = new ChangeSet('Local code').initializeFromWorldNode(node);
 		cs.ensureCompatibility();
 		cs.ensureHasInitializeScript();

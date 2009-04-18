@@ -1486,12 +1486,6 @@ m.openInWorld();';
 		cs.addChange(c2);
 	},
 });
-TestCase.subclass('lively.Tests.ToolsTests.CodeEntityTests', {
-
-	testWrapsFileFragment: function() {
-		
-	},
-});
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     
