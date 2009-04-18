@@ -446,17 +446,17 @@ login: function() {
 // -------------
 		
 	createWikiNavigatorButton: function() {
-	    var btn =  new TextMorph(new Rectangle(0,0,80,50), 'Wiki control');
-	    btn.supressHandles = true;
-	    btn.handlesMouseDown = Functions.False;
-	    var self = this;
-	    btn.onMouseOver = function(evt) {
-	        var navMorph = self.buildView(pt(800,105));
-	        self.world.addMorph(navMorph);
-	        navMorph.setPosition(pt(0, 0))
-	    };
-	    btn.positionInLowerLeftCorner = function() { btn.setPosition(pt(0, 0)) };
-	    this.btn = btn;
+		var btn =  new TextMorph(new Rectangle(0,0,80,50), 'Wiki control');
+		var self = this;
+		btn.suppressHandles = true;
+		btn.handlesMouseDown = Functions.True;
+		btn.onMouseDown = function(evt) {
+			var navMorph = self.buildView(pt(800,105));
+			self.world.addMorph(navMorph);
+			navMorph.setPosition(pt(0, 0))
+		};
+		btn.positionInLowerLeftCorner = function() { btn.setPosition(pt(0, 0)) };
+		this.btn = btn;
 	},
 	
 	isActive: function() {
