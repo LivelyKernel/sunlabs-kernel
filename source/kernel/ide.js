@@ -2405,7 +2405,7 @@ worldDefQuery: new Query('//code'),
 	},
 
 	addHookTo: function(node) {
-		defNode = this.findOrCreateDefNodeOfWorld(node);
+		defNode = node.tagName == 'defs' ? node : this.findOrCreateDefNodeOfWorld(node);
 		this.xmlElement = LivelyNS.create("code");
 		defNode.appendChild(this.xmlElement);
 	},
@@ -2413,6 +2413,7 @@ findOrCreateDefNodeOfWorld: function(doc) {
 	var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').findFirst(doc);
 	if (!defNode) {
 		var worldNode = new Query('.//*[@type="WorldMorph"]').findFirst(doc);
+		if (!worldNode) dbgOn(true);
 		defNode = NodeFactory.create('defs');
 		worldNode.appendChild(defNode); // null Namespace?
 	}
