@@ -34,7 +34,7 @@ panelSpec: [
               "Pane3Content", "Pane3Selection", "Pane3Choicer", "Pane3Menu", "Pane3Filters",
               "SourceString", "StatusMessage", "RootFilters"],
     commands: function() {
-        return ide.BrowserCommand.allSubclasses().collect(function(ea) { return new ea(this) }, this);
+        return [];
     },
     
     initialize: function($super) { 
@@ -103,7 +103,9 @@ panelSpec: [
     },
 
 	buildCommandButtons: function(morph) {
-		var cmds = this.commands().select(function(ea) { return ea.wantsButton() });
+		var cmds = this.commands()
+			.collect(function(ea) { return new ea(this) }, this)
+			.select(function(ea) { return ea.wantsButton() });
 		if (cmds.length === 0) return;
 
         var height = 20;
@@ -396,6 +398,7 @@ onPane3ContentUpdate: function(items, source) {
 	},
 commandMenuSpec: function(pane) {
 	var result = this.commands()
+		.collect(function(ea) { return new ea(this) }, this)
 		.select(function(ea) { return ea.wantsMenu() && ea.isActive(pane) })
 		.inject([], function(all, ea) { return all.concat(ea.trigger()) });
 	if (result.length > 0)
@@ -607,6 +610,17 @@ rootNode: function() {
 	// this._rootNode = new ide.EnvironmentNode(Global, this);
 	return this._rootNode;
 },
+commands: function() {
+		// lively.ide.BrowserCommand.allSubclasses().collect(function(ea) { return ea.type}).join(',\n')
+        return [
+			lively.ide.BrowseWorldCommand,
+			lively.ide.AllModulesLoadCommand,
+			lively.ide.ShowLineNumbersCommand,
+			lively.ide.RefreshCommand,
+			lively.ide.EvaluateCommand,
+			lively.ide.SortCommand]
+    },
+
  
 });
  
@@ -640,9 +654,11 @@ panelSpec: [
 allPaneNames: ['Pane1', 'Pane2'],
 viewTitle: "LocalCodeBrowser",
 
-initialize: function($super, optChangeSet) {
+initialize: function($super, optWorldProxy) {
 	$super();
-	this.changeSet = optChangeSet || ChangeSet.fromWorld(WorldMorph.current());
+	this.worldProxy = optWorldProxy;
+	this.changeSet = (optWorldProxy && optWorldProxy.getChangeSet()) ||
+		ChangeSet.fromWorld(WorldMorph.current());
 	//this.installFilter(new lively.ide.NodeTypeFilter(lively.ide.ClassFragmentNode), 'Pane1');
 },
 
@@ -652,6 +668,16 @@ rootNode: function() {
 		this._rootNode = this.changeSet.asNode(this);
 	return this._rootNode;
 },
+commands: function() {
+        return [lively.ide.BrowseWorldCommand,
+				lively.ide.SaveChangesCommand,
+				lively.ide.RefreshCommand,
+				lively.ide.EvaluateCommand,
+				lively.ide.SortCommand,
+				lively.ide.ChangeSetMenuCommand,
+				lively.ide.ClassChangeMenuCommand]
+    },
+
  
 });
 ide.BasicBrowser.subclass('lively.ide.WikiCodeBrowser', {
@@ -677,6 +703,15 @@ rootNode: function() {
 		this._rootNode = new lively.ide.WikiCodeNode(WikiNetworkAnalyzer.forRepo(this.wikiUrl), this);
 	return this._rootNode;
 },
+commands: function() {
+        return [lively.ide.BrowseWorldCommand,
+				lively.ide.RefreshCommand,
+				lively.ide.EvaluateCommand,
+				lively.ide.SortCommand,
+				lively.ide.ChangeSetMenuCommand,
+				lively.ide.ClassChangeMenuCommand]
+},
+
  
 });
  
@@ -1130,8 +1165,6 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetNode', {
     childNodes: function() {
 		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
 	},
- 
-    buttonSpecs: lively.ide.CompleteFileFragmentNode.prototype.buttonSpecs,
     
     sourceString: function($super) {
 		return '';
@@ -1209,6 +1242,8 @@ childNodes: function($super) {
 	x=this.target;
 		return this.worldProxy.localName() + (this.target == null ? ' (not loaded)' :  '');
 	},
+buttonSpecs: function() { return [] },
+
 menuSpec: function($super) {
 		var spec = [];
 		var node = this;
@@ -1345,6 +1380,50 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 	},
 
 });
+lively.ide.BrowserCommand.subclass('lively.ide.BrowseWorldCommand', {
+
+	wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		return 'Browse world...';
+	},
+
+	trigger: function() {
+		var w = WorldMorph.current();
+		w.prompt('Enter URL for World', function(url) {
+			url = new URL(url);
+			var proxy = new WikiWorldProxy(url, url.getDirectory());
+			new lively.ide.LocalCodeBrowser(proxy).open();
+		});
+	},
+
+});
+lively.ide.BrowserCommand.subclass('lively.ide.SaveChangesCommand', {
+
+	wantsButton: function() {
+		return true;
+	},
+
+	asString: function() {
+		return 'Push changes back';
+	},
+
+	trigger: function() {
+	var b = this.browser;
+	if (!(b instanceof lively.ide.LocalCodeBrowser)) {
+		console.log('Save changes not yet implemented for ' + b);
+		return;
+	}	
+	if (!b.worldProxy) {
+		console.log('Browser has no WorldProxy -- cannot save!');
+		return;
+	}
+	b.worldProxy.writeChangeSet(b.changeSet);
+	},
+
+});
 ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
 
 	wantsMenu: function() {
@@ -1365,7 +1444,7 @@ getChangeSet: function() {
 	if (this.browser.selectionInPane('Pane1') instanceof lively.ide.ChangeSetNode)
 		return this.browser.selectionInPane('Pane1').target;
 	if (this.browser instanceof lively.ide.LocalCodeBrowser)
-		return ChangeSet.current();
+		return this.browser.changeSet;
 	throw new Error('Do not know which ChangeSet to choose for command');
 },
 
@@ -2372,8 +2451,8 @@ Change.addMethods({
 Change.subclass('ChangeSet', {
 
 	initializerName: 'initializer',
-nodeQuery: new Query('//code'),
-worldDefQuery: new Query('//code'),
+
+
 
     initialize: function(optName) {
 		// Keep track of an ordered list of Changes
@@ -2397,6 +2476,7 @@ worldDefQuery: new Query('//code'),
 	},
 
 	reconstructFrom: function(node) {
+		if (!node) return false;
 		var codeNodes = node.getElementsByTagName('code');
 		if (codeNodes.length == 0) return false;
 		if (codeNodes.length > 1) console.warn('multiple code nodes in ' + node);
@@ -2405,6 +2485,8 @@ worldDefQuery: new Query('//code'),
 	},
 
 	addHookTo: function(node) {
+		if (!node)
+			throw dbgOn(new Error('Couldn\'t add ChangeSet'));
 		defNode = node.tagName == 'defs' ? node : this.findOrCreateDefNodeOfWorld(node);
 		this.xmlElement = LivelyNS.create("code");
 		defNode.appendChild(this.xmlElement);
@@ -2412,7 +2494,8 @@ worldDefQuery: new Query('//code'),
 findOrCreateDefNodeOfWorld: function(doc) {
 	var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').findFirst(doc);
 	if (!defNode) {
-		var worldNode = new Query('.//*[@type="WorldMorph"]').findFirst(doc);
+		var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
+			doc : new Query('.//*[@type="WorldMorph"]').findFirst(doc);
 		if (!worldNode) dbgOn(true);
 		defNode = NodeFactory.create('defs');
 		worldNode.appendChild(defNode); // null Namespace?
