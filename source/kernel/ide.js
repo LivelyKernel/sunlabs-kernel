@@ -2395,6 +2395,18 @@ setName: function(newName) {
 setDefinition: function(src) {
 	this.getXMLElement().textContent = src;
 },
+disableAutomaticEval: function() {
+	this.getXMLElement().setAttributeNS(null, 'automaticEval', 'false');
+},
+enableAutomaticEval: function() {
+	this.getXMLElement().setAttributeNS(null, 'automaticEval', 'true');
+},
+automaticEvalEnabled: function() {
+	return this.getAttributeNamed('automaticEval') != 'false';
+},
+
+
+
 
 addSubElement: function(change, insertBeforeChange) {
 		var doc = this.xmlElement.ownerDocument;
@@ -2558,7 +2570,7 @@ ensureHasInitializeScript: function() {
 },
 evaluateAllButInitializer: function() {
 	this.subElements()
-		.reject(function(ea) { return ea.getName() == this.initializerName}, this)
+		.select(function(ea) { return ea.getName() !== this.initializerName && ea.automaticEvalEnabled() }, this)
 		.forEach(function(ea) { ea.evaluate() });
 },
 evaluateInitializer: function() {

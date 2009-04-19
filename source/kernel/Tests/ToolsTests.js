@@ -1471,6 +1471,19 @@ testStartUpEvaluating: function() {
 	cs.evaluateInitializer();
 	this.assert(lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 2');
 },
+testStartUpEvaluatingWithDisabledChanges: function() {
+	lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
+	lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
+	var newChange1 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
+	var newChange2 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
+	newChange2.disableAutomaticEval();
+	var cs = ChangeSet.fromWorld(this.worldMorph);
+	cs.addSubElements([newChange1, newChange2]);
+	cs.evaluateAllButInitializer();
+	this.assert(lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
+	this.assert(!lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
+},
+
 
 
 	xtestReal: function() {
