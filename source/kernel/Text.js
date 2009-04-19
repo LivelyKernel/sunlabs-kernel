@@ -1205,7 +1205,7 @@ subMenuItems: function($super, evt) {
         return this.textContent; 
     },
 
-    resetRendering: function() {
+    resetRendering: function(replacementHints) {
 	this.textContent.replaceRawNodeChildren(null);
 	this.textContent.setFill(this.textColor);
         this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
@@ -1641,15 +1641,13 @@ subMenuItems: function($super, evt) {
         return new thisModule.Text(this.textString, this.textStyle); 
     },
 
-    replaceSelectionWith: function(replacement, delayComposition, justMoreTyping) { 
-	// Note:  -delayComposition- is now ignored everyhere
-	// Often called with only one arg for normal paste
+    replaceSelectionWith: function(replacement) { 
         if (! this.acceptInput) return;
 	var strStyle = this.textStyle;
 	var repStyle = replacement.style;
 	var oldLength = this.textString.length;
 	
-	if (! justMoreTyping) { // save info for 'More' command
+	if (! this.typingHasBegun) { // save info for 'More' command
 	    this.charsReplaced = this.getSelectionString();
 	    this.lastFindLoc = this.selectionRange[0] + replacement.length;
 	}
@@ -1667,9 +1665,10 @@ subMenuItems: function($super, evt) {
 	// Splice the textString
 	var before = this.textString.substring(0,this.selectionRange[0]); 
 	var after = this.textString.substring(this.selectionRange[1]+1, oldLength);
-	this.setTextString(before.concat(replacement.asString(),after), delayComposition, justMoreTyping);
+	this.setTextString(before.concat(replacement.asString(),after), 'replacementHints');
+
         if(this.selectionRange[0] == -1 && this.selectionRange[1] == -1) {
-            this.setSelectionRange(0,0); // symthom fix of typing into an "very emty" string
+            this.setSelectionRange(0,0); // symptom fix of typing into a "very empty" string
         };
 	
 	// Compute new selection, and display
@@ -1846,13 +1845,14 @@ subMenuItems: function($super, evt) {
     
     replaceSelectionfromKeyboard: function(replacement) {
         if (!this.acceptInput) return;        
-        var justMoreTyping = this.typingHasBegun;  // will get reset by replaceSelection
 
-		this.replaceSelectionWith(replacement, null, this.typingHasBegun); // 2nd arg ignored
-
-        if (justMoreTyping)  this.charsTyped += replacement;
+        if (this.typingHasBegun)  this.charsTyped += replacement;
         	else  this.charsTyped = replacement;
-        this.typingHasBegun = true;  // For undo and select-all commands        
+
+		this.replaceSelectionWith(replacement);
+		// Note:  typingHasBegun will get reset here by replaceSelection
+
+		this.typingHasBegun = true;  // For undo and select-all commands        
     },
     
     doCut: function() {
@@ -1960,7 +1960,7 @@ subMenuItems: function($super, evt) {
 	var prevSelection = this.selectionRange[0];
 	var result = "" + this.tryBoundEval(strToEval);
 	isPrintIt=true;
-	this.replaceSelectionWith(" " + result, false);
+	this.replaceSelectionWith(" " + result);
 	this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
     },
     doSave: function() {
@@ -2170,10 +2170,10 @@ TextMorph.addMethods({
 	if (emph.style == 'italic' && currentEmphasis.style.endsWith('italic')) return this.emphasizeSelection({style: 'unitalic'});
 	this.emphasizeSelection(emph);
     },
-    pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+    pvtUpdateTextString: function(replacement, replacementHints) {
 	// Note:  -delayComposition- is now ignored everyhere
         replacement = replacement || "";    
-	if(!justMoreTyping) { 
+	if(!this.typingHasBegun) { 
             // Mark for undo, but not if continuation of type-in
 	    this.undoTextString = this.textString;
 	    this.undoSelectionRange = this.selectionRange;
@@ -2182,11 +2182,11 @@ TextMorph.addMethods({
 	// DI: Might want to put the maxSafeSize test in clients
 	dbgOn(!replacement.truncate);
         this.textString = replacement.truncate(this.maxSafeSize);
-        this.composeAfterEdits();
+        this.composeAfterEdits(replacementHints);
     },
     
-    composeAfterEdits: function() {
-        this.resetRendering();
+    composeAfterEdits: function(replacementHints) {
+        this.resetRendering(replacementHints);
         this.layoutChanged(); 
         this.changed();
         this.drawSelection(); // some callers of pvtUpdate above may call setSelection again
@@ -2261,11 +2261,11 @@ TextMorph.addMethods({
         this.changed();
     },
     
-    setTextString: function(replacement, delayComposition, justMoreTyping) {
+    setTextString: function(replacement, replacementHints) {
 	// Note:  -delayComposition- is now ignored everyhere
         if (Object.isString(replacement)) replacement = String(replacement); 
         if (this.autoAccept) this.setText(replacement);
-        this.pvtUpdateTextString(replacement, delayComposition, justMoreTyping); 
+        this.pvtUpdateTextString(replacement, replacementHints); 
     },
     
     updateTextString: function(newStr) {
