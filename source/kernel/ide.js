@@ -1103,16 +1103,23 @@ ide.BrowserNode.subclass('lively.ide.ChangeNode', {
 
 	documentation: 'Abstract node for Changes/ChangeSet nodes',
 asString: function() {
-		return this.target.getName();
+		return this.target.getName() + (this.target.automaticEvalEnabled() ? '' : ' (disabled)');
 	},
 
 
 	menuSpec: function() {
 		var spec = [];
-		var node = this;
+		var n = this;
+		var t = n.target;
 		spec.push(['remove', function() {
-			node.target.remove();
-			node.browser.allChanged() }]);
+			t.remove();
+			n.browser.allChanged() }]);
+		if (t.automaticEvalEnabled())	
+			spec.push(['disable evaluation at startup', function() {
+				t.disableAutomaticEval(); n.signalChange(); }]);
+		else
+			spec.push(['enable evaluation at startup', function() {
+				t.enableAutomaticEval(); n.signalChange(); }]);
 		return spec;
 	},
 sourceString: function() {
