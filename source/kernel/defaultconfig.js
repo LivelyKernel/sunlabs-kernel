@@ -228,6 +228,25 @@ Object.extend(Config, {
 });
 
 
+Object.extend(Config, {
+	// Morphic
+	alignToGridSpace: 10, // determins the pixels to snap to during shift dragging with mouse
+	ballonHelpDelay: 1000,
+	// Fabrik
+	showFabrikComponentBox: false,
+	showFahrenheitCelsiusExample: false,
+	showTextListExample: false,
+	openFabrikBrowserExample: false,
+	// Wiki
+	showWikiNavigator: true,
+	// Tests
+	loadTests: [], //e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
+	showTesterRunner: false,
+	// Modules
+	modulesOnWorldLoad: ['ide.js'/*FIXME for ChangeSet*/, 'LKWiki.js' /*"Fabrik.js", 'TileScripting.js',*/ ],
+	codeBase: document.baseURI.substring(0, document.baseURI.lastIndexOf('/') + 1)
+});
+
 //	*** Minimal World Only ***
 //  In spite of all the foregoing complexity, merely changing this conditional
 //	to true will bypass all examples and worlds, and only create a few
@@ -243,17 +262,3 @@ if (false) {
     Config.showStar = false;  // true to show star
     Config.spinningStar = false;  // true to enable spinning
 }
-
-Config.showTesterRunner = false;
-Config.showFabrikComponentBox = false;
-Config.showFahrenheitCelsiusExample = false;
-Config.showTextListExample = false;
-Config.openFabrikBrowserExample = false;
-Config.showWikiNavigator = true;
-
-Config.alignToGridSpace = 10; // determins the pixels to snap to during shift dragging with mouse
-Config.ballonHelpDelay = 1000; // Default
-
-Config.loadTests = [] //  e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
-
-Config.modulesOnWorldLoad = [/*"Fabrik.js", 'TileScripting.js',*/ 'ide.js'/*FIXME for ChangeSet*/, 'LKWiki.js']
