@@ -259,7 +259,7 @@ thisModule.Font.addMethods({
 
 }    
     
-lively.data.Wrapper.subclass('TextWord', {
+lively.data.Wrapper.subclass('lively.Text.TextWord', {
 
     documentation: "represents a chunk of text which might be printable or might be whitespace",
 
@@ -268,12 +268,11 @@ lively.data.Wrapper.subclass('TextWord', {
     isTab: false,
 
     initialize: function(offset, length) {
-        this.startIndex = offset;
+	this.startIndex = offset;
 	this.stopIndex  = offset;
-        this.length = length;
-        this.shouldRender = true;
-        this.bounds = null;
-        this.wasComposed = false;
+	this.length = length;
+	this.shouldRender = true;
+	this.bounds = null;
 	this.rawNode = null;
     },
 
@@ -385,7 +384,7 @@ lively.data.Wrapper.subclass('TextWord', {
     
     // clone a chunk only copying minimal information
     cloneSkeleton: function() {
-        var c = new TextWord(this.startIndex, this.length);
+        var c = new lively.Text.TextWord(this.startIndex, this.length);
         c.isWhite = this.isWhite;
         c.isNewLine = this.isNewLine;
         c.isTab = this.isTab;
@@ -398,8 +397,7 @@ lively.data.Wrapper.subclass('TextWord', {
             " length: " + this.length +
             " isWhite: " + this.isWhite +
             " isNewLine: " + this.isNewLine +
-            " isTab: " + this.isTab +
-            " wasComposed: " + this.wasComposed;
+            " isTab: " + this.isTab;
         if (this.bounds == null) {
             lString += " null bounds";
         } else {
@@ -442,7 +440,7 @@ Object.subclass('lively.Text.TextLine', {
     whiteSpaceDict: {' ': true, '\t': true, '\r': true, '\n': true},
     
     // create a new line
-    initialize: function(textString, textStyle, startIndex, topLeft, font, defaultStyle, chunkSkeleton) {
+    initialize: function(textString, textStyle, startIndex, topLeft, font, defaultStyle) {
         this.textString = textString;
         this.textStyle = textStyle;
         this.startIndex = startIndex;
@@ -455,7 +453,7 @@ Object.subclass('lively.Text.TextLine', {
 	//	this.adoptStyle(defaultStyle);
 	this.spaceWidth = font.getCharWidth(' ');
         this.tabWidth = this.spaceWidth * 4;
-        this.chunks = chunkSkeleton;
+        this.chunks = null;  //  Will be an array after compose
     },
     
     lineHeight: function() {
@@ -473,55 +471,9 @@ Object.subclass('lively.Text.TextLine', {
 	return (c == '\r' || c == '\n');
     },
     
-    chunkFromWord: function(str, offset) {
-	// we found a word so figure out where the chunk extends to (private)
-        for (var i = offset; i < str.length; i++) {
-            if (this.whiteSpaceDict[str[i]]) {
-                return i - offset;
-            }
-        }
-        return i - offset;
-    },
-    
-    chunkFromSpace: function(str, offset) {
-	// we found a space so figure out where the chunk extends to (private)
-        for (var i = offset; i < str.length; i++) {
-            if (str[i] != ' ') {
-                return i - offset;
-            }
-        }
-        return i - offset;
-    },
-    
-    chunkFromString: function(str, style, startOffset) {
-	// look at str starting at startOffset and return an array with all of the chunks in it
-	// Note: if style is not null, then break at style changes as well as other chunk boundaries
-        var offset = startOffset;
-        var pieces = [];
-        var chunkSize;
-	
-        while (offset < str.length) {
-            chunkSize = 1; // default is one character long
-            if (this.whiteSpaceDict[str[offset]]) {
-                if (this.isNewLine(str[offset])) {
-                    pieces.push(new TextWord(offset).asNewLine());
-                } else if (str[offset] == '\t') {
-                    pieces.push(new TextWord(offset).asTab());
-                } else {
-                    chunkSize = this.chunkFromSpace(str, offset);
-                    pieces.push(new TextWord(offset, chunkSize).asWhite());
-                }
-           } else {
-		chunkSize = this.chunkFromWord(str, offset);
-		if(style) {  // if style breaks within this chunk, shorten chunk to end at the break
-			var styleSize = style.runLengthAt(offset);  // length remaining in run
-			if (styleSize < chunkSize) chunkSize = styleSize;
-		}	
-		pieces.push(new TextWord(offset, chunkSize));
-           }
-           offset += chunkSize;
-        }
-        return pieces;
+    endsWithNewLine: function() {
+	// Does this line end with a newLine character?
+	return this.chunks.last().isNewLine;
     },
     
     baselineY: function() {
@@ -536,80 +488,79 @@ Object.subclass('lively.Text.TextLine', {
 	return this.currentFont.getCharWidth(this.textString.charAt(index));
     },
 
-    compose: function(compositionWidth) {
+    compose: function(compositionWidth, chunkStream) {
 	// compose a line of text, breaking it appropriately at compositionWidth
-	// nSpaceChunks and lastChunkIndex are used for alignment in adjustAfterComposition
+	// nSpaceChunks is used for alignment in adjustAfterComposition
 	this.nSpaceChunks = 0; 
-	this.lastChunkIndex = 0; 
-        var lastBounds = this.topLeft.extent(pt(0, this.currentFont.getSize())); 
+	var lastBounds = this.topLeft.extent(pt(0, this.currentFont.getSize())); 
 	var runningStartIndex = this.startIndex;
 	var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
-	
-        // a way to optimize out repeated scanning
-        if (this.chunks == null)
-            this.chunks = this.chunkFromString(this.textString, this.textStyle, this.startIndex);
+	this.chunks = new Array();
 
+//	console.log("this.textString = /" + this.textString + "/, len = " + this.textString.length);
 	var hasStyleChanged = false;
 	var lastNonWhite = null;
-        for (var i = 0; i < this.chunks.length; i++) {
-            var c = this.chunks[i];
-	    this.lastChunkIndex = i;
-	    if (c.startIndex >= nextStyleChange) {
-		hasStyleChanged = true;
-		// For now style changes are only seen at chunk breaks
-		if (!c.isNewLine) this.adoptStyle(this.textStyle.valueAt(c.startIndex), c.startIndex); // Dont change style at newlines
-		nextStyleChange = c.startIndex + this.textStyle.runLengthAt(c.startIndex);
-	    }
-            if (c.isWhite) {
-                c.bounds = lastBounds.withX(lastBounds.maxX());
+        for (var i=0; true; i++) {
+            var c = chunkStream.nextChunk();
+			if (c == null) break;
+//		console.log(i.toString() + ": " + c);
+			this.chunks.push(c);
+//		console.log("c.startIndex = " + c.startIndex + ", nextStyleChange = " + nextStyleChange);
 
-                if (c.isNewLine) {
-                    c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
-                    runningStartIndex = c.getNextStartIndex();
-                    c.wasComposed = true;
-                    break;
-                }
-                this.nSpaceChunks ++ ;
-		if (c.isTab) {
-                    var tabXBoundary = c.bounds.x - this.topLeft.x;
-                    c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
-                } else {
-                    var spaceIncrement = this.spaceWidth;
-                    c.bounds.width = spaceIncrement * c.length;
-                }
-                runningStartIndex = c.getNextStartIndex();
-            } else {
+	    if (c.startIndex >= nextStyleChange) {
+			hasStyleChanged = true;
+			// Don't bother to change style at line breaks
+			if (!c.isNewLine) this.adoptStyle(this.textStyle.valueAt(c.startIndex), c.startIndex); 
+			nextStyleChange = c.startIndex + this.textStyle.runLengthAt(c.startIndex);
+	    }
+		if (c.isWhite) {  // Various whitespace chunks...
+			c.bounds = lastBounds.withX(lastBounds.maxX());
+
+			if (c.isNewLine) {
+				c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
+				runningStartIndex = c.getNextStartIndex();
+				break;
+			}
+			this.nSpaceChunks ++ ;  // DI: shouldn't this only be incase of spaces (ie, not tabs)?
+			if (c.isTab) {
+				var tabXBoundary = c.bounds.x - this.topLeft.x;
+				c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
+			} else {
+				var spaceIncrement = this.spaceWidth;
+				c.bounds.width = spaceIncrement * c.length;
+			}
+			runningStartIndex = c.getNextStartIndex();
+
+	} else {  // Not whitespace...
 		c.allocRawNode(); 
 		lastNonWhite = c;
 
 		if (hasStyleChanged) {
-		    // once we notice one change, we will reapply font-size to chunk
-		    this.currentFont.applyTo(c);
-		    if(this.localColor) {
-			var colorSpec = this.localColor;
-			if (!(colorSpec instanceof Color)) colorSpec = Color[colorSpec]; // allow color names
-			if (colorSpec instanceof Color) c.rawNode.setAttributeNS(null, "fill", String(colorSpec));
-		    }
+			// once we notice one change, we will reapply font-size to chunk
+			this.currentFont.applyTo(c);
+			if (this.localColor) {
+				var colorSpec = this.localColor;
+				if (!(colorSpec instanceof Color)) colorSpec = Color[colorSpec]; // allow color names
+				if (colorSpec instanceof Color) c.rawNode.setAttributeNS(null, "fill", String(colorSpec));
+			}
 		}
-                var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
-                if (didLineBreak) {
-                    if (i == 0) {
-                        // XXX in the future, another chunk needs to be inserted in the array at this point
-                        //     otherwise the bounds will be messed up - kam
-                        runningStartIndex = c.getStopIndex() + 1;
-                    } else {
-                        // Back up to re-render this word and abort rendering
-                        c.shouldRender = false;
-                    }
-                    this.nSpaceChunks-- ;  // This makes last interiror space no longer interior
-                    break;
+		var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
+		if (didLineBreak) {  // This chunk ran beyond compositionWidth
+			if (i == 0) {  // If first chunk, then have to trim it
+				runningStartIndex = c.getStopIndex() + 1;
+			} else {
+				// Otherwise, drop it entirely, to be rendered on next line
+				runningStartIndex = c.startIndex;
+				this.chunks.pop();
+			}
+			this.nSpaceChunks-- ;  // This makes last interior space no longer interior
+			break;
 		}
 		runningStartIndex = c.getNextStartIndex();
-            }
-            lastBounds = c.bounds;
-	    c.wasComposed = true;
-        }
-        this.overallStopIndex = runningStartIndex - 1;
+	}
+	lastBounds = c.bounds;
+	}
+	this.overallStopIndex = runningStartIndex - 1;
     },
     
     adoptStyle: function(emph, charIx) {
@@ -648,9 +599,10 @@ Object.subclass('lively.Text.TextLine', {
 
     // get the bounds of the character at stringIndex
     getBounds: function(stringIndex) {
-        for (var i = 0; i <= this.lastChunkIndex; i++) {
-            var c = this.chunks[i];
-            if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
+	var lastIndex = this.chunks.length-1;
+	for (var i = 0; i <= lastIndex; i++) {
+		var c = this.chunks[i];
+		if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
 		return c.getBounds(this, stringIndex);
         }
         return null;
@@ -660,7 +612,6 @@ Object.subclass('lively.Text.TextLine', {
     indexForX: function(x) {
         for (var i = 0; i < this.chunks.length; i++) {
             var c = this.chunks[i];
-            if (!c.wasComposed) continue;
 	    if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(this, x);
         }
         return 0; // should not get here unless rightX is out of bounds
@@ -676,19 +627,21 @@ Object.subclass('lively.Text.TextLine', {
 	var deltaX = 0;
 	var paddingX = 0;
 	var spaceRemaining = 0;
+	var lastIndex = this.chunks.length-1;
+
 	if (this.alignment != 'left') {
-	    spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[this.lastChunkIndex-1].bounds.maxX();
+	    spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[lastIndex-1].bounds.maxX();
 	    if (this.alignment == 'right') deltaX = spaceRemaining;
 	    if (this.alignment == 'center') deltaX = spaceRemaining / 2;
 	    if (this.alignment == 'justify' && (this.overallStopIndex !=  this.textString.length-1)
-		&& !(this.chunks[this.lastChunkIndex].isNewLine)) {
+		&& !(this.chunks[lastIndex].isNewLine)) {
 		//  Distribute remaining space over the various space chunks
 		var nSpaces = this.nSpaceChunks;
 		paddingX = spaceRemaining / Math.max(1, nSpaces); 
 	    }
 	}
 	var baselineY = this.baselineY();
-        for (var i = 0; i <= this.lastChunkIndex; i++) {
+        for (var i = 0; i <= lastIndex; i++) {
 	    this.chunks[i].adjustAfterComposition(textString, deltaX, paddingX, baselineY);
             if (this.chunks[i].isSpaces()) deltaX += paddingX;
         }
@@ -703,42 +656,11 @@ Object.subclass('lively.Text.TextLine', {
         }
     },
     
-    cloneChunkSkeleton: function(sIndex) {  // Say it 3 times fast 
-	// Copy only the relevant chunks to this.chunks
-	// Return the remaining chunks which may include an extra in case of split lines
-	// DI: Note I rewrote this (much faster) without really knowing the details
-        if (this.chunks == null) return null;
-	
-        var extra = null;
-	var wrap = false;
-        var localChunkCount = 0;
-	for (var i = 0; i < this.chunks.length; i++) {  // Step through this line, break at end
-            var tc = this.chunks[i];
-            if (tc.startIndex < sIndex) {
-		localChunkCount++;
-		if ((tc.startIndex + tc.length) > sIndex) {
-	            // this chunk has been broken up by a word wrap
-		    wrap = true;
-		    extra = tc.cloneSkeleton();
-	            extra.length -= sIndex - extra.startIndex;
-	            extra.startIndex = sIndex;
-		    tc.length -= extra.length;
-		    break;
-		}
-            }
-            else if (tc.startIndex == sIndex)  extra = tc.cloneSkeleton();
-            else break;
-        }
-	var remainingChunks = this.chunks;
-	this.chunks = this.chunks.slice(0, localChunkCount);  // Make copy of chunks local to this line
-	if (!extra) remainingChunks.splice(0, localChunkCount+1); // Drop local chunks from big list
-	else remainingChunks.splice(0, (wrap ? localChunkCount : localChunkCount+1), extra); // ... adding clone or split at line-end
-	
-	return remainingChunks;
+    removeRawNodes: function(textContent) {
+	// remove all rawNodes held by the line
+	for (var i = 0; i < this.chunks.length; i++) this.chunks[i].removeRawNode();
     },
-
-    // accessor function
-
+    
     setTabWidth: function(w, asSpaces) {
         this.tabWidth = asSpaces ? w * this.spaceWidth : w;
     },
@@ -872,7 +794,64 @@ Morph.subclass('TextSelectionMorph', {
     undraw: function() {
 	this.removeAllMorphs();
     }
+});
 
+Object.subclass('lively.Text.ChunkStream', {
+
+    documentation: "Parses a string with style into chunks of text or white space",
+    
+    whiteSpaceDict: {' ': true, '\t': true, '\r': true, '\n': true},
+
+    initialize: function(str, style, stringIndex) {
+		this.str = str;
+		this.style = style;
+		this.stringIndex = stringIndex;
+   },
+
+    nextChunk: function() {
+	// look at str starting at stringIndex and return the next appropriate chunk
+	// Note: if style is not null, then break at style changes as well as other chunk boundaries
+
+	if (this.stringIndex >= this.str.length) return null;
+
+	var nextChar = this.str[this.stringIndex];
+	var chunkSize = 1; // default is one character long
+	if (this.whiteSpaceDict[nextChar]) {
+		if (nextChar == '\r' || nextChar == '\n') {
+			return new lively.Text.TextWord(this.stringIndex++).asNewLine(); }
+		if (nextChar == '\t') {
+			return new lively.Text.TextWord(this.stringIndex++).asTab(); }
+		var chunkSize = this.chunkLengthForSpaces(this.str, this.stringIndex);
+		var chunk = new lively.Text.TextWord(this.stringIndex, chunkSize).asWhite();
+		this.stringIndex += chunkSize ;
+		return chunk;
+	}
+	var chunkSize = this.chunkLengthForWord(this.str, this.stringIndex);
+	if(this.style) {  // if style breaks within this chunk, shorten chunk to end at the break
+		var styleSize = this.style.runLengthAt(stringIndex);  // length remaining in run
+		if (styleSize < chunkSize) chunkSize = styleSize;
+	}	
+	var chunk = new lively.Text.TextWord(this.stringIndex, chunkSize);
+	this.stringIndex += chunkSize;
+	return chunk;
+    },
+
+chunkLengthForSpaces: function(str, index) {
+	// we found a space at str[index];  return the corresponding chunk length
+	// Note:  This and ...ForWord should probably be inline, and they can start at index+1
+	// Further note:  Both might be faster with a regex
+	// Dominant stats would be 1 space only, and typically 4-5 characters
+		for (var i = index; i < str.length; i++)
+			if (str[i] != ' ') return i - index;
+		return i - index;
+    },
+
+chunkLengthForWord: function(str, index) {
+	// we found a non-blank at str[index];  return the corresponding chunk length
+	for (var i = index; i < str.length; i++)
+	    if (this.whiteSpaceDict[str[i]])  return i - index;
+	return i - index;
+    }
 });
 
 
@@ -983,9 +962,11 @@ BoxMorph.subclass("TextMorph", {
 
     bounds: function($super, ignoreTransients) {
         if (this.fullBounds != null) return this.fullBounds;
+
+		// Note: composeAfterEdits relies on these calls to resetRendering, fitText, and drawSelection...
         this.resetRendering();
-        this.fitText(); // adjust bounds or text for fit
-	this.drawSelection("noScroll");
+        this.fitText(); // adjust bounds or text for fit 
+        this.drawSelection("noScroll");
         return $super(ignoreTransients);
     },
     
@@ -1205,13 +1186,67 @@ subMenuItems: function($super, evt) {
         return this.textContent; 
     },
 
-    resetRendering: function() {
+    resetRendering: function(replacementHints) {
 	this.textContent.replaceRawNodeChildren(null);
 	this.textContent.setFill(this.textColor);
         this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
         this.font.applyTo(this.textContent);
         this.lines = null;
         this.lineNumberHint = 0;
+    // if (replacementHints) this.ensureRendered();  // just to test timing
+	},
+
+    renderAfterReplacement: function(replacementHints) {
+	// DI:  The entire text composition scheme here should be replaced by something simpler
+	// However, until that time, I've put in this hack to speed up editing in large bodies of text.
+	//		The idea is to preserve all text lines that precede the change, and
+	//		to recompose beginning at the change (possibly the line before).
+	//		Then, after the change, we check at the end of each line whether
+	//		the next line begins where one of the original lines began.
+	//		In that case, composition can stop, and the remaining original lines retained
+	//		after adjustment of their startingIndex and possibly their y-coordinate.
+	//		Finally, the rawNodes for the lines actually replaced must be deleted.
+	//		With apologies for complexity, this routine necessarily encompasses the logic of 
+	//			resetRendering and fitText, as invoked via bounds() in composeAfterEdits
+
+	if (!Config.newText) return this.composeAfterEdits();  // Bypass completely to run old logic
+
+	// The hints tell what range of the prior text got replaced, and how large was the replacement
+	var selStart = replacementHints.selStart;  // JS substring convention: [1,2] means str[1] alone
+	var selStop = replacementHints.selStop;
+	var repLength = replacementHints.repLength;
+	var compositionWidth = this.compositionWidth();
+
+	// It is assumed that this textMorph is still fully rendered for the text prior to replacement
+	// Thus we can determine the lines affected by the change
+	var firstLineOfChange = this.lineNumberForIndex(selStart);
+//console.log("lineNumber returned " + firstLineOfChange + " for index = " + selStart);
+	var lastValidLine = firstLineOfChange - 1;
+	if (lastValidLine >= 0 && !this.lines[lastValidLine].endsWithNewLine()) lastValidLine-- ;
+
+	// Note: Our first goal will be to preserve all lines befor the replacement,
+	//    but to recompose from there to the end.
+	//    After that, we'll put in logic to preserve lines after the replacement
+
+//console.log("replacing at char " + selStart + ", saving lines through " + lastValidLine);
+
+	//  Release rawNodes for the deleted lines (for now all beyond lastValidLine)
+	for (var i = lastValidLine+1; i < this.lines.length; i++) this.lines[i].removeRawNodes();
+
+    var oldFirstLine = this.lines[firstLineOfChange];
+	// Note: do we need font at starting index??
+	var newLines = this.composeLines(oldFirstLine.startIndex, oldFirstLine.topLeft, compositionWidth, this.font);
+	for (var i = 0; i < newLines.length; i++) newLines[i].render(this.textContent);
+
+	//	Update the textString reference in all retained textlines
+	for (var i = 0; i <= lastValidLine; i++) {
+		this.lines[i].textString = this.textString;
+		this.lines[i].textStyle = this.textStyle;
+	}
+	this.lines = this.lines.slice(0, lastValidLine+1).concat(newLines);
+
+	this.fitText();  // *** this should not recompose, only update bounds
+	this.drawSelection("noScroll");
     },
 
     ensureTextString: function() { 
@@ -1231,34 +1266,35 @@ subMenuItems: function($super, evt) {
 
     // compose the lines if necessary and then render them
     renderText: function(topLeft, compositionWidth) {
-        if (this.lines == null) { 
-            this.lines = this.composeLines(topLeft, compositionWidth, this.font);
-        } 
-        for (var i = 0; i < this.lines.length; i++) {
-            this.lines[i].render(this.textContent);
-        }
+	// Note:  This seems to be a spacer for one-line texts, as in a list of texts,
+	//    not an interline spacing for lines in a paragraph.
+	var defaultInterline = (lively.Text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
+
+	if (this.lines == null) this.lines = this.composeLines(0, topLeft.addXY(0, defaultInterline/2), compositionWidth, this.font);
+	for (var i = 0; i < this.lines.length; i++) this.lines[i].render(this.textContent);
     },
 
-    // compose all of the lines in the text
-    composeLines: function(initialTopLeft, compositionWidth, font) {
-        var lines = [];
-        var startIndex = 0;
-        var stopIndex = this.textString.length - 1;
-        var chunkSkeleton = null;
-	var defaultInterline = (lively.Text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
-	var topLeft = initialTopLeft.addXY(0, defaultInterline/2);
-        while (startIndex <= stopIndex) {
-	    var line = new lively.Text.TextLine(this.textString, this.textStyle, startIndex, 
-		                    topLeft, font, new TextEmphasis({}), chunkSkeleton);
-            line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
-            line.compose(compositionWidth);
-            line.adjustAfterComposition(this.textString, compositionWidth);
-            lines.push(line);
-            startIndex = line.getNextStartIndex();
-            topLeft = topLeft.addXY(0, line.lineHeight());
-            // this is an optimization that keeps us from having to re-scan the string on each line
-            chunkSkeleton = line.cloneChunkSkeleton(startIndex);
-        }
+    composeLines: function(initialStartIndex, initialTopLeft, compositionWidth, font) {
+		// compose and return in an array, lines in the text beginning at initialStartIndex
+//	console.log("composeLines(" + initialStartIndex + "): " + this.textString.substring(0,10) + "...");
+// if (this.textString.startsWith("P = ") && initialStartIndex == 0) lively.lang.Execution.showStack();
+		var lines = new Array();
+		var startIndex = initialStartIndex;
+		var stopIndex = this.textString.length - 1;
+		var chunkStream = new lively.Text.ChunkStream(this.textString, this.textStyle, startIndex);
+		var topLeft = initialTopLeft;
+		while (startIndex <= stopIndex) {
+			var line = new lively.Text.TextLine(this.textString, this.textStyle, startIndex, 
+							topLeft, font, new TextEmphasis({}));
+			line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
+			line.compose(compositionWidth, chunkStream);
+			line.adjustAfterComposition(this.textString, compositionWidth);
+			startIndex = line.getNextStartIndex();
+			chunkStream.stringIndex = startIndex;
+			topLeft = topLeft.addXY(0, line.lineHeight());
+			lines.push(line);
+//	if (this.textString.startsWith("P = ")) console.log("line no " + (lines.length-1) + ": [begin, end] = " + [line.startIndex, line.overallStopIndex])
+		}
         return lines;
     },
 
@@ -1641,42 +1677,46 @@ subMenuItems: function($super, evt) {
         return new thisModule.Text(this.textString, this.textStyle); 
     },
 
-    replaceSelectionWith: function(replacement, delayComposition, justMoreTyping) {
-	// Often called with only one arg for normal paste
+    replaceSelectionWith: function(replacement) { 
         if (! this.acceptInput) return;
 	var strStyle = this.textStyle;
 	var repStyle = replacement.style;
 	var oldLength = this.textString.length;
 	
-	if (! justMoreTyping) { // save info for 'More' command
+	if (! this.typingHasBegun) { // save info for 'More' command
 	    this.charsReplaced = this.getSelectionString();
 	    this.lastFindLoc = this.selectionRange[0] + replacement.length;
 	}
-	
-	if (strStyle || repStyle) { // Splice the style array if any
+
+	var selStart = this.selectionRange[0];  // JS substring convention: [1,2] means str[1] alone
+	var selStop = this.selectionRange[1] + 1;
+	var repLength = replacement.asString.length;
+	var replacementHints = {selStart: selStart, selStop: selStop, repLength: repLength};
+
+	// Splice the style array if any	
+	if (strStyle || repStyle) { 
 	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
 	    if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
-	    var beforeStyle = strStyle.slice(0, this.selectionRange[0]);
-	    var afterStyle = strStyle.slice(this.selectionRange[1]+1, oldLength);
+	    var beforeStyle = strStyle.slice(0, selStart);
+	    var afterStyle = strStyle.slice(selStop, oldLength);
 	    this.textStyle = beforeStyle.concat(repStyle).concat(afterStyle);
-	    // console.log("replaceSel; textStyle = " + this.textStyle);
 	}		
 	if (this.textStyle && this.textStyle.values.all(function(ea) {return !ea})) this.textStyle = null;
 
 	// Splice the textString
-	var before = this.textString.substring(0,this.selectionRange[0]); 
-	var after = this.textString.substring(this.selectionRange[1]+1, oldLength);
-	this.setTextString(before.concat(replacement.asString(),after), delayComposition, justMoreTyping);
-        if(this.selectionRange[0] == -1 && this.selectionRange[1] == -1) {
-            this.setSelectionRange(0,0); // symthom fix of typing into an "very emty" string
+	var before = this.textString.substring(0,selStart); 
+	var after = this.textString.substring(selStop, oldLength);
+	this.setTextString(before.concat(replacement.asString(),after), replacementHints);
+
+        if(selStart == -1 && selStop == 0) {  // FixMe -- this shouldn't happen
+            this.setSelectionRange(0,0); // symptom fix of typing into a "very empty" string
         };
 	
-        // Compute new selection, and display if not delayed
+	// Compute new selection, and display
 	var selectionIndex = this.selectionRange[0] + replacement.length;
-	if (delayComposition) this.selectionRange = [selectionIndex, selectionIndex-1];
-	else this.setNullSelectionAt(selectionIndex); // this displays it as well
+	this.setNullSelectionAt(selectionIndex); 
 
-		this.showChangeClue();		
+	this.showChangeClue();		
     },
 
     setNullSelectionAt: function(charIx) { 
@@ -1845,31 +1885,15 @@ subMenuItems: function($super, evt) {
     },
     
     replaceSelectionfromKeyboard: function(replacement) {
-        // This special version of replaceSelectionWith carries out the replacement
-        // but postpones the necessary composition for some time (200 ms) later.
-        // Thus, if there is further keyboard input pending, it can get handled also
-        // without composition until there is an adequate pause.
-        // Note: If other events happen when composition has been postponed,
-        //    and this can be tested by if(this.delayedComposition),
-        //    then a call to composeAfterEdits() must be forced before handling them.
-        if (!this.acceptInput) return;
-        
-        this.replaceSelectionWith(replacement, true, this.typingHasBegun); // 2nd arg = true delays composition
+        if (!this.acceptInput) return;        
 
-        if (this.typingHasBegun) {
-            this.charsTyped += replacement;
-        } else {  
-            this.charsTyped = replacement;
-        };
-        this.typingHasBegun = true;  // So undo will revert to first replacement
+        if (this.typingHasBegun)  this.charsTyped += replacement;
+        	else  this.charsTyped = replacement;
 
-        // Bundle display of typing unless suppressed for reliablity or response in small text
-        if (Config.showAllTyping  || (Config.showMostTyping && this.textString.length<1000)) {
-            this.composeAfterEdits();
-        } else {
-            if(!this.delayedComposition) this.delayedComposition = new SchedulableAction(this, "composeAfterEdits", null, 0);
-            this.world().scheduleForLater(this.delayedComposition, 200, true); // will override a prior request
-        }
+		this.replaceSelectionWith(replacement);
+		// Note:  typingHasBegun will get reset here by replaceSelection
+
+		this.typingHasBegun = true;  // For undo and select-all commands        
     },
     
     doCut: function() {
@@ -1900,8 +1924,9 @@ subMenuItems: function($super, evt) {
 	}
     },
     doExchange: function() {
-        var sel1 = this.selectionRange;
+	var sel1 = this.selectionRange;
 	var sel2 = this.previousSelection;
+
 	var d = 1;  // direction current selection will move
 	if (sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
 	if (sel1[1] >= sel2[0]) return; // ranges must not overlap
@@ -1977,7 +2002,7 @@ subMenuItems: function($super, evt) {
 	var prevSelection = this.selectionRange[0];
 	var result = "" + this.tryBoundEval(strToEval);
 	isPrintIt=true;
-	this.replaceSelectionWith(" " + result, false);
+	this.replaceSelectionWith(" " + result);
 	this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
     },
     doSave: function() {
@@ -2011,7 +2036,7 @@ subMenuItems: function($super, evt) {
     },
     processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
 	var key = evt.getKeyChar();
-	// console.log('command ' + key);
+	console.log('command ' + key);
 
 	// ARRGH FIXME
 	if (key == 'I' && evt.isShiftDown()) {
@@ -2187,9 +2212,10 @@ TextMorph.addMethods({
 	if (emph.style == 'italic' && currentEmphasis.style.endsWith('italic')) return this.emphasizeSelection({style: 'unitalic'});
 	this.emphasizeSelection(emph);
     },
-    pvtUpdateTextString: function(replacement, delayComposition, justMoreTyping) {
+    pvtUpdateTextString: function(replacement, replacementHints) {
+	// Note:  -delayComposition- is now ignored everyhere
         replacement = replacement || "";    
-	if(!justMoreTyping) { 
+	if(!this.typingHasBegun) { 
             // Mark for undo, but not if continuation of type-in
 	    this.undoTextString = this.textString;
 	    this.undoSelectionRange = this.selectionRange;
@@ -2198,15 +2224,14 @@ TextMorph.addMethods({
 	// DI: Might want to put the maxSafeSize test in clients
 	dbgOn(!replacement.truncate);
         this.textString = replacement.truncate(this.maxSafeSize);
-        if (!delayComposition) this.composeAfterEdits();  // Typein wants lazy composition
+        this.composeAfterEdits(replacementHints);
     },
     
-    composeAfterEdits: function() {
-        this.resetRendering();
+    composeAfterEdits: function(replacementHints) {
         this.layoutChanged(); 
+        if (replacementHints) return this.renderAfterReplacement(replacementHints);
         this.changed();
-        this.drawSelection(); // some callers of pvtUpdate above may call setSelection again
-	this.delayedComposition = null;
+		// Note: changed will call bounds, and thus resetRendering and drawSelection
     },
     
     saveContents: function(contentString) {    
@@ -2278,10 +2303,11 @@ TextMorph.addMethods({
         this.changed();
     },
     
-    setTextString: function(replacement, delayComposition, justMoreTyping) {
+    setTextString: function(replacement, replacementHints) {
+	// Note:  -delayComposition- is now ignored everyhere
         if (Object.isString(replacement)) replacement = String(replacement); 
         if (this.autoAccept) this.setText(replacement);
-        this.pvtUpdateTextString(replacement, delayComposition, justMoreTyping); 
+        this.pvtUpdateTextString(replacement, replacementHints); 
     },
     
     updateTextString: function(newStr) {
