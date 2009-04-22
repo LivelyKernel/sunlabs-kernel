@@ -1180,6 +1180,7 @@ Object.extend(WikiWorldNodeMorph, {
 					filename.endsWith('.jsp') ||
 					filename.startsWith('._') ||
 		 			filename == 'auth' || filename == 'logout' ||
+					filename == URL.source.filename() || filename == 'CachedWorldMetaData' ||
 		 			ea.getURL().hostname != 'livelykernel.sunlabs.com')
 		 			    continue;
 			//console.log('Create for ' + ea.getURL());

@@ -4090,6 +4090,11 @@ PasteUpMorph.subclass("WorldMorph", {
                 require('Examples.js').toRun(function() {
 					var kal = WorldMorph.current().addMorph(new SymmetryMorph(300, 7)); 
 					kal.startUp(); }) } ],
+			["Image Morph", function(evt) {
+				world.prompt('Enter image URL', function(urlString) {
+					var img = new ImageMorph(evt.point().extent(pt(100,100)), urlString);
+					img.setFill(null);
+					img.openInWorld() }) }],
 			["Video Morph", function(evt) {
 				var v = new VideoMorph();
 				v.setPosition(evt.point());
