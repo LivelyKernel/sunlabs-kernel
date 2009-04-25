@@ -276,6 +276,16 @@ lively.data.Wrapper.subclass('lively.Text.TextWord', {
 	this.rawNode = null;
     },
 
+    adjustAfterEdits: function(delta, Ydelta) {
+	this.startIndex += delta;
+	this.stopIndex += delta;
+	if (Ydelta != 0) {
+		if (this.bounds) this.bounds = this.bounds.withY(this.bounds.y + Ydelta);
+		if (this.rawNode) this.rawNode.setAttributeNS(null, "y",
+												Number(this.rawNode.getAttributeNS(null, "y")) + Ydelta );
+	}
+    },
+
     deserialize: function(importer, rawNode) {
         this.rawNode = rawNode;
     },
@@ -383,13 +393,7 @@ lively.data.Wrapper.subclass('lively.Text.TextWord', {
     },
     
     // clone a chunk only copying minimal information
-    cloneSkeleton: function() {
-        var c = new lively.Text.TextWord(this.startIndex, this.length);
-        c.isWhite = this.isWhite;
-        c.isNewLine = this.isNewLine;
-        c.isTab = this.isTab;
-        return c;
-    },
+    
     
     // string representation
     toString: function() {
@@ -456,6 +460,18 @@ Object.subclass('lively.Text.TextLine', {
         this.chunks = null;  //  Will be an array after compose
     },
     
+	adjustAfterEdits: function(newTextString, newTextStyle, delta, Ydelta) {
+		// tag: newText
+		this.textString = newTextString;
+		this.textStyle = newTextStyle;
+		this.startIndex += delta;
+		this.overallStopIndex += delta;
+		if (Ydelta != 0) this.topLeft.y += Ydelta;
+
+		// Need to run through all chunks, as well
+		for (var i = 0; i < this.chunks.length; i++) this.chunks[i].adjustAfterEdits(delta, Ydelta);
+	},
+
     lineHeight: function() {
 	return this.lineHeightFactor * this.currentFont.getSize();
     },
@@ -489,6 +505,7 @@ Object.subclass('lively.Text.TextLine', {
     },
 
     compose: function(compositionWidth, chunkStream) {
+		// tag: newText
 	// compose a line of text, breaking it appropriately at compositionWidth
 	// nSpaceChunks is used for alignment in adjustAfterComposition
 	this.nSpaceChunks = 0; 
@@ -599,8 +616,7 @@ Object.subclass('lively.Text.TextLine', {
 
     // get the bounds of the character at stringIndex
     getBounds: function(stringIndex) {
-	var lastIndex = this.chunks.length-1;
-	for (var i = 0; i <= lastIndex; i++) {
+	for (var i = 0; i < this.chunks.length; i++) {
 		var c = this.chunks[i];
 		if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
 		return c.getBounds(this, stringIndex);
@@ -621,20 +637,38 @@ Object.subclass('lively.Text.TextLine', {
     containsThisIndex: function(index) {
         return this.startIndex <= index && index <= this.getStopIndex();
     },
+testForIndex: function(index) {
+	// Return -1, 0 or +1 depending on whether this index is in 
+	//        a previous line, this line, or a later line
+	if (index < this.startIndex) return -1;
+	if (index > this.overallStopIndex) return +1;
+	return 0;  
+    },
+testForY: function(y) {
+	// Return -1, 0 or +1 depending on whether this y value is in 
+	//        a previous line, this line, or a later line
+	if (y < this.getTopY()) return -1;
+	if (y >= (this.getTopY() + this.lineHeight())) return +1;
+	return 0;  
+    },
+
+
 
     adjustAfterComposition: function(textString, compositionWidth) {
+
 	// Align the text after composition
 	var deltaX = 0;
 	var paddingX = 0;
 	var spaceRemaining = 0;
-	var lastIndex = this.chunks.length-1;
+	var lastIndex = this.chunks.length-1;  // Index of last character chunk
+	if (this.chunks[lastIndex].isNewLine) lastIndex = Math.max(lastIndex-1, 0);
 
 	if (this.alignment != 'left') {
-	    spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[lastIndex-1].bounds.maxX();
+	    spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[lastIndex].bounds.maxX();
 	    if (this.alignment == 'right') deltaX = spaceRemaining;
 	    if (this.alignment == 'center') deltaX = spaceRemaining / 2;
 	    if (this.alignment == 'justify' && (this.overallStopIndex !=  this.textString.length-1)
-		&& !(this.chunks[lastIndex].isNewLine)) {
+		&& !(this.chunks.last().isNewLine)) {
 		//  Distribute remaining space over the various space chunks
 		var nSpaces = this.nSpaceChunks;
 		paddingX = spaceRemaining / Math.max(1, nSpaces); 
@@ -658,7 +692,8 @@ Object.subclass('lively.Text.TextLine', {
     
     removeRawNodes: function(textContent) {
 	// remove all rawNodes held by the line
-	for (var i = 0; i < this.chunks.length; i++) this.chunks[i].removeRawNode();
+	for (var i = 0; i < this.chunks.length; i++)
+		this.chunks[i].removeRawNode();
     },
     
     setTabWidth: function(w, asSpaces) {
@@ -773,7 +808,7 @@ thisModule.WrapStyle = Class.makeEnum([
     "Shrink" // sets both width and height based on line breaks only
 ]);
 
-Morph.subclass('TextSelectionMorph', {
+Morph.subclass('lively.Text.TextSelectionMorph', {
 
     documentation: "Visual representation of the text selection",
     style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
@@ -828,7 +863,7 @@ Object.subclass('lively.Text.ChunkStream', {
 	}
 	var chunkSize = this.chunkLengthForWord(this.str, this.stringIndex);
 	if(this.style) {  // if style breaks within this chunk, shorten chunk to end at the break
-		var styleSize = this.style.runLengthAt(stringIndex);  // length remaining in run
+		var styleSize = this.style.runLengthAt(this.stringIndex);  // length remaining in run
 		if (styleSize < chunkSize) chunkSize = styleSize;
 	}	
 	var chunk = new lively.Text.TextWord(this.stringIndex, chunkSize);
@@ -906,7 +941,7 @@ BoxMorph.subclass("TextMorph", {
     },
 
 	initializeTextSelection: function() {
-		this.textSelection = this.addMorphBack(new TextSelectionMorph());
+		this.textSelection = this.addMorphBack(new lively.Text.TextSelectionMorph());
 		// The TextSelection must be beneath the Text, shift rawNode around
 		this.rawNode.insertBefore(this.textSelection.rawNode, this.shape.rawNode.nextSibling);
 	},
@@ -960,20 +995,24 @@ BoxMorph.subclass("TextMorph", {
 			this.addChangeClue(true);
 	},
 
-    bounds: function($super, ignoreTransients) {
-        if (this.fullBounds != null) return this.fullBounds;
+    bounds: function($super, ignoreTransients, hasBeenRendered) {
+		// tag: newText
+		if (this.fullBounds != null) return this.fullBounds;
+		if (this.shouldNotRender) return $super(ignoreTransients);
 
-		// Note: composeAfterEdits relies on these calls to resetRendering, fitText, and drawSelection...
-        this.resetRendering();
-        this.fitText(); // adjust bounds or text for fit 
-        this.drawSelection("noScroll");
-        return $super(ignoreTransients);
+		// Note: renderAfterReplacement calls this preemptively to set fullBounds
+		//    and to call fitText and all, but without re-rendering...
+		if (!hasBeenRendered) this.resetRendering();
+		this.fitText(); // adjust bounds or text for fit 
+		this.drawSelection("noScroll");
+		return $super(ignoreTransients);
     },
+
+
+
+
     
-    changed: function($super) {
-        this.bounds(); // will force new bounds if layout changed
-        $super();
-    },
+    
     
     setTextColor: function(color) {
         this.textColor = color;
@@ -999,6 +1038,15 @@ BoxMorph.subclass("TextMorph", {
 	}
 	return this;
     },
+applyStyleDeferred: function(styleSpec) {
+	// tag: newText
+	// Use of this method should make the style changes without causing unnecessary
+	//    multiple renderings in the process
+	this.shouldNotRender = true;  // suppresses attempts to render text in bounds()
+	this.applyStyle(styleSpec);
+	this.shouldNotRender = false;
+},
+
     
     makeStyleSpec: function($super, spec) {
 	var spec = $super();
@@ -1032,8 +1080,8 @@ BoxMorph.subclass("TextMorph", {
     
     beLabel: function(styleMods) {
 	// Note default style is applied first, then any additional specified
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
-	if (styleMods) this.applyStyle(styleMods);
+	this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
+	if (styleMods) this.applyStyleDeferred(styleMods);
 	this.ignoreEvents();
         // this.isAccepting = false;
         this.layoutChanged();
@@ -1043,7 +1091,7 @@ BoxMorph.subclass("TextMorph", {
 
     beListItem: function() {
 	// specify padding, otherwise selection will overlap
-	this.applyStyle({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
+	this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
 	this.ignoreEvents();
 	this.suppressHandles = true;
 	this.acceptInput = false;
@@ -1179,75 +1227,109 @@ subMenuItems: function($super, evt) {
     },
     
     ensureRendered: function() { // created on demand and cached
+		// tag: newText
         if (this.ensureTextString() == null) return null;
-        if (!this.textContent.rawNode.firstChild) {
-	    this.renderText(this.textTopLeft(), this.compositionWidth());
-        }
+//        if (!this.textContent.rawNode.firstChild)  this.renderText(this.textTopLeft(), this.compositionWidth());
+        if (!this.lines)  this.renderText(this.textTopLeft(), this.compositionWidth());
         return this.textContent; 
     },
 
-    resetRendering: function(replacementHints) {
+    resetRendering: function() {
+		// tag: newText
 	this.textContent.replaceRawNodeChildren(null);
 	this.textContent.setFill(this.textColor);
-        this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
-        this.font.applyTo(this.textContent);
-        this.lines = null;
-        this.lineNumberHint = 0;
-    // if (replacementHints) this.ensureRendered();  // just to test timing
+	this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
+	this.font.applyTo(this.textContent);
+	this.lines = null;
+	this.lineNumberHint = 0;
 	},
 
     renderAfterReplacement: function(replacementHints) {
+	// tag: newText
 	// DI:  The entire text composition scheme here should be replaced by something simpler
-	// However, until that time, I've put in this hack to speed up editing in large bodies of text.
-	//		The idea is to preserve all text lines that precede the change, and
-	//		to recompose beginning at the change (possibly the line before).
-	//		Then, after the change, we check at the end of each line whether
-	//		the next line begins where one of the original lines began.
-	//		In that case, composition can stop, and the remaining original lines retained
-	//		after adjustment of their startingIndex and possibly their y-coordinate.
-	//		Finally, the rawNodes for the lines actually replaced must be deleted.
-	//		With apologies for complexity, this routine necessarily encompasses the logic of 
-	//			resetRendering and fitText, as invoked via bounds() in composeAfterEdits
+	// However, until that time, I have put in added logic to speed up editing in large bodies of text.
+	//	We look at the lines of text as follows...
+	//
+	//		A:  Lines preceding the replacement, and that are unchanged
+	//			Note that a preceding line can be affected if it has word-break spillover
+	//		B:  Lines following A, including the replacement, and up to C
+	//		C:  Lines following the replacement, and that are unchanged, except for Y-position
 
-	if (!Config.newText) return this.composeAfterEdits();  // Bypass completely to run old logic
+	if (Config.useOldText) return this.composeAfterEdits();  // In case of emergency
+	var test = false && this.textString.startsWith("P = new");  // Check out all the new logic in this case
+	if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
+	if (test) console.log("Last line y before = " + this.lines.last().topLeft.y);
 
 	// The hints tell what range of the prior text got replaced, and how large was the replacement
 	var selStart = replacementHints.selStart;  // JS substring convention: [1,2] means str[1] alone
 	var selStop = replacementHints.selStop;
 	var repLength = replacementHints.repLength;
+	var repStop = selStart + repLength;
+	var delta =  repLength - (selStop+1 - selStart);  // index in string after replacement rel to before
+	if (test) console.log(", selStart = " + selStart + ", selStop = " + selStop + ", repLength = " + repLength + ", repStop = " + repStop + ", delta = " + delta);
+
 	var compositionWidth = this.compositionWidth();
 
 	// It is assumed that this textMorph is still fully rendered for the text prior to replacement
 	// Thus we can determine the lines affected by the change
-	var firstLineOfChange = this.lineNumberForIndex(selStart);
-//console.log("lineNumber returned " + firstLineOfChange + " for index = " + selStart);
-	var lastValidLine = firstLineOfChange - 1;
-	if (lastValidLine >= 0 && !this.lines[lastValidLine].endsWithNewLine()) lastValidLine-- ;
+	var lastLineNoOfA = Math.max(this.lineNumberForIndex(selStart) - 1, -1);  // -1 means no lines in A
+	if (lastLineNoOfA >= 0 && !this.lines[lastLineNoOfA].endsWithNewLine()) lastLineNoOfA-- ;
+	if (test) console.log("Replacing from " + selStart + " in line " + this.lineNumberForIndex(selStart) + " preserving lines 0 through " + lastLineNoOfA);
 
-	// Note: Our first goal will be to preserve all lines befor the replacement,
-	//    but to recompose from there to the end.
-	//    After that, we'll put in logic to preserve lines after the replacement
+	var testEarlyEnd = function (lineStart) {
+		//  Brilliant test looks for lines that begin at the same character as lineStart, thus indicating
+		//  a line at which we can stop composing, and simply reuse the prior lines after updating
+		if (lineStart <= repStop) return false;  // Not beyond the replacement yet
+		var oldLineNo = this.lineNumberForIndex(lineStart - delta);  // --- do we need to check < 0 here?
+		if (oldLineNo < 0) return false;
+		var match = (this.lines[oldLineNo].startIndex + delta) == lineStart;
+		if (test) console.log("At index " + lineStart + ", earlyEnd returns " + match);
+		return match }
 
-//console.log("replacing at char " + selStart + ", saving lines through " + lastValidLine);
-
-	//  Release rawNodes for the deleted lines (for now all beyond lastValidLine)
-	for (var i = lastValidLine+1; i < this.lines.length; i++) this.lines[i].removeRawNodes();
-
-    var oldFirstLine = this.lines[firstLineOfChange];
+    var oldFirstLine = this.lines[lastLineNoOfA+1];  // The first line that may change
 	// Note: do we need font at starting index??
-	var newLines = this.composeLines(oldFirstLine.startIndex, oldFirstLine.topLeft, compositionWidth, this.font);
+	var newLines = this.composeLines(oldFirstLine.startIndex, oldFirstLine.topLeft, compositionWidth, this.font, testEarlyEnd.bind(this));
 	for (var i = 0; i < newLines.length; i++) newLines[i].render(this.textContent);
+	if (test) console.log("Size of lines before = " + (lastLineNoOfA+1));
+	if (test) console.log("Size of new lines = " + newLines.length);
+	if (test) console.log("stopIndex = " + newLines.last().getStopIndex() + ", overall last = " + (this.textString.length-1));
 
-	//	Update the textString reference in all retained textlines
-	for (var i = 0; i <= lastValidLine; i++) {
-		this.lines[i].textString = this.textString;
-		this.lines[i].textStyle = this.textStyle;
+	var lastLineInB = newLines.last();
+	if (lastLineInB.getStopIndex() < this.textString.length-1) {
+		//  Composition stopped before the end, presumably because of our brilliant test
+		var firstLineNoInC = this.lineNumberForIndex(lastLineInB.getNextStartIndex() - delta);
+		if (test) console.log("lineNumberForIndex(" + (lastLineInB.getNextStartIndex() - delta) + ") = " + firstLineNoInC);	
+		var firstLineInC = this.lines[firstLineNoInC];
+		var Ydelta = lastLineInB.topLeft.y + lastLineInB.lineHeight() - firstLineInC.topLeft.y;
+		if (test) console.log ("lastLineInB.topLeft.y / lastLineInB.lineHeight() / firstLineInC.topLeft.y");
+		if (test) console.log (lastLineInB.topLeft.y + " / " + lastLineInB.lineHeight() + " / " + firstLineInC.topLeft.y);
+
+		//  Update the remaining old lines, adjusting indices and Y-values as well
+		for (var i = firstLineNoInC; i < this.lines.length; i++)
+			this.lines[i].adjustAfterEdits(this.textString, this.textStyle, delta, Ydelta);
+		if (test) console.log("Size of lines after = " + (this.lines.length-firstLineNoInC));
+		newLines = newLines.concat(this.lines.slice(firstLineNoInC));
+		//  Release rawNodes for the deleted lines (just up to firstLineNoInC)
+		for (var i = lastLineNoOfA+1; i < firstLineNoInC; i++)
+			this.lines[i].removeRawNodes();
+	} else {
+		//  Release rawNodes for the deleted lines (all beyond lastLineNoOfA)
+		for (var i = lastLineNoOfA+1; i < this.lines.length; i++)
+			this.lines[i].removeRawNodes();
 	}
-	this.lines = this.lines.slice(0, lastValidLine+1).concat(newLines);
+	//	Update the textString reference in lines retained before the replacement
+	for (var i = 0; i <= lastLineNoOfA; i++) 
+		this.lines[i].adjustAfterEdits(this.textString, this.textStyle, 0, 0);
 
-	this.fitText();  // *** this should not recompose, only update bounds
-	this.drawSelection("noScroll");
-    },
+	this.lines = this.lines.slice(0, lastLineNoOfA+1).concat(newLines);
+
+	if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
+	if (test) console.log("Last line y after = " + this.lines.last().topLeft.y);
+
+	this.bounds(null, true);  // Call bounds now to set fullBounds and avoid re-rendering
+	},
+
+
 
     ensureTextString: function() { 
         // may be overrridden
@@ -1256,6 +1338,7 @@ subMenuItems: function($super, evt) {
 
     // return the bounding rectangle for the index-th character in textString    
     getCharBounds: function(index) {
+		// tag: newText
         this.ensureRendered();
         if (this.lines) {
             var line = this.lineForIndex(index);
@@ -1266,18 +1349,20 @@ subMenuItems: function($super, evt) {
 
     // compose the lines if necessary and then render them
     renderText: function(topLeft, compositionWidth) {
+		// tag: newText
 	// Note:  This seems to be a spacer for one-line texts, as in a list of texts,
 	//    not an interline spacing for lines in a paragraph.
 	var defaultInterline = (lively.Text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
 
-	if (this.lines == null) this.lines = this.composeLines(0, topLeft.addXY(0, defaultInterline/2), compositionWidth, this.font);
+	this.lines = this.composeLines(0, topLeft.addXY(0, defaultInterline/2), compositionWidth, this.font);
 	for (var i = 0; i < this.lines.length; i++) this.lines[i].render(this.textContent);
     },
 
-    composeLines: function(initialStartIndex, initialTopLeft, compositionWidth, font) {
+    composeLines: function(initialStartIndex, initialTopLeft, compositionWidth, font, testEarlyEnd) {
+		// tag: newText
 		// compose and return in an array, lines in the text beginning at initialStartIndex
 //	console.log("composeLines(" + initialStartIndex + "): " + this.textString.substring(0,10) + "...");
-// if (this.textString.startsWith("P = ") && initialStartIndex == 0) lively.lang.Execution.showStack();
+// if (this.textString.startsWith("funct") && initialStartIndex == 0) lively.lang.Execution.showStack();
 		var lines = new Array();
 		var startIndex = initialStartIndex;
 		var stopIndex = this.textString.length - 1;
@@ -1293,30 +1378,29 @@ subMenuItems: function($super, evt) {
 			chunkStream.stringIndex = startIndex;
 			topLeft = topLeft.addXY(0, line.lineHeight());
 			lines.push(line);
-//	if (this.textString.startsWith("P = ")) console.log("line no " + (lines.length-1) + ": [begin, end] = " + [line.startIndex, line.overallStopIndex])
+			if (testEarlyEnd && testEarlyEnd(startIndex)) break
 		}
         return lines;
     },
+lineNumberSearch: function(lineFunction) {
+        // A linear search, starting at the same place as last time.
+        if (!this.lines) return -1;
+		var lineNo = this.lineNumberHint;
+		if (! lineNo || lineNo < 0 || lineNo >= this.lines.length) lineNo = 0;
+
+		while (lineNo >= 0 && lineNo < this.lines.length) {
+			var test = lineFunction(this.lines[lineNo]);
+			if (test == 0) {this.lineNumberHint = lineNo;  return lineNo; }
+			if (test < 0) lineNo--;
+				else lineNo++;
+		}
+		return -1;
+	},
+
 
     // find what line contains the index 'stringIndex'
     lineNumberForIndex: function(stringIndex) {
-        // Could use a binary search, but instead we check same as last time,
-        // then next line after, and finally a linear search.
-        console.assert(this.lines != null, "null lines in " + this + "," + (new Error()).stack);
-        if (this.lineNumberHint < this.lines.length && 
-            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
-            return this.lineNumberHint;  // Same line as last time
-	
-        this.lineNumberHint++;  // Try next one down (dominant use pattern)
-        if (this.lineNumberHint < this.lines.length &&
-            this.lines[this.lineNumberHint].containsThisIndex(stringIndex))
-            return this.lineNumberHint;  // Next line after last time
-	
-        for (var i = 0; i < this.lines.length; i++) {  // Do it the hard way
-            if (this.lines[i].containsThisIndex(stringIndex)) { this.lineNumberHint = i; return i; }
-        }
-        return -1; 
-    },
+		return this.lineNumberSearch( function(line) { return line.testForIndex(stringIndex); });	},
 
     lineForIndex: function(stringIndex) {
         return this.lines[this.lineNumberForIndex(stringIndex)];
@@ -1324,15 +1408,7 @@ subMenuItems: function($super, evt) {
 
     // find what line contains the y value in character metric space
     lineNumberForY: function(y) {
-        if (!this.lines || this.lines.length < 1 || y < this.lines[0].getTopY()) return -1;
-    
-        for (var i = 0; i < this.lines.length; i++) {
-            var line = this.lines[i];
-	    // was line.font.getSize()
-            if (y < line.getTopY() + line.lineHeight()) return i; 
-        }
-        return -1; 
-    },
+		return this.lineNumberSearch( function(line) { return line.testForY(y); });    },
     lineForY: function(y) {
         var i = this.lineNumberForY(y);
 	if (i < 0) return null;
@@ -1447,13 +1523,18 @@ subMenuItems: function($super, evt) {
 		return this.textSelection
 	},
 
-	undrawSelection: function() {
+	selectionStyle: function() {
+	// This is just a way into the lively.Text namespace; not an access to this selectionMorph
+	return lively.Text.TextSelectionMorph.prototype.style
+	},
+undrawSelection: function() {
 		if (!this.textSelection) {
 			return
 		} else {
 			this.textSelection.undraw();
 		}
 	},
+
 
     drawSelection: function(noScroll) { // should really be called buildSelection now
         if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
@@ -1462,7 +1543,6 @@ subMenuItems: function($super, evt) {
 
 		this.undrawSelection();
         var selection = this.getTextSelection();
-		
 
         var jRect;
         if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
@@ -1478,7 +1558,7 @@ subMenuItems: function($super, evt) {
 	    if (this.textString.length > 0) {
 		// console.log("text box failure in drawSelection index = " + this.selectionRange[0] + "text is: " + this.textString.substring(0, Math.min(15,this.textString.length)) + '...'); 
 	    }
-            return;
+			return;
         }
     
         var r1 = this.lineRect(jRect.withWidth(1));
@@ -1486,7 +1566,9 @@ subMenuItems: function($super, evt) {
             var r2 = r1.translatedBy(pt(-1,0)); 
         } else {
             jRect = this.getCharBounds(this.selectionRange[1]);
-            if (jRect == null) return;
+            if (jRect == null)  {
+			    return;
+			}
             
             var r2 = this.lineRect(jRect);
             r2 = r2.translatedBy(pt(r2.width - 1, 0)).withWidth(1); 
@@ -1507,6 +1589,7 @@ subMenuItems: function($super, evt) {
                 selection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
             }
         }
+
 		// scrolling here can cause circularity with bounds calc
 	if (!noScroll) this.scrollSelectionIntoView();
     },
@@ -1689,26 +1772,27 @@ subMenuItems: function($super, evt) {
 	}
 
 	var selStart = this.selectionRange[0];  // JS substring convention: [1,2] means str[1] alone
-	var selStop = this.selectionRange[1] + 1;
-	var repLength = replacement.asString.length;
+	var selStop = this.selectionRange[1];
+	var repLength = replacement.asString().length;
 	var replacementHints = {selStart: selStart, selStop: selStop, repLength: repLength};
+	if (this.textString.length == 0) replacementHints = null;  // replacement logic fails in thsi case
 
 	// Splice the style array if any	
 	if (strStyle || repStyle) { 
 	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
 	    if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
 	    var beforeStyle = strStyle.slice(0, selStart);
-	    var afterStyle = strStyle.slice(selStop, oldLength);
+	    var afterStyle = strStyle.slice(selStop+1, oldLength);
 	    this.textStyle = beforeStyle.concat(repStyle).concat(afterStyle);
 	}		
 	if (this.textStyle && this.textStyle.values.all(function(ea) {return !ea})) this.textStyle = null;
 
 	// Splice the textString
 	var before = this.textString.substring(0,selStart); 
-	var after = this.textString.substring(selStop, oldLength);
+	var after = this.textString.substring(selStop+1, oldLength);
 	this.setTextString(before.concat(replacement.asString(),after), replacementHints);
 
-        if(selStart == -1 && selStop == 0) {  // FixMe -- this shouldn't happen
+        if(selStart == -1 && selStop == -1) {  // FixMe -- this shouldn't happen
             this.setSelectionRange(0,0); // symptom fix of typing into a "very empty" string
         };
 	
@@ -1804,7 +1888,7 @@ subMenuItems: function($super, evt) {
 				return moveCursor(newPos);
 			}
 			case Event.KEY_UP: {
-   	        	var lineNo = this.lineNumberForIndex(pos);
+   	        	var lineNo = this.lineNumberForIndex(Math.min(pos, this.textString.length-1));
 				if (lineNo <= 0) { // cannot move up
 					evt.stop();
 		            return true;
@@ -2213,6 +2297,7 @@ TextMorph.addMethods({
 	this.emphasizeSelection(emph);
     },
     pvtUpdateTextString: function(replacement, replacementHints) {
+	// tag: newText
 	// Note:  -delayComposition- is now ignored everyhere
         replacement = replacement || "";    
 	if(!this.typingHasBegun) { 
@@ -2228,10 +2313,14 @@ TextMorph.addMethods({
     },
     
     composeAfterEdits: function(replacementHints) {
-        this.layoutChanged(); 
-        if (replacementHints) return this.renderAfterReplacement(replacementHints);
-        this.changed();
-		// Note: changed will call bounds, and thus resetRendering and drawSelection
+		// tag: newText
+		//this.changed();
+		this.layoutChanged(); 
+
+		// Note: renderAfterReplacement will call bounds pre-emptively to avoid re-rendering
+		if (replacementHints) this.renderAfterReplacement(replacementHints);
+			else this.lines = null;
+		this.changed();  // will cause bounds to be called, and hence re-rendering
     },
     
     saveContents: function(contentString) {    
@@ -2304,7 +2393,6 @@ TextMorph.addMethods({
     },
     
     setTextString: function(replacement, replacementHints) {
-	// Note:  -delayComposition- is now ignored everyhere
         if (Object.isString(replacement)) replacement = String(replacement); 
         if (this.autoAccept) this.setText(replacement);
         this.pvtUpdateTextString(replacement, replacementHints); 
@@ -2376,7 +2464,7 @@ TextMorph.addMethods({
 Object.extend(TextMorph, {
     makeLabel: function(labelString, styleIfAny) {
 	var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
-	label.beLabel(styleIfAny)
+	label.beLabel(styleIfAny);
 	return label;
     }
 });
