@@ -55,12 +55,11 @@ TextMorph.addMethods({  // Canvas Display
     drawOn: function(graphicContext, bnds) {
 	this.shape.drawOn(graphicContext, bnds.outsetByRect(this.padding));
 	},
-    drawSubmorphsOn: function(graphicContext, clipRect) {
+    drawSubmorphsOn: function($super, graphicContext, clipRect) {
 	// First display the submorphs (including selection), then the text
-	if(this.submorphs == null) return
-	for(var i=0; i<this.submorphs.length; i++)
-		this.submorphs[i].fullDrawOn(graphicContext, clipRect);
-	this.drawTextOn(graphicContext, clipRect); },
+	$super(graphicContext, clipRect);
+	var subClip = this.getTransform().createInverse().transformRectToRect(clipRect);
+	this.drawTextOn(graphicContext, subClip); },
     fontString: function(font) {
 	var fontString = "";
 		if (font.style.indexOf("bold") >= 0) fontString += "bold ";
@@ -68,18 +67,22 @@ TextMorph.addMethods({  // Canvas Display
 	fontString += (font.size*0.75).toString() + "pt " + font.family;
 	//console.log ("fontString = " + fontString);
 	return fontString; },
-    drawTextOn: function(ctx, bnds, clipRect) {
+    drawTextOn: function(ctx, clipRect) {
 	if (!ctx.fillText) return;
 	if (this.lines == null) return;
-	// Still need to intersect clipRect with line rects for performance
-        var bnds = this.innerBounds();
+
+	var bnds = this.innerBounds();
 	ctx.textBaseline = 'top';
 	ctx.fillStyle = this.shape.canvasFillFor(this.textColor);
 	var currentFont = this.font;
 	ctx.font = this.fontString(this.font);
-	//console.log(graphicContext.font);
-	//console.log();
-	for (var i=0; i<this.lines.length; i++) {
+
+	// Only display lines in the damage region
+	var firstLine = this.lineNumberForY(clipRect.y);
+	if (firstLine < 0) firstLine = 0;
+	var lastLine = this.lineNumberForY(clipRect.maxY());
+	if (lastLine < 0) lastLine = this.lines.length-1;
+	for (var i=firstLine; i<=lastLine; i++) {
 		var line = this.lines[i];
 		var str = line.textString;
 		for (var j=0; j<line.chunks.length; j++) {
@@ -183,7 +186,9 @@ WorldMorph.addMethods({  // World
 			ctx.strokeRect(dr.x, dr.y, dr.width, dr.height); }
 	}
 	},
-    displayOnCanvas: WorldMorph.prototype.displayOnCanvas.wrap(function(originalFunc, arg) {	originalFunc(arg);	var canvas = document.getElementById('lively.canvas');
+    displayOnCanvas: WorldMorph.prototype.displayOnCanvas.wrap(function(originalFunc, arg) {
+	originalFunc(arg);
+	var canvas = document.getElementById('lively.canvas');
 	if (!canvas || !canvas.getContext) return;
 	var ctx = canvas.getContext("2d");
 	this.fullDrawOn(ctx, this.innerBounds());
