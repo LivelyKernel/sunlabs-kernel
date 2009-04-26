@@ -117,7 +117,7 @@ ImageMorph.addMethods({  // Canvas Display
     drawOn: function(graphicContext, bnds) {
 	var rawImage = this.image.rawNode;
 	if (rawImage && rawImage.tagName === 'img') {
-	    console.log(rawImage.width, bnds.width, rawImage.height, bnds.height);
+	    // console.log(rawImage.width, bnds.width, rawImage.height, bnds.height);
 	    try {
 		graphicContext.drawImage(rawImage, bnds.x, bnds.y, 
 					 Math.min(rawImage.width, bnds.width), Math.min(rawImage.height, bnds.height));

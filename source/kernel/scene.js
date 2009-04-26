@@ -157,6 +157,7 @@ Object.subclass('lively.data.Wrapper', {
 
 	getDefsNode: function() {
 		var defNode = $A(this.rawNode.getElementsByTagName('defs')).detect(function(ea) {
+			if (ea == null) lively.lang.Execution.showStack();
 			return ea.parentNode === this.rawNode;
 		}, this);
 		// create and append one when defNode is not there
