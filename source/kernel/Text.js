@@ -1775,7 +1775,7 @@ undrawSelection: function() {
 	var selStop = this.selectionRange[1];
 	var repLength = replacement.asString().length;
 	var replacementHints = {selStart: selStart, selStop: selStop, repLength: repLength};
-	if (this.textString.length == 0) replacementHints = null;  // replacement logic fails in thsi case
+	if (this.textString.length == 0) replacementHints = null;  // replacement logic fails in this case
 
 	// Splice the style array if any	
 	if (strStyle || repStyle) { 
@@ -2314,13 +2314,14 @@ TextMorph.addMethods({
     
     composeAfterEdits: function(replacementHints) {
 		// tag: newText
-		//this.changed();
+		var oneLiner = (this.lines == null) || (this.lines.length <= 1)
 		this.layoutChanged(); 
 
 		// Note: renderAfterReplacement will call bounds pre-emptively to avoid re-rendering
 		if (replacementHints) this.renderAfterReplacement(replacementHints);
 			else this.lines = null;
 		this.changed();  // will cause bounds to be called, and hence re-rendering
+		if (oneLiner) this.bounds();  // Force a redisplay
     },
     
     saveContents: function(contentString) {    
