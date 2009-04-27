@@ -157,7 +157,7 @@ var Config = {
     useShadowMorphs: true,
 
     // load serialized worlds instead of building them from Javascript
-    loadSerializedSubworlds: true,
+    loadSerializedSubworlds: false,  //*** temporary avoidance of a failure
 
     // where the local web server runs
     // FIXME: parse /trunk/source/server/brazil.config to figure out the port?
