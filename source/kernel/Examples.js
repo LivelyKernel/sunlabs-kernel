@@ -171,7 +171,7 @@ angleForHour: function(hr) {
         var hour = timeNow.getUTCHours() + offset + minute/60;
         this.hours.setRotation(this.angleForHour(hour));
         this.minutes.setRotation(minute/60*2*Math.PI);
-        this.seconds.setRotation(second/60*-2*Math.PI); 
+        this.seconds.setRotation(second/60*2*Math.PI); 
     }
 });
 
