@@ -3200,15 +3200,15 @@ invalidRect: function() {
 
     },
 
-    layoutChanged: function Morph$layoutChanged() { 
+    layoutChanged: function Morph$layoutChanged() {
 	// layoutChanged() is called whenever the cached fullBounds may have changed
 	// It invalidates the cache, which will be recomputed when bounds() is called
 	// Naturally it must be propagated up its owner chain.
 	// Note the difference in meaning from adjustForNewBounds()
 	// KP: the following may or may not be necessary:
 
-	if(! this.fullBounds) return;  // already called
 	this.transformChanged(); // DI: why is this here?
+	if(! this.fullBounds) return;  // already called
 	
 	this.fullBounds = null;
 	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
