@@ -1038,15 +1038,14 @@ BoxMorph.subclass("TextMorph", {
 	}
 	return this;
     },
-applyStyleDeferred: function(styleSpec) {
+    applyStyleDeferred: function(styleSpec) {
 	// tag: newText
-	// Use of this method should make the style changes without causing unnecessary
-	//    multiple renderings in the process
+	// Use of this method should minimize multiple renderings of text due to applyStyle
 	this.shouldNotRender = true;  // suppresses attempts to render text in bounds()
-	this.applyStyle(styleSpec);
+	try {this.applyStyle(styleSpec); }
+		catch (e) { this.shouldNotRender = false; }
 	this.shouldNotRender = false;
-},
-
+    },
     
     makeStyleSpec: function($super, spec) {
 	var spec = $super();
@@ -1528,11 +1527,8 @@ lineNumberSearch: function(lineFunction) {
 	return lively.Text.TextSelectionMorph.prototype.style
 	},
 undrawSelection: function() {
-		if (!this.textSelection) {
-			return
-		} else {
-			this.textSelection.undraw();
-		}
+		if (!this.textSelection) return
+		this.textSelection.undraw(); 
 	},
 
 
@@ -1583,7 +1579,7 @@ undrawSelection: function() {
             r2 = r2.withBottomLeft(pt(localBounds.x + padding.left(), r2.maxY()));
             selection.addRectangle(r1);
             selection.addRectangle(r2);
-        
+       
             if (this.lineNo(r2) != this.lineNo(r1) + 1) {
                 // Selection spans 3 or more lines; fill the block between top and bottom lines
                 selection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));

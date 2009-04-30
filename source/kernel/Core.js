@@ -3177,8 +3177,14 @@ Morph.addMethods({
     },
 
     changed: function() {
-	// (this.owner || this).invalidRect(this.bounds());
+	// Note most morphs don't need this in SVG, but text needs the 
+	// call on bounds() to trigger layout on new bounds
+	if(this.owner) this.owner.invalidRect(this.bounds());
     },
+invalidRect: function() {
+	// Do nothing (handled by SVG).  Overridden in canvas.
+    },
+
     
     layoutOnSubmorphLayout: function(submorph) {
 	// override to return false, in which case layoutChanged() will not be propagated to
@@ -3200,9 +3206,10 @@ Morph.addMethods({
 	// Naturally it must be propagated up its owner chain.
 	// Note the difference in meaning from adjustForNewBounds()
 	// KP: the following may or may not be necessary:
+
+	if(! this.fullBounds) return;  // already called
 	this.transformChanged(); // DI: why is this here?
 	
-	if(! this.fullBounds) return;
 	this.fullBounds = null;
 	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
 	    this.owner.layoutChanged();
