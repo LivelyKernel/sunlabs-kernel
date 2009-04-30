@@ -1001,7 +1001,7 @@ BoxMorph.subclass("TextMorph", {
 		if (this.shouldNotRender) return $super(ignoreTransients);
 
 		// Note: renderAfterReplacement calls this preemptively to set fullBounds
-		//    and to call fitText and all, but without re-rendering...
+		//    by calling fitText and all, but without re-rendering...
 		if (!hasBeenRendered) this.resetRendering();
 		this.fitText(); // adjust bounds or text for fit 
 		this.drawSelection("noScroll");
@@ -1379,7 +1379,7 @@ subMenuItems: function($super, evt) {
 			lines.push(line);
 			if (testEarlyEnd && testEarlyEnd(startIndex)) break
 		}
-        return lines;
+		return lines;
     },
 lineNumberSearch: function(lineFunction) {
         // A linear search, starting at the same place as last time.
@@ -2311,6 +2311,11 @@ TextMorph.addMethods({
     composeAfterEdits: function(replacementHints) {
 		// tag: newText
 		var oneLiner = (this.lines == null) || (this.lines.length <= 1)
+
+		// this.changed();  // Needed to invalidate old bounds in canvas
+		// But above causes too much to happen; instead just do...
+		this.invalidRect(this.innerBounds());  // much faster
+
 		this.layoutChanged(); 
 
 		// Note: renderAfterReplacement will call bounds pre-emptively to avoid re-rendering

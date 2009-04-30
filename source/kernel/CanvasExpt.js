@@ -78,6 +78,7 @@ TextMorph.addMethods({  // Canvas Display
 	ctx.font = this.fontString(this.font);
 
 	// Only display lines in the damage region
+	// DI: this loop should be TextLine.drawOn(ctx, clipRect)
 	var firstLine = this.lineNumberForY(clipRect.y);
 	if (firstLine < 0) firstLine = 0;
 	var lastLine = this.lineNumberForY(clipRect.maxY());
