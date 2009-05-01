@@ -978,57 +978,48 @@ ticksInMethod: function() {
 	    return result;
 	},
 	
-        installStackTracers: function(remove) {
-	console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
-	remove = (remove == "uninstall");  // call with this string to uninstall
-	var allClasses = Global.classes(true);
-	allClasses.forEach(function(theClass) {
-		var cName = theClass.type || // LK class
-			theClass.name || // system class
-			theClass.toString().match(/function\s([a-zA-Z0-9]+)\(\).*/)[1]; // if class does not support name
-		if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
-		if (theClass === Global || theClass == Object) return;
-		var methodNames = theClass.localFunctionNames();
-		
-		// Replace all methods of this class with a wrapped version
-		for (var mi = 0; mi < methodNames.length; mi++) {
-			var mName = methodNames[mi];
-			var originalMethod = theClass.prototype[mName];
-		    // Put names on the original methods 
-			originalMethod.declaredClass = cName;
-			originalMethod.methodName = mName;
-			// Now replace each method with a wrapper function (or remove it)
-			if (!Class.isClass(originalMethod)) {  // leave the constructor alone and other classes alone
-				if (!remove)
-					theClass.prototype[mName] = originalMethod.tracingWrapper();
-				else
-					if (originalMethod.originalFunction)
-						theClass.prototype[mName] = originalMethod.originalFunction;
-			}
-		}
-		// Do the same for class methods (need to clean this up)
-		var classFns = []; 
-		for (var p in theClass) {
-			if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
-				classFns.push(p);
-		}
-		for (var mi = 0; mi < classFns.length; mi++) {
-			var mName = classFns[mi];
-			var originalMethod = theClass[mName];
-			// Put names on the original methods 
-			originalMethod.declaredClass = cName;
-			originalMethod.methodName = mName;
-			// Now replace each method with a wrapper function (or remove it)
-			if (!Class.isClass(originalMethod)) { // leave the constructor alone and other classes alone
-				if (!remove)
-					theClass[mName] = originalMethod.tracingWrapper();
-				else
-					if (originalMethod.originalFunction)
-						theClass[mName] = originalMethod.originalFunction;
-			}
-		}
-	});		// end forEach
-},
+    installStackTracers: function(remove) {
+    console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
+        remove = (remove == "uninstall");  // call with this string to uninstall
+        Class.withAllClassNames(Global, function(cName) { 
+	if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
+            if (cName == 'Global' || cName == 'Object') return;
+            var theClass = Class.forName(cName);
+            var methodNames = theClass.localFunctionNames();
+	
+            // Replace all methods of this class with a wrapped version
+	for (var mi = 0; mi < methodNames.length; mi++) {
+                var mName = methodNames[mi];
+                var originalMethod = theClass.prototype[mName];
+	    // Put names on the original methods 
+                originalMethod.declaredClass = cName;
+                originalMethod.methodName = mName;
+                // Now replace each method with a wrapper function (or remove it)
+                if (!Class.isClass(originalMethod)) {  // leave the constructor alone and other classes alone
+		if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
+		else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
+	    }
+            }
+	// Do the same for class methods (need to clean this up)
+	var classFns = []; 
+	for (var p in theClass) {
+	    if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
+		classFns.push(p);
+	}
+            for (var mi = 0; mi < classFns.length; mi++) {
+                var mName = classFns[mi];
+                var originalMethod = theClass[mName];
+	    // Put names on the original methods 
+                originalMethod.declaredClass = cName;
+                originalMethod.methodName = mName;
+                // Now replace each method with a wrapper function (or remove it)
+                if (!Class.isClass(originalMethod)) { // leave the constructor alone and other classes alone
+		if(!remove) theClass[mName] = originalMethod.tracingWrapper();
+		else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
+	    }
+            }
+        });
+    },
         tallyLOC: function() {
             console.log("Tallying lines of code by decompilation");
             var classNames = [];
