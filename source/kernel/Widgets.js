@@ -1265,7 +1265,7 @@ BoxMorph.subclass("TextListMorph", {
         if (lineNo in this.submorphs) {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill(); 
-            item.setFill(lively.Text.TextSelectionMorph.prototype.style.fill);
+            item.setFill(TextSelectionMorph.prototype.style.fill);
             selectionContent = item.textString;
             this.scrollItemIntoView(item);
         }
@@ -1424,7 +1424,7 @@ TextListMorph.subclass("ListMorph", {
         if (lineNo in this.submorphs) {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill();
-            item.setFill(lively.Text.TextSelectionMorph.prototype.style.fill);
+            item.setFill(TextSelectionMorph.prototype.style.fill);
             selectionContent = this.itemList[lineNo];
             if (selectionContent.isListItem) {
 				selectionContent = selectionContent.value;

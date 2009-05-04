@@ -808,7 +808,7 @@ thisModule.WrapStyle = Class.makeEnum([
     "Shrink" // sets both width and height based on line breaks only
 ]);
 
-Morph.subclass('lively.Text.TextSelectionMorph', {
+Morph.subclass('TextSelectionMorph', {
 
     documentation: "Visual representation of the text selection",
     style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
@@ -941,7 +941,7 @@ BoxMorph.subclass("TextMorph", {
     },
 
 	initializeTextSelection: function() {
-		this.textSelection = this.addMorphBack(new lively.Text.TextSelectionMorph());
+		this.textSelection = this.addMorphBack(new TextSelectionMorph());
 		// The TextSelection must be beneath the Text, shift rawNode around
 		this.rawNode.insertBefore(this.textSelection.rawNode, this.shape.rawNode.nextSibling);
 	},
@@ -1524,7 +1524,7 @@ lineNumberSearch: function(lineFunction) {
 
 	selectionStyle: function() {
 	// This is just a way into the lively.Text namespace; not an access to this selectionMorph
-	return lively.Text.TextSelectionMorph.prototype.style
+	return TextSelectionMorph.prototype.style
 	},
 undrawSelection: function() {
 		if (!this.textSelection) return
