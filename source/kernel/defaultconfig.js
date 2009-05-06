@@ -247,6 +247,9 @@ Object.extend(Config, {
 	codeBase: document.baseURI.substring(0, document.baseURI.lastIndexOf('/') + 1)
 });
 
+Config.onWindowResizeUpdateWorldBounds = true;
+
+
 //	*** Minimal World Only ***
 //  In spite of all the foregoing complexity, merely changing this conditional
 //	to true will bypass all examples and worlds, and only create a few

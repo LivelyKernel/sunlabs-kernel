@@ -1294,7 +1294,7 @@ subMenuItems: function($super, evt) {
 	if (test) console.log("stopIndex = " + newLines.last().getStopIndex() + ", overall last = " + (this.textString.length-1));
 
 	var lastLineInB = newLines.last();
-	if (lastLineInB.getStopIndex() < this.textString.length-1) {
+	if (lastLineInB && lastLineInB.getStopIndex() < this.textString.length-1) {
 		//  Composition stopped before the end, presumably because of our brilliant test
 		var firstLineNoInC = this.lineNumberForIndex(lastLineInB.getNextStartIndex() - delta);
 		if (test) console.log("lineNumberForIndex(" + (lastLineInB.getNextStartIndex() - delta) + ") = " + firstLineNoInC);	

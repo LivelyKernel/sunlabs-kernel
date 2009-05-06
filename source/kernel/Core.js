@@ -4110,7 +4110,10 @@ PasteUpMorph.subclass("WorldMorph", {
 			["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
 					GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
-			["Effects demo (FF only)", function(evt) { require('demofx.js').toRun(Functions.Empty); }]
+			["Effects demo (FF only)", function(evt) { require('demofx.js').toRun(Functions.Empty); }],
+			["PresentationPage", function(evt) { require('lively.Presentation').toRun(function(){
+				world.addMorph(new lively.Presentation.PageMorph(new Rectangle(0,0,800,600)))
+				}); }],
         ];
         var toolMenuItems = [
             ["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
@@ -5519,6 +5522,25 @@ ClipboardHack = {
 }
 
 
+window.onresize = function(evt) {
+	if (Config.onWindowResizeUpdateWorldBounds) { 
+		var h = document.getElementsByTagName('html')[0];
+	    var world = WorldMorph.current();
+		if (!world) {
+			console.log("Error: No world to resize.")
+			return;
+		}		
+		// Todo: get rid of the arbitrary offset without getting scrollbars
+		var canvas = world.rawNode.parentNode;
+	    var newWidth = h.clientWidth - 4;
+	    var newHeight = h.clientHeight-  4;
+	
+		canvas.setAttribute("width", newWidth);
+		canvas.setAttribute("height", newHeight);
+		world.setExtent(pt(newWidth, newHeight) )
+	    world.fullBounds = new Rectangle(0,0,newWidth, newHeight)
+	}    
+};
 
 console.log('loaded Core.js');
 
