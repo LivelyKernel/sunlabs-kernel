@@ -911,7 +911,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 	    this.rawNode.points.clear();
 	}
 	if (this.useDOM) vertlist.forEach(function(p) { this.rawNode.points.appendItem(p) }, this);
-	else this.rawNode.setAttributeNS(null, "points",
+	else this.rawNode.setAttribute("points",
 					 vertlist.map(function (p) { return (p.x||0.0) + "," + (p.y||0.0) }).join(' '));
     },
 

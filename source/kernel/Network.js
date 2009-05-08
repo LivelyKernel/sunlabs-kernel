@@ -196,7 +196,7 @@ URL.fromLiteral = function(literal) {
     return new URL(literal);
 };
 
-URL.source = new URL(document.baseURI);
+URL.source = new URL(document.documentURI);
 
 URL.proxy = (function() {
     if (!Config.proxyURL) {

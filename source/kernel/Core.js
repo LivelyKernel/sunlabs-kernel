@@ -164,7 +164,7 @@ Object.extend(Global.window, {
 (function() { // override config options with options from the query part of the URL
 
     // may have security implications ...
-    var query = Global.document.baseURI.split('?')[1];
+    var query = Global.document.documentURI.split('?')[1];
     if (!query) return;
 
     var configOverrides = query.toQueryParams();
@@ -5495,7 +5495,7 @@ ClipboardHack = {
         if(!buffer) return false;
         if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
             buffer.onpaste = function() {
-                TextMorph.clipboardString = event.clipboardData.getData("text/plain");
+				TextMorph.clipboardString = event.clipboardData.getData("text/plain");
                 if(target.doPaste) target.doPaste();
             };
         	buffer.focus();

@@ -244,7 +244,7 @@ Object.extend(Config, {
 	showTesterRunner: false,
 	// Modules
 	modulesOnWorldLoad: ['ide.js'/*FIXME for ChangeSet*/, 'LKWiki.js' /*"Fabrik.js", 'TileScripting.js',*/ ],
-	codeBase: document.baseURI.substring(0, document.baseURI.lastIndexOf('/') + 1)
+	codeBase: document.documentURI.substring(0, document.documentURI.lastIndexOf('/') + 1)
 });
 
 Config.onWindowResizeUpdateWorldBounds = true;
