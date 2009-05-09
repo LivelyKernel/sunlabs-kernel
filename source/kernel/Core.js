@@ -5522,9 +5522,9 @@ ClipboardHack = {
 }
 
 
-window.onresize = function() {
-	if (!Config.onWindowResizeUpdateWorldBounds) return;
-	var html = Global.document.firstChild;
+window.onresize = function(evt) {
+	if (!Config.onWindowResizeUpdateWorldBounds) return; 
+	var h = document.getElementsByTagName('html')[0];
     var world = WorldMorph.current();
 	if (!world) {
 		console.log("Error: No world to resize.")
