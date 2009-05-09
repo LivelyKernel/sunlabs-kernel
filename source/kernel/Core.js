@@ -5522,24 +5522,23 @@ ClipboardHack = {
 }
 
 
-window.onresize = function(evt) {
-	if (Config.onWindowResizeUpdateWorldBounds) { 
-		var h = document.getElementsByTagName('html')[0];
-	    var world = WorldMorph.current();
-		if (!world) {
-			console.log("Error: No world to resize.")
-			return;
-		}		
-		// Todo: get rid of the arbitrary offset without getting scrollbars
-		var canvas = world.rawNode.parentNode;
-	    var newWidth = h.clientWidth - 4;
-	    var newHeight = h.clientHeight-  4;
-	
-		canvas.setAttribute("width", newWidth);
-		canvas.setAttribute("height", newHeight);
-		world.setExtent(pt(newWidth, newHeight) )
-	    world.fullBounds = new Rectangle(0,0,newWidth, newHeight)
-	}    
+window.onresize = function() {
+	if (!Config.onWindowResizeUpdateWorldBounds) return;
+	var html = Global.document.firstChild;
+    var world = WorldMorph.current();
+	if (!world) {
+		console.log("Error: No world to resize.")
+		return;
+	}		
+	// Todo: get rid of the arbitrary offset without getting scrollbars
+	var canvas = world.rawNode.parentNode;
+    var newWidth = h.clientWidth - 4;
+    var newHeight = h.clientHeight-  4;
+
+	canvas.setAttribute("width", newWidth);
+	canvas.setAttribute("height", newHeight);
+	world.setExtent(pt(newWidth, newHeight) )
+    world.fullBounds = new Rectangle(0,0,newWidth, newHeight)
 };
 
 console.log('loaded Core.js');

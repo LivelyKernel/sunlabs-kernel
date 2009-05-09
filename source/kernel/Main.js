@@ -481,6 +481,11 @@ function setupCounter(doc) {
 	lively.data.Wrapper.prototype.newId(maxCount);
 }
 
+function browserSpecificFixes() {
+	if (Global.navigator.appName == 'Opera')
+		window.onresize();
+};
+
 function main() {
     var world = null;
     var canvas = Global.document.getElementById("canvas");
@@ -516,6 +521,8 @@ function main() {
        	console.log("created empty world");
     }
 
+	browserSpecificFixes();
+	
     if(Config.useShadowMorphs) HandMorph.prototype.useShadowMorphs = true;
     // Populate the world with sample objects, widgets and applications
     if (Config.skipAllExamples) {
