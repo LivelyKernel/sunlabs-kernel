@@ -5,7 +5,10 @@ load('jslib/dojo.js.uncompressed.js');
 
 load('scene.js');
 
-
+(function() {
+    var jsctx = Packages.org.mozilla.javascript.Context.currentContext;
+    print('opt level ' + jsctx.getOptimizationLevel());
+})();
 
 
 var Global = this;
