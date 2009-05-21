@@ -49,20 +49,22 @@ function seq(array) {
      //return new Packages.javafx.reflect.FXFloatValue(value, ctx.getPrimitiveType('Float'));
  }
 
+
  function fxMake(className, props) {
      var jinst = new java.lang.Class.forName(className).newInstance();
+     var loc = Packages.com.sun.javafx.runtime.location.ObjectVariable.make(jinst);
      for (var name in props) {
 	 if (!props.hasOwnProperty(name)) continue;
-	 var loc = jinst['get$' + name].call(jinst);
-	 switch (typeof props[name]) { // FIXME: dispatch on the type of loc instead?
+	 var field = jinst['get$' + name].call(jinst);
+	 switch (typeof props[name]) { // FIXME: dispatch on the type of field instead?
 	 case 'number': 
-	     loc.setAsFloatFromLiteral(props[name]);
+	     field.setAsFloatFromLiteral(props[name]);
 	     break;
 	 case 'object':
 	 case 'string':
 	     //print('setting from literal ' + props[name]);
-	     jinst[name] = props[name]
-	     loc.setFromLiteral(props[name]);
+	     //jinst[name] = props[name];  // XXX
+	     field.setFromLiteral(props[name]);
 	     break;
 	 default:
 	     print('weird ' + (typeof props[name]));
@@ -70,7 +72,7 @@ function seq(array) {
      }
      print('initializing ' + className);
      jinst.initialize$();
-     return jinst;
+     return loc;
  }
 
  function test1(width, height) {
@@ -103,25 +105,25 @@ function seq(array) {
 	     content: seq([
 		 fxMake('javafx.scene.shape.Rectangle', {
 		     x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: green
-		 }),
+		 }).get(),
 		 fxMake('javafx.scene.shape.Circle', {
 		     centerX: 118, centerY:110, radius:83, fill: white, stroke: red
-		 }),
+		 }).get(),
 		 fxMake('javafx.scene.shape.Rectangle', {
 		     x: 100, y: 35,
 		     width: 150, height: 150,
 		     arcWidth: 15, arcHeight: 15,
 		     fill: green
-		 })
+		 }).get()
 	     ])
-	 })
+	 }).get()
      });
      ///print('rect is ' + rect);
      return stage;
 
  }
 
-// test2();
+test2();
 
 //Packages.javax.swing.SwingUtilities.invokeLater(function() { test2()});
 
