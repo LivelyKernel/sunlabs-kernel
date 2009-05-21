@@ -1,6 +1,9 @@
 var ctx = Packages.javafx.reflect.FXContext.getInstance();
 var jsctx = Packages.org.mozilla.javascript.Context.currentContext;
 
+jsctx.setWrapFactory(new Packages.CustomWrapFactory);
+
+
 function a2l(object) {
     return java.util.Arrays.asList(object);
 }
@@ -58,6 +61,7 @@ function seq(array) {
 	 case 'object':
 	 case 'string':
 	     //print('setting from literal ' + props[name]);
+	     jinst[name] = props[name]
 	     loc.setFromLiteral(props[name]);
 	     break;
 	 default:
@@ -85,12 +89,10 @@ function seq(array) {
  }
 
  function test2() {
-     var Color =  java.lang.Class.forName('javafx.scene.paint.Color');
-     var red = Color.getField('$RED').get(Color);
-     var green = Color.getField('$GREEN').get(Color);
-     var white = Color.getField('$WHITE').get(Color);
-     
-     print('red is ' + red);
+     var Color =  Packages.javafx.scene.paint.Color;
+     var red = Color.$RED;
+     var green = Color.$GREEN;
+     var white = Color.$WHITE;
      
      stage = fxMake('javafx.stage.Stage', {
 	 title: 'Declaring is easy!', 
@@ -118,5 +120,8 @@ function seq(array) {
      return stage;
 
  }
-Packages.javax.swing.SwingUtilities.invokeLater(function() { test2()});
+
+// test2();
+
+//Packages.javax.swing.SwingUtilities.invokeLater(function() { test2()});
 
