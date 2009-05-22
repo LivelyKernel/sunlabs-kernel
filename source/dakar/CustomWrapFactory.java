@@ -41,6 +41,10 @@ public class CustomWrapFactory extends WrapFactory {
 	    return "FXLocation";
 	}
 
+	public Object[] getIds() {
+	    return this.properties.toArray();
+	}
+
 	private ObjectLocation extractFieldVariable(String name) throws Exception {
 	    Object content = ((ObjectLocation)this.javaObject).get();
 	    Method getter = content.getClass().getMethod("get$" + name);
@@ -48,12 +52,32 @@ public class CustomWrapFactory extends WrapFactory {
 	    return variable;
 	}
 
+	public Object get(int index, Scriptable start) {
+	    try {
+		if (this.javaObject instanceof SequenceLocation) {
+		    Object result = ((SequenceLocation)this.javaObject).get(index);
+		    // this will return naked FXObject, not Location
+		    //System.err.println("got result " + result);
+		    return Context.javaToJS(result, start);
+		}
+		return Scriptable.NOT_FOUND;
+	    } catch (Exception e) {
+		e.printStackTrace(System.err);
+		return Scriptable.NOT_FOUND;
+	    }
+	}
+	
 	public Object get(String name, Scriptable start) {
 	    try {
 		ObjectLocation variable = this.extractFieldVariable(name);
 		System.err.println("GET " + name);
 		// hmm, no conversion to Scriptable here? is this automatic?
-		return variable;
+		Object content = variable.get(); // get will box the primitive?
+		if (content instanceof Boolean || content instanceof Number || content instanceof String) {
+		    System.err.println("variable was " + variable);
+		    return content;
+		}
+		return Context.javaToJS(variable, start); // FIXME start?
 	    } catch (Exception e) { 
 		System.err.println("not found getter " + name);
 		return Context.getUndefinedValue();
