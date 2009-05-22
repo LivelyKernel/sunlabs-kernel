@@ -52,15 +52,13 @@ function seq(array) { // not needed any more
 
  function fxMake(className, props) {
      var jinst = new java.lang.Class.forName(className).newInstance();
-     var loc = Packages.com.sun.javafx.runtime.location.ObjectVariable.make(jinst);
      for (var name in props) {
 	 if (!props.hasOwnProperty(name)) continue;
-	 loc[name] = props[name]; // FIXME distinguish literals and otherwise, how?
+	 jinst[name] = props[name];
      }
-
      jinst.initialize$();
      print('initializing ' + className);
-     return loc;
+     return jinst;
  }
 
  function test1(width, height) {
@@ -79,6 +77,7 @@ function seq(array) { // not needed any more
      FX.getMethod('exit').invoke(FX);
  }
 
+ var stage;
  function test2() {
      var Color =  Packages.javafx.scene.paint.Color;
      var red = Color.$RED;
@@ -108,6 +107,7 @@ function seq(array) { // not needed any more
 	 })
      });
      ///print('rect is ' + rect);
+     print('stage is ' + stage);
      return stage;
 
  }

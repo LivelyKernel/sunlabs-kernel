@@ -148,11 +148,11 @@ public class CustomWrapFactory extends WrapFactory {
 	    if (value instanceof NativeArray) {
 		NativeArray array = (NativeArray)value;
 		int length = (int)array.getLength();
-		Object[] jarray = new Object[length];
+		FXObject[] jarray = new FXObject[length];
 		// FIXME this assumes array of ObjectLocations!
+		System.err.println("making array");
 		for (int i = 0; i < length; i++) {
-		    Object loc = ((org.mozilla.javascript.Wrapper)array.get(i, start)).unwrap();
-		    jarray[i] = ((ObjectLocation<FXObject>)loc).get();
+		    jarray[i] = (FXObject)((org.mozilla.javascript.Wrapper)array.get(i, start)).unwrap();
 		}
 		value = Sequences.make(TypeInfo.Object, jarray, length);
 	    }
@@ -191,6 +191,8 @@ public class CustomWrapFactory extends WrapFactory {
 			//System.err.println("method " + m.getName());
 			if (m.getName().startsWith("get$")) {
 			    properties.add(m.getName().substring(4));
+			} else if (m.getName().equals("initialize$")) {
+			    properties.add("initialize$");
 			}
 		    }
 		    if (properties.size() > 0) 
@@ -226,6 +228,11 @@ public class CustomWrapFactory extends WrapFactory {
 
 	public Object get(String name, Scriptable start) {
 	    try {
+		if (name.equals("initialize$"))  { // FIXME ad hoc
+		    System.err.println("Trying to initialize through " + name);
+		    return new NativeJavaMethod(this.javaObject.getClass().getMethod(name), name);
+		}
+		
 		ObjectLocation variable = this.extractFieldVariable(name);
 		System.err.println("GET " + name);
 		// hmm, no conversion to Scriptable here? is this automatic?
@@ -248,8 +255,7 @@ public class CustomWrapFactory extends WrapFactory {
 		Object[] jarray = new Object[length];
 		// FIXME this assumes array of ObjectLocations!
 		for (int i = 0; i < length; i++) {
-		    Object loc = ((org.mozilla.javascript.Wrapper)array.get(i, start)).unwrap();
-		    jarray[i] = ((ObjectLocation<FXObject>)loc).get();
+		    jarray[i] = (FXObject)((org.mozilla.javascript.Wrapper)array.get(i, start)).unwrap();
 		}
 		value = Sequences.make(TypeInfo.Object, jarray, length);
 	    }
@@ -277,12 +283,13 @@ public class CustomWrapFactory extends WrapFactory {
     }
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
-	Class type = staticType != null ? staticType : obj.getClass();
+	//Class type = staticType != null ? staticType : obj.getClass();
+	Class type = obj == null ? staticType : obj.getClass();
 	if (ObjectLocation.class.isAssignableFrom(type)) {
 	    System.err.println("custom wrapping " + type);
 	    return new ScriptableLocation(scope, obj, type);
 	} else if (FXObject.class.isAssignableFrom(type)) {
-	    System.err.println("custom wrapping " + type);
+	    System.err.println("FX custom wrapping " + type);
 	    return new ScriptableFXObject(scope, (FXObject)obj, type);
 	}
 	return super.wrap(cx, scope, obj, staticType);
