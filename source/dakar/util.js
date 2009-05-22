@@ -1,4 +1,4 @@
-var ctx = Packages.javafx.reflect.FXContext.getInstance();
+
 var jsctx = Packages.org.mozilla.javascript.Context.currentContext;
 
 jsctx.setWrapFactory(new Packages.CustomWrapFactory);
@@ -39,7 +39,7 @@ function optlevel(level) {
 	return jsctx.setOptimizationLevel(level);
 }
 
-function seq(array) {
+function seq(array) { // not needed any more
     var type = com.sun.javafx.runtime.TypeInfo.Object;
     return Packages.com.sun.javafx.runtime.sequence.Sequences.make(type, array, array.length)
 }
@@ -55,27 +55,16 @@ function seq(array) {
      var loc = Packages.com.sun.javafx.runtime.location.ObjectVariable.make(jinst);
      for (var name in props) {
 	 if (!props.hasOwnProperty(name)) continue;
-	 var field = jinst['get$' + name].call(jinst);
-	 switch (typeof props[name]) { // FIXME: dispatch on the type of field instead?
-	 case 'number': 
-	     field.setAsFloatFromLiteral(props[name]);
-	     break;
-	 case 'object':
-	 case 'string':
-	     //print('setting from literal ' + props[name]);
-	     //jinst[name] = props[name];  // XXX
-	     field.setFromLiteral(props[name]);
-	     break;
-	 default:
-	     print('weird ' + (typeof props[name]));
-	 }
+	 loc[name] = props[name]; // FIXME distinguish literals and otherwise, how?
      }
-     print('initializing ' + className);
+
      jinst.initialize$();
+     print('initializing ' + className);
      return loc;
  }
 
  function test1(width, height) {
+     var ctx = Packages.javafx.reflect.FXContext.getInstance();
      var Stage = ctx.findClass('javafx.stage.Stage');
      var s = Stage.allocate();
      js = s.asObject();
@@ -102,21 +91,21 @@ function seq(array) {
 	 height: 500,
 	 scene: fxMake('javafx.scene.Scene', {
 	 //    fill: red,
-	     content: seq([
+	     content: [
 		 fxMake('javafx.scene.shape.Rectangle', {
 		     x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: green
-		 }).get(),
+		 }),
 		 fxMake('javafx.scene.shape.Circle', {
 		     centerX: 118, centerY:110, radius:83, fill: white, stroke: red
-		 }).get(),
+		 }),
 		 fxMake('javafx.scene.shape.Rectangle', {
 		     x: 100, y: 35,
 		     width: 150, height: 150,
 		     arcWidth: 15, arcHeight: 15,
 		     fill: green
-		 }).get()
-	     ])
-	 }).get()
+		 })
+	     ]
+	 })
      });
      ///print('rect is ' + rect);
      return stage;
