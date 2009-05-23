@@ -48,13 +48,11 @@ public class CustomWrapFactory extends WrapFactory {
 	    prototype = m;
 	}
 
-
 	public void delete(String name) {
 	}
 	
 	public void delete(int index) {
 	}
-
 
 	public boolean has(int index, Scriptable start) {
 	    throw new RuntimeException();
@@ -63,7 +61,6 @@ public class CustomWrapFactory extends WrapFactory {
 	public void put(int index, Scriptable start, Object value) {
 	    throw new RuntimeException();
 	}
-
     }
     
 
@@ -84,8 +81,7 @@ public class CustomWrapFactory extends WrapFactory {
 			}
 			// how about instance methods???
 		    }
-		    if (properties.size() > 0) 
-			System.err.println("properties of " + content.getClass().getName() + " " + properties);
+		    //if (properties.size() > 0) System.err.println("properties of " + content.getClass().getName() + " " + properties);
 		}
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
@@ -140,7 +136,7 @@ public class CustomWrapFactory extends WrapFactory {
 		return Context.javaToJS(variable, start); // FIXME start?
 	    } catch (Exception e) { 
 		System.err.println("not found getter " + name);
-		return Context.getUndefinedValue();
+		return Scriptable.NOT_FOUND;
 	    }
 	}
 	
@@ -283,7 +279,6 @@ public class CustomWrapFactory extends WrapFactory {
     }
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
-	//Class type = staticType != null ? staticType : obj.getClass();
 	Class type = obj == null ? staticType : obj.getClass();
 	if (ObjectLocation.class.isAssignableFrom(type)) {
 	    System.err.println("custom wrapping " + type);

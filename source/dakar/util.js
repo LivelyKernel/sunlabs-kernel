@@ -112,6 +112,7 @@ function seq(array) { // not needed any more
 
  }
 
+
 test2();
 
 //Packages.javax.swing.SwingUtilities.invokeLater(function() { test2()});
