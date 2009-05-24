@@ -42,7 +42,7 @@ Object.subclass('URL', {
 	    this.protocol = result[1]; 
 	    if (!result[1]) 
 		throw new Error("bad url " + urlString + ", " + result);
-	    this.hostname = result[2] && result[2].substring(2); // skip the leading slashes
+	    this.hostname = result[2] && result[2].substring(2).split(':')[0]; // skip the leading slashes and remove port
 	    this.port = result[3] && parseInt(result[3].substring(1)); // skip the colon
 	    
 	    var fullpath = result[4];
