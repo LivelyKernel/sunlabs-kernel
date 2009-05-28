@@ -9,13 +9,13 @@ import java.lang.reflect.*;
 
 public class CustomWrapFactory extends WrapFactory {
 
-    public static abstract class AbstractScriptable implements Scriptable, org.mozilla.javascript.Wrapper {
+    public static class ScriptableFXObject implements Scriptable, org.mozilla.javascript.Wrapper {
 	Object javaObject;
 	Scriptable parent;
 	Scriptable prototype;
 	ArrayList<String> properties = new ArrayList<String>(); // could be shared based on type
 
-	public AbstractScriptable(Scriptable scope, Object javaObject, Class type) {
+	public ScriptableFXObject(Scriptable scope, Object javaObject, Class type) {
 	    this.javaObject = javaObject;
 	    this.parent = scope;
 	    try {
@@ -30,7 +30,6 @@ public class CustomWrapFactory extends WrapFactory {
 			}
 			// how about instance methods???
 		    }
-		    //if (properties.size() > 0) System.err.println("properties of " + content.getClass().getName() + " " + properties);
 		}
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
@@ -88,7 +87,13 @@ public class CustomWrapFactory extends WrapFactory {
 	    return this.properties.toArray();
 	}
 
-	abstract Object getTarget();
+	public String getClassName() {
+	    return "FXObject";
+	}
+
+	Object getTarget() {
+	    return javaObject;
+	}
 
 	ObjectLocation extractFieldVariable(String name) throws Exception {
 	    Object content = this.getTarget();
@@ -106,13 +111,7 @@ public class CustomWrapFactory extends WrapFactory {
 		// FIXME how about Sequence.length
 		ObjectLocation variable = this.extractFieldVariable(name);
 		System.err.println("GET " + name);
-		// hmm, no conversion to Scriptable here? is this automatic?
-		Object content = variable.get(); // get will box the primitive?
-		if (content instanceof Boolean || content instanceof Number || content instanceof String) {
-		    System.err.println("variable was " + variable);
-		    return content;
-		}
-		return Context.javaToJS(variable, start); // FIXME start?
+		return Context.javaToJS(variable.get(), start); // FIXME start?
 	    } catch (Exception e) { 
 		System.err.println("not found getter " + name);
 		return Context.getUndefinedValue();
@@ -157,10 +156,8 @@ public class CustomWrapFactory extends WrapFactory {
 
 	public Object get(int index, Scriptable start) {
 	    try {
-		if (this.javaObject instanceof SequenceLocation) {
-		    Object result = ((SequenceLocation)this.javaObject).get(index);
-		    // this will return naked FXObject, not Location
-		    //System.err.println("got result " + result);
+		if (this.javaObject instanceof Sequence) {
+		    Object result = ((Sequence)this.javaObject).get(index);
 		    return Context.javaToJS(result, start);
 		}
 		return Context.getUndefinedValue();
@@ -170,46 +167,14 @@ public class CustomWrapFactory extends WrapFactory {
 	    }
 	}
     }
-    
-    public static class ScriptableLocation  extends AbstractScriptable  {
-	public ScriptableLocation(Scriptable scope, Object object, Class type) {
-	    super(scope, object, type);
-	}
-
-	public String getClassName() {
-	    return "FXLocation";
-	}
-
-	Object getTarget() {
-	    return ((ObjectLocation)javaObject).get();
-	}
-    }
-
-    public static class ScriptableFXObject extends AbstractScriptable  {
-
-	public ScriptableFXObject(Scriptable scope, FXObject object, Class type) {
-	    super(scope, object, type);
-	}
-
-	public String getClassName() {
-	    return "FXObject";
-	}
-
-	Object getTarget() {
-	    return javaObject;
-	}
-    }
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	Class type = obj == null ? staticType : obj.getClass();
 	if (type != null) {
-	    if (ObjectLocation.class.isAssignableFrom(type)) {
-		System.err.println("custom wrapping " + type);
-		return new ScriptableLocation(scope, obj, type);
-	    } else if (FXObject.class.isAssignableFrom(type)) {
+	    if (FXObject.class.isAssignableFrom(type) || Sequence.class.isAssignableFrom(type)) {
 		System.err.println("FX custom wrapping " + type);
-		return new ScriptableFXObject(scope, (FXObject)obj, type);
-	    }
+		return new ScriptableFXObject(scope, obj, type);
+	    } 
 	}
 	return super.wrap(cx, scope, obj, staticType);
     }
