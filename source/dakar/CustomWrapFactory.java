@@ -103,6 +103,7 @@ public class CustomWrapFactory extends WrapFactory {
 		    System.err.println("Trying to initialize through " + name);
 		    return new NativeJavaMethod(this.javaObject.getClass().getMethod(name), name);
 		}
+		// FIXME how about Sequence.length
 		ObjectLocation variable = this.extractFieldVariable(name);
 		System.err.println("GET " + name);
 		// hmm, no conversion to Scriptable here? is this automatic?
@@ -132,25 +133,28 @@ public class CustomWrapFactory extends WrapFactory {
 	    }
 	    try {
 		ObjectLocation variable = this.extractFieldVariable(name);
-		if (value instanceof org.mozilla.javascript.Wrapper) {
-		    // FIXME is there a better way???
-		    value = ((org.mozilla.javascript.Wrapper)value).unwrap();
-		}
-		System.err.println("variable " + variable + " new value " + value);
-		if (!(value instanceof Float) && (variable instanceof FloatLocation)) {
-		    // FIXME FIXME super ad-hoc
-		    value = new Float(((Number)value).floatValue()); 
+		System.err.println("variable " + variable + " new value " + value + " type " + variable.getClass().getName());
+		if (variable instanceof FloatLocation) { // FIXME FIXME super ad-hoc
+		    value = Context.jsToJava(value, Float.class);
+
 		} else if (value instanceof ObjectLocation) {
 		    // here's a place where two locations could be bound to each other?
 		    value = ((ObjectLocation)value).get();
+		} else if (value instanceof org.mozilla.javascript.Wrapper) {
+		    // FIXME is there a better way???
+		    value = ((org.mozilla.javascript.Wrapper)value).unwrap();
+		    if (value instanceof ObjectLocation) {
+			value = ((ObjectLocation)value).get();
+		    }
 		}
+		
 		variable.set(value); 
-		//System.err.println("!PUT " + name + ", " + getter + " " + variable.get());
 		return;
 	    } catch (Exception e) { 
 		e.printStackTrace(System.err);
 	    }
 	}
+
 	public Object get(int index, Scriptable start) {
 	    try {
 		if (this.javaObject instanceof SequenceLocation) {
@@ -159,7 +163,7 @@ public class CustomWrapFactory extends WrapFactory {
 		    //System.err.println("got result " + result);
 		    return Context.javaToJS(result, start);
 		}
-		return Scriptable.NOT_FOUND;
+		return Context.getUndefinedValue();
 	    } catch (Exception e) {
 		e.printStackTrace(System.err);
 		return Scriptable.NOT_FOUND;

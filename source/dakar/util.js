@@ -49,6 +49,12 @@ function seq(array) { // not needed any more
      //return new Packages.javafx.reflect.FXFloatValue(value, ctx.getPrimitiveType('Float'));
  }
 
+ function props(value) {
+     var array = [];
+     for (var name in value) array.push(name);
+     return array;
+ }
+
 
  function fxMake(className, props) {
      var jinst = new java.lang.Class.forName(className).newInstance();
