@@ -13,7 +13,7 @@ public class CustomWrapFactory extends WrapFactory {
 	Object javaObject;
 	Scriptable parent;
 	Scriptable prototype;
-	ArrayList<String> properties = new ArrayList<String>(); // could be shared based on type
+	Map<String, Method> properties = new HashMap<String, Method>(); // could be shared based on type
 
 	public ScriptableFXObject(Scriptable scope, Object javaObject, Class type) {
 	    this.javaObject = javaObject;
@@ -26,7 +26,7 @@ public class CustomWrapFactory extends WrapFactory {
 		    for (Method m : content.getClass().getMethods()) {
 			//System.err.println("method " + m.getName());
 			if (m.getName().startsWith("get$")) {
-			    properties.add(m.getName().substring(4));
+			    properties.put(m.getName().substring(4), m);
 			}
 			// how about instance methods???
 		    }
@@ -80,11 +80,11 @@ public class CustomWrapFactory extends WrapFactory {
 	}
 
 	public boolean has(String name, Scriptable start) {
-	    return this.properties.contains(name);
+	    return this.properties.containsKey(name);
 	}
 
 	public Object[] getIds() {
-	    return this.properties.toArray();
+	    return this.properties.keySet().toArray();
 	}
 
 	public String getClassName() {
@@ -97,7 +97,9 @@ public class CustomWrapFactory extends WrapFactory {
 
 	ObjectLocation extractFieldVariable(String name) throws Exception {
 	    Object content = this.getTarget();
-	    Method getter = content.getClass().getMethod("get$" + name);
+	    //Method getter = content.getClass().getMethod("get$" + name);
+	    Method getter = this.properties.get(name);
+	    if (getter == null) throw new Exception("Didnt find " + name);
 	    ObjectLocation variable = (ObjectLocation)getter.invoke(content);
 	    return variable;
 	}
