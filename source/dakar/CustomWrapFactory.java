@@ -185,7 +185,7 @@ public class CustomWrapFactory extends WrapFactory {
 	
 	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
 			   Object[] args) {
-	    return this.construct(ctx, scope, args); // is this what we want?
+	    return this.construct(cx, scope, args); // is this what we want?
 	}
 	
 	public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
@@ -197,7 +197,7 @@ public class CustomWrapFactory extends WrapFactory {
 		if (args.length == 1) {
 		    Scriptable initlist = (Scriptable)args[0];
 		    for (Object id : initlist.getIds()) { // FIXME error checking and such
-			String name = (Object)id;
+			String name = (String)id;
 			wrapper.put(name, scope, initlist.get(name, scope));
 			// does this agree with the deferred initialization semantics of FX?
 		    }
