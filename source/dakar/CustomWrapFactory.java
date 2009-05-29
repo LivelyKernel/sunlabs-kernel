@@ -106,10 +106,12 @@ public class CustomWrapFactory extends WrapFactory {
 
 	public Object get(String name, Scriptable start) {
 	    try {
+		/*
 		if (name.equals("initialize$"))  { // FIXME ad hoc
 		    System.err.println("Trying to initialize through " + name);
 		    return new NativeJavaMethod(this.javaObject.getClass().getMethod(name), name);
 		}
+		*/
 		// FIXME how about Sequence.length
 		ObjectLocation variable = this.extractFieldVariable(name);
 		System.err.println("GET " + name);
@@ -183,8 +185,7 @@ public class CustomWrapFactory extends WrapFactory {
 	
 	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
 			   Object[] args) {
-	    return null;
-
+	    return this.construct(ctx, scope, args); // is this what we want?
 	}
 	
 	public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
@@ -192,9 +193,14 @@ public class CustomWrapFactory extends WrapFactory {
 		FXObject object = (FXObject)clazz.newInstance();
 		object.initialize$();
 		Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
-		Scriptable initlist = (Scriptable)args[0];
-		for (Object name : initlist.getIds()) { // FIXME error checking and such
-		    wrapper.put((String)name, scope, initlist.get((String)name, scope));
+		if (args.length > 1) throw new RuntimeException("too many args?");
+		if (args.length == 1) {
+		    Scriptable initlist = (Scriptable)args[0];
+		    for (Object id : initlist.getIds()) { // FIXME error checking and such
+			String name = (Object)id;
+			wrapper.put(name, scope, initlist.get(name, scope));
+			// does this agree with the deferred initialization semantics of FX?
+		    }
 		}
 		return wrapper;
 	    } catch (Exception e) {
@@ -203,8 +209,9 @@ public class CustomWrapFactory extends WrapFactory {
 	}
 	
     }
-
+    // this could be replaced with a hacked NativeJavaPackage
     public static class javafx {
+	
 	public static class scene {
 	    public static FXConstructor Group = new FXConstructor("javafx.scene.Group");
 	    public static FXConstructor Scene = new FXConstructor("javafx.scene.Scene");
