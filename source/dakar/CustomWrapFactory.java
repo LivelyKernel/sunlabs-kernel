@@ -178,6 +178,7 @@ public class CustomWrapFactory extends WrapFactory {
 		return new ScriptableFXObject(scope, obj, type);
 	    } 
 	}
+	System.err.println("wrapping " + obj);
 	return super.wrap(cx, scope, obj, staticType);
     }
 }

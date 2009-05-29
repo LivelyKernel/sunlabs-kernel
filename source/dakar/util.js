@@ -56,14 +56,18 @@ function seq(array) { // not needed any more
  }
 
 
- function fxMake(className, props) {
-     var jinst = new java.lang.Class.forName(className).newInstance();
+ function fxMake(clazz, props) {
+     //var jinst = new java.lang.Class.forName(className).newInstance();
+     //weirdly, javascript seems to use custom wrappers an object is created through java.lang.Class.forName('x.y.X').newInstance()
+     //but *not* when it's created through new Packages.x.y.X()!
+
+     var jinst = clazz.__javaObject__.newInstance();
      for (var name in props) {
 	 if (!props.hasOwnProperty(name)) continue;
 	 jinst[name] = props[name];
      }
      jinst.initialize$();
-     print('initializing ' + className);
+     print('initializing ' + clazz.__javaObject__.getName());
      return jinst;
  }
 
@@ -84,28 +88,29 @@ function seq(array) { // not needed any more
  }
 
  var stage;
+ var javafx = Packages.javafx;
  function test2() {
-     var Color =  Packages.javafx.scene.paint.Color;
+     var Color =  javafx.scene.paint.Color;
      var red = Color.$RED;
      var green = Color.$GREEN;
      var white = Color.$WHITE;
      
-     stage = fxMake('javafx.stage.Stage', {
+     stage = fxMake(javafx.stage.Stage, {
 	 title: 'Declaring is easy!', 
 	 width: 400, 
 	 height: 500,
-	 scene: fxMake('javafx.scene.Scene', {
+	 scene: fxMake(javafx.scene.Scene, {
 	 //    fill: red,
 	     content: [
-		 fxMake('javafx.scene.Group', {
+		 fxMake(javafx.scene.Group, {
 		     content: [
-			 fxMake('javafx.scene.shape.Rectangle', {
+			 fxMake(javafx.scene.shape.Rectangle, {
 			     x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: green
 			 }),
-			 fxMake('javafx.scene.shape.Circle', {
+			 fxMake(javafx.scene.shape.Circle, {
 			     centerX: 118, centerY:110, radius:83, fill: white, stroke: red
 			 }),
-			 fxMake('javafx.scene.shape.Rectangle', {
+			 fxMake(javafx.scene.shape.Rectangle, {
 			     x: 100, y: 35,
 			     width: 150, height: 150,
 			     arcWidth: 15, arcHeight: 15,
