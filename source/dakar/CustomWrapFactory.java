@@ -219,6 +219,9 @@ public class CustomWrapFactory extends WrapFactory {
 		public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
 		public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
 	    }
+	    public static class paint {
+		public static FXConstructor Color = new FXConstructor("javafx.scene.paint.Color");
+	    }
 	}
 	public static class stage {
 	    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");

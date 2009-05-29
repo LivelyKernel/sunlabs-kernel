@@ -97,22 +97,22 @@ function seq(array) { // not needed any more
      var white = Color.$WHITE;
 
      var javafx = Packages.CustomWrapFactory.javafx;     
-     stage = new javafx.stage.Stage({
+     stage = javafx.stage.Stage({
 	 title: 'Declaring is easy!', 
 	 width: 400, 
 	 height: 500,
-	 scene: new javafx.scene.Scene({
+	 scene: javafx.scene.Scene({
 	     fill: red,
 	     content: [
-		 new javafx.scene.Group({
+		 javafx.scene.Group({
 		     content: [
-			 new javafx.scene.shape.Rectangle({
+			 javafx.scene.shape.Rectangle({
 			     x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: green
 			 }),
-			 new javafx.scene.shape.Circle({
+			 javafx.scene.shape.Circle({
 			     centerX: 118, centerY:110, radius:83, fill: white, stroke: red
 			 }),
-			 new javafx.scene.shape.Rectangle({
+			 javafx.scene.shape.Rectangle({
 			     x: 100, y: 35,
 			     width: 150, height: 150,
 			     arcWidth: 15, arcHeight: 15,
