@@ -57,6 +57,7 @@ function seq(array) { // not needed any more
 
 
  function fxMake(clazz, props) {
+     // not needed?
      //var jinst = new java.lang.Class.forName(className).newInstance();
      //weirdly, javascript seems to use custom wrappers an object is created through java.lang.Class.forName('x.y.X').newInstance()
      //but *not* when it's created through new Packages.x.y.X()!
@@ -95,22 +96,22 @@ function seq(array) { // not needed any more
      var green = Color.$GREEN;
      var white = Color.$WHITE;
      
-     stage = fxMake(javafx.stage.Stage, {
+     stage = new Packages.CustomWrapFactory.Stage({
 	 title: 'Declaring is easy!', 
 	 width: 400, 
 	 height: 500,
-	 scene: fxMake(javafx.scene.Scene, {
+	 scene: new Packages.CustomWrapFactory.Scene({
 	 //    fill: red,
 	     content: [
-		 fxMake(javafx.scene.Group, {
+		 new Packages.CustomWrapFactory.Group({
 		     content: [
-			 fxMake(javafx.scene.shape.Rectangle, {
+			 new Packages.CustomWrapFactory.Rectangle({
 			     x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: green
 			 }),
-			 fxMake(javafx.scene.shape.Circle, {
+			 new Packages.CustomWrapFactory.Circle({
 			     centerX: 118, centerY:110, radius:83, fill: white, stroke: red
 			 }),
-			 fxMake(javafx.scene.shape.Rectangle, {
+			 new Packages.CustomWrapFactory.Rectangle({
 			     x: 100, y: 35,
 			     width: 150, height: 150,
 			     arcWidth: 15, arcHeight: 15,

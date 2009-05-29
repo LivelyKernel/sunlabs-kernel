@@ -9,7 +9,7 @@ import java.lang.reflect.*;
 
 public class CustomWrapFactory extends WrapFactory {
 
-    public static class ScriptableFXObject implements Scriptable, org.mozilla.javascript.Wrapper {
+    public static class ScriptableFXObject implements Scriptable, Wrapper {
 	Object javaObject;
 	Scriptable parent;
 	Scriptable prototype;
@@ -128,7 +128,7 @@ public class CustomWrapFactory extends WrapFactory {
 		// FIXME this assumes array of ObjectLocations!
 		System.err.println("making array");
 		for (int i = 0; i < length; i++) {
-		    jarray[i] = (FXObject)((org.mozilla.javascript.Wrapper)array.get(i, start)).unwrap();
+		    jarray[i] = (FXObject)((Wrapper)array.get(i, start)).unwrap();
 		}
 		value = Sequences.make(TypeInfo.Object, jarray, length);
 	    }
@@ -141,9 +141,9 @@ public class CustomWrapFactory extends WrapFactory {
 		} else if (value instanceof ObjectLocation) {
 		    // here's a place where two locations could be bound to each other?
 		    value = ((ObjectLocation)value).get();
-		} else if (value instanceof org.mozilla.javascript.Wrapper) {
+		} else if (value instanceof Wrapper) {
 		    // FIXME is there a better way???
-		    value = ((org.mozilla.javascript.Wrapper)value).unwrap();
+		    value = ((Wrapper)value).unwrap();
 		    if (value instanceof ObjectLocation) {
 			value = ((ObjectLocation)value).get();
 		    }
@@ -170,6 +170,48 @@ public class CustomWrapFactory extends WrapFactory {
 	}
     }
 
+
+    public static class FXConstructor extends BaseFunction {
+	Class clazz;
+	public FXConstructor(String name) {
+	    try {
+		this.clazz = Class.forName(name);
+	    } catch (Exception e) {
+		throw new RuntimeException(e);
+	    }
+	}
+	
+	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
+			   Object[] args) {
+	    return null;
+
+	}
+	
+	public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
+	    try {
+		FXObject object = (FXObject)clazz.newInstance();
+		object.initialize$();
+		Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
+		Scriptable initlist = (Scriptable)args[0];
+		for (Object name : initlist.getIds()) { // FIXME error checking and such
+		    wrapper.put((String)name, scope, initlist.get((String)name, scope));
+		}
+		return wrapper;
+	    } catch (Exception e) {
+		throw new RuntimeException(e);
+	    }
+	}
+	
+    }
+
+    public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
+    public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
+    public static FXConstructor Group = new FXConstructor("javafx.scene.Group");
+    public static FXConstructor Scene = new FXConstructor("javafx.scene.Scene");
+    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");
+
+
+
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	Class type = obj == null ? staticType : obj.getClass();
 	if (type != null) {
@@ -178,7 +220,7 @@ public class CustomWrapFactory extends WrapFactory {
 		return new ScriptableFXObject(scope, obj, type);
 	    } 
 	}
-	System.err.println("wrapping " + obj);
+	//System.err.println("wrapping " + obj);
 	return super.wrap(cx, scope, obj, staticType);
     }
 }
