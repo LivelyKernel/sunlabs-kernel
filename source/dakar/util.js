@@ -89,29 +89,30 @@ function seq(array) { // not needed any more
  }
 
  var stage;
- var javafx = Packages.javafx;
+
  function test2() {
-     var Color =  javafx.scene.paint.Color;
+     var Color =  Packages.javafx.scene.paint.Color;
      var red = Color.$RED;
      var green = Color.$GREEN;
      var white = Color.$WHITE;
-     
-     stage = new Packages.CustomWrapFactory.Stage({
+
+     var javafx = Packages.CustomWrapFactory.javafx;     
+     stage = new javafx.stage.Stage({
 	 title: 'Declaring is easy!', 
 	 width: 400, 
 	 height: 500,
-	 scene: new Packages.CustomWrapFactory.Scene({
-	 //    fill: red,
+	 scene: new javafx.scene.Scene({
+	     fill: red,
 	     content: [
-		 new Packages.CustomWrapFactory.Group({
+		 new javafx.scene.Group({
 		     content: [
-			 new Packages.CustomWrapFactory.Rectangle({
+			 new javafx.scene.shape.Rectangle({
 			     x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: green
 			 }),
-			 new Packages.CustomWrapFactory.Circle({
+			 new javafx.scene.shape.Circle({
 			     centerX: 118, centerY:110, radius:83, fill: white, stroke: red
 			 }),
-			 new Packages.CustomWrapFactory.Rectangle({
+			 new javafx.scene.shape.Rectangle({
 			     x: 100, y: 35,
 			     width: 150, height: 150,
 			     arcWidth: 15, arcHeight: 15,

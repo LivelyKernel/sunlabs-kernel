@@ -204,13 +204,20 @@ public class CustomWrapFactory extends WrapFactory {
 	
     }
 
-    public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
-    public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
-    public static FXConstructor Group = new FXConstructor("javafx.scene.Group");
-    public static FXConstructor Scene = new FXConstructor("javafx.scene.Scene");
-    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");
-
-
+    public static class javafx {
+	public static class scene {
+	    public static FXConstructor Group = new FXConstructor("javafx.scene.Group");
+	    public static FXConstructor Scene = new FXConstructor("javafx.scene.Scene");
+	    public static class shape {
+		public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
+		public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
+	    }
+	}
+	public static class stage {
+	    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");
+	}
+    }
+    
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	Class type = obj == null ? staticType : obj.getClass();
