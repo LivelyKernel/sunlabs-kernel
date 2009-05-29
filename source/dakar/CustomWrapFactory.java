@@ -9,27 +9,43 @@ import java.lang.reflect.*;
 
 public class CustomWrapFactory extends WrapFactory {
 
+    static class MemberInfo {
+	Map<String, Method> properties = new HashMap<String, Method>(); // could be shared based on type
+	Map<String, Function> methods = new HashMap<String, Function>(); // could be shared based on type
+	public MemberInfo(Class cl) {
+	    System.err.println("class " + cl);
+	    for (Method m : cl.getMethods()) {
+		String name = m.getName();
+		if (name.startsWith("get$")) {
+		    this.properties.put(name.substring(4), m);
+		} else {
+		    this.methods.put(name, new NativeJavaMethod(m, name));
+		}
+	    }
+	}
+    }
+
+    static Map<Class, MemberInfo> memberInfos = new HashMap<Class, MemberInfo>();
+    
     public static class ScriptableFXObject implements Scriptable, Wrapper {
 	Object javaObject;
 	Scriptable parent;
 	Scriptable prototype;
-	Map<String, Method> properties = new HashMap<String, Method>(); // could be shared based on type
+	MemberInfo memberInfo;
 
 	public ScriptableFXObject(Scriptable scope, Object javaObject, Class type) {
 	    this.javaObject = javaObject;
 	    this.parent = scope;
 	    try {
-		Object content = this.getTarget(); 
 		// cache methods, check if content has the same class and if not, update properties.
-		if (content != null) {
-		    System.err.println("class " + content.getClass().getName());
-		    for (Method m : content.getClass().getMethods()) {
-			//System.err.println("method " + m.getName());
-			if (m.getName().startsWith("get$")) {
-			    properties.put(m.getName().substring(4), m);
-			}
-			// how about instance methods???
+		if (this.javaObject != null) {
+		    Class c = javaObject.getClass();
+		    MemberInfo mi = memberInfos.get(c);
+		    if (mi == null) {
+			mi = new MemberInfo(c);
+			memberInfos.put(c, mi);
 		    }
+		    this.memberInfo = mi;
 		}
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
@@ -42,7 +58,7 @@ public class CustomWrapFactory extends WrapFactory {
 	}
 	
 	public Object getDefaultValue(Class hint) {
-	    return this.javaObject.toString(); // ??
+	    return this.javaObject != null ? this.javaObject.toString() : null;
 	}
 
 	public Object unwrap() {
@@ -80,42 +96,37 @@ public class CustomWrapFactory extends WrapFactory {
 	}
 
 	public boolean has(String name, Scriptable start) {
-	    return this.properties.containsKey(name);
+	    return this.memberInfo.properties.containsKey(name);
 	}
 
 	public Object[] getIds() {
-	    return this.properties.keySet().toArray();
+	    return this.memberInfo.properties.keySet().toArray();
 	}
 
 	public String getClassName() {
 	    return "FXObject";
 	}
 
-	Object getTarget() {
-	    return javaObject;
-	}
 
 	ObjectLocation extractFieldVariable(String name) throws Exception {
-	    Object content = this.getTarget();
 	    //Method getter = content.getClass().getMethod("get$" + name);
-	    Method getter = this.properties.get(name);
-	    if (getter == null) throw new Exception("Didnt find " + name);
-	    ObjectLocation variable = (ObjectLocation)getter.invoke(content);
-	    return variable;
+	    Method getter = this.memberInfo.properties.get(name);
+	    if (getter == null) return null;
+	    return (ObjectLocation)getter.invoke(this.javaObject);
 	}
 
 	public Object get(String name, Scriptable start) {
 	    try {
-		/*
-		if (name.equals("initialize$"))  { // FIXME ad hoc
-		    System.err.println("Trying to initialize through " + name);
-		    return new NativeJavaMethod(this.javaObject.getClass().getMethod(name), name);
-		}
-		*/
-		// FIXME how about Sequence.length
 		ObjectLocation variable = this.extractFieldVariable(name);
-		System.err.println("GET " + name);
-		return Context.javaToJS(variable.get(), start); // FIXME start?
+		if (variable != null) {
+		    System.err.println("GET " + name);
+		    return Context.javaToJS(variable.get(), start); // FIXME start?
+		} else if ((this.javaObject instanceof Sequence) && (name.equals("length"))) {
+		    return ((Sequence)this.javaObject).size();
+		} else {
+		    return Context.javaToJS(this.memberInfo.methods.get(name), start);
+		}
+
 	    } catch (Exception e) { 
 		System.err.println("not found getter " + name);
 		return Context.getUndefinedValue();

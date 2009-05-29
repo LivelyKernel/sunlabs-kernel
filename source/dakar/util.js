@@ -103,6 +103,7 @@ function seq(array) { // not needed any more
 	 height: 500,
 	 scene: javafx.scene.Scene({
 	     fill: red,
+
 	     content: [
 		 javafx.scene.Group({
 		     content: [
