@@ -114,15 +114,27 @@ public class CustomWrapFactory extends WrapFactory {
 	    if (getter == null) return null;
 	    return (ObjectLocation)getter.invoke(this.javaObject);
 	}
+       
+	private static Sequence sequenceFromArray(NativeArray array, Scriptable scope) {
+	    int length = (int)array.getLength();
+	    FXObject[] fxarray = new FXObject[length];
+	    // FIXME this assumes array of Wrappers!
+	    for (int i = 0; i < length; i++) {
+		fxarray[i] = (FXObject)((Wrapper)array.get(i, scope)).unwrap();
+	    }
+	    return Sequences.make(TypeInfo.Object, fxarray, length);
+	}
+	
 
 	public Object get(String name, Scriptable start) {
 	    try {
 		ObjectLocation variable = this.extractFieldVariable(name);
 		if (variable != null) {
 		    System.err.println("GET " + name);
+		    if (name.equals("content")) {
+			System.err.println("content variable " + Arrays.asList(variable.getClass().getName(), variable.get().getClass().getSuperclass()));
+		    }
 		    return Context.javaToJS(variable.get(), start); // FIXME start?
-		} else if ((this.javaObject instanceof Sequence) && (name.equals("length"))) {
-		    return ((Sequence)this.javaObject).size();
 		} else {
 		    return Context.javaToJS(this.memberInfo.methods.get(name), start);
 		}
@@ -133,24 +145,20 @@ public class CustomWrapFactory extends WrapFactory {
 	    }
 	}
 
+	public Object get(int index, Scriptable start) {
+	    return Scriptable.NOT_FOUND;
+	}
+
 	public void put(String name, Scriptable start, Object value) {
 	    if (value instanceof NativeArray) {
-		NativeArray array = (NativeArray)value;
-		int length = (int)array.getLength();
-		FXObject[] jarray = new FXObject[length];
-		// FIXME this assumes array of ObjectLocations!
-		System.err.println("making array");
-		for (int i = 0; i < length; i++) {
-		    jarray[i] = (FXObject)((Wrapper)array.get(i, start)).unwrap();
-		}
-		value = Sequences.make(TypeInfo.Object, jarray, length);
+		// FIXME this breaks referential equality, but maybe it's OK
+		value = this.sequenceFromArray((NativeArray)value, start);
 	    }
 	    try {
 		ObjectLocation variable = this.extractFieldVariable(name);
-		System.err.println("variable " + variable + " new value " + value + " type " + variable.getClass().getName());
+		//System.err.println("variable " + variable + " new value " + value + " type " + variable.getClass().getName());
 		if (variable instanceof FloatLocation) { // FIXME FIXME super ad-hoc
 		    value = Context.jsToJava(value, Float.class);
-
 		} else if (value instanceof ObjectLocation) {
 		    // here's a place where two locations could be bound to each other?
 		    value = ((ObjectLocation)value).get();
@@ -161,24 +169,10 @@ public class CustomWrapFactory extends WrapFactory {
 			value = ((ObjectLocation)value).get();
 		    }
 		}
-		
 		variable.set(value); 
 		return;
 	    } catch (Exception e) { 
 		e.printStackTrace(System.err);
-	    }
-	}
-
-	public Object get(int index, Scriptable start) {
-	    try {
-		if (this.javaObject instanceof Sequence) {
-		    Object result = ((Sequence)this.javaObject).get(index);
-		    return Context.javaToJS(result, start);
-		}
-		return Context.getUndefinedValue();
-	    } catch (Exception e) {
-		e.printStackTrace(System.err);
-		return Scriptable.NOT_FOUND;
 	    }
 	}
     }
@@ -220,6 +214,28 @@ public class CustomWrapFactory extends WrapFactory {
 	}
 	
     }
+
+    public static class ScriptableSequence extends NativeJavaObject {
+	public String getClassName() {
+	    return "FXSequence";
+	}
+
+	public ScriptableSequence(Scriptable scope, Sequence sequence, Class staticType) {
+	    super(scope, sequence, staticType, true);
+	}
+
+	public Object get(int index, Scriptable start) {
+	    Object result = ((Sequence)this.javaObject).get(index);
+	    return Context.javaToJS(result, start);
+	}
+
+	public Object get(String name, Scriptable start) {
+	    if (name.equals("length")) {
+		return Context.javaToJS(((Sequence)this.javaObject).size(), start);
+	    }
+	    return super.get(name, start);
+	}
+    }
     // this could be replaced with a hacked NativeJavaPackage
     public static class javafx {
 	
@@ -238,14 +254,19 @@ public class CustomWrapFactory extends WrapFactory {
 	    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");
 	}
     }
-    
+ 
+   
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	Class type = obj == null ? staticType : obj.getClass();
 	if (type != null) {
-	    if (FXObject.class.isAssignableFrom(type) || Sequence.class.isAssignableFrom(type)) {
+	    if (FXObject.class.isAssignableFrom(type)) {
 		System.err.println("FX custom wrapping " + type);
 		return new ScriptableFXObject(scope, obj, type);
+		
+	    } else if (Sequence.class.isAssignableFrom(type)) {
+		System.err.println("FX wrapping sequence " + type);
+		return new ScriptableSequence(scope, (Sequence)obj, type);
 	    } 
 	}
 	//System.err.println("wrapping " + obj);

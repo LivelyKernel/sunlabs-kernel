@@ -90,20 +90,21 @@ function seq(array) { // not needed any more
 
  var stage;
 
+ var javafx = Packages.CustomWrapFactory.javafx;
  function test2() {
      var Color =  Packages.javafx.scene.paint.Color;
      var red = Color.$RED;
      var green = Color.$GREEN;
      var white = Color.$WHITE;
+     var blue = Color.$BLUE;
 
-     var javafx = Packages.CustomWrapFactory.javafx;     
+
      stage = javafx.stage.Stage({
 	 title: 'Declaring is easy!', 
 	 width: 400, 
 	 height: 500,
 	 scene: javafx.scene.Scene({
 	     fill: red,
-
 	     content: [
 		 javafx.scene.Group({
 		     content: [
@@ -120,6 +121,9 @@ function seq(array) { // not needed any more
 			     fill: green
 			 })
 		     ]
+		 }),
+	 	 javafx.scene.shape.Rectangle({
+		     x: 45, y:235, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: blue
 		 })
 	     ]
 	 })
