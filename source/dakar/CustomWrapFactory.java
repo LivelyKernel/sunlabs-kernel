@@ -131,9 +131,6 @@ public class CustomWrapFactory extends WrapFactory {
 		ObjectLocation variable = this.extractFieldVariable(name);
 		if (variable != null) {
 		    System.err.println("GET " + name);
-		    if (name.equals("content")) {
-			System.err.println("content variable " + Arrays.asList(variable.getClass().getName(), variable.get().getClass().getSuperclass()));
-		    }
 		    return Context.javaToJS(variable.get(), start); // FIXME start?
 		} else {
 		    return Context.javaToJS(this.memberInfo.methods.get(name), start);
@@ -150,12 +147,16 @@ public class CustomWrapFactory extends WrapFactory {
 	}
 
 	public void put(String name, Scriptable start, Object value) {
-	    if (value instanceof NativeArray) {
-		// FIXME this breaks referential equality, but maybe it's OK
-		value = this.sequenceFromArray((NativeArray)value, start);
-	    }
 	    try {
+
 		ObjectLocation variable = this.extractFieldVariable(name);
+
+		if (value instanceof NativeArray) {
+		    // FIXME this breaks referential equality, but maybe it's OK
+		    variable.set(this.sequenceFromArray((NativeArray)value, start));
+		    return;
+		}
+
 		//System.err.println("variable " + variable + " new value " + value + " type " + variable.getClass().getName());
 		if (variable instanceof FloatLocation) { // FIXME FIXME super ad-hoc
 		    value = Context.jsToJava(value, Float.class);

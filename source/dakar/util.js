@@ -104,7 +104,7 @@ function seq(array) { // not needed any more
 	 width: 400, 
 	 height: 500,
 	 scene: javafx.scene.Scene({
-	     fill: red,
+	     //fill: red,
 	     content: [
 		 javafx.scene.Group({
 		     content: [
