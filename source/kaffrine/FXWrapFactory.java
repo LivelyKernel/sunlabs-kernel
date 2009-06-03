@@ -171,6 +171,25 @@ public class FXWrapFactory extends WrapFactory {
 		if (value instanceof NativeArray) {
 		    // FIXME this breaks referential equality, but maybe it's OK
 		    value = this.sequenceFromArray((NativeArray)value, start);
+		} else if (value instanceof Function) {
+		    
+		    value = new com.sun.javafx.functions.Function0<Object>() {
+			public Object invoke() {
+			    System.err.println("invoking function!!");
+			    return null;
+			}
+		    };
+		    Method locator = this.memberInfo.locations.get(name);
+		    if (locator != null) {
+			ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
+			location.set(value);
+			System.err.println("retrieved stored value " + value);
+		    } else {
+			this.doSet(name, value);
+			System.err.println("XXno locator for " + name);
+		    }
+		    //System.err.println("SUCCESS " + this.doGet(name));
+		    return;
 		} else if (value instanceof Number) { // FIXME FIXME super ad-hoc
 		    value = Context.jsToJava(value, Float.class);
 		} else if (value instanceof Wrapper) {
