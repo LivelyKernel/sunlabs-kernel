@@ -230,6 +230,7 @@ public class FXWrapFactory extends WrapFactory {
 	    try {
 		FXObject object = (FXObject)clazz.newInstance();
 		//object.initialize$();
+
 		
 		Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
 		if (args.length > 1) throw new RuntimeException("too many args?");
@@ -242,7 +243,11 @@ public class FXWrapFactory extends WrapFactory {
 		    }
 		}
 		
+		object.addTriggers$();
+		// FIXME the following should be run to allow full initialize$() but does not work like this.
+		//object.applyDefaults$();
 		object.complete$();
+
 		return wrapper;
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
@@ -278,6 +283,10 @@ public class FXWrapFactory extends WrapFactory {
 	public static class scene {
 	    public static FXConstructor Group = new FXConstructor("javafx.scene.Group");
 	    public static FXConstructor Scene = new FXConstructor("javafx.scene.Scene");
+	    public static class control {
+		public static FXConstructor Button = new FXConstructor("javafx.scene.control.Button");
+	    }
+	    
 	    public static class shape {
 		public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
 		public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
