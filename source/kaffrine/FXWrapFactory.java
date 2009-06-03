@@ -204,6 +204,22 @@ public class FXWrapFactory extends WrapFactory {
 		throw new RuntimeException(e);
 	    }
 	}
+
+	public String getDefaultValue(Class hint) {
+	    return "[JavaFXClass " + clazz.getName() + "]";
+	}
+
+	public Object get(String name, Scriptable start) {
+	    try {
+		Field field = clazz.getField("$"+ name);
+		return field.get(clazz);
+	    } catch (Exception e) { 
+		System.err.println("woo " + e);
+	    }
+	    return super.get(name, start);
+	}
+
+		    
 	
 	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
 			   Object[] args) {
@@ -225,6 +241,7 @@ public class FXWrapFactory extends WrapFactory {
 			// does this agree with the deferred initialization semantics of FX?
 		    }
 		}
+		
 		object.complete$();
 		return wrapper;
 	    } catch (Exception e) {
