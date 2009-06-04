@@ -5,6 +5,8 @@ var javafx = Packages.FXWrapFactory.javafx;
 
 function test() {
     var Color =  javafx.scene.paint.Color;
+    var shape = javafx.scene.shape;
+
     // FIXME: this trick to avoid a deadlock
     //stage = javafx.stage.Stage({});
     
@@ -15,9 +17,7 @@ function test() {
 	scene: javafx.scene.Scene({
 	    //fill: Color.RED,
 	    content: [
-		javafx.scene.control.Button({
-		    width: 200, height: 100, strong: true, translateX: 20, translateY: 20
-		}),
+		//javafx.scene.control.Button({ width: 200, height: 100, strong: true, translateX: 20, translateY: 20 }),
 		javafx.scene.Group({
 		    content: [
 			javafx.scene.shape.Rectangle({
@@ -42,7 +42,7 @@ function test() {
     });
     ///print('rect is ' + rect);
     print('stage is ' + stage);
-    var gr = stage.scene.content[1];
+    var gr = stage.scene.content[0];
     print('sizeof group is ' + gr.content.length);
     gr.content[0].action = function() { print("yo!") } 
     print('action is ' + gr.content[0].action);

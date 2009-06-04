@@ -144,7 +144,11 @@ public class FXWrapFactory extends WrapFactory {
 		Method locator = this.memberInfo.locations.get(name);
 		if (locator != null) {
 		    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-		    value = location.get();
+		    if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
+			value = location;
+		    } else {
+			value = location.get();
+		    }
 		} else {
 		    value = this.doGet(name);
 		}
@@ -158,6 +162,7 @@ public class FXWrapFactory extends WrapFactory {
 		}
 	    } catch (Exception e) { 
 		System.err.println("not found getter " + name);
+		e.printStackTrace();
 		return Context.getUndefinedValue();
 	    }
 	}
@@ -231,7 +236,7 @@ public class FXWrapFactory extends WrapFactory {
 	public Object get(String name, Scriptable start) {
 	    try {
 		Field field = clazz.getField("$"+ name);
-		return field.get(clazz);
+		return Context.javaToJS(field.get(clazz), start);
 	    } catch (Exception e) { 
 		System.err.println("woo " + e);
 	    }
@@ -275,27 +280,61 @@ public class FXWrapFactory extends WrapFactory {
 	
     }
 
-    public static class ScriptableSequence extends NativeJavaObject {
+
+    
+
+    public static class ScriptableSequence extends ScriptableObject {
 	public String getClassName() {
 	    return "FXSequence";
 	}
+	SequenceVariable variable;
+	
+	public ScriptableSequence() {
+	    variable = null;
+	}
 
-	public ScriptableSequence(Scriptable scope, Sequence sequence, Class staticType) {
-	    super(scope, sequence, staticType, true);
+	public ScriptableSequence(Scriptable scope, Scriptable prototype) {		
+	    super(scope, prototype);
+	}
+
+	public void jsConstructor() {
+	    Sequence seq = Sequences.make(TypeInfo.Object, new Object[0], 0);
+	    this.variable = SequenceVariable.make(TypeInfo.Object, seq);
+	}
+	
+	public Object getDefaultValue() {
+	    return this.toString();
 	}
 
 	public Object get(int index, Scriptable start) {
-	    Object result = ((Sequence)this.javaObject).get(index);
-	    return Context.javaToJS(result, start);
+	    return variable.get().get(index);
 	}
 
-	public Object get(String name, Scriptable start) {
-	    if (name.equals("length")) {
-		return Context.javaToJS(((Sequence)this.javaObject).size(), start);
-	    }
-	    return super.get(name, start);
+	public void put(int index, Scriptable start, Object value) {
+	    // FIXME
+	    //variable.get().set(index, value);
 	}
+
+	public int jsGet_length() {
+	    System.err.print("getting length");
+	    return variable.get().size();
+	}
+	
+	public Object jsFunction_get(int index) {
+	    return variable.get().get(index);
+	}
+
+	public void jsFunction_push(Object value) {
+	    ObjectArraySequence seq = (ObjectArraySequence)variable.get();
+	    Object result = variable.replaceSlice(seq.size(), seq.size(), Sequences.make(TypeInfo.Object, Context.jsToJava(value, Object.class)));
+	    //variable.replaceValue(seq);
+	    //seq.replace(seq.size(), seq.size(), value, true);
+	    //variable.set(seq);
+	}
+
+	
     }
+
     // this could be replaced with a hacked NativeJavaPackage
     public static class javafx {
 	
@@ -319,18 +358,29 @@ public class FXWrapFactory extends WrapFactory {
 	}
     }
  
+    private boolean isInited = false;
    
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
+	if (!isInited) {
+	    try {
+		ScriptableObject.defineClass(scope, ScriptableSequence.class);
+	    } catch (Exception e) {
+		throw new RuntimeException(e);
+	    }
+	    isInited = true;
+	}
 	Class type = obj == null ? staticType : obj.getClass();
 	if (type != null) {
 	    if (FXObject.class.isAssignableFrom(type)) {
 		System.err.println("FX custom wrapping " + type);
 		return new ScriptableFXObject(scope, obj, type);
 		
-	    } else if (Sequence.class.isAssignableFrom(type)) {
+	    } else if (SequenceVariable.class.isAssignableFrom(type)) {
 		System.err.println("FX wrapping sequence " + type);
-		return new ScriptableSequence(scope, (Sequence)obj, type);
+		ScriptableSequence seq = new ScriptableSequence(scope, ScriptableObject.getClassPrototype(scope, "FXSequence"));
+		seq.variable = (SequenceVariable)obj;
+		return super.wrap(cx, scope, seq, staticType);
 	    } 
 	}
 	//System.err.println("wrapping " + obj);

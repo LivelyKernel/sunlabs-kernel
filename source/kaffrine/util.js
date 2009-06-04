@@ -73,22 +73,19 @@ function seq(array) { // not needed any more
      return jinst;
  }
 
- function test1(width, height) {
-     var ctx = Packages.javafx.reflect.FXContext.getInstance();
-     var Stage = ctx.findClass('javafx.stage.Stage');
-     var s = Stage.allocate();
-     js = s.asObject();
-     js.get$width().setAsFloatFromLiteral(width);
-     js.get$height().setAsFloatFromLiteral(height);
-     js.get$title().setFromLiteral("Declaring is easy!");
-     s.initialize();
- }
-
  function fxexit() {
      var FX = java.lang.Class.forName('javafx.lang.FX');
      FX.getMethod('exit').invoke(FX);
  }
 
+/*
+ function fxSeq(array) {
+     var pkg = Packages.com.sun.javafx.runtime;
+     var seq = pkg.sequence.Sequences.make(pkg.TypeInfo.Object, array, array.length);
+     return pkg.location.SequenceVariable.make(pkg.TypeInfo.Object, seq);
+ }
+*/
 
-//Packages.javax.swing.SwingUtilities.invokeLater(function() { test2()});
+
+//Packagesx.javax.swing.SwingUtilities.invokeLater(function() { test2()});
 
