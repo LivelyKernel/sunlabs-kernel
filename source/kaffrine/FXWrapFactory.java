@@ -277,18 +277,83 @@ public class FXWrapFactory extends WrapFactory {
 		throw new RuntimeException(e);
 	    }
 	}
-	
     }
 
 
+    public static class FXRuntime extends ScriptableObject {
+	static String JS_NAME = "FXRuntime";
+
+	public String getClassName() {
+	    return JS_NAME;
+	}
+	public void jsConstructor() {
+	}
+
+	public FXRuntime() {
+	}
+
+	public FXRuntime(Scriptable scope, Scriptable prototype) {		
+	    super(scope, prototype);
+	}
+
+
+
+	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
+	    if (object instanceof ScriptableFXObject) {
+		Object target = ((ScriptableFXObject)object).unwrap();
+		try {
+		    Method locator = target.getClass().getMethod("loc$" + fieldName);
+		    Object result = locator.invoke(target);
+		    if (result instanceof ObjectVariable) {
+			ObjectVariable variable = (ObjectVariable)result;
+			System.err.println("will observe " + fieldName);
+			final Scriptable scope = ScriptableObject.getTopLevelScope(object);
+			ChangeListener<Object> listener = new ChangeListener<Object>() {
+			    public void onChange(Object oldValue, Object newValue) {
+				Context cx = Context.getCurrentContext();
+				callback.call(cx, scope, scope, new Object[] { Context.javaToJS(oldValue, scope), 
+									       Context.javaToJS(newValue, scope) });
+			    }
+			};
+			variable.addChangeListener(listener);
+		    } else if (result instanceof FloatVariable) { // ewwwww!!!
+			FloatVariable variable = (FloatVariable)result;
+			System.err.println("will observe " + fieldName);
+			final Scriptable scope = ScriptableObject.getTopLevelScope(object);
+			ChangeListener<Float> listener = new ChangeListener<Float>() {
+			    public void onChange(Float oldValue, Float newValue) {
+				Context cx = Context.getCurrentContext();
+				callback.call(cx, scope, scope, new Object[] { Context.javaToJS(oldValue, scope), 
+									       Context.javaToJS(newValue, scope) });
+			    }
+			};
+			variable.addChangeListener(listener);
+			
+
+		    }
+			//locatio
+		} catch (Exception e) {
+		    throw new RuntimeException(e);
+		}
+
+		
+	    } else {
+		System.err.println("no!");
+	    }
+	}
+	
+    }
+
     
 
+
     public static class ScriptableSequence extends ScriptableObject {
+	SequenceVariable variable;
+	
 	static String JS_NAME = "FXSequence";
 	public String getClassName() {
 	    return JS_NAME;
 	}
-	SequenceVariable variable;
 	
 	public ScriptableSequence() {
 	    variable = null;
@@ -312,8 +377,9 @@ public class FXWrapFactory extends WrapFactory {
 	}
 
 	public void put(int index, Scriptable start, Object value) {
-	    // FIXME
-	    //variable.get().set(index, value);
+	    ObjectArraySequence seq = (ObjectArraySequence)variable.get();
+	    variable.replaceSlice(index, index, 
+				  Sequences.make(TypeInfo.Object, Context.jsToJava(value, Object.class)));
 	}
 
 	public int jsGet_length() {
@@ -355,6 +421,9 @@ public class FXWrapFactory extends WrapFactory {
 	    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");
 	}
     }
+
+    public static FXConstructor Test = new FXConstructor("FXTest");
+
  
     private boolean isInited = false;
    
@@ -363,6 +432,7 @@ public class FXWrapFactory extends WrapFactory {
 	if (!isInited) {
 	    try {
 		ScriptableObject.defineClass(scope, ScriptableSequence.class);
+		ScriptableObject.defineClass(scope, FXRuntime.class);
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
 	    }
@@ -373,14 +443,13 @@ public class FXWrapFactory extends WrapFactory {
 	    if (FXObject.class.isAssignableFrom(type)) {
 		//System.err.println("FX custom wrapping " + type);
 		return new ScriptableFXObject(scope, obj, type);
-		
 	    } else if (SequenceVariable.class.isAssignableFrom(type)) {
 		//System.err.println("FX wrapping sequence " + type);
 		ScriptableSequence seq = new ScriptableSequence(scope, ScriptableObject.getClassPrototype(scope, 
 													  ScriptableSequence.JS_NAME));
 		seq.variable = (SequenceVariable)obj;
 		return super.wrap(cx, scope, seq, staticType);
-	    } 
+	    }
 	}
 	//System.err.println("wrapping " + obj);
 	return super.wrap(cx, scope, obj, staticType);
