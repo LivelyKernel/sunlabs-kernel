@@ -533,6 +533,7 @@ function main() {
 		});	
 	}
     if(Config.testTracing) lively.lang.Execution.testTrace();
+    if(Config.testPlotDemo) new PlotDemo().open();
 
 }
 
@@ -543,6 +544,5 @@ function main() {
 // needed to figure out font geometry. Apparently the update happens
 // after control returns to the caller of JS
 main.logCompletion("main").delay(Config.mainDelay);
-
 }.logCompletion("Main.js"));
 };

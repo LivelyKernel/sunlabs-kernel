@@ -181,7 +181,21 @@ BoxMorph.subclass('ButtonMorph', {
 			}}
 		});
 	}
+});
 
+Object.extend(ButtonMorph, {
+    boundsLabelAction: function(bnds, label, downAction, upAction) {
+	var b = new ButtonMorph(bnds);
+	b.setLabel(label);
+	b.getThisValue = function() { return this.onState; };
+	b.setThisValue = function(bool) {
+		this.onState = bool;
+		if (this.onState && downAction) downAction.call(b.owner);
+		if (!this.onState && upAction) upAction.call(b.owner);
+		};
+	// button is its own model in this case
+	b.connectModel({model: b, getValue: "getThisValue", setValue: "setThisValue"});
+	return b; }
 });
 
 

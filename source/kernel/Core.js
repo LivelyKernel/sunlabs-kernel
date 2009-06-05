@@ -2632,10 +2632,12 @@ Morph.addMethods({
 	if (this.owner == null) return false; // can't reshape the world
 	var partName = this.shape.partNameNear(this.localize(evt.point()));
 	if (partName == null) return false;
+
 	var loc = this.shape.partPosition(partName);
-	
-	var handle = this.addMorph(this.makeHandle(loc, partName, evt.hand));  
-	// after which it should get converted appropriately here
+	var handle = this.makeHandle(loc, partName, evt.hand);
+	if (!handle) return false;  // makeHandle variants may return null
+
+	this.addMorph(handle);  
 	handle.showHelp(evt);
 	if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
 	evt.hand.setMouseFocus(handle);
@@ -5484,7 +5486,7 @@ ClipboardHack = {
 		buffer.setAttribute("id","copypastebuffer");
 		buffer.setAttribute("style","position:absolute;z-index: -400;left:0px; top:1px; width:1px; height:1px;");
 		buffer.textContent = "NoText";
-		document.body.appendChild(buffer);
+		if (!UserAgent.isMozilla) document.body.appendChild(buffer);
 		return buffer;
 	},
 
