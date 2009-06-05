@@ -45,7 +45,9 @@ function test() {
 		    x: 45, y:235, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.BLUE
 		}),
 		javafx.scene.control.Button({ width: 200, height: 100, strong: true, translateX: 20, translateY: 20 }),
-		javafx.scene.control.Slider({ width: 200, height: 30, translateX: 20, translateY: 120 })
+		javafx.scene.control.Slider({ width: 200, height: 30, translateX: 20, translateY: 120 }),
+		javafx.scene.control.TextBox({ width: 200, height: 30, translateX: 20, translateY: 160,
+					       columns: 12, text: "Hello World" })
 	    ]
 	})
     });
@@ -60,17 +62,21 @@ function test() {
     button = stage.scene.content[2];
     slider = stage.scene.content[3];
 
-    sliderModel = { position: 0, max: 0 }
-    fxBind(slider, 'value', sliderModel, 'position', true); 
-    //slider.fxBind('value', sliderModel, 'position', true); 
-    fxBind(slider, 'max', sliderModel, 'max'); 
-    //slider.fxBind('max', sliderModel, 'max'); 
+    appModel = { position: 0, max: 0, label: "" }
+    fxBind(slider, 'value', appModel, 'position', true); 
     
+//slider.fxBind('value', appModel, 'position', true); 
+    fxBind(slider, 'max', appModel, 'max'); 
+    //slider.fxBind('max', appModel, 'max'); 
+    
+    var textBox = stage.scene.content[4];
+    fxBind(textBox, 'text', appModel, 'label');
+
     
     button.action = function() { 
 	print("button says hi!"); 
-	if (sliderModel.position + 10 < sliderModel.max)
-	    sliderModel.position += 10;
+	if (appModel.position + 10 < appModel.max)
+	    appModel.position += 10;
     } 
 
     return stage;

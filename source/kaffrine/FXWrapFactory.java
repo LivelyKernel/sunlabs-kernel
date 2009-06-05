@@ -436,7 +436,7 @@ public class FXWrapFactory extends WrapFactory {
 	    public static class control {
 		public static FXConstructor Button = new FXConstructor("javafx.scene.control.Button");
 		public static FXConstructor Slider = new FXConstructor("javafx.scene.control.Slider");
-		
+		public static FXConstructor TextBox = new FXConstructor("javafx.scene.control.TextBox");
 	    }
 	    
 	    public static class shape {
@@ -447,7 +447,7 @@ public class FXWrapFactory extends WrapFactory {
 		public static FXConstructor Color = new FXConstructor("javafx.scene.paint.Color");
 		public static FXConstructor LinearGradient = new FXConstructor("javafx.scene.paint.LinearGradient");
 		public static FXConstructor Stop = new FXConstructor("javafx.scene.paint.Stop");
-
+		
 	    }
 	}
 	public static class stage {
