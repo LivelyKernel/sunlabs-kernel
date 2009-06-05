@@ -1,5 +1,6 @@
 var jsctx = Packages.org.mozilla.javascript.Context.currentContext;
 jsctx.setWrapFactory(Packages.FXWrapFactory.instance);
+load('bootstrap.js');
 
 function a2l(object) {
     return java.util.Arrays.asList(object);
@@ -91,6 +92,18 @@ function seq(array) { // not needed any more
      FXRuntime.observe(fxObject, fxFieldName, function(old, aNew) { jsObject[jsFieldName] = aNew; });
      if (inverse) fxInverseBind(fxObject, fxFieldName, jsObject, jsFieldName);
  }
+
+
+/*
+Object.defineProperty(Object.prototype, 'fxBind', {
+    enumerable: false,
+    value: function(ownField, otherObject, otherField, inverse) {
+	if (FXRuntime.isFXObject(this)) {
+	    fxBind(this, ownField, otherObject, otherField, inverse);
+	} else print('not supported');
+    }
+});
+*/
  
 
 

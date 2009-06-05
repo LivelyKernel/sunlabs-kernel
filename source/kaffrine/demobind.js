@@ -1,5 +1,4 @@
 load('util.js');
-load('bootstrap.js');
 
 
 var t1 = new Packages.FXTest();
@@ -17,8 +16,6 @@ Object.defineProperty(slider, 'position', {
     }
 });
 */
-
-
 
 
 

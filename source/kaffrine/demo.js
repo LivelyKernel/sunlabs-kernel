@@ -57,14 +57,17 @@ function test() {
     
 
     print('action is ' + stage.scene.content[2].action);
+    button = stage.scene.content[2];
     slider = stage.scene.content[3];
 
     sliderModel = { position: 0, max: 0 }
     fxBind(slider, 'value', sliderModel, 'position', true); 
+    //slider.fxBind('value', sliderModel, 'position', true); 
     fxBind(slider, 'max', sliderModel, 'max'); 
+    //slider.fxBind('max', sliderModel, 'max'); 
     
     
-    stage.scene.content[2].action = function() { 
+    button.action = function() { 
 	print("button says hi!"); 
 	if (sliderModel.position + 10 < sliderModel.max)
 	    sliderModel.position += 10;

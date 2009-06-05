@@ -116,7 +116,6 @@ public class FXWrapFactory extends WrapFactory {
 	    return "FXObject";
 	}
 
-
 	Object doGet(String name) throws Exception {
 	    Method getter = this.memberInfo.getters.get(name);
 	    if (getter == null) return Scriptable.NOT_FOUND; // FIXME
@@ -215,8 +214,6 @@ public class FXWrapFactory extends WrapFactory {
 		} else if (value instanceof Wrapper) {
 		    // FIXME is there a better way???
 		    value = ((Wrapper)value).unwrap();
-		    if (name.equals("color"))
-			System.err.println("value type " + value);
 		    /*
 		    if (value instanceof ObjectLocation) {
 			System.err.println("!!!! deref " + name); 
@@ -242,7 +239,6 @@ public class FXWrapFactory extends WrapFactory {
 	}
     }
 
-
     public static class FXConstructor extends BaseFunction {
 	Class clazz;
 	public FXConstructor(String name) {
@@ -267,8 +263,6 @@ public class FXWrapFactory extends WrapFactory {
 	    return super.get(name, start);
 	}
 
-		    
-	
 	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
 			   Object[] args) {
 	    return this.construct(cx, scope, args); // is this what we want?
@@ -294,7 +288,6 @@ public class FXWrapFactory extends WrapFactory {
 		}
 		// FIXME the following should be run to allow full initialize$() but does not work like this.
 		object.complete$();
-
 		return wrapper;
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
@@ -322,7 +315,6 @@ public class FXWrapFactory extends WrapFactory {
 	public static boolean jsStaticFunction_isFXObject(Scriptable object) {
 	    return object instanceof ScriptableFXObject; // or sequence?
 	}
-
 
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
 	    if (object instanceof ScriptableFXObject) {
@@ -464,16 +456,14 @@ public class FXWrapFactory extends WrapFactory {
     }
 
     public static FXConstructor Test = new FXConstructor("FXTest");
-
  
     private boolean isInited = false;
-   
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	if (!isInited) {
 	    try {
-		ScriptableObject.defineClass(scope, ScriptableSequence.class);
-		ScriptableObject.defineClass(scope, FXRuntime.class);
+		ScriptableObject.defineClass(scope, ScriptableSequence.class, false, true);
+		ScriptableObject.defineClass(scope, FXRuntime.class, false, true);
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
 	    }

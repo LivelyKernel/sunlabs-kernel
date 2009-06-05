@@ -1,7 +1,6 @@
 load('util.js');
 
 
-load('bootstrap.js');
 load('rhino-compat.js');
 load('lang.js');
 
