@@ -1,4 +1,5 @@
 load('util.js');
+load('bootstrap.js');
 var stage;
 
 var javafx = Packages.FXWrapFactory.javafx;
@@ -7,9 +8,6 @@ function test() {
     var Color =  javafx.scene.paint.Color;
     var shape = javafx.scene.shape;
 
-    // FIXME: this trick to avoid a deadlock
-    //stage = javafx.stage.Stage({});
-    
     stage = javafx.stage.Stage({
 	title: 'Declaring is easy!', 
 	width: 400, 
@@ -17,8 +15,8 @@ function test() {
 	scene: javafx.scene.Scene({
 	    //fill: Color.RED,
 	    content: [
-		//javafx.scene.control.Button({ width: 200, height: 100, strong: true, translateX: 20, translateY: 20 }),
 		javafx.scene.Group({
+		    translateY: 130,
 		    content: [
 			javafx.scene.shape.Rectangle({
 			    x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN
@@ -45,24 +43,35 @@ function test() {
 		}),
 	 	javafx.scene.shape.Rectangle({
 		    x: 45, y:235, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.BLUE
-		})
+		}),
+		javafx.scene.control.Button({ width: 200, height: 100, strong: true, translateX: 20, translateY: 20 }),
+		javafx.scene.control.Slider({ width: 200, height: 30, translateX: 20, translateY: 120 })
 	    ]
 	})
     });
 
-    aStop = javafx.scene.paint.Stop({offset: 0.0, color: Color.BLACK});
-    print('we got ' + [aStop.offset, aStop.color] + "," + Color.RED);
-    
-    
     ///print('rect is ' + rect);
     print('stage is ' + stage);
     var gr = stage.scene.content[0];
-    print('sizeof group is ' + gr.content.length);
-    gr.content[0].action = function() { print("yo!") } 
-    print('action is ' + gr.content[0].action);
+    //print('sizeof group is ' + gr.content.length);
+    
+
+    print('action is ' + stage.scene.content[2].action);
+    slider = stage.scene.content[3];
+
+    sliderModel = { position: 0, max: 0 }
+    fxBind(slider, 'value', sliderModel, 'position', true); 
+    fxBind(slider, 'max', sliderModel, 'max'); 
+    
+    
+    stage.scene.content[2].action = function() { 
+	print("button says hi!"); 
+	if (sliderModel.position + 10 < sliderModel.max)
+	    sliderModel.position += 10;
+    } 
+
     return stage;
 }
     
-//Packages.javax.swing.SwingUtilities.invokeLater(test);
 
 test();

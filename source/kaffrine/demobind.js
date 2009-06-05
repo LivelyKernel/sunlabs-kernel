@@ -1,23 +1,6 @@
 load('util.js');
 load('bootstrap.js');
 
-function fxInverseBind(fxObject, fxFieldName, jsObject, jsFieldName) {
-    Object.defineProperty(jsObject, jsFieldName, {
-	getter: function() {
-	    return fxObject[fxFieldName];
-	},
-	setter: function(value) {
-	    fxObject[fxFieldName] = value;
-	}
-    });
-}
-    
-function fxBind(fxObject, fxFieldName, jsObject, jsFieldName, inverse) {
-    jsObject[jsFieldName] = fxObject[fxFieldName];
-    FXRuntime.observe(fxObject, fxFieldName, function(old, aNew) { jsObject[jsFieldName] = aNew; });
-    if (inverse) fxInverseBind(fxObject, fxFieldName, jsObject, jsFieldName);
-}
-
 
 var t1 = new Packages.FXTest();
 
@@ -34,14 +17,6 @@ Object.defineProperty(slider, 'position', {
     }
 });
 */
-
-
-
-
-
-
-
-
 
 
 

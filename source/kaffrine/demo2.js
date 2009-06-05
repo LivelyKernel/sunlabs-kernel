@@ -42,29 +42,27 @@ var FxNode = fx.dom.Node.extend({
 	    return node;
 	}
     }
-    
-    
 });
     
 
-    function rect(x, y) {
-	return javafx.scene.shape.Rectangle({
-	    x: x, y: y, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
-	})
-    }
+function rect(x, y) {
+    return javafx.scene.shape.Rectangle({
+	x: x, y: y, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
+    })
+}
 
-    if (true) {
-	var n = new FxNode(javafx.scene.shape.Rectangle({
-	    x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
-	}));
-	
-	n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
-	    x: 145, y:135, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
-	})));
-	
-	print('OK ' + n.outerNode);
-    }
-
+if (true) {
+    var n = new FxNode(javafx.scene.shape.Rectangle({
+	x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
+    }));
+    
+    n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
+	x: 145, y:135, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
+    })));
+    
+    print('OK ' + n.outerNode);
+}
+    
 var stage = javafx.stage.Stage({
     title: 'Declaring is easy!', 
     width: 400, 

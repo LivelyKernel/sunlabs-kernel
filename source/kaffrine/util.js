@@ -1,8 +1,5 @@
-
 var jsctx = Packages.org.mozilla.javascript.Context.currentContext;
-
-print('wrap factory ' + Packages.FXWrapFactory);
-jsctx.setWrapFactory(new Packages.FXWrapFactory());
+jsctx.setWrapFactory(Packages.FXWrapFactory.instance);
 
 function a2l(object) {
     return java.util.Arrays.asList(object);
@@ -77,6 +74,25 @@ function seq(array) { // not needed any more
      var FX = java.lang.Class.forName('javafx.lang.FX');
      FX.getMethod('exit').invoke(FX);
  }
+
+ function fxBind(fxObject, fxFieldName, jsObject, jsFieldName, inverse) {
+     function fxInverseBind(fxObject, fxFieldName, jsObject, jsFieldName) {
+	 Object.defineProperty(jsObject, jsFieldName, {
+	     getter: function() {
+		 return fxObject[fxFieldName];
+	     },
+	     setter: function(value) {
+		 fxObject[fxFieldName] = value;
+	     }
+	 });
+     }
+     
+     jsObject[jsFieldName] = fxObject[fxFieldName];
+     FXRuntime.observe(fxObject, fxFieldName, function(old, aNew) { jsObject[jsFieldName] = aNew; });
+     if (inverse) fxInverseBind(fxObject, fxFieldName, jsObject, jsFieldName);
+ }
+ 
+
 
 /*
  function fxSeq(array) {

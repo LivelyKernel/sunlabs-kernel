@@ -8,14 +8,15 @@ import java.lang.reflect.*;
 
 
 public class FXWrapFactory extends WrapFactory {
+    
+    public static FXWrapFactory instance = new FXWrapFactory();
 
     static class MemberInfo {
 	Map<String, Method> getters = new HashMap<String, Method>(); // could be shared based on type
 	Map<String, Method> setters = new HashMap<String, Method>(); // could be shared based on type
 	Map<String, Method> locations = new HashMap<String, Method>(); // could be shared based on type
-
-
 	Map<String, Function> methods = new HashMap<String, Function>(); // could be shared based on type
+
 	public MemberInfo(Class cl) {
 	    System.err.println("class " + cl);
 	    for (Method m : cl.getMethods()) {
@@ -178,16 +179,25 @@ public class FXWrapFactory extends WrapFactory {
 		    // FIXME this breaks referential equality, but maybe it's OK
 		    value = this.sequenceFromArray((NativeArray)value, start);
 		} else if (value instanceof Function) {
-		    
+		    final Function fun = (Function)value;
+		    final Scriptable scope = ScriptableObject.getTopLevelScope(start);
+		    // FIXME pick the right function?
 		    value = new com.sun.javafx.functions.Function0<Object>() {
 			public Object invoke() {
-			    System.err.println("invoking function!!");
-			    return null;
+			    Context cx = Context.enter();
+			    cx.setWrapFactory(FXWrapFactory.instance);
+			    try {
+				fun.call(cx, scope, scope, new Object[0]);
+				return null;
+			    } finally {
+				Context.exit();
+			    }
 			}
 		    };
 		    boolean result = this.doSet(name, value);
 		    if (!result) {
-			System.err.println("doSet failed on " + name);
+			System.err.println("doSet failed on " + name + " value " + value + " " + this.javaObject);
+			System.err.println("setters " + this.memberInfo.setters.keySet());
 			Method locator = this.memberInfo.locations.get(name);
 			if (locator != null) {
 			    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
@@ -282,10 +292,7 @@ public class FXWrapFactory extends WrapFactory {
 			// does this agree with the deferred initialization semantics of FX?
 		    }
 		}
-		
-
 		// FIXME the following should be run to allow full initialize$() but does not work like this.
-		
 		object.complete$();
 
 		return wrapper;
@@ -329,9 +336,14 @@ public class FXWrapFactory extends WrapFactory {
 			final Scriptable scope = ScriptableObject.getTopLevelScope(object);
 			ChangeListener<Object> listener = new ChangeListener<Object>() {
 			    public void onChange(Object oldValue, Object newValue) {
-				Context cx = Context.getCurrentContext();
-				callback.call(cx, scope, scope, new Object[] { Context.javaToJS(oldValue, scope), 
-									       Context.javaToJS(newValue, scope) });
+				Context cx = Context.enter();
+				cx.setWrapFactory(FXWrapFactory.instance);
+				try {
+				    callback.call(cx, scope, scope, new Object[] { Context.javaToJS(oldValue, scope), 
+										   Context.javaToJS(newValue, scope) });
+				} finally {
+				    Context.exit();
+				}
 			    }
 			};
 			variable.addChangeListener(listener);
@@ -341,9 +353,14 @@ public class FXWrapFactory extends WrapFactory {
 			final Scriptable scope = ScriptableObject.getTopLevelScope(object);
 			ChangeListener<Float> listener = new ChangeListener<Float>() {
 			    public void onChange(Float oldValue, Float newValue) {
-				Context cx = Context.getCurrentContext();
-				callback.call(cx, scope, scope, new Object[] { Context.javaToJS(oldValue, scope), 
-									       Context.javaToJS(newValue, scope) });
+				Context cx = Context.enter();
+				cx.setWrapFactory(FXWrapFactory.instance);
+				try {
+				    callback.call(cx, scope, scope, new Object[] { Context.javaToJS(oldValue, scope), 
+										   Context.javaToJS(newValue, scope) });
+				} finally {
+				    Context.exit();
+				}
 			    }
 			};
 			variable.addChangeListener(listener);
@@ -426,6 +443,8 @@ public class FXWrapFactory extends WrapFactory {
 	    public static FXConstructor Scene = new FXConstructor("javafx.scene.Scene");
 	    public static class control {
 		public static FXConstructor Button = new FXConstructor("javafx.scene.control.Button");
+		public static FXConstructor Slider = new FXConstructor("javafx.scene.control.Slider");
+		
 	    }
 	    
 	    public static class shape {
