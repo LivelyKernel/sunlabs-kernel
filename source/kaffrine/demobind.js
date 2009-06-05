@@ -27,13 +27,6 @@ var javafx = Packages.FXWrapFactory.javafx;
 //FXRuntime.observe(t1, 'field', function(old, anew) { print('change: ' + [old,anew]); } )
 //FXRuntime.observe(r, 'width', function(old, anew) { print('r changed: ' + [old,anew]); } )
 //FXRuntime.observe(r, 'width', function(old, aNew) { anObject.aField = aNew; });
-
-
-var r = javafx.scene.shape.Rectangle({x: 10, width: 10, height: 10});
-var slider = { position: 0 };
-    
-fxBind(r, 'x', slider, 'position', true); 
-
 /*
 Object.defineProperty(slider, 'position', {
     bind: function() {
@@ -41,6 +34,25 @@ Object.defineProperty(slider, 'position', {
     }
 });
 */
+
+
+
+
+
+
+
+
+
+
+
+
+
+var r = javafx.scene.shape.Rectangle({x: 10, width: 10, height: 10});
+var slider = { position: 0 }; 
+    // var slider = { position: bind r.x with inverse }
+    // var slider = { position: bind(function() { return r.x }, true) }
+fxBind(r, 'x', slider, 'position', true); 
+
 
 
 

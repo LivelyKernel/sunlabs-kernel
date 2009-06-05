@@ -122,10 +122,11 @@ public class FXWrapFactory extends WrapFactory {
 	    return getter.invoke(this.javaObject);
 	}
 
-	Object doSet(String name, Object value) throws Exception {
+	boolean doSet(String name, Object value) throws Exception {
 	    Method setter = this.memberInfo.setters.get(name);
-	    if (setter == null) return Scriptable.NOT_FOUND; // FIXME
-	    return setter.invoke(this.javaObject, value);
+	    if (setter == null) return false;
+	    setter.invoke(this.javaObject, value);
+	    return true;
 	}
        
 	private static Sequence sequenceFromArray(NativeArray array, Scriptable scope) {
@@ -184,14 +185,18 @@ public class FXWrapFactory extends WrapFactory {
 			    return null;
 			}
 		    };
-		    Method locator = this.memberInfo.locations.get(name);
-		    if (locator != null) {
-			ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-			location.set(value);
-			System.err.println("retrieved stored value " + value);
-		    } else {
-			this.doSet(name, value);
-			System.err.println("XXno locator for " + name);
+		    boolean result = this.doSet(name, value);
+		    if (!result) {
+			System.err.println("doSet failed on " + name);
+			Method locator = this.memberInfo.locations.get(name);
+			if (locator != null) {
+			    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
+			    location.set(value);
+			    System.err.println("retrieved stored value " + value);
+			} else {
+			    
+			    System.err.println("XXno locator for " + name);
+			}
 		    }
 		    //System.err.println("SUCCESS " + this.doGet(name));
 		    return;
@@ -200,16 +205,25 @@ public class FXWrapFactory extends WrapFactory {
 		} else if (value instanceof Wrapper) {
 		    // FIXME is there a better way???
 		    value = ((Wrapper)value).unwrap();
+		    if (name.equals("color"))
+			System.err.println("value type " + value);
+		    /*
 		    if (value instanceof ObjectLocation) {
+			System.err.println("!!!! deref " + name); 
 			value = ((ObjectLocation)value).get();
 		    }
-		}
-		Method locator = this.memberInfo.locations.get(name);
-		if (locator != null) {
-		    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-		    location.set(value);
-		} else {
-		    this.doSet(name, value);
+		    */
+		} 
+		boolean result = this.doSet(name, value);
+		if (!result) {
+		    System.err.println("not public? " + name);
+		    Method locator = this.memberInfo.locations.get(name);
+		    if (locator != null) {
+			ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
+			location.set(value);
+		    } else {
+			System.err.println("locator not present " + name );
+		    }
 		}
 		return;
 	    } catch (Exception e) { 
@@ -255,8 +269,8 @@ public class FXWrapFactory extends WrapFactory {
 		FXObject object = (FXObject)clazz.getConstructor(boolean.class).newInstance(true);
 		
 		//FXObject object = (FXObject)clazz.newInstance();
-		object.initialize$();
-
+		object.addTriggers$();
+		object.applyDefaults$();
 		
 		Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
 		if (args.length > 1) throw new RuntimeException("too many args?");
@@ -269,10 +283,10 @@ public class FXWrapFactory extends WrapFactory {
 		    }
 		}
 		
-		//object.addTriggers$();
+
 		// FIXME the following should be run to allow full initialize$() but does not work like this.
-		//object.applyDefaults$();
-		//object.complete$();
+		
+		object.complete$();
 
 		return wrapper;
 	    } catch (Exception e) {
@@ -298,6 +312,9 @@ public class FXWrapFactory extends WrapFactory {
 	    super(scope, prototype);
 	}
 
+	public static boolean jsStaticFunction_isFXObject(Scriptable object) {
+	    return object instanceof ScriptableFXObject; // or sequence?
+	}
 
 
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
@@ -417,6 +434,9 @@ public class FXWrapFactory extends WrapFactory {
 	    }
 	    public static class paint {
 		public static FXConstructor Color = new FXConstructor("javafx.scene.paint.Color");
+		public static FXConstructor LinearGradient = new FXConstructor("javafx.scene.paint.LinearGradient");
+		public static FXConstructor Stop = new FXConstructor("javafx.scene.paint.Stop");
+
 	    }
 	}
 	public static class stage {
@@ -447,8 +467,9 @@ public class FXWrapFactory extends WrapFactory {
 		return new ScriptableFXObject(scope, obj, type);
 	    } else if (SequenceVariable.class.isAssignableFrom(type)) {
 		//System.err.println("FX wrapping sequence " + type);
-		ScriptableSequence seq = new ScriptableSequence(scope, ScriptableObject.getClassPrototype(scope, 
-													  ScriptableSequence.JS_NAME));
+		ScriptableSequence seq = 
+		    new ScriptableSequence(scope, ScriptableObject.getClassPrototype(scope, 
+										     ScriptableSequence.JS_NAME));
 		seq.variable = (SequenceVariable)obj;
 		return super.wrap(cx, scope, seq, staticType);
 	    }

@@ -30,7 +30,16 @@ function test() {
 			    x: 100, y: 35,
 			    width: 150, height: 150,
 			    arcWidth: 15, arcHeight: 15,
-			    fill: Color.GREEN
+			    fill: javafx.scene.paint.LinearGradient({
+				startX: 0.0, 
+				startY: 0.0, 
+				endX: 1.0, 
+				endY: 0.0,
+				stops: [
+				    javafx.scene.paint.Stop({offset: 0.0, color: Color.BLACK}),
+				    javafx.scene.paint.Stop({offset: 1.0, color: Color.RED})
+				]
+			    })
 			})
 		    ]
 		}),
@@ -40,6 +49,11 @@ function test() {
 	    ]
 	})
     });
+
+    aStop = javafx.scene.paint.Stop({offset: 0.0, color: Color.BLACK});
+    print('we got ' + [aStop.offset, aStop.color] + "," + Color.RED);
+    
+    
     ///print('rect is ' + rect);
     print('stage is ' + stage);
     var gr = stage.scene.content[0];
