@@ -27,10 +27,10 @@ var FxNode = fx.dom.Node.extend({
     
     id: {
 	getter: function() {
-	    return this.innerNode.id;
+	    return this.outerNode.id;
 	},
 	setter: function(value) {
-	    this.innerNode.id = String(value);
+	    this.outerNode.id = String(value);
 	}
     },
 
@@ -42,8 +42,8 @@ var FxNode = fx.dom.Node.extend({
 	    return node;
 	}
     }
-
-
+    
+    
 });
     
 

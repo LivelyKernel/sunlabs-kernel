@@ -252,8 +252,10 @@ public class FXWrapFactory extends WrapFactory {
 	
 	public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
 	    try {
-		FXObject object = (FXObject)clazz.newInstance();
-		//object.initialize$();
+		FXObject object = (FXObject)clazz.getConstructor(boolean.class).newInstance(true);
+		
+		//FXObject object = (FXObject)clazz.newInstance();
+		object.initialize$();
 
 		
 		Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
@@ -267,10 +269,10 @@ public class FXWrapFactory extends WrapFactory {
 		    }
 		}
 		
-		object.addTriggers$();
+		//object.addTriggers$();
 		// FIXME the following should be run to allow full initialize$() but does not work like this.
 		//object.applyDefaults$();
-		object.complete$();
+		//object.complete$();
 
 		return wrapper;
 	    } catch (Exception e) {

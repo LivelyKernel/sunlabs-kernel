@@ -34,6 +34,14 @@ var slider = { position: 0 };
     
 fxBind(r, 'x', slider, 'position', true); 
 
+/*
+Object.defineProperty(slider, 'position', {
+    bind: function() {
+	return r.x + 10;
+    }
+});
+*/
+
 
 
 
