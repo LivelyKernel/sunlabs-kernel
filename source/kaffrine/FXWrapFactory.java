@@ -16,22 +16,30 @@ public class FXWrapFactory extends WrapFactory {
 	Map<String, Method> setters = new HashMap<String, Method>(); // could be shared based on type
 	Map<String, Method> locations = new HashMap<String, Method>(); // could be shared based on type
 	Map<String, Function> methods = new HashMap<String, Function>(); // could be shared based on type
+	String[] memberNames;
 
 	public MemberInfo(Class cl) {
-	    System.err.println("class " + cl);
+	    //System.err.println("class " + cl);
+	    Set<String> members = new HashSet<String>();
 	    for (Method m : cl.getMethods()) {
 		String name = m.getName();
 		if (name.startsWith("get$")) {
+		    members.add(name);
 		    this.getters.put(name.substring(4), m);
 		} else if (name.startsWith("set$")) {
 		    this.setters.put(name.substring(4), m);
 		} else if (name.startsWith("loc$")) {
+		    members.add(name);
 		    this.locations.put(name.substring(4), m);
 		} else {
+		    members.add(name);
 		    this.methods.put(name, new NativeJavaMethod(m, name));
 		}
 	    }
+	    this.memberNames = members.toArray(new String[members.size()]);
 	}
+
+	
     }
 
     static Map<Class, MemberInfo> memberInfos = new HashMap<Class, MemberInfo>();
@@ -105,11 +113,12 @@ public class FXWrapFactory extends WrapFactory {
 	}
 
 	public boolean has(String name, Scriptable start) {
-	    return this.memberInfo.getters.containsKey(name);
+	    return this.memberInfo.getters.containsKey(name) || this.memberInfo.methods.containsKey(name);
 	}
 
 	public Object[] getIds() {
-	    return this.memberInfo.getters.keySet().toArray();
+	    // FIXME efficiency
+	    return this.memberInfo.memberNames;
 	}
 
 	public String getClassName() {
@@ -131,12 +140,19 @@ public class FXWrapFactory extends WrapFactory {
        
 	private static Sequence sequenceFromArray(NativeArray array, Scriptable scope) {
 	    int length = (int)array.getLength();
-	    FXObject[] fxarray = new FXObject[length];
-	    // FIXME this assumes array of Wrappers!
+	    Object[] fxarray = new Object[length];
+	    TypeInfo type = TypeInfo.Object; // unless otherwise
 	    for (int i = 0; i < length; i++) {
-		fxarray[i] = (FXObject)((Wrapper)array.get(i, scope)).unwrap();
+		Object element = array.get(i, scope);
+		if (element instanceof Number) {
+		    // FIXME this guesses the type based on a single non-wrapper
+		    type = TypeInfo.Float;
+		} else if (element instanceof Wrapper) {
+		    element = ((Wrapper)element).unwrap();
+		}
+		fxarray[i] = element;
 	    }
-	    return Sequences.make(TypeInfo.Object, fxarray, length);
+	    return Sequences.make(type, fxarray, length);
 	}
 	
 	public Object get(String name, Scriptable start) {
@@ -420,9 +436,9 @@ public class FXWrapFactory extends WrapFactory {
 	public Object getDefaultValue() {
 	    return this.toString();
 	}
-
+	
 	public Object get(int index, Scriptable start) {
-	    return variable.get().get(index);
+	    return Context.javaToJS(variable.get().get(index), start);
 	}
 
 	public void put(int index, Scriptable start, Object value) {
@@ -446,8 +462,18 @@ public class FXWrapFactory extends WrapFactory {
 				  Sequences.make(TypeInfo.Object, Context.jsToJava(value, Object.class)));
 	}
 	
-    }
+	public Object jsFunction_remove(int index) {
+	    Object value = variable.get(index);
+	    variable.deleteSlice(index, index + 1);
+	    return value;
+	}
 
+	public int jsFunction_indexOf(Object value) {
+	    return Sequences.<Object>indexOf(variable.get(), value);
+	}
+
+    }
+	
     // this could be replaced with a hacked NativeJavaPackage
     public static class javafx {
 	
@@ -463,14 +489,20 @@ public class FXWrapFactory extends WrapFactory {
 	    public static class shape {
 		public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
 		public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
+		public static FXConstructor Polygon = new FXConstructor("javafx.scene.shape.Polygon");
 	    }
 	    public static class paint {
 		public static FXConstructor Color = new FXConstructor("javafx.scene.paint.Color");
 		public static FXConstructor LinearGradient = new FXConstructor("javafx.scene.paint.LinearGradient");
 		public static FXConstructor Stop = new FXConstructor("javafx.scene.paint.Stop");
-		
 	    }
+
 	}
+
+	public static class geometry {
+	    public static FXConstructor Point2D = new FXConstructor("javafx.geometry.Point2D");
+	}
+
 	public static class stage {
 	    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");
 	}

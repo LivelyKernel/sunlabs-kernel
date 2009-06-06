@@ -143,13 +143,12 @@ fx.module('dom', fx.lang.Object, function(Base) {
 	removeChild: {
 	    value: function(oldChild) {
 		if (!this.hasOwnProperty('.childNodes')) return null;
-		var index = Packages.com.sun.javafx.runtime.sequence.Sequences.indexOf(this.childNodes['.nodes'], oldChild);
-		//var index = this.childNodes['.nodes'].indexOf(oldChild);
+		var index = this.childNodes['.nodes'].indexOf(oldChild);
 		if (index != -1) {
 		    oldChild['.parentNode'] = null;
 		    // FIXME
-		    this.childNodes['.nodes'].splice(index, 1);
-		    
+		    //this.childNodes['.nodes'].splice(index, 1);
+		    this.childNodes['.nodes'].remove(index);
 		}
 		return oldChild;
 	    }
