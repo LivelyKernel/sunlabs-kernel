@@ -22,7 +22,10 @@ function test() {
 			    x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN
 			}),
 			javafx.scene.shape.Circle({
-			    centerX: 118, centerY:110, radius:83, fill: Color.WHITE, stroke: Color.RED
+			    centerX: 118, centerY:110, radius:83, fill: Color.WHITE, stroke: Color.RED,
+			    onMouseClicked: function(evt) {
+				print("clicked " + evt);
+			    }
 			}),
 			javafx.scene.shape.Rectangle({
 			    x: 100, y: 35,
@@ -72,12 +75,17 @@ function test() {
     var textBox = stage.scene.content[4];
     fxBind(textBox, 'text', appModel, 'label');
 
+
+
     
     button.action = function() { 
 	print("button says hi!"); 
 	if (appModel.position + 10 < appModel.max)
 	    appModel.position += 10;
     } 
+
+
+
 
     return stage;
 }
