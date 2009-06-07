@@ -94,6 +94,27 @@ function seq(array) { // not needed any more
  }
 
 
+
+function printStage() {
+    function printContent(seq, nesting) {
+	var prefix = "";
+	for (var i = 0; i < nesting; i++) {
+	    prefix += "   ";
+	}
+	
+	for (var i = 0; i < seq.length; i++) {
+	    var that = seq[i];
+	    print(prefix + seq[i]);
+	    if (that instanceof javafx.scene.Group) {
+		printContent(that.content, nesting + 1);
+	    }
+	}
+    }
+    printContent(stage.scene.content, 0);
+    
+}
+
+
 /*
 Object.defineProperty(Object.prototype, 'fxBind', {
     enumerable: false,
