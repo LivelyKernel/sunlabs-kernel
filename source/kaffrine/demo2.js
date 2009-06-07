@@ -27,6 +27,7 @@ var EventAdapter = {
 
 var fxRegistry = new java.util.WeakHashMap();
 
+
 var FxNode = fx.dom.Node.extend({
     constructor: {
 	value: function(inherited, fxNode) {
@@ -141,10 +142,11 @@ var Hand = FxNode.extend({
 	    //load.effect = null;
 	    // FIXME: do the whole transform thing?
 	    // FIXME why inner here?
+	    print('load is ' + load.innerNode.boundsInParent);
 	    var pos = target.outerNode.sceneToLocal(javafx.geometry.Point2D({x: eventPoint.x, y: eventPoint.y}));
 	    //print('pos is ' + [pos.x, pos.y] + ' on evt ' + [eventPoint.x, eventPoint.y]);
-	    load.translateX += pos.x;
-	    load.translateY += pos.y;
+	    load.outerNode.translateX += pos.x;
+	    load.outerNode.translateY += pos.y;
 	    target.appendChild(load);
 	}
     }
@@ -174,7 +176,7 @@ var world = new FxNode(javafx.scene.Group({
 	} else {
 	    print('picked up ' + evt.source);
 	    var domNode = fxRegistry.get(evt.source);
-	    if (domNode) hand.pick(domNode, {x: evt.sceneX, y: evt.sceneY});
+	    if (domNode) hand.pick(domNode, {x: evt.sceneX, y: evt.sceneY}); else print('nope');
 	}
 	    
     }

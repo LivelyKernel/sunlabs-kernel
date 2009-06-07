@@ -202,7 +202,8 @@ public class FXWrapFactory extends WrapFactory {
 			System.err.println("didnt find setter for " + name);
 			return;
 		    }
-		    if (setter.getReturnType() == com.sun.javafx.functions.Function0.class) {
+		    Class returnType = setter.getReturnType();
+		    if (returnType == com.sun.javafx.functions.Function0.class) {
 			// FIXME pick the right function?
 			value = new com.sun.javafx.functions.Function0<Object>() {
 			    public Object invoke() {
@@ -216,7 +217,7 @@ public class FXWrapFactory extends WrapFactory {
 				}
 			    }
 			};
-		    } else if (setter.getReturnType() == com.sun.javafx.functions.Function1.class) {
+		    } else if (returnType == com.sun.javafx.functions.Function1.class) {
 			value = new com.sun.javafx.functions.Function1<Object, Object>() {
 			    public Object invoke(Object arg1) {
 				Context cx = Context.enter();
@@ -229,7 +230,8 @@ public class FXWrapFactory extends WrapFactory {
 				}
 			    }
 			};
-		    }
+		    } // FIXME do that for every type??
+
 		    
 		    boolean result = this.doSet(name, value);
 		    if (!result) {
@@ -408,8 +410,6 @@ public class FXWrapFactory extends WrapFactory {
 	}
 	
     }
-
-    
 
 
     public static class ScriptableSequence extends ScriptableObject {
