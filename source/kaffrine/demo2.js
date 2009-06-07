@@ -15,17 +15,7 @@ print('javafx ' + javafx.scene.shape.Rectangle);
 var Color =  javafx.scene.paint.Color;
 
 
-var EventAdapter = {
-    onMouseMoved: function(evt)  {
-    },
-    onMousePressed: function(evt) {
-	print("click on " + evt.source);
-    },
-    onMouseReleased: function(evt) {
-    }
-};
-
-var fxRegistry = new java.util.WeakHashMap();
+var fxRegistry = new java.util.WeakHashMap(); // map f3 nodes to js nodes
 var debugCount = 0;
 
 var FxNode = fx.dom.Node.extend({
@@ -36,9 +26,6 @@ var FxNode = fx.dom.Node.extend({
 	    
 	    this.outerNode = javafx.scene.Group({ 
 		content: fxNode !== undefined ? [fxNode] : [],
-		//onMouseMoved: EventAdapter.onMouseMoved,
-		//onMousePressed: EventAdapter.onMousePressed,
-		//onMouseReleased: EventAdapter.onMouseReleased
 	    });
 	    this.innerNode = fxNode;
 	    fxRegistry.put(fxNode, this);
@@ -58,6 +45,14 @@ var FxNode = fx.dom.Node.extend({
 	},
 	setter: function(value) {
 	    this.outerNode.id = String(value);
+	}
+    },
+
+    translateBy: {
+	value: function(x, y) {
+	    var outer = this.outerNode;
+	    outer.translateX += x;
+	    outer.translateY += y;
 	}
     },
 
@@ -121,8 +116,7 @@ var Hand = FxNode.extend({
 	    that = node.outerNode;
 	    var pos = node.outerNode.sceneToLocal(eventPoint);
 	    print(pos);
-	    node.outerNode.translateX -= pos.x;
-	    node.outerNode.translateY -= pos.y;
+	    node.translateBy(-pos.x, -pos.y);
 	    //that = node;
 	    // FIXME get the dom node from the node
 	    this.appendChild(node);
@@ -141,8 +135,7 @@ var Hand = FxNode.extend({
 	    print('dropping load ' + load + ' on target ' + target);
 	    var pos = target.outerNode.sceneToLocal(eventPoint);
 	    //print('pos is ' + [pos.x, pos.y] + ' on evt ' + [eventPoint.x, eventPoint.y]);
-	    load.outerNode.translateX += pos.x;
-	    load.outerNode.translateY += pos.y;
+	    load.translateBy(pos.x, pos.y);
 	    target.appendChild(load);
 	}
     }
