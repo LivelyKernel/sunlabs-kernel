@@ -174,7 +174,7 @@ public class FXWrapFactory extends WrapFactory {
 		    //System.err.println("GET " + name);
 		    return Context.javaToJS(value, start); // FIXME start?
 		} else {
-		    System.err.println("trying method " + name);
+		    //System.err.println("trying method " + name);
 		    return Context.javaToJS(this.memberInfo.methods.get(name), start);
 		}
 	    } catch (Exception e) { 
@@ -293,6 +293,7 @@ public class FXWrapFactory extends WrapFactory {
 	}
 
 	public Object get(String name, Scriptable start) {
+
 	    try {
 		Field field = clazz.getField("$"+ name);
 		return Context.javaToJS(field.get(clazz), start);
@@ -301,6 +302,16 @@ public class FXWrapFactory extends WrapFactory {
 	    }
 	    return super.get(name, start);
 	}
+
+	public boolean hasInstance(Scriptable instance) {
+	    if (instance instanceof ScriptableFXObject) {
+		Object obj = ((ScriptableFXObject)instance).unwrap();
+		if (obj == null) return true;
+		else return obj.getClass().isAssignableFrom(this.clazz);
+	    }
+	    return false;
+	}
+
 
 	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
 			   Object[] args) {
