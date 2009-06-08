@@ -90,9 +90,8 @@ var Hand = FxNode.extend({
 	    var cursor = javafx.scene.shape.Polygon({points: [0, 0, 11, 6, 6, 11, 0, 0], translateX: 3, translateY: 3, strokeWidth:1, fill: Color.BLUE, id: 'hand'});
 	    inherited(cursor);
 	    //this.cursor = new fx.scene.Polygon({
-	    //this.grabEffect = new Packages.com.sun.scenario.effect.DropShadow();
-	    //this.grabEffect.setOffsetX(4);
-	    //this.grabEffect.setOffsetY(2);
+	    this.grabEffect = new javafx.scene.effect.DropShadow({offsetX: 4, offsetY: 2});
+	    
 	}
     },
     
@@ -121,7 +120,8 @@ var Hand = FxNode.extend({
 	    this.appendChild(node);
 	    print('load is ' + node);
 	    //this.insertBefore(node, this.cursor);
-	    //node.effect = this.grabEffect; // what if it already had some effect?
+	    
+	    node.innerNode.effect = this.grabEffect; // what if it already had some effect?
 	}
     },
     
@@ -129,7 +129,7 @@ var Hand = FxNode.extend({
 	value: function(target, eventPoint) {
 	    var load = this.load();
 	    if (target === load) throw new Error();
-	    //load.effect = null;
+	    load.innerNode.effect = null;
 	    // FIXME: do the whole transform thing?
 	    print('dropping load ' + load + ' on target ' + target);
 	    // FIXME use a real transform on load?
@@ -179,6 +179,9 @@ var stage = javafx.stage.Stage({
 		    if (hand.load()) { 
 			//var receiver = world.getIntersectionList(p)[0];
 			var receiver = world;
+			print('drop: ' + [evt.source, evt.node]);
+			if (evt.node instanceof javafx.scene.Group) 
+			    print('hell, ' + evt.node.content[0].content[0]);
 			hand.dropOn(receiver, point); // FIXME choose the right drop target
 		    } else {
 			//print('pick up source ' + evt.source + "," + evt.source.boundsInParent);

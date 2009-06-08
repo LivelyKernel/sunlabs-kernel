@@ -502,6 +502,11 @@ public class FXWrapFactory extends WrapFactory {
 		public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
 		public static FXConstructor Polygon = new FXConstructor("javafx.scene.shape.Polygon");
 	    }
+	    
+	    public static class effect {
+		public static FXConstructor DropShadow = new FXConstructor("javafx.scene.effect.DropShadow");
+	    }
+
 	    public static class paint {
 		public static FXConstructor Color = new FXConstructor("javafx.scene.paint.Color");
 		public static FXConstructor LinearGradient = new FXConstructor("javafx.scene.paint.LinearGradient");
