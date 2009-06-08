@@ -483,6 +483,10 @@ public class FXWrapFactory extends WrapFactory {
 	    return Sequences.<Object>indexOf(variable.get(), value);
 	}
 
+	public String jsFunction_toString() {
+	    return variable.get().toString();
+	}
+
     }
 	
     // this could be replaced with a hacked NativeJavaPackage

@@ -28,7 +28,7 @@ fx.module('dom', fx.lang.Object, function(Base) {
 	toString: {
 	    override: true,
 	    value: function() {
-		return String(this['.nodes']);
+		return "NodeList(" + this['.nodes'] + ")";
 	    }
 	},
 	

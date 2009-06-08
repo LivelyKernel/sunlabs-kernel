@@ -35,7 +35,7 @@ var FxNode = fx.dom.Node.extend({
     toString: {
 	override: true,
 	value: function() {
-	    return this.innerNode.toString();
+	    return "FxNode(" + this.innerNode.toString() + ")";
 	}
     },
     
@@ -55,6 +55,20 @@ var FxNode = fx.dom.Node.extend({
 	    outer.translateY += y;
 	}
     },
+
+    containingNode: {
+	value: function(pt) {
+	    for (var i = 0; i < this.childNodes.length; i++) {
+		var n = this.childNodes.item(i);
+		if (!n) print('what, null? ' + this.childNodes + "," + n + ', i=' + i);
+		var answer =  n.containingNode(pt);
+		if (answer) return answer;
+	    }
+	    if (this.innerNode.contains(pt.x, pt.y)) return this;
+	    else return false;
+	}
+    },
+
 
     appendChild: {
 	override: true,
@@ -91,7 +105,6 @@ var Hand = FxNode.extend({
 	    inherited(cursor);
 	    //this.cursor = new fx.scene.Polygon({
 	    this.grabEffect = new javafx.scene.effect.DropShadow({offsetX: 4, offsetY: 2});
-	    
 	}
     },
     
@@ -112,7 +125,7 @@ var Hand = FxNode.extend({
 		editHalo = null;
 	    }
             */
-	    that = node.outerNode;
+	    that = node;
 	    // FIXME use a real transform
 	    node.translateBy(-eventPoint.x, -eventPoint.y);
 	    //that = node;
@@ -153,6 +166,11 @@ var n = new FxNode(javafx.scene.shape.Rectangle({
 n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
     x: 145, y:135, width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.BLUE, stroke: Color.BLACK
 })));
+
+n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
+    x: 40, y:135, width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.RED, stroke: Color.BLACK
+})));
+
     
 print('OK ' + n);
 
@@ -178,10 +196,8 @@ var stage = javafx.stage.Stage({
 		    var point = javafx.geometry.Point2D({x: evt.sceneX, y: evt.sceneY});
 		    if (hand.load()) { 
 			//var receiver = world.getIntersectionList(p)[0];
-			var receiver = world;
+			var receiver = world.containingNode(point);
 			print('drop: ' + [evt.source, evt.node]);
-			if (evt.node instanceof javafx.scene.Group) 
-			    print('hell, ' + evt.node.content[0].content[0]);
 			hand.dropOn(receiver, point); // FIXME choose the right drop target
 		    } else {
 			//print('pick up source ' + evt.source + "," + evt.source.boundsInParent);
