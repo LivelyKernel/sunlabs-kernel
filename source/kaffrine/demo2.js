@@ -114,9 +114,8 @@ var Hand = FxNode.extend({
 	    }
             */
 	    that = node.outerNode;
-	    var pos = node.outerNode.sceneToLocal(eventPoint);
-	    print(pos);
-	    node.translateBy(-pos.x, -pos.y);
+	    // FIXME use a real transform
+	    node.translateBy(-eventPoint.x, -eventPoint.y);
 	    //that = node;
 	    // FIXME get the dom node from the node
 	    this.appendChild(node);
@@ -133,9 +132,8 @@ var Hand = FxNode.extend({
 	    //load.effect = null;
 	    // FIXME: do the whole transform thing?
 	    print('dropping load ' + load + ' on target ' + target);
-	    var pos = target.outerNode.sceneToLocal(eventPoint);
-	    //print('pos is ' + [pos.x, pos.y] + ' on evt ' + [eventPoint.x, eventPoint.y]);
-	    load.translateBy(pos.x, pos.y);
+	    // FIXME use a real transform on load?
+	    load.translateBy(eventPoint.x, eventPoint.y);
 	    target.appendChild(load);
 	}
     }
@@ -144,8 +142,10 @@ var Hand = FxNode.extend({
 
 var hand = new Hand();
 
-var world = new FxNode(javafx.scene.shape.Rectangle({width: 500, height: 500, fill: Color.WHITE, stroke: Color.BLACK, id: 'background'}));
-
+var world = new FxNode(javafx.scene.shape.Rectangle({width: 500, height: 500, fill: 
+						     Color.WHITE, stroke: Color.BLACK, id: 'background'}));
+						     
+						     
 var n = new FxNode(javafx.scene.shape.Rectangle({
     x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
 }));
@@ -168,7 +168,6 @@ var stage = javafx.stage.Stage({
 	    javafx.scene.Group({
 		content: [ world.outerNode, hand.outerNode],
 		onMouseMoved: function(evt) {
-		    //print('evt ' + evt);
 		    hand.outerNode.translateX = evt.sceneX;
 		    hand.outerNode.translateY = evt.sceneY;
 		},
