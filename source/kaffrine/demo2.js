@@ -19,8 +19,7 @@ var FxNode = fx.dom.Node.extend({
     constructor: {
 	value: function(inherited, fxNode) {
 	    inherited();
-	    if (fxNode && !fxNode.id) fxNode.id = String(debugCount++);
-	    
+	    if (fxNode && !fxNode.id) fxNode.id = String("node_" + debugCount++);
 	    this.outerNode = javafx.scene.Group({ 
 		content: fxNode !== undefined ? [fxNode] : [],
 	    });
@@ -50,6 +49,24 @@ var FxNode = fx.dom.Node.extend({
 	    var outer = this.outerNode;
 	    outer.translateX += x;
 	    outer.translateY += y;
+	}
+    },
+
+    translateX: {
+	getter: function() {
+	    return this.outerNode.translateX;
+	},
+	setter: function(value) {
+	    this.outerNode.translateX = value;
+	}
+    },
+
+    translateY: {
+	getter: function() {
+	    return this.outerNode.translateY;
+	},
+	setter: function(value) {
+	    this.outerNode.translateY = value;
 	}
     },
 
@@ -109,10 +126,11 @@ var Hand = FxNode.extend({
     constructor: {
 	value: function(inherited) {
 	    //var cursor = Rectangle({width: 10, height: 10, translateX: 3, translateY: 3, fill: Color.BLACK});
-	    var cursor = javafx.scene.shape.Polygon({points: [0, 0, 11, 6, 6, 11, 0, 0], translateX: 3, translateY: 3, strokeWidth:1, fill: Color.BLUE, id: 'hand'});
-	    inherited(cursor);
+	    inherited(javafx.scene.shape.Polygon({points: [0, 0, 11, 6, 6, 11, 0, 0], 
+						  translateX: 3, translateY: 3, strokeWidth:1, fill: Color.BLUE, id: 'hand'}));
+
 	    //this.cursor = new fx.scene.Polygon({
-	    this.grabEffect = new javafx.scene.effect.DropShadow({offsetX: 4, offsetY: 2});
+	    this.grabEffect = javafx.scene.effect.DropShadow({offsetX: 4, offsetY: 2});
 	}
     },
     
@@ -162,8 +180,8 @@ var Hand = FxNode.extend({
 
 var hand = new Hand();
 
-var world = new FxNode(Rectangle({width: 500, height: 500, fill: 
-						     Color.LIGHTBLUE, stroke: Color.BLACK, id: 'background'}));
+var world = new FxNode(Rectangle({width: 500, height: 500, fill: Color.LIGHTBLUE, 
+    stroke: Color.BLACK, id: 'background'}));
 						     
 						     
 var n = new FxNode(Rectangle({
@@ -241,22 +259,28 @@ var stage = javafx.stage.Stage({
 			    domNode.parentNode.appendChild(editHalo);
 			    var r = 4;
 			    var topLeft =  editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    var topRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width, fill: c})));
-			    var topCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, fill: c})));
-			    var bottomLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateY: box.height, fill: c})));
-			    var centerLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateY: box.height/2, fill: c})));
+			    var topRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    topRight.moveTo(box.width, 0);
+			    var topCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    topCenter.moveTo(box.width/2, 0);
+			    var bottomLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    bottomLeft.moveTo(0, box.height);
+			    var centerLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, 
+				translateY: box.height/2, fill: c})));
 			    var bottomRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height, fill: c})));
-			    var bottomCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, translateY: box.height, fill: c})));
-			    var centerRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height/2, fill: c})));
+			    var bottomCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, 
+				translateX: box.width/2, translateY: box.height, fill: c})));
+			    var centerRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, 
+				translateX: box.width, translateY: box.height/2, fill: c})));
 			    
 			    editHalo.childNodes.forEach(function(n) {
 				n.noGrab = true;
 				n.outerNode.blocksMouse = true; // don't pass to the halo rectangle
 				// this will also prevent the world from tracking the mouse, so the HandMorph will lag slightly.
-				n.onMousePressed = function(ev) {
+				n.outerNode.onMousePressed = function(ev) {
 				    n.eventPoint = {x: ev.clientX, y: ev.clientY};
 				}
-				n.onMouseReleased = function(ev) {
+				n.outerNode.onMouseReleased = function(ev) {
 				    n.eventPoint = null;
 				}
 			    });
@@ -271,25 +295,24 @@ var stage = javafx.stage.Stage({
 			    
 			    // FIXME: only correct for topLeft
 			    [topLeft, bottomLeft, topRight, bottomRight].forEach(function(n) {
-				n.addEventListener("mousemove", {
-				    handleEvent: function(ev) {
-					var tgt = ev.target;
-					if (tgt.eventPoint) {
-					    var dx = (ev.clientX - tgt.eventPoint.x);
-					    var dy = (ev.clientY - tgt.eventPoint.y);
-					    editHalo.translateX += dx;
-					    if (edited.x !== undefined) edited.x += dx;
-					    editHalo.translateY += dy;
-					    if (edited.y !== undefined) edited.y += dy;
-					    editHalo.width -= dx;
-					    if (edited.width !== undefined) edited.width -= dx;
-					    editHalo.height -= dy;
-					    if (edited.height !== undefined) edited.height -= dy;
-					    recompute(editHalo);
-					    tgt.eventPoint = {x: tgt.eventPoint.x + dx, y: tgt.eventPoint.y + dy}
-					}
+				n.outerNode.onMouseMoved = function(ev) {
+				    print('caught');
+				    var tgt = fxRegistry.get(ev.source);
+				    if (tgt.eventPoint) {
+					var dx = (ev.clientX - tgt.eventPoint.x);
+					var dy = (ev.clientY - tgt.eventPoint.y);
+					editHalo.translateX += dx;
+					if (edited.x !== undefined) edited.x += dx;
+					editHalo.translateY += dy;
+					if (edited.y !== undefined) edited.y += dy;
+					editHalo.width -= dx;
+					if (edited.width !== undefined) edited.width -= dx;
+					editHalo.height -= dy;
+					if (edited.height !== undefined) edited.height -= dy;
+					recompute(editHalo);
+					tgt.eventPoint = {x: tgt.eventPoint.x + dx, y: tgt.eventPoint.y + dy}
 				    }
-				})
+				}
 			    });
 			} else {
 			    hand.pick(domNode, point); 
