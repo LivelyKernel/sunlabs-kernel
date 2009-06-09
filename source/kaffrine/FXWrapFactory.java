@@ -262,7 +262,7 @@ public class FXWrapFactory extends WrapFactory {
 		} 
 		boolean result = this.doSet(name, value);
 		if (!result) {
-		    System.err.println("not public? " + name);
+		    //System.err.println("not public? " + name);
 		    Method locator = this.memberInfo.locations.get(name);
 		    if (locator != null) {
 			ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
@@ -362,6 +362,7 @@ public class FXWrapFactory extends WrapFactory {
 	public static boolean jsStaticFunction_isFXObject(Scriptable object) {
 	    return object instanceof ScriptableFXObject; // or sequence?
 	}
+	
 
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
 	    if (object instanceof ScriptableFXObject) {
@@ -580,8 +581,7 @@ public class FXWrapFactory extends WrapFactory {
 		}
 		}*/
 	    if (newValue == null && createPkg) {
-		FXPackage pkg;
-		pkg = new FXPackage(className, classLoader);
+		FXPackage pkg = new FXPackage(className, classLoader);
 		ScriptRuntime.setObjectProtoAndParent(pkg, getParentScope());
 		newValue = pkg;
 	    }
@@ -640,9 +640,8 @@ public class FXWrapFactory extends WrapFactory {
 		return new ScriptableFXObject(scope, obj, type);
 	    } else if (SequenceVariable.class.isAssignableFrom(type)) {
 		//System.err.println("FX wrapping sequence " + type);
-		ScriptableSequence seq = new ScriptableSequence(scope, 
-								ScriptableObject.getClassPrototype(scope, 
-												   ScriptableSequence.JS_NAME));
+		Scriptable proto = ScriptableObject.getClassPrototype(scope, ScriptableSequence.JS_NAME);
+		ScriptableSequence seq = new ScriptableSequence(scope, proto);
 		seq.variable = (SequenceVariable)obj;
 		return super.wrap(cx, scope, seq, staticType);
 	    }

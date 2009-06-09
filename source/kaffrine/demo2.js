@@ -1,19 +1,15 @@
 load('util.js');
-
-
 load('rhino-compat.js');
 load('lang.js');
-
 load('dom.js');
 
-print('hello');
-
-
 var javafx = Packages.FXWrapFactory.FX;
-print('javafx ' + javafx.scene.shape.Rectangle);
+print('javafx ' + javafx.scene.shape.Rectangle); // << somehow this is necessary?
 	
 var Color =  javafx.scene.paint.Color;
-
+var Rectangle = javafx.scene.shape.Rectangle;
+var Ellipse = javafx.scene.shape.Ellipse;
+//print('Rectangle ' + Rectangle);
 
 var fxRegistry = new java.util.WeakHashMap(); // map f3 nodes to js nodes
 var debugCount = 0;
@@ -103,7 +99,7 @@ var FxNode = fx.dom.Node.extend({
     
 
 function rect(x, y) {
-    return javafx.scene.shape.Rectangle({
+    return Rectangle({
 	x: x, y: y, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
     })
 }
@@ -112,7 +108,7 @@ function rect(x, y) {
 var Hand = FxNode.extend({
     constructor: {
 	value: function(inherited) {
-	    //var cursor = javafx.scene.shape.Rectangle({width: 10, height: 10, translateX: 3, translateY: 3, fill: Color.BLACK});
+	    //var cursor = Rectangle({width: 10, height: 10, translateX: 3, translateY: 3, fill: Color.BLACK});
 	    var cursor = javafx.scene.shape.Polygon({points: [0, 0, 11, 6, 6, 11, 0, 0], translateX: 3, translateY: 3, strokeWidth:1, fill: Color.BLUE, id: 'hand'});
 	    inherited(cursor);
 	    //this.cursor = new fx.scene.Polygon({
@@ -166,23 +162,23 @@ var Hand = FxNode.extend({
 
 var hand = new Hand();
 
-var world = new FxNode(javafx.scene.shape.Rectangle({width: 500, height: 500, fill: 
+var world = new FxNode(Rectangle({width: 500, height: 500, fill: 
 						     Color.LIGHTBLUE, stroke: Color.BLACK, id: 'background'}));
 						     
 						     
-var n = new FxNode(javafx.scene.shape.Rectangle({
+var n = new FxNode(Rectangle({
     width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK, id: 'green'
 }));
     
 n.translateBy(45, 35);
 
-var n2 = n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
+var n2 = n.appendChild(new FxNode(Rectangle({
     width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.BLUE, stroke: Color.BLACK, id: 'blue'
 })));
 
 n2.translateBy(-5, 100);
 
-var n3 = n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
+var n3 = n.appendChild(new FxNode(Rectangle({
     width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.RED, stroke: Color.BLACK, id: 'red'
 })));
 
@@ -233,7 +229,7 @@ var stage = javafx.stage.Stage({
 			    print('box is ' + box);
 			    // translateX: bind(ev.target, 'boundsInParent.x')
 			    var c = Color.LIGHTGRAY;
-			    editHalo = new FxNode(javafx.scene.shape.Rectangle({width: box.width, height: box.height, strokeWidth: 1, fill: null, stroke: c}));
+			    editHalo = new FxNode(Rectangle({width: box.width, height: box.height, strokeWidth: 1, fill: null, stroke: c}));
 			    editHalo.moveTo(box.minX, box.minY);
 			    editHalo.outerNode.onMousePressed = function(evt) {
 				if (editHalo) {
@@ -244,14 +240,14 @@ var stage = javafx.stage.Stage({
 			    editHalo.noGrab = true;
 			    domNode.parentNode.appendChild(editHalo);
 			    var r = 4;
-			    var topLeft =  editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    var topRight = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width, fill: c})));
-			    var topCenter = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, fill: c})));
-			    var bottomLeft = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateY: box.height, fill: c})));
-			    var centerLeft = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateY: box.height/2, fill: c})));
-			    var bottomRight = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height, fill: c})));
-			    var bottomCenter = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, translateY: box.height, fill: c})));
-			    var centerRight = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height/2, fill: c})));
+			    var topLeft =  editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    var topRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width, fill: c})));
+			    var topCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, fill: c})));
+			    var bottomLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateY: box.height, fill: c})));
+			    var centerLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateY: box.height/2, fill: c})));
+			    var bottomRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height, fill: c})));
+			    var bottomCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, translateY: box.height, fill: c})));
+			    var centerRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height/2, fill: c})));
 			    
 			    editHalo.childNodes.forEach(function(n) {
 				n.noGrab = true;
