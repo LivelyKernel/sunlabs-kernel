@@ -293,7 +293,8 @@ public class FXWrapFactory extends WrapFactory {
 	}
 
 	public Object get(String name, Scriptable start) {
-
+	    if (name.equals("prototype"))
+		return null; // can we return something meaningful?
 	    try {
 		Field field = clazz.getField("$"+ name);
 		return Context.javaToJS(field.get(clazz), start);
@@ -305,13 +306,10 @@ public class FXWrapFactory extends WrapFactory {
 
 	public boolean hasInstance(Scriptable instance) {
 	    if (instance instanceof ScriptableFXObject) {
-		Object obj = ((ScriptableFXObject)instance).unwrap();
-		if (obj == null) return true;
-		else return obj.getClass().isAssignableFrom(this.clazz);
+		return this.clazz.isInstance(((ScriptableFXObject)instance).unwrap());
 	    }
 	    return false;
 	}
-
 
 	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
 			   Object[] args) {
@@ -336,7 +334,6 @@ public class FXWrapFactory extends WrapFactory {
 			// does this agree with the deferred initialization semantics of FX?
 		    }
 		}
-		// FIXME the following should be run to allow full initialize$() but does not work like this.
 		object.complete$();
 		return wrapper;
 	    } catch (Exception e) {
@@ -413,8 +410,6 @@ public class FXWrapFactory extends WrapFactory {
 		} catch (Exception e) {
 		    throw new RuntimeException(e);
 		}
-
-		
 	    } else {
 		System.err.println("no!");
 	    }
@@ -466,11 +461,15 @@ public class FXWrapFactory extends WrapFactory {
 	    return variable.get().get(index);
 	}
 
+	public void jsFunction_insertAt(Object value, int index) {
+	    ObjectArraySequence seq = (ObjectArraySequence)variable.get();
+	    variable.replaceSlice(index, index, 
+				  Sequences.make(TypeInfo.Object, Context.jsToJava(value, Object.class)));
+	}
+
 	public void jsFunction_push(Object value) {
 	    ObjectArraySequence seq = (ObjectArraySequence)variable.get();
-	    int length = seq.size();
-	    variable.replaceSlice(length, length, 
-				  Sequences.make(TypeInfo.Object, Context.jsToJava(value, Object.class)));
+	    this.jsFunction_insertAt(value, seq.size());
 	}
 	
 	public Object jsFunction_remove(int index) {
@@ -501,7 +500,7 @@ public class FXWrapFactory extends WrapFactory {
 	}
 	
 	public boolean has(String id, Scriptable start) {
-	    return true;
+	    return true; 
 	}
 	
 	public boolean has(int index, Scriptable start) {
@@ -525,7 +524,7 @@ public class FXWrapFactory extends WrapFactory {
 	}
 	
 	// set up a name which is known to be a package so we don't
-    // need to look for a class by that name
+	// need to look for a class by that name
 	void forcePackage(String name, Scriptable scope) {
 	    FXPackage pkg;
 	    int end = name.indexOf('.');
@@ -641,9 +640,9 @@ public class FXWrapFactory extends WrapFactory {
 		return new ScriptableFXObject(scope, obj, type);
 	    } else if (SequenceVariable.class.isAssignableFrom(type)) {
 		//System.err.println("FX wrapping sequence " + type);
-		ScriptableSequence seq = 
-		    new ScriptableSequence(scope, ScriptableObject.getClassPrototype(scope, 
-										     ScriptableSequence.JS_NAME));
+		ScriptableSequence seq = new ScriptableSequence(scope, 
+								ScriptableObject.getClassPrototype(scope, 
+												   ScriptableSequence.JS_NAME));
 		seq.variable = (SequenceVariable)obj;
 		return super.wrap(cx, scope, seq, staticType);
 	    }
