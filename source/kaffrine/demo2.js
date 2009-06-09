@@ -56,6 +56,15 @@ var FxNode = fx.dom.Node.extend({
 	}
     },
 
+    moveTo: {
+	value: function(x, y) {
+	    var outer = this.outerNode;
+	    outer.translateX = x;
+	    outer.translateY = y;
+	}
+    },
+
+
     containingNode: {
 	value: function(pt) {
 	    for (var i = 0; i < this.childNodes.length; i++) {
@@ -64,7 +73,9 @@ var FxNode = fx.dom.Node.extend({
 		var answer =  n.containingNode(pt);
 		if (answer) return answer;
 	    }
-	    if (this.innerNode.contains(pt.x, pt.y)) return this;
+	    var scenePoint = javafx.geometry.Point2D({x: pt.x, y: pt.y});
+	    var localPoint = this.innerNode.sceneToLocal(scenePoint);
+	    if (this.innerNode.contains(localPoint.x, localPoint.y)) return this;
 	    else return false;
 	}
     },
@@ -116,7 +127,7 @@ var Hand = FxNode.extend({
     },
     
     pick: {
-	value: function(node, eventPoint) {
+	value: function(node, scenePoint) {
 	    // find the event point wrt/node's origin
 	    //if (node.noGrab) return;		
 	    /*
@@ -126,27 +137,27 @@ var Hand = FxNode.extend({
 	    }
             */
 	    that = node;
-	    // FIXME use a real transform
-	    node.translateBy(-eventPoint.x, -eventPoint.y);
-	    //that = node;
-	    // FIXME get the dom node from the node
+	    // FIXME use a real transform 
+	    var localPoint = node.outerNode.sceneToLocal(scenePoint); // where node sees the mouse pointer
+	    node.moveTo(-localPoint.x, -localPoint.y);
+	    //print(node + 'translate will be at ' + [node.translateX, node.translateY]);
+	    that = node;
+	    // node's local point corresponding to the 
 	    this.appendChild(node);
-	    print('load is ' + node);
 	    //this.insertBefore(node, this.cursor);
-	    
 	    node.innerNode.effect = this.grabEffect; // what if it already had some effect?
 	}
     },
     
     dropOn: {
-	value: function(target, eventPoint) {
+	value: function(target, scenePoint) {
 	    var load = this.load();
 	    if (target === load) throw new Error();
 	    load.innerNode.effect = null;
-	    // FIXME: do the whole transform thing?
-	    print('dropping load ' + load + ' on target ' + target);
+	    //print('dropping load ' + load + ' on target ' + target + ' at ' + [scenePoint.x, scenePoint.y]);
 	    // FIXME use a real transform on load?
-	    load.translateBy(eventPoint.x, eventPoint.y);
+	    var localPoint = target.outerNode.sceneToLocal(scenePoint); // where node sees the mouse pointer
+	    load.translateBy(localPoint.x, localPoint.y);
 	    target.appendChild(load);
 	}
     }
@@ -160,17 +171,22 @@ var world = new FxNode(javafx.scene.shape.Rectangle({width: 500, height: 500, fi
 						     
 						     
 var n = new FxNode(javafx.scene.shape.Rectangle({
-    x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
+    width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK, id: 'green'
 }));
     
-n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
-    x: 145, y:135, width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.BLUE, stroke: Color.BLACK
+n.translateBy(45, 35);
+
+var n2 = n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
+    width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.BLUE, stroke: Color.BLACK, id: 'blue'
 })));
 
-n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
-    x: 40, y:135, width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.RED, stroke: Color.BLACK
+n2.translateBy(-5, 100);
+
+var n3 = n.appendChild(new FxNode(javafx.scene.shape.Rectangle({
+    width:60, height:60, arcWidth: 15, arcHeight: 15, fill: Color.RED, stroke: Color.BLACK, id: 'red'
 })));
 
+n3.translateBy(100, 100);
     
 print('OK ' + n);
 
@@ -197,7 +213,6 @@ var stage = javafx.stage.Stage({
 		    if (hand.load()) { 
 			//var receiver = world.getIntersectionList(p)[0];
 			var receiver = world.containingNode(point);
-			print('drop: ' + [evt.source, evt.node]);
 			hand.dropOn(receiver, point); // FIXME choose the right drop target
 		    } else {
 			//print('pick up source ' + evt.source + "," + evt.source.boundsInParent);
