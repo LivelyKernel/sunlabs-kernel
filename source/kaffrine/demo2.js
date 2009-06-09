@@ -89,8 +89,14 @@ var FxNode = fx.dom.Node.extend({
 	    }
 	    var scenePoint = javafx.geometry.Point2D({x: pt.x, y: pt.y});
 	    var localPoint = this.innerNode.sceneToLocal(scenePoint);
-	    if (this.innerNode.contains(localPoint.x, localPoint.y)) return this;
-	    else return false;
+	    try {
+		if (this.innerNode.contains(localPoint.x, localPoint.y)) return this;
+		else return false;
+	    } catch (err) {
+		print('innerNode ' + this.innerNode + ' issue ' + err);
+		return false;
+	    }
+
 	}
     },
 
@@ -207,7 +213,43 @@ print('OK ' + n);
  
 world.appendChild(n);
 
-    
+ 
+function makeStarVertices(r, center, startAngle) {
+    function polar(r, theta) {
+	return { x: r*Math.cos(theta), y: r*Math.sin(theta)}
+    }
+    var vertices = [];
+    var nVerts = 10;
+    for (var i= 0; i <= nVerts; i++) {
+	var a = startAngle + (2*Math.PI/nVerts*i);
+	var p = polar(r, a);
+	if (i % 2 == 0) 
+	    p = { x: p.x *0.39, y: p.y * 0.39}; 
+	vertices.push(p.x + center.x);
+	vertices.push(p.y + center.y);
+    }
+    return vertices; 
+}
+
+var star = new FxNode(javafx.scene.shape.Polygon({
+     points: makeStarVertices(50, { x:0, y:0}, 0), 
+    strokeWidth: 1, fill: Color.YELLOW, stroke: Color.BLACK
+}));
+
+star.moveTo(300, 300); 
+world.appendChild(star);
+
+var button = new FxNode(javafx.scene.control.Button({ width: 80, height: 30, strong: true,
+    text: 'rotate star',
+    action: function() {
+	star.outerNode.rotate += 20;
+    }
+}));
+button.moveTo(260, 400);			
+			    
+							
+world.appendChild(button); 
+     
 var stage = javafx.stage.Stage({
     title: 'Declaring is easy!', 
     width: 400, 
