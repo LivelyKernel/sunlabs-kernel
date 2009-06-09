@@ -504,6 +504,7 @@ public class FXWrapFactory extends WrapFactory {
 	    public static class shape {
 		public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
 		public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
+		public static FXConstructor Ellipse = new FXConstructor("javafx.scene.shape.Ellipse");
 		public static FXConstructor Polygon = new FXConstructor("javafx.scene.shape.Polygon");
 	    }
 	    

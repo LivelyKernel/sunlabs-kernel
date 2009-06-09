@@ -17,6 +17,7 @@ var Color =  javafx.scene.paint.Color;
 
 var fxRegistry = new java.util.WeakHashMap(); // map f3 nodes to js nodes
 var debugCount = 0;
+var editHalo;
 
 var FxNode = fx.dom.Node.extend({
     constructor: {
@@ -130,12 +131,11 @@ var Hand = FxNode.extend({
 	value: function(node, scenePoint) {
 	    // find the event point wrt/node's origin
 	    //if (node.noGrab) return;		
-	    /*
 	    if (editHalo) {
 		editHalo.parentNode.removeChild(editHalo);
 		editHalo = null;
 	    }
-            */
+
 	    that = node;
 	    // FIXME use a real transform 
 	    var localPoint = node.outerNode.sceneToLocal(scenePoint); // where node sees the mouse pointer
@@ -167,7 +167,7 @@ var Hand = FxNode.extend({
 var hand = new Hand();
 
 var world = new FxNode(javafx.scene.shape.Rectangle({width: 500, height: 500, fill: 
-						     Color.WHITE, stroke: Color.BLACK, id: 'background'}));
+						     Color.LIGHTBLUE, stroke: Color.BLACK, id: 'background'}));
 						     
 						     
 var n = new FxNode(javafx.scene.shape.Rectangle({
@@ -192,6 +192,7 @@ print('OK ' + n);
 
  
 world.appendChild(n);
+
     
 var stage = javafx.stage.Stage({
     title: 'Declaring is easy!', 
@@ -218,7 +219,85 @@ var stage = javafx.stage.Stage({
 			//print('pick up source ' + evt.source + "," + evt.source.boundsInParent);
 			//print('pick up loc ' + evt.node);
 			var domNode = fxRegistry.get(evt.source);
-			if (domNode) hand.pick(domNode, point); else print('nope');
+			if (domNode === world) {
+			    if (editHalo) {
+				editHalo.parentNode.removeChild(editHalo);
+				editHalo = null;
+			    } else print('do nothing');
+			    return;
+			} else if (!domNode) { 
+			    print('nope'); 
+			    return;
+			} else if (evt.metaDown) {
+			    var box = domNode.outerNode.boundsInParent;
+			    print('box is ' + box);
+			    // translateX: bind(ev.target, 'boundsInParent.x')
+			    var c = Color.LIGHTGRAY;
+			    editHalo = new FxNode(javafx.scene.shape.Rectangle({width: box.width, height: box.height, strokeWidth: 1, fill: null, stroke: c}));
+			    editHalo.moveTo(box.minX, box.minY);
+			    editHalo.outerNode.onMousePressed = function(evt) {
+				if (editHalo) {
+				    editHalo.parentNode.removeChild(editHalo);
+				    editHalo = null;
+				}
+			    };
+			    editHalo.noGrab = true;
+			    domNode.parentNode.appendChild(editHalo);
+			    var r = 4;
+			    var topLeft =  editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    var topRight = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width, fill: c})));
+			    var topCenter = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, fill: c})));
+			    var bottomLeft = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateY: box.height, fill: c})));
+			    var centerLeft = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateY: box.height/2, fill: c})));
+			    var bottomRight = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height, fill: c})));
+			    var bottomCenter = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width/2, translateY: box.height, fill: c})));
+			    var centerRight = editHalo.appendChild(new FxNode(new javafx.scene.shape.Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height/2, fill: c})));
+			    
+			    editHalo.childNodes.forEach(function(n) {
+				n.noGrab = true;
+				n.outerNode.blocksMouse = true; // don't pass to the halo rectangle
+				// this will also prevent the world from tracking the mouse, so the HandMorph will lag slightly.
+				n.onMousePressed = function(ev) {
+				    n.eventPoint = {x: ev.clientX, y: ev.clientY};
+				}
+				n.onMouseReleased = function(ev) {
+				    n.eventPoint = null;
+				}
+			    });
+			    
+			    var edited = evt.source;
+			    function recompute(editHalo) {
+				topRight.translateX = bottomRight.translateX = centerRight.translateX = editHalo.x + editHalo.width;
+				topCenter.translateX = bottomCenter.translateX = topRight.translateX/2;
+				bottomLeft.translateY = bottomRight.translateY = bottomCenter.translateY = editHalo.y + editHalo.height;
+				centerLeft.translateY = centerRight.translateY = bottomLeft.translateY/2;
+			    }
+			    
+			    // FIXME: only correct for topLeft
+			    [topLeft, bottomLeft, topRight, bottomRight].forEach(function(n) {
+				n.addEventListener("mousemove", {
+				    handleEvent: function(ev) {
+					var tgt = ev.target;
+					if (tgt.eventPoint) {
+					    var dx = (ev.clientX - tgt.eventPoint.x);
+					    var dy = (ev.clientY - tgt.eventPoint.y);
+					    editHalo.translateX += dx;
+					    if (edited.x !== undefined) edited.x += dx;
+					    editHalo.translateY += dy;
+					    if (edited.y !== undefined) edited.y += dy;
+					    editHalo.width -= dx;
+					    if (edited.width !== undefined) edited.width -= dx;
+					    editHalo.height -= dy;
+					    if (edited.height !== undefined) edited.height -= dy;
+					    recompute(editHalo);
+					    tgt.eventPoint = {x: tgt.eventPoint.x + dx, y: tgt.eventPoint.y + dy}
+					}
+				    }
+				})
+			    });
+			} else {
+			    hand.pick(domNode, point); 
+			}
 		    }
 		}
 	    })
