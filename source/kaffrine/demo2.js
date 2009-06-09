@@ -9,7 +9,7 @@ load('dom.js');
 print('hello');
 
 
-var javafx = Packages.FXWrapFactory.javafx;
+var javafx = Packages.FXWrapFactory.FX;
 print('javafx ' + javafx.scene.shape.Rectangle);
 	
 var Color =  javafx.scene.paint.Color;

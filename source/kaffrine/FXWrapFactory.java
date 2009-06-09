@@ -486,50 +486,139 @@ public class FXWrapFactory extends WrapFactory {
 	public String jsFunction_toString() {
 	    return variable.get().toString();
 	}
-
-    }
-	
-    // this could be replaced with a hacked NativeJavaPackage
-    public static class javafx {
-	
-	public static class scene {
-	    public static FXConstructor Group = new FXConstructor("javafx.scene.Group");
-	    public static FXConstructor Scene = new FXConstructor("javafx.scene.Scene");
-	    public static class control {
-		public static FXConstructor Button = new FXConstructor("javafx.scene.control.Button");
-		public static FXConstructor Slider = new FXConstructor("javafx.scene.control.Slider");
-		public static FXConstructor TextBox = new FXConstructor("javafx.scene.control.TextBox");
-	    }
-	    
-	    public static class shape {
-		public static FXConstructor Rectangle = new FXConstructor("javafx.scene.shape.Rectangle");
-		public static FXConstructor Circle = new FXConstructor("javafx.scene.shape.Circle");
-		public static FXConstructor Ellipse = new FXConstructor("javafx.scene.shape.Ellipse");
-		public static FXConstructor Polygon = new FXConstructor("javafx.scene.shape.Polygon");
-	    }
-	    
-	    public static class effect {
-		public static FXConstructor DropShadow = new FXConstructor("javafx.scene.effect.DropShadow");
-	    }
-
-	    public static class paint {
-		public static FXConstructor Color = new FXConstructor("javafx.scene.paint.Color");
-		public static FXConstructor LinearGradient = new FXConstructor("javafx.scene.paint.LinearGradient");
-		public static FXConstructor Stop = new FXConstructor("javafx.scene.paint.Stop");
-	    }
-
-	}
-
-	public static class geometry {
-	    public static FXConstructor Point2D = new FXConstructor("javafx.geometry.Point2D");
-	}
-
-	public static class stage {
-	    public static FXConstructor Stage = new FXConstructor("javafx.stage.Stage");
-	}
     }
 
-    public static FXConstructor Test = new FXConstructor("FXTest");
+    // hacked JavaNativePackage from rhino
+    public static class FXPackage extends ScriptableObject {
+	
+	FXPackage(String packageName, ClassLoader classLoader) {
+	    this.packageName = packageName;
+	    this.classLoader = classLoader;
+	}
+	
+	public String getClassName() {
+	    return "JavaFXPackage";
+	}
+	
+	public boolean has(String id, Scriptable start) {
+	    return true;
+	}
+	
+	public boolean has(int index, Scriptable start) {
+	    return false;
+	}
+	
+	public void put(String id, Scriptable start, Object value) {
+        // Can't add properties to Java packages.  Sorry.
+	}
+	
+	public void put(int index, Scriptable start, Object value) {
+	    throw new RuntimeException();
+	}
+	
+	public Object get(String id, Scriptable start) {
+	    return getPkgProperty(id, start, true);
+	}
+	
+	public Object get(int index, Scriptable start) {
+	    return NOT_FOUND;
+	}
+	
+	// set up a name which is known to be a package so we don't
+    // need to look for a class by that name
+	void forcePackage(String name, Scriptable scope) {
+	    FXPackage pkg;
+	    int end = name.indexOf('.');
+	    if (end == -1) {
+		end = name.length();
+	    }
+	    
+	    String id = name.substring(0, end);
+	    Object cached = super.get(id, this);
+	    if (cached != null && cached instanceof FXPackage) {
+		pkg = (FXPackage) cached;
+	    } else {
+		String newPackage = packageName.length() == 0
+		    ? id
+		    : packageName + "." + id;
+		pkg = new FXPackage(newPackage, classLoader);
+		ScriptRuntime.setObjectProtoAndParent(pkg, scope);
+		super.put(id, this, pkg);
+	    }
+	    if (end < name.length()) {
+		pkg.forcePackage(name.substring(end+1), scope);
+	    }
+	}
+	
+	synchronized Object getPkgProperty(String name, Scriptable start, boolean createPkg) {
+	    Object cached = super.get(name, start);
+	    if (cached != NOT_FOUND)
+		return cached;
+	    String className = (packageName.length() == 0) ? name : packageName + '.' + name;
+	    //Context cx = currentContext;
+	    
+	    //ClassShutter shutter = cx.getClassShutter();
+	    Scriptable newValue;
+	    try {
+		newValue = new FXConstructor(className);
+		newValue.setPrototype(getPrototype());
+	    } catch (Exception e) {
+		//System.err.println("not found " + className);
+		newValue = null;
+	    }
+	    
+	    /*
+	    if (shutter == null || shutter.visibleToScripts(className)) {
+		Class cl = null;
+		if (classLoader != null) {
+		    cl = Kit.classOrNull(classLoader, className);
+		} else {
+		    cl = Kit.classOrNull(className);
+		}
+		if (cl != null) {
+		    newValue = new FXConstructor(getTopLevelScope(this), cl);
+		    newValue.setPrototype(getPrototype());
+		}
+		}*/
+	    if (newValue == null && createPkg) {
+		FXPackage pkg;
+		pkg = new FXPackage(className, classLoader);
+		ScriptRuntime.setObjectProtoAndParent(pkg, getParentScope());
+		newValue = pkg;
+	    }
+	    if (newValue != null) {
+		// Make it available for fast lookup and sharing of
+		// lazily-reflected constructors and static members.
+		super.put(name, start, newValue);
+	    }
+	    return newValue;
+	}
+	
+	public Object getDefaultValue(Class ignored) {
+	    return toString();
+	}
+	
+	public String toString() {
+	    return "[JavaFXPackage " + packageName + "]";
+	}
+	
+	public boolean equals(Object obj) {
+	    if(obj instanceof FXPackage) {
+		FXPackage njp = (FXPackage)obj;
+		return packageName.equals(njp.packageName) && classLoader == njp.classLoader;
+	    }
+	    return false;
+	}
+	
+	public int hashCode() {
+	    return packageName.hashCode() ^ (classLoader == null ? 0 : classLoader.hashCode());
+	}
+	
+	private String packageName;
+	private ClassLoader classLoader;
+    }
+
+    public static FXPackage FX = new FXPackage("javafx", null);
  
     private boolean isInited = false;
 
@@ -538,6 +627,8 @@ public class FXWrapFactory extends WrapFactory {
 	    try {
 		ScriptableObject.defineClass(scope, ScriptableSequence.class, false, true);
 		ScriptableObject.defineClass(scope, FXRuntime.class, false, true);
+		// FIXME!
+		FX.setParentScope(scope);
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
 	    }
