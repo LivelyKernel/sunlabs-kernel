@@ -3,7 +3,7 @@ load('rhino-compat.js');
 load('lang.js');
 load('dom.js');
 
-var javafx = Packages.FXWrapFactory.FX;
+var javafx = Packages.banana.FXWrapFactory.FX;
 print('javafx ' + javafx.scene.shape.Rectangle); // << somehow this is necessary?
 	
 var Color =  javafx.scene.paint.Color;
@@ -87,10 +87,12 @@ var FxNode = fx.dom.Node.extend({
 		var answer =  n.containingNode(pt);
 		if (answer) return answer;
 	    }
-	    var scenePoint = javafx.geometry.Point2D({x: pt.x, y: pt.y});
+	    var scenePoint = new javafx.geometry.Point2D({x: pt.x, y: pt.y});
 	    var localPoint = this.innerNode.sceneToLocal(scenePoint);
+	    print('loc point ' + localPoint + ', ' + this.innerNode);
 	    try {
-		if (this.innerNode.contains(localPoint.x, localPoint.y)) return this;
+		if (this.innerNode.contains(localPoint)) return this;
+		//if (this.innerNode.contains(localPoint.x, localPoint.y)) return this;
 		else return false;
 	    } catch (err) {
 		print('innerNode ' + this.innerNode + ' issue ' + err);
@@ -148,6 +150,8 @@ var Hand = FxNode.extend({
     },
     
     pick: {
+	param: [FxNode, javafx.geometry.Point2D],
+	returns: null, // NONE?
 	value: function(node, scenePoint) {
 	    // find the event point wrt/node's origin
 	    //if (node.noGrab) return;		
@@ -156,7 +160,7 @@ var Hand = FxNode.extend({
 		editHalo = null;
 	    }
 
-	    that = node;
+	    bthat = node;
 	    // FIXME use a real transform 
 	    var localPoint = node.outerNode.sceneToLocal(scenePoint); // where node sees the mouse pointer
 	    node.moveTo(-localPoint.x, -localPoint.y);

@@ -1,3 +1,4 @@
+package banana;
 
 import org.mozilla.javascript.*;
 import com.sun.javafx.runtime.*;
@@ -278,70 +279,6 @@ public class FXWrapFactory extends WrapFactory {
 	}
     }
 
-    public static class FXConstructor extends BaseFunction {
-	Class clazz;
-	public FXConstructor(String name) {
-	    try {
-		this.clazz = Class.forName(name);
-	    } catch (Exception e) {
-		throw new RuntimeException(e);
-	    }
-	}
-
-	public String getDefaultValue(Class hint) {
-	    return "[JavaFXClass " + clazz.getName() + "]";
-	}
-
-	public Object get(String name, Scriptable start) {
-	    if (name.equals("prototype"))
-		return null; // can we return something meaningful?
-	    try {
-		Field field = clazz.getField("$"+ name);
-		return Context.javaToJS(field.get(clazz), start);
-	    } catch (Exception e) { 
-		System.err.println("woo " + e);
-	    }
-	    return super.get(name, start);
-	}
-
-	public boolean hasInstance(Scriptable instance) {
-	    if (instance instanceof ScriptableFXObject) {
-		return this.clazz.isInstance(((ScriptableFXObject)instance).unwrap());
-	    }
-	    return false;
-	}
-
-	public Object call(Context cx, Scriptable scope, Scriptable thisObj,
-			   Object[] args) {
-	    return this.construct(cx, scope, args); // is this what we want?
-	}
-	
-	public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
-	    try {
-		FXObject object = (FXObject)clazz.getConstructor(boolean.class).newInstance(true);
-		
-		//FXObject object = (FXObject)clazz.newInstance();
-		object.addTriggers$();
-		object.applyDefaults$();
-		
-		Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
-		if (args.length > 1) throw new RuntimeException("too many args?");
-		if (args.length == 1) {
-		    Scriptable initlist = (Scriptable)args[0];
-		    for (Object id : initlist.getIds()) { // FIXME error checking and such
-			String name = (String)id;
-			wrapper.put(name, scope, initlist.get(name, scope));
-			// does this agree with the deferred initialization semantics of FX?
-		    }
-		}
-		object.complete$();
-		return wrapper;
-	    } catch (Exception e) {
-		throw new RuntimeException(e);
-	    }
-	}
-    }
-
 
     public static class FXRuntime extends ScriptableObject {
 	static String JS_NAME = "FXRuntime";
@@ -560,8 +497,9 @@ public class FXWrapFactory extends WrapFactory {
 	    //ClassShutter shutter = cx.getClassShutter();
 	    Scriptable newValue;
 	    try {
-		newValue = new FXConstructor(className);
+		newValue = new NativeJavaFXClass(getTopLevelScope(this), Class.forName(className));
 		newValue.setPrototype(getPrototype());
+
 	    } catch (Exception e) {
 		//System.err.println("not found " + className);
 		newValue = null;
