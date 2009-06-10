@@ -4,6 +4,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 
+// hacked JavaMembers
 class JavaFXMembers {
 
     Map<String, Method> getters = new HashMap<String, Method>(); // could be shared based on type
@@ -14,8 +15,6 @@ class JavaFXMembers {
     JavaFXMembers(Scriptable scope, Class cl) {
 	this.cl = cl;
 	reflect(scope);
-	//System.err.println("instance methods " + instanceMethods);
-	//System.err.println("class " + cl);
     }
     
     Map<String, Object> staticMethods = new HashMap<String, Object>();
@@ -31,7 +30,6 @@ class JavaFXMembers {
 	list.addAll(instanceMethods.keySet());
 	return list.toArray();
     }
-
 
     public void reflect(Scriptable scope) {
         for (Method method : this.cl.getMethods()) {
