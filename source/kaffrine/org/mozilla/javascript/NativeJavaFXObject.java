@@ -171,27 +171,23 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		    // FIXME pick the right function?
 		    value = new com.sun.javafx.functions.Function0<Object>() {
 			public Object invoke() {
-			    Context cx = Context.enter();
-			    cx.setWrapFactory(FXWrapFactory.instance);
-			    try {
-				// FIXME conversion?
-				return fun.call(cx, scope, scope, new Object[0]);
-			    } finally {
-				Context.exit();
-			    }
+			    return ContextFactory.getGlobal().call(new ContextAction() {
+				    public Object run(Context cx) {
+					cx.setWrapFactory(FXWrapFactory.instance);
+					return fun.call(cx, scope, scope, new Object[0]);
+				    }
+				});
 			}
 		    };
 		} else if (returnType == com.sun.javafx.functions.Function1.class) {
 		    value = new com.sun.javafx.functions.Function1<Object, Object>() {
-			public Object invoke(Object arg1) {
-			    Context cx = Context.enter();
-			    cx.setWrapFactory(FXWrapFactory.instance);
-			    try {
-				// FIXME conversion?
-				return fun.call(cx, scope, scope, new Object[] {arg1});
-			    } finally {
-				Context.exit();
-			    }
+			public Object invoke(final Object arg1) {
+			    return ContextFactory.getGlobal().call(new ContextAction() {
+				    public Object run(Context cx) {
+					cx.setWrapFactory(FXWrapFactory.instance);
+					return fun.call(cx, scope, scope, new Object[] {arg1});
+				    }
+				});
 			}
 		    };
 		} // FIXME do that for every type??

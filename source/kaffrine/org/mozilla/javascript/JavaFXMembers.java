@@ -23,7 +23,7 @@ class JavaFXMembers {
 
     Object[] getIds() {
 	// FIXME more efficient?
-	List list = new ArrayList();
+	List<String> list = new ArrayList<String>();
 	list.addAll(getters.keySet());
 	list.addAll(setters.keySet());
 	list.addAll(locations.keySet());

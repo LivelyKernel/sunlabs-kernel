@@ -251,6 +251,8 @@ button.moveTo(260, 400);
 			    
 							
 world.appendChild(button); 
+
+
      
 var stage = javafx.stage.Stage({
     title: 'Declaring is easy!', 
@@ -369,3 +371,37 @@ var stage = javafx.stage.Stage({
     })
 });
 
+
+function set_interval(callback, delay) {
+    // env.js setInterval is not Swing-friendly
+    var listener = new JavaAdapter(Packages.java.awt.event.ActionListener, {
+	actionPerformed: function(actionEvent) {
+	    print('wrap factory ' + jsctx.getWrapFactory());
+	    var javafx = Packages.org.mozilla.javascript.FXWrapFactory.FX;
+	    print('check instance' + FXRuntime.isFXObject(javafx.scene.transform.Rotate()));
+	    // transform actionEvent ?
+	    callback.call(this, actionEvent);
+	}
+    });
+    var timer = new Packages.javax.swing.Timer(delay, listener);
+    timer.start();
+    return timer;
+}
+    
+function setInterval(action, delay) {
+    return set_interval(function() {
+	action.apply(this, arguments);
+	//fx.dom.update();
+    }, delay);
+
+};
+
+
+var degs = 0;
+button.innerNode.action = function() {
+    
+    //print('!!' + [star, javafx.scene.transform.Rotate({angle: 1}).angle]);
+    javafx.lang.FX.deferAction(function() {
+	star.outerNode.rotate += 20;
+    });
+}

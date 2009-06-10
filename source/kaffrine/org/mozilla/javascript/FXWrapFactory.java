@@ -162,10 +162,12 @@ public class FXWrapFactory extends WrapFactory {
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	if (!isInited) {
 	    try {
-		ScriptableObject.defineClass(scope, ScriptableSequence.class, false, true);
-		ScriptableObject.defineClass(scope, FXRuntime.class, false, true);
+		Scriptable topScope = ScriptableObject.getTopLevelScope(scope);
+		if (topScope != scope) System.err.println("different!");
+		ScriptableObject.defineClass(topScope, ScriptableSequence.class, false, true);
+		ScriptableObject.defineClass(topScope, FXRuntime.class, false, true);
 		// FIXME!
-		FX.setParentScope(scope);
+		FX.setParentScope(topScope);
 	    } catch (Exception e) {
 		throw new RuntimeException(e);
 	    }

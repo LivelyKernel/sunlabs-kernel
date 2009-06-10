@@ -8,6 +8,7 @@ import java.lang.reflect.*;
 
 
 public class NativeJavaFXClass extends NativeJavaObject implements Function {
+    JavaFXMembers members;
 
     public NativeJavaFXClass(Scriptable scope, Class cl) {
         this.parent = scope;
@@ -16,6 +17,8 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
     }
     
     public void initMembers() {
+	Class cl = this.getClassObject();
+        this.members = JavaFXMembers.lookupClass(parent, cl, cl);
     }
 
     public Class getClassObject() {
@@ -29,11 +32,14 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
     public Object get(String name, Scriptable start) {
 	if (name.equals("prototype"))
 	    return null; // can we return something meaningful?
+	// FIXME what is really the ABI? cf NativeJavaClass
 	try {
 	    Field field = this.getClassObject().getField("$"+ name);
 	    return Context.javaToJS(field.get(this.getClassObject()), start);
 	} catch (Exception e) { 
-	    System.err.println("woo " + e);
+	    NativeJavaMethod method = (NativeJavaMethod)members.staticMethods.get(name);
+	    //System.err.println("static method " + method);
+	    if (method != null) return method;
 	}
 	return super.get(name, start);
     }
