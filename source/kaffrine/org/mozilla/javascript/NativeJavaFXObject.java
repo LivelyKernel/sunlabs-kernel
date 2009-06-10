@@ -152,47 +152,49 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	return Scriptable.NOT_FOUND;
     }
     
+    static com.sun.javafx.functions.Function makeFunction(final Function fun, Class targetClass, final Scriptable scope) {
+	if (targetClass == com.sun.javafx.functions.Function0.class) {
+	    // FIXME pick the right function?
+	    return new com.sun.javafx.functions.Function0<Object>() {
+		public Object invoke() {
+		    return ContextFactory.getGlobal().call(new ContextAction() {
+			    public Object run(Context cx) {
+				cx.setWrapFactory(FXWrapFactory.instance);
+				return fun.call(cx, scope, scope, new Object[0]);
+			    }
+			});
+		}
+	    };
+	} else if (targetClass == com.sun.javafx.functions.Function1.class) {
+	    return new com.sun.javafx.functions.Function1<Object, Object>() {
+		public Object invoke(final Object arg1) {
+		    return ContextFactory.getGlobal().call(new ContextAction() {
+			    public Object run(Context cx) {
+				cx.setWrapFactory(FXWrapFactory.instance);
+				return fun.call(cx, scope, scope, new Object[] {arg1});
+			    }
+			});
+		}
+	    };
+	} else {
+	    return null;
+	    // FIXME do that for every type??
+	}
+    }
+
+    
     public void put(String name, Scriptable start, Object value) {
 	try {
 	    if (value instanceof NativeArray) {
 		// FIXME this breaks referential equality, but maybe it's OK
 		value = this.sequenceFromArray((NativeArray)value, start);
 	    } else if (value instanceof Function) {
-		final Function fun = (Function)value;
-		final Scriptable scope = ScriptableObject.getTopLevelScope(start);
-		
 		Method setter = this.memberInfo.setters.get(name);
 		if (setter == null) {
 		    System.err.println("didnt find setter for " + name);
 		    return;
 		}
-		Class returnType = setter.getReturnType();
-		if (returnType == com.sun.javafx.functions.Function0.class) {
-		    // FIXME pick the right function?
-		    value = new com.sun.javafx.functions.Function0<Object>() {
-			public Object invoke() {
-			    return ContextFactory.getGlobal().call(new ContextAction() {
-				    public Object run(Context cx) {
-					cx.setWrapFactory(FXWrapFactory.instance);
-					return fun.call(cx, scope, scope, new Object[0]);
-				    }
-				});
-			}
-		    };
-		} else if (returnType == com.sun.javafx.functions.Function1.class) {
-		    value = new com.sun.javafx.functions.Function1<Object, Object>() {
-			public Object invoke(final Object arg1) {
-			    return ContextFactory.getGlobal().call(new ContextAction() {
-				    public Object run(Context cx) {
-					cx.setWrapFactory(FXWrapFactory.instance);
-					return fun.call(cx, scope, scope, new Object[] {arg1});
-				    }
-				});
-			}
-		    };
-		} // FIXME do that for every type??
-		
-		
+		value = makeFunction((Function)value, setter.getReturnType(), ScriptableObject.getTopLevelScope(start));
 		boolean result = this.doSet(name, value);
 		if (!result) {
 		    System.err.println("doSet failed on " + name + " value " + value + " " + this.javaObject);
@@ -203,7 +205,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 			location.set(value);
 			System.err.println("retrieved stored value " + value);
 		    } else {
-			System.err.println("XXno locator for " + name);
+			System.err.println("XXX no locator for " + name);
 		    }
 		}
 		//System.err.println("SUCCESS " + this.doGet(name));
@@ -213,12 +215,6 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	    } else if (value instanceof Wrapper) {
 		// FIXME is there a better way???
 		value = ((Wrapper)value).unwrap();
-		/*
-		  if (value instanceof ObjectLocation) {
-		  System.err.println("!!!! deref " + name); 
-		  value = ((ObjectLocation)value).get();
-		  }
-		*/
 	    } 
 	    boolean result = this.doSet(name, value);
 	    if (!result) {
@@ -228,7 +224,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
 		    location.set(value);
 		} else {
-		    System.err.println("locator not present " + name );
+		    System.err.println("locator not present " + name);
 		}
 	    }
 	    return;
