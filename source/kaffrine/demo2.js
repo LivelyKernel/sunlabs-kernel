@@ -188,7 +188,7 @@ var Hand = FxNode.extend({
 
 var hand = new Hand();
 
-var world = new FxNode(Rectangle({width: 500, height: 500, fill: Color.LIGHTBLUE, 
+var world = new FxNode(Rectangle({width: 500, height: 500, fill: Color.DARKGRAY, 
     stroke: Color.BLACK, id: 'background'}));
 						     
 						     
@@ -290,7 +290,7 @@ var stage = javafx.stage.Stage({
 			    var box = domNode.outerNode.boundsInParent;
 			    print('box is ' + box);
 			    // translateX: bind(ev.target, 'boundsInParent.x')
-			    var c = Color.LIGHTGRAY;
+			    var c = Color.WHITE;
 			    editHalo = new FxNode(Rectangle({width: box.width, height: box.height, strokeWidth: 1, fill: null, stroke: c}));
 			    editHalo.moveTo(box.minX, box.minY);
 			    editHalo.outerNode.onMousePressed = function(evt) {
@@ -322,7 +322,7 @@ var stage = javafx.stage.Stage({
 				n.outerNode.blocksMouse = true; // don't pass to the halo rectangle
 				// this will also prevent the world from tracking the mouse, so the HandMorph will lag slightly.
 				n.outerNode.onMousePressed = function(ev) {
-				    n.eventPoint = {x: ev.clientX, y: ev.clientY};
+				    n.eventPoint = {x: ev.sceneX, y: ev.sceneY};
 				}
 				n.outerNode.onMouseReleased = function(ev) {
 				    n.eventPoint = null;
@@ -330,6 +330,7 @@ var stage = javafx.stage.Stage({
 			    });
 			    
 			    var edited = evt.source;
+			    print('edited ' + edited);
 			    function recompute(editHalo) {
 				topRight.translateX = bottomRight.translateX = centerRight.translateX = editHalo.x + editHalo.width;
 				topCenter.translateX = bottomCenter.translateX = topRight.translateX/2;
@@ -343,8 +344,8 @@ var stage = javafx.stage.Stage({
 				    print('caught');
 				    var tgt = fxRegistry.get(ev.source);
 				    if (tgt.eventPoint) {
-					var dx = (ev.clientX - tgt.eventPoint.x);
-					var dy = (ev.clientY - tgt.eventPoint.y);
+					var dx = (ev.sceneX - tgt.eventPoint.x);
+					var dy = (ev.sceneY - tgt.eventPoint.y);
 					editHalo.translateX += dx;
 					if (edited.x !== undefined) edited.x += dx;
 					editHalo.translateY += dy;
