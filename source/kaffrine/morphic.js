@@ -167,7 +167,7 @@ var Hand = FxNode.extend({
 	    // node's local point corresponding to the 
 	    this.appendChild(node);
 	    //this.insertBefore(node, this.cursor);
-	    node.outerNode.effect = this.grabEffect; // what if it already had some effect?
+	    this.outerNode.effect = this.grabEffect; // what if it already had some effect?
 	}
     },
     
@@ -175,7 +175,7 @@ var Hand = FxNode.extend({
 	value: function(target, scenePoint) {
 	    var load = this.load();
 	    if (target === load) throw new Error();
-	    load.outerNode.effect = null;
+	    this.outerNode.effect = null;
 	    //print('dropping load ' + load + ' on target ' + target + ' at ' + [scenePoint.x, scenePoint.y]);
 	    // FIXME use a real transform on load?
 	    var localPoint = target.outerNode.sceneToLocal(scenePoint); // where node sees the mouse pointer
@@ -251,7 +251,6 @@ button.moveTo(260, 400);
 			    
 							
 world.appendChild(button); 
-
 
      
 var stage = javafx.stage.Stage({

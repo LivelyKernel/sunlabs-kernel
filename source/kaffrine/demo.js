@@ -16,7 +16,7 @@ function test() {
 	    //fill: Color.RED,
 	    content: [
 		javafx.scene.Group({
-		    translateY: 130,
+		    translateY: 200,
 		    content: [
 			javafx.scene.shape.Rectangle({
 			    x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN
