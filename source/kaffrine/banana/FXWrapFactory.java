@@ -12,9 +12,6 @@ public class FXWrapFactory extends WrapFactory {
     
     public static FXWrapFactory instance = new FXWrapFactory();
 
-
-
-
     public static class FXRuntime extends ScriptableObject {
 	static String JS_NAME = "FXRuntime";
 
@@ -89,7 +86,6 @@ public class FXWrapFactory extends WrapFactory {
 	}
 	
     }
-
 
     public static class ScriptableSequence extends ScriptableObject {
 	SequenceVariable variable;
