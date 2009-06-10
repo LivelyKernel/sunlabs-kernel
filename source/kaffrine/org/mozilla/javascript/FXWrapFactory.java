@@ -155,7 +155,7 @@ public class FXWrapFactory extends WrapFactory {
 	}
     }
 
-    public static NativeJavaFXPackage FX = new NativeJavaFXPackage("javafx", null);
+    public static NativeJavaFXPackage FX = new NativeJavaFXPackage(true, "javafx", null);
  
     private boolean isInited = false;
 
