@@ -2,7 +2,7 @@ load('util.js');
 load('bootstrap.js');
 var stage;
 
-var javafx = Packages.banana.FXWrapFactory.FX;
+var javafx = Packages.org.mozilla.javascript.FXWrapFactory.FX;
 
 function test() {
     var Color =  javafx.scene.paint.Color;

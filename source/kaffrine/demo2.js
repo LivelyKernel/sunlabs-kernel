@@ -3,7 +3,7 @@ load('rhino-compat.js');
 load('lang.js');
 load('dom.js');
 
-var javafx = Packages.banana.FXWrapFactory.FX;
+var javafx = Packages.org.mozilla.javascript.FXWrapFactory.FX;
 print('javafx ' + javafx.scene.shape.Rectangle); // << somehow this is necessary?
 	
 var Color =  javafx.scene.paint.Color;

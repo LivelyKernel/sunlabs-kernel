@@ -1,5 +1,5 @@
 var jsctx = Packages.org.mozilla.javascript.Context.currentContext;
-jsctx.setWrapFactory(Packages.banana.FXWrapFactory.instance);
+jsctx.setWrapFactory(Packages.org.mozilla.javascript.FXWrapFactory.instance);
 load('bootstrap.js');
 
 function a2l(object) {

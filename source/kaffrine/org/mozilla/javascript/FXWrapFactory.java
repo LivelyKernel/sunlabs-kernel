@@ -1,6 +1,5 @@
-package banana;
+package org.mozilla.javascript;
 
-import org.mozilla.javascript.*;
 import com.sun.javafx.runtime.*;
 import com.sun.javafx.runtime.sequence.*;
 import com.sun.javafx.runtime.location.*;

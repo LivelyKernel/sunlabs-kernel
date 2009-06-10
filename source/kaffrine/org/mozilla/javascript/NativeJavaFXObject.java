@@ -5,7 +5,6 @@ import com.sun.javafx.runtime.sequence.*;
 import com.sun.javafx.runtime.location.*;
 import java.util.*;
 import java.lang.reflect.*;
-import banana.FXWrapFactory;
 
 public class NativeJavaFXObject implements Scriptable, Wrapper {
 

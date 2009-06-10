@@ -5,7 +5,6 @@ import com.sun.javafx.runtime.sequence.*;
 import com.sun.javafx.runtime.location.*;
 import java.util.*;
 import java.lang.reflect.*;
-import banana.FXWrapFactory;
 
 
 public class NativeJavaFXClass extends NativeJavaObject implements Function {
