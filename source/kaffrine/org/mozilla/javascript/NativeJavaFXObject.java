@@ -8,64 +8,32 @@ import java.lang.reflect.*;
 
 public class NativeJavaFXObject implements Scriptable, Wrapper {
 
-    static class MemberInfo {
-	Map<String, Method> getters = new HashMap<String, Method>(); // could be shared based on type
-	Map<String, Method> setters = new HashMap<String, Method>(); // could be shared based on type
-	Map<String, Method> locations = new HashMap<String, Method>(); // could be shared based on type
-	Map<String, Function> methods = new HashMap<String, Function>(); // could be shared based on type
-	String[] memberNames;
-
-	public MemberInfo(Class cl) {
-	    //System.err.println("class " + cl);
-	    Set<String> members = new HashSet<String>();
-	    for (Method m : cl.getMethods()) {
-		String name = m.getName();
-		if (name.startsWith("get$")) {
-		    members.add(name);
-		    this.getters.put(name.substring(4), m);
-		} else if (name.startsWith("set$")) {
-		    this.setters.put(name.substring(4), m);
-		} else if (name.startsWith("loc$")) {
-		    members.add(name);
-		    this.locations.put(name.substring(4), m);
-		} else {
-		    members.add(name);
-		    this.methods.put(name, new NativeJavaMethod(m, name));
-		}
-	    }
-	    this.memberNames = members.toArray(new String[members.size()]);
-	}
-
-	
-    }
-
-    static Map<Class, MemberInfo> memberInfos = new HashMap<Class, MemberInfo>();
-
 
     Object javaObject;
     Scriptable parent;
     Scriptable prototype;
-    MemberInfo memberInfo;
+    JavaFXMembers memberInfo;
+    Class staticType;
     
     public NativeJavaFXObject(Scriptable scope, Object javaObject, Class type) {
 	this.javaObject = javaObject;
 	this.parent = scope;
-	try {
-	    // cache methods, check if content has the same class and if not, update properties.
-	    if (this.javaObject != null) {
-		Class c = javaObject.getClass();
-		MemberInfo mi = memberInfos.get(c);
-		if (mi == null) {
-		    mi = new MemberInfo(c);
-		    memberInfos.put(c, mi);
-		}
-		this.memberInfo = mi;
-	    }
-	} catch (Exception e) {
-	    throw new RuntimeException(e);
-	}
+	this.staticType = type;
+	initMembers();
     }
-    
+
+    private void initMembers() {
+        Class dynamicType;
+        if (javaObject != null) {
+            dynamicType = javaObject.getClass();
+        } else {
+            dynamicType = staticType;
+        }
+        this.memberInfo = JavaFXMembers.lookupClass(this.parent, dynamicType, this.staticType);
+        //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
+    }
+
+
     public boolean hasInstance(Scriptable value) {
 	// This is an instance of a Java class, so always return false
 	return false;
