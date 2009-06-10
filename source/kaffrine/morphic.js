@@ -376,9 +376,6 @@ function set_interval(callback, delay) {
     // env.js setInterval is not Swing-friendly
     var listener = new JavaAdapter(Packages.java.awt.event.ActionListener, {
 	actionPerformed: function(actionEvent) {
-	    print('wrap factory ' + jsctx.getWrapFactory());
-	    var javafx = Packages.org.mozilla.javascript.FXWrapFactory.FX;
-	    print('check instance' + FXRuntime.isFXObject(javafx.scene.transform.Rotate()));
 	    // transform actionEvent ?
 	    callback.call(this, actionEvent);
 	}
@@ -397,11 +394,19 @@ function setInterval(action, delay) {
 };
 
 
-var degs = 0;
-button.innerNode.action = function() {
-    
-    //print('!!' + [star, javafx.scene.transform.Rotate({angle: 1}).angle]);
-    javafx.lang.FX.deferAction(function() {
-	star.outerNode.rotate += 20;
-    });
-}
+button.innerNode.action = (function() {
+    var timer = null;
+    return function() {
+	javafx.lang.FX.deferAction(function() {
+	    if (timer == null) {
+		timer = setInterval(function() {
+		    star.outerNode.rotate += 5;
+		}, 20);
+	    } else {
+		timer.stop();
+		timer = null;
+	    }
+	});
+    }
+})();
+
