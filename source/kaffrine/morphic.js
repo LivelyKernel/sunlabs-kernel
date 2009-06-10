@@ -70,6 +70,28 @@ var FxNode = fx.dom.Node.extend({
 	}
     },
 
+    width: {
+	// FIXME really? innerNode may not have height
+	getter: function() {
+	    return this.innerNode.width;
+	},
+	setter: function(value) {
+	    this.innerNode.width = value;
+	}
+    },
+
+    height: {
+	// FIXME really? innerNode may not have height
+	getter: function() {
+	    return this.innerNode.height;
+	},
+	setter: function(value) {
+	    this.innerNode.height = value;
+	}
+    },
+
+
+
     moveTo: {
 	value: function(x, y) {
 	    var outer = this.outerNode;
@@ -265,6 +287,11 @@ var stage = javafx.stage.Stage({
 		    hand.outerNode.translateX = evt.sceneX;
 		    hand.outerNode.translateY = evt.sceneY;
 		},
+		onMouseDragged: function(evt) {
+		    hand.outerNode.translateX = evt.sceneX;
+		    hand.outerNode.translateY = evt.sceneY;
+		},
+
 		onMousePressed: function(evt) {
 		    //print('source ' + evt.source);
 		    //print('click on ' + evt.source.content[0]);
@@ -324,6 +351,7 @@ var stage = javafx.stage.Stage({
 				// this will also prevent the world from tracking the mouse, so the HandMorph will lag slightly.
 				n.outerNode.onMousePressed = function(ev) {
 				    n.eventPoint = {x: ev.sceneX, y: ev.sceneY};
+				    print('attached ' + [ev.sceneX, ev.sceneY] + ' to ' + n);
 				}
 				n.outerNode.onMouseReleased = function(ev) {
 				    n.eventPoint = null;
@@ -342,8 +370,8 @@ var stage = javafx.stage.Stage({
 			    // FIXME: only correct for topLeft
 			    [topLeft, bottomLeft, topRight, bottomRight].forEach(function(n) {
 				n.outerNode.onMouseMoved = function(ev) {
-				    print('caught');
 				    var tgt = fxRegistry.get(ev.source);
+				    //print('moved ' + [tgt, tgt.eventPoint]);
 				    if (tgt.eventPoint) {
 					var dx = (ev.sceneX - tgt.eventPoint.x);
 					var dy = (ev.sceneY - tgt.eventPoint.y);
@@ -358,7 +386,8 @@ var stage = javafx.stage.Stage({
 					recompute(editHalo);
 					tgt.eventPoint = {x: tgt.eventPoint.x + dx, y: tgt.eventPoint.y + dy}
 				    }
-				}
+				};
+				n.outerNode.onMouseDragged = n.outerNode.onMouseMoved;
 			    });
 			} else {
 			    hand.pick(domNode, point); 
