@@ -18,11 +18,12 @@ class JavaFXMembers {
 	//System.err.println("class " + cl);
     }
     
-    Hashtable staticMethods = new Hashtable();
-    Hashtable instanceMethods = new Hashtable();
+    Map<String, Object> staticMethods = new HashMap<String, Object>();
+    Map<String, Object> instanceMethods = new HashMap<String, Object>();
 
 
     Object[] getIds() {
+	// FIXME more efficient?
 	List list = new ArrayList();
 	list.addAll(getters.keySet());
 	list.addAll(setters.keySet());
@@ -32,12 +33,10 @@ class JavaFXMembers {
     }
 
 
-
     public void reflect(Scriptable scope) {
         for (Method method : this.cl.getMethods()) {
-            int mods = method.getModifiers();
-            boolean isStatic = Modifier.isStatic(mods);
-            Hashtable ht = isStatic ? staticMethods : instanceMethods;
+	    boolean isStatic = Modifier.isStatic(method.getModifiers());
+	    
             String name = method.getName();
 	    if (name.startsWith("get$")) {
 		this.getters.put(name.substring(4), method);
@@ -49,7 +48,8 @@ class JavaFXMembers {
 		this.locations.put(name.substring(4), method);
 		continue;
 	    } 
-
+	    
+            Map<String, Object> ht = isStatic ? staticMethods : instanceMethods;
             Object value = ht.get(name);
             if (value == null) {
                 ht.put(name, method);
@@ -73,15 +73,12 @@ class JavaFXMembers {
         // first in staticMembers and then in members
         for (int tableCursor = 0; tableCursor != 2; ++tableCursor) {
             boolean isStatic = (tableCursor == 0);
-            Hashtable ht = (isStatic) ? staticMethods : instanceMethods;
-            Enumeration e = ht.keys();
-            while (e.hasMoreElements()) {
-                String name = (String)e.nextElement();
+            Map<String, Object> ht = (isStatic) ? staticMethods : instanceMethods;
+	    for (String name : ht.keySet()) {
                 MemberBox[] methodBoxes;
                 Object value = ht.get(name);
                 if (value instanceof Method) {
-                    methodBoxes = new MemberBox[1];
-                    methodBoxes[0] = new MemberBox((Method)value);
+                    methodBoxes = new MemberBox[] { new MemberBox((Method)value) };
                 } else {
                     ObjArray overloadedMethods = (ObjArray)value;
                     int N = overloadedMethods.size();
@@ -111,8 +108,4 @@ class JavaFXMembers {
 	}
 	return mi;
     }
-    
-
-
-
 }
