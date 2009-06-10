@@ -89,10 +89,8 @@ var FxNode = fx.dom.Node.extend({
 	    }
 	    var scenePoint = new javafx.geometry.Point2D({x: pt.x, y: pt.y});
 	    var localPoint = this.innerNode.sceneToLocal(scenePoint);
-	    print('loc point ' + localPoint + ', ' + this.innerNode);
 	    try {
-		if (this.innerNode.contains(localPoint)) return this;
-		//if (this.innerNode.contains(localPoint.x, localPoint.y)) return this;
+		if (this.innerNode.contains(localPoint.x, localPoint.y)) return this;
 		else return false;
 	    } catch (err) {
 		print('innerNode ' + this.innerNode + ' issue ' + err);

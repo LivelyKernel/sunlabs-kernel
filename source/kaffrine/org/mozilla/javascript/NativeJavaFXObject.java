@@ -33,7 +33,6 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 
-
     public boolean hasInstance(Scriptable value) {
 	// This is an instance of a Java class, so always return false
 	return false;
@@ -78,12 +77,12 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     }
     
     public boolean has(String name, Scriptable start) {
-	return this.memberInfo.getters.containsKey(name) || this.memberInfo.methods.containsKey(name);
+	return this.memberInfo.getters.containsKey(name) || this.memberInfo.instanceMethods.containsKey(name);
     }
     
     public Object[] getIds() {
 	// FIXME efficiency
-	    return this.memberInfo.memberNames;
+	return this.memberInfo.getIds();
     }
     
     public String getClassName() {
@@ -140,7 +139,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		return Context.javaToJS(value, start); // FIXME start?
 	    } else {
 		//System.err.println("trying method " + name);
-		return Context.javaToJS(this.memberInfo.methods.get(name), start);
+		return Context.javaToJS(this.memberInfo.instanceMethods.get(name), start);
 	    }
 	} catch (Exception e) { 
 	    System.err.println("not found getter " + name);
