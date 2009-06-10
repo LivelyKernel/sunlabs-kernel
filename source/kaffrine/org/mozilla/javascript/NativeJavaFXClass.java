@@ -23,7 +23,6 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
         return (Class) super.unwrap();
     }
 
-
     public String getDefaultValue(Class hint) {
 	return "[JavaFXClass " + getClassObject().getName() + "]";
     }
@@ -41,8 +40,8 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
     }
     
     public boolean hasInstance(Scriptable instance) {
-	if (instance instanceof banana.FXWrapFactory.ScriptableFXObject) {
-	    return this.getClassObject().isInstance(((banana.FXWrapFactory.ScriptableFXObject)instance).unwrap());
+	if (instance instanceof NativeJavaFXObject) {
+	    return this.getClassObject().isInstance(((NativeJavaFXObject)instance).unwrap());
 	}
 	return false;
     }
