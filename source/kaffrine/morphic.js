@@ -369,9 +369,11 @@ var stage = javafx.stage.Stage({
 			    var edited = evt.source;
 			    print('edited ' + edited);
 			    function recompute(editHalo) {
-				topRight.translateX = bottomRight.translateX = centerRight.translateX = editHalo.x + editHalo.width;
+				topRight.translateX = bottomRight.translateX = centerRight.translateX 
+				    = editHalo.innerNode.x + editHalo.width;
 				topCenter.translateX = bottomCenter.translateX = topRight.translateX/2;
-				bottomLeft.translateY = bottomRight.translateY = bottomCenter.translateY = editHalo.y + editHalo.height;
+				bottomLeft.translateY = bottomRight.translateY = bottomCenter.translateY 
+				    = editHalo.innerNode.y + editHalo.height;
 				centerLeft.translateY = centerRight.translateY = bottomLeft.translateY/2;
 			    }
 			    
