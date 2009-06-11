@@ -122,13 +122,12 @@ var FxNode = fx.dom.Node.extend({
 	}
     },
 
-
-    appendChild: {
+    removeChild: {
 	override: true,
 	value: function(inherited, node) {
-	    inherited(node);
+	    node = inherited(node);
 	    var parent = node.outerNode.parent;
-	    if (parent) { 
+	    if (parent && node) { 
 		for (var i = 0; i < parent.content.length; i++) {
 		    if (parent.content[i] === node.outerNode) {
 			var was = parent.content.remove(i);
@@ -136,6 +135,15 @@ var FxNode = fx.dom.Node.extend({
 		    }
 		}
 	    }
+	}
+    },
+
+
+
+    appendChild: {
+	override: true,
+	value: function(inherited, node) {
+	    inherited(node);
 	    this.outerNode.content.push(node.outerNode);
 	    return node;
 	}
@@ -170,12 +178,11 @@ var Hand = FxNode.extend({
     },
     
     pick: {
-	param: [FxNode, javafx.geometry.Point2D],
-	returns: null, // NONE?
 	value: function(node, scenePoint) {
 	    // find the event point wrt/node's origin
-	    //if (node.noGrab) return;		
+	    if (node.noGrab) return;		
 	    if (editHalo) {
+		print('removing editHalo');
 		editHalo.parentNode.removeChild(editHalo);
 		editHalo = null;
 	    }
@@ -319,7 +326,7 @@ var stage = javafx.stage.Stage({
 			    print('box is ' + box);
 			    // translateX: bind(ev.target, 'boundsInParent.x')
 			    var c = Color.WHITE;
-			    editHalo = new FxNode(Rectangle({width: box.width, height: box.height, strokeWidth: 1, fill: null, stroke: c}));
+			    editHalo = new FxNode(Rectangle({width: box.width, height: box.height, fill: null, stroke: c}));
 			    editHalo.moveTo(box.minX, box.minY);
 			    editHalo.outerNode.onMousePressed = function(evt) {
 				if (editHalo) {
@@ -337,13 +344,14 @@ var stage = javafx.stage.Stage({
 			    topCenter.moveTo(box.width/2, 0);
 			    var bottomLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
 			    bottomLeft.moveTo(0, box.height);
-			    var centerLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, 
-				translateY: box.height/2, fill: c})));
-			    var bottomRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, translateX: box.width, translateY: box.height, fill: c})));
-			    var bottomCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, 
-				translateX: box.width/2, translateY: box.height, fill: c})));
-			    var centerRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, 
-				translateX: box.width, translateY: box.height/2, fill: c})));
+			    var centerLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    centerLeft.moveTo(0, box.height/2);
+			    var bottomRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    bottomRight.moveTo(box.width, box.height);
+			    var bottomCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    bottomCenter.moveTo(box.width/2, box.height);
+			    var centerRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
+			    centerRight.moveTo(box.width, box.height/2);
 			    
 			    editHalo.childNodes.forEach(function(n) {
 				n.noGrab = true;

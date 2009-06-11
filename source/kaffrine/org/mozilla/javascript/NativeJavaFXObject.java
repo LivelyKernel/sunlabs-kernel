@@ -118,17 +118,30 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	}
 	return Sequences.make(type, fxarray, length);
     }
+
+    public ObjectLocation getLocation(String name) {
+	Method locator = this.memberInfo.locations.get(name);
+	if (locator != null) {
+	    try {
+		return (ObjectLocation)locator.invoke(this.javaObject);
+	    } catch (Exception e) {
+		System.err.println("problem " + e + " on locator " + name);
+		return null;
+	    }
+	} else return null;
+    }
+
     
     public Object get(String name, Scriptable start) {
 	try {
-	    Object value;
+	    Object value = null;
 	    Method locator = this.memberInfo.locations.get(name);
 	    if (locator != null) {
 		ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
 		if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
-		    value = location;
+		    value = location; // hocus pocus, for sequences, it's the locations not values that are wrapped
 		} else {
-		    value = location.get();
+		    value = location.get(); 
 		}
 	    } else {
 		value = this.doGet(name);
@@ -182,6 +195,9 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	}
     }
 
+    // what if value is a special Function that is bindable? 
+    // For the time being, ignore the body and look at the attributes of it
+    // x.y = (function(){ x + y}).
     
     public void put(String name, Scriptable start, Object value) {
 	try {
