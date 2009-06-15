@@ -475,6 +475,7 @@ var stage = javafx.stage.Stage({
 					tgt.eventPoint = {x: tgt.eventPoint.x + dx, y: tgt.eventPoint.y + dy}
 				    }
 				};
+				n.outerNode.onMouseDragged = n.outerNode.onMouseMoved;
 				n.outerNode.onMouseDragged = function(ev) {
 				    n.outerNode.onMouseMoved(ev);
 				    //stage.scene.content[0].onMouseMoved(ev);

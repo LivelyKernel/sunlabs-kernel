@@ -146,7 +146,10 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	    } else {
 		value = this.doGet(name);
 	    }
-	    
+	    if (value instanceof com.sun.javafx.functions.Function) {
+		value = this.functionCache.get(name);
+	    }
+
 	    if (value != Scriptable.NOT_FOUND) {
 		//System.err.println("GET " + name);
 		return Context.javaToJS(value, start); // FIXME start?
@@ -195,6 +198,8 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	}
     }
 
+    private Map<String, Function> functionCache = new HashMap<String, Function>(); // FIXME lazy?
+
     // what if value is a special Function that is bindable? 
     // For the time being, ignore the body and look at the attributes of it
     // x.y = (function(){ x + y}).
@@ -207,10 +212,12 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	    } else if (value instanceof Function) {
 		Method setter = this.memberInfo.setters.get(name);
 		if (setter == null) {
-		    System.err.println("didnt find setter for " + name);
+		    System.err.println("didn't find setter for " + name);
 		    return;
 		}
+		this.functionCache.put(name, (Function)value);
 		value = makeFunction((Function)value, setter.getReturnType(), ScriptableObject.getTopLevelScope(start));
+
 		boolean result = this.doSet(name, value);
 		if (!result) {
 		    System.err.println("doSet failed on " + name + " value " + value + " " + this.javaObject);
