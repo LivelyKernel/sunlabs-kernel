@@ -238,7 +238,12 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		Method locator = this.memberInfo.locations.get(name);
 		if (locator != null) {
 		    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-		    location.set(value);
+		    try {
+			location.set(value);
+		    } catch (RuntimeException e) {
+			System.err.println("value " + value + " location " + location);
+			throw e;
+		    }
 		} else {
 		    System.err.println("locator not present " + name);
 		}

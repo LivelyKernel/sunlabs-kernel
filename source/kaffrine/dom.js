@@ -156,6 +156,7 @@ fx.module('dom', fx.lang.Object, function(Base) {
 	
 	appendChild: {
 	    value: function(newChild) {
+		// FIXME what if newChild is null?
 		newChild.parentNode && newChild.parentNode.removeChild(newChild);
 		newChild['.parentNode'] = this;
 		//print('HERE ' + this.childNodes['.nodes']);

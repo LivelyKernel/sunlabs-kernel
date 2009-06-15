@@ -86,14 +86,18 @@ public class FXWrapFactory extends WrapFactory {
 	
     }
 
-    public static class ScriptableSequence extends ScriptableObject {
+    public static class ScriptableSequence extends ScriptableObject implements Wrapper {
 	SequenceVariable variable;
 	
 	static String JS_NAME = "FXSequence";
 	public String getClassName() {
 	    return JS_NAME;
 	}
-	
+	 
+	public Object unwrap() { // ??? this is most likely incorrect?
+	    return variable.get();
+	}
+
 	public ScriptableSequence() {
 	    variable = null;
 	}

@@ -91,8 +91,7 @@ var FxNode = fx.dom.Node.extend({
     },
 
 
-
-    moveTo: {
+    translateTo: {
 	value: function(x, y) {
 	    var outer = this.outerNode;
 	    outer.translateX = x;
@@ -138,8 +137,6 @@ var FxNode = fx.dom.Node.extend({
 	}
     },
 
-
-
     appendChild: {
 	override: true,
 	value: function(inherited, node) {
@@ -147,16 +144,73 @@ var FxNode = fx.dom.Node.extend({
 	    this.outerNode.content.push(node.outerNode);
 	    return node;
 	}
+    },
+    
+    cloneNode: {
+	value: function(deep) {
+	    var copy = Object.create(Object.getPrototypeOf(this));
+	    
+	    var fxNode = null;
+	    var shape = this.innerNode;
+	    if (shape instanceof Rectangle) {
+		fxNode = new Rectangle({x: shape.x, y: shape.y, width: shape.width, height: shape.height, 
+					arcWidth: shape.arcWidth, arcHeight: shape.arcHeight,
+					fill: shape.fill, stroke: shape.stroke});
+	    } else if (shape instanceof javafx.scene.shape.Polygon) {
+		fxNode = new javafx.scene.shape.Polygon({points: shape.points,
+							 fill: shape.fill, stroke: shape.stroke});
+		
+	    }  else {
+		throw new Exception('cant handle ' + shape);
+
+	    }
+	    copy.outerNode = javafx.scene.Group({ 
+		content: fxNode !== undefined ? [fxNode] : [],
+	    });
+	    copy.innerNode = fxNode;
+	    fxRegistry.put(fxNode, copy);
+	    
+	    //copy['.shapeType'] = this['.shapeType'];
+	    // FIXME this is obviously retarded, merge with constructor etc
+	    
+	    var blacklist = ['outerNode', 'innerNode', 'parentNode', 'childNodes', 
+		'boundsInLocal', 'boundsInParent', 'boundsInScene', 'firstChild', 'lastChild', 'previousSibling',
+		'nextSibling', 'id'];
+	    for (var name in this) {
+		if (blacklist.indexOf(name) == -1) {
+		    // doesn't handle getters and setters
+		    if (name.charAt(0) == '.') continue;
+		    var value = this[name];
+		    if (value instanceof Function) continue; // FIXME copy if not in prototype?
+		    try {
+			print('copying ' + name);
+			copy[name] = this[name];
+		    } catch (er) {
+			print('failure while copying ' + name + ", "  + er);
+			throw er;
+		    }
+		}
+	    }
+	    if (deep) {
+		for (var ch = this.firstChild; ch; ch = ch.nextSibling) {
+		    copy.appendChild(ch.cloneNode(true));
+		}
+	    }
+	    return copy;
+	}
     }
+
+
 });
     
 
+/*
 function rect(x, y) {
     return Rectangle({
 	x: x, y: y, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK
     })
 }
-
+*/
 
 var Hand = FxNode.extend({
     constructor: {
@@ -164,7 +218,7 @@ var Hand = FxNode.extend({
 	    //var cursor = Rectangle({width: 10, height: 10, translateX: 3, translateY: 3, fill: Color.BLACK});
 	    inherited(javafx.scene.shape.Polygon({points: [0, 0, 11, 6, 6, 11, 0, 0], 
 						  translateX: 3, translateY: 3, strokeWidth:1, fill: Color.BLUE, id: 'hand'}));
-
+	    
 	    //this.cursor = new fx.scene.Polygon({
 	    this.grabEffect = javafx.scene.effect.DropShadow({offsetX: 4, offsetY: 2});
 	}
@@ -187,10 +241,10 @@ var Hand = FxNode.extend({
 		editHalo = null;
 	    }
 
-	    bthat = node;
+	    that = node;
 	    // FIXME use a real transform 
 	    var localPoint = node.outerNode.sceneToLocal(scenePoint); // where node sees the mouse pointer
-	    node.moveTo(-localPoint.x, -localPoint.y);
+	    node.translateTo(-localPoint.x, -localPoint.y);
 	    //print(node + 'translate will be at ' + [node.translateX, node.translateY]);
 	    that = node;
 	    // node's local point corresponding to the 
@@ -263,11 +317,11 @@ function makeStarVertices(r, center, startAngle) {
 }
 
 var star = new FxNode(javafx.scene.shape.Polygon({
-     points: makeStarVertices(50, { x:0, y:0}, 0), 
+    points: makeStarVertices(50, { x:0, y:0}, 0), 
     strokeWidth: 1, fill: Color.YELLOW, stroke: Color.BLACK
 }));
-
-star.moveTo(300, 300); 
+    
+star.translateTo(300, 300); 
 world.appendChild(star);
 
 var button = new FxNode(javafx.scene.control.Button({ width: 80, height: 30, strong: true,
@@ -276,7 +330,7 @@ var button = new FxNode(javafx.scene.control.Button({ width: 80, height: 30, str
 	star.outerNode.rotate += 20;
     }
 }));
-button.moveTo(260, 400);			
+button.translateTo(260, 400);			
 			    
 							
 world.appendChild(button); 
@@ -321,13 +375,17 @@ var stage = javafx.stage.Stage({
 			} else if (!domNode) { 
 			    print('nope'); 
 			    return;
+			} else if (evt.shiftDown) {
+			    var clone = domNode.cloneNode(true);
+			    print('cloned  ' + clone);
+			    hand.pick(clone, point);
 			} else if (evt.metaDown) {
 			    var box = domNode.outerNode.boundsInParent;
 			    print('box is ' + box);
 			    // translateX: bind(ev.target, 'boundsInParent.x')
 			    var c = Color.WHITE;
 			    editHalo = new FxNode(Rectangle({width: box.width, height: box.height, fill: null, stroke: c}));
-			    editHalo.moveTo(box.minX, box.minY);
+			    editHalo.translateTo(box.minX, box.minY);
 			    editHalo.outerNode.onMousePressed = function(evt) {
 				if (editHalo) {
 				    editHalo.parentNode.removeChild(editHalo);
@@ -339,19 +397,19 @@ var stage = javafx.stage.Stage({
 			    var r = 4;
 			    var topLeft =  editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
 			    var topRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    topRight.moveTo(box.width, 0);
+			    topRight.translateTo(box.width, 0);
 			    var topCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    topCenter.moveTo(box.width/2, 0);
+			    topCenter.translateTo(box.width/2, 0);
 			    var bottomLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    bottomLeft.moveTo(0, box.height);
+			    bottomLeft.translateTo(0, box.height);
 			    var centerLeft = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    centerLeft.moveTo(0, box.height/2);
+			    centerLeft.translateTo(0, box.height/2);
 			    var bottomRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    bottomRight.moveTo(box.width, box.height);
+			    bottomRight.translateTo(box.width, box.height);
 			    var bottomCenter = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    bottomCenter.moveTo(box.width/2, box.height);
+			    bottomCenter.translateTo(box.width/2, box.height);
 			    var centerRight = editHalo.appendChild(new FxNode(Ellipse({radiusX: r, radiusY: r, fill: c})));
-			    centerRight.moveTo(box.width, box.height/2);
+			    centerRight.translateTo(box.width, box.height/2);
 			    
 			    editHalo.childNodes.forEach(function(n) {
 				n.noGrab = true;
