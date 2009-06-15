@@ -161,7 +161,7 @@ var FxNode = fx.dom.Node.extend({
 							 fill: shape.fill, stroke: shape.stroke});
 		
 	    }  else {
-		throw new Exception('cant handle ' + shape);
+		throw new Error('cant handle ' + shape);
 
 	    }
 	    copy.outerNode = javafx.scene.Group({ 
@@ -202,7 +202,15 @@ var FxNode = fx.dom.Node.extend({
 
 
 });
-    
+
+
+var FxText = FxNode.extend({
+    constructor: {
+	value: function(inherited, proplist) {
+	    inherited(javafx.scene.text.Text(proplist));
+	}
+    }
+});
 
 /*
 function rect(x, y) {
@@ -274,7 +282,6 @@ var hand = new Hand();
 var world = new FxNode(Rectangle({width: 500, height: 500, fill: Color.DARKGRAY, 
     stroke: Color.BLACK, id: 'background'}));
 						     
-						     
 var n = new FxNode(Rectangle({
     width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK, id: 'green'
 }));
@@ -298,7 +305,20 @@ print('OK ' + n);
  
 world.appendChild(n);
 
+world.appendChild(new FxText({content: "JavaFX\nJavaFX\nJavaFX\nJavaFX", 
+			      translateX: 300, translateY: 20, strokeWidth: 1}));
  
+
+
+world.appendChild(new FxNode(Ellipse({translateX: 300, translateY: 200,
+				  radiusX: 40, radiusY: 20,
+				      fill: Color.BLUE,
+				      stroke: Color.BLACK,
+				      strokeWidth: 1})));
+						    
+
+
+
 function makeStarVertices(r, center, startAngle) {
     function polar(r, theta) {
 	return { x: r*Math.cos(theta), y: r*Math.sin(theta)}
@@ -455,7 +475,10 @@ var stage = javafx.stage.Stage({
 					tgt.eventPoint = {x: tgt.eventPoint.x + dx, y: tgt.eventPoint.y + dy}
 				    }
 				};
-				n.outerNode.onMouseDragged = n.outerNode.onMouseMoved;
+				n.outerNode.onMouseDragged = function(ev) {
+				    n.outerNode.onMouseMoved(ev);
+				    //stage.scene.content[0].onMouseMoved(ev);
+				}
 			    });
 			} else {
 			    hand.pick(domNode, point); 
