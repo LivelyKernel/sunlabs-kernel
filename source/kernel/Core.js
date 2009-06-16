@@ -896,6 +896,7 @@ Copier.subclass('Importer', {
 	resizeCanvasToFitWorld: function(world) {
 		console.log('Resizing SVG canvas');
 		var canvas = world.rawNode.parentNode;
+		if (!canvas) return;
 		if (canvas.clientWidth != world.bounds().width)
 			canvas.setAttribute("width", world.bounds().width);
 		if (canvas.clientHeight != world.bounds().height)

@@ -2617,6 +2617,20 @@ openExample: function() {
 		this.setExtent(extent);
 	},
 	
+      embedMov: function(name) {
+      console.log('Embedding move...');
+      this.foRawNode.removeChild(this.foRawNode.firstChild);
+      var extent = this.getExtent();
+      var node = this.objectNodeForMovFromTemplate(name, extent);
+      this.foRawNode.appendChild(node);
+      this.setExtent(extent);
+    },
+
+	objectNodeForMovFromTemplate: function(name, extent) {
+	var string = Strings.format('<body xmlns="http://www.w3.org/1999/xhtml"><embed src="%s" type="video/quicktime" width="%s" height="%s" autoplay="false" controller="true"/></body>', name, extent.x, extent.y);
+	var node = document.adoptNode(stringToXML(string));
+	return node;
+      },
 	
 objectNodeFromTemplate: function(url, extent) {
 	url = url.toString().replace(/&/g, "&amp;");
