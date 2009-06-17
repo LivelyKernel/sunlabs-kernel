@@ -31,6 +31,18 @@ public class FXWrapFactory extends WrapFactory {
 	    return object instanceof NativeJavaFXObject; // or sequence?
 	}
 	
+	public static String jsStaticFunction_getEncodedSource(Scriptable object) {
+	    if (object instanceof NativeFunction) {
+		return ((NativeFunction)object).getEncodedSource();
+	    } else return null;
+	}
+
+	public static byte[] jsStaticFunction_getICode(Scriptable object) {
+	    if (object instanceof InterpretedFunction) {
+		return ((InterpretedFunction)object).idata.itsICode;
+	    } else return null;
+	}
+
 
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
 	    if (object instanceof NativeJavaFXObject) {

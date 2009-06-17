@@ -355,6 +355,20 @@ button.translateTo(260, 400);
 							
 world.appendChild(button); 
 
+
+/*
+function range(begin, end) {  
+    for (var i = begin; i < end; ++i) {  
+	yield i;  
+    }  
+} 
+
+world.appendChild(new FxNode(javafx.scene.control.ListView({
+    items: [("Item " + i) for each (i in range(0, 21))],
+    //    translateX: 20,
+    translateY: 300
+})));
+*/
      
 var stage = javafx.stage.Stage({
     title: 'Declaring is easy!', 
@@ -519,10 +533,12 @@ button.innerNode.action = (function() {
     return function() {
 	javafx.lang.FX.deferAction(function() {
 	    if (timer == null) {
+		button.innerNode.text = 'stop rotation';
 		timer = setInterval(function() {
 		    star.outerNode.rotate += 5;
 		}, 20);
 	    } else {
+		button.innerNode.text = 'rotate star';
 		timer.stop();
 		timer = null;
 	    }
