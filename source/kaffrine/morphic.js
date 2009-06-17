@@ -183,7 +183,10 @@ var FxNode = fx.dom.Node.extend({
 	    } else if (shape instanceof javafx.scene.shape.Polygon) {
 		fxNode = new javafx.scene.shape.Polygon({points: shape.points,
 							 fill: shape.fill, stroke: shape.stroke});
-		
+	    } else if (shape instanceof Ellipse) {
+		fxNode = new Ellipse({ 
+		    translateX: shape.translateX, translateY: shape.translateY,
+		    radiusX: shape.radiusX, radiusY: shape.radiusY, fill: shape.fill, stroke: shape.stroke});
 	    }  else {
 		throw new Error('cant handle ' + shape);
 
@@ -197,7 +200,7 @@ var FxNode = fx.dom.Node.extend({
 	    //copy['.shapeType'] = this['.shapeType'];
 	    // FIXME this is obviously retarded, merge with constructor etc
 	    
-	    var blacklist = ['outerNode', 'innerNode', 'parentNode', 'childNodes', 
+	    var blacklist = ['outerNode', 'innerNode', 'parentNode', 'childNodes', 'ownerDocument',
 		'boundsInLocal', 'boundsInParent', 'boundsInScene', 'firstChild', 'lastChild', 'previousSibling',
 		'nextSibling', 'id'];
 	    for (var name in this) {
