@@ -29,9 +29,15 @@ var FxNode = fx.dom.Node.extend({
 	    this.outerNode = javafx.scene.Group({ 
 		content: fxNode !== undefined ? [fxNode] : [],
 	    });
-	    this.outerNode.id = String("node_" + debugCount++);
+	    this.outerNode.id = String("fx-" + debugCount++);
 	    this.innerNode = fxNode;
 	    document.fxRegistry.put(fxNode, this);
+	}
+    },
+
+    ownerDocument: {
+	getter: function() {
+	    return document; // FIXME
 	}
     },
 
