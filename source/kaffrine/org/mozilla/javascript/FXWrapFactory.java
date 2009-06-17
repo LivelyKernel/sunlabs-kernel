@@ -117,20 +117,19 @@ public class FXWrapFactory extends WrapFactory {
 	    }
 	    isInited = true;
 	}
-	Class type = obj == null ? staticType : obj.getClass();
-	if (type != null) {
-	    if (FXObject.class.isAssignableFrom(type)) {
-		//System.err.println("FX custom wrapping " + type);
-		return new NativeJavaFXObject(scope, obj, type);
-	    } else if (SequenceVariable.class.isAssignableFrom(type)) {
-		//System.err.println("FX wrapping sequence " + type);
-		Scriptable proto = ScriptableObject.getClassPrototype(scope, NativeJavaFXSequence.JS_NAME);
-		NativeJavaFXSequence seq = new NativeJavaFXSequence(scope, proto);
-		seq.variable = (SequenceVariable)obj;
-		return super.wrap(cx, scope, seq, staticType);
-	    }
-	}
-	//System.err.println("wrapping " + obj);
-	return super.wrap(cx, scope, obj, staticType);
+	if (obj == null) return null; 
+	Class type = obj.getClass();
+	if (FXObject.class.isAssignableFrom(type)) {
+	    //System.err.println("FX custom wrapping " + type);
+	    return new NativeJavaFXObject(scope, obj, type);
+	} else if (SequenceVariable.class.isAssignableFrom(type)) {
+	    //System.err.println("FX wrapping sequence " + type);
+	    Scriptable proto = ScriptableObject.getClassPrototype(scope, NativeJavaFXSequence.JS_NAME);
+	    NativeJavaFXSequence seq = new NativeJavaFXSequence(scope, proto);
+	    seq.variable = (SequenceVariable)obj;
+	    return super.wrap(cx, scope, seq, staticType);
+	} else 
+	    //System.err.println("wrapping " + obj);
+	    return super.wrap(cx, scope, obj, staticType);
     }
 }

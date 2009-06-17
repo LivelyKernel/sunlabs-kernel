@@ -11,7 +11,14 @@ var Rectangle = javafx.scene.shape.Rectangle;
 var Ellipse = javafx.scene.shape.Ellipse;
 //print('Rectangle ' + Rectangle);
 
-var fxRegistry = new java.util.WeakHashMap(); // map f3 nodes to js nodes
+var document = new fx.lang.Object({
+    fxRegistry: new java.util.WeakHashMap(), // map f3 nodes to js nodes
+    getElementById: function(id) {
+	var node = stage.scene.lookup(id);
+	return node && this.fxRegistry.get(node);
+    }
+});
+
 var debugCount = 0;
 var editHalo;
 
@@ -19,12 +26,12 @@ var FxNode = fx.dom.Node.extend({
     constructor: {
 	value: function(inherited, fxNode) {
 	    inherited();
-	    if (fxNode && !fxNode.id) fxNode.id = String("node_" + debugCount++);
 	    this.outerNode = javafx.scene.Group({ 
 		content: fxNode !== undefined ? [fxNode] : [],
 	    });
+	    this.outerNode.id = String("node_" + debugCount++);
 	    this.innerNode = fxNode;
-	    fxRegistry.put(fxNode, this);
+	    document.fxRegistry.put(fxNode, this);
 	}
     },
 
@@ -37,12 +44,23 @@ var FxNode = fx.dom.Node.extend({
     
     id: {
 	getter: function() {
-	    return this.outerNode.id;
+	    return this.innerNode.id;
 	},
 	setter: function(value) {
-	    this.outerNode.id = String(value);
+	    this.innerNode.id = String(value);
 	}
     },
+
+    
+    className: {
+	getter: function() {
+	    return this.innerNode.styleClass;
+	},
+	setter: function(value) {
+	    this.innerNode.styleClass = value;
+	}
+    },
+
 
     translateBy: {
 	value: function(x, y) {
@@ -168,7 +186,7 @@ var FxNode = fx.dom.Node.extend({
 		content: fxNode !== undefined ? [fxNode] : [],
 	    });
 	    copy.innerNode = fxNode;
-	    fxRegistry.put(fxNode, copy);
+	    document.fxRegistry.put(fxNode, copy);
 	    
 	    //copy['.shapeType'] = this['.shapeType'];
 	    // FIXME this is obviously retarded, merge with constructor etc
@@ -281,9 +299,10 @@ var hand = new Hand();
 
 var world = new FxNode(Rectangle({width: 500, height: 500, fill: Color.DARKGRAY, 
     stroke: Color.BLACK, id: 'background'}));
+
 						     
 var n = new FxNode(Rectangle({
-    width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK, id: 'green'
+    width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN, stroke: Color.BLACK, id: 'green_rect'
 }));
     
 n.translateBy(45, 35);
@@ -399,7 +418,7 @@ var stage = javafx.stage.Stage({
 		    } else {
 			//print('pick up source ' + evt.source + "," + evt.source.boundsInParent);
 			//print('pick up loc ' + evt.node);
-			var domNode = fxRegistry.get(evt.source);
+			var domNode = document.fxRegistry.get(evt.source);
 			if (domNode === world) {
 			    if (editHalo) {
 				editHalo.parentNode.removeChild(editHalo);
@@ -472,7 +491,7 @@ var stage = javafx.stage.Stage({
 			    // FIXME: only correct for topLeft
 			    [topLeft, bottomLeft, topRight, bottomRight].forEach(function(n) {
 				n.outerNode.onMouseMoved = function(ev) {
-				    var tgt = fxRegistry.get(ev.source);
+				    var tgt = document.fxRegistry.get(ev.source);
 				    //print('moved ' + [tgt, tgt.eventPoint]);
 				    if (tgt.eventPoint) {
 					var dx = (ev.sceneX - tgt.eventPoint.x);
@@ -545,4 +564,7 @@ button.innerNode.action = (function() {
 	});
     }
 })();
+
+var location= {}
+load('jquery.js');
 
