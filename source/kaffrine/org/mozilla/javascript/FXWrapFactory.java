@@ -111,7 +111,7 @@ public class FXWrapFactory extends WrapFactory {
  
     private boolean isInited = false;
     
-    Scriptable topScope;
+    Scriptable topScope; // FIXME revisit, can we do this?
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	if (!isInited) {
