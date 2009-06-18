@@ -5,21 +5,34 @@ import java.util.*;
 
 
 // hacked JavaMembers
-class JavaFXMembers {
+class JavaFXMembers<T> {
 
     Map<String, Method> getters = new HashMap<String, Method>(); // could be shared based on type
-    Map<String, Method> setters = new HashMap<String, Method>(); // could be shared based on type
-    Map<String, Method> locations = new HashMap<String, Method>(); // could be shared based on type
-    Class cl;
+    private Map<String, Method> setters = new HashMap<String, Method>(); // could be shared based on type
+    private Map<String, Method> locations = new HashMap<String, Method>(); // could be shared based on type
+    Map<String, Object> staticMethods = new HashMap<String, Object>();
+    Map<String, Object> instanceMethods = new HashMap<String, Object>();
+
+
+    private Class<T> cl;
     
-    JavaFXMembers(Scriptable scope, Class cl) {
+    JavaFXMembers(Scriptable scope, Class<T> cl) {
 	this.cl = cl;
 	reflect(scope);
     }
     
-    Map<String, Object> staticMethods = new HashMap<String, Object>();
-    Map<String, Object> instanceMethods = new HashMap<String, Object>();
 
+    Method getterFor(String name) {
+	return this.getters.get(name);
+    }
+
+    Method locatorFor(String name) {
+	return this.locations.get(name);
+    }
+
+    Method setterFor(String name) {
+	return this.setters.get(name);
+    }
 
     Object[] getIds() {
 	// FIXME more efficient?
@@ -29,6 +42,10 @@ class JavaFXMembers {
 	list.addAll(locations.keySet());
 	list.addAll(instanceMethods.keySet());
 	return list.toArray();
+    }
+    
+    public String toString() {
+	return this.cl.getName() + "[" + Arrays.asList(this.getIds()) + "]";
     }
 
     public void reflect(Scriptable scope) {
@@ -71,7 +88,7 @@ class JavaFXMembers {
         // first in staticMembers and then in members
         for (int tableCursor = 0; tableCursor != 2; ++tableCursor) {
             boolean isStatic = (tableCursor == 0);
-            Map<String, Object> ht = (isStatic) ? staticMethods : instanceMethods;
+            Map<String, Object> ht = isStatic ? staticMethods : instanceMethods;
 	    for (String name : ht.keySet()) {
                 MemberBox[] methodBoxes;
                 Object value = ht.get(name);
@@ -96,12 +113,12 @@ class JavaFXMembers {
         }
     }
 
-    static Map<Class, JavaFXMembers> memberInfos = new HashMap<Class, JavaFXMembers>();
+    private static Map<Class, JavaFXMembers> memberInfos = new HashMap<Class, JavaFXMembers>();
 
-    public static JavaFXMembers lookupClass(Scriptable scope, Class dynamicType, Class staticType) {
-	JavaFXMembers mi = memberInfos.get(dynamicType);
+    public static <U> JavaFXMembers<U> lookupClass(Scriptable scope, Class<U> dynamicType, Class staticType) {
+	JavaFXMembers<U> mi = memberInfos.get(dynamicType);
 	if (mi == null) {
-	    mi = new JavaFXMembers(scope, dynamicType);
+	    mi = new JavaFXMembers<U>(scope, dynamicType);
 	    memberInfos.put(dynamicType, mi);
 	}
 	return mi;

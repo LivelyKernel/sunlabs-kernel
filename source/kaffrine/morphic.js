@@ -379,10 +379,23 @@ var button = new FxNode(javafx.scene.control.Button({ width: 80, height: 30, str
     }
 }));
 button.translateTo(260, 400);			
-			    
-							
 world.appendChild(button); 
 
+var textInput = new FxNode(javafx.scene.control.TextBox({width: 200, height: 30}));
+
+textInput.translateTo(20, 400);
+world.appendChild(textInput);
+    
+textInput.innerNode.onKeyTyped = function(evt) {
+    //print('event is ' + evt);
+    //print('code ' + evt.code + ' vs ' + javafx.scene.input.KeyCode.VK_ENTER);
+    if (evt['char'] == '\n') {
+	var txt = textInput.innerNode.text;
+	print('input ' + txt);
+	//print($('#' + ));
+    } 
+    //textInput.innerNode.
+}
 
 /*
 function range(begin, end) {  

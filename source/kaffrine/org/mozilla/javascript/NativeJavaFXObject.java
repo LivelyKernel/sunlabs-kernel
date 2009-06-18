@@ -8,16 +8,15 @@ import java.lang.reflect.*;
 
 public class NativeJavaFXObject implements Scriptable, Wrapper {
 
-
     Object javaObject;
-    Scriptable parent;
+    //Scriptable parent; // ellide parent scope and share, what about thread safety?
     Scriptable prototype;
     JavaFXMembers memberInfo;
     Class staticType;
     
     public NativeJavaFXObject(Scriptable scope, Object javaObject, Class type) {
 	this.javaObject = javaObject;
-	this.parent = scope;
+	//this.parent = scope;
 	this.staticType = type;
 	initMembers();
     }
@@ -29,7 +28,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
         } else {
             dynamicType = staticType;
         }
-        this.memberInfo = JavaFXMembers.lookupClass(this.parent, dynamicType, this.staticType);
+        this.memberInfo = JavaFXMembers.lookupClass(this.getParentScope(), dynamicType, this.staticType);
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 
@@ -47,11 +46,12 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     }
     
     public Scriptable getParentScope() {
-	return parent;
+	return FXWrapFactory.instance.topScope;
+	//return parent;
     }
     
     public void setParentScope(Scriptable m) {
-	parent = m;
+	//parent = m;
     }
     
     public Scriptable getPrototype() {
@@ -90,13 +90,13 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     }
     
     Object doGet(String name) throws Exception {
-	Method getter = this.memberInfo.getters.get(name);
+	Method getter = this.memberInfo.getterFor(name);
 	if (getter == null) return Scriptable.NOT_FOUND; // FIXME
 	return getter.invoke(this.javaObject);
     }
     
     boolean doSet(String name, Object value) throws Exception {
-	Method setter = this.memberInfo.setters.get(name);
+	Method setter = this.memberInfo.setterFor(name);
 	if (setter == null) return false;
 	setter.invoke(this.javaObject, value);
 	return true;
@@ -120,7 +120,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     }
 
     public ObjectLocation getLocation(String name) {
-	Method locator = this.memberInfo.locations.get(name);
+	Method locator = this.memberInfo.locatorFor(name);
 	if (locator != null) {
 	    try {
 		return (ObjectLocation)locator.invoke(this.javaObject);
@@ -135,7 +135,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     public Object get(String name, Scriptable start) {
 	try {
 	    Object value = null;
-	    Method locator = this.memberInfo.locations.get(name);
+	    Method locator = this.memberInfo.locatorFor(name);
 	    if (locator != null) {
 		ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
 		if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
@@ -210,7 +210,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		// FIXME this breaks referential equality, but maybe it's OK
 		value = this.sequenceFromArray((NativeArray)value, start);
 	    } else if (value instanceof Function) {
-		Method setter = this.memberInfo.setters.get(name);
+		Method setter = this.memberInfo.setterFor(name);
 		if (setter == null) {
 		    System.err.println("didn't find setter for " + name);
 		    return;
@@ -221,8 +221,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		boolean result = this.doSet(name, value);
 		if (!result) {
 		    System.err.println("doSet failed on " + name + " value " + value + " " + this.javaObject);
-		    System.err.println("setters " + this.memberInfo.setters.keySet());
-		    Method locator = this.memberInfo.locations.get(name);
+		    Method locator = this.memberInfo.locatorFor(name);
 		    if (locator != null) {
 			ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
 			location.set(value);
@@ -242,7 +241,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	    boolean result = this.doSet(name, value);
 	    if (!result) {
 		//System.err.println("not public? " + name);
-		Method locator = this.memberInfo.locations.get(name);
+		Method locator = this.memberInfo.locatorFor(name);
 		if (locator != null) {
 		    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
 		    try {

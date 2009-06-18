@@ -43,6 +43,14 @@ public class FXWrapFactory extends WrapFactory {
 	    } else return null;
 	}
 
+	public static void jsStaticFunction_dumpMembers(Scriptable object) {
+	    if (object instanceof NativeJavaFXObject) {
+		System.err.println("member info " + ((NativeJavaFXObject)object).memberInfo);
+	    } else {
+		System.err.println("not a member");
+	    }
+	}
+
 
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
 	    if (object instanceof NativeJavaFXObject) {
@@ -102,11 +110,13 @@ public class FXWrapFactory extends WrapFactory {
     public static NativeJavaFXPackage FX = new NativeJavaFXPackage(true, "javafx", null);
  
     private boolean isInited = false;
+    
+    Scriptable topScope;
 
     public Object wrap(Context cx, Scriptable scope, Object obj, Class staticType) {
 	if (!isInited) {
 	    try {
-		Scriptable topScope = ScriptableObject.getTopLevelScope(scope);
+		topScope = ScriptableObject.getTopLevelScope(scope);
 		if (topScope != scope) System.err.println("different!");
 		ScriptableObject.defineClass(topScope, NativeJavaFXSequence.class, false, true);
 		ScriptableObject.defineClass(topScope, FXRuntime.class, false, true);

@@ -37,9 +37,15 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
 	    Field field = this.getClassObject().getField("$"+ name);
 	    return Context.javaToJS(field.get(this.getClassObject()), start);
 	} catch (Exception e) { 
-	    NativeJavaMethod method = (NativeJavaMethod)members.staticMethods.get(name);
-	    //System.err.println("static method " + method);
-	    if (method != null) return method;
+	    // now try without the $
+	    try {
+		Field field = this.getClassObject().getField(name);
+		return Context.javaToJS(field.get(this.getClassObject()), start);
+	    } catch (Exception e2) { 
+		NativeJavaMethod method = (NativeJavaMethod)members.staticMethods.get(name);
+		//System.err.println("static method " + method);
+		if (method != null) return method;
+	    }
 	}
 	return super.get(name, start);
     }
