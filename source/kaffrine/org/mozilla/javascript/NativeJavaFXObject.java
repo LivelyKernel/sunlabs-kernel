@@ -91,26 +91,40 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     }
     
     Object doGet(String name) throws Exception {
-	Method locator = this.memberInfo.locatorFor(name);
-	if (locator != null) {
-	    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-	    if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
-		return location; // hocus pocus, for sequences, it's the locations not values that are wrapped
-	    } else {
-		return location.get(); 
-	    }
-	} else {
-	    Method getter = this.memberInfo.getterFor(name);
-	    if (getter == null) return Scriptable.NOT_FOUND; // FIXME
+	Method getter = this.memberInfo.getterFor(name);
+	if (getter != null) {
 	    return getter.invoke(this.javaObject);
+	} else {
+	    Method locator = this.memberInfo.locatorFor(name);
+	    if (locator != null) {
+		ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
+		if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
+		    return location; // hocus pocus, for sequences, it's the locations not values that are wrapped
+		} else {
+		    return location.get(); 
+		}
+	    }  else {
+		return Scriptable.NOT_FOUND; // FIXME
+	    }
 	}
     }
     
-    boolean doSet(String name, Object value) throws Exception {
+    void doSet(String name, Object value) throws Exception {
 	Method setter = this.memberInfo.setterFor(name);
-	if (setter == null) return false;
-	setter.invoke(this.javaObject, value);
-	return true;
+	if (setter != null) {
+	    setter.invoke(this.javaObject, value);
+	} else {
+	    Method locator = this.memberInfo.locatorFor(name);
+	    if (locator != null) {
+		ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
+		try {
+		    location.set(value);
+		} catch (RuntimeException e) {
+		    System.err.println("value " + value + " location " + location);
+		    throw e;
+		}
+	    } 
+	}
     }
     
     private static Sequence sequenceFromArray(NativeArray array, Scriptable scope) {
@@ -130,19 +144,6 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	return Sequences.make(type, fxarray, length);
     }
 
-    ObjectLocation getLocation(String name) {
-	Method locator = this.memberInfo.locatorFor(name);
-	if (locator != null) {
-	    try {
-		return (ObjectLocation)locator.invoke(this.javaObject);
-	    } catch (Exception e) {
-		System.err.println("problem " + e + " on locator " + name);
-		return null;
-	    }
-	} else return null;
-    }
-
-    
     public Object get(String name, Scriptable start) {
 	// imagine this as a big compiler-generated switch on perfectHash(name)
 	try {
@@ -211,27 +212,14 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		// FIXME this breaks referential equality, but maybe it's OK
 		value = this.sequenceFromArray((NativeArray)value, start);
 	    } else if (value instanceof Function) {
-		Method setter = this.memberInfo.setterFor(name);
+		Method setter = this.memberInfo.setterFor(name); // need the type of the setter
 		if (setter == null) {
 		    System.err.println("didn't find setter for " + name);
 		    return;
 		}
 		this.functionCache.put(name, (Function)value);
-		value = makeFunction((Function)value, setter.getReturnType(), ScriptableObject.getTopLevelScope(start));
-
-		boolean result = this.doSet(name, value);
-		if (!result) {
-		    System.err.println("doSet failed on " + name + " value " + value + " " + this.javaObject);
-		    Method locator = this.memberInfo.locatorFor(name);
-		    if (locator != null) {
-			ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-			location.set(value);
-			System.err.println("retrieved stored value " + value);
-		    } else {
-			System.err.println("XXX no locator for " + name);
-		    }
-		}
-		//System.err.println("SUCCESS " + this.doGet(name));
+		this.doSet(name, makeFunction((Function)value, setter.getReturnType(), 
+					      ScriptableObject.getTopLevelScope(start)));
 		return;
 	    } else if (value instanceof Number) { // FIXME FIXME super ad-hoc
 		value = Context.jsToJava(value, Float.class);
@@ -239,22 +227,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 		// FIXME is there a better way???
 		value = ((Wrapper)value).unwrap();
 	    } 
-	    boolean result = this.doSet(name, value);
-	    if (!result) {
-		//System.err.println("not public? " + name);
-		Method locator = this.memberInfo.locatorFor(name);
-		if (locator != null) {
-		    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-		    try {
-			location.set(value);
-		    } catch (RuntimeException e) {
-			System.err.println("value " + value + " location " + location);
-			throw e;
-		    }
-		} else {
-		    System.err.println("locator not present " + name);
-		}
-	    }
+	    this.doSet(name, value);
 	    return;
 	} catch (Exception e) { 
 	    e.printStackTrace(System.err);

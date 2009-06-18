@@ -50,7 +50,6 @@ class JavaFXMembers<T> {
     public void reflect(Scriptable scope) {
         for (Method method : this.cl.getMethods()) {
 	    boolean isStatic = Modifier.isStatic(method.getModifiers());
-	    
             String name = method.getName();
 	    if (name.startsWith("get$")) {
 		this.getters.put(name.substring(4), method);
