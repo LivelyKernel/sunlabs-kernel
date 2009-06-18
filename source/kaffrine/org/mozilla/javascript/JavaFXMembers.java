@@ -9,7 +9,7 @@ class JavaFXMembers<T> {
 
     Map<String, Method> getters = new HashMap<String, Method>(); // could be shared based on type
     private Map<String, Method> setters = new HashMap<String, Method>(); // could be shared based on type
-    private Map<String, Method> locations = new HashMap<String, Method>(); // could be shared based on type
+    private Map<String, Method> locators = new HashMap<String, Method>(); // could be shared based on type
     Map<String, Object> staticMethods = new HashMap<String, Object>();
     Map<String, Object> instanceMethods = new HashMap<String, Object>();
 
@@ -19,6 +19,7 @@ class JavaFXMembers<T> {
     JavaFXMembers(Scriptable scope, Class<T> cl) {
 	this.cl = cl;
 	reflect(scope);
+	//analyze();
     }
     
     Method getterFor(String name) {
@@ -26,7 +27,7 @@ class JavaFXMembers<T> {
     }
 
     Method locatorFor(String name) {
-	return this.locations.get(name);
+	return this.locators.get(name);
     }
 
     Method setterFor(String name) {
@@ -38,13 +39,25 @@ class JavaFXMembers<T> {
 	List<String> list = new ArrayList<String>();
 	list.addAll(getters.keySet());
 	list.addAll(setters.keySet());
-	list.addAll(locations.keySet());
+	list.addAll(locators.keySet());
 	list.addAll(instanceMethods.keySet());
 	return list.toArray();
     }
     
     public String toString() {
 	return this.cl.getName() + ":" + Arrays.asList(this.getIds());
+    }
+
+
+    public void analyze() {
+	ArrayList<String> missingGetters = new ArrayList<String>();
+	for (String name: this.locators.keySet()) {
+	    if (!this.getters.containsKey(name)) {
+		missingGetters.add(name);
+	    }
+	}
+	if (missingGetters.size() > 0)
+	    System.err.println(this.cl.getName() + " has locator but not getter for " + missingGetters);
     }
 
     public void reflect(Scriptable scope) {
@@ -57,8 +70,9 @@ class JavaFXMembers<T> {
 	    } else if (name.startsWith("set$")) {
 		this.setters.put(name.substring(4), method);
 		continue;
-	    } else if (name.startsWith("loc$")) {
-		this.locations.put(name.substring(4), method);
+	    } else if (name.startsWith("loc$") && (name.length() > 4)) {
+		// looks like there's loc$(int), allows to enumerate locs?
+		this.locators.put(name.substring(4), method);
 		continue;
 	    } 
 	    
