@@ -120,7 +120,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 	return Sequences.make(type, fxarray, length);
     }
 
-    public ObjectLocation getLocation(String name) {
+    ObjectLocation getLocation(String name) {
 	Method locator = this.memberInfo.locatorFor(name);
 	if (locator != null) {
 	    try {
@@ -134,6 +134,8 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
 
     
     public Object get(String name, Scriptable start) {
+	// imagine this as a big compiler-generated switch on perfectHash(name)
+	
 	try {
 	    Object value = null;
 	    Method locator = this.memberInfo.locatorFor(name);

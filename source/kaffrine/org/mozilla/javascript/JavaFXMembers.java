@@ -45,7 +45,7 @@ class JavaFXMembers<T> {
     }
     
     public String toString() {
-	return this.cl.getName() + "[" + Arrays.asList(this.getIds()) + "]";
+	return this.cl.getName() + ":" + Arrays.asList(this.getIds());
     }
 
     public void reflect(Scriptable scope) {
