@@ -69,15 +69,14 @@ class JavaFXMembers<T> {
             if (value == null) {
                 ht.put(name, method);
             } else {
-                ObjArray overloadedMethods;
-                if (value instanceof ObjArray) {
-                    overloadedMethods = (ObjArray)value;
+                ArrayList<Method> overloadedMethods;
+                if (value instanceof ArrayList) {
+                    overloadedMethods = (ArrayList<Method>)value;
                 } else {
-                    if (!(value instanceof Method)) Kit.codeBug();
                     // value should be instance of Method as at this stage
                     // staticMembers and members can only contain methods
-                    overloadedMethods = new ObjArray();
-                    overloadedMethods.add(value);
+                    overloadedMethods = new ArrayList<Method>();
+                    overloadedMethods.add((Method)value);
                     ht.put(name, overloadedMethods);
                 }
                 overloadedMethods.add(method);
@@ -95,7 +94,7 @@ class JavaFXMembers<T> {
                 if (value instanceof Method) {
                     methodBoxes = new MemberBox[] { new MemberBox((Method)value) };
                 } else {
-                    ObjArray overloadedMethods = (ObjArray)value;
+                    ArrayList<Method> overloadedMethods = (ArrayList<Method>)value;
                     int N = overloadedMethods.size();
                     if (N < 2) Kit.codeBug();
                     methodBoxes = new MemberBox[N];

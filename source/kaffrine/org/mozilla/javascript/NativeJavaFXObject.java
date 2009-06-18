@@ -51,6 +51,7 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     }
     
     public void setParentScope(Scriptable m) {
+	System.err.println("setting scope has no effect");
 	//parent = m;
     }
     
