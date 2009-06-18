@@ -91,9 +91,19 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     }
     
     Object doGet(String name) throws Exception {
-	Method getter = this.memberInfo.getterFor(name);
-	if (getter == null) return Scriptable.NOT_FOUND; // FIXME
-	return getter.invoke(this.javaObject);
+	Method locator = this.memberInfo.locatorFor(name);
+	if (locator != null) {
+	    ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
+	    if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
+		return location; // hocus pocus, for sequences, it's the locations not values that are wrapped
+	    } else {
+		return location.get(); 
+	    }
+	} else {
+	    Method getter = this.memberInfo.getterFor(name);
+	    if (getter == null) return Scriptable.NOT_FOUND; // FIXME
+	    return getter.invoke(this.javaObject);
+	}
     }
     
     boolean doSet(String name, Object value) throws Exception {
@@ -135,24 +145,12 @@ public class NativeJavaFXObject implements Scriptable, Wrapper {
     
     public Object get(String name, Scriptable start) {
 	// imagine this as a big compiler-generated switch on perfectHash(name)
-	
 	try {
-	    Object value = null;
-	    Method locator = this.memberInfo.locatorFor(name);
-	    if (locator != null) {
-		ObjectLocation location = (ObjectLocation)locator.invoke(this.javaObject);
-		if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
-		    value = location; // hocus pocus, for sequences, it's the locations not values that are wrapped
-		} else {
-		    value = location.get(); 
-		}
-	    } else {
-		value = this.doGet(name);
-	    }
+	    Object value = this.doGet(name);
 	    if (value instanceof com.sun.javafx.functions.Function) {
 		value = this.functionCache.get(name);
 	    }
-
+	    
 	    if (value != Scriptable.NOT_FOUND) {
 		//System.err.println("GET " + name);
 		return Context.javaToJS(value, start); // FIXME start?

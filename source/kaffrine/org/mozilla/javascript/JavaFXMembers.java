@@ -21,7 +21,6 @@ class JavaFXMembers<T> {
 	reflect(scope);
     }
     
-
     Method getterFor(String name) {
 	return this.getters.get(name);
     }
