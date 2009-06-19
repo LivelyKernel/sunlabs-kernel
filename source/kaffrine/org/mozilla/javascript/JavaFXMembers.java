@@ -126,9 +126,10 @@ class JavaFXMembers<T> {
 
     private static Map<Class, JavaFXMembers> memberInfos = new HashMap<Class, JavaFXMembers>();
 
-    public static <U> JavaFXMembers<U> lookupClass(Scriptable scope, Class<U> dynamicType, Class staticType) {
+    public static <U> JavaFXMembers<U> lookupClass(Scriptable scope, Class<U> dynamicType) {
 	JavaFXMembers<U> mi = memberInfos.get(dynamicType);
 	if (mi == null) {
+	    //System.err.println("Creating class for " + dynamicType);
 	    mi = new JavaFXMembers<U>(scope, dynamicType);
 	    memberInfos.put(dynamicType, mi);
 	}

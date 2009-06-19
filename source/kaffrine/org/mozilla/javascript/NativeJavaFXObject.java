@@ -11,25 +11,16 @@ public class NativeJavaFXObject extends ScriptableFXBase implements Scriptable, 
     Object javaObject;
     //Scriptable parent; // ellide parent scope and share, what about thread safety?
     Scriptable prototype;
-    JavaFXMembers memberInfo;
-    Class staticType;
     
     public NativeJavaFXObject(Scriptable scope, Object javaObject, Class type) {
+	super(type);
 	System.err.println("making wrapper object " + javaObject);
 	this.javaObject = javaObject;
 	//this.parent = scope;
-	this.staticType = type;
-	initMembers();
     }
 
-    @Override void initMembers() {
-        Class dynamicType;
-        if (javaObject != null) {
-            dynamicType = javaObject.getClass();
-        } else {
-            dynamicType = staticType;
-        }
-        this.memberInfo = JavaFXMembers.lookupClass(this.getParentScope(), dynamicType, this.staticType);
+    @Override void initMembers(Class typeHint) {
+        this.memberInfo = JavaFXMembers.lookupClass(this.getParentScope(), typeHint);
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 
@@ -45,5 +36,4 @@ public class NativeJavaFXObject extends ScriptableFXBase implements Scriptable, 
     @Override Object receiver() {
 	return javaObject;
     }
-
 }

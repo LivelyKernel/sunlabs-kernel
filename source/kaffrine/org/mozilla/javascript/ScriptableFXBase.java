@@ -7,7 +7,7 @@ import java.util.*;
 import java.lang.reflect.*;
 
 // this should be rewritten to be the parent of FXBase
-public class ScriptableFXBase implements Scriptable {
+public class ScriptableFXBase implements Scriptable, Wrapper {
 
     //Scriptable parent; // ellide parent scope and share, what about thread safety?
     Scriptable prototype; // FIXME ellide prototype
@@ -15,11 +15,21 @@ public class ScriptableFXBase implements Scriptable {
     private Map<String, Function> functionCache = new HashMap<String, Function>(); // FIXME lazy?
     
     public ScriptableFXBase() {
-	initMembers();
+	this(null);
     }
     
-    void initMembers() {
-        this.memberInfo = JavaFXMembers.lookupClass(this.getParentScope(), this.getClass(), null);
+    public ScriptableFXBase(Class typeHint) {
+	initMembers(typeHint);
+    }
+    
+    public Object unwrap() {
+	return this; // FIXME cheating here
+    }
+    void initMembers(Class typeHint) {
+	if (typeHint == null) {
+	    typeHint = this.receiver().getClass();
+	}
+        this.memberInfo = JavaFXMembers.lookupClass(this.getParentScope(), typeHint);
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 

@@ -18,7 +18,7 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
     
     public void initMembers() {
 	Class cl = this.getClassObject();
-        this.members = JavaFXMembers.lookupClass(parent, cl, cl);
+        this.members = JavaFXMembers.lookupClass(parent, cl);
     }
 
     public Class getClassObject() {
@@ -51,8 +51,8 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
     }
     
     public boolean hasInstance(Scriptable instance) {
-	if (instance instanceof NativeJavaFXObject) {
-	    return this.getClassObject().isInstance(((NativeJavaFXObject)instance).unwrap());
+	if (instance instanceof Wrapper) {
+	    return this.getClassObject().isInstance(((Wrapper)instance).unwrap());
 	}
 	return false;
     }
