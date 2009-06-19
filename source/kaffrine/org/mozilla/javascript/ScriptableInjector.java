@@ -22,7 +22,7 @@ public class ScriptableInjector implements ClassFileTransformer {
 	    System.err.println("In class " + name);
 	    if (name.equals(OLD_BASE)) {
 		//superName = "org/mozilla/javascript/ScriptableFXBase";
-		System.err.println("should rewrite " + superName + " to "  + NEW_BASE);
+		System.err.println("will rewrite " + superName + " to "  + NEW_BASE);
 	    }
 	    super.visit(version, access, name, signature, NEW_BASE, interfaces);
 	} 
@@ -33,7 +33,7 @@ public class ScriptableInjector implements ClassFileTransformer {
 		return new MethodAdapter(delegate) {
 		    @Override public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 			if (opcode == Opcodes.INVOKESPECIAL) {
-			    System.err.printf("should rewrite invokespecial %s %s %s to invokespecial %s %s %s\n", 
+			    System.err.printf("will rewrite invokespecial %s %s %s to invokespecial %s %s %s\n", 
 					      owner, name, desc, NEW_BASE, name, desc);
 			}
 			super.visitMethodInsn(opcode, NEW_BASE, name, desc);

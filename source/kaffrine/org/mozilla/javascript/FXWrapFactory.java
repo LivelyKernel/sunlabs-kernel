@@ -57,8 +57,8 @@ public class FXWrapFactory extends WrapFactory {
 
 
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
-	    if (object instanceof NativeJavaFXObject) {
-		Object target = ((NativeJavaFXObject)object).unwrap();
+	    if (object instanceof ScriptableFXBase) {
+		Object target = ((ScriptableFXBase)object).unwrap();
 		try {
 		    Method locator = target.getClass().getMethod("loc$" + fieldName);
 		    Object result = locator.invoke(target);
@@ -134,7 +134,6 @@ public class FXWrapFactory extends WrapFactory {
 	if (obj == null) return null; 
 	Class type = obj.getClass();
 	if (FXObject.class.isAssignableFrom(type)) {
-	    //System.err.println("FX custom wrapping " + type);
 	    return new NativeJavaFXObject(scope, obj, type);
 	} else if (SequenceVariable.class.isAssignableFrom(type)) {
 	    //System.err.println("FX wrapping sequence " + type);
