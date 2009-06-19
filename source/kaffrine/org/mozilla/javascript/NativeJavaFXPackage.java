@@ -80,12 +80,19 @@ public class NativeJavaFXPackage extends ScriptableObject {
         ClassShutter shutter = cx.getClassShutter();
         Scriptable newValue = null;
         if (shutter == null || shutter.visibleToScripts(className)) {
-            Class cl = null;
-            if (classLoader != null) {
-                cl = Kit.classOrNull(classLoader, className);
-            } else {
-                cl = Kit.classOrNull(className);
-            }
+            Class cl;
+	    try {
+		if (classLoader != null) {
+		    cl = classLoader.loadClass(className);
+		} else {
+		    cl = Class.forName(className);
+		}
+	    } catch (ClassNotFoundException e) {
+		cl = null;
+	    } catch (Exception e) {
+		e.printStackTrace(System.err);
+		cl = null;
+	    }
             if (cl != null) {
                 newValue = new NativeJavaFXClass(getTopLevelScope(this), cl);
                 newValue.setPrototype(getPrototype());
