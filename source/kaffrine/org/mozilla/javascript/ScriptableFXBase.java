@@ -11,7 +11,8 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 
     //Scriptable parent; // ellide parent scope and share, what about thread safety?
     JavaFXMembers memberInfo;
-    private Map<String, Function> functionCache = new HashMap<String, Function>(); // FIXME lazy?
+    static private Map<com.sun.javafx.functions.Function, Function> 
+	functionCache = new IdentityHashMap<com.sun.javafx.functions.Function, Function>(); // FIXME lazy?
     
     public ScriptableFXBase() {
 	this(null);
@@ -150,7 +151,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 	try {
 	    Object value = this.doGet(name);
 	    if (value instanceof com.sun.javafx.functions.Function) {
-		value = this.functionCache.get(name);
+		value = this.functionCache.get((com.sun.javafx.functions.Function)value);
 	    }
 	    
 	    if (value != Scriptable.NOT_FOUND) {
@@ -216,9 +217,11 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 		    System.err.println("didn't find setter for " + name);
 		    return;
 		}
-		this.functionCache.put(name, (Function)value);
-		this.doSet(name, makeFunction((Function)value, setter.getReturnType(), 
-					      ScriptableObject.getTopLevelScope(start)));
+		com.sun.javafx.functions.Function fun = 
+		    makeFunction((Function)value, setter.getReturnType(), 
+				 ScriptableObject.getTopLevelScope(start));
+		this.functionCache.put(fun, (Function)value);
+		this.doSet(name, fun);
 		return;
 	    } else if (value instanceof Number) { // FIXME FIXME super ad-hoc
 		value = Context.jsToJava(value, Float.class);
