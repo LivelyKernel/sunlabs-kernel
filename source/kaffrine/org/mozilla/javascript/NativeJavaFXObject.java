@@ -10,11 +10,9 @@ public class NativeJavaFXObject extends ScriptableFXBase implements Scriptable, 
 
     Object javaObject;
     //Scriptable parent; // ellide parent scope and share, what about thread safety?
-    Scriptable prototype;
     
     public NativeJavaFXObject(Scriptable scope, Object javaObject, Class type) {
 	super(type);
-	System.err.println("making wrapper object " + javaObject);
 	this.javaObject = javaObject;
 	//this.parent = scope;
     }

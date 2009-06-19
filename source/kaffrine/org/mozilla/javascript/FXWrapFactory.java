@@ -51,6 +51,10 @@ public class FXWrapFactory extends WrapFactory {
 	    }
 	}
 
+	public static void jsStaticFunction_dumpKnownClasses() {
+	    System.err.println(JavaFXMembers.memberInfos.keySet());
+	}
+
 
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
 	    if (object instanceof NativeJavaFXObject) {

@@ -10,7 +10,6 @@ import java.lang.reflect.*;
 public class ScriptableFXBase implements Scriptable, Wrapper {
 
     //Scriptable parent; // ellide parent scope and share, what about thread safety?
-    Scriptable prototype; // FIXME ellide prototype
     JavaFXMembers memberInfo;
     private Map<String, Function> functionCache = new HashMap<String, Function>(); // FIXME lazy?
     
@@ -54,11 +53,11 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
     }
     
     public Scriptable getPrototype() {
-	return prototype;
+	return null;
     }
     
     public void setPrototype(Scriptable m) {
-	prototype = m;
+	System.err.println("no effect setting prototype in " + this.getClassName());
     }
     
     public void delete(String name) {
@@ -201,8 +200,6 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 	    // FIXME do that for every type??
 	}
     }
-
-
 
     // what if value is a special Function that is bindable? 
     // For the time being, ignore the body and look at the attributes of it

@@ -124,7 +124,7 @@ class JavaFXMembers<T> {
         }
     }
 
-    private static Map<Class, JavaFXMembers> memberInfos = new HashMap<Class, JavaFXMembers>();
+    static Map<Class, JavaFXMembers> memberInfos = new HashMap<Class, JavaFXMembers>();
 
     public static <U> JavaFXMembers<U> lookupClass(Scriptable scope, Class<U> dynamicType) {
 	JavaFXMembers<U> mi = memberInfos.get(dynamicType);
@@ -132,6 +132,9 @@ class JavaFXMembers<T> {
 	    //System.err.println("Creating class for " + dynamicType);
 	    mi = new JavaFXMembers<U>(scope, dynamicType);
 	    memberInfos.put(dynamicType, mi);
+	    if (!com.sun.javafx.runtime.FXBase.class.isAssignableFrom(dynamicType)) {
+		System.err.println("wrapper class " + dynamicType);
+	    }
 	}
 	return mi;
     }
