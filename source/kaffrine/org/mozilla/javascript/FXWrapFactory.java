@@ -45,7 +45,7 @@ public class FXWrapFactory extends WrapFactory {
 
 	public static void jsStaticFunction_dumpMembers(Scriptable object) {
 	    if (object instanceof ScriptableFXBase) {
-		System.err.println("type descriptor " + ((ScriptableFXBase)object).typeDescriptor);
+		System.err.println("type descriptor " + ((ScriptableFXBase)object).getTypeDescriptor());
 	    } else {
 		System.err.println("not a ScriptableFX");
 	    }
