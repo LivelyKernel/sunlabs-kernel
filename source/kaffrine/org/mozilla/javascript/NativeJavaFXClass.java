@@ -18,7 +18,7 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
     
     public void initMembers() {
 	Class cl = this.getClassObject();
-        this.members = JavaFXMembers.lookupClass(parent, cl);
+        this.members = JavaFXMembers.lookupClass(cl);
     }
 
     public Class getClassObject() {

@@ -18,7 +18,7 @@ public class NativeJavaFXObject extends ScriptableFXBase implements Scriptable, 
     }
 
     @Override void initMembers(Class typeHint) {
-        this.typeDescriptor = JavaFXMembers.lookupClass(this.getParentScope(), typeHint);
+        this.typeDescriptor = JavaFXMembers.lookupClass(typeHint);
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 

@@ -13,12 +13,12 @@ class JavaFXMembers<T> {
     Map<String, Object> staticMethods = new HashMap<String, Object>();
     Map<String, Object> instanceMethods = new HashMap<String, Object>();
 
-    
+
     private Class<T> cl;
     
-    JavaFXMembers(Scriptable scope, Class<T> cl) {
+    JavaFXMembers(Class<T> cl) {
 	this.cl = cl;
-	reflect(scope);
+	reflect();
 	//analyze();
     }
     
@@ -63,7 +63,7 @@ class JavaFXMembers<T> {
 	    System.err.println(this.cl.getName() + " has locator but not getter for " + missingGetters);
     }
 
-    public void reflect(Scriptable scope) {
+    public void reflect() {
         for (Method method : this.cl.getMethods()) {
 	    boolean isStatic = Modifier.isStatic(method.getModifiers());
             String name = method.getName();
@@ -119,9 +119,6 @@ class JavaFXMembers<T> {
                     }
                 }
                 NativeJavaMethod fun = new NativeJavaMethod(methodBoxes);
-                if (scope != null) {
-                    ScriptRuntime.setFunctionProtoAndParent(fun, scope);
-                }
                 ht.put(name, fun);
             }
         }
@@ -129,11 +126,11 @@ class JavaFXMembers<T> {
 
     static Map<Class, JavaFXMembers> memberInfos = new HashMap<Class, JavaFXMembers>();
 
-    public static <U> JavaFXMembers<U> lookupClass(Scriptable scope, Class<U> dynamicType) {
+    public static <U> JavaFXMembers<U> lookupClass(Class<U> dynamicType) {
 	JavaFXMembers<U> mi = memberInfos.get(dynamicType);
 	if (mi == null) {
 	    //System.err.println("Creating class for " + dynamicType);
-	    mi = new JavaFXMembers<U>(scope, dynamicType);
+	    mi = new JavaFXMembers<U>(dynamicType);
 	    memberInfos.put(dynamicType, mi);
 	    if (!com.sun.javafx.runtime.FXBase.class.isAssignableFrom(dynamicType)) {
 		System.err.println("wrapper class " + dynamicType);

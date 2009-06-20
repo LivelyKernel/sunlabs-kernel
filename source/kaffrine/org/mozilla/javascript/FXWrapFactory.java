@@ -55,7 +55,6 @@ public class FXWrapFactory extends WrapFactory {
 	    System.err.println(JavaFXMembers.memberInfos.keySet());
 	}
 
-
 	public static void jsStaticFunction_observe(Scriptable object, String fieldName, final Function callback) {
 	    if (object instanceof ScriptableFXBase) {
 		Object target = ((ScriptableFXBase)object).unwrap();
@@ -96,8 +95,6 @@ public class FXWrapFactory extends WrapFactory {
 			    }
 			};
 			variable.addChangeListener(listener);
-			
-
 		    }
 			//locatio
 		} catch (Exception e) {

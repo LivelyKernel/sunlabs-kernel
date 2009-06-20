@@ -29,7 +29,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 	if (typeHint == null) {
 	    typeHint = this.receiver().getClass();
 	}
-        this.typeDescriptor = JavaFXMembers.lookupClass(this.getParentScope(), typeHint);
+        this.typeDescriptor = JavaFXMembers.lookupClass(typeHint);
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 
@@ -45,7 +45,8 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
     
     public Scriptable getParentScope() {
 	return FXWrapFactory.instance.topScope;
-	//return parent;
+	// this is probably OK, but untested
+	//return null;
     }
     
     public void setParentScope(Scriptable m) {
