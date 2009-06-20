@@ -10,7 +10,7 @@ import java.lang.reflect.*;
 public class ScriptableFXBase implements Scriptable, Wrapper {
 
     //Scriptable parent; // ellide parent scope and share, what about thread safety?
-    JavaFXMembers memberInfo;
+    JavaFXMembers typeDescriptor;
     static private Map<com.sun.javafx.functions.Function, Function> 
 	functionCache = new IdentityHashMap<com.sun.javafx.functions.Function, Function>(); // FIXME lazy?
     
@@ -29,7 +29,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 	if (typeHint == null) {
 	    typeHint = this.receiver().getClass();
 	}
-        this.memberInfo = JavaFXMembers.lookupClass(this.getParentScope(), typeHint);
+        this.typeDescriptor = JavaFXMembers.lookupClass(this.getParentScope(), typeHint);
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 
@@ -76,12 +76,12 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
     }
     
     public boolean has(String name, Scriptable start) {
-	return this.memberInfo.getters.containsKey(name) || this.memberInfo.instanceMethods.containsKey(name);
+	return this.typeDescriptor.has(name);
     }
     
     public Object[] getIds() {
 	// FIXME efficiency
-	return this.memberInfo.getIds();
+	return this.typeDescriptor.getIds();
     }
     
     public String getClassName() {
@@ -93,11 +93,11 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
     }
     
     Object doGet(String name) throws Exception {
-	Method getter = this.memberInfo.getterFor(name);
+	Method getter = this.typeDescriptor.getterFor(name);
 	if (getter != null) {
 	    return getter.invoke(this.receiver());
 	} else {
-	    Method locator = this.memberInfo.locatorFor(name);
+	    Method locator = this.typeDescriptor.locatorFor(name);
 	    if (locator != null) {
 		ObjectLocation location = (ObjectLocation)locator.invoke(this.receiver());
 		if (SequenceVariable.class.isAssignableFrom(locator.getReturnType())) {
@@ -112,11 +112,11 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
     }
     
     void doSet(String name, Object value) throws Exception {
-	Method setter = this.memberInfo.setterFor(name);
+	Method setter = this.typeDescriptor.setterFor(name);
 	if (setter != null) {
 	    setter.invoke(this.receiver(), value);
 	} else {
-	    Method locator = this.memberInfo.locatorFor(name);
+	    Method locator = this.typeDescriptor.locatorFor(name);
 	    if (locator != null) {
 		ObjectLocation location = (ObjectLocation)locator.invoke(this.receiver());
 		try {
@@ -151,7 +151,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 	try {
 	    Object value = this.doGet(name);
 	    if (value instanceof com.sun.javafx.functions.Function) {
-		value = this.functionCache.get((com.sun.javafx.functions.Function)value);
+		value = functionCache.get((com.sun.javafx.functions.Function)value);
 	    }
 	    
 	    if (value != Scriptable.NOT_FOUND) {
@@ -159,7 +159,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 		return Context.javaToJS(value, start); // FIXME start?
 	    } else {
 		//System.err.println("trying method " + name);
-		return Context.javaToJS(this.memberInfo.instanceMethods.get(name), start);
+		return Context.javaToJS(this.typeDescriptor.instanceMethods.get(name), start);
 	    }
 	} catch (Exception e) { 
 	    System.err.println("not found getter " + name);
@@ -197,7 +197,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 		}
 	    };
 	} else {
-	    return null;
+	    throw new RuntimeException("unimplemented wrapping in " + targetClass);
 	    // FIXME do that for every type??
 	}
     }
@@ -212,7 +212,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 		// FIXME this breaks referential equality, but maybe it's OK
 		value = this.sequenceFromArray((NativeArray)value, start);
 	    } else if (value instanceof Function) {
-		Method setter = this.memberInfo.setterFor(name); // need the type of the setter
+		Method setter = this.typeDescriptor.setterFor(name); // need the type of the setter
 		if (setter == null) {
 		    System.err.println("didn't find setter for " + name);
 		    return;
@@ -220,7 +220,7 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
 		com.sun.javafx.functions.Function fun = 
 		    makeFunction((Function)value, setter.getReturnType(), 
 				 ScriptableObject.getTopLevelScope(start));
-		this.functionCache.put(fun, (Function)value);
+		functionCache.put(fun, (Function)value);
 		this.doSet(name, fun);
 		return;
 	    } else if (value instanceof Number) { // FIXME FIXME super ad-hoc

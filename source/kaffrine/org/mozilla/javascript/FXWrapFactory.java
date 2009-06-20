@@ -44,10 +44,10 @@ public class FXWrapFactory extends WrapFactory {
 	}
 
 	public static void jsStaticFunction_dumpMembers(Scriptable object) {
-	    if (object instanceof NativeJavaFXObject) {
-		System.err.println("member info " + ((NativeJavaFXObject)object).memberInfo);
+	    if (object instanceof ScriptableFXBase) {
+		System.err.println("type descriptor " + ((ScriptableFXBase)object).typeDescriptor);
 	    } else {
-		System.err.println("not a member");
+		System.err.println("not a ScriptableFX");
 	    }
 	}
 

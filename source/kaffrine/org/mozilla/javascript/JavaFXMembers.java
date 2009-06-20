@@ -7,13 +7,13 @@ import java.util.*;
 // hacked JavaMembers
 class JavaFXMembers<T> {
 
-    Map<String, Method> getters = new HashMap<String, Method>(); // could be shared based on type
+    private Map<String, Method> getters = new HashMap<String, Method>(); // could be shared based on type
     private Map<String, Method> setters = new HashMap<String, Method>(); // could be shared based on type
     private Map<String, Method> locators = new HashMap<String, Method>(); // could be shared based on type
     Map<String, Object> staticMethods = new HashMap<String, Object>();
     Map<String, Object> instanceMethods = new HashMap<String, Object>();
 
-
+    
     private Class<T> cl;
     
     JavaFXMembers(Scriptable scope, Class<T> cl) {
@@ -48,6 +48,9 @@ class JavaFXMembers<T> {
 	return this.cl.getName() + ":" + Arrays.asList(this.getIds());
     }
 
+    public boolean has(String name) {
+	return getters.containsKey(name) || instanceMethods.containsKey(name);
+    }
 
     public void analyze() {
 	ArrayList<String> missingGetters = new ArrayList<String>();
