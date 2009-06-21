@@ -5479,6 +5479,7 @@ BoxMorph.subclass('ContainerMorph', {
 
 ClipboardHack = {
 	ensurePasteBuffer: function() {
+		if (UserAgent.isMozilla && UserAgent.fireFoxVersion) return;
 		var buffer = document.getElementById("copypastebuffer");
 		if (buffer) return buffer;
 		buffer = document.createElement("textarea");
@@ -5487,7 +5488,7 @@ ClipboardHack = {
 		buffer.setAttribute("id","copypastebuffer");
 		buffer.setAttribute("style","position:absolute;z-index: -400;left:0px; top:1px; width:1px; height:1px;");
 		buffer.textContent = "NoText";
-		if (!UserAgent.isMozilla) document.body.appendChild(buffer);
+		document.body.appendChild(buffer);
 		return buffer;
 	},
 
