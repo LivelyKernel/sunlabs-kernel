@@ -67,16 +67,24 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
 	    
 	    //FXObject object = (FXObject)clazz.newInstance();
 	    object.addTriggers$();
-	    object.applyDefaults$();
+	    //object.applyDefaults$();
 	    
 	    Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
 	    if (args.length > 1) throw new RuntimeException("too many args?");
 	    if (args.length == 1) {
+
+		final int count = object.count$();
+		final short[] initmap = FXBase.makeInitMap$(count); // FIXME
+		for (int i = 0; i < count; i++) {
+		    object.applyDefaults$(i);
+		    // object.loc$(i); // FIXME do the right thing, get the fields from initlist
+		}
+		
 		Scriptable initlist = (Scriptable)args[0];
+		// clearly wrong, either apply defaults or initialize here
 		for (Object id : initlist.getIds()) { // FIXME error checking and such
 		    String name = (String)id;
 		    wrapper.put(name, scope, initlist.get(name, scope));
-		    // does this agree with the deferred initialization semantics of FX?
 		}
 	    }
 	    object.complete$();

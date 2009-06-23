@@ -25,7 +25,6 @@ public class ScriptableFXBase implements Scriptable, Wrapper {
     void initMembers(Class typeHint) {
         //this.fieldAndMethods = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
-
     
     public JavaFXMembers getTypeDescriptor() {
 	return JavaFXMembers.lookupClass(this.getClass());

@@ -1,7 +1,6 @@
 #!/bin/sh
 fxlib=/Library/Frameworks/JavaFX.framework/Versions/Current/lib
-# make ext lazily
-rm ext/rhinoglue.jar
+rm -f ext/rhinoglue.jar
 javac  -extdirs $fxlib/shared:ext org/mozilla/javascript/*.java
 files=`find org -name '*.class' -print`
 
