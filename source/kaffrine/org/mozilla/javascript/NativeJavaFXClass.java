@@ -9,11 +9,30 @@ import java.lang.reflect.*;
 
 public class NativeJavaFXClass extends NativeJavaObject implements Function {
     JavaFXMembers members;
+    Map<Integer, String> offsets = new HashMap<Integer,String>();
+
 
     public NativeJavaFXClass(Scriptable scope, Class cl) {
         this.parent = scope;
         this.javaObject = cl;
 	initMembers();
+	try {
+	    int count;
+	    try {
+		count = (Integer)cl.getMethod("VCNT$").invoke(cl);
+	    } catch (NoSuchMethodException e) {
+		// None of that vcnt business
+		return;
+	    }
+	    for (Field field: cl.getFields()) {
+		if (field.getName().startsWith("VOFF$")){
+		    offsets.put((Integer)field.get(cl), field.getName().substring(5));
+		}
+	    }
+	    //System.err.println("Class " + cl + " has vcount " + count + " offsets " + offsets);
+	} catch (Exception e) {
+	    throw new RuntimeException(e);
+	}
     }
     
     public void initMembers() {
@@ -64,27 +83,24 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
     public Scriptable construct(Context cx, Scriptable scope, Object[] args) {
 	try {
 	    FXObject object = (FXObject)this.getClassObject().getConstructor(boolean.class).newInstance(true);
-	    
-	    //FXObject object = (FXObject)clazz.newInstance();
 	    object.addTriggers$();
-	    //object.applyDefaults$();
 	    
 	    Scriptable wrapper = (Scriptable)Context.javaToJS(object, scope);
 	    if (args.length > 1) throw new RuntimeException("too many args?");
 	    if (args.length == 1) {
-
 		final int count = object.count$();
-		final short[] initmap = FXBase.makeInitMap$(count); // FIXME
-		for (int i = 0; i < count; i++) {
-		    object.applyDefaults$(i);
-		    // object.loc$(i); // FIXME do the right thing, get the fields from initlist
-		}
-		
 		Scriptable initlist = (Scriptable)args[0];
-		// clearly wrong, either apply defaults or initialize here
-		for (Object id : initlist.getIds()) { // FIXME error checking and such
-		    String name = (String)id;
-		    wrapper.put(name, scope, initlist.get(name, scope));
+		for (int i = 0; i < count; i++) {
+		    String name = this.offsets.get(Integer.valueOf(i));
+		    Object value = initlist.get(name, scope);
+		    if (value == Scriptable.NOT_FOUND) {
+			object.applyDefaults$(i);
+		    } else {
+			// FIXME not necessarily ObjectLocation
+			// FIXME do the right thing, get the fields from initlist
+			wrapper.put(name, scope, value);
+			//((ObjectLocation)object.loc$(i)).set(value); 
+		    }
 		}
 	    }
 	    object.complete$();
