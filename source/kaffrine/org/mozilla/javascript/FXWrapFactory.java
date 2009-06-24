@@ -107,7 +107,124 @@ public class FXWrapFactory extends WrapFactory {
 	
     }
 
+    public static class Bind extends ScriptableObject {
+	static String JS_NAME = "Bind";
+	private String sourceProp;
+	private Scriptable source;
+	private String targetProp;
+	private Scriptable target;
+	boolean shouldMakeInverse = false;
 
+	public String getClassName() {
+	    return JS_NAME;
+	}
+	public void jsConstructor(Scriptable source) {
+	    // imagine that arg could be a string or a function, much like eval?
+	    this.source = source;
+	}
+
+	public Bind() {
+	}
+	
+	public Scriptable jsFunction_withInverse() {
+	    this.shouldMakeInverse = true;
+	    return this;
+	}
+
+	public void makeInverse() {
+	    if (target instanceof FXObject) {
+		try {
+		    Method locator = target.getClass().getMethod("loc$" + this.targetProp);
+		    Object result = locator.invoke(target);
+		    System.err.println("will observe " + this.targetProp + ", " + result);
+		    if (result instanceof ObjectVariable) {
+			ObjectVariable variable = (ObjectVariable)result;
+			final Scriptable scope = ScriptableObject.getTopLevelScope(target);
+			ChangeListener<Object> listener = new ChangeListener<Object>() {
+			    public void onChange(Object oldValue, Object newValue) {
+				// here it's backwards
+				Context cx = Context.enter();
+				cx.setWrapFactory(FXWrapFactory.instance);
+				try {
+				    source.put(sourceProp, scope, newValue);
+				} finally {
+				    Context.exit();
+				}
+			    }
+			};
+			variable.addChangeListener(listener);
+		    } else if (result instanceof FloatVariable) { // ewwwww!!!
+			FloatVariable variable = (FloatVariable)result;
+			final Scriptable scope = ScriptableObject.getTopLevelScope(target);
+			ChangeListener<Float> listener = new ChangeListener<Float>() {
+			    public void onChange(Float oldValue, Float newValue) {
+				// here it's backwards
+				Context cx = Context.enter();
+				cx.setWrapFactory(FXWrapFactory.instance);
+				try {
+				    source.put(sourceProp, scope, newValue);
+				} finally {
+				    Context.exit();
+				}
+			    }
+			};
+			variable.addChangeListener(listener);
+		    }
+		    //locatio
+		} catch (Exception e) {
+		    throw new RuntimeException(e);
+		}
+	    }  else {
+		System.err.println("cant make inverse yet: " + target);
+	    }
+	    //System.err.println("make me inverse");
+	}
+
+	public Scriptable jsFunction_select(String fieldName) {
+	    this.sourceProp = fieldName;
+	    return this;
+	}
+
+	private Object valueStorage;
+	
+	public Scriptable jsFunction_attachTo(Scriptable target, String targetProp) {
+	    this.target = target;
+	    this.targetProp = targetProp;
+	    final Scriptable scope = this.getParentScope();
+	    if (source instanceof FXObject) {
+		System.err.println("can't attach to FXObjects yet");
+		target.put(targetProp, scope, this.source.get(sourceProp, scope));
+	    }  else if (source instanceof ScriptableObject) {
+		final ScriptableObject ssource = (ScriptableObject)source;
+		Object oldSetter = ssource.getGetterOrSetter(sourceProp, 0, true);
+		final Scriptable finalTarget = target; // they are really final
+		final String finalTargetProp = targetProp;
+		valueStorage = ssource.get(sourceProp, scope); // initialize
+		Callable setter = new BaseFunction() {
+			// FIXME revisit scopes here
+			public Object call(Context cx, Scriptable xxx, Scriptable thisObj, Object[] args) {
+			    Object newValue = args[0];
+			    valueStorage = newValue;
+			    finalTarget.put(finalTargetProp, scope, newValue);
+			    return null;
+			}
+		    };
+		ssource.setGetterOrSetter(sourceProp, 0, setter, true);
+		Callable getter = new BaseFunction() {
+			public Object call(Context cx, Scriptable xxx, Scriptable thisObj, Object[] args) {
+			    return valueStorage;
+			}
+		    };
+		ssource.setGetterOrSetter(sourceProp, 0, getter, false);
+	    } else {
+		System.err.println("target was " + target);
+	    }
+	    if (this.shouldMakeInverse)
+		this.makeInverse();
+	    return this;
+	}
+    }
+    
     public static NativeJavaFXPackage FX = new NativeJavaFXPackage(true, "javafx", null);
  
     private boolean isInited = false;
@@ -121,6 +238,7 @@ public class FXWrapFactory extends WrapFactory {
 		if (topScope != scope) System.err.println("different!");
 		ScriptableObject.defineClass(topScope, NativeJavaFXSequence.class, false, true);
 		ScriptableObject.defineClass(topScope, FXRuntime.class, false, true);
+		ScriptableObject.defineClass(topScope, Bind.class, false, true);
 		// FIXME!
 		FX.setParentScope(topScope);
 	    } catch (Exception e) {

@@ -93,11 +93,17 @@ public class NativeJavaFXClass extends NativeJavaObject implements Function {
 		for (int i = 0; i < count; i++) {
 		    String name = this.offsets.get(Integer.valueOf(i));
 		    Object value = initlist.get(name, scope);
+
 		    if (value == Scriptable.NOT_FOUND) {
 			object.applyDefaults$(i);
+		    } else if (value instanceof FXWrapFactory.Bind) {
+			System.err.println("got bind " + value);
+			FXWrapFactory.Bind bindExp = (FXWrapFactory.Bind)value;
+			bindExp.jsFunction_attachTo(wrapper, name);
+			
 		    } else {
 			// FIXME not necessarily ObjectLocation
-			// FIXME do the right thing, get the fields from initlist
+			// now you get to test if value is 
 			wrapper.put(name, scope, value);
 			//((ObjectLocation)object.loc$(i)).set(value); 
 		    }

@@ -8,6 +8,8 @@ function test() {
     var Color =  javafx.scene.paint.Color;
     var shape = javafx.scene.shape;
 
+    appModel = { position: 0, max: 100, label: "hello" };
+
     stage = javafx.stage.Stage({
 	title: 'Declaring is easy!', 
 	width: 400, 
@@ -19,7 +21,7 @@ function test() {
 		    translateY: 200,
 		    content: [
 			javafx.scene.shape.Rectangle({
-			    x: 45, y:35, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN
+			    x: 45, y:35, width:150, height: 150, arcWidth: 15, arcHeight: 15, fill: Color.GREEN
 			}),
 			javafx.scene.shape.Circle({
 			    centerX: 118, centerY:110, radius:83, fill: Color.WHITE, stroke: Color.RED,
@@ -48,9 +50,14 @@ function test() {
 		    x: 45, y:235, width:150, height:150, arcWidth: 15, arcHeight: 15, fill: Color.BLUE
 		}),
 		javafx.scene.control.Button({ width: 200, height: 100, strong: true, translateX: 20, translateY: 20 }),
-		javafx.scene.control.Slider({ width: 200, height: 30, translateX: 20, translateY: 120 }),
+		javafx.scene.control.Slider({ width: 200, height: 30, translateX: 20, translateY: 120,
+					      value: new Bind(appModel).select('position').withInverse()
+					      //max: new Bind(appModel).select('max')
+					    }),
 		javafx.scene.control.TextBox({ width: 200, height: 30, translateX: 20, translateY: 160,
-					       columns: 12, text: "Hello World" })
+					       columns: 12, text: "Hello World",
+					       text: new Bind(appModel).select('label').withInverse()
+					     })
 	    ]
 	})
     });
@@ -65,17 +72,7 @@ function test() {
     button = stage.scene.content[2];
     slider = stage.scene.content[3];
 
-    appModel = { position: 0, max: 0, label: "" }
-    fxBind(slider, 'value', appModel, 'position', true); 
-    
-//slider.fxBind('value', appModel, 'position', true); 
-    fxBind(slider, 'max', appModel, 'max'); 
-    //slider.fxBind('max', appModel, 'max'); 
-    
     var textBox = stage.scene.content[4];
-    fxBind(textBox, 'text', appModel, 'label');
-
-
 
     
     button.action = function() { 

@@ -75,7 +75,7 @@ function seq(array) { // not needed any more
      var FX = java.lang.Class.forName('javafx.lang.FX');
      FX.getMethod('exit').invoke(FX);
  }
-
+/*
  function fxBind(fxObject, fxFieldName, jsObject, jsFieldName, inverse) {
      function fxInverseBind(fxObject, fxFieldName, jsObject, jsFieldName) {
 	 Object.defineProperty(jsObject, jsFieldName, {
@@ -92,7 +92,7 @@ function seq(array) { // not needed any more
      FXRuntime.observe(fxObject, fxFieldName, function(old, aNew) { jsObject[jsFieldName] = aNew; });
      if (inverse) fxInverseBind(fxObject, fxFieldName, jsObject, jsFieldName);
  }
-
+*/
 
 
 function printStage() {
