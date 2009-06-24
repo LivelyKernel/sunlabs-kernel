@@ -2591,8 +2591,9 @@ XenoMorph.subclass('VideoMorph', {
 	useExperimentalRotation: false,
 
 	initialize: function($super, bounds) { 
-        $super(bounds || new Rectangle(0,0,100,100));
-		this.applyStyle({fillOpacity: 0.6, borderColor: Color.black, borderWidth: 1});
+	$super(bounds || new Rectangle(0,0,100,100));
+	this.margin = 20;
+	this.applyStyle({fillOpacity: 0.6, borderColor: Color.black, borderWidth: 1});
     },
 openExample: function() {
 	this.embedVideo('<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>');
@@ -2700,8 +2701,8 @@ updateCSS: function() {
 },
 
 getVideoBounds: function() {
-	var margin = 20;
-	return this.innerBounds().insetBy(margin).translatedBy(this.getPosition());
+	var gt = this.getGlobalTransform();
+	return gt.transformRectToRect(this.innerBounds().insetBy(this.margin));
 },
 
 
