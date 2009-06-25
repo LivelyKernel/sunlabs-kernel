@@ -2619,7 +2619,7 @@ openExample: function() {
 	},
 	
       embedMov: function(name) {
-      console.log('Embedding move...');
+      console.log('Embedding mov...');
       this.foRawNode.removeChild(this.foRawNode.firstChild);
       var extent = this.getExtent();
       var node = this.objectNodeForMovFromTemplate(name, extent);
@@ -2627,6 +2627,24 @@ openExample: function() {
       this.setExtent(extent);
     },
 
+	embedStream: function(name) {
+      console.log('Embedding Stream...');
+      this.foRawNode.removeChild(this.foRawNode.firstChild);
+      var extent = this.getExtent();
+      var node = this.objectNodeForStreamFromTemplate(name, extent);
+      this.foRawNode.appendChild(node);
+      this.setExtent(extent);
+    },
+
+	objectNodeForStreamFromTemplate: function(url, extent) {
+		// get filename: rtsp://localhost:554/mystream.sdp --> mystream
+		var movieName = /.*\/([a-zA-Z0-9]+)\.sdp/.exec(url);
+		var name = movieName + '.mov';
+		var string = Strings.format('<body xmlns="http://www.w3.org/1999/xhtml"><embed src="%s" qtsrc="%s" type="video/quicktime" width="%s" height="%s" autoplay="false" controller="true"/></body>', name, url, extent.x, extent.y);
+		var node = document.adoptNode(stringToXML(string));
+		return node;		
+	},
+	
 	objectNodeForMovFromTemplate: function(name, extent) {
 	var string = Strings.format('<body xmlns="http://www.w3.org/1999/xhtml"><embed src="%s" type="video/quicktime" width="%s" height="%s" autoplay="false" controller="true"/></body>', name, extent.x, extent.y);
 	var node = document.adoptNode(stringToXML(string));
