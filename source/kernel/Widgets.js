@@ -2638,13 +2638,13 @@ openExample: function() {
 
 	objectNodeForStreamFromTemplate: function(url, extent) {
 		// get filename: rtsp://localhost:554/mystream.sdp --> mystream
-		var movieName = /.*\/([a-zA-Z0-9]+)\.sdp/.exec(url);
+		var movieName = /.*\/([a-zA-Z0-9]+)(\.sdp)?/.exec(url)[1];
 		var name = movieName + '.mov';
 		var string = Strings.format('<body xmlns="http://www.w3.org/1999/xhtml"><embed src="%s" qtsrc="%s" type="video/quicktime" width="%s" height="%s" autoplay="false" controller="true"/></body>', name, url, extent.x, extent.y);
 		var node = document.adoptNode(stringToXML(string));
 		return node;		
 	},
-	
+			
 	objectNodeForMovFromTemplate: function(name, extent) {
 	var string = Strings.format('<body xmlns="http://www.w3.org/1999/xhtml"><embed src="%s" type="video/quicktime" width="%s" height="%s" autoplay="false" controller="true"/></body>', name, extent.x, extent.y);
 	var node = document.adoptNode(stringToXML(string));
@@ -2723,8 +2723,14 @@ getVideoBounds: function() {
 	return gt.transformRectToRect(this.innerBounds().insetBy(this.margin));
 },
 
+});
 
-
+Object.extend(VideoMorph, {
+	openStream: function(url) {
+		var m = new VideoMorph(new Rectangle(0,0,360,300));
+		m.openInWorld();
+		m.embedStream(url);
+	}
 });
 
 // most likely deprecated, should use Widget, which is a view.
