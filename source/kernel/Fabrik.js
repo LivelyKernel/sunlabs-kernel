@@ -197,7 +197,7 @@ Global.Fabrik = {
      */
     addConvenienceFunctions: function() {
         Global.allFabrikClassNames = function() {
-            return ["FabrikMorph", "FabrikComponent", "ComponentModel", "PinMorph", "PinHandle", "lively.Fabrik.ConnectorMorph", 
+            return ["FabrikMorph", "FabrikComponent", "PinMorph", "PinHandle",  
                 "Component",  "TextComponent", "FunctionComponent", "ComponentBox", "PointSnapper", "FlowLayout"]
         };
         Global.allClassNames = function() {
@@ -717,7 +717,7 @@ Morph.subclass('PinMorph', {
 			valueHelpText = this.prettyPrintObject(valueHelpText);
         return this.pinHandle.getName() + "\n" + valueHelpText;
     },
-    
+
 	prettyPrintObject: function(obj) {
 		var result = "{"
 		Object.keys(obj).each(function(ea) {
@@ -769,10 +769,13 @@ Morph.subclass('PinMorph', {
     },
 
 	morphMenu: function($super, evt) { 
-		var menu = $super(evt);
-		
+		// var menu = $super(evt);
+		var menu = new MenuMorph([], this);
 		menu.addItem(["inspect value", function() {
 			new SimpleInspector(this.pinHandle.getValue()).open();
+		}.bind(this)]);
+		menu.addItem(["remove", function() {
+			this.pinHandle.component.removePin(this.pinHandle.getName());
 		}.bind(this)]);
 		return menu;
 	}
@@ -2818,6 +2821,11 @@ Component.subclass('FunctionComponent', {
         return result;
     },
 
+	removePin: function($super, name) {
+		$super(name);
+		this.updateFunctionHeader();
+	},
+
 	generateInputPinObserverFor: function(fieldName) {
 		var specObj = {};
 		specObj['on' + fieldName + 'Update'] = function() { this.execute() }.bind(this);
@@ -3138,7 +3146,7 @@ Object.subclass("PointSnapper", {
         this.formalModel = Record.newPlainInstance({Snapped: false});
         this.morph = morph;
         this.points = points;
-        this.limit = 30;
+        this.limit = 15;
         this.offset = pt(0,0);
         return this;
     },

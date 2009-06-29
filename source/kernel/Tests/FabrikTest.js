@@ -1183,6 +1183,7 @@ TestCase.subclass('PinHandleTest', {
         // this.assertEqualState(this.innerPin.reachablePins(), [this.innerPin, this.componentPinInner, this.outerPin], 'innerPin');
         // this.assertEqualState(this.outerPin.reachablePins(), [this.innerPin, this.outerPin], 'innerPin');
     }
+
 });
 
 TestCase.subclass('PluggableConnectorTest', {
