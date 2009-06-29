@@ -1105,7 +1105,20 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
     showContextMenu: function(evt) {
         if (this.contextMenu) return; // open only one context menu
     
-        this.contextMenu = new MenuMorph([["cut", this.pinConnector, "remove"]], self);
+        this.contextMenu = new MenuMorph([
+			["cut", this.pinConnector, "remove"]], self);
+			
+		var self = this;
+		if (!this.isRectangularLayouting) {
+			this.contextMenu.addItem(["layout [ ]", function() {
+				self.isRectangularLayouting = true;
+			}])
+		} else {
+			this.contextMenu.addItem(["layout [X]", function() {
+				self.isRectangularLayouting = false;
+			}])
+		};
+		
         var offset = pt(-40,-40);
         var pos = this.window().localize(evt.mousePoint).addPt(offset)
         this.contextMenu.openIn(this.window(), pos, false, "");
@@ -1184,8 +1197,29 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         // console.log("update View for connector");        
         if (this.startHandle) this.setStartPoint(this.localize(this.startHandle.getGlobalPinPosition()));
         if (this.endHandle) this.setEndPoint(this.localize(this.endHandle.getGlobalPinPosition()));
+		this.layoutRectangular();
     },
+
+	reshape: function($super,  partName, newPoint, lastCall) {
+		console.log("reshape")
+		$super(partName, newPoint, lastCall);
+		this.layoutRectangular();
+	},
+	
+	layoutRectangular: function() {
+		if (this.isRectangularLayouting) {
+			var v = this.shape.vertices(); 
+			for (var i=1; i < v.length - 1; i++) {
+				var lastx = v[i + ( i % 2)].x
+				var lasty = v[i - ( i % 2)].y
+				v[i] = pt(lastx, lasty); 
+			}; 
+			this.setVertices(v);
+		}
+	},
+
 });
+
 
 Widget.subclass('PinConnector', {
 
