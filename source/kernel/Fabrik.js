@@ -988,6 +988,15 @@ ComponentModel = {
     }
 };
 
+/*
+ *  *** Connector Morph ***
+ * 
+ *  Merging the Connector Morph from the Widgets package back is a litte bit tricky,
+ *  because the behavior is different.
+ *  This Connector connects two little Handles/Pins/Ports that belong to a bigger Morph/Component.
+ *  The ConnectorMorph in Widgets connects two morphs directly.
+ *  TODO: Merge them, or give them a common super class.
+ */ 
 Morph.subclass('lively.Fabrik.ConnectorMorph', {
     
     isConnectorMorph: true,
@@ -997,7 +1006,6 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         if (!verts) verts = [pt(0,0), pt(100,100)];
         if (!lineWidth) lineWidth = 1;  
         if (!lineColor) lineColor = Color.red;   
-        //this.formalModel = Record.newPlainInstance({StartHandle: null, EndHandle: null});
         
         this.pinConnector = pinConnector;
         
@@ -1005,24 +1013,19 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         $super(new lively.scene.Polyline(vertices));
         this.applyStyle({borderWidth: lineWidth, borderColor: lineColor, fill: null});
         
-
-		this.customizeShapeBehavior();
-        
-        // this.setStrokeOpacity(0.7);
+		this.customizeShapeBehavior();        
         this.lineColor = lineColor;
         
         this.closeAllToDnD();    
         
-        // try to disable drag and drop for me, but it does not work
-        // this.okToBeGrabbedBy = function(){return null};
-        // this.morphToGrabOrReceive = Functions.Null;
-        
-
         this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
         this.addMorph(this.arrowHead);
         this.setupArrowHeadUpdating();
-    },
-    
+
+		this.midPoints = [];
+    },    
+
+	/* Serialization */
     onDeserialize: function() {
         this.setupArrowHeadUpdating();
         this.updateArrow();
@@ -1034,9 +1037,9 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 		return this; 
     },	
 
-
 	handlesMouseDown: Functions.True,
     
+    /* Arrow */
     setupArrowHeadUpdating: function() {
         var self = this;
         this.shape.setVertices = this.shape.setVertices.wrap(function(proceed) {
@@ -1046,6 +1049,25 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         });
     },
     
+    updateArrow: function() {
+        var v = this.shape.vertices();
+        var toPos = v[v.length-1];
+        var fromPos = v[v.length-2];
+        this.arrowHead.pointFromTo(fromPos, toPos);
+        if (this.pinConnector && this.pinConnector.isBidirectional) {
+            if (!this.arrowHeadBack) {
+                this.arrowHeadBack = new ArrowHeadMorph(1, this.lineColor, this.lineColor);
+                this.addMorph(this.arrowHeadBack);
+                this.closeAllToDnD();
+            };
+            toPos = v[0];
+            fromPos = v[1];        
+            this.arrowHeadBack.pointFromTo(fromPos, toPos);
+        };
+    },
+
+    /* Accessors */
+	/* Handles are the Pins or Ports where the line connects */
     setStartHandle: function(pinHandle) {
         this.startHandle = pinHandle;
     },
@@ -1062,6 +1084,17 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         return this.endHandle;
     },    
 
+    /* Morphs are the big entities that should be connected */
+	getStartMorph: function() {
+		return this.getStartHandle().owner
+	},
+	
+	getEndMorph: function() { 
+		return this.getEndHandle().owner 
+	},
+
+	/* UI Customization */
+	
     // I don't know who sends this, but by intercepting here I can stop him.... drag me
     // logStack shows no meaningfull results here
     translateBy: function($super, delta) {
@@ -1069,6 +1102,24 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 		//$super(delta)
     },
     
+	remove: function($super) {
+        $super();
+        if (!this.fabrik) console.log('no fabrik!!!');
+        if (this.fabrik) this.fabrik.removeConnector(this);
+    },
+
+	fullContainsWorldPoint: function($super, p) {
+		//console.log(indentForDepth(indentLevel) + "check fullContainsWorldPoint" + this);
+        if (!this.startHandle || !this.endHandle)
+            return false;
+        // to ensure correct dnd behavior when connector is beneath a pinMorph in hand
+        if (this.startHandle.fullContainsWorldPoint(p) || this.endHandle.fullContainsWorldPoint(p))
+            return false;
+        return $super(p);
+    },
+
+	/* Control Point UI */
+
     customizeShapeBehavior: function() {
         
         this.shape.controlPointProximity = 20;
@@ -1101,7 +1152,6 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         return handleMorph;
     },
     
-    
     showContextMenu: function(evt) {
         if (this.contextMenu) return; // open only one context menu
     
@@ -1109,23 +1159,23 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 			["cut", this.pinConnector, "remove"]], self);
 			
 		var self = this;
-		if (!this.isRectangularLayouting) {
-			this.contextMenu.addItem(["layout [ ]", function() {
-				self.isRectangularLayouting = true;
+		if (!this.orthogonalLayout) {
+			this.contextMenu.addItem(["orthogonal [ ]", function() {
+				self.orthogonalLayout = true;
 			}])
 		} else {
-			this.contextMenu.addItem(["layout [X]", function() {
-				self.isRectangularLayouting = false;
+			this.contextMenu.addItem(["orthogonal [X]", function() {
+				self.orthogonalLayout = false;
 			}])
 		};
 		
-        var offset = pt(-40,-40);
+        var offset = pt(-40,-50);
         var pos = this.window().localize(evt.mousePoint).addPt(offset)
         this.contextMenu.openIn(this.window(), pos, false, "");
         
         var connector = this;
         var handObserver = new HandPositionObserver(function(value) {
-            if (!connector.contextMenu.owner || value.dist(connector.contextMenu.worldPoint(pt(20,20))) > 40) {
+            if (!connector.contextMenu.owner || value.dist(connector.contextMenu.worldPoint(pt(20,40))) > 40) {
                     connector.contextMenu.remove();
                     connector.contextMenu = null;
                     this.stop();
@@ -1134,17 +1184,7 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         handObserver.start();
     },
     
-    // containsWorldPoint: Functions.Null,
-    
-    fullContainsWorldPoint: function($super, p) {
-		//console.log(indentForDepth(indentLevel) + "check fullContainsWorldPoint" + this);
-        if (!this.startHandle || !this.endHandle)
-            return false;
-        // to ensure correct dnd behavior when connector is beneath a pinMorph in hand
-        if (this.startHandle.fullContainsWorldPoint(p) || this.endHandle.fullContainsWorldPoint(p))
-            return false;
-        return $super(p);
-    },
+	/* Control Points */
 
     setStartPoint: function(point) {
         if (!point) 
@@ -1170,53 +1210,59 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         return this.shape.vertices().last();
     },
     
-    remove: function($super) {
-        $super();
-        if (!this.fabrik) console.log('no fabrik!!!');
-        if (this.fabrik) this.fabrik.removeConnector(this);
-    },
+	getControlPoints: function() {
+		var points = [];
+		points.push(this.getStartPoint());
+		points.push(this.getEndPoint());
+		return points
+	},
+	
 
-    updateArrow: function() {
-        var v = this.shape.vertices();
-        var toPos = v[v.length-1];
-        var fromPos = v[v.length-2];
-        this.arrowHead.pointFromTo(fromPos, toPos);
-        if (this.pinConnector && this.pinConnector.isBidirectional) {
-            if (!this.arrowHeadBack) {
-                this.arrowHeadBack = new ArrowHeadMorph(1, this.lineColor, this.lineColor);
-                this.addMorph(this.arrowHeadBack);
-                this.closeAllToDnD();
-            };
-            toPos = v[0];
-            fromPos = v[1];        
-            this.arrowHeadBack.pointFromTo(fromPos, toPos);
-        };
-    },
+	/* Updating */
     
     updateView: function (varname, source) {
         // console.log("update View for connector");        
         if (this.startHandle) this.setStartPoint(this.localize(this.startHandle.getGlobalPinPosition()));
         if (this.endHandle) this.setEndPoint(this.localize(this.endHandle.getGlobalPinPosition()));
-		this.layoutRectangular();
+		this.layoutOrthogonal();
     },
 
 	reshape: function($super,  partName, newPoint, lastCall) {
 		console.log("reshape")
 		$super(partName, newPoint, lastCall);
-		this.layoutRectangular();
+		this.layoutOrthogonal();
 	},
 	
-	layoutRectangular: function() {
-		if (this.isRectangularLayouting) {
-			var v = this.shape.vertices(); 
-			for (var i=1; i < v.length - 1; i++) {
-				var lastx = v[i + ( i % 2)].x
-				var lasty = v[i - ( i % 2)].y
-				v[i] = pt(lastx, lasty); 
-			}; 
+	/* Orthogonal Layout */
+	
+	layoutOrthogonal: function() {
+		if (this.orthogonalLayout) {
+			var p = this.getControlPoints();
+			var v = this.shape.vertices();
+			if (p.length == 2 ) { // first the trivial case
+				var ratio = Math.abs(p[1].x - p[0].x) > Math.abs(p[1].y - p[0].y); // lets try out something weired 
+				if (ratio < 1) { // how to switch between those two cases
+					v = [p[0], pt(p[0].x, p[1].y) ,p[1]];
+				} else {
+					v = [p[0], pt(p[1].x, p[0].y) ,p[1]];
+				}
+			};
+			 
 			this.setVertices(v);
 		}
 	},
+
+	enableOrthogonalLayout: function() {
+		this.orthogonalLayout = true;
+	},
+	
+	isStartPointHorizontal: function() {
+		return true;
+	},
+	
+	isEndPointHorizontal: function() {
+		return false;
+	}
 
 });
 

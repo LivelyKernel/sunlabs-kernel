@@ -169,23 +169,25 @@ Object.subclass('TestSuite', {
 	},
 	
 	setTestCases: function(testCaseClasses) {
-		this.testCases = testCaseClasses.collect(function(ea) {
-			return new ea(this.result);
-		}, this);
+		// this.testCases = testCaseClasses.collect(function(ea) {
+		// 	return new ea(this.result);
+		// }, this);
+		this.testCaseClasses = testCaseClasses
 	},
 	
 	runAll: function() {
-	    this.testsToRun = this.testCases;
+	    this.testClassesToRun = this.testCaseClasses;
 	    this.runDelayed();
 	},
 	
 	runDelayed: function() {
-	    var testCase = this.testsToRun.shift();
-	    if (!testCase) {
+	    var testCaseClass = this.testClassesToRun.shift();
+	    if (!testCaseClass) {
 	        if (this.runFinished)
 	            this.runFinished();
 	        return
 	    }
+		var testCase = new testCaseClass(this.result)
 	    if (this.showProgress)
 	        this.showProgress(testCase);
         testCase.runAll();
@@ -320,7 +322,7 @@ Widget.subclass('TestRunner', {
 		}));
 		var self = this;
 		var total = self.resultBar.getExtent().x;
-		var step = self.resultBar.getExtent().x / testSuite.testCases.length;
+		var step = self.resultBar.getExtent().x / testSuite.testCaseClasses.length;
 		// Refactor!
 		testSuite.showProgress = function(testCase) {
 		    self.setResultText(testCase.constructor.type);

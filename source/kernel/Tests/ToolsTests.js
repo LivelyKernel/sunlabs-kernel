@@ -1502,7 +1502,7 @@ m.openInWorld();';
 
 TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     
-    shouldRun: true,
+    shouldRun: false,
     
     testStartKeyWatcher: function() {
 		var keyWatcher = Morph.makeRectangle(0,0,100,20);

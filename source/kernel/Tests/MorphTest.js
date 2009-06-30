@@ -172,7 +172,6 @@ TestCase.subclass('TextMorphTest', {
 
 	testExtendSelection2: function() {
 		var m = this.m;
-		this.dontRemove = true;
 		var pos = 'Hello World'.length;
 		m.startSelection(pos);
 		m.extendSelection(pos+3);
