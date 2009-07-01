@@ -1166,6 +1166,7 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 		if (!this.orthogonalLayout) {
 			this.contextMenu.addItem(["orthogonal [ ]", function() {
 				self.orthogonalLayout = true;
+				self.layoutOrthogonal();
 			}])
 		} else {
 			this.contextMenu.addItem(["orthogonal [X]", function() {
@@ -1243,27 +1244,30 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 		if (this.orthogonalLayout) {
 			var p = this.getControlPoints();
 			var v = this.shape.vertices();
-			if (p.length == 2 ) { 
+			if (p.length == 2 ) {
+				var mid = p[0].midPt(p[1]);
+				v = [];
+				v.push(p[0]) 
 				if (this.isStartPointHorizontal()) { 
 					if (!this.isEndPointHorizontal()) {
-						v = [p[0], pt(p[1].x, p[0].y) ,p[1]];
+						v.push(pt(p[1].x, p[0].y));
 					} else {
-						var midx = p[0].x + ((p[1].x - p[0].x) / 2);
-						v = [p[0], pt(midx, p[0].y), pt(midx, p[1].y) ,p[1]];
+						v.push(pt(mid.x, p[0].y));
+						v.push(pt(mid.x, p[1].y));
 					}
 				} else {
 					if (this.isEndPointHorizontal()) {
-						v = [p[0], pt(p[0].x, p[1].y) ,p[1]];
+						v.push(pt(p[0].x, p[1].y));
 					} else {
-						var midy = p[0].y + ((p[1].y - p[0].y) / 2);
-						v = [p[0], pt(p[0].x, midy), pt(p[1].x, midy) ,p[1]];
+						v.push(pt(p[0].x, mid.y));
+						v.push(pt(p[1].x, mid.y));
 					}
-					
 				}
+				v.push(p[1]);
 			};
-			 
+			// the other cases are left to the reader ;-) ...
 			this.setVertices(v);
-		}
+		};
 	},
 
 	enableOrthogonalLayout: function() {
@@ -1272,8 +1276,7 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 	
 	computeNormalizeXYRatio: function(bounds, position) {
 		// normalized x / y ratio as heuristic for how to connectors should leave.. 
-		var c = bounds.center();		
-		var d = c.subPt(position);
+		var d = bounds.center().subPt(position);
 		return Math.abs(d.x / bounds.width) > Math.abs(d.y / bounds.height)	
 	},
 
