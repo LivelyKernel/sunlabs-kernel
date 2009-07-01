@@ -2800,7 +2800,7 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
     
     openIn: function(world, optLoc) {
 	var view = this.buildView(this.getInitialViewExtent(world), this.getModel());
-	view.ownerWidget = this; // ??
+	view.ownerWidget = this; // for remembering the widget during serialization...
 	return world.addFramedMorph(view, this.getViewTitle(), optLoc, this.useLightFrame);
     },
     

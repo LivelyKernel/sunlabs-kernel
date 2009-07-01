@@ -103,8 +103,9 @@ Global.Fabrik = {
     
     openComponentBox: function(world, loc) {
         if (!world) world = WorldMorph.current();
-        var box = new ComponentBox();
-        box.openIn(world, loc);
+        var box = new ComponentBoxMorph();
+		world.addMorph(box);
+		box.setPosition(loc);
         return box;
     },
 
@@ -697,8 +698,13 @@ Morph.subclass('PinMorph', {
         
         if (this.pinHandle.isFakeHandle) return;
         
+		if(!this.pinHandle.component.fabrik) {
+			console.log("Warning: " + this + " has no fabrik, so connections are not possible");
+			return;
+		}
         var fakePin = this.pinHandle.createFakePinHandle();
-        
+
+
         if (!fakePin.morph) fakePin.buildView(); // Could already be triggered in connectTo in create....
         // change style to distinguish between real handles... put into an own method...?
         fakePin.morph.setFill(Color.red);
@@ -1021,8 +1027,9 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
         this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
         this.addMorph(this.arrowHead);
         this.setupArrowHeadUpdating();
+		this.orthogonalLayout = true;
 
-		this.midPoints = [];
+		this.midPoints = []; // to be implemented
     },    
 
 	/* Serialization */
@@ -1226,7 +1233,8 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 	/* Updating */
     
     updateView: function (varname, source) {
-        // console.log("update View for connector");        
+        // console.log("update View for connector");
+     	if (!this.owner) return;
         if (this.startHandle) this.setStartPoint(this.localize(this.startHandle.getGlobalPinPosition()));
         if (this.endHandle) this.setEndPoint(this.localize(this.endHandle.getGlobalPinPosition()));
 		this.layoutOrthogonal();
@@ -1237,8 +1245,7 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 		$super(partName, newPoint, lastCall);
 		this.layoutOrthogonal();
 	},
-	
-	/* Orthogonal Layout */
+
 	
 	layoutOrthogonal: function() {
 		if (this.orthogonalLayout) {
@@ -1281,6 +1288,7 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 	},
 
 	computeNormalizeXYRatioFromMorph: function(morph) {
+		if(!morph.owner) return true;
 		return this.computeNormalizeXYRatio(morph.owner.shape.bounds(), morph.getPosition())
 	},
 	
@@ -3159,85 +3167,109 @@ Component.subclass('TextListComponent', {
     
 });
 
-Widget.subclass('ComponentBox', {
+Morph.subclass('ComponentContainerMorph', {
 
-    viewTitle: "Fabrik Component Box",
-    viewExtent: pt(600,300),
-    
-    initialize: function($super) { 
-        $super();
-        // FIXME Why isnt this handled at a central point?????
-        this.model = ComponentModel.newModel();
-        this.ownModel(this.model);
-        
-    },
-    
+	initialize: function($super, bounds) {
+		$super(new lively.scene.Rectangle(bounds));
+		this.setFill(null);
+		// to be implemented
+	},
+	
+	suppressHandles: true,
+	
+	morphToGrabOrReceive: function(evt) {
+		if (!this.fullContainsWorldPoint(evt.mousePoint)) return null;
+		return this // don't ask any submorphs
+	},
+	
+	captureMouseEvent: function(evt, hasFocus) {
+		if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
+		if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
+		if (this.mouseHandler == null)
+		    return false;
+
+		if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
+		    return false;
+
+		return this.mouseHandler.handleMouseEvent(evt, this);
+	},
+	
+	createMorph: function(evt) {
+		if (!this.createFunc) return null;	
+		var compMorph = this.createFunc();
+		evt.hand.addMorph(compMorph);
+		compMorph.setPosition(pt(0,0));
+		return compMorph
+	},
+	
+	okToBeGrabbedBy: function() {
+		return null
+	},
+
+	handlesMouseDown: Functions.True,
+	 
+	onMouseDown: function(evt) {
+		return this.createMorph(evt);
+	}
+});
+
+Morph.subclass('ComponentBoxMorph', {
+
+	openForDragAndDrop: false,
+	suppressHandles: false,
+
+	initialize: function($super, bounds) {
+		bounds = bounds || new Rectangle(0, 0, 630,300)
+		$super(new lively.scene.Rectangle(bounds));
+		this.setFill(Color.white);
+
+		this.buildContent();
+		return this;
+	},
+
+	onDeserialize: function() {
+		this.submorphs.clone().each(function(ea) {ea.remove()});
+		this.buildContent();
+	},
+
     addMorphOfComponent: function(comp, createFunc, optExtent) {
         var m = comp.buildView(optExtent);
         
+		var scale = 0.7;
         m.setExtent(optExtent || pt(120, 100));
-        
-        m.withAllSubmorphsDo(function() {
-            this.handlesMouseDown = Functions.True;
-            this.okToBeGrabbedBy = function() {
-                return createFunc();
-            };
-            this.onMouseDown = function(evt) {
-                    var compMorph = createFunc();
-                    evt.hand.addMorph(compMorph);
-                    compMorph.setPosition(pt(0,0));
-            };
-        });
+        m.setScale(scale);
 
         var textHeight = 30;
-        var wrapper = new ClipMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle());
-        wrapper.addMorph(m);
-        var text = new TextMorph(pt(0,m.getExtent().y).extent(m.getExtent().x, wrapper.getExtent().y), comp.constructor.type);
+        var wrapper = new ComponentContainerMorph(m.getExtent().addPt(pt(0,textHeight)).extentAsRectangle());
+      	wrapper.createFunc = createFunc;
+  		wrapper.addMorph(m);
+        var text = new TextMorph(pt(0, m.getExtent().y * scale + 5).extent(m.getExtent().x * scale, wrapper.getExtent().y * scale), comp.constructor.type);
         text.beLabel();
         wrapper.addMorph(text);
-        this.panel.addMorph(wrapper);
+        this.addMorph(wrapper);
     },
-    
-    buildView: function(extent) {
-        var model = this.model;
-        var panel = new PanelMorph(this.viewExtent);
-        this.panel = panel;
-        
-        panel.applyStyle({
-                borderWidth: 2,
-                fill: new lively.paint.LinearGradient([
-                        new lively.paint.Stop(0, Color.white), 
-                        new lively.paint.Stop(1, Color.primary.blue)], 
-                    lively.paint.LinearGradient.NorthSouth)});
-    
 
-        this.addMorphOfComponent(new FabrikComponent(), function() {
-            var extent = pt(300,250);
-            var fabrik = new FabrikComponent();
-            fabrik.defaultViewExtent = extent;
-            fabrik.viewTitle = 'Fabrik';
-            fabrik.openIn(WorldMorph.current(), WorldMorph.current().hands.first().getPosition().midPt(extent));
-            return fabrik.panel.owner;
-        });
-        
-        var defaultCreateFunc = function(theClass, optExtent) {
-            return new theClass().buildView(optExtent);
-        };
-        
-        this.addMorphOfComponent(new FunctionComponent(), defaultCreateFunc.curry(FunctionComponent));
-        this.addMorphOfComponent(new TextComponent(), defaultCreateFunc.curry(TextComponent));
-        this.addMorphOfComponent(new PluggableComponent(), defaultCreateFunc.curry(PluggableComponent));
-        this.addMorphOfComponent(new TextListComponent(), defaultCreateFunc.curry(TextListComponent));
-        this.addMorphOfComponent(new WebRequestComponent(), defaultCreateFunc.curry(WebRequestComponent, pt(220,50)), pt(220,50));
-        this.addMorphOfComponent(new ImageComponent(), defaultCreateFunc.curry(ImageComponent, pt(50,50)), pt(50,50));
-        
-        
-                
-        new FlowLayout(this.panel).layoutSubmorphsInMorph();
-        panel.openDnD();
-        
-        return panel;
-    }
+	buildContent: function() {
+		this.addMorphOfComponent(new FabrikComponent(), function() {
+	          var extent = pt(300,250);
+	          var fabrik = new FabrikComponent();
+	          fabrik.defaultViewExtent = extent;
+	          fabrik.viewTitle = 'Fabrik';
+	          fabrik.openIn(WorldMorph.current(), WorldMorph.current().hands.first().getPosition().midPt(extent));
+	          return fabrik.panel.owner;
+      	});
+      	var defaultCreateFunc = function(theClass, optExtent) {
+          	return new theClass().buildView(optExtent);
+      	};
+      	this.addMorphOfComponent(new FunctionComponent(), defaultCreateFunc.curry(FunctionComponent));
+		this.addMorphOfComponent(new TextComponent(), defaultCreateFunc.curry(TextComponent));
+		this.addMorphOfComponent(new PluggableComponent(), defaultCreateFunc.curry(PluggableComponent));
+		this.addMorphOfComponent(new TextListComponent(), defaultCreateFunc.curry(TextListComponent));
+		this.addMorphOfComponent(new WebRequestComponent(), defaultCreateFunc.curry(WebRequestComponent, pt(220,50)), pt(220,50));
+		this.addMorphOfComponent(new ImageComponent(), defaultCreateFunc.curry(ImageComponent, pt(50,50)), pt(50,50));
+		new FlowLayout(this).layoutSubmorphsInMorph();
+	},
+    
 
 });
 
