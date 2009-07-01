@@ -248,7 +248,7 @@ Object.extend(Config, {
 });
 
 Config.onWindowResizeUpdateWorldBounds = true;
-
+Config.disableNoConsoleWarning = false;
 
 //	*** Minimal World Only ***
 //  In spite of all the foregoing complexity, merely changing this conditional
@@ -265,3 +265,5 @@ if (false) {
     Config.showStar = false;  // true to show star
     Config.spinningStar = false;  // true to enable spinning
 }
+
+

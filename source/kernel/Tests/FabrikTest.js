@@ -933,22 +933,23 @@ TestCase.subclass('AConnectorMorphTest', {
 		this.morph1 = Morph.makeRectangle(startPoint.x, startPoint.y, 50, 50);
 		this.morph2 = Morph.makeRectangle(endPoint.x, endPoint.y , 50, 50);
 
-		this.m1 = new PinMorph();
-		this.m1.setPosition(pt(41,16));
-		if(start) this.m1.setPosition(pt(-9,-9)); // move to origin
-		this.morph1.addMorph(this.m1);
+		this.pin1 = new PinMorph();
+		this.pin1.setPosition(pt(41,16));
+		if(start) this.pin1.setPosition(pt(-9,-9)); // move to origin
+		this.morph1.addMorph(this.pin1);
 		
-		this.m2 = new PinMorph();
-		this.m2.setPosition(pt(16,-9));
-		if(end) this.m2.setPosition(pt(-9,-9)); // move to origin
-		this.morph2.addMorph(this.m2);
+		this.pin2 = new PinMorph();
+		this.pin2.setPosition(pt(16,-9));
+		if(end) this.pin2.setPosition(pt(-9,-9)); // move to origin
+		this.morph2.addMorph(this.pin2);
 
-		this.c.setStartHandle(this.m1);
-        this.c.setEndHandle(this.m2);
+		this.c.setStartHandle(this.pin1);
+        this.c.setEndHandle(this.pin2);
 
 		this.openInWorld(this.morph1);
 		this.openInWorld(this.morph2);
 		this.openInWorld(this.c);
+		this.c.updateView();	
 
 		return this.c
 	},
@@ -1013,26 +1014,16 @@ TestCase.subclass('AConnectorMorphTest', {
 		this.assertEqual(c.orthogonalLayout, true, "orthogonal layout not enabled");
 		this.assertEqual(c.getControlPoints().length, 2, "wrong number of control points");
 		this.assertEqual(v.length, 3, "wrong number of vertice points");
-		this.assertEqual(v[1], pt(150, 200), "wrong computed second vertice");
+		this.assertEqual(v[1], pt(225, 125), "wrong computed second vertice");
 	},
 	
 	testGetControlPoints: function() {
 		var c = this.createConnectorMock();
-		c.updateView();	
 		
 		var points = c.getControlPoints();
 		this.assertEqual(points.length, 2, "wrong number of control points");
 		this.assertEqual(points[0], pt(150,125), "wrong start point");
 		this.assertEqual(points[1], pt(225,200), "wrong end point");
-	},
-
-	testControlPointOrientation: function() {
-		var p1 = pt(50,50);
-		var p2 = pt(150,50);
-		var c = this.createConnectorMock(p1, p2);
-		c.updateView();	
-		this.assertEqual(c.isStartPointHorizontal(), true, "wrong start point orientation");
-		this.assertEqual(c.isEndPointHorizontal(), false, "wrong end point orientation");
 	},
 	
 	testGetStartAndEndMoprh: function() {
@@ -1040,24 +1031,24 @@ TestCase.subclass('AConnectorMorphTest', {
 		this.morph1 = Morph.makeRectangle(0, 0, 100, 100);
 		this.morph2 = Morph.makeRectangle(200, 200 , 100, 100);
 
-		this.morph1.addMorph(this.m1);
-		this.morph2.addMorph(this.m2);
+		this.morph1.addMorph(this.pin1);
+		this.morph2.addMorph(this.pin2);
         this.assertIdentity(this.c.getStartMorph(), this.morph1, "start morph");
 		this.assertIdentity(this.c.getEndMorph(), this.morph2, "end morph");
     },
 
 	testControlPointOrientation: function() {
-		var c = this.createConnectorMock();		
-		this.c.updateView();	
+		var c = this.createConnectorMock();
 		this.assertEqual(c.isStartPointHorizontal(), true, "wrong start point orientation");
 		this.assertEqual(c.isEndPointHorizontal(), false, "wrong end point orientation");
 	},
-	
+
+
 	tearDown: function() {		
 		this.morphsToClose.each(function(ea){ea.remove()})
 		delete this.c;
-		delete this.m1;
-		delete this.m2;
+		delete this.pin1;
+		delete this.pin2;
 		delete this.morph1;
 		delete this.morph2;
 		delete this.componentConnector;

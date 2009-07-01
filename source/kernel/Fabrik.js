@@ -1155,10 +1155,14 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
     showContextMenu: function(evt) {
         if (this.contextMenu) return; // open only one context menu
     
+		var self = this;
         this.contextMenu = new MenuMorph([
 			["cut", this.pinConnector, "remove"]], self);
-			
-		var self = this;
+		
+		this.contextMenu.addItem(["inspect", function() {
+			inspect(self)
+		}]);
+	
 		if (!this.orthogonalLayout) {
 			this.contextMenu.addItem(["orthogonal [ ]", function() {
 				self.orthogonalLayout = true;
@@ -1239,12 +1243,22 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 		if (this.orthogonalLayout) {
 			var p = this.getControlPoints();
 			var v = this.shape.vertices();
-			if (p.length == 2 ) { // first the trivial case
-				var ratio = Math.abs(p[1].x - p[0].x) > Math.abs(p[1].y - p[0].y); // lets try out something weired 
-				if (ratio < 1) { // how to switch between those two cases
-					v = [p[0], pt(p[0].x, p[1].y) ,p[1]];
+			if (p.length == 2 ) { 
+				if (this.isStartPointHorizontal()) { 
+					if (!this.isEndPointHorizontal()) {
+						v = [p[0], pt(p[1].x, p[0].y) ,p[1]];
+					} else {
+						var midx = p[0].x + ((p[1].x - p[0].x) / 2);
+						v = [p[0], pt(midx, p[0].y), pt(midx, p[1].y) ,p[1]];
+					}
 				} else {
-					v = [p[0], pt(p[1].x, p[0].y) ,p[1]];
+					if (this.isEndPointHorizontal()) {
+						v = [p[0], pt(p[0].x, p[1].y) ,p[1]];
+					} else {
+						var midy = p[0].y + ((p[1].y - p[0].y) / 2);
+						v = [p[0], pt(p[0].x, midy), pt(p[1].x, midy) ,p[1]];
+					}
+					
 				}
 			};
 			 
@@ -1256,12 +1270,23 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 		this.orthogonalLayout = true;
 	},
 	
+	computeNormalizeXYRatio: function(bounds, position) {
+		// normalized x / y ratio as heuristic for how to connectors should leave.. 
+		var c = bounds.center();		
+		var d = c.subPt(position);
+		return Math.abs(d.x / bounds.width) > Math.abs(d.y / bounds.height)	
+	},
+
+	computeNormalizeXYRatioFromMorph: function(morph) {
+		return this.computeNormalizeXYRatio(morph.owner.shape.bounds(), morph.getPosition())
+	},
+	
 	isStartPointHorizontal: function() {
-		return true;
+		return this.computeNormalizeXYRatioFromMorph(this.getStartHandle());
 	},
 	
 	isEndPointHorizontal: function() {
-		return false;
+		return this.computeNormalizeXYRatioFromMorph(this.getEndHandle());
 	}
 
 });

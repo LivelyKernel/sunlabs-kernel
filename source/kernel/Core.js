@@ -99,8 +99,10 @@ var Loader = {
     
     var platformConsole = Global.window.console || ( Global.window.parent && Global.window.parent.console); 
     if (!platformConsole) {
-	window.alert && window.alert('no console! console output disabled');
-	platformConsole = { log: function(msg) { } } // do nothing as a last resort
+		if (!Config.disableNoConsoleWarning) {
+			window.alert && window.alert('no console! console output disabled');
+		};
+		platformConsole = { log: function(msg) { } } // do nothing as a last resort
     }
     
     if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
