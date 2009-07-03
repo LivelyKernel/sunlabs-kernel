@@ -1324,10 +1324,13 @@ Widget.subclass('PinConnector', {
         // FIXME: Relays inbetween? Serialization?
         var fromModel = fromPinHandle.component.getModel();
         var toModel = toPinHandle.component.getModel();
+		// console.log("observeFromModel " + fromModel + " -> " + toModel);
+
         // implicit assertion: pinHandle name equals field name of model
         var spec = {};
         spec[fromPinHandle.getName()] = "=set" + toPinHandle.getName();
-        fromModel.addObserver(toModel, spec);    
+        fromModel.addObserver(toModel, spec); 
+   		// console.log("DEBUG: " + fromModel[fromPinHandle.getName()+"$observers"] )
     },
   
     // just for make things work ...
@@ -1335,7 +1338,7 @@ Widget.subclass('PinConnector', {
         this.morph = new lively.Fabrik.ConnectorMorph(null, 4, Color.blue, this);
         if (!this.fromPin.morph) throw new Error("fromPin.morph is nil");
         if (!this.toPin.morph) throw new Error("toPin.morph is nil");
-        this.morph.setStartHandle(this.fromPin.morph);
+        this.morph.setStartHandle(this.fromPin.morph); // handle is the handle or the morph?
         this.morph.setEndHandle(this.toPin.morph);
         this.morph.ownerWidget = this;
         this.morph.connector = this; // for debugging... of course...
@@ -1348,7 +1351,7 @@ Widget.subclass('PinConnector', {
 
     onDeserialize: function($super) {
 		//$super();
-        // console.log("dersialize connector from" + this.fromPin + " to " + this.toPin)  
+        // console.log("dersialize connector from" + this.fromPin.id() + " to " + this.toPin.id())  
         this.observeFromTo(this.fromPin, this.toPin);
         if (this.isBidirectional) {
             this.observeFromTo(this.toPin, this.fromPin);
@@ -2925,9 +2928,6 @@ Component.subclass('FunctionComponent', {
             this.setResult(null); // force an update
             this.execute()
         }.bind(this)});
-        // arg, thats dirty. addFieldAndPinHandle automatically adds an observer for all pins...
-        // solve this with input/output pins!
-        this.formalModel.removeObserver(null, 'Result');
     },
     
     addFieldAndPinHandle: function($super, field, coercionSpec) {
