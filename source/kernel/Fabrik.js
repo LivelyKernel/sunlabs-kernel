@@ -2835,7 +2835,8 @@ ComponentMorph.subclass('FunctionComponentMorph', {
 		if (!this.functionBodyMorph)
 			return;
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
-            var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval);
+			var forceImplicit = !str.match(/^[ ]*return /);
+            var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval, forceImplicit);
 			console.log("eval: " + source)          
             return eval(source).apply(self.component, self.component.parameterValues());
         });
@@ -2963,9 +2964,9 @@ Component.subclass('FunctionComponent', {
         return this.composeFunction(this.formalModel.getFunctionHeader(), this.formalModel.getFunctionBody() || "", interactiveEval)
     },
     
-    composeFunction: function(header, body, evalFunc) {
+    composeFunction: function(header, body, evalFunc, forceImplicit) {
         var funcSource = "var x = "+ header;
-        var evalImplicit = ! body.match(/return /)
+        var evalImplicit = ! body.match(/return /) || forceImplicit
         // BUG problems with: [1,2,3,4,5,6].select(function(ea) {return true})
 		if(evalImplicit) {
             body = this.fixObjectLiterals(body);
