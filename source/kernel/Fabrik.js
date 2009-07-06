@@ -2836,7 +2836,7 @@ ComponentMorph.subclass('FunctionComponentMorph', {
 			return;
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
             var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval);
-            console.log("eval: " + source)          
+			console.log("eval: " + source)          
             return eval(source).apply(self.component, self.component.parameterValues());
         });
     },        
@@ -2915,6 +2915,7 @@ Component.subclass('FunctionComponent', {
         var pin = this.addFieldAndPinHandle(name);
         pin.becomeInputPin();
         this.updateFunctionHeader();
+		this.generateInputPinObserverFor(name);
         return pin;
     },
     
@@ -2928,13 +2929,6 @@ Component.subclass('FunctionComponent', {
             this.setResult(null); // force an update
             this.execute()
         }.bind(this)});
-    },
-    
-    addFieldAndPinHandle: function($super, field, coercionSpec) {
-        var result = $super(field, coercionSpec);
-        // for automatic execution when input values change
-		this.generateInputPinObserverFor(field)
-        return result;
     },
 
 	removePin: function($super, name) {
@@ -2972,7 +2966,8 @@ Component.subclass('FunctionComponent', {
     composeFunction: function(header, body, evalFunc) {
         var funcSource = "var x = "+ header;
         var evalImplicit = ! body.match(/return /)
-        if(evalImplicit) {
+        // BUG problems with: [1,2,3,4,5,6].select(function(ea) {return true})
+		if(evalImplicit) {
             body = this.fixObjectLiterals(body);
             funcSource = funcSource.replace("(", "(pvtArgToEvalBody, ");
             funcSource = funcSource.replace(", )", ")") // just in case we would have no other parameter

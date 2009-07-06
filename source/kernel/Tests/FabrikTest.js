@@ -691,7 +691,7 @@ TestCase.subclass('ComponentTest', {
     
 });
 
-TestCase.subclass('FunctionComponentTest', {
+TestCase.subclass('AFunctionComponentTest', {
     
     setUp: function() {
         this.fabrikComponent = new FabrikComponent();
@@ -741,7 +741,7 @@ TestCase.subclass('FunctionComponentTest', {
     testAutomaticExecuteWhenNewPinIsAdded: function() {
         var newPinName = 'NewInput';
         this.assert(!this.functionComponent1['get' + newPinName], 'Should not have another pin or field yet');
-        this.functionComponent1.addFieldAndPinHandle(newPinName);
+        this.functionComponent1.addInputFieldAndPin(newPinName);
         this.assert(this.functionComponent1['get' + newPinName], 'Should have another pin or field yet');
         this.textComponent1.getPinHandle("Text").connectTo(this.functionComponent1.getPinHandle(newPinName));
         this.functionComponent1.setFunctionBody('return this.get' + newPinName + '()'); 
@@ -813,6 +813,12 @@ TestCase.subclass('FunctionComponentTest', {
         }
     },
     
+	// known to fail
+    XtestComposeFunctionImplicitReturnWithInnerReturn: function() {
+        var f = this.functionComponent1.composeFunction("function f(input)", "[1,2,3].select(function(ea) {return true})");
+        this.assertEqual(f.apply(this.functionComponent1, []), "1,2,3", "implicit return with inner return failed");
+    },
+
     // new FunctionComponentTest().runTest('testFixObjectLiterals')
     testFixObjectLiterals: function() {
         var str = '{abc: 123, def: 456}';
