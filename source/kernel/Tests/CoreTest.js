@@ -57,7 +57,7 @@ TestCase.subclass('lively.Tests.CoreTest.ConnectModelTest', {
 	},
 
 });
-TestCase.subclass('lively.Tests.CoreTest.TestModel', {
+TestCase.subclass('Alively.Tests.CoreTest.TestModel', {
 
 		testSetterSource: function() {
 		var calls = 0; var test = this;
@@ -74,6 +74,26 @@ TestCase.subclass('lively.Tests.CoreTest.TestModel', {
 		m2.setMyValue(3);
 		this.assertEqual(calls, 2);
 	},
+	
+	testNodeRecord: function() {
+		var rec = Record.newNodeInstance({Foo: null});
+		this.assert(rec.Foo$Element, "DOM node is missing");
+		var string = "HelloString";
+		rec.setFoo(string);
+		this.assert(rec.getFoo(), string, "string as node content is broken")
+		var obj = {bar: "hello", isJSONConformant: true};
+		rec.setFoo(obj);
+		this.assert(rec.Foo$Element, "DOM node for obj is missing");
+		this.assert(rec.getFoo(), "no foo")
+		this.assert(rec.getFoo().bar, "no foo bar")
+	},
+	
+	
+	testConverter: function() {
+		var value = {bar: "Hello", isJSONConformant: true};
+		var node = Converter.encodeProperty("Foo", value);
+		this.assert(node, "no node");
+	}
 
 });
 
