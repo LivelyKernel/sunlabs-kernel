@@ -266,4 +266,5 @@ if (false) {
     Config.spinningStar = false;  // true to enable spinning
 }
 
+Config.confirmNavigation = false; // don't show confirmation dialog when navigating a link
 

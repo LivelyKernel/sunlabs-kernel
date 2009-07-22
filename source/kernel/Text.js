@@ -1640,7 +1640,8 @@ undrawSelection: function() {
 
     onMouseDown: function(evt) {
 		var link = this.linkUnderMouse(evt);
-		if (link) {
+		if (link && !evt.isCtrlDown()) { // there has to be a way to edit links!
+	        console.log("follow link")
 			this.doLinkThing(evt, link);
 			return true;
 		}
