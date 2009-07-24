@@ -498,20 +498,23 @@ function main() {
     var importer = new Importer();
     if (documentHasSerializedMorphs(document)) {
 		setupCounter(document);
-        require(Config.modulesOnWorldLoad).toRun(function() {
+        require(Config.modulesBeforeChanges).toRun(function() {
 			var changes = !Config.skipChanges && ChangeSet.fromWorld(document.documentElement);
 			changes && changes.evaluateAllButInitializer();
-			var world = importer.loadWorldContents(document);
-            world.displayOnCanvas(canvas);
-            console.log("world is " + world);
-			changes && changes.evaluateInitializer();
-            if (Config.showWikiNavigator) {
-                require('LKWiki.js').toRun(function() {
-                    //just a quick hack...
-                    console.log('starting WikiNavigator');
-                    WikiNavigator.enableWikiNavigator();
-                });
-            }
+			require(Config.modulesOnWorldLoad).toRun(function() {
+				var world = importer.loadWorldContents(document);
+	            world.displayOnCanvas(canvas);
+	            console.log("world is " + world);
+				changes && changes.evaluateInitializer();
+
+	            if (Config.showWikiNavigator) {
+	                require('LKWiki.js').toRun(function() {
+	                    //just a quick hack...
+	                    console.log('starting WikiNavigator');
+	                    WikiNavigator.enableWikiNavigator();
+	                });
+	            }
+			})
         })
         return;
     } else {
