@@ -25,26 +25,28 @@ var Loader = {
         
         var script = document.createElement('script');
         script.id = url;
-        script.type = 'text/javascript';
+        script.type = 'text/ecmascript';
         script.src = url;
-        var node = document.getElementsByTagName(embedSerializable ? "defs" : "script")[0];
+        var node = document.getElementsByTagName(embedSerializable ? "defs" : "body")[0];
         if (onLoadCb) script.onload = onLoadCb;
         node.appendChild(script);
     },
     
     scriptInDOM: function(url) {
         if (document.getElementById(url)) return true;
-        var preloaded = document.getElementsByTagName('defs')[0].childNodes;
-        for (var i = 0; i < preloaded.length; i++)
-			if (Loader.scriptElementLinksTo(preloaded[i], url)) return true
+        var scriptElements = document.getElementsByTagName('script');
+        for (var i = 0; i < scriptElements.length; i++)
+			if (Loader.scriptElementLinksTo(scriptElements[i], url))
+				return true
         return false;
     },
 
 	scriptElementLinksTo: function(element, url) {
 		if (!element.getAttribute) return false;
-		var link = element.getAttributeNS(Namespace.XLINK, 'href') || element.getAttributeNS(null, 'src');
-		if (link) return url.endsWith(link)
-		return false
+		var link = element.getAttributeNS(Namespace.XLINK, 'href') ||
+			element.getAttributeNS(null, 'src');
+		// FIXME just using the file name does not really work for namespaces
+		return link && url.split('/').last() == link
 	}
 };
 
