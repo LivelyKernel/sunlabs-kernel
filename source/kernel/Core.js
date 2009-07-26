@@ -36,12 +36,16 @@ var Loader = {
         if (document.getElementById(url)) return true;
         var preloaded = document.getElementsByTagName('defs')[0].childNodes;
         for (var i = 0; i < preloaded.length; i++)
-            if (preloaded[i].getAttribute &&
-                    preloaded[i].getAttribute('xlink:href') &&
-                        url.endsWith(preloaded[i].getAttribute('xlink:href')))
-                            return true
+			if (Loader.scriptElementLinksTo(preloaded[i], url)) return true
         return false;
-    }
+    },
+
+	scriptElementLinksTo: function(element, url) {
+		if (!element.getAttribute) return false;
+		var link = element.getAttributeNS(Namespace.XLINK, 'href') || element.getAttributeNS(null, 'src');
+		if (link) return url.endsWith(link)
+		return false
+	}
 };
 
 // test which checks if all modules are loaded
