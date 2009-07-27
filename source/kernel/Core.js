@@ -111,16 +111,7 @@ var Loader = {
 		platformConsole = { log: function(msg) { } } // do nothing as a last resort
     }
     
-    if (platformConsole.warn && platformConsole.info && platformConsole.assert) {
-	// it's a Firebug/Firebug lite console, it does all we want, so no extra work necessary
-	try {
-            Global.console = platformConsole;
-            Global.console.consumers = [platformConsole]; // compatibility fix	        
-	} catch (e) {
-	    platformConsole.log('Problem with setting Global.console?');
-	}
-    } else {
-	// rebind to something that has all the calls
+ 	// rebind to something that has all the calls, and forwards ti consumers...
 	Global.console = {
 	    
 	    consumers: [ platformConsole], // new LogWindow() ],
@@ -149,7 +140,6 @@ var Loader = {
 		if (!expr) this.log("assert failed:" + msg);
 	    }
 	}
-    }
     
 })(); 
 

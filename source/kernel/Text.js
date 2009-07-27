@@ -2055,7 +2055,7 @@ undrawSelection: function() {
 	},
 	
 	doInspect: function() {
-		console.log("do inspect")
+		// console.log("do inspect")
 		var strToEval = this.getSelectionString(); 
 		if (strToEval.length == 0)
 			strToEval = this.pvtCurrentLineString();
@@ -2117,7 +2117,7 @@ undrawSelection: function() {
     },
     processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
 	var key = evt.getKeyChar();
-	console.log('command ' + key);
+	// console.log('command ' + key);
 
 	// ARRGH FIXME
 	if (key == 'I' && evt.isShiftDown()) {

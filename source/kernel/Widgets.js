@@ -2350,20 +2350,22 @@ BoxMorph.subclass("ScrollPane", {
         menu.openIn(this.world(), evt.mousePoint, false); 
     },
 
-    getScrollPosition: function() { 
-        var ht = this.innerMorph().bounds().height;
-        var slideRoom = ht - this.bounds().height;
-	// note that inner morph may have exactly the same size as outer morph so slideRoom may be zero
+	slideRoom: function() {
+		// 10 is a offset that works with the default font size... I think this may be font size related
+		return this.innerMorph().bounds().height - this.bounds().height + 10;
+	},
+
+    getScrollPosition: function() {         
+        var slideRoom = this.slideRoom();
+		// note that inner morph may have exactly the same size as outer morph so slideRoom may be zero
         return slideRoom && -this.innerMorph().position().y/slideRoom; 
     },
     
     setScrollPosition: function(scrollPos) { 
-        var ht = this.innerMorph().bounds().height;
-        var slideRoom = ht - this.bounds().height;
-        this.innerMorph().setPosition(pt(this.innerMorph().position().x, -slideRoom*scrollPos)); 
+        this.innerMorph().setPosition(pt(this.innerMorph().position().x, -this.slideRoom()*scrollPos )); 
 		if (this.scrollBar)
         	this.getScrollBar().adjustForNewBounds();
-	//console.log("setScrollPos  ht = " + ht + ", slideRoom = " + slideRoom + ", scrollPos = " + scrollPos);
+
     },
 
     getVisibleExtent: function(scrollPos) {
@@ -3079,92 +3081,101 @@ PromptDialog.test = function() {
 
 Widget.subclass('ConsoleWidget', {
 
-    viewTitle: "Console",
-    formals: ["LogMessages", "RecentLogMessages", "Commands", "CommandCursor", "LastCommand", "Menu", "Capacity"],
-    ctx: {},
-    
-    initialize: function($super, capacity) {
-        $super(null);
+	viewTitle: "Console",
+	formals: ["LogMessages", "RecentLogMessages", "Commands", "CommandCursor", "LastCommand", "Menu", "Capacity"],
+	ctx: {},
+	
+	initialize: function($super, capacity) {
+		$super(null);
 
-	// note newNodeInstance causes problems with serializing Menu
-        var model = Record.newNodeInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
-	    CommandCursor: 0,  LastCommand: "", Capacity: capacity,
-	    Menu: [["command history", this, "addCommandHistoryInspector"]]});
+		// note newNodeInstance causes problems with serializing Menu
+		var model = Record.newNodeInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
+		CommandCursor: 0,  LastCommand: "", Capacity: capacity,
+		Menu: [["command history", this, "addCommandHistoryInspector"]]});
 	
 		
-        this.relayToModel(model, {LogMessages: "LogMessages",
+		this.relayToModel(model, {LogMessages: "LogMessages",
 				  RecentLogMessages: "+RecentLogMessages",
 				  Commands: "Commands",
 				  LastCommand: "LastCommand",
 				  Menu: "Menu",
 				  Capacity: "-Capacity"});
 		this.ownModel(model);
-    
-   		Global.console.consumers.push(this); // does not work correctly
-        this.ans = undefined; // last computed value
-        return this;
-    },
-    
-    addCommandHistoryInspector: function() {
-        WorldMorph.current().addTextListWindow({
-	    extent:pt(500, 40),
-	    content: this.getCommands([]),
-	    title: "Command history"
-	});
-    },
+	
+		Global.console.consumers.push(this); 
+		this.ans = undefined; // last computed value
+		return this;
+	},
 
-    getInitialViewExtent: function(world, hint) {
-        return hint || pt(world.viewport().width, 160); 
-    },
-    
-    buildView: function(extent) {
-        var panel = PanelMorph.makePanedPanel(extent, [
-            ['messagePane', newTextListPane, new Rectangle(0, 0, 1, 0.8)],
-            ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
-        ]);
+	onDeserialize: function() {
+		this.setLogMessages([]);
+		Global.console.consumers.push(this);
+	},
+	
+	addCommandHistoryInspector: function() {
+		WorldMorph.current().addTextListWindow({
+			extent:pt(500, 40),
+			content: this.getCommands([]),
+			title: "Command history"
+		});
+	},
+
+	getInitialViewExtent: function(world, hint) {
+		return hint || pt(world.viewport().width - 60, 160); 
+	},
+	
+	buildView: function(extent) {
+		var panel = PanelMorph.makePanedPanel(extent, [
+			['messagePane', newTextListPane, new Rectangle(0, 0, 1, 0.8)],
+			['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
+		]);
 		panel.ownerWidget = this; // to serialize the widget
 
-        var model = this.getModel();
-        var m = panel.messagePane;
+		var model = this.getModel();
+		var m = panel.messagePane;
 	
-        m.relayToModel(model, {List: "-LogMessages", ListDelta: "RecentLogMessages", 
-			       Capacity: "-Capacity", Menu: "-Menu"});
+		m.relayToModel(model, {List: "-LogMessages", ListDelta: "RecentLogMessages", 
+				   Capacity: "-Capacity", Menu: "-Menu"});
 	
-	m.innerMorph().focusHaloBorderWidth = 0;
+		m.innerMorph().focusHaloBorderWidth = 0;
 	
-        var self = this;
-        panel.shutdown = function() {
-            Class.getPrototype(this).shutdown.call(this);
-            var index = window.console.consumers.indexOf(self);
-            if (index >= 0) {
-                window.console.consumers.splice(index);
-            }
-        };
+		var self = this;
+		panel.shutdown = function() {
+			Class.getPrototype(this).shutdown.call(this);
+			var index = window.console.consumers.indexOf(self);
+			if (index >= 0) {
+				window.console.consumers.splice(index);
+			}
+		};
 
-        m = panel.commandLine.beInputLine(100);
-	m.relayToModel(model, { History: "-Commands", HistoryCursor: "CommandCursor", Text: "LastCommand"});
-        return panel;
-    },
+		m = panel.commandLine.beInputLine(100);
+		m.relayToModel(model, { History: "-Commands", HistoryCursor: "CommandCursor", Text: "LastCommand"});
+		return panel;
+	},
 
-    evaluate: interactiveEval.bind(this.ctx),
-    
-    onLastCommandUpdate: function(text) {
-        if (!text) return;
-        try {
-            var ans = this.evaluate(text);
-            if (ans !== undefined) this.ans = ans;
-	    var command = Object.inspect(ans);
-	    this.setRecentLogMessages([command]);
-        } catch (er) {
-	    dbgOn(true);
-            alert("Whoa Evaluation error: "  + er);
-        }
-    },
-    
-    log: function(message) {
-        this.setRecentLogMessages([message]);
-    }
-    
+	evaluate: interactiveEval.bind(this.ctx),
+	
+	onLogMessagesUpdate: function() {
+		// do nothing... onDeserialize seem to need it
+	},
+
+	onLastCommandUpdate: function(text) {
+		if (!text) return;
+		try {
+			var ans = this.evaluate(text);
+			if (ans !== undefined) this.ans = ans;
+		var command = Object.inspect(ans);
+		this.setRecentLogMessages([command]);
+		} catch (er) {
+		dbgOn(true);
+			alert("Whoa Evaluation error: "	 + er);
+		}
+	},
+	
+	log: function(message) {
+		this.setRecentLogMessages([message]);
+	}
+	
 });
 
 
