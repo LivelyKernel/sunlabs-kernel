@@ -22,6 +22,14 @@ TestCase.subclass('MorphTest', {
 	    this.assert(!this.m2.isContainedIn(this.m3));
 	    this.assert(!this.m4.isContainedIn(this.m1));
 	},
+
+	testOwnerWidget: function() {
+		var w = new Widget();
+		this.m1.ownerWidget = w;
+		this.assertIdentity(this.m1.getOwnerWidget(), w, "m1")
+		this.assertIdentity(this.m2.getOwnerWidget(), w, "m2")
+
+	}
 	
 });
 

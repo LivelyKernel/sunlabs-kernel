@@ -1537,6 +1537,20 @@ Morph.addMethods({  // tmp copy
 });
 
 
+
+Morph.addMethods({  
+
+    getOwnerWidget: function() {
+		if(this.ownerWidget) {
+			return this.ownerWidget
+		};
+		if (this.owner) {
+			return this.owner.getOwnerWidget();
+		}
+		return undefined;
+	}
+});
+
 // Functions for change management
 Object.extend(Morph, {
     

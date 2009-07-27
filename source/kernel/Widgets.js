@@ -3086,13 +3086,16 @@ Widget.subclass('ConsoleWidget', {
 	    CommandCursor: 0,  LastCommand: "", Capacity: capacity,
 	    Menu: [["command history", this, "addCommandHistoryInspector"]]});
 	
+		
         this.relayToModel(model, {LogMessages: "LogMessages",
 				  RecentLogMessages: "+RecentLogMessages",
 				  Commands: "Commands",
 				  LastCommand: "LastCommand",
 				  Menu: "Menu",
 				  Capacity: "-Capacity"});
-        Global.console.consumers.push(this);
+		this.ownModel(model);
+    
+   		Global.console.consumers.push(this); // does not work correctly
         this.ans = undefined; // last computed value
         return this;
     },
@@ -3114,6 +3117,7 @@ Widget.subclass('ConsoleWidget', {
             ['messagePane', newTextListPane, new Rectangle(0, 0, 1, 0.8)],
             ['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
         ]);
+		panel.ownerWidget = this; // to serialize the widget
 
         var model = this.getModel();
         var m = panel.messagePane;

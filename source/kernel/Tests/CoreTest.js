@@ -93,7 +93,15 @@ TestCase.subclass('Alively.Tests.CoreTest.TestModel', {
 		var value = {bar: "Hello", isJSONConformant: true};
 		var node = Converter.encodeProperty("Foo", value);
 		this.assert(node, "no node");
-	}
+	},
+
+	xtestConvertWrapper: function() {
+		var rec = Record.newNodeInstance({Foo: null});
+		var ref = new DummyCopierObject();
+		var node = Converter.encodeProperty("Foo", ref);
+		this.assert(node, "no node");
+	},
+
 
 });
 
