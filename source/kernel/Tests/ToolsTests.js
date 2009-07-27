@@ -89,7 +89,7 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
 
     setUp: function() {
         this.sut = new FileParser();
-        this.sut.verbose = true;
+        this.sut.verbose = false;
     },
     
     testParseClassDef: function() {

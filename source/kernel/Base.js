@@ -2319,7 +2319,7 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
                 }
 	    }
 	} else {
-	    console.log('not found ' + name);
+	    // console.log('not found ' + name);
 	    return undefined;
 	}
     },

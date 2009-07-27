@@ -1263,7 +1263,9 @@ TestCase.subclass('PluggableConnectorTest', {
         var cmp = new PluggableComponent();
         cmp.buildView();
         cmp.adoptToModel(model);
-        var morphs = cmp.panel.submorphs.select(function (ea) { console.log(ea.toString()); return ea.constructor.type == "PinMorph"})
+        var morphs = cmp.panel.submorphs.select(function (ea) { 
+				// console.log(ea.toString()); 
+				return ea.constructor.type == "PinMorph"})
         this.assertEqual(morphs.length, 2, "pinmorphs not created");
     },
 });
@@ -1527,7 +1529,7 @@ TestCase.subclass('TextListComponentTest', {
                             '<postal_code data="12685"/>' + '</forecast_information>').parentNode; // get document element
         var list = FabrikConverter.xmlToStringArray(xml);
         this.textList.setList(list);
-        console.log('THE LIST::::    ' + this.textList.getList());
+        // console.log('THE LIST::::    ' + this.textList.getList());
     },
     
     testRemembersSelectionIndex: function() {
@@ -1584,7 +1586,7 @@ TestCase.subclass('ComponentSerializeTest', {
         this.assert(xml, "parse failed");
         var newWorld = importer.loadWorldContents(xml);
 
-        console.log(string);
+        // console.log(string);
     },
 
 
@@ -1734,7 +1736,7 @@ TestCase.subclass('FabrikConverterTest', {
     
     testConvertAll: function() {
         var result = this.converter.xmlToJs(this.xml);
-        console.log('result: ' + JSON.serialize(result));
+        // console.log('result: ' + JSON.serialize(result));
     },
     
     testStringArrayfromXMLSimple: function() {
@@ -2063,7 +2065,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
 		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
 		var string = Exporter.stringify(doc);
 		
-		console.log(string);
+		// console.log(string);
 		
 		var world2 = this.loadWorldFromSource(string);
 		var morph2 = world2.submorphs.first();
@@ -2170,11 +2172,11 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 		this.assertIdentity(connector.toPin, pin2, "connector.fromPin");
 		this.assert(connector.hasOwnProperty("fromPin"), "connector.hasOwnProperty");
 		this.assert(!(connector.fromPin instanceof Function), "fromPin is a function");
-		console.log("--start----------------------------------------------------")
+		// console.log("--start----------------------------------------------------")
 		var copy = connector.copy(new Copier());
 		
 		this.assert(copy.noShallowCopyProperties, "copy.noShallowCopyProperties");
-		console.log("--stop----------------------------------------------------")
+		// console.log("--stop----------------------------------------------------")
 		this.assertIdentity(copy.fromPin, pin1, "copy.fromPin");
 		this.assertIdentity(copy.toPin, pin2, "copy.toPin");
 	},
@@ -2323,14 +2325,14 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCo
 	testCopyAsXMLString: function() {
         var text1 = this.createTextWidgetExample();
 		var text1String = text1.copyAsXMLString();
-		console.log(text1String);
+		// console.log(text1String);
     },
 	
 	testLoadMorphsWithWorldTrunkFromSource: function() {
 		var text1 = this.createTextWidgetExample();
 		this.assert(text1.panel.component instanceof TextComponent, "panel has no text component");
 		var text1String = text1.copyAsXMLString();
-		console.log(text1String);
+		// console.log(text1String);
 		var morphs = this.copier.loadMorphsWithWorldTrunkFromSource(text1String);
 		this.assertEqual(morphs.size(), 1, "wrong number of morphs")
 		var morph1 = morphs[0];

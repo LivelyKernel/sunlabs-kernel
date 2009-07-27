@@ -204,7 +204,7 @@ Object.subclass('lively.data.Wrapper', {
 		var desc = LivelyNS.create("field", {name: prop, ref: propValue.id()});
 		appendNode(desc);
 		if (prop === "ownerWidget") {
-		    console.log('recursing for field ' + prop);
+		    // console.log('recursing for field ' + prop);
 		    propValue.prepareForSerialization(extraNodes);
 		    appendNode(propValue.rawNode);
 		}

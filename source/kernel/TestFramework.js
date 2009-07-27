@@ -52,10 +52,12 @@ Object.subclass('TestCase', {
 		this.log('Running test: ' + aSelector);
 		try {
 			this.currentSelector = aSelector;
+			// var startTimeTest = (new Date()).getTime();	
 			this.setUp();
 			this[aSelector]();
 			this.result.addSuccess(this.constructor.type, aSelector);
-			this.log(' ++ succeeded ++');
+			// this.log(' ++ succeeded ++ (' + ((new Date()).getTime() - startTimeTest) +"ms)" );
+			// this.log(' ++ succeeded ++');
 		} catch (e) {
 			this.result.addFailure(this.constructor.type, aSelector, e);
 			this.log(' -- failed -- ' + '(' + printError(e) + ')');

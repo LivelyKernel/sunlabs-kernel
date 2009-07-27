@@ -567,7 +567,7 @@ Morph.subclass('PinMorph', {
 	okToBeGrabbedBy: Functions.Null,
     
     setPinHandle: function(pinHandle) {
-        console.log("setPinHandle" + pinHandle)
+        // console.log("setPinHandle" + pinHandle)
         this.pinHandle = pinHandle;
         this.ownerWidget = pinHandle;
     },
@@ -585,7 +585,7 @@ Morph.subclass('PinMorph', {
      /* Drag and Drop of Pin */        
     addMorph: function($super, morph) {
         if (!morph.pinHandle || !morph.pinHandle.isFakeHandle) return;
-        console.log("dropping pin on other pin...");
+        // console.log("dropping pin on other pin...");
         $super(morph); // to remove it out of the hand
 
         //FIXME: just for make things work...
@@ -618,7 +618,7 @@ Morph.subclass('PinMorph', {
             var index = inputPins.indexOf(this.pinHandle);
             if (index > 0) {
                 var prevPinPosition = (inputPins[index - 1]).morph.getPosition();
-                console.log("prev pos " + prevPinPosition);
+                // console.log("prev pos " + prevPinPosition);
                 this.setPosition(prevPinPosition.addPt(pt(0,25)));
             }       
         }
@@ -649,9 +649,9 @@ Morph.subclass('PinMorph', {
             if (otherPinMorph.isPinMorph) {
                 return otherPinMorph.addMorph(this); // let him do the job
             } else {
-                console.log("Pin DnD Problem: found  " + String(otherPinMorph));
+                console.warn("Pin DnD Problem: found  " + String(otherPinMorph));
             }; 
-            console.log("found other pin " + otherPinMorph)
+            // console.log("found other pin " + otherPinMorph)
             this.pinHandle.connectors.first().remove();
             this.remove();
         };
@@ -699,7 +699,7 @@ Morph.subclass('PinMorph', {
         if (this.pinHandle.isFakeHandle) return;
         
 		if(!this.pinHandle.component.fabrik) {
-			console.log("Warning: " + this + " has no fabrik, so connections are not possible");
+			console.warn("Warning: " + this + " has no fabrik, so connections are not possible");
 			return;
 		}
         var fakePin = this.pinHandle.createFakePinHandle();
@@ -900,7 +900,7 @@ Widget.subclass('PinHandle', {
     connectTo: function(otherPinHandle) {
 
         if (!this.isConnectableTo(otherPinHandle)) {
-            console.log('tried to connect pins but a connection is not allowed')
+            console.warn('tried to connect pins but a connection is not allowed')
             return;
         }
         
@@ -910,7 +910,7 @@ Widget.subclass('PinHandle', {
                     
         var existingConnection = this.detectConnectorWith(otherPinHandle);
         if (existingConnection) {
-            console.log('There exists already a connection from ' + this.getName() + ' to ' + otherPinHandle.getName());
+            // console.log('There exists already a connection from ' + this.getName() + ' to ' + otherPinHandle.getName());
             return existingConnection;
         };
                 
@@ -1241,7 +1241,7 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
     },
 
 	reshape: function($super,  partName, newPoint, lastCall) {
-		console.log("reshape")
+		// console.log("reshape")
 		$super(partName, newPoint, lastCall);
 		this.layoutOrthogonal();
 	},
@@ -1317,7 +1317,7 @@ Widget.subclass('PinConnector', {
         if (toPinHandle.isFakeHandle) return;
         this.observeFromTo(fromPinHandle, toPinHandle);
             
-        console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
+        // console.log("PinConnector says: Connected pin " + fromPinHandle.getName() + " to pin " + toPinHandle.getName());
     },
   
     observeFromTo: function(fromPinHandle, toPinHandle) {
@@ -1359,17 +1359,17 @@ Widget.subclass('PinConnector', {
     },
 
 	copyFrom: function($super, copier, other) {
-		console.log("COPY CONNECTOR")
+		// console.log("COPY CONNECTOR")
 		$super(copier, other);
 		
 		//copier.smartCopyProperty("morph", this, other);
 
-		console.log("COPY TO")		
+		// console.log("COPY TO")		
 		copier.shallowCopyProperty("toPin", this, other);	
-		console.log("toPin: " + other.toPin);
-		console.log("COPY FROM")		
+		// console.log("toPin: " + other.toPin);
+		// console.log("COPY FROM")		
 		copier.shallowCopyProperty("fromPin", this, other);
-		console.log("fromPin: " + other.fromPin);
+		// console.log("fromPin: " + other.fromPin);
 		
 		return this; 
     },	
@@ -1387,7 +1387,7 @@ Widget.subclass('PinConnector', {
     remove: function() {
         // FIXME: View!!!
         if (this.morph) {
-            console.log('remove con');
+            // console.log('remove con');
             this.morph.remove();
         }
     
@@ -1396,7 +1396,7 @@ Widget.subclass('PinConnector', {
 
         // FIXME move to PionHandle
         var self = this;
-        console.log("remove con from " + this.fromPin.getName() + " to: " + this.toPin.getName());
+       	//  console.log("remove con from " + this.fromPin.getName() + " to: " + this.toPin.getName());
         this.fromPin.connectors = this.fromPin.connectors.reject(function (ea) { return ea === self}, this);
         this.toPin.connectors = this.toPin.connectors.reject(function (ea) { return ea === self}, this);
         
@@ -1873,14 +1873,14 @@ BoxMorph.subclass('ComponentMorph', {
     },
     
     onMouseDown: function ($super, evt) {
-        console.log('making selection');
+        // console.log('making selection');
         $super(evt);
 		evt.hand.setKeyboardFocus(this);
         return true;
     },
 
 	onKeyPress: function(evt) {
-        console.log("onKeyPress " + this + " ---  " + evt )
+        // console.log("onKeyPress " + this + " ---  " + evt )
 
 		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
 			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
@@ -1911,7 +1911,7 @@ BoxMorph.subclass('ComponentMorph', {
 
 				
 		// var copy = this.copy(new Copier());
-		console.log('copied %s', copy);
+		// console.log('copied %s', copy);
 		copy.owner = null; // so following addMorph will just leave the tfm alone
 		this.owner.addMorph(copy); // set up owner as the original parent so that...        
 
@@ -2091,7 +2091,7 @@ Widget.subclass('Component', {
     
     getFieldNamesFromModel: function(model) {
         var result = [];
-        console.log("looking for field names");
+        // console.log("looking for field names");
         // look for getter/setter functions and extract field names from them
         for (var name in model) {
             if (!name.startsWith('set') || !(model[name] instanceof Function)) continue; 
@@ -2101,7 +2101,7 @@ Widget.subclass('Component', {
             // Ignore the getRecordField and setRecordField which every Record has
             if (nameWithoutSet == 'RecordField') continue;
             // getter and setter are there, we found a field
-            console.log("Found field: " + nameWithoutSet);
+            // console.log("Found field: " + nameWithoutSet);
             result.push(nameWithoutSet);
         };
         return result;
@@ -2378,7 +2378,7 @@ ComponentMorph.subclass('FabrikMorph', {
 			if (ea.panel.dimMorph)
 				ea.panel.dimMorph.remove();
 			if (ea.panel.isCollapsed == false) {
-				console.log("collapse " + ea);
+				// console.log("collapse " + ea);
 			 	ea.panel.collapseToggle(true);
 			};
 		});
@@ -2551,7 +2551,7 @@ Component.subclass('FabrikComponent', {
     },
     
     buildView: function($super, optExtent) {
-        console.log("buildView for " + this);
+        // console.log("buildView for " + this);
         // this.panel = PanelMorph.makePanedPanel(this.viewExtent || optExtent || this.defaultViewExtent,
         //     [['playfield', function(initialBounds){ return new FabrikMorph(initialBounds) }, pt(1,1).extentAsRectangle()]]
         // );
@@ -2579,7 +2579,7 @@ Component.subclass('FabrikComponent', {
     plugin: function(component) {
         
         if (this.components.include(component)) {
-            console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
+            // console.log('FabrikComponent.plugin(): ' + component + 'was already plugged in.');
             return;
         }
         this.components.push(component);
@@ -2595,7 +2595,7 @@ Component.subclass('FabrikComponent', {
     
     pluginConnector: function(connector) {
         if (this.connectors.include(connector)) {
-            console.log("Plugin connector failed: " + connector + " is already plugged in!");
+            console.warn("Plugin connector failed: " + connector + " is already plugged in!");
             return;
         };        
         this.connectors.push(connector);
@@ -2618,9 +2618,9 @@ Component.subclass('FabrikComponent', {
 
     removeConnector: function(connector) {
         if (!this.connectors.include(connector)) {
-            console.log('FabrikComponent>>removeConnector: tried to remove connector, which is not there');
+            // console.log('FabrikComponent>>removeConnector: tried to remove connector, which is not there');
         };
-        console.log('Removing connectir')
+        // console.log('Removing connectir')
         this.connectors = this.connectors.reject(function(ea) { return ea === connector });
         this.morph.removeMorph(connector.morph);
     },
@@ -2675,7 +2675,7 @@ Object.subclass('ComponentCopier', {
     },
 	
 	pasteComponentFromXMLStringIntoFabrik: function(componentMorphsAsXmlString, fabrik) {
-		console.log("pasteComponentFromXMLStringIntoFabrik")
+		// console.log("pasteComponentFromXMLStringIntoFabrik")
 		
 		var morphs = this.loadMorphsWithWorldTrunkFromSource(componentMorphsAsXmlString);
 		
@@ -2684,15 +2684,15 @@ Object.subclass('ComponentCopier', {
 		
 		// unpack potential selection morph
 		if(morphs[0].isSelectionContainer) {
-			console.log("unpack potential selection morph")
+			// console.log("unpack potential selection morph")
 			morphs = morphs[0].submorphs
 		};
 		
-		console.log("try to paste  " + morphs.length + " morphs")
+		// console.log("try to paste  " + morphs.length + " morphs")
 		var components = morphs.collect(function(ea) {
 			return ea.component}).select(function(ea) {return ea});
 		var copier = new Copier();
-		console.log("try to paste  " + components.length + " components")
+		// console.log("try to paste  " + components.length + " components")
 		
 		var offset = pt(50,50); 
 		// fabrik.panel.localize(WorldMorph.current().hands.first().getPosition())
@@ -2702,7 +2702,7 @@ Object.subclass('ComponentCopier', {
 			fabrik.plugin(comp);
 			comp.panel.setPosition(oldPos.addPt(offset));
 			if (!fabrik.morph.submorphs.include(comp.panel)) {
-				console.log("ERROR: pasted component did not get added to fabrik");
+				console.warn("ERROR: pasted component did not get added to fabrik");
 			}
 		})
 		return components
@@ -2837,7 +2837,7 @@ ComponentMorph.subclass('FunctionComponentMorph', {
         this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
 			var forceImplicit = !str.match(/^[ ]*return /);
             var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval, forceImplicit);
-			console.log("eval: " + source)          
+			// console.log("eval: " + source)          
             return eval(source).apply(self.component, self.component.parameterValues());
         });
     },        
@@ -2983,7 +2983,7 @@ Component.subclass('FunctionComponent', {
             else
                 return evalFunc(funcSource).bind(this);
         } catch(e) {
-            console.log("Error when evaluating:" + funcSource + " error: " + e.msg);
+            // console.log("Error when evaluating:" + funcSource + " error: " + e.msg);
             return function(){} // do nothing
         }
     },
@@ -3007,10 +3007,10 @@ Component.subclass('FunctionComponent', {
             var result = this.pvtGetFunction().apply(this, parameters);
         } catch(e) {
             dbgOn(true);
-            console.log("FunctionComponentModel: error " + e + " when executing body" + this.formalModel.getFunctionBody());
+            console.warn("FunctionComponentModel: error " + e + " when executing body" + this.formalModel.getFunctionBody());
             return; // don't set any result
         };
-        console.log("Result of function call: " + result);
+        // console.log("Result of function call: " + result);
 		this.formalModel.setResult(result || null ); 
     },
 });
@@ -3028,7 +3028,9 @@ Component.subclass('WebRequestComponent', {
 
     setupObserver: function() {
         this.formalModel.addObserver({onURLUpdate: function(url) { this.makeRequest() }.bind(this)});
-        this.formalModel.addObserver({onResponseTextUpdate: function() { console.log('getting response...') }});	
+        this.formalModel.addObserver({onResponseTextUpdate: function() { 
+				//console.log('getting response...') 
+		}});	
 	},
 
 	onDeserialize: function($super) {
@@ -3061,12 +3063,12 @@ Component.subclass('WebRequestComponent', {
     
     makeRequest: function() {
         if (!this.formalModel.getURL()) return;
-        console.log('making reqest to: ' + this.formalModel.getURL());
+        //console.log('making reqest to: ' + this.formalModel.getURL());
         
         try {
             var url = new URL(this.formalModel.getURL());
         } catch(e) {
-            console.log('Invalid URL!');
+            console.warn('Invalid URL! in makeRequest');
             return // invalid url, we do not proceed
         }
         // var x = new Resource(this.formalModel.newRelay({URL: '-URL', ContentText: '+ResponseText', ContentDocument: '+ResponseXML'}));
@@ -3483,7 +3485,7 @@ Morph.subclass("FabrikClockMorph", {
     },
 
     updateHands: function() {
-		console.log("update hands");
+		// console.log("update hands");
 		var currentDate = new Date();
         var offset;
         if (this.timeZoneOffset === undefined)
@@ -3513,7 +3515,7 @@ Morph.subclass("FabrikClockMorph", {
     if (m instanceof FabrikMorph && !override/* && !m.openInWindow*/) {
         m.halos.remove();
         m.adjustForNewBounds();
-        console.log('adding fabrikmorph to world...')
+        // console.log('adding fabrikmorph to world...')
         return m.component.openIn(this, this.hands.first().getPosition().addPt(m.getPosition()));
     };
     return proceed(m, front);
@@ -3559,6 +3561,7 @@ Global.inspect = function(inspectee) {
 	var world = WorldMorph.current();
 	new SimpleInspector(inspectee).openIn(world, world.hands.first().getPosition());
 };
+
 
 console.log('loaded Fabrik.js');
 

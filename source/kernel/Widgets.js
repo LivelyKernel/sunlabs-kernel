@@ -457,8 +457,13 @@ Morph.subclass('HandleMorph', {
                 this.remove(); 
             }
             return; 
-        }
+        };
     
+		if (!this.owner) {
+			console.warn("Handle " + this + " has no owner in onMouseMove!" )
+			return;
+		}
+
         // Mouse down: edit targetMorph
         this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
 
