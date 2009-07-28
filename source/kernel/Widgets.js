@@ -1126,110 +1126,109 @@ TextMorph.subclass("CheapListMorph", {
 
 BoxMorph.subclass("TextListMorph", {
 
-    documentation: "A list that uses TextMorphs to display individual items",
-    style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
-    formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
-    defaultCapacity: 50,
-    highlightItemsOnMove: false,
+	documentation: "A list that uses TextMorphs to display individual items",
+	style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
+	formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
+	defaultCapacity: 50,
+	highlightItemsOnMove: false,
 
-    layoutManager: new VerticalLayout(), // singleton is OK
-    
-    initialize: function($super, initialBounds, itemList, optPadding, optTextStyle) {
-        // itemList is an array of strings
-	this.baseWidth = initialBounds.width;
-        var height = Math.max(initialBounds.height, itemList.length * TextMorph.prototype.fontSize);
-        initialBounds = initialBounds.withHeight(height);
-	if (optPadding) this.padding = optPadding;
-        $super(initialBounds);
-        this.itemList = itemList;
-        this.selectedLineNo = -1;
-	this.textStyle = optTextStyle;
-	this.generateSubmorphs(itemList);
+	layoutManager: new VerticalLayout(), // singleton is OK
 	
-	if (Config.selfConnect) { // self connect logic, not really needed 
-            var model = Record.newNodeInstance({List: [], Selection: null, Capacity: this.defaultCapacity, 
-		ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
-	    this.relayToModel(model, {List: "List", Selection: "Selection", Capacity: "-Capacity", 
-				      ListDelta: "-ListDelta",
-				      DeletionConfirmation: "-DeletionConfirmation", DeletionRequest: "+DeletionRequest"});
-	}
-        this.setList(itemList);
-        this.savedFill = null; // for selecting items
-        return this;
-    },
-    
-    onDeserialize: function() {
-        this.itemList = [];
-        for (var i = 0; i < this.submorphs.length; i++ ) {
-            var m = this.submorphs[i];
-            m.beListItem();
-            m.relayMouseEvents(this);
-           this.itemList.push(m.textString);
-        }
-        this.setList(this.itemList);
-        this.layoutChanged();
-    },
+	initialize: function($super, initialBounds, itemList, optPadding, optTextStyle) {
+		// itemList is an array of strings
+		this.baseWidth = initialBounds.width;
+		var height = Math.max(initialBounds.height, itemList.length * TextMorph.prototype.fontSize);
+		initialBounds = initialBounds.withHeight(height);
+		if (optPadding) this.padding = optPadding;
+		$super(initialBounds);
+		this.itemList = itemList;
+		this.selectedLineNo = -1;
+		this.textStyle = optTextStyle;
+		this.generateSubmorphs(itemList);
+	
+		if (Config.selfConnect) { // self connect logic, not really needed 
+			var model = Record.newNodeInstance({List: [], Selection: null, Capacity: this.defaultCapacity, 
+				ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
+			this.relayToModel(model, {List: "List", Selection: "Selection", Capacity: "-Capacity", 
+				ListDelta: "-ListDelta",
+				DeletionConfirmation: "-DeletionConfirmation", DeletionRequest: "+DeletionRequest"});
+		}
+		this.setList(itemList);
+		this.savedFill = null; // for selecting items
+		return this;
+	},
+	
+	onDeserialize: function() {
+		this.itemList = [];
+		for (var i = 0; i < this.submorphs.length; i++ ) {
+			var m = this.submorphs[i];
+			m.beListItem();
+			m.relayMouseEvents(this);
+			this.itemList.push(m.textString);
+		}
+		this.setList(this.itemList);
+		this.layoutChanged();
+	},
 
-    handlesMouseDown: Functions.True,
+	handlesMouseDown: Functions.True,
 
-    generateSubmorphs: function(itemList) {
-	var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle();
-	for (var i = 0; i < itemList.length; i++)  {
-	    var m = new TextMorph(rect, itemList[i]).beListItem();
-	    if (this.textStyle) m.applyStyle(this.textStyle);
-	    this.addMorph(m);
-	    m.relayMouseEvents(this);
-	}
-	// FIXME: border doesn't belong here, doesn't take into account padding.
-	var borderBounds = this.bounds();//.expandBy(this.getBorderWidth()/2);
-	var delta = 2; // FIXME FIXME
-	var newBounds = new Rectangle(delta, 0, borderBounds.width - delta, borderBounds.height + this.padding.bottom());
-	this.shape.setBounds(newBounds);
-    },
+	generateSubmorphs: function(itemList) {
+		var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle();
+		for (var i = 0; i < itemList.length; i++)  {
+			var m = new TextMorph(rect, itemList[i]).beListItem();
+			if (this.textStyle) m.applyStyle(this.textStyle);
+			this.addMorph(m);
+			m.relayMouseEvents(this);
+		}
+		// FIXME: border doesn't belong here, doesn't take into account padding.
+		var borderBounds = this.bounds();//.expandBy(this.getBorderWidth()/2);
+		var delta = 2; // FIXME FIXME
+		var newBounds = new Rectangle(delta, 0, borderBounds.width - delta, borderBounds.height + this.padding.bottom());
+		this.shape.setBounds(newBounds);
+	},
 
-    adjustForNewBounds: function($super) {
-	$super();
-	// FIXME: go through all the submorphs adjust?
-	// Really, just fold into the layout logic, when in place
-	this.baseWidth = this.bounds().width;
-    },
+	adjustForNewBounds: function($super) {
+		$super();
+		// FIXME: go through all the submorphs adjust?
+		// Really, just fold into the layout logic, when in place
+		this.baseWidth = this.bounds().width;
+	},
 
-    takesKeyboardFocus: Functions.True,
+	takesKeyboardFocus: Functions.True,
 
-    setHasKeyboardFocus: function(newSetting) { 
-        this.hasKeyboardFocus = newSetting;
-        return newSetting;
-    },
-    
-    onMouseDown: function(evt) {
-	var target = this.morphToReceiveEvent(evt);
-	var index = this.submorphs.indexOf(target);
-	this.highlightItem(evt, index, true);
-	evt.hand.setMouseFocus(this); // to get moves
+	setHasKeyboardFocus: function(newSetting) { 
+		this.hasKeyboardFocus = newSetting;
+		return newSetting;
+	},
+	
+	onMouseDown: function(evt) {
+		var target = this.morphToReceiveEvent(evt);
+		var index = this.submorphs.indexOf(target);
+		this.highlightItem(evt, index, true);
+		evt.hand.setMouseFocus(this); // to get moves
+	},
 
-    },
+	onMouseMove: function(evt) {
+		 // console.log("%s got evt %s", this.getType(),  evt);
+		 if (!this.highlightItemsOnMove) return;
+		 var target = this.morphToReceiveEvent(evt);
+		 var index = this.submorphs.indexOf(target);
+		 this.highlightItem(evt, index, false);
+	},
+	
+	onMouseWheel: function(evt) {
+		console.log("wheel event " + evt + "," + evt.wheelDelta() + " on " + this); // no break
+	},
 
-    onMouseMove: function(evt) {
-         // console.log("%s got evt %s", this.getType(),  evt);
-         if (!this.highlightItemsOnMove) return;
-         var target = this.morphToReceiveEvent(evt);
-         var index = this.submorphs.indexOf(target);
-         this.highlightItem(evt, index, false);
-    },
-    
-    onMouseWheel: function(evt) {
-	console.log("wheel event " + evt + "," + evt.wheelDelta() + " on " + this); // no break
-    },
-
-    highlightItem: function(evt, index, updateModel) {
-        if (index >= 0) {
-            this.selectLineAt(index, updateModel);
-            this.requestKeyboardFocus(evt.hand);
-            return true;
-        }
-        if (!updateModel) this.selectLineAt(-1, updateModel);
-        return false;
-    },
+	highlightItem: function(evt, index, updateModel) {
+		if (index >= 0) {
+			this.selectLineAt(index, updateModel);
+			this.requestKeyboardFocus(evt.hand);
+			return true;
+		}
+		if (!updateModel) this.selectLineAt(-1, updateModel);
+		return false;
+	},
 
     onKeyPress: Functions.Empty,
 
