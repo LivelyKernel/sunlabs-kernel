@@ -2409,7 +2409,9 @@ TextMorph.addMethods({
     
     resetScrollPane: function() {
         var sp = this.enclosingScrollPane();
-	if (sp) sp.scrollToTop();
+		if (sp) {
+			sp.scrollToTop();
+		}
     },
     
     scrollSelectionIntoView: function() { 

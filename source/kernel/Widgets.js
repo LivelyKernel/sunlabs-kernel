@@ -1296,10 +1296,19 @@ BoxMorph.subclass("TextListMorph", {
         var priorItem = this.getSelection();
         var removed = this.itemList.length + newItems.length - capacity;
         if (removed > 0) {
+			var oldPosition = this.submorphs[0].getPosition();
             for (var i = 0; i < removed; i++) {
                 this.submorphs[0].remove();
             }
             this.itemList = this.itemList.slice(removed);
+			
+			// update position of of old morphs in list, 
+			// normally this would be the job of the VerticalLayout behavior
+			// -> TODO: implement layoutChanged() in VerticalLayout
+			var delta = oldPosition.subPt(this.submorphs[0].getPosition());
+			for (var i = 0; i < this.submorphs.length; i++) {
+                this.submorphs[i].moveBy(delta);
+            }
         }
         this.itemList = this.itemList.concat(newItems);
         this.generateSubmorphs(newItems);
@@ -1398,7 +1407,7 @@ BoxMorph.subclass("TextListMorph", {
         // Need a cleaner way to do this ;-)
         var sp = this.enclosingScrollPane();
         if (!sp) return false;
-        if (toBottom) sp.scrollToBottom();
+		if (toBottom) sp.scrollToBottom();
         else sp.scrollToTop();
         return true;
     },
@@ -2362,6 +2371,7 @@ BoxMorph.subclass("ScrollPane", {
     },
     
     setScrollPosition: function(scrollPos) { 
+		// this.adjustForNewBounds();
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -this.slideRoom()*scrollPos )); 
 		if (this.scrollBar)
         	this.getScrollBar().adjustForNewBounds();

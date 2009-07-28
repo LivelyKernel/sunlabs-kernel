@@ -1852,7 +1852,9 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 	    submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
 	    //submorph.translateBy(pt(dx, dy));
 	}
-    }
+    },
+
+
 
 });
 

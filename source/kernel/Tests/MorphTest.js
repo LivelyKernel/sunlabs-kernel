@@ -46,6 +46,54 @@ TestCase.subclass('ButtonMorphTest', {
 	
 });
 
+
+TestCase.subclass('ATextListMorphTest', {
+
+	setUp: function() {
+		this.morph = new TextListMorph(new Rectangle(0,0,100,100),[]);
+		this.model = Record.newNodeInstance({List: [], Selection: null, Capacity: 4, 
+			ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
+	    this.morph.relayToModel(this.model, {List: "List", Selection: "Selection", Capacity: "-Capacity", 
+				      ListDelta: "-ListDelta", DeletionConfirmation: "-DeletionConfirmation", DeletionRequest: "+DeletionRequest"});
+	},
+	
+	tearDown: function() {
+		// this.morph.remove();
+	},
+	
+	openMorph: function() {
+		WorldMorph.current().addMorph(this.morph);		
+	},
+	
+    testUpdateList: function() {
+		this.morph.updateList(["Hallo"]);
+		this.assertEqual(this.morph.itemList.length, 1);
+    },
+	
+	testAppendList: function() {
+		this.morph.appendList(["Hallo"]);
+		this.assertEqual(this.morph.itemList.length, 1);
+	},
+	
+	testDefaultCapacity: function() {
+		this.assertEqual(this.morph.getCapacity(), 4);
+		
+	},
+	
+	testAppendListOverCapaciy: function() {
+		this.openMorph();
+		this.morph.updateList(["1","2","3"]);
+		var firstY = this.morph.submorphs[0].getPosition().y;
+		this.morph.appendList(["4","5","6"]);
+		this.assertEqual(this.morph.itemList.length, 4);
+		this.assertEqual(this.morph.submorphs[0].getPosition().y, firstY, "the layout did not get updated");
+
+
+	},
+
+
+});
+
 TestCase.subclass('ListMorphTest', {
 
     setUp: function() {
@@ -100,9 +148,7 @@ TestCase.subclass('ListMorphTest', {
         this.assertEqual(this.list.submorphs.length, 2, "wrong number of submorphs");
         this.assertEqual(this.list.submorphs.first().textString, "Hello", "wrong display of object");
     },
-    
-    
-    
+
 });
 
 
