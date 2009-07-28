@@ -3110,6 +3110,10 @@ Widget.subclass('ConsoleWidget', {
 	onDeserialize: function() {
 		this.setLogMessages([]);
 		Global.console.consumers.push(this);
+		// hack to find the real solution...
+		if (this.panel) {
+			this.panel.messagePane.adjustForNewBounds();
+		}
 	},
 	
 	addCommandHistoryInspector: function() {
@@ -3130,6 +3134,7 @@ Widget.subclass('ConsoleWidget', {
 			['commandLine', TextMorph, new Rectangle(0, 0.8, 1, 0.2)]
 		]);
 		panel.ownerWidget = this; // to serialize the widget
+		this.panel = panel;
 
 		var model = this.getModel();
 		var m = panel.messagePane;

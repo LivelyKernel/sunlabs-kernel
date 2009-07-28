@@ -891,54 +891,59 @@ chunkLengthForWord: function(str, index) {
 
 
 BoxMorph.subclass("TextMorph", {
-    
-    documentation: "Container for Text",
-    // these are prototype variables
-    fontSize:   Config.defaultFontSize   || 12,
-    fontFamily: Config.defaultFontFamily || 'Helvetica',
-    textColor: Color.black,
-    backgroundColor: Color.veryLightGray,
-    style: { borderWidth: 1, borderColor: Color.black},
-    padding: Rectangle.inset(6, 4),
-    wrap: thisModule.WrapStyle.Normal,
+	
+	documentation: "Container for Text",
+	// these are prototype variables
+	fontSize:	Config.defaultFontSize	 || 12,
+	fontFamily: Config.defaultFontFamily || 'Helvetica',
+	textColor: Color.black,
+	backgroundColor: Color.veryLightGray,
+	style: { borderWidth: 1, borderColor: Color.black},
+	padding: Rectangle.inset(6, 4),
+	wrap: thisModule.WrapStyle.Normal,
 
-    maxSafeSize: 20000, 
-    tabWidth: 4,
-    tabsAsSpaces: true,
-    noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['textContent', 'lines', 'textSelection']),
-    locale: Locale,
-    acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
-    autoAccept: false,
-    isSelecting: false, // true if last onmousedown was in character area (hit>0)
-    selectionPivot: null,  // index of hit at onmousedown
-    lineNumberHint: 0,
-    hasKeyboardFocus: false,
+	maxSafeSize: 20000, 
+	tabWidth: 4,
+	tabsAsSpaces: true,
+	noShallowCopyProperties: Morph.prototype.noShallowCopyProperties.concat(['textContent', 'lines', 'textSelection']),
+	locale: Locale,
+	acceptInput: true, // whether it accepts changes to text KP: change: interactive changes
+	autoAccept: false,
+	isSelecting: false, // true if last onmousedown was in character area (hit>0)
+	selectionPivot: null,  // index of hit at onmousedown
+	lineNumberHint: 0,
+	hasKeyboardFocus: false,
 	useChangeClue: false,
-    
-    formals: {
-	Text: { byDefault: ""},
-	Selection: { byDefault: ""},
-	History: {byDefault: "----"},
-	HistoryCursor: {byDefault: 0},
-	DoitContext: {byDefault: null}
-    },
-    
-    initializeTransientState: function($super) {
-        $super();
-        this.selectionRange = [0, -1]; // null or a pair of indices into textString
-        this.priorSelection = [0, -1];  // for double-clicks
-        // note selection is transient
-        this.lines = null;//: TextLine[]
-    },
+	
+	formals: {
+		Text: { byDefault: ""},
+		Selection: { byDefault: ""},
+		History: {byDefault: "----"},
+		HistoryCursor: {byDefault: 0},
+		DoitContext: {byDefault: null}
+	},
+	
+	initializeTransientState: function($super) {
+		$super();
+		this.selectionRange = [0, -1]; // null or a pair of indices into textString
+		this.priorSelection = [0, -1];	// for double-clicks
+		// note selection is transient
+		this.lines = null;//: TextLine[]
+	
+		if (this.isInputLine) {	 // for discussion, see beInputLine...
+			this.beInputLine(this.historySize)
+		}
 
-    initializePersistentState: function($super, shape) {
-        $super(shape);
-        this.textContent = this.addWrapper(new lively.scene.Text());
-        this.resetRendering();
-        // KP: set attributes on the text elt, not on the morph, so that we can retrieve it
-	this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
-        this.initializeTextSelection();
-    },
+	},
+
+	initializePersistentState: function($super, shape) {
+		$super(shape);
+		this.textContent = this.addWrapper(new lively.scene.Text());
+		this.resetRendering();
+		// KP: set attributes on the text elt, not on the morph, so that we can retrieve it
+		this.applyStyle({fill: this.backgroundColor, borderWidth: this.borderWidth, borderColor: this.borderColor});
+		this.initializeTextSelection();
+	},
 
 	initializeTextSelection: function() {
 		this.textSelection = this.addMorphBack(new TextSelectionMorph());
@@ -946,47 +951,47 @@ BoxMorph.subclass("TextMorph", {
 		this.rawNode.insertBefore(this.textSelection.rawNode, this.shape.rawNode.nextSibling);
 	},
 
-    restoreFromSubnode: function($super, importer, rawNode) {
-	if ($super(importer, rawNode)) return true;
-	if (rawNode.localName == "text") {
-            this.textContent = new lively.scene.Text(importer, rawNode);   
-            this.fontFamily = this.textContent.getFontFamily();
-            this.fontSize = this.textContent.getFontSize();
-            this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
-            this.textColor = new Color(Importer.marker, this.textContent.getFill());
-	    return true;
-	} 
-	return false;
-    },
+	restoreFromSubnode: function($super, importer, rawNode) {
+		if ($super(importer, rawNode)) return true;
+		if (rawNode.localName == "text") {
+			this.textContent = new lively.scene.Text(importer, rawNode);   
+			this.fontFamily = this.textContent.getFontFamily();
+			this.fontSize = this.textContent.getFontSize();
+			this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
+			this.textColor = new Color(Importer.marker, this.textContent.getFill());
+			return true;
+		} 
+		return false;
+	},
 
-    restorePersistentState: function($super, importer) {
-	$super(importer); // FIXME legacy code, remove the whole method
-	var attr = this.rawNode.getAttributeNS(null, "stored-style");
-	if (attr) {
-	    var styleInfo = Converter.fromJSONAttribute(attr);
-	    this.textStyle = new RunArray(styleInfo.runs, styleInfo.values); 
-	}
-    },
+	restorePersistentState: function($super, importer) {
+		$super(importer); // FIXME legacy code, remove the whole method
+		var attr = this.rawNode.getAttributeNS(null, "stored-style");
+		if (attr) {
+			var styleInfo = Converter.fromJSONAttribute(attr);
+			this.textStyle = new RunArray(styleInfo.runs, styleInfo.values); 
+		}
+	},
 
-    initialize: function($super, rect, textString, useChangeClue) {
-        this.textString = textString || "";
-        // rk 4/16/09 added two lines below as a bugfix for searching code with alt+w
-        // in rev 2764 a changed call was added to setFill which causes an error
-        this.selectionRange = [0, -1]; // null or a pair of indices into textString
-        this.priorSelection = [0, -1];
-        $super(rect);
-        // KP: note layoutChanged will be called on addition to the tree
-        // DI: ... and yet this seems necessary!
-        if (this.textString instanceof thisModule.Text) {
-	    	this.textStyle = this.textString.style;
-	    	this.textString = this.textString.string || "";
+	initialize: function($super, rect, textString, useChangeClue) {
+		this.textString = textString || "";
+		// rk 4/16/09 added two lines below as a bugfix for searching code with alt+w
+		// in rev 2764 a changed call was added to setFill which causes an error
+		this.selectionRange = [0, -1]; // null or a pair of indices into textString
+		this.priorSelection = [0, -1];
+		$super(rect);
+		// KP: note layoutChanged will be called on addition to the tree
+		// DI: ... and yet this seems necessary!
+		if (this.textString instanceof thisModule.Text) {
+			this.textStyle = this.textString.style;
+			this.textString = this.textString.string || "";
 		}
 		if (this.textString === undefined) alert('initialize: ' + this);
 		this.useChangeClue = useChangeClue == true;
 		this.addChangeClue(useChangeClue);
 		this.layoutChanged();
-        return this;
-    },
+		return this;
+	},
 
 	onDeserialize: function() {
 		// the morph gets lost when it is not hung into the dom 
@@ -995,187 +1000,183 @@ BoxMorph.subclass("TextMorph", {
 			this.addChangeClue(true);
 	},
 
-    bounds: function($super, ignoreTransients, hasBeenRendered) {
+	bounds: function($super, ignoreTransients, hasBeenRendered) {
 		// tag: newText
 		if (this.fullBounds != null) return this.fullBounds;
 		if (this.shouldNotRender) return $super(ignoreTransients);
 
 		// Note: renderAfterReplacement calls this preemptively to set fullBounds
-		//    by calling fitText and all, but without re-rendering...
+		//	  by calling fitText and all, but without re-rendering...
 		if (!hasBeenRendered) this.resetRendering();
 		this.fitText(); // adjust bounds or text for fit 
 		this.drawSelection("noScroll");
 		return $super(ignoreTransients);
-    },
+	},
 
+	setTextColor: function(color) {
+		this.textColor = color;
+		this.layoutChanged();
+		this.changed();
+	},
+	
+	getTextColor: function() {
+		return this.textColor;
+	},
 
+	applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
+		$super(spec);
+		if (spec.wrapStyle !== undefined) {
+			if (spec.wrapStyle in thisModule.WrapStyle) this.setWrapStyle(spec.wrapStyle);
+			else console.log("unknown wrap style " + spec.wrapStyle);
+		}
+		if (spec.fontSize !== undefined) {
+			this.setFontSize(spec.fontSize);
+		}
+		if (spec.textColor !== undefined) {
+			this.setTextColor(spec.textColor);
+		}
+		return this;
+	},
 
+	applyStyleDeferred: function(styleSpec) {
+		// tag: newText
+		// Use of this method should minimize multiple renderings of text due to applyStyle
+		this.shouldNotRender = true;  // suppresses attempts to render text in bounds()
+		try {this.applyStyle(styleSpec); }
+			catch (e) { this.shouldNotRender = false; }
+		this.shouldNotRender = false;
+	},
+	
+	makeStyleSpec: function($super, spec) {
+		var spec = $super();
+		if (this.wrap != TextMorph.prototype.wrap) {
+			spec.wrapStyle = this.wrap;
+		}
+		if (this.getFontSize() !== TextMorph.prototype.fontSize) {
+			spec.fontSize = this.getFontSize();
+		}
+		if (this.getFontFamily() !== TextMorph.prototype.fontFamily) {
+			spec.fontFamily = this.getFontFamily();
+		}
 
+		if (this.textColor !== TextMorph.prototype.textColor) {
+			spec.textColor = this.textColor;
+		}
+		return spec;
+	},
+	
+	setWrapStyle: function(style) {
+		if (!(style in thisModule.WrapStyle)) { 
+			console.log("unknown style " + style + " in " + thisModule.WrapStyle);
+			return; 
+		}
+		if (style == TextMorph.prototype.wrap) {
+			delete this.wrap;
+		} else {
+			this.wrap = style;
+		}
+	},
     
-    
-    
-    setTextColor: function(color) {
-        this.textColor = color;
-        this.layoutChanged();
-        this.changed();
-    },
-    
-    getTextColor: function() {
-        return this.textColor;
-    },
+	beLabel: function(styleMods) {
+		// Note default style is applied first, then any additional specified
+		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
+		if (styleMods) this.applyStyleDeferred(styleMods);
+		this.ignoreEvents();
+		// this.isAccepting = false;
+		this.layoutChanged();
+		this.okToBeGrabbedBy = Functions.Null;
+		return this;
+	},
 
-    applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
-	$super(spec);
-	if (spec.wrapStyle !== undefined) {
-	    if (spec.wrapStyle in thisModule.WrapStyle) this.setWrapStyle(spec.wrapStyle);
-	    else console.log("unknown wrap style " + spec.wrapStyle);
-	}
-	if (spec.fontSize !== undefined) {
-	    this.setFontSize(spec.fontSize);
-	}
-	if (spec.textColor !== undefined) {
-	    this.setTextColor(spec.textColor);
-	}
-	return this;
-    },
-    applyStyleDeferred: function(styleSpec) {
-	// tag: newText
-	// Use of this method should minimize multiple renderings of text due to applyStyle
-	this.shouldNotRender = true;  // suppresses attempts to render text in bounds()
-	try {this.applyStyle(styleSpec); }
-		catch (e) { this.shouldNotRender = false; }
-	this.shouldNotRender = false;
-    },
-    
-    makeStyleSpec: function($super, spec) {
-	var spec = $super();
-	if (this.wrap != TextMorph.prototype.wrap) {
-	    spec.wrapStyle = this.wrap;
-	}
-	if (this.getFontSize() !== TextMorph.prototype.fontSize) {
-	    spec.fontSize = this.getFontSize();
-	}
-	if (this.getFontFamily() !== TextMorph.prototype.fontFamily) {
-	    spec.fontFamily = this.getFontFamily();
-	}
+	beListItem: function() {
+		// specify padding, otherwise selection will overlap
+		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
+		this.ignoreEvents();
+		this.suppressHandles = true;
+		this.acceptInput = false;
+		this.okToBeGrabbedBy = Functions.Null;
+		this.focusHaloBorderWidth = 0;
+		this.drawSelection = Functions.Empty;
+		return this;
+	},
+	
+	nextHistoryEntry: function() {
+		var history = this.getHistory();
+		if (!history || history.length == 0) return "";
+		var current = this.getHistoryCursor();
+		current = (current + 1) % history.length;
+		this.setHistoryCursor(current);
+		return history[current];
+	},
+	
+	previousHistoryEntry: function() {
+		var history = this.getHistory();
+		if (!history || history.length == 0) return "";
+		var current = this.getHistoryCursor();
+		current = (current + history.length - 1) % history.length;
+		this.setHistoryCursor(current);
+		return history[current];
+	},
+	
+	saveHistoryEntry: function(text, historySize) {
+		if (!historySize || !text) return;
+		var history = this.getHistory();
+		if (!history) history = [];
+		history.push(text);
+		history.length > historySize && history.unshift();
+		this.setHistory(history);
+		this.setHistoryCursor(history.length);
+	},
+	
+	beInputLine: function(historySize) {
+		this.isInputLine = true; // remeber to resetup after deserialization
+		this.historySize = historySize;
+		// should this behavior variation not go into a subclass (or COP layer ;-)) 
+		// to make it less vulnerable for serialization? 
+		this.onKeyDown = function(evt) {
+			switch (evt.getKeyCode()) {
+				case Event.KEY_DOWN: 
+					historySize && this.setTextString(this.nextHistoryEntry());
+					this.setNullSelectionAt(this.textString.length);
+					evt.stop();
+					return true;
+				case Event.KEY_UP: 
+					historySize && this.setTextString(this.previousHistoryEntry());
+					this.setNullSelectionAt(this.textString.length);
+					evt.stop();
+					return true;
+				case Event.KEY_RETURN:
+					historySize && this.saveHistoryEntry(this.textString, historySize);
+					this.saveContents(this.textString);
+					evt.stop();
+					return true;
+				default:
+					return Class.getPrototype(this).onKeyDown.call(this, evt);
+			}
+		};
+		this.okToBeGrabbedBy = Functions.Null;
+		this.onTextUpdate = function(newValue) {
+			TextMorph.prototype.onTextUpdate.call(this, newValue);
+			this.setSelectionRange(0, this.textString.length); 
+		}
+		return this;
+	},
 
-	if (this.textColor !== TextMorph.prototype.textColor) {
-	    spec.textColor = this.textColor;
-	}
-	return spec;
-    },
-    
-    setWrapStyle: function(style) {
-	if (!(style in thisModule.WrapStyle)) { 
-	    console.log("unknown style " + style + " in " + thisModule.WrapStyle);
-	    return; 
-	}
-        if (style == TextMorph.prototype.wrap) {
-            delete this.wrap;
-        } else {
-	    this.wrap = style;
-        }
-    },
-    
-    beLabel: function(styleMods) {
-	// Note default style is applied first, then any additional specified
-	this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
-	if (styleMods) this.applyStyleDeferred(styleMods);
-	this.ignoreEvents();
-        // this.isAccepting = false;
-        this.layoutChanged();
-        this.okToBeGrabbedBy = Functions.Null;
-        return this;
-    },
+	beHelpBalloonFor: function(targetMorph) {
+		this.relayMouseEvents(targetMorph, 
+			{onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+		// some eye candy for the help
+		this.linkToStyles(['helpText']);
+		this.setWrapStyle(thisModule.WrapStyle.Shrink);
+		this.openForDragAndDrop = false; // so it won't interfere with mouseovers
+		return this;
+	},
 
-    beListItem: function() {
-	// specify padding, otherwise selection will overlap
-	this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
-	this.ignoreEvents();
-	this.suppressHandles = true;
-	this.acceptInput = false;
-	this.okToBeGrabbedBy = Functions.Null;
-	this.focusHaloBorderWidth = 0;
-	this.drawSelection = Functions.Empty;
-	return this;
-    },
-    
-    nextHistoryEntry: function() {
-	var history = this.getHistory();
-	if (!history || history.length == 0) return "";
-	var current = this.getHistoryCursor();
-	current = (current + 1) % history.length;
-	this.setHistoryCursor(current);
-	return history[current];
-    },
-    
-    previousHistoryEntry: function() {
-	var history = this.getHistory();
-	if (!history || history.length == 0) return "";
-	var current = this.getHistoryCursor();
-	current = (current + history.length - 1) % history.length;
-	this.setHistoryCursor(current);
-	return history[current];
-    },
-    
-    saveHistoryEntry: function(text, historySize) {
-	if (!historySize || !text) return;
-	var history = this.getHistory();
-	if (!history) history = [];
-	history.push(text);
-	history.length > historySize && history.unshift();
-	this.setHistory(history);
-	this.setHistoryCursor(history.length);
-    },
-    
-    
-    beInputLine: function(historySize) {
-        this.onKeyDown = function(evt) {
-	    switch (evt.getKeyCode()) {
-	    case Event.KEY_DOWN: 
-		historySize && this.setTextString(this.nextHistoryEntry());
-		this.setNullSelectionAt(this.textString.length);
-		evt.stop();
-		return true;
-	    case Event.KEY_UP: 
-		historySize && this.setTextString(this.previousHistoryEntry());
-		this.setNullSelectionAt(this.textString.length);
-		evt.stop();
-		return true;
-	    case Event.KEY_RETURN:
-		historySize && this.saveHistoryEntry(this.textString, historySize);
-		this.saveContents(this.textString);
-		evt.stop();
-		return true;
-	    default:
-		return Class.getPrototype(this).onKeyDown.call(this, evt);
-	    }
-        };
-        this.okToBeGrabbedBy = Functions.Null;
-	this.onTextUpdate = function(newValue) {
-	    TextMorph.prototype.onTextUpdate.call(this, newValue);
-	    this.setSelectionRange(0, this.textString.length); 
-	}
-	return this;
-    },
-
-    beHelpBalloonFor: function(targetMorph) {
-        this.relayMouseEvents(targetMorph, 
-            {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
-        // some eye candy for the help
-	this.linkToStyles(['helpText']);
-	this.setWrapStyle(thisModule.WrapStyle.Shrink);
-        this.openForDragAndDrop = false; // so it won't interfere with mouseovers
-        return this;
-    },
-
-    
-
-subMenuItems: function($super, evt) {
-	var items = $super(evt);
-	items.unshift(["Text functions" , this.editMenuItems(evt)]);
-	return items;
-    },
+	subMenuItems: function($super, evt) {
+		var items = $super(evt);
+		items.unshift(["Text functions" , this.editMenuItems(evt)]);
+		return items;
+	},
 
     editMenuItems: function(evt) {
 	return [
