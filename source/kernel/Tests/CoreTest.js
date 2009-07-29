@@ -59,7 +59,7 @@ TestCase.subclass('lively.Tests.CoreTest.ConnectModelTest', {
 });
 TestCase.subclass('Alively.Tests.CoreTest.TestModel', {
 
-		testSetterSource: function() {
+	testSetterSource: function() {
 		var calls = 0; var test = this;
 		var m1 = Record.newPlainInstance({MyValue: 0});
 		var m2 = Record.newPlainInstance({MyValue: 1});
@@ -88,6 +88,21 @@ TestCase.subclass('Alively.Tests.CoreTest.TestModel', {
 		this.assert(rec.getFoo().bar, "no foo bar")
 	},
 	
+	// fails
+	testStoreReferenceInNodeRecord: function() {
+		var rec = Record.newNodeInstance({Foo: null});
+		var widget = new Widget();
+		rec.setFoo(widget);
+		this.assertIdentity(rec.getFoo(), widget);
+	},
+
+
+	testSetRecordFieldWithWrapper: function() {
+		var rec = Record.newNodeInstance();
+		var widget = new Widget();
+		rec.setRecordField("Foo", widget);
+		this.assertIdentity(rec["Foo$Element"], widget);
+	},
 	
 	testConverter: function() {
 		var value = {bar: "Hello", isJSONConformant: true};
@@ -95,6 +110,28 @@ TestCase.subclass('Alively.Tests.CoreTest.TestModel', {
 		this.assert(node, "no node");
 	},
 
+	testConvertArray: function() {
+		var value = ["Hello"];
+		var node = Converter.encodeProperty("Foo", value);
+		this.assert(node, "no node");
+		this.assertEqual(node.textContent, '["Hello"]');
+	},
+
+	testConvertArrayWithReference: function() {
+		var ref = new Widget();
+		var value = ["Hello", ref];
+		var node = Converter.encodeProperty("Foo", value);
+		this.assert(node, "no node");
+		this.assertEqual(node.textContent, '["Hello","url(#' +ref.id()+')"]');
+	},
+	
+	testConvertArrayWithReferenceBack: function() {
+		var ref = new Widget();
+		var value = ["Hello", ref];
+		var node = Converter.encodeProperty("Foo", value);
+		
+	},
+	
 	xtestConvertWrapper: function() {
 		var rec = Record.newNodeInstance({Foo: null});
 		var ref = new DummyCopierObject();

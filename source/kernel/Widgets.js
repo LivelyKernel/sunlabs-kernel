@@ -1647,17 +1647,21 @@ Morph.addMethods({
 PseudoMorph.subclass('MenuItem', {
     
     initialize: function($super, name, closureOrMorph, selectorOrClosureArg, selectorArg) {
-	$super();
-	this.name = name;
-	this.action = closureOrMorph;
-	this.para1 = selectorOrClosureArg;
-	this.para2 = selectorArg;
+		$super();
+		this.name = name;
+		this.action = closureOrMorph;
+		this.para1 = selectorOrClosureArg;
+		this.para2 = selectorArg;
     },
+
     asArrayItem: function() { // for extrinsic menu manipulations
-	return [this.name, this.action, this.para1, this.para2];
+		return [this.name, this.action, this.para1, this.para2];
     },
 
     invoke: function(evt, targetMorph) {
+		console.log("-------------------------------------------")
+		item = this;
+		console.log("invoke "+ targetMorph)
         if (this.action instanceof Function) { // alternative style, items ['menu entry', function] pairs
             this.action.call(targetMorph || this, evt);
         } else if (Object.isString(this.action.valueOf())) {
@@ -1671,15 +1675,16 @@ PseudoMorph.subclass('MenuItem', {
                 console.log("no menu target " + targetMorph);
             }
         } else {
-	    var functionName = this.para1;
+	    	var functionName = this.para1;
             var func = this.action[functionName];  // target[functionName]
-            if (func == null) console.log('Could not find function ' + functionName + " on " + this.action);
-            // call as target.function(parameterOrNull,event,menuItem)
-            else { 	    
-		var arg = this.para2;
-//console.log("menu.invoke: " + Object.inspect(this.action) + " action=" + functionName + " arg =" + Object.inspect(arg));
-		func.call(this.action, arg, evt, this); 
-	    }
+            if (func == null) { 
+				console.log('Could not find function ' + functionName + " on " + this.action);
+            	// call as target.function(parameterOrNull,event,menuItem)
+            } else { 	    
+				var arg = this.para2;
+				//console.log("menu.invoke: " + Object.inspect(this.action) + " action=" + functionName + " arg =" + Object.inspect(arg));
+				func.call(this.action, arg, evt, this); 
+	    	}
         }
     }
 
@@ -1733,7 +1738,7 @@ Morph.subclass("MenuMorph", {
 
     labelStyle: {
         padding: Rectangle.inset(3),
-	borderWidth: 1, 
+		borderWidth: 1, 
         borderRadius: 4, 
         fillOpacity: 0.75, 
         wrapStyle: text.WrapStyle.Shrink
@@ -1750,16 +1755,16 @@ Morph.subclass("MenuMorph", {
         // The last item is seldom used, but it allows the caller to put
         // additional data at the end of the menuItem, where the receiver can find it.
 
-	// Note that an alternative form of item is supported, as:
-	// 	[itemName, itemFunction]
-	// which will be executed as follows:
-	//	itemFunction.call(targetMorph || this, evt)
-	// See MenuItem for yet another form of invocation for targets matching
-	//	var responder = (targetMorph || this).getModelValue("getMenuTarget");
+		// Note that an alternative form of item is supported, as:
+		// 	[itemName, itemFunction]
+		// which will be executed as follows:
+		//	itemFunction.call(targetMorph || this, evt)
+		// See MenuItem for yet another form of invocation for targets matching
+		//	var responder = (targetMorph || this).getModelValue("getMenuTarget");
 
-	// Finally, note that if the itemName is followed by an array
-	//	then that array is the specification for a subMenu,
-	//	and, the itemName will appear followed by '...'
+		// Finally, note that if the itemName is followed by an array
+		//	then that array is the specification for a subMenu,
+		//	and, the itemName will appear followed by '...'
 
         // The optional parameter lineList is an array of indices into items.
         // It will cause a line to be displayed below each item so indexed
@@ -1778,8 +1783,9 @@ Morph.subclass("MenuMorph", {
         this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
         this.ownerMenu = ownerMenu;
     },
+
     onDeserialize: function() {
-	this.listMorph.relayMouseEvents(this);
+		this.listMorph.relayMouseEvents(this);
     },
 
     addItem: function(item, index) {
@@ -1790,29 +1796,34 @@ Morph.subclass("MenuMorph", {
         parts[0].push(item);
         this.items = parts[0].concat(parts[1]);
     },
+
     checkItem: function(item) {
-	if (Object.isString(item)) throw dbgOn(new Error(
-		'Menu item specification should be an array, not just a string'));
-	return Object.isArray(item[1]) ?
+		if (Object.isString(item)) throw dbgOn(new Error(
+			'Menu item specification should be an array, not just a string'));
+		return Object.isArray(item[1]) ?
         	new SubMenuItem(item[0], item[1], item[2], item[3]) :
-		new MenuItem(item[0], item[1], item[2], item[3]); 
+			new MenuItem(item[0], item[1], item[2], item[3]); 
     },
+
     addItems: function(items) {
-	items.forEach( function(item) { this.addItem(item); }.bind(this));
+		items.forEach( function(item) { this.addItem(item); }.bind(this));
     },
+
     getRawItems: function() {
-	return this.items  // Private protocol for pie-menu access
+		return this.items  // Private protocol for pie-menu access
     },
+
     addRawItem: function(item) {
-	this.items.push(this.addPseudoMorph(item));  // Private protocol for pie-menu access
+		this.items.push(this.addPseudoMorph(item));  // Private protocol for pie-menu access
     },
 
     addLine: function(item) { // Not yet supported
         // The idea is for this to add a real line on top of the text
         this.items.push(this.addPseudoMorph(new MenuItem('-----')));
     },
+
     addSubmenuItem: function(item) {
-	// FIXME: Isn't this now just equivalent to addItem?
+		// FIXME: Isn't this now just equivalent to addItem?
         var item = new SubMenuItem(item[0], item[1], item[2], item[3]);
         this.items.push(this.addPseudoMorph(item));
     },
@@ -1844,13 +1855,13 @@ Morph.subclass("MenuMorph", {
     },
 
     estimateListWidth: function(proto) {
-	// estimate with based on some prototypical TextMorph object
-	// lame but let's wait to do the right thing until the layout business is complete
-	var maxWidth = 0;
-	for (var i = 0; i < this.items.length; i++)
-	    if (this.items[i].name.length > maxWidth) maxWidth = this.items[i].name.length;
-	var protoPadding = Rectangle.inset(6, 4);
-	return maxWidth*proto.fontSize/2 + protoPadding.left() + protoPadding.right();
+		// estimate with based on some prototypical TextMorph object
+		// lame but let's wait to do the right thing until the layout business is complete
+		var maxWidth = 0;
+		for (var i = 0; i < this.items.length; i++)
+		    if (this.items[i].name.length > maxWidth) maxWidth = this.items[i].name.length;
+		var protoPadding = Rectangle.inset(6, 4);
+		return maxWidth*proto.fontSize/2 + protoPadding.left() + protoPadding.right();
     },
 
     openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
@@ -1862,25 +1873,26 @@ Morph.subclass("MenuMorph", {
 
         parentMorph.addMorphAt(this, loc);
 	
-	var textList = this.items.pluck('name');
+		var textList = this.items.pluck('name');
         this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
 					   textList, Rectangle.inset(0, this.listStyle.borderRadius/2), this.textStyle);
 	
-	var menu = this;
-	this.listMorph.onKeyDown = function(evt) {
-	    var result = Class.getPrototype(this).onKeyDown.call(this, evt);
-	    switch (evt.getKeyCode()) {
-	    case Event.KEY_ESC:
-		if (!menu.stayUp) menu.removeOnEvent(evt);
-		evt.stop();
-		return true;
-	    case Event.KEY_RETURN: {
-		if (menu.invokeItemAtIndex(evt, this.selectedLineNo)) 
-		    evt.stop();
-		return true;
-	    }
-	    }
-	};
+		var menu = this;
+		this.listMorph.onKeyDown = function(evt) {
+	    	var result = Class.getPrototype(this).onKeyDown.call(this, evt);
+		    switch (evt.getKeyCode()) {
+		    	case Event.KEY_ESC: {
+					if (!menu.stayUp) menu.removeOnEvent(evt);
+						evt.stop();
+					return true;
+				}
+		    	case Event.KEY_RETURN: {
+					if (menu.invokeItemAtIndex(evt, this.selectedLineNo)) 
+			    		evt.stop();
+					return true;
+	    		}
+	    	}
+		};
 
         this.listMorph.applyStyle(this.listStyle);
         this.listMorph.suppressHandles = true;
@@ -1893,10 +1905,9 @@ Morph.subclass("MenuMorph", {
             var label = TextMorph.makeLabel(captionIfAny, this.labelStyle);
             label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
             this.label = this.addMorph(label);
-	    this.label.setFill(new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
+	    	this.label.setFill(new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
 								new lively.paint.Stop(1, Color.gray)]));
         }
-
 
         // If menu and/or caption is off screen, move it back so it is visible
         var menuRect = this.bounds();  //includes caption if any
@@ -1960,8 +1971,8 @@ Morph.subclass("MenuMorph", {
     },
 
     onMouseUp: function(evt) {
-	if (!this.invokeItemAtIndex(evt, this.selectedItemIndex(evt)) && !this.stayUp)
-	    this.setMouseFocus(evt); // moved away, don't lose the focus
+		if (!this.invokeItemAtIndex(evt, this.selectedItemIndex(evt)) && !this.stayUp)
+	    	this.setMouseFocus(evt); // moved away, don't lose the focus
     },
 
     onMouseDown: function(evt) {
@@ -1996,18 +2007,18 @@ Morph.subclass("MenuMorph", {
     },
     
     invokeItemAtIndex: function(evt, index) {
-	if (index === null) return false;
-        try {
-	    this.invokeItem(evt, this.items[index]);
-        } finally {
-	    if (!this.stayUp) this.removeOnEvent(evt);
-        }
-	return true;
+		if (index === null) return false;
+	        try {
+		    this.invokeItem(evt, this.items[index]);
+	        } finally {
+		    if (!this.stayUp) this.removeOnEvent(evt);
+	        }
+		return true;
     },
     
     invokeItem: function invokeItem(evt, item) {
         if (!item) return;
-	item.invoke(evt, this.targetMorph);
+		item.invoke(evt, this.targetMorph);
     }
 
 });
@@ -2337,24 +2348,25 @@ BoxMorph.subclass("ScrollPane", {
             this.menuButton.setPosition(this.getScrollBar().getPosition());
             this.menuButton.setFill(this.getScrollBar().getFill());
             this.getScrollBar().setBounds(this.getScrollBar().bounds().withTopLeft(
-            this.getScrollBar().bounds().topLeft().addXY(0, w)));
+            	this.getScrollBar().bounds().topLeft().addXY(0, w)));
         }
         this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
     },
 
     menuButtonPressed: function(evt, button) {
+		//console.log("menuButtonPressed")
         evt.hand.setMouseFocus(null);
         var editItems = this.innerMorph().editMenuItems();
-	var items = this.innerMorph().getModelValue("getMenu") || [];
+		var items = this.innerMorph().getModelValue("getMenu") || [];
         if (editItems.length == 0 && items.length == 0) return;
         var menu;
-	if (editItems.length > 0 && items.length > 0) {
+		if (editItems.length > 0 && items.length > 0) {
             var menu = new MenuMorph(editItems, this);
-	    menu.addLine();
-	    items.forEach(function(item) {menu.addItem(item); });
-	} else {
-	    var menu = new MenuMorph(editItems.concat(items), this);
-	}
+	    	menu.addLine();
+	    	items.forEach(function(item) {menu.addItem(item); });
+		} else {
+	    	var menu = new MenuMorph(editItems.concat(items), this);
+		}
         menu.openIn(this.world(), evt.mousePoint, false); 
     },
 
@@ -2828,7 +2840,9 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 				this.rawNode.removeChild(ea);
 			}
 		}, this)
-		this.rawNode.appendChild(model.rawNode);
+		if (model.rawNode instanceof Node) {
+			this.rawNode.appendChild(model.rawNode);
+		}
     },
 
     open: function() { // call interactively
@@ -3097,11 +3111,15 @@ Widget.subclass('ConsoleWidget', {
 	initialize: function($super, capacity) {
 		$super(null);
 
-		// note newNodeInstance causes problems with serializing Menu
+		
+		// BEWARE don't use newNodeInstance, because it causes problems with serializing Menu
+		// but I do it anyway.... lets fix this!
 		var model = Record.newNodeInstance({LogMessages: [], RecentLogMessages: [], Commands: [], 
-		CommandCursor: 0,  LastCommand: "", Capacity: capacity,
-		Menu: [["command history", this, "addCommandHistoryInspector"]]});
-	
+			CommandCursor: 0,  LastCommand: "", Capacity: capacity,
+			Menu: [
+				["command history", this, "addCommandHistoryInspector"],
+				["clear", this, "clearList"]
+			]});
 		
 		this.relayToModel(model, {LogMessages: "LogMessages",
 				  RecentLogMessages: "+RecentLogMessages",
@@ -3109,22 +3127,30 @@ Widget.subclass('ConsoleWidget', {
 				  LastCommand: "LastCommand",
 				  Menu: "Menu",
 				  Capacity: "-Capacity"});
+		
 		this.ownModel(model);
-	
+
+
 		Global.console.consumers.push(this); 
 		this.ans = undefined; // last computed value
 		return this;
 	},
 
+
+
 	onDeserialize: function() {
-		this.setLogMessages([]);
+		this.clearList();
 		Global.console.consumers.push(this);
+	},
+
+	clearList: function() {
+		this.setLogMessages([]);
 		// hack to find the real solution...
 		if (this.panel) {
 			this.panel.messagePane.adjustForNewBounds();
 		}
 	},
-	
+
 	addCommandHistoryInspector: function() {
 		WorldMorph.current().addTextListWindow({
 			extent:pt(500, 40),

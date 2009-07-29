@@ -2297,46 +2297,58 @@ Record.subclass('lively.data.DOMRecord', {
 
 });
 
+
+// Serialization of Model at runtime, everything is serialized during setting and getting....
+// Jens: I don't know what is the use case of this? Should it break early?
 lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
     documentation: "uses nodes instead of attributes to store values",
 
     getRecordField: function(name) { 
-	var fieldElement = this[name + "$Element"];
-	if (fieldElement) {
-	    if (LivelyNS.getAttribute(fieldElement, "isNode")) return fieldElement.firstChild; // Replace with DocumentFragment
-	    var value = fieldElement.textContent;
-	    if (value) {
-		var family = LivelyNS.getAttribute(fieldElement, "family");
-		if (family) {
-		    var klass = Class.forName(family);
-		    if (klass) throw new Error('unknown type ' + family);
-		    return klass.fromLiteral(JSON.unserialize(value, Converter.nodeDecodeFilter));
-    		} else {
-    		    if (value == 'NaN') return NaN;
-    		    if (value == 'undefined') return undefined;
-    		    if (value == 'null') return null;
-    		    return JSON.unserialize(value);
-                }
-	    }
-	} else {
-	    // console.log('not found ' + name);
-	    return undefined;
-	}
+		var fieldElement = this[name + "$Element"];
+		if (fieldElement) {
+			if (lively.data.Wrapper.isInstance(fieldElement)) {
+				return fieldElement; // wrappers are stored directly
+			};			
+		    if (LivelyNS.getAttribute(fieldElement, "isNode")) return fieldElement.firstChild; // Replace with DocumentFragment
+		    var value = fieldElement.textContent;
+		    if (value) {
+			var family = LivelyNS.getAttribute(fieldElement, "family");
+			if (family) {
+			    var klass = Class.forName(family);
+			    if (klass) throw new Error('unknown type ' + family);
+			    return klass.fromLiteral(JSON.unserialize(value, Converter.nodeDecodeFilter));
+	    		} else {
+	    		    if (value == 'NaN') return NaN;
+	    		    if (value == 'undefined') return undefined;
+	    		    if (value == 'null') return null;
+	    		    return JSON.unserialize(value);
+	            }
+		    }
+		} else {
+		    // console.log('not found ' + name);
+		    return undefined;
+		}
     },
     
     setRecordField: function(name, value) {
-	if (value === undefined) {
-	    throw new Error("use removeRecordField to remove " + name);
-	}
-	var fieldElement = this[name + "$Element"];
-	if (fieldElement && fieldElement.parentElement === this.rawNode) {
-	    this.rawNode.removeChild(fieldElement);
-	}
-	fieldElement = Converter.encodeProperty(name, value);
-	if (fieldElement) this.rawNode.appendChild(fieldElement);
-	else console.log("failed to encode " + name + "= " + value);
-	this[name + "$Element"] = fieldElement;
-	// console.log("created cdata " + fieldElement.textContent);
+		if (value === undefined) {
+		    throw new Error("use removeRecordField to remove " + name);
+		}
+		var propName = name + "$Element"; 
+		var fieldElement = this[propName];
+		if (fieldElement && fieldElement.parentElement === this.rawNode) {
+		    this.rawNode.removeChild(fieldElement);
+		}
+		
+		if (lively.data.Wrapper.isInstance(value)) { 
+			this[propName] = value; // don't encode wrappers, handle serialization somewhere else 
+		} else {
+			fieldElement = Converter.encodeProperty(name, value);
+			if (fieldElement) this.rawNode.appendChild(fieldElement);
+			else console.log("failed to encode " + name + "= " + value);
+			this[propName] = fieldElement;
+		}
+		// console.log("created cdata " + fieldElement.textContent);
     },
     
     removeRecordField: function(name) {

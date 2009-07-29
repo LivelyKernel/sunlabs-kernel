@@ -247,7 +247,7 @@ var Converter = {
 
     nodeEncodeFilter: function(baseObj, key) {
         var value = baseObj[key];
-	if (!value) return value;
+		if (!value) return value;
         if (!value.nodeType) return value;
         if (value.nodeType !== document.DOCUMENT_NODE && value.nodeType !== document.DOCUMENT_TYPE_NODE)
             return JSON.serialize({XML: Exporter.stringify(value)});
@@ -255,69 +255,72 @@ var Converter = {
     },
     
     toJSONAttribute: function(obj) {
-	return obj ? escape(JSON.serialize(obj, Converter.wrapperAndNodeEncodeFilter)) : "";
+		return obj ? escape(JSON.serialize(obj, Converter.wrapperAndNodeEncodeFilter)) : "";
     },
 
     nodeDecodeFilter: function(baseObj, key) {
-	var value = baseObj[key];
-	if (!value || !Object.isString(value) || !value.include('XML')) return value;
-	var unserialized = JSON.unserialize(value);
-	if (!unserialized.XML) return value;
-	// var xmlString = value.substring("XML:".length);
-	// FIXME if former XML was an Element, it has now a new parentNode, seperate in Elements/Documents?
-	//dbgOn(true);
-	var node = new DOMParser().parseFromString(unserialized.XML, "text/xml");
+		var value = baseObj[key];
+		if (!value || !Object.isString(value) || !value.include('XML')) return value;
+		var unserialized = JSON.unserialize(value);
+		if (!unserialized.XML) return value;
+		// var xmlString = value.substring("XML:".length);
+		// FIXME if former XML was an Element, it has now a new parentNode, seperate in Elements/Documents?
+		//dbgOn(true);
+		var node = new DOMParser().parseFromString(unserialized.XML, "text/xml");
         return document.importNode(node.documentElement, true);
     },
 
     fromJSONAttribute: function(str) {
-	return str ?  JSON.unserialize(unescape(str), Converter.nodeDecodeFilter) : null;
+		return str ?  JSON.unserialize(unescape(str), Converter.nodeDecodeFilter) : null;
     },
     
     needsJSONEncoding: function(value) {
-	// some objects can be saved in as DOM attributes using their
-	// .toString() form, others need JSON
-	if (value instanceof Color) return false;
-	var type = typeof value.valueOf();
-	return type != "string" && type != "number"; 
+		// some objects can be saved in as DOM attributes using their
+		// .toString() form, others need JSON
+		if (value instanceof Color) return false;
+		var type = typeof value.valueOf();
+		return type != "string" && type != "number"; 
     },
 
+	// TODO parallels to preparePropertyForSerialization in scene.js
+	// Why to we encodeProperties for Records at runtime and not at serialization time?
     encodeProperty: function(prop, propValue) {
-	var desc = LivelyNS.create("field", {name: prop});
-	if (Converter.isJSONConformant(propValue) || propValue instanceof Array) { // hope for the best wrt/arrays
-	    // FIXME: deal with arrays of primitives etc?
-	    var encoding;
-	    if (propValue === null)
-		encoding = NodeFactory.createText("null");
-	    else switch (typeof propValue) {
-	    case "number":
-	    case "boolean":
-		encoding = NodeFactory.createText(String(propValue));
-		break;
-	    default:
-		encoding = NodeFactory.createCDATA(JSON.serialize(propValue, Converter.nodeEncodeFilter));
-	    }
-	    desc.appendChild(encoding);
-	    return desc;
-	} 
+		var desc = LivelyNS.create("field", {name: prop});
 	
-	if (propValue && propValue.toLiteral) {
-	    desc.setAttributeNS(null, "family", propValue.constructor.type);
-	    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue.toLiteral())));
-	    return desc;
-	}
-	if (propValue.nodeType) {
-	    switch (propValue.nodeType) {
-	    case document.DOCUMENT_NODE:
-	    case document.DOCUMENT_TYPE_NODE:
-		throw new Error('Cannot store Document/DocumentType'); // to be removed
-	    default:
-		desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
-		desc.appendChild(document.importNode(propValue, true));
-	    }
-	    return desc;
-	} 
-	return null;
+		if (Converter.isJSONConformant(propValue) || propValue instanceof Array) { // hope for the best wrt/arrays
+		    // FIXME: deal with arrays of primitives etc?
+		    var encoding;
+		    if (propValue === null)
+				encoding = NodeFactory.createText("null");
+		    else switch (typeof propValue) {
+		    	case "number":
+		    	case "boolean":
+					encoding = NodeFactory.createText(String(propValue));
+					break;
+		    	default:
+					encoding = NodeFactory.createCDATA(JSON.serialize(propValue, Converter.wrapperAndNodeEncodeFilter));
+		    }
+		    desc.appendChild(encoding);
+		    return desc;
+		} 
+	
+		if (propValue && propValue.toLiteral) {
+		    desc.setAttributeNS(null, "family", propValue.constructor.type);
+		    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue.toLiteral())));
+		    return desc;
+		}
+		if (propValue.nodeType) {
+		    switch (propValue.nodeType) {
+		    case document.DOCUMENT_NODE:
+		    case document.DOCUMENT_TYPE_NODE:
+			throw new Error('Cannot store Document/DocumentType'); // to be removed
+		    default:
+			desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
+			desc.appendChild(document.importNode(propValue, true));
+		    }
+		    return desc;
+		} 
+		return null;
     },
     
     isJSONConformant: function(value) { // for now, arrays not handled but could be
