@@ -5505,7 +5505,8 @@ ClipboardHack = {
 		buffer.setAttribute("id","copypastebuffer");
 		buffer.setAttribute("style","position:absolute;z-index: -400;left:0px; top:1px; width:1px; height:1px;");
 		buffer.textContent = "NoText";
-		document.body.appendChild(buffer);
+		var outerBody = Global.document.body || Global.parent.document.body;
+		outerBody.appendChild(buffer);
 		return buffer;
 	},
 

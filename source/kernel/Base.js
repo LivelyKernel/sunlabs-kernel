@@ -129,8 +129,10 @@
  })();
 
 
-
-var Global = this.window.top || this.window; // set to the context enclosing the SVG context.
+// set to the context enclosing the SVG context.
+// rk: replaced "this.window.top || this.window" with "this.window"
+// rk: when is it necessary to use the parent context?
+var Global = this.window;
 function dbgOn(cond, optMessage) {
     if (optMessage) console.log(optMessage);
     if (cond) debugger; // note that rhino has issues with this keyword
