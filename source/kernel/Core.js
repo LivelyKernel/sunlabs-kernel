@@ -22,13 +22,20 @@ var Loader = {
     loadJs: function(url, onLoadCb, embedSerializable) {
         
         if (document.getElementById(url)) return;
-        
-        var script = document.createElement('script');
-        script.id = url;
-        script.type = 'text/ecmascript';
-        script.src = url;
+
         var node = document.getElementsByTagName(embedSerializable ? "defs" : "body")[0];
-        if (onLoadCb) script.onload = onLoadCb;
+		if (!node) node = document.getElementsByTagName("defs")[0];
+        if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
+		var xmlNamespace = node.namespaceURI;
+        var script = document.createElementNS(xmlNamespace, 'script');
+        script.setAttributeNS(xmlNamespace, 'id', url);
+		script.setAttributeNS(xmlNamespace, 'type', 'text/ecmascript');
+		if (xmlNamespace == Namespace.SVG)
+			script.setAttributeNS(Namespace.XLINK, 'href', url);
+		else
+			script.setAttributeNS(xmlNamespace, 'src', url);
+        if (onLoadCb)
+			script.setAttributeNS(xmlNamespace, 'onload', onLoadCb);
         node.appendChild(script);
     },
     
@@ -43,6 +50,8 @@ var Loader = {
 
 	scriptElementLinksTo: function(element, url) {
 		if (!element.getAttribute) return false;
+		// FIXME use namespace consistently
+		if (element.getAttribute('id') == url) return true;
 		var link = element.getAttributeNS(Namespace.XLINK, 'href') ||
 			element.getAttributeNS(null, 'src');
 		// FIXME just using the file name does not really work for namespaces
