@@ -125,7 +125,7 @@ Morph.subclass("ClockMorph", {
     initialize: function($super, position, radius, timeZoneOffset, hour12or24, roman) {
         $super(new lively.scene.Ellipse(position, radius));
         this.applyLinkedStyles();
-        this.timeZoneOffset = timeZoneOffset;
+        this.timeZoneOffset = timeZoneOffset || (-1 * new Date().getTimezoneOffset() / 60) - 1;
 		this.nHours = hour12or24 || 12
         this.makeNewFace(roman);  // Roman
     },
@@ -164,7 +164,7 @@ angleForHour: function(hr) {
 
     setHands: function() { 
         var timeNow = new Date();
-        var offset = this.timeZoneOffset  ||  - timeNow.getTimezoneOffset() / 60;
+        var offset = Number(this.timeZoneOffset) + 1;
 		offset += (this.nHours == 12) ? 3 : 6;  // compensate for angle of 12
         var second = timeNow.getUTCSeconds();
         var minute = timeNow.getUTCMinutes() + second/60;
