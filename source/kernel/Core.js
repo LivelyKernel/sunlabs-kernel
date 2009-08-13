@@ -19,23 +19,23 @@
 /* Code loader. Appends file to DOM. */
 var Loader = {
     
-    loadJs: function(url, onLoadCb, embedSerializable) {
+    loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
         
         if (document.getElementById(url)) return;
 
-        var node = document.getElementsByTagName(embedSerializable ? "defs" : "body")[0];
-		if (!node) node = document.getElementsByTagName("defs")[0];
+		// FIXME Assumption that first def node has scripts
+		var node = document.getElementsByTagName("defs")[0];
         if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
 		var xmlNamespace = node.namespaceURI;
         var script = document.createElementNS(xmlNamespace, 'script');
-        script.setAttributeNS(xmlNamespace, 'id', url);
-		script.setAttributeNS(xmlNamespace, 'type', 'text/ecmascript');
-		if (xmlNamespace == Namespace.SVG)
+        script.setAttributeNS(null, 'id', url);
+		script.setAttributeNS(null, 'type', 'text/ecmascript');
+		if (xmlNamespace)
 			script.setAttributeNS(Namespace.XLINK, 'href', url);
 		else
-			script.setAttributeNS(xmlNamespace, 'src', url);
+			script.setAttributeNS(null, 'src', url);
         if (onLoadCb)
-			script.setAttributeNS(xmlNamespace, 'onload', onLoadCb);
+			script.setAttributeNS(null, 'onload', onLoadCb);
         node.appendChild(script);
     },
     
