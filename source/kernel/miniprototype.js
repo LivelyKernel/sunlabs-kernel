@@ -522,4 +522,3 @@ if (!Array.prototype.lastIndexOf) Array.prototype.lastIndexOf = function(item, i
 
 Array.prototype.toArray = Array.prototype.clone;
 
-//// ADDITIONS
