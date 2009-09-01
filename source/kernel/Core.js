@@ -57,7 +57,7 @@ var Loader = {
 		// Hack
 		if (url == link) return true;
 		// FIXME just using the file name does not really work for namespaces
-		return link && url.split('/').last() == link
+		return link && url.split('/').last() == link.split('/').last();
 	}
 };
 
