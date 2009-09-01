@@ -20,7 +20,7 @@
 var Loader = {
     
     loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
-        
+		dbgOn(Config.debugLoadScript);
         if (document.getElementById(url)) return;
 
 		// FIXME Assumption that first def node has scripts
