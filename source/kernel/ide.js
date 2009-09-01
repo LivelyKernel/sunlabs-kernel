@@ -2409,7 +2409,7 @@ enableAutomaticEval: function() {
 	this.getXMLElement().setAttributeNS(null, 'automaticEval', 'true');
 },
 automaticEvalEnabled: function() {
-	return this.getAttributeNamed('automaticEval') != 'false';
+	return this.getAttributeNamed('automaticEval') && this.getAttributeNamed('automaticEval') != 'false';
 },
 
 
