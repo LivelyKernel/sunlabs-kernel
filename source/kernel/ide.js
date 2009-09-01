@@ -2776,12 +2776,8 @@ Change.subclass('DoitChange', {
 		try {
 			result = eval(this.getDefinition())
 		} catch(e) {
-			try {
-				result = JSON.unserialize(this.getDefinition())
-			} catch(e) {
-				dbgOn(true);
-				console.log('Error evaluating ' + this.getName() + ': ' + e);
-			}
+			dbgOn(true);
+			console.log('Error evaluating ' + this.getName() + ': ' + e);
 		}
 		return result;
 	},
