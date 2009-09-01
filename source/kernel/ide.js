@@ -2812,8 +2812,9 @@ Object.subclass('AnotherCodeMarkupParser', {
 	createChange: function(xmlElement) {
 		var klass = this.changeClasses.detect(function(ea) { return ea.isResponsibleFor(xmlElement) });
 		//if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
-		if (!klass) {
-			console.warn('Found no Change class for ' + Exporter.stringify(xmlElement).replace(/\n|\r/, ' '));
+		if (!klass) { console.warn(
+				'Found no Change class for ' + Exporter.stringify(xmlElement).replace(/\n|\r/, ' ') +
+				'tag name: ' + xmlElement.tagName);
 			return null;
 		}
 		return new klass(xmlElement);
