@@ -54,6 +54,8 @@ var Loader = {
 		if (element.getAttribute('id') == url) return true;
 		var link = element.getAttributeNS(Namespace.XLINK, 'href') ||
 			element.getAttributeNS(null, 'src');
+		// Hack
+		if (url == link) return true;
 		// FIXME just using the file name does not really work for namespaces
 		return link && url.split('/').last() == link
 	}
