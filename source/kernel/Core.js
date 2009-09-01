@@ -30,11 +30,16 @@ var Loader = {
         var script = document.createElementNS(xmlNamespace, 'script');
         script.setAttributeNS(null, 'id', url);
 		script.setAttributeNS(null, 'type', 'text/ecmascript');
+		
+		if (Config.disableScriptCaching)
+			url = url + '?' + date.getTime();
+		
 		if (xmlNamespace)
 			script.setAttributeNS(Namespace.XLINK, 'href', url);
 		else
 			script.setAttributeNS(null, 'src', url);
-        if (onLoadCb)
+        
+		if (onLoadCb)
 			script.setAttributeNS(null, 'onload', onLoadCb);
         node.appendChild(script);
     },
