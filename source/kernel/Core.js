@@ -29,16 +29,13 @@ var Loader = {
 		var xmlNamespace = node.namespaceURI;
         var script = document.createElementNS(xmlNamespace, 'script');
         script.setAttributeNS(null, 'id', url);
-		script.setAttributeNS(null, 'type', 'text/ecmascript');
-		
+		script.setAttributeNS(null, 'type', 'text/ecmascript');		
 		if (Config.disableScriptCaching)
-			url = url + '?' + date.getTime();
-		
+			url = url + '?' + new Date().getTime();
 		if (xmlNamespace)
 			script.setAttributeNS(Namespace.XLINK, 'href', url);
 		else
 			script.setAttributeNS(null, 'src', url);
-        
 		if (onLoadCb)
 			script.setAttributeNS(null, 'onload', onLoadCb);
         node.appendChild(script);
