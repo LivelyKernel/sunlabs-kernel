@@ -3958,6 +3958,8 @@ PasteUpMorph.subclass("WorldMorph", {
 	this.enterCount = 0;
     },
 
+	doNotSerialize: ['hands', 'scheduledActions', 'lastStepTime', 'mainLoop', 'worldId' ],
+
     initializeTransientState: function($super) {
         $super();
         this.hands = [];
