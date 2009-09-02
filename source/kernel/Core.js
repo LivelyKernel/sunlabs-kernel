@@ -20,40 +20,33 @@
 var Loader = {
     
     loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
-		dbgOn(Config.debugLoadScript);
-        if (document.getElementById(url)) return;
-
+		if (document.getElementById(url)) return;
 		// FIXME Assumption that first def node has scripts
 		var node = document.getElementsByTagName("defs")[0];
-        if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
-		var xmlNamespace = node.namespaceURI;
-        var script = document.createElementNS(xmlNamespace, 'script');
-        script.setAttributeNS(null, 'id', url);
-		script.setAttributeNS(null, 'type', 'text/ecmascript');		
-		if (Config.disableScriptCaching)
-			url = url + '?' + new Date().getTime();
-		if (xmlNamespace)
-			script.setAttributeNS(Namespace.XLINK, 'href', url);
-		else
-			script.setAttributeNS(null, 'src', url);
-		if (onLoadCb)
-			script.setAttributeNS(null, 'onload', onLoadCb);
-        node.appendChild(script);
-    },
-
-	// sometimes script.onload seems not to be invoked, here we do our own callback invocation
-	loadJsPolling: function(url, onLoadCb) {
-		var timeout = 30;
-		function testIfLoaded() {
-			if (Loader.scriptInDOM(url)) {
-				onLoadCb && onLoadCb();
-				return;
-			}
-			Global.setTimeout(testIfLoaded, timeout);
+		if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
+		
+		if (true) {
+			var script = document.createElement('script');
+			script.id = url;
+			script.type = 'text/ecmascript';
+			script.src = url;
+			if (onLoadCb) script.onload = onLoadCb;
+		} else { // the following will work for HTML but not XHTML --> find a solution
+			var xmlNamespace = node.namespaceURI;
+			var script = document.createElementNS(xmlNamespace, 'script');
+			script.setAttributeNS(null, 'id', url);
+			script.setAttributeNS(null, 'type', 'text/ecmascript');		
+			if (Config.disableScriptCaching)
+				url = url + '?' + new Date().getTime();
+			if (xmlNamespace)
+				script.setAttributeNS(Namespace.XLINK, 'href', url);
+			else
+				script.setAttributeNS(null, 'src', url);
+			if (onLoadCb)
+				script.setAttributeNS(null, 'onload', onLoadCb);
 		}
-		testIfLoaded();
-		Loader.loadJs(url, null/*no onload used*/, false);
-	},
+		node.appendChild(script);
+    },
     
     scriptInDOM: function(url) {
         if (document.getElementById(url)) return true;
