@@ -47,7 +47,7 @@ TestCase.subclass('ButtonMorphTest', {
 });
 
 
-TestCase.subclass('ATextListMorphTest', {
+TestCase.subclass('TextListMorphTest', {
 
 	setUp: function() {
 		this.morph = new TextListMorph(new Rectangle(0,0,100,100),[]);
@@ -58,7 +58,7 @@ TestCase.subclass('ATextListMorphTest', {
 	},
 	
 	tearDown: function() {
-		// this.morph.remove();
+		this.morph.remove();
 	},
 	
 	openMorph: function() {
@@ -279,7 +279,7 @@ TestCase.subclass('ImageMorphTest', {
     },
 });
 
-TestCase.subclass('AScrollPaneTest', {
+TestCase.subclass('ScrollPaneTest', {
 
 	testDisableScrollBar: function() {
 		var scrollPane = Global.newTextListPane(new Rectangle(0,0,100,100));

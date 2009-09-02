@@ -2863,48 +2863,7 @@ lively.data.Wrapper.subclass('Widget', ViewTrait, { // FIXME remove code duplica
 	}
 	return parent;
     },
-    
-    // copied from Morph
-    // move up to Wrapper
-    
-    deserializeRelayFromNode: function(importer, node) {
-       var spec = {};
-        $A(node.getElementsByTagName("binding")).forEach(function(elt) {
-            var key = elt.getAttributeNS(null, "formal");
-            var value = elt.getAttributeNS(null, "actual");
-            spec[key] = value;
-        });
-
-        var name = LivelyNS.getAttribute(node, "name");
-        if (name) {
-            var relay = this[name] = Relay.newInstance(spec, null);
-            var ref = LivelyNS.getAttribute(node, "ref");
-            importer.addPatchSite(relay, "delegate", ref);
-        }
-    },
-    
-    deserializeRecordFromNode: function(importer, node) { 
-        var spec = JSON.unserialize(node.getElementsByTagName("definition")[0].textContent);
-        var Rec = lively.data.DOMNodeRecord.prototype.create(spec);
-        var model = new Rec(importer, node);
-        var id = node.getAttribute("id");
-        if (id) importer.addMapping(id, model); 
-        this.actualModel = model;
-    },
-    
-    deserializeArrayFromNode: function(importer, node) {
-    	var name = LivelyNS.getAttribute(node, "name");
-    	this[name] = [];
-    	var index = 0;
-    	$A(node.getElementsByTagName("item")).forEach(function(elt) {
-    	    var ref = LivelyNS.getAttribute(elt, "ref");
-    	    if (ref) {
-    		importer.addPatchSite(this, name, ref, index);
-    	    } else this[name].push(null);
-    	    index ++;
-    	}, this);
-    },
-    
+      
     restoreFromSubnodes: function(importer) {
         
         // Todo: move common parts to super class wrapper

@@ -1450,32 +1450,15 @@ duplicate: function () {
             }
             case "array": {
                 helperNodes.push(node);
-                var name = LivelyNS.getAttribute(node, "name");
-                this[name] = [];
-                var index = 0;
-                $A(node.getElementsByTagName("item")).forEach(function(elt) {
-                    var ref = LivelyNS.getAttribute(elt, "ref");
-                    if (ref) {
-                        importer.addPatchSite(this, name, ref, index);
-                    } else this[name].push(null);
-                    index ++;
-                }, this);
+                this.deserializeArrayFromNode(importer, node);
                 break;
             }
-
             case "relay": {
-                var spec = {};
-                $A(node.getElementsByTagName("binding")).forEach(function(elt) {
-                    var key = elt.getAttributeNS(null, "formal");
-                    var value = elt.getAttributeNS(null, "actual");
-                    spec[key] = value;
-                });
-                var name = LivelyNS.getAttribute(node, "name");
-                if (name) {
-                    var relay = this[name] = Relay.newInstance(spec, null);
-                    var ref = LivelyNS.getAttribute(node, "ref");
-                    importer.addPatchSite(relay, "delegate", ref);
-                }
+                this.deserializeRelayFromNode(importer, node);
+                break;
+            }
+            case "record": {
+                this.deserializeRecordFromNode(importer, node);
                 break;
             }
             case "defs": { 
