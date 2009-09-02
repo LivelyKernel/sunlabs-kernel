@@ -24,7 +24,9 @@ var Loader = {
 		// FIXME Assumption that first def node has scripts
 		var node = document.getElementsByTagName("defs")[0];
 		if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
-		
+		if (Config.disableScriptCaching)
+			url = url + '?' + new Date().getTime();
+			
 		if (true) {
 			var script = document.createElement('script');
 			script.id = url;
@@ -36,8 +38,6 @@ var Loader = {
 			var script = document.createElementNS(xmlNamespace, 'script');
 			script.setAttributeNS(null, 'id', url);
 			script.setAttributeNS(null, 'type', 'text/ecmascript');		
-			if (Config.disableScriptCaching)
-				url = url + '?' + new Date().getTime();
 			if (xmlNamespace)
 				script.setAttributeNS(Namespace.XLINK, 'href', url);
 			else
