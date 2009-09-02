@@ -40,6 +40,20 @@ var Loader = {
 			script.setAttributeNS(null, 'onload', onLoadCb);
         node.appendChild(script);
     },
+
+	// sometimes script.onload seems not to be invoked, here we do our own callback invocation
+	loadJsPolling: function(url, onLoadCb) {
+		var timeout = 30;
+		function testIfLoaded() {
+			if (Loader.scriptInDOM(url)) {
+				onLoadCb && onLoadCb();
+				return;
+			}
+			Global.setTimeout(testIfLoaded, timeout);
+		}
+		testIfLoaded();
+		Loader.loadJs(url, null/*no onload used*/, false);
+	},
     
     scriptInDOM: function(url) {
         if (document.getElementById(url)) return true;
