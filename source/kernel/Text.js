@@ -890,9 +890,11 @@ chunkLengthForWord: function(str, index) {
 });
 
 
-BoxMorph.subclass("TextMorph", {
+BoxMorph.subclass('TextMorph', {
 	
 	documentation: "Container for Text",
+	doNotSerialize: ['lines', 'selectionRange', 'priorSelection'],
+
 	// these are prototype variables
 	fontSize:	Config.defaultFontSize	 || 12,
 	fontFamily: Config.defaultFontFamily || 'Helvetica',
@@ -915,6 +917,7 @@ BoxMorph.subclass("TextMorph", {
 	hasKeyboardFocus: false,
 	useChangeClue: false,
 	
+
 	formals: {
 		Text: { byDefault: ""},
 		Selection: { byDefault: ""},

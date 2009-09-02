@@ -168,87 +168,120 @@ Object.subclass('lively.data.Wrapper', {
 			defNode = this.rawNode.appendChild(NodeFactory.create('defs'));
 		return defNode;
 	},
+	
+	doNotSerialize: ['rawNode'],
 
-    prepareForSerialization: function(extraNodes) {
-	for (var prop in this) {
-	    if (!this.hasOwnProperty(prop)) continue;
-            if (prop === 'rawNode') continue;
-	    var m = this[prop];
-	    if (m === this.constructor.prototype[prop])  // save space
-		continue;
-	    this.preparePropertyForSerialization(prop, m, extraNodes);
-	}
-    },
+	isPropertyOnIgnoreList: function(prop) {
+		return this.doNotSerialize.include(prop) || this.isPropertyOnIgnoreListInClassHierarchy(prop, this.constructor);
+	},
 
-    preparePropertyForSerialization: function(prop, propValue, extraNodes) {
-	var self = this;
-	function appendNode(node) {
-	    try {
-		extraNodes.push(self.rawNode.appendChild(node));
-	    } catch (er) { throw er;}
-	    extraNodes.push(self.rawNode.appendChild(NodeFactory.createNL()));
-	}
+	isPropertyOnIgnoreListInClassHierarchy: function(prop, klass) {
+		if (klass === Object)
+			return false;
+		return klass.prototype.doNotSerialize.include(prop) || this.isPropertyOnIgnoreListInClassHierarchy(prop, klass.superclass);
+	},
+	
+	prepareForSerialization: function(extraNodes) {
+		for (var prop in this) {
+			if (!this.hasOwnProperty(prop)) 
+				continue;
+			if (this.isPropertyOnIgnoreList(prop))
+				continue;
+			var m = this[prop];
+			if (m === this.constructor.prototype[prop])	 // save space
+				continue;
+			this.preparePropertyForSerialization(prop, m, extraNodes);
+		}
+	},
 
-	if (propValue instanceof Function) {
-	    return;
-	} else if (lively.data.Wrapper.isInstance(propValue)) { 
-	    if (prop === 'owner') 
+	appendNodeToExtraNodes: function(node, extraNodes) {
+		try {
+			extraNodes.push(this.rawNode.appendChild(node));
+		} catch (er) { throw er;}
+		extraNodes.push(this.rawNode.appendChild(NodeFactory.createNL())); // why that?
+	},
+
+	prepareArrayPropertyForSerialization: function(prop, propValue, extraNodes) {
+		if (prop === 'submorphs')
+			return;	 // we'll deal manually
+		var arr = LivelyNS.create("array", {name: prop});
+		var abort = false;
+		propValue.forEach(function iter(elt) {
+			if (elt && lively.data.Wrapper.isInstance(elt)) { // FIXME what if Wrapper is a mixin?
+				// if item empty, don't set the ref field
+				var item =	(elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
+				extraNodes.push(arr.appendChild(item));
+				extraNodes.push(arr.appendChild(NodeFactory.createNL()));
+			} else {
+				var item = Converter.encodeProperty(null, elt, true);
+				if (item) {
+					extraNodes.push(arr.appendChild(item));
+					extraNodes.push(arr.appendChild(NodeFactory.createNL()));
+				} else {
+					console.log("ERROR Serializing item in array " + prop + " of " + this)
+					abort = true;
+					return;
+				}
+			}
+		}, this);
+		if (!abort) { 
+			//console.assert($A(this.rawNode.getElementsByTagName("array")).select(function(ea){ 
+			//	  return ea.getAttribute("name") == prop }).length == 1, "ERROR: node with " + prop + " is already in raw Node");
+			this.appendNodeToExtraNodes(arr, extraNodes);
+		}	
+	},
+
+	prepareWrapperPropertyForSerialization: function(prop, propValue, extraNodes) {
+		if (prop === 'owner') 
 		return; // we'll deal manually
-	    if (propValue instanceof lively.paint.Gradient || propValue  instanceof lively.scene.Image) 
-		return; // these should sit in defs and be handled by restoreDefs()
+		if (propValue instanceof lively.paint.Gradient || propValue	 instanceof lively.scene.Image) 
+			return; // these should sit in defs and be handled by restoreDefs()
 
-	    //console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
-	    if (!propValue.rawNode) {
-		console.log("wha', no raw node on " + propValue);
-	    } else if (propValue.id() != null) {
-		var desc = LivelyNS.create("field", {name: prop, ref: propValue.id()});
-		appendNode(desc);
-		if (prop === "ownerWidget") {
-		    // console.log('recursing for field ' + prop);
-		    propValue.prepareForSerialization(extraNodes);
-		    appendNode(propValue.rawNode);
+		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
+		if (!propValue.rawNode) {
+			console.log("wha', no raw node on " + propValue);
+		} else if (propValue.id() != null) {
+			var desc = LivelyNS.create("field", {name: prop, ref: propValue.id()});
+			this.appendNodeToExtraNodes(desc, extraNodes);;
+			if (prop === "ownerWidget") {
+				// console.log('recursing for field ' + prop);
+				propValue.prepareForSerialization(extraNodes);
+				this.appendNodeToExtraNodes(propValue.rawNode, extraNodes);
+			}
 		}
-	    }
-	} else if (propValue instanceof Relay) {
-	    var delegate = propValue.delegate;
-	    if (lively.data.Wrapper.isInstance(delegate)) { // FIXME: better instanceof
-		var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
-		Properties.forEachOwn(propValue.definition, function(key, value) {
-		    var binding = desc.appendChild(LivelyNS.create("binding"));
-		    binding.setAttributeNS(null, "formal", key);
-		    binding.setAttributeNS(null, "actual", value);
-		});
-		appendNode(desc);
-	    } else {
-		console.warn('unexpected: '+ propValue + 's delegate is ' + delegate);
-	    }
-	} else if (propValue instanceof Array) {
-	    if (prop === 'submorphs')
-		return;  // we'll deal manually
-	    var arr = LivelyNS.create("array", {name: prop});
-	    var abort = false;
-	    propValue.forEach(function iter(elt) {
-		if (elt && !lively.data.Wrapper.isInstance(elt)) { // FIXME what if Wrapper is a mixin?
-		    abort = true;
-		    return;
+	},
+	
+	prepareRelayPropertyForSerialization: function(prop, propValue, extraNodes) {
+		var delegate = propValue.delegate;
+		if (lively.data.Wrapper.isInstance(delegate)) { // FIXME: better instanceof
+			var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
+			Properties.forEachOwn(propValue.definition, function(key, value) {
+				var binding = desc.appendChild(LivelyNS.create("binding"));
+				binding.setAttributeNS(null, "formal", key);
+				binding.setAttributeNS(null, "actual", value);
+			});
+			this.appendNodeToExtraNodes(desc, extraNodes);
+		} else {
+			console.warn('unexpected: '+ propValue + 's delegate is ' + delegate);
+		}		
+	},
+
+	preparePropertyForSerialization: function(prop, propValue, extraNodes) {
+		if (propValue instanceof Function) {
+			return;
+		} else if (lively.data.Wrapper.isInstance(propValue)) { 
+			this.prepareWrapperPropertyForSerialization(prop, propValue, extraNodes)
+		} else if (propValue instanceof Relay) {
+			this.prepareRelayPropertyForSerialization(prop, propValue, extraNodes)
+		} else if (propValue instanceof Array) {
+			this.prepareArrayPropertyForSerialization(prop, propValue, extraNodes) 
+		} else if (prop === 'rawNode' || prop === 'defs') { // necessary because nodes get serialized
+			return;
+		} else {
+			var node = Converter.encodeProperty(prop, propValue);
+			node && this.appendNodeToExtraNodes(node, extraNodes);;
 		}
-		// if item empty, don't set the ref field
-		var item =  (elt && elt.id()) ? LivelyNS.create("item", {ref: elt.id()}) : LivelyNS.create("item"); 
-		extraNodes.push(arr.appendChild(item));
-		extraNodes.push(arr.appendChild(NodeFactory.createNL()));
-	    }, this);
-	    if (!abort) { 
-	        //console.assert($A(this.rawNode.getElementsByTagName("array")).select(function(ea){ 
-                //    return ea.getAttribute("name") == prop }).length == 1, "ERROR: node with " + prop + " is already in raw Node");
-                appendNode(arr)
-	    }
-	} else if (prop === 'rawNode' || prop === 'defs') { // necessary because nodes get serialized
-	    return;
-	} else {
-	    var node = Converter.encodeProperty(prop, propValue);
-	    node && appendNode(node);
-	}
-    },
+	},
 
     reference: function() {
 	if (!this.refcount) {
@@ -297,6 +330,22 @@ Object.subclass('lively.data.Wrapper', {
         throw new Error("Error in deserializing Widget: no getEncodedType for " + node);     
     },
     
+	deserializeValueFromNode: function(importer, node) {
+		var value = node.textContent;
+		if (value) {
+			var family = LivelyNS.getAttribute(node, "family");
+			if (family) {
+				var cls = Class.forName(family);
+				if (!cls) throw new Error('uknown type ' + family);
+				return cls.fromLiteral(JSON.unserialize(value));
+			} else if (value === 'NaN') {
+				return  NaN; // JSON doesn't unserializes NaN
+			} else {
+				return  JSON.unserialize(value);
+			}
+		}
+	},
+
     deserializeFieldFromNode: function(importer, node) {
         var name = LivelyNS.getAttribute(node, "name");
         if (name) {
@@ -310,19 +359,7 @@ Object.subclass('lively.data.Wrapper', {
 				this[name] = realNode;
 				this.addNonMorph(realNode);
 			} else {
-                var value = node.textContent;
-                if (value) {
-                    var family = LivelyNS.getAttribute(node, "family");
-                    if (family) {
-                        var cls = Class.forName(family);
-                        if (!cls) throw new Error('uknown type ' + family);
-                        this[name] = cls.fromLiteral(JSON.unserialize(value));
-                    } else if (value === 'NaN') {
-						this[name] = NaN; // JSON doesn't unserializes NaN
-					} else {
-                        this[name] = JSON.unserialize(value);
-                    }
-                }
+                this[name] = this.deserializeValueFromNode(importer, node);
             }
         } else {
             throw new Error("could not deserialize field without name");
@@ -336,7 +373,6 @@ Object.subclass('lively.data.Wrapper', {
             var value = elt.getAttributeNS(null, "actual");
             spec[key] = value;
         });
-
         var name = LivelyNS.getAttribute(node, "name");
         if (name) {
             var relay = this[name] = Relay.newInstance(spec, null);
@@ -361,8 +397,10 @@ Object.subclass('lively.data.Wrapper', {
     	$A(node.getElementsByTagName("item")).forEach(function(elt) {
     	    var ref = LivelyNS.getAttribute(elt, "ref");
     	    if (ref) {
-    		importer.addPatchSite(this, name, ref, index);
-    	    } else this[name].push(null);
+    			importer.addPatchSite(this, name, ref, index);
+    	    } else {
+				this[name].push(this.deserializeValueFromNode(importer, node));
+			}
     	    index ++;
     	}, this);
     },

@@ -915,6 +915,7 @@ Object.extend(PanelMorph, {
 });
 
 TextMorph.subclass("CheapListMorph", {
+	doNotSerialize: ['itemList'],
     
     style: { borderColor: Color.black, borderWidth: 1 },
 
@@ -1127,6 +1128,7 @@ TextMorph.subclass("CheapListMorph", {
 BoxMorph.subclass("TextListMorph", {
 
 	documentation: "A list that uses TextMorphs to display individual items",
+	doNotSerialize: ['itemList'],
 	style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
 	formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
 	defaultCapacity: 50,
@@ -2299,9 +2301,10 @@ BoxMorph.subclass("ScrollPane", {
     },
 
     submorphBounds: function() {
-	// a little optimization 
-	// FIXME: epimorphs should be included
-	return this.clipMorph.bounds();
+		// a little optimization 
+		// FIXME: epimorphs should be included
+		if (this.clipMorph)
+			return this.clipMorph.bounds();
     },
 
     innerMorph: function() {

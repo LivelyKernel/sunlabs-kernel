@@ -304,9 +304,12 @@ var Converter = {
 
 	// TODO parallels to preparePropertyForSerialization in scene.js
 	// Why to we encodeProperties for Records at runtime and not at serialization time?
-    encodeProperty: function(prop, propValue) {
-		var desc = LivelyNS.create("field", {name: prop});
-	
+    encodeProperty: function(prop, propValue, isItem) {
+		if (isItem) {
+			var desc = LivelyNS.create("item");
+		} else {
+			var desc = LivelyNS.create("field", {name: prop});
+		}
 		if (Converter.isJSONConformant(propValue) || propValue instanceof Array) { // hope for the best wrt/arrays
 		    // FIXME: deal with arrays of primitives etc?
 		    var encoding;

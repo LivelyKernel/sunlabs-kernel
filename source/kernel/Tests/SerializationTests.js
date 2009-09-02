@@ -143,6 +143,13 @@ TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
             return ea.getAttribute("name") == fieldName});
         this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
         return result
+    },
+
+    getArrayNamed: function(node, fieldName) {
+        var result = $A(node.getElementsByTagName("array")).detect(function(ea) {
+            return ea.getAttribute("name") == fieldName});
+        this.assert(result, "" + node + " (id: " + node.id + ") no array named: " + fieldName);
+        return result
     }
 
 });
@@ -237,6 +244,10 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
                         '<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
                         '<field name="exampleAttributePointAsValue" family="Point"><![CDATA[{"x":12,"y":34}]]></field>' +
                         '<field name="exampleReference" ref="103:Morph"></field>' +
+						'<array name="exampleArray">' +
+							'<item><![CDATA["Hallo"]]></item>' +
+							'<item ref="103:Morph"></item>' +
+						'</array>' +
                     '</g>'+
                     '<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
                         '<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
@@ -255,11 +266,16 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
 		
 		this.assertIdentity(morph1.owner, world, "morph1 owner is not the world");
         
-         
-
+		this.assert(morph1.exampleArray, "exampleArray is mising");
+        this.assertEqual(morph1.exampleArray[0], "Hallo", "String in array failed");
+        this.assertIdentity(morph1.exampleArray[1], morph2, "Referebce in array failed");
+		
         //this.showMyWorld(show)
     },
     
+
+
+
     /*
      * - test an widget embedded into a morph and referenced from a different morph
      */
@@ -459,6 +475,7 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
             var morph = new Morph(new lively.scene.Rectangle(this.bounds));
         morph.simpleNumber = 12345;
         morph.simpleString = "eineZeichenkette";
+		morph.arrayOfStrings = ["Hallo", "Welt"]
         this.worldMorph.addMorph(morph);
         var doc = Exporter.shrinkWrapMorph(this.worldMorph);
         
@@ -475,6 +492,10 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
            <field name="fullBounds">null</field>
            <field name="simpleNumber">12345</field>
            <field name="simpleString"><![CDATA["eineZeichenkette"]]></field>
+		   <array name="arrayOfStrings">
+		      <item><![CDATA["Hallo"]]></item>
+		      <item><![CDATA["Welt"]]></item>
+		   </array>
         </g>
         */
         var numberNode = this.getFieldNamed(morphNode, "simpleNumber");
@@ -482,6 +503,9 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
         
         var stringNode = this.getFieldNamed(morphNode, "simpleString");    
         this.assertEqual(stringNode.textContent, '"eineZeichenkette"', "simpleString failed");
+
+		var arrayNode = this.getArrayNamed(morphNode, "arrayOfStrings");
+		 
     },
 
     testSerializeDummyWidget: function() {
