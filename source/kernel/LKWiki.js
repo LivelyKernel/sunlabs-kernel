@@ -10,7 +10,12 @@ Widget.subclass('WikiNavigator', {
             // if URL.source.getDirectory() is http://localhost/livelyBranch/proxy/wiki/test/
             // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
             if (!URL.source.toString().include("wiki")) return URL.source.getDirectory().toString();
-            return /(.*wiki).*/.exec(URL.source.getDirectory().toString())[1];
+			var match = /(.*wiki).*/.exec(URL.source.getDirectory().toString());
+			if (match) {
+            	return match[1];
+			} else {
+				return undefined
+			}
     },
    
     initialize: function($super, url, world, rev) {
