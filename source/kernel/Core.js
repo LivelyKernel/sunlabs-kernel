@@ -670,42 +670,42 @@ Object.subclass('Exporter', {
 
     rootMorph: null,
 
-    initialize: function(rootMorph) {
-	this.rootMorph = rootMorph;
-	(rootMorph instanceof Morph) || console.log("weird, root morph is " + rootMorph);
-    },
+	initialize: function(rootMorph) {
+		this.rootMorph = rootMorph;
+		(rootMorph instanceof Morph) || console.log("weird, root morph is " + rootMorph);
+	},
 
-    extendForSerialization: function() {
-	// decorate with all the extra needed to serialize correctly. Return the additional nodes, to be removed 
-	var helperNodes = [];
+	extendForSerialization: function() {
+		// decorate with all the extra needed to serialize correctly. Return the additional nodes, to be removed 
+		var helperNodes = [];
 
-	var exporter = this;
-	this.rootMorph.withAllSubmorphsDo(function() { 
-	    exporter.verbose && console.log("serializing " + this);
-	    
-	    this.prepareForSerialization(helperNodes);
-	    // some formatting
-	    var nl = NodeFactory.createNL();
-	    this.rawNode.parentNode.insertBefore(nl, this.rawNode);
-	    helperNodes.push(nl);
-	});
-	return helperNodes;
-    },
+		var exporter = this;
+		this.rootMorph.withAllSubmorphsDo(function() { 
+			exporter.verbose && console.log("serializing " + this);
 
-    removeHelperNodes: function(helperNodes) {
-	for (var i = 0; i < helperNodes.length; i++) {
-	    var n = helperNodes[i];
-	    n.parentNode.removeChild(n);
+			this.prepareForSerialization(helperNodes);
+			// some formatting
+			var nl = NodeFactory.createNL();
+			this.rawNode.parentNode.insertBefore(nl, this.rawNode);
+			helperNodes.push(nl);
+		});
+		return helperNodes;
+	},
+
+	removeHelperNodes: function(helperNodes) {
+		for (var i = 0; i < helperNodes.length; i++) {
+			var n = helperNodes[i];
+			n.parentNode.removeChild(n);
+		}
+	},
+
+	serialize: function(destDocument) {
+		// model is inserted as part of the root morph.
+		var helpers = this.extendForSerialization();
+		var result = destDocument.importNode(this.rootMorph.rawNode, true);
+		this.removeHelperNodes(helpers);
+		return result;
 	}
-    },
-
-    serialize: function(destDocument) {
-	// model is inserted as part of the root morph.
-	var helpers = this.extendForSerialization();
-	var result = destDocument.importNode(this.rootMorph.rawNode, true);
-	this.removeHelperNodes(helpers);
-	return result;
-    }
 
 
 });
@@ -1374,15 +1374,15 @@ duplicate: function () {
 	importer.verbose && console.log("deserialized " + this);
     },
 
-    prepareForSerialization: function($super, extraNodes) {
-	// this is the morph to serialize
-	if (Config.useTransformAPI) {
-	    // gotta set it explicitly, it's not in SVG
-	    this.setTrait("transform", this.getTransform().toAttributeValue());
-	    // FIXME, remove?
-	}
-	return $super(extraNodes);
-    },
+	prepareForSerialization: function($super, extraNodes) {
+		// this is the morph to serialize
+		if (Config.useTransformAPI) {
+			// gotta set it explicitly, it's not in SVG
+			this.setTrait("transform", this.getTransform().toAttributeValue());
+			// FIXME, remove?
+		}
+		return $super(extraNodes);
+	},
     
     restorePersistentState: function(importer) {
 	var pointerEvents = this.getTrait("pointer-events");

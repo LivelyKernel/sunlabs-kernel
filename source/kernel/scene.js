@@ -194,13 +194,16 @@ Object.subclass('lively.data.Wrapper', {
 		}
 	},
 
-	appendNodeToExtraNodes: function(node, extraNodes) {
+	appendHelperNode: function(node, extraNodes) {
 		try {
 			extraNodes.push(this.rawNode.appendChild(node));
 		} catch (er) { throw er;}
-		extraNodes.push(this.rawNode.appendChild(NodeFactory.createNL())); // why that?
+		console.log("appendHelperNode " + node.tagName + " " + node.parentNode)
+		node.isHelper = true;
+		// who deletes the extra whitespace after the nodes are reloaded? 
+		// extraNodes.push(this.rawNode.appendChild(NodeFactory.createNL())); 
 	},
-
+	
 	prepareArrayPropertyForSerialization: function(prop, propValue, extraNodes) {
 		if (prop === 'submorphs')
 			return;	 // we'll deal manually
@@ -227,7 +230,7 @@ Object.subclass('lively.data.Wrapper', {
 		if (!abort) { 
 			//console.assert($A(this.rawNode.getElementsByTagName("array")).select(function(ea){ 
 			//	  return ea.getAttribute("name") == prop }).length == 1, "ERROR: node with " + prop + " is already in raw Node");
-			this.appendNodeToExtraNodes(arr, extraNodes);
+			this.appendHelperNode(arr, extraNodes);
 		}	
 	},
 
@@ -242,11 +245,11 @@ Object.subclass('lively.data.Wrapper', {
 			console.log("wha', no raw node on " + propValue);
 		} else if (propValue.id() != null) {
 			var desc = LivelyNS.create("field", {name: prop, ref: propValue.id()});
-			this.appendNodeToExtraNodes(desc, extraNodes);;
+			this.appendHelperNode(desc, extraNodes);;
 			if (prop === "ownerWidget") {
 				// console.log('recursing for field ' + prop);
 				propValue.prepareForSerialization(extraNodes);
-				this.appendNodeToExtraNodes(propValue.rawNode, extraNodes);
+				this.appendHelperNode(propValue.rawNode, extraNodes);
 			}
 		}
 	},
@@ -257,10 +260,11 @@ Object.subclass('lively.data.Wrapper', {
 			var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
 			Properties.forEachOwn(propValue.definition, function(key, value) {
 				var binding = desc.appendChild(LivelyNS.create("binding"));
+				// extraNodes.push(binding); 
 				binding.setAttributeNS(null, "formal", key);
 				binding.setAttributeNS(null, "actual", value);
 			});
-			this.appendNodeToExtraNodes(desc, extraNodes);
+			this.appendHelperNode(desc, extraNodes);
 		} else {
 			console.warn('unexpected: '+ propValue + 's delegate is ' + delegate);
 		}		
@@ -279,7 +283,7 @@ Object.subclass('lively.data.Wrapper', {
 			return;
 		} else {
 			var node = Converter.encodeProperty(prop, propValue);
-			node && this.appendNodeToExtraNodes(node, extraNodes);;
+			node && this.appendHelperNode(node, extraNodes);;
 		}
 	},
 
@@ -384,6 +388,7 @@ Object.subclass('lively.data.Wrapper', {
             var ref = LivelyNS.getAttribute(node, "ref");
             importer.addPatchSite(relay, "delegate", ref);
         }
+		node.parentNode.removeChild(node);
     },
     
     deserializeRecordFromNode: function(importer, node) { 
@@ -425,7 +430,27 @@ Object.extend(lively.data.Wrapper, {
 });
 
 
-Object.subclass('lively.data.WrapperCollector', {
+/* Garbage Collection */
+
+lively.data.Wrapper.addMethods({
+	removeGarbageRelayNodes: function() {
+		$A(this.rawNode.childNodes).each(function(ea) {
+			if(ea.tagName == "relay")
+				this.rawNode.removeChild(ea)
+		}, this)	
+	},
+
+	removeGarbageFromRawNode: function() {
+		"WorldMorph.current().removeGarbageFromRawNode()"
+		this.removeGarbageRelayNodes();
+		this.submorphs.each(function(ea) {
+			ea.removeGarbageFromRawNode()
+		})
+	}
+	
+});
+
+Object.extend(lively.data.Wrapper, {
 
 	collectFill: function(morph, result) {
 		var fill = morph.getFill();
@@ -438,6 +463,7 @@ Object.subclass('lively.data.WrapperCollector', {
 	},
 	
 	collectSystemDictionaryGarbage: function() {
+		"lively.data.Wrapper.collectSystemDictionaryGarbage()"
 		var usedFillIds = this.collectFill(WorldMorph.current(),[]).collect(function(ea){return ea.id()});
 		$A(new lively.data.Wrapper().dictionary().childNodes).each(function(ea) {
 			// console.log("GC considering " + ea)
@@ -449,9 +475,7 @@ Object.subclass('lively.data.WrapperCollector', {
 	},
 });
 
-Global.collectSystemDictionaryGarbage = function() {
-	(new lively.data.WrapperCollector()).collectSystemDictionaryGarbage()
-};
+
 
 Object.extend(Object.subclass('lively.data.FragmentURI'), {
     parse: function(string) {
