@@ -169,8 +169,9 @@ askToNavigateToUrl: function(url) {
 	if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway
 
 	var msg = 'Go to ' + this.model.getURL() + ' ?';
-	var label1 = this.worldExists() ? 'Save and follow link' : 'Save, create, follow link';
-	var label2 = this.worldExists() ? 'Just follow link' : 'Create and follow link';
+	var worldExists = this.worldExists();
+	var label1 = worldExists ? 'Save and follow link' : 'Save, create, follow link';
+	var label2 = worldExists ? 'Just follow link' : 'Create and follow link';
         
 	var model = Record.newPlainInstance({
                  Button1: null, Button2: null, Message: msg, LabelButton1: label1, LabelButton2: label2 });
@@ -178,7 +179,7 @@ askToNavigateToUrl: function(url) {
                  onButton1Update: function(value) {
                      if (!value) return;
                      if (WikiNavigator.current && WikiNavigator.current.doSave().isSuccess()) {
-                         if (!this.worldExists()) this.doSave(); // create other world
+                         if (!worldExists) this.doSave(); // create other world
                          this.navigateToUrl();
                          return; // Alibi
                      }
@@ -186,7 +187,7 @@ askToNavigateToUrl: function(url) {
                  }.bind(this),
                  onButton2Update: function(value) {
                      if (!value) return;
-                     if (!this.worldExists())
+                     if (!worldExists)
                         if (!this.doSave().isSuccess()) return;
                      this.navigateToUrl()
                  }.bind(this)});
@@ -327,9 +328,8 @@ Object.extend(WikiNavigator, {
 	    	fileName += ".xhtml";
 		return URL.source.withFilename(fileName);
 	},
-	test: function() {
-		var url = new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/test.txt');
-		WikiNavigator.enableWikiNavigator(true, url);
+	test: function(urlString) {
+		WikiNavigator.enableWikiNavigator(true, new URL(urlString));
 		return WikiNavigator.current;
 	},
 });

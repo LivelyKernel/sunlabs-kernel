@@ -243,7 +243,7 @@ Object.extend(Config, {
 	loadTests: [], //e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 	showTesterRunner: false,
 	// Modules
-	modulesBeforeChanges: ['ide.js'/*FIXME for ChangeSet*/, 'LKWiki.js'],
+	modulesBeforeChanges: ['LKWiki.js', 'ChangeSet.js'],
 	modulesOnWorldLoad: [  /*"Fabrik.js", 'TileScripting.js',*/ ],
 	codeBase: document.documentURI.substring(0, document.documentURI.lastIndexOf('/') + 1)
 });
