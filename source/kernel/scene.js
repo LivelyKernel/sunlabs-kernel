@@ -341,11 +341,16 @@ Object.subclass('lively.data.Wrapper', {
 			} else if (value === 'NaN') {
 				return  NaN; // JSON doesn't unserializes NaN
 			} else {
-				return  JSON.unserialize(value);
+				try {
+					return JSON.unserialize(value);
+				} catch (e) {
+					console.log('Error in lively.data.Wrapper.deserializeValueFromNode:');
+					console.log(e + ' was thrown when deserializing: ' + value);
+				}
 			}
 		}
 	},
-
+		
     deserializeFieldFromNode: function(importer, node) {
         var name = LivelyNS.getAttribute(node, "name");
         if (name) {
