@@ -893,7 +893,8 @@ chunkLengthForWord: function(str, index) {
 BoxMorph.subclass('TextMorph', {
 	
 	documentation: "Container for Text",
-	doNotSerialize: ['lines', 'selectionRange', 'priorSelection'],
+	doNotSerialize: ['lines', 'selectionRange', 'focusHalo', 'priorSelection', 'previousSelection', 
+		'undoSelectionRange', 'undoTextString', 'charsTyped', 'charsReplaced', 'lastFindLoc', 'selectionPivot','typingHasBegun'],
 
 	// these are prototype variables
 	fontSize:	Config.defaultFontSize	 || 12,
@@ -995,6 +996,14 @@ BoxMorph.subclass('TextMorph', {
 		this.layoutChanged();
 		return this;
 	},
+	
+	prepareForSerialization: function($super, extraNodes) {
+		if (this.textSelection) {
+			this.textSelection.remove();
+			delete this.textSelection;
+		}
+		return $super(extraNodes);
+    },
 
 	onDeserialize: function() {
 		// the morph gets lost when it is not hung into the dom 
@@ -1524,6 +1533,14 @@ lineNumberSearch: function(lineFunction) {
 			this.initializeTextSelection();
 		}
 		return this.textSelection
+	},
+	
+	removeTextSelection: function() {
+		if (!this.textSelection) {
+			return
+		}
+		this.textSelection.remove();
+		delete this.textSelection;
 	},
 
 	selectionStyle: function() {
