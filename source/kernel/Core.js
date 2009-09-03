@@ -683,7 +683,10 @@ Object.subclass('Exporter', {
 		this.rootMorph.withAllSubmorphsDo(function() { 
 			exporter.verbose && console.log("serializing " + this);
 
+			// TODO: merge this into the "prepareForSerialization"
+			lively.data.Wrapper.collectSystemDictionaryGarbage(this.rootMorph);
 			this.prepareForSerialization(helperNodes);
+			
 			// some formatting
 			var nl = NodeFactory.createNL();
 			this.rawNode.parentNode.insertBefore(nl, this.rawNode);
@@ -1354,25 +1357,25 @@ duplicate: function () {
 		return this; 
 	},
 
-    deserialize: function($super, importer, rawNode) {
-	// FIXME what if id is not unique?
-	$super(importer, rawNode);
-	this.internalInitialize(rawNode, false);
-	this.pvtSetTransform(this.getTransform());
-	
-	this.restoreFromSubnodes(importer);
-	this.restorePersistentState(importer);    
-	
-	if (!this.shape) { 
-	   console.log("Error in Morph.deserialize(): I have no shape! Fall back to Rectangle!");
-	   var shape = new lively.scene.Rectangle(new Rectangle(0, 0, 100, 100));
-	   this.initializePersistentState(shape);
-	   this.applyStyle({fill: Color.red});
-	};
-	
-	this.initializeTransientState();
-	importer.verbose && console.log("deserialized " + this);
-    },
+	deserialize: function($super, importer, rawNode) {
+		// FIXME what if id is not unique?
+		$super(importer, rawNode);
+		this.internalInitialize(rawNode, false);
+		this.pvtSetTransform(this.getTransform());
+
+		this.restoreFromSubnodes(importer);
+		this.restorePersistentState(importer);    
+
+		if (!this.shape) { 
+			console.log("Error in Morph.deserialize(): I have no shape! Fall back to Rectangle!");
+			var shape = new lively.scene.Rectangle(new Rectangle(0, 0, 100, 100));
+			this.initializePersistentState(shape);
+			this.applyStyle({fill: Color.red});
+		};
+
+		this.initializeTransientState();
+		importer.verbose && console.log("deserialized " + this);
+	},
 
 	prepareForSerialization: function($super, extraNodes) {
 		// this is the morph to serialize
@@ -1384,19 +1387,19 @@ duplicate: function () {
 		return $super(extraNodes);
 	},
     
-    restorePersistentState: function(importer) {
-	var pointerEvents = this.getTrait("pointer-events");
-	if (pointerEvents == "none") {
-	    this.ignoreEvents();
-	} else if (pointerEvents) {
-	    console.log("can't handle pointer-events " + pointerEvents);
-	}
-	return; // override in subclasses
-    },
+	restorePersistentState: function(importer) {
+		var pointerEvents = this.getTrait("pointer-events");
+		if (pointerEvents == "none") {
+			this.ignoreEvents();
+		} else if (pointerEvents) {
+			console.log("can't handle pointer-events " + pointerEvents);
+		}
+		return; // override in subclasses
+	},
 
-    restoreFromSubnode: function(importer, node) {
-	// Override me
-    },
+	restoreFromSubnode: function(importer, node) {
+		// Override me
+	},
 
 	restoreFromDefsNode: function(importer, node) {
 	    // the only one handled here "code"

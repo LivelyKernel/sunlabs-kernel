@@ -198,7 +198,7 @@ Object.subclass('lively.data.Wrapper', {
 		try {
 			extraNodes.push(this.rawNode.appendChild(node));
 		} catch (er) { throw er;}
-		console.log("appendHelperNode " + node.tagName + " " + node.parentNode)
+		// console.log("appendHelperNode " + node.tagName + " " + node.parentNode)
 		node.isHelper = true;
 		// who deletes the extra whitespace after the nodes are reloaded? 
 		// extraNodes.push(this.rawNode.appendChild(NodeFactory.createNL())); 
@@ -287,26 +287,28 @@ Object.subclass('lively.data.Wrapper', {
 		}
 	},
 
-    reference: function() {
-	if (!this.refcount) {
-	    if (!this.id()) {
-		this.setId(this.newId());
-	    }
-	    this.dictionary().appendChild(this.rawNode);
-	    this.refcount = 1; 
-	    return;
-	}
-	this.refcount ++;
-    },
+	reference: function() {
+		// console.log("reference " + this)
+		if (!this.refcount) {
+			if (!this.id()) {
+				this.setId(this.newId());
+			}
+			this.dictionary().appendChild(this.rawNode);
+			this.refcount = 1; 
+			return;
+		}
+		this.refcount ++;
+	},
 
-    dereference: function() {
-	// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
-	if (this.refcount === undefined) throw new Error('sorry, undefined');
-	this.refcount --;
-	if (this.refcount == 0) {
-            if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
-	}
-    },
+	dereference: function() {
+		// console.log("dereference " + this)
+		// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
+		if (this.refcount === undefined) throw new Error('sorry, undefined');
+		this.refcount --;
+		if (this.refcount == 0) {
+			if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
+		}
+	},
 
     dictionary: function() {
 		if (lively.data.Wrapper.dictionary)
@@ -462,13 +464,15 @@ Object.extend(lively.data.Wrapper, {
 		return result
 	},
 	
-	collectSystemDictionaryGarbage: function() {
+	collectSystemDictionaryGarbage: function(rootMorph) {
 		"lively.data.Wrapper.collectSystemDictionaryGarbage()"
-		var usedFillIds = this.collectFill(WorldMorph.current(),[]).collect(function(ea){return ea.id()});
+		if (!rootMorph)
+			rootMorph = WorldMorph.current();
+		var usedFillIds = this.collectFill(rootMorph,[]).collect(function(ea){return ea.id()});
 		$A(new lively.data.Wrapper().dictionary().childNodes).each(function(ea) {
 			// console.log("GC considering " + ea)
 			if(['linearGradient', 'radialGradient'].include(ea.tagName) && !usedFillIds.include(ea.id)) {
-				console.log("SystemDictionary GC: remove " + ea)
+				// console.log("SystemDictionary GC: remove " + ea)
 				lively.data.Wrapper.dictionary.removeChild(ea)
 			}
 		});
@@ -478,22 +482,21 @@ Object.extend(lively.data.Wrapper, {
 
 
 Object.extend(Object.subclass('lively.data.FragmentURI'), {
-    parse: function(string) {
-	var match = string && string.match("url\\(#(.*)\\)");
-	return match && match[1];
-	// 'ur(#fragmentURI)'
-	//return string.substring(5, string.length - 1);
-    },
+	parse: function(string) {
+		var match = string && string.match("url\\(#(.*)\\)");
+		return match && match[1];
+		// 'ur(#fragmentURI)'
+		//return string.substring(5, string.length - 1);
+	},
 
-    fromString: function(id) {
-	return "url(#" + id + ")";
-    },
-    
-    getElement: function(string) {
-	var id = this.parse(string);
-	return id && Global.document.getElementById(id);
-    }
-    
+	fromString: function(id) {
+		return "url(#" + id + ")";
+	},
+
+	getElement: function(string) {
+		var id = this.parse(string);
+		return id && Global.document.getElementById(id);
+	}
 });
 
 
@@ -643,22 +646,28 @@ this.Node.addMethods({
 	} else throw dbgOn(new TypeError('cannot deal with paint ' + paint));
     },
 
-    getFill: function() {
+	getFill: function() {
 		// hack
-        if (this._fill || this._fill === null)
+		if (this._fill || this._fill === null)
 			return this._fill;
 		var attr = this.rawNode.getAttribute('fill');
-	        if (!attr) { false && console.log("Didn't find fill for " + this); return null; };
+		if (!attr) { 
+			false && console.log("Didn't find fill for " + this); return null; 
+		};
 		var rawFill = lively.data.FragmentURI.getElement(attr);
-		if (!rawFill) { false && console.log("Didn't find fill for " + this); return null; };
+		if (!rawFill) { 
+			false && console.log("Didn't find fill for " + this); return null; 
+		};
 		var klass = lively.data.Wrapper.getEncodedType(rawFill);
 		klass = Class.forName(klass) || Class.forName('lively.paint.' + klass);
-		if (!klass) { false && console.log("Didn't find fill for " + this); return null; };
+		if (!klass) { 
+			false && console.log("Didn't find fill for " + this); return null; 
+		};
 		var importer = new Importer();
 		//dbgOn(true);
 		this._fill = new klass(importer, rawFill);
 		return this._fill;
-    },
+	},
     
     setStroke: function(paint) {
 	if ((this._stroke !== paint) && (this._stroke instanceof lively.paint.Gradient)) {
