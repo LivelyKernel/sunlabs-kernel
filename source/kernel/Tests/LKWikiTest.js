@@ -748,13 +748,17 @@ createProxy: function(spec) {
 	return p;
 },
 
+findCodeNodeIn: function(doc) {
+	return new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]/code').findFirst(doc);
+},
+
 addChangeSetToWorld: function() {
 	var world = this.worldMorph;
 	var cs = ChangeSet.fromWorld(world);
 	var change = DoitChange.create('dummy');
 	cs.addChange(change);
 	// test if it works
-	var codeElement =  cs.nodeQuery.findFirst(this.dom);
+	var codeElement = this.findCodeNodeIn(this.dom);
 	this.assert(codeElement.childNodes.length > 0,
 		'Error in Setup: Cannot install ChangeSet in DummyWorld');
 	return cs;
@@ -773,7 +777,7 @@ testConstructDocumentOfChangeSet: function() {
 	var result = sut.getDocumentOfChangeSet(cs);
 	this.assertEqual(
 		Exporter.stringify(cs.xmlElement),
-		Exporter.stringify(cs.nodeQuery.findFirst(result)),
+		Exporter.stringify(this.findCodeNodeIn(result)),
 		'documents not equal? Got change CS into new doc?');
 },
 
