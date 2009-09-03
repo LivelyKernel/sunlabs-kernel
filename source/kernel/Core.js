@@ -1173,6 +1173,8 @@ lively.data.Wrapper.subclass('Morph', {
 
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
+	doNotSerialize: ['fullBounds'],
+
     // prototype vars
     rotation: 0.0,
     scalePoint: pt(1,1),
@@ -3958,7 +3960,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	this.enterCount = 0;
     },
 
-	doNotSerialize: ['hands', 'scheduledActions', 'lastStepTime', 'mainLoop', 'worldId' ],
+	doNotSerialize: ['hands', 'scheduledActions', 'lastStepTime', 'mainLoop', 'worldId', 'secondTick', 'currentScript', 'currentSelection' ],
 
     initializeTransientState: function($super) {
         $super();

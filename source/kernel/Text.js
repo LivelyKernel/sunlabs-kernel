@@ -893,8 +893,8 @@ chunkLengthForWord: function(str, index) {
 BoxMorph.subclass('TextMorph', {
 	
 	documentation: "Container for Text",
-	doNotSerialize: ['lines', 'selectionRange', 'focusHalo', 'priorSelection', 'previousSelection', 
-		'undoSelectionRange', 'undoTextString', 'charsTyped', 'charsReplaced', 'lastFindLoc', 'selectionPivot','typingHasBegun'],
+	doNotSerialize: ['charsTyped', 'charsReplaced', 'delayedComposition', 'focusHalo', 'lastFindLoc', 'lines', 'priorSelection', 'previousSelection', 
+		'selectionRange', 'selectionPivot','typingHasBegun', 'undoSelectionRange', 'undoTextString'],
 
 	// these are prototype variables
 	fontSize:	Config.defaultFontSize	 || 12,
