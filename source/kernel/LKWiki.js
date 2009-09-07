@@ -861,36 +861,42 @@ startUp: function(url) {
 	}
 });
 
-Object.subclass('LinkExtractor', {
+	Object.subclass('LinkExtractor', {
 
 	documentation: 'Extracts Link URLs from a document',
 
-	urlRegex: /([^"']["'](http[\:a-zA-Z0-9\/\.\-]+)["'])+/g,
-	correctedUrlRegex: /.*(http[\:a-zA-Z0-9\/\.\-]+).*/,
-	textQuery: new Query('/descendant::*/text()'),
 	urlQuery: new Query("/descendant::*[@family='URL']"),
+	attributeQuery: new Query('//*[@name="textStyle"]'),
 
 extractLinksFromDocument: function(doc) {
-	var strings = this.textQuery.findAll(doc).inject([], function(all, ea) {
+	/*var strings = this.textQuery.findAll(doc).inject([], function(all, ea) {
 		return all.concat(this.extractLinksFromString(ea));
+	}, this);*/
+	strings = this.attributeQuery.findAll(doc).inject([], function(all, ea) {
+		return all.concat(this.extractLinksFromField(ea));
 	}, this);
 	strings = strings.concat(this.urlQuery.findAll(doc).collect(function(ea) {
 		return this.extractLinkFromUrlNode(ea);
 	}, this));
-	if (this.url)
-		strings = strings.select(function(ea) { return ea.startsWith(this.url.toString()) }, this);
-	var result = strings.uniq().collect(function(ea) { return new URL(ea) }).select(function(ea) { return ea.isLeaf() });
-	//console.log('Extracted: ' + result);
-	return result;
-},
-extractLinksFromString: function(string) {
-	var urls = string.textContent.match(this.urlRegex);
-	if (!urls) return [];
-	var correctedUrls = urls.collect(function(ea) { return ea.match(this.correctedUrlRegex)[1] }, this);
-	return correctedUrls.uniq();
+	var urls = strings.uniq().inject([], function(all, string) {
+		var url = URL.ensureAbsoluteURL(string);
+		if (this.url)
+			if (!url.toString().startsWith(this.url.toString())) return all;
+		if (url.isLeaf()) all.push(url);
+		return all;
+	}, this);		
+	//console.log('Extracted: ' + urls);
+	return urls;
 },
 extractLinkFromUrlNode: function(node) {
 	return Class.forName('URL').fromLiteral(JSON.unserialize(node.textContent)).toString();
+},
+extractLinksFromField: function(field) {
+	var regExFindAllLinks = /\"link\"\:\"[^\"]+\"/g;
+	var regExExtractLink = /\"link\":\"([^\"]+)\"/;
+	var fieldText = field.textContent;
+	var linkProperties = fieldText.match(regExFindAllLinks);
+	return linkProperties.collect(function(ea) { return ea.match(regExExtractLink)[1] });
 },
 
 });

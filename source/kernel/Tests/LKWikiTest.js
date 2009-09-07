@@ -594,10 +594,10 @@ TestCase.subclass('lively.Tests.LKWikiTest.WikiNetworkAnalyzerTest', {
 '<title>Lively Kernel canvas</title>' + '\n' +
 '<defs>' + '\n' + '\n' +
 '</defs>' + '\n' + '\n' +
-'<field name="test"><![CDATA[{"runs":[33,18,13,33,17,15,18,20,17,17,16,16,8,14,8,19],"values":[' + '\n' +
+'<field name="textStyle"><![CDATA[{"runs":[33,18,13,33,17,15,18,20,17,17,16,16,8,14,8,19],"values":[' + '\n' +
 '{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/non-existing/test1.xhtml"},' + '\n' +
 '{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/non-existing/test1.xhtml"},' +
-'{},{"color":"blue","link":"http://livelykernel.sunlabs.com/repository/non-existing/test2.xhtml"},' + '\n' +
+'{},{"color":"blue","link":"test2.xhtml"},' + '\n' +
 '{},{"color":"blue","link":"http://livelykernel.sunlabs.com/"}]}]]></field>' + '\n' + '\n' +
 '<field name="url" family="URL"><![CDATA[{"protocol":"http:","hostname":"livelykernel.sunlabs.com","pathname":"/repository/non-existing/test3.xhtml","constructor":null,"splitter":null,"pathSplitter":null,"initialize":null,"inspect":null,"toString":null,"fullPath":null,"isLeaf":null,"dirname":null,"filename":null,"getDirectory":null,"withPath":null,"withRelativePath":null,"withFilename":null,"toQueryString":null,"withQuery":null,"withoutQuery":null,"eq":null,"relativePathFrom":null,"svnWorkspacePath":null,"svnVersioned":null,"notSvnVersioned":null,"toLiteral":null}]]></field>' + '\n' + '\n' +
 '</svg>' + '\n' + '\n' +
@@ -608,17 +608,17 @@ TestCase.subclass('lively.Tests.LKWikiTest.WikiNetworkAnalyzerTest', {
 setUp: function() {
 	this.doc = this.sampleDocument();
 	this.repoUrl = new URL("http://livelykernel.sunlabs.com/repository/non-existing/");
-	this.linksOfSampleDoc = [this.createWorldProxyFor('test1.xhtml'),
-										this.createWorldProxyFor('test2.xhtml'),
-										this.createWorldProxyFor('test3.xhtml')];
+	this.linksOfSampleDoc = [this.createWorldProxyFor(this.repoUrl.withFilename('test1.xhtml')),
+										this.createWorldProxyFor(URL.source.withFilename('test2.xhtml')),
+										this.createWorldProxyFor(this.repoUrl.withFilename('test3.xhtml'))];
 },
 tearDown: function($super) {
 	$super(); WikiNetworkAnalyzer.instances = []
 },
 
 
-createWorldProxyFor: function(worldName) {
-	return new WikiWorldProxy(this.repoUrl.withFilename(worldName), this.repoUrl);
+createWorldProxyFor: function(url) {
+	return new WikiWorldProxy(url, this.repoUrl);
 },
 logReport: function() {
 	return stringToXML('<?xml version="1.0" encoding="utf-8"?>' + '\n' +
@@ -689,10 +689,11 @@ useMockResource: function(analyzer, config) {
 
 
 testExtractLinks: function() {
-	var doc = this.sampleDocument();
+	doc = this.sampleDocument();
 	var expected = this.linksOfSampleDoc.collect(function(ea) {return ea.getURL() });
 	var sut = new WikiNetworkAnalyzer(this.repoUrl);
 	var result = sut.extractLinksFromDocument(doc);
+result.forEach(function(ea) {console.log(ea)});
 	this.assertEqual(result.length, expected.length);
 	this.assertEqualState(result, expected);
 },
@@ -783,7 +784,9 @@ testConstructDocumentOfChangeSet: function() {
 
 
 
-});TestCase.subclass('lively.Tests.LKWikiTest.SerializerTest', {
+});
+
+TestCase.subclass('lively.Tests.LKWikiTest.SerializerTest', {
 
 	testSerializeAndDeserializeBasicObjects: function() {
 		var basic = {
