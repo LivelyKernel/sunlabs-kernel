@@ -24,14 +24,13 @@ var Loader = {
 		// FIXME Assumption that first def node has scripts
 		var node = document.getElementsByTagName("defs")[0];
 		if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
-		if (Config.disableScriptCaching)
-			url = url + '?' + new Date().getTime();
+		var exactUrl = Config.disableScriptCaching ? url + '?' + new Date().getTime() : url;
 			
 		if (true) {
 			var script = document.createElement('script');
 			script.id = url;
 			script.type = 'text/ecmascript';
-			script.src = url;
+			script.src = exactUrl;
 			if (onLoadCb) script.onload = onLoadCb;
 		} else { // the following will work for HTML but not XHTML --> find a solution
 			var xmlNamespace = node.namespaceURI;
@@ -39,9 +38,9 @@ var Loader = {
 			script.setAttributeNS(null, 'id', url);
 			script.setAttributeNS(null, 'type', 'text/ecmascript');		
 			if (xmlNamespace)
-				script.setAttributeNS(Namespace.XLINK, 'href', url);
+				script.setAttributeNS(Namespace.XLINK, 'href', exactUrl);
 			else
-				script.setAttributeNS(null, 'src', url);
+				script.setAttributeNS(null, 'src', exactUrl);
 			if (onLoadCb)
 				script.setAttributeNS(null, 'onload', onLoadCb);
 		}
@@ -63,10 +62,14 @@ var Loader = {
 		if (element.getAttribute('id') == url) return true;
 		var link = element.getAttributeNS(Namespace.XLINK, 'href') ||
 			element.getAttributeNS(null, 'src');
-		// Hack
+		if (!link) return false;
 		if (url == link) return true;
+		// Hack
 		// FIXME just using the file name does not really work for namespaces
-		return link && url.split('/').last() == link.split('/').last();
+		// http://bla/test.xhtml?01234 -> test.xhtml?01234 -> test.xhtml
+		var linkName = link.split('/').last().split('?').first();
+		var urlName = url.split('/').last().split('?').first();
+		return linkName == urlName;
 	}
 };
 

@@ -245,7 +245,8 @@ Object.extend(Config, {
 	// Modules
 	modulesBeforeChanges: ['LKWiki.js', 'ChangeSet.js'],
 	modulesOnWorldLoad: [  /*"Fabrik.js", 'TileScripting.js',*/ ],
-	codeBase: document.documentURI.substring(0, document.documentURI.lastIndexOf('/') + 1)
+	codeBase: document.documentURI.substring(0, document.documentURI.lastIndexOf('/') + 1),
+	disableScriptCaching: false
 });
 
 Config.onWindowResizeUpdateWorldBounds = true;
