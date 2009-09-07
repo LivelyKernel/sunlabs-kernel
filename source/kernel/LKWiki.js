@@ -1197,6 +1197,7 @@ Object.extend(WikiWorldNodeMorph, {
 			if (filename.endsWith('.js') ||
 		 			filename.endsWith('.txt') ||
 		 			filename.endsWith('.htpasswd') ||
+					filename.endsWith('.htaccess') ||
 		 			filename.endsWith('.lkml') ||
 					filename.endsWith('.jsp') ||
 					filename.startsWith('._') ||
