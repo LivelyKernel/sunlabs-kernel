@@ -901,6 +901,7 @@ extractLinksFromField: function(field) {
 	var regExExtractLink = /\"link\":\"([^\"]+)\"/;
 	var fieldText = field.textContent;
 	var linkProperties = fieldText.match(regExFindAllLinks);
+	if (!linkProperties) return [];
 	return linkProperties.collect(function(ea) { return ea.match(regExExtractLink)[1] });
 },
 
@@ -1007,7 +1008,7 @@ NodeMorph.subclass('WikiWorldNodeMorph', {
 		if (name.endsWith('.xhtml'))
 			name = name.substr(0, name.length-'.xhtml'.length);
 		this.addLabel(name);
-		this.shouldCreateLinks = true;
+		this.shouldCreateLinks = !this.isSpecialWorld();
 		this.lastUpdated = 0;
 		// ----
         var oldBorderColor = this.label.getBorderColor();
@@ -1020,6 +1021,10 @@ NodeMorph.subclass('WikiWorldNodeMorph', {
 	onDeserialize: function($super) {
 		$super();
 		//this.initUpdateLinks();
+	},
+	
+	isSpecialWorld: function() {
+		return this.url.filename().startsWith('rk-wikiVis');
 	},
 	
 	getWikiWorldProxy: function() {
@@ -1099,12 +1104,12 @@ manuallyUpdateVersions: function() {
 
 
 addNewLinks: function(linkProxies) {
+	if (!this.shouldCreateLinks) return;
 	linkProxies.forEach(function(ea) {
 		if (ea === this.getWikiWorldProxy())
 			return;
 		var node = this.findNodeForProxy(ea);
 		if (!node) {
-			if (!this.shouldCreateLinks) return;
 			node = WikiWorldNodeMorph.create(ea.getURL());
 		}
 		if (this.isConnectedTo(node))
