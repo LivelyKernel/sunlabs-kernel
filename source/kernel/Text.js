@@ -1701,13 +1701,14 @@ undrawSelection: function() {
 		evt.hand.setMouseFocus(null);
 		evt.stop();  // else weird things happen when return from this link by browser back button
 
+		var url = URL.ensureAbsoluteURL(link);
         // add require to LKWiki.js here
-        var wikiNav = new WikiNavigator(new URL(link), null, -1 /*FIXME don't ask for the headrevision*/);
+        var wikiNav = new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
         if (!wikiNav.isActive())
-            this.world().confirm("Please confirm link to " + link,
+            this.world().confirm("Please confirm link to " + url.toString(),
                 function (answer) {
                     Config.askBeforeQuit = false;
-                    window.location.assign(link + '?' + new Date().getTime());
+                    window.location.assign(url.toString() + '?' + new Date().getTime());
                 }.bind(this));
         else wikiNav.askToSaveAndNavigateToUrl(this.world());
     },
@@ -2203,7 +2204,8 @@ undrawSelection: function() {
     linkifySelection: function(emph) {
         this.world().prompt("Enter the link you wish to find...",
 			    function(response) {
-			        if (!response.startsWith('http://')) response = URL.source.notSvnVersioned().withFilename(response).toString();
+			        /*if (!response.startsWith('http://'))
+						response = URL.source.notSvnVersioned().withFilename(response).toString();*/
 			        this.emphasizeSelection( {color: "blue", link: response} );
 			    }.bind(this));
     },

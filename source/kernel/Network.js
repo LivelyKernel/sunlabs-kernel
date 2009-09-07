@@ -201,7 +201,7 @@ URL.source = new URL(document.documentURI);
 URL.ensureAbsoluteURL = function(urlString) {
 	return /^http.*/.test(urlString) ?
 		new URL(urlString) :
-		URL.source.getDirectory().withRelativePath(urlString);
+		URL.source.notSvnVersioned().getDirectory().withRelativePath(urlString);
 };
 
 URL.proxy = (function() {
