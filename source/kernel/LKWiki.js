@@ -1181,7 +1181,7 @@ Object.extend(WikiWorldNodeMorph, {
 	lookForNewFiles: function(optProxies) {
 		var repourl=new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/');
 		var proxies = optProxies || WikiNetworkAnalyzer.forRepo(repourl).getWorldProxies();
-		console.log('looking/creating nodes for ' + proxies.length + ' proxies');
+		console.log('lookForNewFiles: ' + proxies.length + ' proxies');
 		for (var i = 0; i < proxies.length; i++) {
 			var ea = proxies[i];
 			var versions = ea.getVersions();
@@ -1197,6 +1197,7 @@ Object.extend(WikiWorldNodeMorph, {
 					filename.startsWith('._') ||
 		 			filename == 'auth' || filename == 'logout' ||
 					filename == URL.source.filename() || filename == 'CachedWorldMetaData' ||
+					filename.startsWith('rk-wikiVis') ||
 		 			ea.getURL().hostname != 'livelykernel.sunlabs.com')
 		 			    continue;
 			//console.log('Create for ' + ea.getURL());
