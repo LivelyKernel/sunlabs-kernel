@@ -1157,11 +1157,6 @@ handleDrop: function(nodeDroppedOntoMe) {
 	return true;
 },
 
-
-
-
-
-
 });
 
 // ===========================================================================
@@ -1185,8 +1180,6 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetNode', {
     asString: function() {
 		return this.target.name;
 	},
-
-
 
 });
 
@@ -1220,9 +1213,6 @@ saveSource: function(newSource) {
 		this.savedSource = this.target.getDefinition();
         return true;
     },
-
-
-
 
 });
 ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
@@ -1270,6 +1260,24 @@ pushChangesBack: function() {
 },
 
 });
+
+/* Double dispatch Change classes to browser nodes */
+ChangeSet.addMethods({
+	asNode: function(browser) { return new lively.ide.ChangeSetNode(this, browser) }
+});
+ClassChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassNode(this, browser) }
+});
+ProtoChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+});
+StaticChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+});
+DoitChange.addMethods({
+	asNode: function(browser) { return new ide.ChangeSetDoitNode(this, browser) }
+});
+
 
 ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 

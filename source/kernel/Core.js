@@ -4158,6 +4158,7 @@ PasteUpMorph.subclass("WorldMorph", {
             ["System code browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
             ["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world, evt.point())})}],
 			["Wiki code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {
+				// FIXME why is repo hard coded?
 				var repo = new URL('http://livelykernel.sunlabs.com/repository/lively-wiki/');
 				new ide.WikiCodeBrowser(repo).open()})}],
             ["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],

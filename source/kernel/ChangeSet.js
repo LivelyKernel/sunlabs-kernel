@@ -268,10 +268,6 @@ ensureCompatibility: function() {
 
 });
 
-ChangeSet.addMethods({
-	asNode: function(browser) { return new lively.ide.ChangeSetNode(this, browser) }
-});
-
 Object.extend(ChangeSet, {
 
 	fromWorld: function(worldOrNode) {
@@ -348,10 +344,6 @@ asJs: function() {
 
 });
 
-ClassChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassNode(this, browser) }
-});
-
 Object.extend(ClassChange, {
 
 	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'class' },
@@ -389,9 +381,6 @@ asJs: function() {
 
 });
 
-ProtoChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
-});
 
 Object.extend(ProtoChange, {
 	
@@ -426,10 +415,6 @@ Change.subclass('StaticChange', {
 
 });
 
-StaticChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
-});
-
 Object.extend(StaticChange, {
 
 	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'static' },
@@ -459,10 +444,6 @@ Change.subclass('DoitChange', {
 		return result;
 	},
 
-});
-
-DoitChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetDoitNode(this, browser) }
 });
 
 Object.extend(DoitChange, {
