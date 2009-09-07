@@ -879,7 +879,12 @@ extractLinksFromDocument: function(doc) {
 		return this.extractLinkFromUrlNode(ea);
 	}, this));
 	var urls = strings.uniq().inject([], function(all, string) {
-		var url = URL.ensureAbsoluteURL(string);
+		try {
+			var url = URL.ensureAbsoluteURL(string);
+		} catch(e) {
+			console.log('Couldn\'t create URL from ' + string);
+			return urls;
+		}
 		if (this.url)
 			if (!url.toString().startsWith(this.url.toString())) return all;
 		if (url.isLeaf()) all.push(url);
