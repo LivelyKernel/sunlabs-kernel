@@ -2097,6 +2097,11 @@ Morph.addMethods({
 	return this.owner.validatedWorld();
     },
 
+	openInWorld: function(loc) {
+        WorldMorph.current().addMorph(this);
+        loc && this.setPosition(loc);
+    },
+	
     toString: function() {
 	try {
 	    return Strings.format("%s(%s)", this.rawNode && this.id() || "" , 

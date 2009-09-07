@@ -1,12 +1,5 @@
 module('lively.Helper').requires().toRun(function() {
 
-// extension to Morphs
-Morph.addMethods({
-    openInWorld: function(loc) {
-        WorldMorph.current().addMorph(this);
-        loc && this.setPosition(loc);
-    }
-});
 // this.getRichText().asMorph().openInWorld()
 
 /*
