@@ -656,6 +656,7 @@ Object.subclass('WikiNetworkAnalyzer', {
 	initialize: function(wikiURL) {
 		this.url = wikiURL;
 		this.worldProxies = [];
+		this.updateLoopId = null;
 	},
 
 getWorldProxies: function() { return this.worldProxies },
@@ -805,6 +806,15 @@ readStateFromFile: function(optCb) {
 		model: {read: function() { eval(r.getResponseText()); optCb && optCb() }}});
 	r.get(url);
 },
+stopUpdateLoop: function() {
+	if (!this.updateLoopId) {
+		console.log('No updateLoopId found. Doing nothing.');
+		return
+	}
+	console.log('Stopping update loop for ' + this.url.toString());
+	Global.window.clearInterval(this.updateLoopId);
+},
+
 
 
 
@@ -841,27 +851,24 @@ startUp: function(url) {
 	startUpdateLoop: function(repoUrl) {
 		// FIXME use SchedulableAction!
 		console.log('Updating for news from wiki...');
-		Global.window.setInterval(function() {WikiNetworkAnalyzer.updateOnce(repoUrl)}, 1000*6);
+		var analyzer = WikiNetworkAnalyzer.forRepo(repoUrl);
+		analyzer.updateLoopId = Global.window.setInterval(
+			function() {WikiNetworkAnalyzer.updateOnce(analyzer)}, 1000*6);
 	},
 	
-	updateOnce: function(repoUrl) {
-		var a = WikiNetworkAnalyzer.forRepo(repoUrl);
-		var worldCount = a.getWorldProxies().length;
+	updateOnce: function(analyzer) {
+		var worldCount = analyzer.getWorldProxies().length;
 		// look for new versions in repo, create proxies if a new world was created
 		// and update existing proxies
 		var cb = function() {
-			if (a.getWorldProxies().length == worldCount) return;
-			WikiWorldNodeMorph.lookForNewFiles(a.getWorldProxies().slice(worldCount));
+			if (analyzer.getWorldProxies().length == worldCount) return;
+			WikiWorldNodeMorph.lookForNewFiles(analyzer.getWorldProxies().slice(worldCount));
 		}
-		a.fetchProxies(null, null, cb);
-		
-		// proxies and NodeMorphs are seperated, inform morphs
-		// that new worlds were created
-		
+		analyzer.fetchProxies(null, null, cb);		
 	}
 });
 
-	Object.subclass('LinkExtractor', {
+Object.subclass('LinkExtractor', {
 
 	documentation: 'Extracts Link URLs from a document',
 
