@@ -1206,14 +1206,6 @@ BoxMorph.subclass('TextMorph', {
 		["color (o)", this.colorSelection.bind(this)],
 		["make link (u)", this.linkifySelection.bind(this)],
 		["help", this.doHelp.bind(this)],
-		["add as preamble to current ChangeSet", function() {
-			var cs = ChangeSet.current();
-			cs.addOrChangePreamble(this.getSelectionString());
-			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
-		["add as postscript to current ChangeSet", function() {
-			var cs = ChangeSet.current();
-			cs.addOrChangePostscript(this.getSelectionString());
-			if (lively.Tools.SourceControl) lively.Tools.SourceControl.updateBrowsers(); }],
 		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
 		["evaluate as Lively markup", function() { 
 			var importer = new Importer();

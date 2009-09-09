@@ -978,6 +978,15 @@ writeChangeSet: function(cs) {
 	r.store(content);
 },
 
+isDeleted: function() {
+	var versions = this.getVersions();
+	if (versions.length == 0)
+		return false; //hmmm?
+	var latest = this.getVersions().first();
+	if (!latest.change) // no change  attribute there, we cannot be sure
+		return false;
+	return latest.change.endsWith('deleted');
+},
 
 localName: function() {
 	if (!this.getURL())
@@ -1050,20 +1059,26 @@ initUpdateLinks: function() {
 
 onLinksUpdate: function(linkProxies) {
 	this.addNewLinks(linkProxies);
-	//this.removeOldLinks(linkProxies);
+	this.removeOldLinks(linkProxies);
 },
 onExistingUpdate: function(exists) {
 	if (!this.label) return;
-    // if (!exists)
-    //  this.label.applyStyle({fill: Color.yellow, fillOpacity: 0.5, fontSize: 8});
-    // else
-    //  this.label.applyStyle({fill: Color.white, fillOpacity: 1, fontSize: 9});
+    if (!exists)
+     this.label.applyStyle({fill: Color.yellow, fillOpacity: 0.5, fontSize: 8});
+    else
+     this.label.applyStyle({fill: Color.white, fillOpacity: 1, fontSize: 9});
 },
 onVersionsUpdate: function(versions) {
     // if (versions.length == 0 && this.url.hostname == this.getWikiWorldProxy().getRepoURL().hostname)
     //     this.onExistingUpdate(false);
     // else
     //     this.onExistingUpdate(true);
+	if (versions.length == 0) return;
+	if (versions.first().change.endsWith('deleted')) {
+		if (this.connectedNodes().length = 0) this.remove();
+		this.getWikiWorldProxy().setExisting(false);
+		return;
+	}
 	if (versions.length > 0 && versions.first().rev != this.lastUpdatedRev) {
 		this.lastUpdatedRev = versions.first().rev;
 		this.initUpdateLinks(); // hmmm
@@ -1209,9 +1224,9 @@ Object.extend(WikiWorldNodeMorph, {
 					filename.endsWith('.jsp') ||
 					filename.startsWith('._') ||
 		 			filename == 'auth' || filename == 'logout' ||
-					filename == URL.source.filename() || filename == 'CachedWorldMetaData' ||
-					filename.startsWith('rk-wikiVis') ||
-		 			ea.getURL().hostname != 'livelykernel.sunlabs.com')
+					filename == 'CachedWorldMetaData' ||
+					filename == 'Makefile' ||
+					ea.getURL().hostname != 'livelykernel.sunlabs.com')
 		 			    continue;
 			//console.log('Create for ' + ea.getURL());
 			WikiWorldNodeMorph.create(ea.getURL());
