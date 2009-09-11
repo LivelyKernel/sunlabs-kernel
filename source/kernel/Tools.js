@@ -1925,15 +1925,19 @@ ChangeList.subclass('SourceDatabase', {
     
     interestingLKFileNames: function() {
         var kernelFileNames = new FileDirectory(URL.source).filenames();
-        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames().collect(function(ea) { return 'Tests/' + ea });
-		var ometaFileNames = [];//new FileDirectory(URL.source.withFilename('ometa/')).filenames().collect(function(ea) { return 'ometa/' + ea });
-        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames).select(function(ea) { return ea.endsWith('.js') || ea.endsWith('.lkml') });
+        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames();
+		testFileNames = testFileNames.collect(function(ea) { return 'Tests/' + ea });
+		/* OMeta */
+		// var ometaFileNames = new FileDirectory(URL.source.withFilename('ometa/')).filenames();
+		// ometaFileNames = ometaFileNames.collect(function(ea) { return 'ometa/' + ea });
+		var ometaFileNames = [];
+		/* filter */
+        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames);
+		jsFiles = jsFiles.select(function(ea) { return ea.endsWith('.js') || ea.endsWith('.lkml') || ea.endsWith('.txt') });
         jsFiles = jsFiles.uniq();
-        // FIXME remove
-        var rejects = [/*"Contributions.js", "Develop.js", "GridLayout.js", "obsolete.js", "requireTest01.js", "rhino-compat.js", "Serialization.js",*/ "test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js", 'JSON.js'];
+        var rejects = ["test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js", 'JSON.js'];
 		jsFiles = jsFiles.reject(function(ea) { return rejects.include(ea) });
-		var otherFiles = ['LKFileParser.txt'];
-		return jsFiles.concat(otherFiles);
+		return jsFiles;
     },
 
 });
