@@ -694,7 +694,15 @@ var Functions = {
     K: function(arg) { return arg; },
     Null: function() { return null; },
     False: function() { return false; },
-    True: function() { return true; }
+    True: function() { return true; },
+	all: function(object) {
+		var a = [];
+		for (var name in object) {  
+	    	if (object[name] instanceof Function)
+				a.push(name);
+		} 
+		return a;
+    },
 };
     
 var Properties = {
@@ -853,7 +861,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
     },
     
     load: function() {
-        if (this.isLoaded()) return;
+		if (this.isLoaded()) return;
         if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
             this.runOnloadCallbacks();
             this.loaded = true;

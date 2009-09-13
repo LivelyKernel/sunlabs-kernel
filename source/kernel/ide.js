@@ -427,9 +427,10 @@ Object.subclass('lively.ide.BrowserNode', {
  
     documentation: 'Abstract node, defining the node interface',
  
-    initialize: function(target, browser) {
+    initialize: function(target, browser, parent) {
         this.target = target;
         this.browser = browser;
+		this.parent = parent;
     },
  
     siblingNodes: function() {
@@ -437,8 +438,10 @@ Object.subclass('lively.ide.BrowserNode', {
         return this.browser.siblingsFor(this);
     },
 
-
- 
+	parent: function() {
+		return this.parent;
+	},
+	
     childNodes: function() {
         return []
     },
@@ -606,8 +609,7 @@ initialize: function($super) {
 rootNode: function() {
 	ide.startSourceControl();
 	if (!this._rootNode)
-	this._rootNode = new ide.SourceControlNode(tools.SourceControl, this);
-	// this._rootNode = new ide.EnvironmentNode(Global, this);
+	this._rootNode = new ide.SourceControlNode(tools.SourceControl, this, null);
 	return this._rootNode;
 },
 commands: function() {
@@ -700,7 +702,7 @@ initialize: function($super, wikiUrl) {
 rootNode: function() {
 	ide.startSourceControl();
 	if (!this._rootNode)
-		this._rootNode = new lively.ide.WikiCodeNode(WikiNetworkAnalyzer.forRepo(this.wikiUrl), this);
+		this._rootNode = new lively.ide.WikiCodeNode(WikiNetworkAnalyzer.forRepo(this.wikiUrl), this, null);
 	return this._rootNode;
 },
 commands: function() {
@@ -728,11 +730,11 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 		for (var i = 0; i < allFiles.length; i++) {
 			var fn = allFiles[i];
 			if (fn.endsWith('.js')) {
-				nodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, fn));
+				nodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
 			} else if (fn.endsWith('.txt')) {
-				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, fn));
+				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
 			} else if (fn.endsWith('.lkml')) {
-				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser));
+				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser, this));
 			}
 		};
 		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
@@ -744,9 +746,9 @@ ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
     
 	documentation: 'The rootNode which gets the code from worlds of a wiki',
 
-	initialize: function($super, target, browser) {
+	initialize: function($super, target, browser, parent) {
 		"console.assert(target instanceof WikiNetworkAnalyzer);"
-		$super(target, browser);
+		$super(target, browser, parent);
 		this.worldsWereFetched = false;
     },
     childNodes: function() {
@@ -761,7 +763,7 @@ ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
 		});
 		nodes = nodes.concat(
 			proxies.collect(function(ea) {
-				return new lively.ide.RemoteChangeSetNode(null, this.browser, ea);
+				return new lively.ide.RemoteChangeSetNode(null, this.browser, this, ea);
 		}, this));
 		this._childNodes = nodes;
 		return nodes;
@@ -843,8 +845,8 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
  
 	maxStringLength: 10000,
 
-    initialize: function($super, target, browser, moduleName) {
-        $super(target, browser);
+    initialize: function($super, target, browser, parent, moduleName) {
+        $super(target, browser, parent);
         this.moduleName = moduleName;
 		this.showAll = false;
     },
@@ -950,10 +952,13 @@ ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
 		var browser = this.browser;
 		var ometaNodes = fileDef.subElements()
 			.select(function(ea) { return ea.type === 'ometaDef'})
-			.collect(function(ea) { return new ide.OMetaGrammarNode(ea, browser) });
+			.collect(function(ea) { return new ide.OMetaGrammarNode(ea, browser, this) });
+/***/
+ometaNodes.forEach(function(ea) { console.log(ea.target.name) });
+/***/
 		var rest = fileDef.subElements()
 			.select(function(ea) { return !fileDef.subElements().include(ea) })
-			.collect(function(ea) { return new ide.ObjectFragmentNode(ea, browser) });
+			.collect(function(ea) { return new ide.ObjectFragmentNode(ea, browser, this) });
 		return ometaNodes.concat(rest);
     },
 
@@ -965,7 +970,7 @@ ide.FileFragmentNode.subclass('lively.ide.OMetaGrammarNode', {
 		var def = this.target;
 		var browser = this.browser;
 		return this.target.subElements()
-			.collect(function(ea) { return new ide.OMetaRuleNode(ea, browser) });
+			.collect(function(ea) { return new ide.OMetaRuleNode(ea, browser, this) });
 	},
 
 });
@@ -980,7 +985,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
         return classFragment.subElements()
             .select(function(ea) { return ea.type === 'propertyDef' })
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-            .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
+            .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser, this) });
     },
 
 	menuSpec: function($super) {
@@ -1027,7 +1032,7 @@ ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
         return obj.subElements()
             .select(function(ea) { return ea.type === 'propertyDef' })
             // .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-            .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser) });
+            .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser, this) });
     },
 
 	menuSpec: ide.ClassFragmentNode.prototype.menuSpec, // FIXME
@@ -1217,9 +1222,9 @@ saveSource: function(newSource) {
 });
 ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
 
-	initialize: function($super, target, browser, worldProxy) {
+	initialize: function($super, target, browser, parent, worldProxy) {
 		// target will become a ChangeSet when world is loaded but can now be undefined
-        $super(target, browser);
+        $super(target, browser, parent);
         this.worldProxy = worldProxy;
     },
 childNodes: function($super) {
@@ -1263,19 +1268,19 @@ pushChangesBack: function() {
 
 /* Double dispatch Change classes to browser nodes */
 ChangeSet.addMethods({
-	asNode: function(browser) { return new lively.ide.ChangeSetNode(this, browser) }
+	asNode: function(browser, parent) { return new lively.ide.ChangeSetNode(this, browser, parent) }
 });
 ClassChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassNode(this, browser) }
+	asNode: function(browser, parent) { return new ide.ChangeSetClassNode(this, browser, parent) }
 });
 ProtoChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+	asNode: function(browser, parent) { return new ide.ChangeSetClassElemNode(this, browser, parent) }
 });
 StaticChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetClassElemNode(this, browser) }
+	asNode: function(browser, parent) { return new ide.ChangeSetClassElemNode(this, browser, parent) }
 });
 DoitChange.addMethods({
-	asNode: function(browser) { return new ide.ChangeSetDoitNode(this, browser) }
+	asNode: function(browser, parent) { return new ide.ChangeSetDoitNode(this, browser, parent) }
 });
 
 
