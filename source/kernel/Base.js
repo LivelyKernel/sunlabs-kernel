@@ -861,7 +861,10 @@ Namespace.addMethods({ // module specific, should be a subclass?
     },
     
     load: function() {
-		if (this.isLoaded()) return;
+		if (this.isLoaded()) {
+			this.runOnloadCallbacks();
+			return;
+		}
         if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
             this.runOnloadCallbacks();
             this.loaded = true;
