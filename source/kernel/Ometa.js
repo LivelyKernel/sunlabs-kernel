@@ -20,6 +20,7 @@ OMetaSupport = {
         str += '\n});';
         var dir = new FileDirectory(url);
         dir.writeFileNamed(destFileName, str);
+		console.log(Strings.format('Successfully compiled OMeta grammar %s to %s', sourceFileName, destFileName));
     },
     
     ometaEval: function(src) {
