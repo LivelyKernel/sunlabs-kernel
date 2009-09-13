@@ -1878,7 +1878,7 @@ ChangeList.subclass('SourceDatabase', {
         var fileString;
         var action = function(fileStringArg) { fileString = fileStringArg };
         this.getCachedTextAsync(fileName, action, true);
-        return fileString;
+        return fileString || '';
     },
     
     getCachedTextAsync: function(fileName, action, beSync) {
