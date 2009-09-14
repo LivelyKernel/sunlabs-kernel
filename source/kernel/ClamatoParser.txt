@@ -5,15 +5,17 @@ ometa ClamatoParser <: Parser {
 	binaryOp = spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
 	keywordPart = spaces identifier:x ':' -> {x + ':'},
 	variable = spaces identifier:x -> {isVariable: true, name: x},
-	literal = numberLiteral:v -> {isLiteral: true, value: v},
+	literal = (stringLiteral | numberLiteral):v -> {isLiteral: true, value: v},
 	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
 		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
+  stringLiteral = '\'' (token('\'\'') -> '\'' | ~'\'' char)+:val '\'' -> val.join(''),
+
 
 	/* ---- expressions ---- */	
+	primary = spaces (variable | literal | '(' expression:e ')' -> e),
 	expression = assignment | evaluation,
 	assignment = variable:vari token(':=') expression:val -> {isAssignment: true, variable: vari, value: val},
 	evaluation = keywordMsg,
-	primary = spaces (variable | literal | '(' expression:e ')' -> e),
 	messageSend = (unaryMsg | binaryMsg | keywordMsg):node -> {node.isMessage = true; node},
 	unaryMsg = primary:rec (unaryId:msgName)*:msgs 	-> {
 						msgs.inject(rec, function(receiver, mName) {

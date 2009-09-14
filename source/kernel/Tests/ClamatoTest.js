@@ -134,6 +134,22 @@ test07bAssignment: function() {
 	this.assertEqual('yz', result.value.variable.name, 'wrong var name 2');
 	this.assert(result.value.value.isLiteral , 'value.value not literal');
 },
+test08aString: function() {
+	var string = ' this is a string';
+	var src = '\'' + string + '\'';
+	var result = this.parse('expression', src);
+	this.assert(result.isLiteral , 'no string');
+	this.assertEqual(string, result.value, 'didnt recognize string');
+},
+test08bStringWithEscapedQuote: function() {
+	var string = 'That\'s fun';
+	var src = '\'That\'\'s fun\'';
+	var result = this.parse('expression', src);
+	this.assert(result.isLiteral , 'no string');
+	this.assertEqual(string, result.value, 'didnt recognize string');
+},
+
+
 
 
 
