@@ -1,5 +1,10 @@
 ometa ClamatoParser <: Parser {
+	/* helper */
+	opt:rule = apply(rule) | empty,
+fromTo :x :y = seq(x) (~seq(y) char)* seq(y), 
+
 	/* ---- recognizing tokens ---- */	
+	space = super(#space) | fromTo('"', '"'),
 	identifier = letter:x letterOrDigit*:xs -> [x].concat(xs).join(''),
 	unaryId = spaces identifier:x ~':' -> x,
 	binaryOp = spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
@@ -12,7 +17,7 @@ ometa ClamatoParser <: Parser {
 
 
 	/* ---- expressions ---- */	
-	primary = spaces (variable | literal | '(' expression:e ')' -> e),
+	primary = spaces (variable | literal | '(' expression:e ')' -> e | block),
 	expression = assignment | evaluation,
 	assignment = variable:vari token(':=') expression:val -> {isAssignment: true, variable: vari, value: val},
 	evaluation = keywordMsg,
@@ -35,9 +40,18 @@ ometa ClamatoParser <: Parser {
 								args: [mNameAndArg[1]]
 							} })},
 	keywordMsg = binaryMsg:rec (keywordPart:keyword binaryMsg:arg -> [keyword, arg])+:partsAndArgs -> {
-								var name = ''; var args = []; partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
-								{isMessage: true, messageName: name, args: args, isKeyword: true, receiver: rec}}
+		var name = ''; var args = []; partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
+		{isMessage: true, messageName: name, args: args, isKeyword: true, receiver: rec}}
 						| binaryMsg,
+block = token('[') opt(#blockArgs):args opt(#declaredVars):declared opt(#sequence):s token(']') ->
+	{isBlock: true, sequence: s, args: args, declaredVars: declared},
+blockArgs = (token(':') variable:v -> v)+:vars token('|') -> vars,
+
+
+	/* method related */
+	sequence = (expression:e ( token('.') | empty ) -> e)+:exprs -> {isSequence: true, children: exprs},
+declaredVars = token('|') (variable:v)*:vars token('|') -> vars,
+
 
 	/* ---- helper ----- */
 	log:x -> {console.log(x); true}

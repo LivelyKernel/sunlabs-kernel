@@ -148,6 +148,42 @@ test08bStringWithEscapedQuote: function() {
 	this.assert(result.isLiteral , 'no string');
 	this.assertEqual(string, result.value, 'didnt recognize string');
 },
+test09aParseSequence: function() {
+	var src = 'x foo. x := 1+2. x + bar';
+	var result = this.parse('sequence', src);
+xx=result;
+	this.assert(result.isSequence , 'no sequence');
+	this.assertEqual(3, result.children.length, 'block squence length wrong');
+	this.assert(result.children[0].isUnary, 'wrong expression in block 1');
+	this.assert(result.children[1].isAssignment, 'wrong expression in block 2');
+	this.assert(result.children[2].isBinary, 'wrong expression in block 3');
+},
+
+test10aParseBlockWithoutArgs: function() {
+	var src = '[1+ 3.  ]';
+	var result = this.parse('expression', src);
+	this.assert(result.isBlock , 'no block');
+	this.assertEqual(1, result.sequence.children.length, 'block squence wrong');
+	this.assert(result.sequence.children[0].isBinary, 'wrong expression in block');
+},
+test10bParseBlockWithDeclaredVariables: function() {
+	var src = '[:a |  |x yz | ]';
+	var result = this.parse('expression', src);
+	this.assert(result.isBlock , 'no block');
+	this.assertEqual(2, result.declaredVars.length, 'declaredVars length wrong');
+	this.assertEqual('x', result.declaredVars[0].name, 'first var');
+	this.assertEqual('yz', result.declaredVars[1].name, 'second var');
+},
+
+test11aParseCommentsAsWithspace: function() {
+	var src = ' x+ "this is a comment" yz';
+	var result = this.parse('expression', src);
+	this.assert(result.isBinary , 'not binary');
+	this.assertEqual('x', result.receiver.name);
+	this.assertEqual('yz', result.args[0].name);
+},
+
+
 
 
 
