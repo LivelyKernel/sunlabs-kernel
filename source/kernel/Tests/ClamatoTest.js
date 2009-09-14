@@ -183,17 +183,34 @@ test11aParseCommentsAsWithspace: function() {
 	this.assertEqual('yz', result.args[0].name);
 },
 
-
-
-
-
-
-
-
-
-
-
-
+test12aClamatoMethod: function() {
+	var src = '- foo\n\
+	@selector := \'xyz\'.\n\
+	self.';
+	var result = this.parse('clamatoMethod', src);
+	this.assert(result.isMethod, 'not a method');
+	this.assertEqual('foo', result.methodName, 'wrong name');
+	this.assertEqual(2, result.sequence.children.length, 'wrong sequence');
+	this.assert(result.sequence.children[0].isAssignment, 'wrong sequence 1');
+	this.assert(result.sequence.children[1].isVariable, 'wrong sequence 2');
+},
+test12bBinaryMethod: function() {
+	var src = '- ++ arg\n\
+	self + arg.';
+	var result = this.parse('clamatoMethod', src);
+	this.assert(result.isMethod, 'not a method');
+	this.assertEqual('++', result.methodName, 'wrong name');
+	this.assertEqual('arg', result.args[0], 'wrong arg name');
+},
+test12cKeywordMethod: function() {
+	var src = '- foo: arg1 bar:arg2\n\
+	arg1 baz: arg2.';
+	var result = this.parse('clamatoMethod', src);
+	this.assert(result.isMethod, 'not a method');
+	this.assertEqual('foo:bar:', result.methodName, 'wrong name');
+	this.assertEqual('arg1', result.args[0], 'wrong arg name');
+	this.assertEqual('arg2', result.args[1], 'wrong arg name');
+},
 
 
 

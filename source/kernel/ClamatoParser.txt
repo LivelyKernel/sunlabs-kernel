@@ -1,6 +1,6 @@
 ometa ClamatoParser <: Parser {
 	/* helper */
-	opt:rule = apply(rule) | empty,
+	opt:rule = apply(rule) | empty -> null,
 fromTo :x :y = seq(x) (~seq(y) char)* seq(y), 
 
 	/* ---- recognizing tokens ---- */	
@@ -10,6 +10,8 @@ fromTo :x :y = seq(x) (~seq(y) char)* seq(y),
 	binaryOp = spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
 	keywordPart = spaces identifier:x ':' -> {x + ':'},
 	variable = spaces identifier:x -> {isVariable: true, name: x},
+instanceVariable = token('@') identifier:x -> {isVariable: true, isInstance: true, name: '@' + x},
+
 	literal = (stringLiteral | numberLiteral):v -> {isLiteral: true, value: v},
 	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
 		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
@@ -17,9 +19,14 @@ fromTo :x :y = seq(x) (~seq(y) char)* seq(y),
 
 
 	/* ---- expressions ---- */	
-	primary = spaces (variable | literal | '(' expression:e ')' -> e | block),
+	primary = spaces (variable | instanceVariable | literal | '(' expression:e ')' -> e | block),
 	expression = assignment | evaluation,
-	assignment = variable:vari token(':=') expression:val -> {isAssignment: true, variable: vari, value: val},
+	assignment = (variable | instanceVariable):vari token(':=') expression:val
+	-> {
+		isAssignment: true,
+		variable: vari,
+		value: val
+	},
 	evaluation = keywordMsg,
 	messageSend = (unaryMsg | binaryMsg | keywordMsg):node -> {node.isMessage = true; node},
 	unaryMsg = primary:rec (unaryId:msgName)*:msgs 	-> {
@@ -30,14 +37,14 @@ fromTo :x :y = seq(x) (~seq(y) char)* seq(y),
 								isUnary: true,
 								receiver: receiver
 							} })},
-	binaryMsg = unaryMsg:rec (binaryOp:msgName unaryMsg:arg -> [msgName, arg])*:msgs -> {
-						msgs.inject(rec, function(receiver, mNameAndArg) {
+	binaryMsg = unaryMsg:rec (binaryOp:msgName unaryMsg:arg -> [msgName, [arg]])*:msgs -> {
+						msgs.inject(rec, function(receiver, mNameAndArgs) {
 							return {
 								isMessage: true,
-								messageName: mNameAndArg[0],
+								messageName: mNameAndArgs[0],
 								isBinary: true,
 								receiver: receiver,
-								args: [mNameAndArg[1]]
+								args: mNameAndArgs[1]
 							} })},
 	keywordMsg = binaryMsg:rec (keywordPart:keyword binaryMsg:arg -> [keyword, arg])+:partsAndArgs -> {
 		var name = ''; var args = []; partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
@@ -50,7 +57,28 @@ blockArgs = (token(':') variable:v -> v)+:vars token('|') -> vars,
 
 	/* method related */
 	sequence = (expression:e ( token('.') | empty ) -> e)+:exprs -> {isSequence: true, children: exprs},
-declaredVars = token('|') (variable:v)*:vars token('|') -> vars,
+	declaredVars = token('|') (variable:v)*:vars token('|') -> vars,
+	clamatoMethod =
+	token('-')
+	methodNameAndArgs:nameAndArgs
+	opt(#declaredVars):vars
+	opt(#sequence):seq
+	-> {
+			isMethod: true,
+			methodName: nameAndArgs[0],
+			args: nameAndArgs[1],
+			declaredVars: vars,
+			sequence: seq
+	},
+methodNameAndArgs =
+	( (keywordPart:keyword spaces identifier:arg -> [keyword, arg])+:partsAndArgs
+		-> {var name = ''; var args = [];
+			partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
+			[name, args]}
+	| binaryOp:msgName spaces identifier:arg -> [msgName, [arg]]
+	| unaryId:msgName -> [msgName, null]
+	),
+
 
 
 	/* ---- helper ----- */
