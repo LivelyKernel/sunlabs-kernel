@@ -13,7 +13,7 @@ ometa ClamatoParser <: Parser {
 	expression = (assignation | evaluation):x -> x,
 	assignation = 9,
 	evaluation = keywordMsg,
-	primary = spaces (variable | literal),
+	primary = spaces (variable | literal | '(' expression:e ')' -> e),
 	messageSend = (unaryMsg | binaryMsg | keywordMsg):node -> {node.isMessage = true; node},
 	unaryMsg = primary:rec (unaryId:msgName)*:msgs 	-> {
 						msgs.inject(rec, function(receiver, mName) {

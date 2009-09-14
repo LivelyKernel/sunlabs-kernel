@@ -52,6 +52,15 @@ test03bKeywordyMessageSend: function() {
 	this.assert(result.args[2].isLiteral);
 	this.assertEqual(23, result.args[2].value);
 },
+test03cKeywordAndBinary: function() {
+	var src = 'x + y foo: 1';
+	var result = this.parse('expression', src);
+	this.assert(result.isKeyword , 'not keyword');
+	this.assertEqual('foo:', result.messageName, 'wrong message name');
+	this.assert(result.args[0].isLiteral , 'not literal arg');
+	this.assert(result.receiver.isBinary , 'not binary receiver');
+},
+
 
 test04aChainedUnaryMessages: function() {
 	var src = 'x foo bar';
@@ -78,6 +87,40 @@ test04aChainedUnaryMessages: function() {
 	this.assertEqual(1, result.args[0].value, 'wrong arg 2');
 	this.assert(result.receiver.isVariable , 'wrong receiver 2');
 },
+test05UnaryBinaryKeywordMessage: function() {
+	var src = 'x foo: 2--3 bar: 1 baz';
+	var result = this.parse('expression', src);
+	this.assert(result.isKeyword , 'not keyword');
+	this.assertEqual('foo:bar:', result.messageName, 'wrong message name');
+	this.assertEqual('x', result.receiver.name, 'wrong receiver name');
+	/* -------- */
+	this.assert(result.args[0].isBinary , 'first arg not binary');
+	this.assertEqual(2, result.args[0].receiver.value, 'first arg wrong receiver');
+	this.assertEqual(3, result.args[0].args[0].value, 'first arg wrong arg');
+	this.assertEqual('--', result.args[0].messageName, 'first arg wrong msgName');
+	/* -------- */
+	this.assert(result.args[1].isUnary , 'secon arg not unary');
+	this.assertEqual('baz', result.args[1].messageName, 'second arg wrong msgName');
+	this.assertEqual(1, result.args[1].receiver.value, 'second arg wrong receiver');
+},
+test06aSubexpressionAndUnary: function() {
+	var src = '(x + y) foo';
+	var result = this.parse('expression', src);
+	this.assert(result.isUnary , 'not unary');
+	this.assertEqual('foo', result.messageName, 'wrong message name');
+	this.assert(result.receiver.isBinary , 'not binary');
+},
+test06bSubexpressionAndUnary: function() {
+	var src = 'x + (y foo: 1)';
+	var result = this.parse('expression', src);
+	this.assert(result.isBinary , 'not binary');
+	this.assertEqual('+', result.messageName, 'wrong message name');
+	this.assert(result.args[0].isKeyword , 'not Keyword');
+	this.assertEqual('foo:', result.args[0].messageName , 'wrong Keyword');
+},
+
+
+
 
 
 
