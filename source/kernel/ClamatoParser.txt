@@ -1,0 +1,17 @@
+ometa ClamatoParser <: Parser {
+	/* ---- recognizing tokens ---- */	
+	identifier = letter:x letterOrDigit*:xs -> [x].concat(xs).join(''),
+	unaryId = identifier:x ~':' -> x,
+
+	/* ---- expressions ---- */
+	variable = identifier:x -> {isVariable: true, name: x},
+	expression = (assignation | evaluation):x -> x,
+	assignation = 9,
+	evaluation = primary:rec spaces (messageSend | empty -> {}):node -> {node.receiver = rec; node},
+	primary = variable,
+	messageSend = unaryMessage:node -> {node.isMessage = true; node},
+	unaryMessage = unaryId:name -> {messageName: name, isUnary: true},
+
+	/* ---- helper ----- */
+	log:x -> console.log(x)
+}
