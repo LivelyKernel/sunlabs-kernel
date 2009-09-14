@@ -57,15 +57,29 @@ blockArgs = (token(':') variable:v -> v)+:vars token('|') -> vars,
 	clamatoMethod =
 	token('-')
 	methodNameAndArgs:nameAndArgs
-	opt(#declaredVars):vars
-	opt(#sequence):seq
+	(primitiveBody | stMethodBody):methodNode
 	-> {
-			isMethod: true,
-			methodName: nameAndArgs[0],
-			args: nameAndArgs[1],
-			declaredVars: vars,
-			sequence: seq
+			methodNode.isMethod = true;
+			methodNode.methodName = nameAndArgs[0];
+			methodNode.args = nameAndArgs[1];
+			methodNode
 	},
+stMethodBody = opt(#declaredVars):vars opt(#sequence):seq
+	-> {
+		declaredVars: vars,
+		sequence: seq
+	},
+primitiveBody =
+	token('{') -> {$elf.count = 0}
+	( ~'}' char:c -> {if (c=='{') $elf.count++; c} | ?($elf.count > 0) token('}'):t -> {$elf.count--; t}
+	)*:body
+	token('}')
+	-> { 
+		isPrimitive: true,
+		primitiveBody: '{' + body.join('') + '}' 
+	},
+
+
 methodNameAndArgs =
 	( (keywordPart:keyword spaces identifier:arg -> [keyword, arg])+:partsAndArgs
 		-> {var name = ''; var args = [];

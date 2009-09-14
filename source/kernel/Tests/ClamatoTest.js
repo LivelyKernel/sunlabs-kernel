@@ -5,7 +5,11 @@ setUp: function() {
 	this.parser = ClamatoParser;
 },
 parse: function(rule, src) {
-	return OMetaSupport.matchAllWithGrammar(this.parser, rule, src, null /*error callback*/);
+	var errorcb = function() {
+		console.log('parse error');
+		console.log(arguments);
+	}
+	return OMetaSupport.matchAllWithGrammar(this.parser, rule, src, errorcb);
 },
 test01ParseUnaryMessageSend: function() {
 	var src = 'x foo';
@@ -224,6 +228,24 @@ test13aParseClass: function() {
 	this.assertEqual('Object', result.className, 'wrong name');
 	this.assertEqual(2, result.methods.length, 'wrong number of methods');
 },
+test14aParseJsPrimitive: function() {
+	var body = '{ this.bar() }';
+	var src = '- foo ' + body;
+	var result = this.parse('clamatoMethod', src);
+	this.assert(result.isPrimitive, 'not a primitve');
+	this.assertEqual('foo', result.methodName, 'wrong name');
+	this.assertEqual(body, result.primitiveBody, 'wrong primBody');
+},
+test14bParseJsPrimitive: function() {
+	var body = '{ (function() { 1 + 2})() }';
+	var src = '- foo ' + body;
+	var result = this.parse('clamatoMethod', src);
+	this.assert(result.isPrimitive, 'not a primitve');
+	this.assertEqual('foo', result.methodName, 'wrong name');
+	this.assertEqual(body, result.primitiveBody, 'wrong primBody');
+},
+
+
 
 
 
