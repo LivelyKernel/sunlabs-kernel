@@ -892,26 +892,6 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
                     {label: 'objects', action: configFilter.curry([lively.ide.ObjectFragmentNode])}];
     },
     
-    menuSpec: function($super) {
-		var menu = $super();
-   		if (!this.target) return menu;
-		var node = this;
-		menu.unshift(['open ChangeList viewer', function() {
-			new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current()) }]);
-		menu.unshift(['reparse', function() {
-    		node.getSourceControl().reparseModule(node.moduleName, true);
-    		node.signalChange() }]);
-		menu.unshift(['toggle showAll', function() {
-    		node.showAll = !node.showAll;
-    		node.signalTextChange() }]);
-		return menu;
-   	
-            /*return [['load module', function() {
-    			node.loadModule();
-                node.signalChange();
-            }]];*/
-	},
-    
     sourceString: function($super) {
 		this.loadModule();
         //if (!this.target) return '';
@@ -934,31 +914,39 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 	},
     
 	menuSpec: function($super) {
-	var spec = $super();
-	var browser = this.browser;
-	var node = this;
-	var spec = spec.reject(function(ea) { return ea.first() == 'add sibling below' || ea.first() == 'remove' });
-	var addNewFile = ['add new file', function() {
-		var world = WorldMorph.current();
-		var createFileIfAbsent = function(filename) {
-			var dir = new FileDirectory(URL.source.getDirectory());
-			if (dir.fileOrDirectoryExists(filename)) {
-				world.notify('File ' + filename + ' already exists!');
-			} else {
-				dir.writeFileNamed(filename, '');
-				browser.sourceDatabase().update();
-				browser.allChanged();
-				browser.inPaneSelectNodeNamed(browser.paneNameOfNode(node), filename);
-			}
-		};
-		world.prompt('Enter filename', createFileIfAbsent)}];
-	var removeFile = ['remove', function() {
-		new FileDirectory(URL.source.getDirectory()).deleteFileNamed(node.moduleName);
-		browser.sourceDatabase().update();
-		browser.allChanged();
-	}]
-	spec.push(addNewFile, removeFile);
-	return spec;
+		var menu = [];
+   		if (!this.target) return menu;
+		var browser = this.browser;
+		var node = this;
+		menu.unshift(['load', function() {
+			try { node.target.getFileString() } catch (e) { WorldMorph.current().notify('Error: ' + e)} }]);
+		menu.unshift(['open ChangeList viewer', function() {
+			new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current()) }]);
+		menu.unshift(['reparse', function() {
+    		node.getSourceControl().reparseModule(node.moduleName, true);
+    		node.signalChange() }]);
+		menu.unshift(['toggle showAll', function() {
+    		node.showAll = !node.showAll;
+    		node.signalTextChange() }]);
+		menu.unshift(['add new file', function() {
+			var world = WorldMorph.current();
+			var createFileIfAbsent = function(filename) {
+				var dir = new FileDirectory(URL.source.getDirectory());
+				if (dir.fileOrDirectoryExists(filename)) {
+					world.notify('File ' + filename + ' already exists!');
+				} else {
+					dir.writeFileNamed(filename, '');
+					browser.sourceDatabase().update();
+					browser.allChanged();
+					browser.inPaneSelectNodeNamed('Pane1', filename);
+				}
+			};
+			world.prompt('Enter filename', createFileIfAbsent)}]);
+		menu.unshift(['remove', function() {
+			new FileDirectory(URL.source.getDirectory()).deleteFileNamed(node.moduleName);
+			browser.sourceDatabase().update();
+			browser.allChanged()}]);
+	return menu;
 },
 
     
