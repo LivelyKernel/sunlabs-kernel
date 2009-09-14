@@ -16,10 +16,22 @@ ometa ClamatoParser <: Parser {
 	primary = spaces (variable | literal),
 	messageSend = (unaryMsg | binaryMsg | keywordMsg):node -> {node.isMessage = true; node},
 	unaryMsg = primary:rec (unaryId:msgName)*:msgs 	-> {
-						msgs.inject(rec, function(receiver, mName) { return {isMessage: true, messageName: mName, isUnary: true, receiver: receiver} })},
+						msgs.inject(rec, function(receiver, mName) {
+							return {
+								isMessage: true,
+								messageName: mName,
+								isUnary: true,
+								receiver: receiver
+							} })},
 	binaryMsg = unaryMsg:rec (binaryOp:msgName unaryMsg:arg -> [msgName, arg])*:msgs -> {
 						msgs.inject(rec, function(receiver, mNameAndArg) {
-							return {isMessage: true, messageName: mNameAndArg[0], isBinary: true, receiver: receiver, args: [mNameAndArg[1]]} })},
+							return {
+								isMessage: true,
+								messageName: mNameAndArg[0],
+								isBinary: true,
+								receiver: receiver,
+								args: [mNameAndArg[1]]
+							} })},
 	keywordMsg = binaryMsg:rec (keywordPart:keyword binaryMsg:arg -> [keyword, arg])+:partsAndArgs -> {
 								var name = ''; var args = []; partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
 								{isMessage: true, messageName: name, args: args, isKeyword: true, receiver: rec}}

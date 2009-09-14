@@ -52,7 +52,19 @@ test03bKeywordyMessageSend: function() {
 	this.assert(result.args[2].isLiteral);
 	this.assertEqual(23, result.args[2].value);
 },
-test04bChainedBinaryMessages: function() {
+
+test04aChainedUnaryMessages: function() {
+	var src = 'x foo bar';
+	var result = this.parse('expression', src);
+	this.assert(result.isMessage, 'not a message node');
+	this.assert(result.isUnary , 'not unary');
+	this.assertEqual('bar', result.messageName, 'wrong message name');
+	result = result.receiver;
+	this.assert(result.isMessage, 'not a message node 2');
+	this.assert(result.isUnary , 'not unary 2');
+	this.assertEqual('foo', result.messageName, 'wrong message name 2');
+	this.assert(result.receiver.isVariable , 'wrong receiver 2');
+},test04bChainedBinaryMessages: function() {
 	var src = 'x + 1 * 2';
 	var result = this.parse('expression', src);
 	this.assert(result.isMessage, 'not a message node');
@@ -66,6 +78,7 @@ test04bChainedBinaryMessages: function() {
 	this.assertEqual(1, result.args[0].value, 'wrong arg 2');
 	this.assert(result.receiver.isVariable , 'wrong receiver 2');
 },
+
 
 
 
