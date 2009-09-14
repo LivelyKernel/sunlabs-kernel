@@ -11,7 +11,7 @@ instanceVariable = token('@') identifier:x -> {isVariable: true, isInstance: tru
 	literal = (stringLiteral | numberLiteral):v -> {isLiteral: true, value: v},
 	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
 		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
-  stringLiteral = '\'' (token('\'\'') -> '\'' | ~'\'' char)+:val '\'' -> val.join(''),
+  stringLiteral = '\'' (token('\'\'') -> '\'' | ~'\'' char)*:val '\'' -> val.join(''),
 
 
 	/* ---- expressions ---- */	
@@ -55,13 +55,14 @@ blockArgs = (token(':') variable:v -> v)+:vars token('|') -> vars,
 	sequence = (expression:e ( token('.') | empty ) -> e)+:exprs -> {isSequence: true, children: exprs},
 	declaredVars = token('|') (variable:v)*:vars token('|') -> vars,
 	clamatoMethod =
-	token('-')
+	spaces ('-' -> false | '+' -> true):isMeta
 	methodNameAndArgs:nameAndArgs
 	(primitiveBody | stMethodBody):methodNode
 	-> {
 			methodNode.isMethod = true;
 			methodNode.methodName = nameAndArgs[0];
 			methodNode.args = nameAndArgs[1];
+			methodNode.isMeta = isMeta;
 			methodNode
 	},
 stMethodBody = opt(#declaredVars):vars opt(#sequence):seq
@@ -73,7 +74,7 @@ primitiveBody =
 	token('{') -> {$elf.count = 0}
 	( ~'}' char:c -> {if (c=='{') $elf.count++; c} | ?($elf.count > 0) token('}'):t -> {$elf.count--; t}
 	)*:body
-	token('}')
+	token('}') (token('.') | empty)
 	-> { 
 		isPrimitive: true,
 		primitiveBody: '{' + body.join('') + '}' 
@@ -96,6 +97,8 @@ methodNameAndArgs =
 			className: name,
 			methods: ms
 		},
+clamatoClasses = (clamatoClass)*:cls spaces end -> cls,
+
 	/* ---- helper ----- */
 	opt:rule = apply(rule) | empty -> null,
 	fromTo :x :y = seq(x) (~seq(y) char)* seq(y), 

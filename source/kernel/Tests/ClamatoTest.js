@@ -152,6 +152,13 @@ test08bStringWithEscapedQuote: function() {
 	this.assert(result.isLiteral , 'no string');
 	this.assertEqual(string, result.value, 'didnt recognize string');
 },
+test08cEmptyString: function() {
+	var src = '\'\'';
+	var result = this.parse('expression', src);
+	this.assert(result.isLiteral , 'no string');
+	this.assertEqual('', result.value, 'didnt recognize string');
+},
+
 test09aParseSequence: function() {
 	var src = 'x foo. x := 1+2. x + bar';
 	var result = this.parse('sequence', src);
@@ -195,6 +202,7 @@ test12aClamatoMethod: function() {
 	this.assert(result.isMethod, 'not a method');
 	this.assertEqual('foo', result.methodName, 'wrong name');
 	this.assertEqual(2, result.sequence.children.length, 'wrong sequence');
+	this.assertIdentity(false, result.isMeta, 'meta method');
 	this.assert(result.sequence.children[0].isAssignment, 'wrong sequence 1');
 	this.assert(result.sequence.children[1].isVariable, 'wrong sequence 2');
 },
