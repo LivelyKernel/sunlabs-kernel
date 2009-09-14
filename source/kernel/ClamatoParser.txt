@@ -2,16 +2,30 @@ ometa ClamatoParser <: Parser {
 	/* ---- recognizing tokens ---- */	
 	identifier = letter:x letterOrDigit*:xs -> [x].concat(xs).join(''),
 	unaryId = identifier:x ~':' -> x,
+	binaryOp = (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
+	literal = numberLiteral:v -> {isLiteral: true, value: v},
+	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
+		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
 
 	/* ---- expressions ---- */
 	variable = identifier:x -> {isVariable: true, name: x},
 	expression = (assignation | evaluation):x -> x,
 	assignation = 9,
 	evaluation = primary:rec spaces (messageSend | empty -> {}):node -> {node.receiver = rec; node},
-	primary = variable,
-	messageSend = unaryMessage:node -> {node.isMessage = true; node},
-	unaryMessage = unaryId:name -> {messageName: name, isUnary: true},
+	primary = spaces (variable | literal),
+	messageSend = (unaryMessage | binaryMessage):node -> {node.isMessage = true; node},
+	binaryMessage = binaryOp:msgName binaryMsgArg:arg -> {messageName: msgName, isBinary: true, arguments: [arg]},
+	binaryMsgArg = (primary unaryMessage+ | primary),
+	unaryMessage = unaryId:msgName -> {messageName: msgName, isUnary: true},
 
 	/* ---- helper ----- */
 	log:x -> console.log(x)
+}
+
+ClamatoParser.isBinaryChar = function(c) {
+  	// from Squeak's TypeTable
+  	var x = c.charCodeAt(0);
+  	return (x >= 1 && x <= 8) || x == 11 || (x >= 14 && x <= 29) || x == 31 || x == 33 || x == 37 ||
+  	x == 38 || (x >= 42 && x <= 45) || x == 47 || (x >= 60 && x <= 64) || x == 92 || x == 96 ||
+  	 ( x >= 126 && x <= 191) || x == 215 || x == 247 || x == 256
 }

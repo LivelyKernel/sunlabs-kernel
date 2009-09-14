@@ -988,6 +988,7 @@ ometaNodes.forEach(function(ea) { console.log(ea.target.name) });
 
 	evalSource: function(newSource) {
 		var def = OMetaSupport.translateToJs(newSource);
+		if (!def) throw(dbgOn(new Error('Cannot translate!')));
 		try {
 			eval(def);
 		} catch (er) {
