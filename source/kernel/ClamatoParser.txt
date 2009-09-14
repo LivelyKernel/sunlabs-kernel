@@ -3,6 +3,7 @@ ometa ClamatoParser <: Parser {
 	identifier = letter:x letterOrDigit*:xs -> [x].concat(xs).join(''),
 	unaryId = identifier:x ~':' -> x,
 	binaryOp = (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
+	keywordPart = identifier:x ':' -> {x + ':'},
 	literal = numberLiteral:v -> {isLiteral: true, value: v},
 	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
 		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
@@ -13,10 +14,14 @@ ometa ClamatoParser <: Parser {
 	assignation = 9,
 	evaluation = primary:rec spaces (messageSend | empty -> {}):node -> {node.receiver = rec; node},
 	primary = spaces (variable | literal),
-	messageSend = (unaryMessage | binaryMessage):node -> {node.isMessage = true; node},
-	binaryMessage = binaryOp:msgName binaryMsgArg:arg -> {messageName: msgName, isBinary: true, arguments: [arg]},
-	binaryMsgArg = (primary unaryMessage+ | primary),
-	unaryMessage = unaryId:msgName -> {messageName: msgName, isUnary: true},
+	messageSend = (unaryMsg | binaryMsg | keywordMsg):node -> {node.isMessage = true; node},
+	unaryMsg = unaryId:msgName -> {messageName: msgName, isUnary: true},
+	binaryMsg = binaryOp:msgName binaryMsgArg:arg -> {messageName: msgName, arguments: [arg], isBinary: true},
+	binaryMsgArg = (primary unaryMsg+ | primary),
+	keywordMsg = (spaces keywordPart:keyword keywordMsgArg:arg -> [keyword, arg])+:partsAndArgs -> {
+		var name = ''; var args = []; partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
+		{messageName: name, arguments: args, isKeyword: true}},
+	keywordMsgArg = binaryMsgArg,
 
 	/* ---- helper ----- */
 	log:x -> console.log(x)
