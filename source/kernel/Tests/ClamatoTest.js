@@ -252,6 +252,18 @@ test14bParseJsPrimitive: function() {
 	this.assertEqual('foo', result.methodName, 'wrong name');
 	this.assertEqual(body, result.primitiveBody, 'wrong primBody');
 },
+test15aCascades: function() {
+	var src = 'x blupf; bla: 3';
+	var result = this.parse('expression', src);
+	this.assert(result.isCascade, 'no cascade');
+	this.assertEqual(2, result.messages);
+	this.assertEqual('blupf', result.messages[0].methodName);
+	this.assertEqual('x', result.messages[0].receiver.name);
+	this.assertEqual('bla:', result.messages[1].methodName);
+	this.assertEqual(1, result.messages[1].args.length);
+	this.assertEqual('x', result.messages[1].receiver.name);
+},
+
 
 
 
