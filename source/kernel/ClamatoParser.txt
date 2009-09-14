@@ -1,9 +1,9 @@
 ometa ClamatoParser <: Parser {
 	/* ---- recognizing tokens ---- */	
 	identifier = letter:x letterOrDigit*:xs -> [x].concat(xs).join(''),
-	unaryId = identifier:x ~':' -> x,
-	binaryOp = (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
-	keywordPart = identifier:x ':' -> {x + ':'},
+	unaryId = spaces identifier:x ~':' -> x,
+	binaryOp = spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
+	keywordPart = spaces identifier:x ':' -> {x + ':'},
 	literal = numberLiteral:v -> {isLiteral: true, value: v},
 	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
 		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
@@ -12,16 +12,18 @@ ometa ClamatoParser <: Parser {
 	variable = identifier:x -> {isVariable: true, name: x},
 	expression = (assignation | evaluation):x -> x,
 	assignation = 9,
-	evaluation = primary:rec spaces (messageSend | empty -> {}):node -> {node.receiver = rec; node},
+	evaluation = keywordMsg,
 	primary = spaces (variable | literal),
 	messageSend = (unaryMsg | binaryMsg | keywordMsg):node -> {node.isMessage = true; node},
-	unaryMsg = unaryId:msgName -> {messageName: msgName, isUnary: true},
-	binaryMsg = binaryOp:msgName binaryMsgArg:arg -> {messageName: msgName, arguments: [arg], isBinary: true},
-	binaryMsgArg = (primary unaryMsg+ | primary),
-	keywordMsg = (spaces keywordPart:keyword keywordMsgArg:arg -> [keyword, arg])+:partsAndArgs -> {
-		var name = ''; var args = []; partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
-		{messageName: name, arguments: args, isKeyword: true}},
-	keywordMsgArg = binaryMsgArg,
+	unaryMsg = primary:rec (unaryId:msgName)*:msgs 	-> {
+						msgs.inject(rec, function(receiver, mName) { return {isMessage: true, messageName: mName, isUnary: true, receiver: receiver} })},
+	binaryMsg = unaryMsg:rec (binaryOp:msgName unaryMsg:arg -> [msgName, arg])*:msgs -> {
+						msgs.inject(rec, function(receiver, mNameAndArg) {
+							return {isMessage: true, messageName: mNameAndArg[0], isBinary: true, receiver: receiver, args: [mNameAndArg[1]]} })},
+	keywordMsg = binaryMsg:rec (keywordPart:keyword binaryMsg:arg -> [keyword, arg])+:partsAndArgs -> {
+								var name = ''; var args = []; partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
+								{isMessage: true, messageName: name, args: args, isKeyword: true, receiver: rec}}
+						| binaryMsg,
 
 	/* ---- helper ----- */
 	log:x -> console.log(x)
