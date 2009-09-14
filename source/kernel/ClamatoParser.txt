@@ -4,14 +4,14 @@ ometa ClamatoParser <: Parser {
 	unaryId = spaces identifier:x ~':' -> x,
 	binaryOp = spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
 	keywordPart = spaces identifier:x ':' -> {x + ':'},
+	variable = spaces identifier:x -> {isVariable: true, name: x},
 	literal = numberLiteral:v -> {isLiteral: true, value: v},
 	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
 		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
 
-	/* ---- expressions ---- */
-	variable = identifier:x -> {isVariable: true, name: x},
-	expression = (assignation | evaluation):x -> x,
-	assignation = 9,
+	/* ---- expressions ---- */	
+	expression = assignment | evaluation,
+	assignment = variable:vari token(':=') expression:val -> {isAssignment: true, variable: vari, value: val},
 	evaluation = keywordMsg,
 	primary = spaces (variable | literal | '(' expression:e ')' -> e),
 	messageSend = (unaryMsg | binaryMsg | keywordMsg):node -> {node.isMessage = true; node},
@@ -38,7 +38,7 @@ ometa ClamatoParser <: Parser {
 						| binaryMsg,
 
 	/* ---- helper ----- */
-	log:x -> console.log(x)
+	log:x -> {console.log(x); true}
 }
 
 ClamatoParser.isBinaryChar = function(c) {

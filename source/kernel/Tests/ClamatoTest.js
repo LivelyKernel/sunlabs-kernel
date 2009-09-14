@@ -118,6 +118,24 @@ test06bSubexpressionAndUnary: function() {
 	this.assert(result.args[0].isKeyword , 'not Keyword');
 	this.assertEqual('foo:', result.args[0].messageName , 'wrong Keyword');
 },
+test07aAssignment: function() {
+	var src = 'xyz := 1';
+	var result = this.parse('expression', src);
+	this.assert(result.isAssignment , 'no assignment');
+	this.assertEqual('xyz', result.variable.name, 'wrong var name');
+	this.assertEqual(1, result.value.value , 'wrong value');
+},
+test07bAssignment: function() {
+	var src = 'x := yz:=1';
+	var result = this.parse('expression', src);
+	this.assert(result.isAssignment , 'no assignment');
+	this.assertEqual('x', result.variable.name, 'wrong var name');
+	this.assert(result.value.isAssignment , 'value not assignment');
+	this.assertEqual('yz', result.value.variable.name, 'wrong var name 2');
+	this.assert(result.value.value.isLiteral , 'value.value not literal');
+},
+
+
 
 
 
