@@ -211,6 +211,20 @@ test12cKeywordMethod: function() {
 	this.assertEqual('arg1', result.args[0], 'wrong arg name');
 	this.assertEqual('arg2', result.args[1], 'wrong arg name');
 },
+test13aParseClass: function() {
+	var src =
+'<Object> \n\
+- = other self foo = other.\n\
+- and: aBlock\n\
+	(self = true)\n\
+		ifTrue: aBlock\n\
+		ifFalse: [false].\n'
+	var result = this.parse('clamatoClass', src);
+	this.assert(result.isClass, 'not a class');
+	this.assertEqual('Object', result.className, 'wrong name');
+	this.assertEqual(2, result.methods.length, 'wrong number of methods');
+},
+
 
 
 

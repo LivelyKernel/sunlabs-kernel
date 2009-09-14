@@ -1,8 +1,4 @@
 ometa ClamatoParser <: Parser {
-	/* helper */
-	opt:rule = apply(rule) | empty -> null,
-fromTo :x :y = seq(x) (~seq(y) char)* seq(y), 
-
 	/* ---- recognizing tokens ---- */	
 	space = super(#space) | fromTo('"', '"'),
 	identifier = letter:x letterOrDigit*:xs -> [x].concat(xs).join(''),
@@ -79,9 +75,16 @@ methodNameAndArgs =
 	| unaryId:msgName -> [msgName, null]
 	),
 
-
-
+	/* ---- class related ---- */
+	clamatoClass = token('<') identifier:name token('>') spaces clamatoMethod*:ms
+		-> {
+			isClass: true,
+			className: name,
+			methods: ms
+		},
 	/* ---- helper ----- */
+	opt:rule = apply(rule) | empty -> null,
+	fromTo :x :y = seq(x) (~seq(y) char)* seq(y), 
 	log:x -> {console.log(x); true}
 }
 
