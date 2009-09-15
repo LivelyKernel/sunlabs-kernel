@@ -252,7 +252,6 @@ test14bParseJsPrimitive: function() {
 test15aCascades: function() {
 	var src = 'x blupf; bla: 3';
 	var result = this.parse('expression', src);
-xx=result;
 	this.assert(result.isCascade, 'no cascade');
 	this.assertEqual(2, result.messages.length);
 	this.assertEqual('blupf', result.messages[0].messageName);
@@ -265,6 +264,41 @@ xx=result;
 
 
 
+
+
+
+});
+TestCase.subclass('lively.Tests.ClamatoTest.ParseExistingSourcesTest', {
+shouldRun: true,
+setUp: function() {
+	this.parser = ClamatoParser;
+},
+parse: function(rule, src) {
+	var test = this;
+	var errorcb = OMetaSupport.handleErrorDebug.wrap(function() {
+		var args = $A(arguments), procceed = args.shift();
+		proceed(args);
+		test.assert(false, 'Couldn\'t parse file');
+	});
+	return OMetaSupport.matchAllWithGrammar(this.parser, rule, src, errorcb);
+},
+urls: [
+	'http://clamato.net/bin/test.st',
+	'http://clamato.net/examples/counter.st',
+	'http://clamato.net/lib/web.st',
+	'http://clamato.net/lib/browse.st',
+	'http://clamato.net/lib/build.st',
+	'http://clamato.net/lib/parser.st',
+	'http://clamato.net/lib/peg.st',
+	'http://clamato.net/lib/workspace.st'
+],
+testAll: function() {
+	this.urls.forEach(function(url) {
+		console.log('...... Parsing: ' + url);
+		var content = FileDirectory.getContent(url);
+		this.parse('clamatoClasses', content);
+	}, this)
+},
 
 
 
