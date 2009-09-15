@@ -1006,4 +1006,12 @@ Object.subclass('FileDirectory', {
 
 });
 
+Object.extend(FileDirectory, {
+	getContent: function(url) {
+		url = new URL(url);
+		var dir = new FileDirectory(url.getDirectory());
+		return dir.fileContent(url.filename());
+	}
+});
+
 console.log('loaded Network.js');
