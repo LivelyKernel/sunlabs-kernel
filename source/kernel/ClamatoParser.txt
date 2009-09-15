@@ -16,62 +16,75 @@ instanceVariable = token('@') identifier:x -> {isVariable: true, isInstance: tru
 
 	/* ---- expressions ---- */	
 	primary = spaces (variable | instanceVariable | literal | '(' expression:e ')' -> e | block),
-	expression = assignment | evaluation,
+	expression = cascade | assignment | evaluation,
 	assignment = (variable | instanceVariable):vari token(':=') expression:val
 	-> {
 		isAssignment: true,
 		variable: vari,
 		value: val
 	},
-cascade = evaluation (token(';') message)+,
+cascade =
+	evaluation:first (token(';') message)+:msgNodes
+	-> {
+		if (!first.isMessage) throw(new Error('First part of cascade not message'));
+		var receiver = first.receiver;
+		msgNodes = [first].concat(msgNodes);
+		msgNodes.forEach(function(ea) { ea.receiver = receiver });
+		{
+			isCascade: true,
+			messages: msgNodes,
+			receiver: receiver
+		}
+	},
 
 	evaluation = keywordSend,
 	message = (keywordMsg | binaryMsg | unaryMsg),
 	unarySend =
-	primary:rec unaryMsg*:namesAndArgs 
+	primary:rec unaryMsg*:msgNodes
 	-> {
-			namesAndArgs.inject(rec, function(receiver, nameAndArgs) {
-				return {
-					isMessage: true,
-					messageName: nameAndArgs[0],
-					isUnary: true,
-					receiver: receiver
-				}
-		})},
-unaryMsg = unaryId:name -> {[name, null]},
+		msgNodes.inject(rec, function(receiver, node) { node.receiver = receiver; return node })
+	},
+unaryMsg =
+	unaryId:name
+	-> {
+		isMessage: true,
+		messageName: name,
+		isUnary: true,
+		args: null,
+		receiver: null
+	},
 
 	binarySend =
-	unarySend:rec binaryMsg*:namesAndArgs
+	unarySend:rec binaryMsg*:nodes
 	-> {
-			namesAndArgs.inject(rec, function(receiver, nameAndArgs) {
-				return {
-					isMessage: true,
-					messageName: nameAndArgs[0],
-					isBinary: true,
-					receiver: receiver,
-					args: nameAndArgs[1]
-				} 
-		})},
-binaryMsg = binaryOp:msgName unarySend:arg -> {[msgName, [arg]]},
+			nodes.inject(rec, function(receiver, node) { node.receiver = receiver; return node })
+	},
+binaryMsg =
+	binaryOp:msgName unarySend:arg
+	-> {
+		isMessage: true,
+		messageName: msgName,
+		isBinary: true,
+		args: [arg],
+		receiver: null
+	},
 
 	keywordSend =
-	binarySend:rec keywordMsg:nameAndArgs
-	-> {
-			{
-				isMessage: true,
-				messageName: nameAndArgs[0],
-				args: nameAndArgs[1],
-				isKeyword: true,
-				receiver: rec}
-			}
-		| binarySend,
+	binarySend:rec keywordMsg:msgNode
+	-> {	msgNode.receiver = rec; msgNode }
+	| binarySend,
 keywordMsg =
 	(keywordPart:keyword binarySend:arg -> [keyword, arg])+:partsAndArgs
 	-> {
-		var name = '';
-		var args = [];
+		var name = '', args = [];
 		partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
-		[name, args];
+		{
+			isMessage: true,
+			messageName: name,
+			args: args,
+			isKeyword: true,
+			receiver: null
+		}
 	},
 
 block =

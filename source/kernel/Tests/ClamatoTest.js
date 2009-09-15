@@ -5,10 +5,7 @@ setUp: function() {
 	this.parser = ClamatoParser;
 },
 parse: function(rule, src) {
-	var errorcb = function() {
-		console.log('parse error');
-		console.log(arguments);
-	}
+	var errorcb = OMetaSupport.handleErrorDebug;
 	return OMetaSupport.matchAllWithGrammar(this.parser, rule, src, errorcb);
 },
 test01ParseUnaryMessageSend: function() {
@@ -255,11 +252,12 @@ test14bParseJsPrimitive: function() {
 test15aCascades: function() {
 	var src = 'x blupf; bla: 3';
 	var result = this.parse('expression', src);
+xx=result;
 	this.assert(result.isCascade, 'no cascade');
-	this.assertEqual(2, result.messages);
-	this.assertEqual('blupf', result.messages[0].methodName);
+	this.assertEqual(2, result.messages.length);
+	this.assertEqual('blupf', result.messages[0].messageName);
 	this.assertEqual('x', result.messages[0].receiver.name);
-	this.assertEqual('bla:', result.messages[1].methodName);
+	this.assertEqual('bla:', result.messages[1].messageName);
 	this.assertEqual(1, result.messages[1].args.length);
 	this.assertEqual('x', result.messages[1].receiver.name);
 },
