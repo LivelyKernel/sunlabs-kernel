@@ -37,12 +37,24 @@ Object.extend(Object, {
       keys.push(property);
     return keys;
   },
+  // 
+  // values: function(object) {
+  //   var values = [];
+  //   for (var property in object)
+  //     values.push(object[property]);
+  //   return values;
+  // },
 
   values: function(object) {
-    var values = [];
-    for (var property in object)
-      values.push(object[property]);
-    return values;
+	var values = [];
+	for(var property in object) {
+		// fixing the bug:	"var property is not a function" bug of firefox
+		// it breaks for example in allClasses
+		if(object.hasOwnProperty(property)) {
+			values.push(object[property]);
+		};
+	};
+	return values;
   },
 
   clone: function(object) {
