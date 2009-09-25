@@ -13,14 +13,17 @@ OMetaSupport = {
         return grammar;
     },
     
-    translateAndWrite: function(sourceFileName, destFileName) {
-        var url = URL.source.getDirectory();
-        var str = 'module(\'' + destFileName + '\').requires(\'ometa/parser.js\').toRun(function() {\n';
-        str += OMetaSupport.translateToJs(OMetaSupport.fileContent(sourceFileName));
-        str += '\n});';
-        var dir = new FileDirectory(url);
-        dir.writeFileNamed(destFileName, str);
-		console.log(Strings.format('Successfully compiled OMeta grammar %s to %s', sourceFileName, destFileName));
+    translateAndWrite: function(sourceFileName, destFileName, additionalRequirements) {
+	var url = URL.source.getDirectory();
+	var requirementsString = additionalRequirements ? ',\'' + additionalRequirements.join('\',\'') + '\'' : '';
+	var str = Strings.format('module(\'%s\').requires(\'ometa/parser.js\'%s).toRun(function() {\n%s\n});',
+		destFileName,
+		requirementsString,
+		OMetaSupport.translateToJs(OMetaSupport.fileContent(sourceFileName)));
+	var dir = new FileDirectory(url);
+	dir.writeFileNamed(destFileName, str);
+	console.log(Strings.format('Successfully compiled OMeta grammar %s to %s',
+		sourceFileName, destFileName));
     },
     
     ometaEval: function(src) {

@@ -23,26 +23,16 @@ keywordPart =
   -> {x + ':'},
 
 variable =
-  spaces identifier:x
-  -> {
-    isVariable: true,
-    name: x
-  },
+  spaces identifier:name
+  -> { new StVariableNode(name) },
 
 instanceVariable =
-  token('@') identifier:x
-  -> {
-    isVariable: true,
-    isInstance: true,
-    name: '@' + x
-  },
+  token('@') identifier:name
+  -> { new StInstanceVariableNode('@' + name) },
 
 literal =
   (stringLiteral | numberLiteral):v
-  -> {
-    isLiteral: true,
-    value: v
-  },
+  -> { new StLiteralNode(v) },
 
 numberLiteral =
   ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns
@@ -66,12 +56,8 @@ expression =
   cascade | assignment | evaluation,
 
 assignment =
-  (variable | instanceVariable):vari token(':=') expression:val
-	-> {
-		isAssignment: true,
-		variable: vari,
-		value: val
-	},
+  (variable | instanceVariable):variable token(':=') expression:value
+	-> { new StAssignmentNode(variable, value) },
 
 cascade =
 	evaluation:first (token(';') message)+:msgNodes
@@ -80,11 +66,7 @@ cascade =
 		var receiver = first.receiver;
 		msgNodes = [first].concat(msgNodes);
 		msgNodes.forEach(function(ea) { ea.receiver = receiver });
-		{
-			isCascade: true,
-			messages: msgNodes,
-			receiver: receiver
-		}
+		new StCascadeNode(msgNodes, receiver);
 	},
 
 evaluation =
@@ -96,37 +78,24 @@ message =
 unarySend =
   primary:rec unaryMsg*:msgNodes
 	-> {msgNodes.inject(rec, function(receiver, node) {
-	    node.receiver = receiver; return node }) },
+	    node.setReceiver(receiver); return node }) },
 
 unaryMsg =
 	unaryId:name
-	-> {
-		isMessage: true,
-		messageName: name,
-		isUnary: true,
-		args: null,
-		receiver: null
-	},
+	-> { new StUnaryMessageNode(name, null, null) },
 
 binarySend =
 	unarySend:rec binaryMsg*:nodes
-	-> {
-			nodes.inject(rec, function(receiver, node) { node.receiver = receiver; return node })
-	},
+	-> { nodes.inject(rec, function(receiver, node) {
+		node.setReceiver(receiver); return node }) },
 
 binaryMsg =
-	binaryOp:msgName unarySend:arg
-	-> {
-		isMessage: true,
-		messageName: msgName,
-		isBinary: true,
-		args: [arg],
-		receiver: null
-	},
+	binaryOp:name unarySend:arg
+	-> { new StBinaryMessageNode(name, [arg], null) },
 
 keywordSend =
 	binarySend:rec keywordMsg:msgNode
-	-> {	msgNode.receiver = rec; msgNode }
+	-> { msgNode.setReceiver(rec); msgNode }
 	| binarySend,
 
 keywordMsg =
@@ -134,13 +103,7 @@ keywordMsg =
 	-> {
 		var name = '', args = [];
 		partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
-		{
-			isMessage: true,
-			messageName: name,
-			args: args,
-			isKeyword: true,
-			receiver: null
-		}
+		new StKeywordMessageNode(name, args, null);
 	},
 
 block =
@@ -149,24 +112,18 @@ block =
 	opt(#declaredVars):declared
 	opt(#sequence):s
 	token(']')
-	-> {
-		isBlock: true,
-		sequence: s,
-		args: args,
-		declaredVars: declared
-	},
+	-> { new StBlockNode(s, args, declared) },
 
-blockArgs = (token(':') variable:v -> v)+:vars token('|') -> vars,
+blockArgs =
+	(token(':') variable:v -> v)+:vars token('|')
+	-> vars,
 
 /*-----------------------------
 ------- method related  -------
 ------------------------------*/
 sequence =
-  (expression:e ( token('.') | empty ) -> e)+:exprs
-  -> {
-    isSequence: true,
-    children: exprs
-  },
+  (expression:e ( token('.') | empty ) -> e)+:children
+  -> { new StSequenceNode(children) },
 
 declaredVars =
   token('|') (variable:v)*:vars token('|')
@@ -176,29 +133,22 @@ clamatoMethod =
 	spaces ('-' -> false | '+' -> true):isMeta
 	methodNameAndArgs:nameAndArgs (primitiveBody | stMethodBody):methodNode
 	-> {
-	  methodNode.isMethod = true;
-		methodNode.methodName = nameAndArgs[0];
-		methodNode.args = nameAndArgs[1];
-		methodNode.isMeta = isMeta;
+		methodNode.setMethodName(nameAndArgs[0]);
+		methodNode.setArgs(nameAndArgs[1]);
+		methodNode.setMeta(isMeta);
 		methodNode
 	},
 
 stMethodBody =
   opt(#declaredVars):vars opt(#sequence):seq
-	-> {
-		declaredVars: vars,
-		sequence: seq
-	},
+	-> { new StMethodNode(null, null, null, seq, vars) },
 
 primitiveBody =
 	token('{') -> {$elf.count = 0}
 	( ~'}' char:c -> {if (c=='{') $elf.count++; c} | ?($elf.count > 0) token('}'):t -> {$elf.count--; t}
 	)*:body
 	token('}') (token('.') | empty)
-	-> { 
-		isPrimitive: true,
-		primitiveBody: '{' + body.join('') + '}' 
-	},
+	-> { new StPrimitveMethodNode(null, null, null, seq, vars, '{' + body.join('') + '}') },
 
 
 methodNameAndArgs =
@@ -214,12 +164,8 @@ methodNameAndArgs =
 -------- class related  -------
 ------------------------------*/
 clamatoClass =
-	token('<') identifier:name token('>') spaces clamatoMethod*:ms
-	-> {
-		isClass: true,
-		className: name,
-		methods: ms
-	},
+	token('<') identifier:name token('>') spaces clamatoMethod*:methods
+	-> { new StClassNode(name, methods) },
 
 clamatoClasses =
 	(clamatoClass)*:cls spaces end -> cls,
