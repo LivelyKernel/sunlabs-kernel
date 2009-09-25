@@ -162,10 +162,10 @@ StNode.subclass('StMethodNode', {
 
 StMethodNode.subclass('StPrimitveMethodNode', {
 	
-	isPrimitve: true,
+	isPrimitive: true,
 	
-	initialize: function($super, methodName, isMeta, args, sequence, declaredVars, primitiveBody) { //---------???????
-		$super(methodName, isMeta, args, sequence, declaredVars);
+	initialize: function($super, methodName, isMeta, args, primitiveBody) { //---------???????
+		$super(methodName, isMeta, args, null, null);
 		this.primitiveBody = primitiveBody;
 	},
 

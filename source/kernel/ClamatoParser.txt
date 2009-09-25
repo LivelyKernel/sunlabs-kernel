@@ -148,7 +148,7 @@ primitiveBody =
 	( ~'}' char:c -> {if (c=='{') $elf.count++; c} | ?($elf.count > 0) token('}'):t -> {$elf.count--; t}
 	)*:body
 	token('}') (token('.') | empty)
-	-> { new StPrimitveMethodNode(null, null, null, seq, vars, '{' + body.join('') + '}') },
+	-> { new StPrimitveMethodNode(null, null, null, '{' + body.join('') + '}') },
 
 
 methodNameAndArgs =
