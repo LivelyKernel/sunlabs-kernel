@@ -958,12 +958,18 @@ ide.CompleteFileFragmentNode.subclass('lively.ide.CompleteOmetaFragmentNode', {
 		var menu = $super();
     	var fileName = this.moduleName;
     	if (!this.target) return menu;
+		var world = WorldMorph.current();
 		menu.unshift(['Translate grammar', function() {
-			WorldMorph.current().prompt(
+			world.prompt(
 				'File name of translated grammar?',
 				function(input) {
 					if (!input.endsWith('.js')) input += '.js';
-					OMetaSupport.translateAndWrite(fileName, input);
+					world.prompt(
+						'Additional requirements (comma separated)?',
+						function(requirementsString) {
+							var requirments = requirementsString ? requirementsString.split(',') : null;
+							OMetaSupport.translateAndWrite(fileName, input, requirments) }
+					);	
 				},
 				fileName.slice(0, fileName.indexOf('.'))
 			) }]);
