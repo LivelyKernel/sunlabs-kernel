@@ -1,28 +1,78 @@
 ometa ClamatoParser <: Parser {
-	/* ---- recognizing tokens ---- */	
-	space = super(#space) | fromTo('"', '"'),
-	identifier = letter:x letterOrDigit*:xs -> [x].concat(xs).join(''),
-	unaryId = spaces identifier:x ~':' -> x,
-	binaryOp = spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs -> cs.join(''),
-	keywordPart = spaces identifier:x ':' -> {x + ':'},
-	variable = spaces identifier:x -> {isVariable: true, name: x},
-instanceVariable = token('@') identifier:x -> {isVariable: true, isInstance: true, name: '@' + x},
+  
+/*-----------------------------
+----- recognizing tokens ------
+------------------------------*/	
+space =
+  super(#space) | fromTo('"', '"'),
+  
+identifier =
+  letter:x letterOrDigit*:xs
+  -> [x].concat(xs).join(''),
 
-	literal = (stringLiteral | numberLiteral):v -> {isLiteral: true, value: v},
-	numberLiteral = ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns -> {
-		sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
-  stringLiteral = '\'' (token('\'\'') -> '\'' | ~'\'' char)*:val '\'' -> val.join(''),
+unaryId =
+  spaces identifier:x ~':'
+  -> x,
 
+binaryOp =
+  spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs
+  -> cs.join(''),
+  
+keywordPart =
+  spaces identifier:x ':'
+  -> {x + ':'},
 
-	/* ---- expressions ---- */	
-	primary = spaces (variable | instanceVariable | literal | '(' expression:e ')' -> e | block),
-	expression = cascade | assignment | evaluation,
-	assignment = (variable | instanceVariable):vari token(':=') expression:val
+variable =
+  spaces identifier:x
+  -> {
+    isVariable: true,
+    name: x
+  },
+
+instanceVariable =
+  token('@') identifier:x
+  -> {
+    isVariable: true,
+    isInstance: true,
+    name: '@' + x
+  },
+
+literal =
+  (stringLiteral | numberLiteral):v
+  -> {
+    isLiteral: true,
+    value: v
+  },
+
+numberLiteral =
+  ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns
+  -> {sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
+
+stringLiteral =
+  '\'' (token('\'\'') -> '\'' | ~'\'' char)*:val '\''
+  -> val.join(''),
+
+/*-----------------------------
+--------- expressions ---------
+------------------------------*/
+primary =
+  spaces (variable
+        | instanceVariable
+        | literal
+        | '(' expression:e ')' -> e
+        | block),
+
+expression =
+  cascade | assignment | evaluation,
+
+assignment =
+  (variable | instanceVariable):vari token(':=') expression:val
 	-> {
 		isAssignment: true,
 		variable: vari,
 		value: val
 	},
+
 cascade =
 	evaluation:first (token(';') message)+:msgNodes
 	-> {
@@ -37,13 +87,17 @@ cascade =
 		}
 	},
 
-	evaluation = keywordSend,
-	message = (keywordMsg | binaryMsg | unaryMsg),
-	unarySend =
-	primary:rec unaryMsg*:msgNodes
-	-> {
-		msgNodes.inject(rec, function(receiver, node) { node.receiver = receiver; return node })
-	},
+evaluation =
+  keywordSend,
+
+message =
+  (keywordMsg | binaryMsg | unaryMsg),
+
+unarySend =
+  primary:rec unaryMsg*:msgNodes
+	-> {msgNodes.inject(rec, function(receiver, node) {
+	    node.receiver = receiver; return node }) },
+
 unaryMsg =
 	unaryId:name
 	-> {
@@ -54,11 +108,12 @@ unaryMsg =
 		receiver: null
 	},
 
-	binarySend =
+binarySend =
 	unarySend:rec binaryMsg*:nodes
 	-> {
 			nodes.inject(rec, function(receiver, node) { node.receiver = receiver; return node })
 	},
+
 binaryMsg =
 	binaryOp:msgName unarySend:arg
 	-> {
@@ -69,10 +124,11 @@ binaryMsg =
 		receiver: null
 	},
 
-	keywordSend =
+keywordSend =
 	binarySend:rec keywordMsg:msgNode
 	-> {	msgNode.receiver = rec; msgNode }
 	| binarySend,
+
 keywordMsg =
 	(keywordPart:keyword binarySend:arg -> [keyword, arg])+:partsAndArgs
 	-> {
@@ -99,28 +155,41 @@ block =
 		args: args,
 		declaredVars: declared
 	},
+
 blockArgs = (token(':') variable:v -> v)+:vars token('|') -> vars,
 
+/*-----------------------------
+------- method related  -------
+------------------------------*/
+sequence =
+  (expression:e ( token('.') | empty ) -> e)+:exprs
+  -> {
+    isSequence: true,
+    children: exprs
+  },
 
-	/* method related */
-	sequence = (expression:e ( token('.') | empty ) -> e)+:exprs -> {isSequence: true, children: exprs},
-	declaredVars = token('|') (variable:v)*:vars token('|') -> vars,
-	clamatoMethod =
+declaredVars =
+  token('|') (variable:v)*:vars token('|')
+  -> vars,
+
+clamatoMethod =
 	spaces ('-' -> false | '+' -> true):isMeta
-	methodNameAndArgs:nameAndArgs
-	(primitiveBody | stMethodBody):methodNode
+	methodNameAndArgs:nameAndArgs (primitiveBody | stMethodBody):methodNode
 	-> {
-			methodNode.isMethod = true;
-			methodNode.methodName = nameAndArgs[0];
-			methodNode.args = nameAndArgs[1];
-			methodNode.isMeta = isMeta;
-			methodNode
+	  methodNode.isMethod = true;
+		methodNode.methodName = nameAndArgs[0];
+		methodNode.args = nameAndArgs[1];
+		methodNode.isMeta = isMeta;
+		methodNode
 	},
-stMethodBody = opt(#declaredVars):vars opt(#sequence):seq
+
+stMethodBody =
+  opt(#declaredVars):vars opt(#sequence):seq
 	-> {
 		declaredVars: vars,
 		sequence: seq
 	},
+
 primitiveBody =
 	token('{') -> {$elf.count = 0}
 	( ~'}' char:c -> {if (c=='{') $elf.count++; c} | ?($elf.count > 0) token('}'):t -> {$elf.count--; t}
@@ -133,7 +202,7 @@ primitiveBody =
 
 
 methodNameAndArgs =
-	( (keywordPart:keyword spaces identifier:arg -> [keyword, arg])+:partsAndArgs
+	((keywordPart:keyword spaces identifier:arg -> [keyword, arg])+:partsAndArgs
 		-> {var name = ''; var args = [];
 			partsAndArgs.forEach(function(ea) { name += ea[0]; args.push(ea[1]) });
 			[name, args]}
@@ -141,20 +210,34 @@ methodNameAndArgs =
 	| unaryId:msgName -> [msgName, null]
 	),
 
-	/* ---- class related ---- */
-	clamatoClass = token('<') identifier:name token('>') spaces clamatoMethod*:ms
-		-> {
-			isClass: true,
-			className: name,
-			methods: ms
-		},
-clamatoClasses = (clamatoClass)*:cls spaces end -> cls,
+/*-----------------------------
+-------- class related  -------
+------------------------------*/
+clamatoClass =
+	token('<') identifier:name token('>') spaces clamatoMethod*:ms
+	-> {
+		isClass: true,
+		className: name,
+		methods: ms
+	},
 
-	/* ---- helper ----- */
-	opt:rule = apply(rule) | empty -> null,
-	fromTo :x :y = seq(x) (~seq(y) char)* seq(y), 
-	log:x -> {console.log(x); true}
+clamatoClasses =
+	(clamatoClass)*:cls spaces end -> cls,
+
+/*-----------------------------
+------------ helper  ----------
+------------------------------*/
+opt:rule =
+	apply(rule) | empty -> null,
+
+fromTo :x :y =
+	seq(x) (~seq(y) char)* seq(y),
+
+log:x
+	-> {console.log(x); true}
 }
+
+/* ----------- additional stuff ----------------*/
 
 ClamatoParser.isBinaryChar = function(c) {
   	// from Squeak's TypeTable
