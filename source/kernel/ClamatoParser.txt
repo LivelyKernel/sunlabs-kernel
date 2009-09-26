@@ -199,11 +199,11 @@ ometa JS2StConverter {
 trans      = [:t apply(t):ans]     -> ans,
 /* ----------- copied -------------- */
 get      :x                                           -> x,
-string   :s                                           -> s.toProgramString(),
 begin    trans:x end                                  -> x,
 /* ---------- modified ----------- */
+string   :s                                           -> s,
 json     trans*:props                                 -> props,
 /* ------------ own -------------- */
-send :msg ?(msg == 'subclass') trans:superclass trans:name trans:body -> {new StClassNode(name, body, superclass)},
+send :msg ?(msg == 'subclass') trans:superclass trans:name (trans | empty -> []):body -> {new StClassNode(name, body, superclass)},
 	test -> StClassNode
 }

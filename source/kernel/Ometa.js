@@ -62,13 +62,12 @@ OMetaSupport = {
         var startIndex = Math.max(0, errorIndex - charsBefore);
         var stopIndex = Math.min(src.length, errorIndex + charsAfter);
 
+		console.log('Last twenty Rules: ' + grammarInstance._ruleStack.slice(grammarInstance._ruleStack.length-20));
 		if (src.constructor === Array) {
-			startIndex++; errorIndex++; stopIndex++;
-			src = '[' + src.toString() + ']';
+			console.log(src = '[' + src.toString() + ']');
+		} else {
+			console.log(src.substring(startIndex, errorIndex) + '<--Error-->' + src.substring(errorIndex, stopIndex));
 		}
-		
-        console.log(src.substring(startIndex, errorIndex) + '<--Error-->' + src.substring(errorIndex, stopIndex));
-        console.log('Last twenty Rules: ' + grammarInstance._ruleStack.slice(grammarInstance._ruleStack.length-20));
     },
     
     handleError: function(src, rule, grammarInstance, errorIndex) {},

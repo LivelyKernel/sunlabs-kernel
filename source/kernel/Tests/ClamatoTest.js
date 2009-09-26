@@ -303,32 +303,45 @@ testAll: function() {
 
 
 });
+
 TestCase.subclass('lively.Tests.ClamatoTest.JS2StConversionTest', {
 shouldRun: true,
 
+errorCb: function() {
+	var test = this;
+	return function() {
+			OMetaSupport.handleErrorDebug.apply(Global,arguments);
+			test.assert(false, 'Couldn\'t parse');
+	 	}
+},
 setUp: function() {
 	this.jsParser = BSJSParser;
 	this.stParser = ClamatoParser;
+	this.js2StConverter = JS2StConverter;
 },
 
+assertNodeMatches: function(node, expectedSpec) {
+	for (name in expectedSpec) {
+		this.assertEqual(expectedSpec[name], node[name]);
+	}
+},
+
+jsAst2StAst: function(jsAst) {
+	return OMetaSupport.matchWithGrammar(this.js2StConverter, "trans", jsAst, this.errorCb());
+},
 parseJs: function(src, optRule) {
 	var rule = optRule || 'topLevel';
-	var test = this;
-	var errorcb = OMetaSupport.handleErrorDebug.wrap(function() {
-		var args = $A(arguments), procceed = args.shift();
-		proceed(args);
-		test.assert(false, 'Couldn\'t parse file');
-	});
-	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src);
+	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src, this.errorCb());
 },
 
 test01ConvertClass: function() {
 	var src = 'Object.subclass(\'Foo\')';
 	var jsAst = this.parseJs(src);
-	xxx = jsAst;
-	this.assert(false);
+	var result = this.jsAst2StAst(jsAst);
+	this.assertNodeMatches(result, {isClass: true, className: 'Foo'});
 },
 
 });
+
 
 });
