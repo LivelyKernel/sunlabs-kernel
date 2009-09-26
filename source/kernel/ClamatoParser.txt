@@ -192,3 +192,18 @@ ClamatoParser.isBinaryChar = function(c) {
   	x == 38 || (x >= 42 && x <= 45) || x == 47 || (x >= 60 && x <= 64) || x == 92 || x == 96 ||
   	 ( x >= 126 && x <= 191) || x == 215 || x == 247 || x == 256
 }
+
+/* ----------- JS2St translation ----------------*/
+
+ometa JS2StConverter {
+trans      = [:t apply(t):ans]     -> ans,
+/* ----------- copied -------------- */
+get      :x                                           -> x,
+string   :s                                           -> s.toProgramString(),
+begin    trans:x end                                  -> x,
+/* ---------- modified ----------- */
+json     trans*:props                                 -> props,
+/* ------------ own -------------- */
+send :msg ?(msg == 'subclass') trans:superclass trans:name trans:body -> {new StClassNode(name, body, superclass)},
+	test -> StClassNode
+}
