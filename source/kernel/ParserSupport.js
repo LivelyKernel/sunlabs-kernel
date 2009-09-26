@@ -187,7 +187,7 @@ StNode.subclass('StClassNode', {
 	},
 
 	toString: function() {
-		return Strings.format('%Class(%s)',
+		return Strings.format('Class(%s)',
 			this.className);
 	},
 
