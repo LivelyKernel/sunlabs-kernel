@@ -303,5 +303,32 @@ testAll: function() {
 
 
 });
+TestCase.subclass('lively.Tests.ClamatoTest.JS2StConversionTest', {
+shouldRun: true,
+
+setUp: function() {
+	this.jsParser = BSJSParser;
+	this.stParser = ClamatoParser;
+},
+
+parseJs: function(src, optRule) {
+	var rule = optRule || 'topLevel';
+	var test = this;
+	var errorcb = OMetaSupport.handleErrorDebug.wrap(function() {
+		var args = $A(arguments), procceed = args.shift();
+		proceed(args);
+		test.assert(false, 'Couldn\'t parse file');
+	});
+	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src);
+},
+
+test01ConvertClass: function() {
+	var src = 'Object.subclass(\'Foo\')';
+	var jsAst = this.parseJs(src);
+	xxx = jsAst;
+	this.assert(false);
+},
+
+});
 
 });
