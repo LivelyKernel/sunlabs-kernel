@@ -1,4 +1,4 @@
-module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js', 'lively.Helper', 'lively.ChangeSet').toRun(function(ide, tools, ometa, help) {
+module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js', 'lively.Helper', 'lively.ChangeSet').toRun(function(ide, tools, omet, help) {
     
     // Modules: "+Modules" --> setModule in model
     // Modules: "-Modules" --> getModule in model
@@ -1768,7 +1768,7 @@ parseNonFile: function(source) {
     },
     
     ptrOfLine: function(lines, lineNo) {
-        lineNo = lineNo - 1 // zero index
+        lineNo = lineNo - 1; // zero index
         var ptr = 0;
         try {
             lines.inject(0, function(charsUntilNow, line, i) {
