@@ -180,10 +180,11 @@ StNode.subclass('StClassNode', {
 	
 	isClass: true,
 	
-	initialize: function($super, className, methods) {
+	initialize: function($super, className, methods, superclass) {
 		$super();
 		this.className = className;
 		this.methods = methods;
+		this.superclass = superclass;
 	},
 
 	toString: function() {
