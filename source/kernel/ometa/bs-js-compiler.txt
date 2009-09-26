@@ -161,8 +161,8 @@ BSJSParser._isKeyword = function(k) { return hasProperty(this.keywords,k) && !ha
 ometa BSJSTranslator {
   trans      = [:t apply(t):ans]     -> ans,
   curlyTrans = [#begin curlyTrans:r] -> r
-             | [#begin trans*:rs]    -> ('{\n' + rs.join(';') + '\n}')
-             | trans:r               -> ('{\n' + r + '\n}'),
+             | [#begin trans*:rs]    -> ('{' + rs.join(';') + '}')
+             | trans:r               -> ('{' + r + '}'),
 
   this                                                  -> 'this',
   break                                                 -> 'break',
