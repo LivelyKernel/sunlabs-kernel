@@ -344,15 +344,15 @@ parseJs: function(src, optRule) {
 	var rule = optRule || 'topLevel';
 	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src, this.errorCb());
 },
-convert: function(jsSrcOrAst) {
+convert: function(jsSrcOrAst, jsParseRule) {
 	jsAst = stAst = null;
-	jsAst = Object.isArray(jsSrcOrAst) ? jsSrcOrAst : this.parseJs(jsSrcOrAst);
+	jsAst = Object.isArray(jsSrcOrAst) ? jsSrcOrAst : this.parseJs(jsSrcOrAst, jsParseRule);
 	stAst = this.jsAst2StAst(jsAst);
 	return stAst;
 },
 test01aConvertTempVarGet: function() {
 	var src = 'tempVar';
-	var result = this.convert(src);
+	var result = this.convert(src, 'expr');
 	var expected = {
 		isVariable: true,
 		name: 'tempVar'
@@ -361,7 +361,7 @@ test01aConvertTempVarGet: function() {
 },
 test01bConvertInstVarGet: function() {
 	var src = 'this.instVar';
-	var result = this.convert(src);
+	var result = this.convert(src, 'expr');
 	var expected = {
 		isVariable: true,
 		isInstance: true,
@@ -371,7 +371,7 @@ test01bConvertInstVarGet: function() {
 },
 test01cPropOfOtherObjIsConvertedIntoMethodSend: function() {
 	var src = 'x.instVar';
-	var result = this.convert(src);
+	var result = this.convert(src, 'expr');
 	var expected = {
 		isMessage: true,
 		isKeyword: true,
@@ -384,7 +384,7 @@ test01cPropOfOtherObjIsConvertedIntoMethodSend: function() {
 
 test02aConvertMutliArgExpression: function() {
 	var src = 'foo.bar()';
-	var result = this.convert(src);
+	var result = this.convert(src, 'expr');
 	var expected = {
 		isKeyword: true,
 		messageName: 'bar:',
@@ -395,7 +395,7 @@ test02aConvertMutliArgExpression: function() {
 },
 test02bConvertBinaryExpression: function() {
 	var src = 'a + 4';
-	var result = this.convert(src);
+	var result = this.convert(src, 'expr');
 	var expected = {
 		isBinary: true,
 		messageName: '+',
@@ -407,7 +407,7 @@ test02bConvertBinaryExpression: function() {
 
 test02cConvertMutliArgExpression: function() {
 	var src = 'foo.bar(1, baz)';
-	var result = this.convert(src);
+	var result = this.convert(src, 'expr');
 	var expected = {
 		isKeyword: true,
 		messageName: 'bar:',
@@ -423,7 +423,8 @@ test03aParseSimpleMethod: function() {
 	var expected = {
 		isMethod: true,
 		methodName: 'foo',
-		args: []
+		args: [],
+		sequence: {children: []}
 	};
 	this.assertNodeMatches(expected, result);
 },
@@ -434,15 +435,30 @@ test03bParseSimpleMethodWithArgs: function() {
 	var expected = {
 		isMethod: true,
 		methodName: 'foo',
-		args: ['a', 'b']
+		args: ['a', 'b'],
+		sequence: {children: []}
+	};
+	this.assertNodeMatches(expected, result);
+},
+test04aParseFunctionWithStatement: function() {
+	var src = 'function() { 3 + 4 }';
+	var result = this.convert(src, 'expr');
+	var expected = {
+		isBlock: true,
+		sequence: {children: [{
+			messageName: '+',
+			receiver: {value: 3},
+			args: [{value: 4}]
+		}]}
 	};
 	this.assertNodeMatches(expected, result);
 },
 
 
-test04aConvertClass: function() {
+
+testXXaConvertClass: function() {
 	var src = 'Object.subclass(\'Foo\')';
-	var result = this.convert(src);
+	var result = this.convert(src, 'expr');
 	var expected = {isClass: true, className: 'Foo'};
 	this.assertNodeMatches({isClass: true, className: 'Foo'}, result);
 },

@@ -198,7 +198,9 @@ ClamatoParser.isBinaryChar = function(c) {
 ometa JS2StConverter {
 trans      = [:t apply(t):ans]     -> ans,
 /* ----------- copied -------------- */
-begin    ( trans | empty ):x end                      -> x,
+begin =
+  trans*:xs end
+  -> { new StSequenceNode(xs) },
 /* ---------- modified ----------- */
 string   :s                                           -> s,
 json     trans*:props                                 -> props,
