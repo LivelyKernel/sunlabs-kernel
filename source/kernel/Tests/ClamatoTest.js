@@ -359,6 +359,25 @@ test01aConvertTempVarGet: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
+test01aConvertTempVarGet: function() {
+	var src = 'tempVar';
+	var result = this.convert(src);
+	var expected = {
+		isVariable: true,
+		name: 'tempVar'
+	};
+	this.assertNodeMatches(expected, result);
+},
+test01bConvertInstVarGet: function() {
+	var src = 'this.instVar';
+	var result = this.convert(src);
+	var expected = {
+		isVariable: true,
+		isInstance: true,
+		name: '@instVar'
+	};
+	this.assertNodeMatches(expected, result);
+},
 test01cPropOfOtherObjIsConvertedIntoMethodSend: function() {
 	var src = 'x.instVar';
 	var result = this.convert(src);
