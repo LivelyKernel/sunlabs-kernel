@@ -129,13 +129,20 @@ declaredVars =
   token('|') (variable:v)*:vars token('|')
   -> vars,
 
+propertyOrMethod =
+  spaces ('-' -> false | '+' -> true):isMeta (property:p token('.') -> p| clamatoMethod):node
+  -> { node.setMeta(isMeta); node },
+  
+property =
+  assignment:assgn
+  -> { new StPropertyNode(assgn) },
+
+  
 clamatoMethod =
-	spaces ('-' -> false | '+' -> true):isMeta
 	methodNameAndArgs:nameAndArgs (primitiveBody | stMethodBody):methodNode
 	-> {
 		methodNode.setMethodName(nameAndArgs[0]);
 		methodNode.setArgs(nameAndArgs[1]);
-		methodNode.setMeta(isMeta);
 		methodNode
 	},
 
@@ -164,8 +171,9 @@ methodNameAndArgs =
 -------- class related  -------
 ------------------------------*/
 clamatoClass =
-	token('<') identifier:name token('>') spaces clamatoMethod*:methods
-	-> { new StClassNode(name, methods) },
+	token('<') identifier:name ( token(':') identifier:superclassName | empty) token('>')
+	spaces propertyOrMethod*:methodsAndProperties
+	-> { new StClassNode(name, methodsAndProperties, superclassName) },
 
 clamatoClasses =
 	(clamatoClass)*:cls spaces end -> cls,
@@ -202,14 +210,19 @@ begin =
   trans*:xs end
   -> { new StSequenceNode(xs) },
 /* ---------- modified ----------- */
-string   :s                                           -> s,
 json     trans*:props                                 -> props,
 /* ------------ own -------------- */
 this
   -> 'self',
 
-number :n
-  -> { new StLiteralNode(n) },
+literal :l =
+  -> { new StLiteralNode(l) },
+  
+number =
+  literal,
+
+string :s =
+  -> s,
 
 get :x  =
   -> { new StVariableNode(x) },
@@ -245,14 +258,15 @@ func :args =
   -> {new StInvokableNode(body, args, [])},
 
 binding =
-  methodBinding | instVarBinding,
+  methodBinding | propertyBinding,
 
 methodBinding :name =
   trans:invokable ?(invokable.isBlock)
   -> {invokable.setMethodName(name); invokable},
 
-instVarBinding =
-  ?(false),
+propertyBinding :name =
+  trans:value
+  -> { new StAssignmentNode(new StVariableNode(name), value) },
 
 test -> StClassNode
 }

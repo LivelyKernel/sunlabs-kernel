@@ -508,8 +508,12 @@ Global.OMeta = {
       realArgs.push(args[idx])
     var m = Object.delegated(this,{input: input, _ruleStack: [], _originalInput: input.arr});
     m.initialize()
-    try { return realArgs.length == 1 ? m._apply.call(m, realArgs[0]) : m._applyWithArgs.apply(m, realArgs) }
-    catch (f) {
+    try {
+		var result = realArgs.length == 1 ? m._apply.call(m, realArgs[0]) : m._applyWithArgs.apply(m, realArgs)
+		if (m.input.arr)
+			console.log('Not all input processed: ' + m.input.arr.toArray().slice(m.input.idx));
+		return result;
+	} catch (f) {
       if (f == fail && matchFailed != undefined) {
         var input = m.input
         if (input.idx != undefined) {

@@ -195,7 +195,7 @@ test12aClamatoMethod: function() {
 	var src = '- foo\n\
 	@selector := \'xyz\'.\n\
 	self.';
-	var result = this.parse('clamatoMethod', src);
+	var result = this.parse('propertyOrMethod', src);
 	this.assert(result.isMethod, 'not a method');
 	this.assertEqual('foo', result.methodName, 'wrong name');
 	this.assertEqual(2, result.sequence.children.length, 'wrong sequence');
@@ -206,7 +206,7 @@ test12aClamatoMethod: function() {
 test12bBinaryMethod: function() {
 	var src = '- ++ arg\n\
 	self + arg.';
-	var result = this.parse('clamatoMethod', src);
+	var result = this.parse('propertyOrMethod', src);
 	this.assert(result.isMethod, 'not a method');
 	this.assertEqual('++', result.methodName, 'wrong name');
 	this.assertEqual('arg', result.args[0], 'wrong arg name');
@@ -214,7 +214,7 @@ test12bBinaryMethod: function() {
 test12cKeywordMethod: function() {
 	var src = '- foo: arg1 bar:arg2\n\
 	arg1 baz: arg2.';
-	var result = this.parse('clamatoMethod', src);
+	var result = this.parse('propertyOrMethod', src);
 	this.assert(result.isMethod, 'not a method');
 	this.assertEqual('foo:bar:', result.methodName, 'wrong name');
 	this.assertEqual('arg1', result.args[0], 'wrong arg name');
@@ -227,16 +227,25 @@ test13aParseClass: function() {
 - and: aBlock\n\
 	(self = true)\n\
 		ifTrue: aBlock\n\
-		ifFalse: [false].\n'
+		ifFalse: [false].'
 	var result = this.parse('clamatoClass', src);
 	this.assert(result.isClass, 'not a class');
 	this.assertEqual('Object', result.className, 'wrong name');
 	this.assertEqual(2, result.methods.length, 'wrong number of methods');
 },
+test13bParseClass: function() {
+	var src ='<ClassA:Object>';
+	var result = this.parse('clamatoClass', src);
+	this.assert(result.isClass, 'not a class');
+	this.assertEqual('ClassA', result.className, 'wrong name');
+	this.assertEqual('Object', result.superclassName, 'wrong name');
+	this.assertEqual(0, result.methods.length, 'wrong number of methods');
+},
+
 test14aParseJsPrimitive: function() {
 	var body = '{ this.bar() }';
 	var src = '- foo ' + body;
-	var result = this.parse('clamatoMethod', src);
+	var result = this.parse('propertyOrMethod', src);
 	this.assert(result.isPrimitive, 'not a primitve');
 	this.assertEqual('foo', result.methodName, 'wrong name');
 	this.assertEqual(body, result.primitiveBody, 'wrong primBody');
@@ -244,7 +253,7 @@ test14aParseJsPrimitive: function() {
 test14bParseJsPrimitive: function() {
 	var body = '{ (function() { 1 + 2})() }';
 	var src = '- foo ' + body;
-	var result = this.parse('clamatoMethod', src);
+	var result = this.parse('propertyOrMethod', src);
 	this.assert(result.isPrimitive, 'not a primitve');
 	this.assertEqual('foo', result.methodName, 'wrong name');
 	this.assertEqual(body, result.primitiveBody, 'wrong primBody');
@@ -260,6 +269,18 @@ test15aCascades: function() {
 	this.assertEqual(1, result.messages[1].args.length);
 	this.assertEqual('x', result.messages[1].receiver.name);
 },
+test16aPropertyDefInClass: function() {
+	var src = '<ClassA>\n- property1 := 1.\n+ property2 := 2.';
+	var result = this.parse('clamatoClass', src);
+	this.assert(result.isClass, 'no class');
+	var props = result.properties;
+	this.assertEqual(2, props.length, 'propertyDefs  length not 1');
+	this.assert(props[0].assignment.isAssignment, 'not assignment');
+	this.assert(!props[0].isMeta, 'not not meta');
+	this.assertEqual('property1' , props[0].assignment.variable.name, 'not correct var name');
+	this.assert(props[1].isMeta, 'not meta');
+},
+
 
 
 
@@ -329,7 +350,7 @@ assertNodeMatches: function(expectedSpec, node) {
 			case String:
 			case Boolean:
 			case Number: {
-				this.assertEqual(expected, actual, name + ' was expected to be ' + expected)
+				this.assertEqual(expected, actual, name + ' was expected to be ' + expected);
 				continue;
 			}
 		};
@@ -440,28 +461,62 @@ test03bParseSimpleMethodWithArgs: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
-test04aParseFunctionWithStatement: function() {
-	var src = 'function() { 3 + 4 }';
+test04aParseFunctionWithStatements: function() {
+	var src = 'function() { 3 + 4; 4 + 7 }';
 	var result = this.convert(src, 'expr');
 	var expected = {
 		isBlock: true,
-		sequence: {children: [{
-			messageName: '+',
-			receiver: {value: 3},
-			args: [{value: 4}]
-		}]}
+		sequence: {children: [
+			{messageName: '+', receiver: {value: 3}, args: [{value: 4}]},
+			{isMessage: true}]}
 	};
 	this.assertNodeMatches(expected, result);
 },
 
 
 
-testXXaConvertClass: function() {
+testXXaConvertClassWithMethod: function() {
 	var src = 'Object.subclass(\'Foo\')';
 	var result = this.convert(src, 'expr');
 	var expected = {isClass: true, className: 'Foo'};
-	this.assertNodeMatches({isClass: true, className: 'Foo'}, result);
+	this.assertNodeMatches(expected, result);
 },
+
+testXXbConvertClassWithMethod: function() {
+	var src = 'Object.subclass(\'Foo\', {\n x: function(a) { 1 },\ny: function() {}})';
+	var result = this.convert(src, 'expr');
+	var expected = {
+		isClass: true,
+		className: 'Foo',
+		methods: [{methodName: 'x', args: ['a']}, {methodName: 'y'}]};
+	this.assertNodeMatches(expected, result);
+},
+testXXcConvertClassWithPropertiesAndMethod: function() {
+	var src = 'Object.subclass(\'Foo\', {\n x: 2,\ny: \'foo\', z: function() { 1 }})';
+	 result = this.convert(src, 'expr');
+	var expected = {
+		isClass: true,
+		className: 'Foo',
+		methods: [{methodName: 'z', args: []}],
+		properties: [{variable: {name: 'x'}, value: {value: 2}}, {isAssignment: true}]
+	};
+	this.assertNodeMatches(expected, result);
+},;
+	this.assertNodeMatches(expected, result);
+},{
+	var src = 'Object.subclass(\'Foo\', {\n x: 1,\ny: \'foo\', z: function() { 1 }})';
+	var result = this.convert(src, 'expr');
+	var expected = {
+		isClass: true,
+		className: 'Foo',
+		methods: [{methodName: 'z', args: []}],
+		properties: [{assignment: {variable: {}}]
+		//properties: [{assignment: {variable: {name: 'x'}, value: 2}}]
+	};
+	this.assertNodeMatches(expected, result);
+},
+
+
 
 
 });

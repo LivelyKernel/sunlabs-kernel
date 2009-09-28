@@ -103,9 +103,25 @@ StNode.subclass('StSequenceNode', {
 	},
 
 	toString: function() {
-		return Strings.format('%Sequence(%s statements)',
+		return Strings.format('Sequence(%s statements)',
 			this.children.length);
 	},
+});
+
+StNode.subclass('StPropertyNode', { /* for JS->St */
+	
+	isProperty: true,
+	
+	initialize: function($super, assignment) {
+		$super();
+		this.assignment = assignment;
+		this.isMeta = false;
+	},
+	
+	setMeta: function(isMeta) {
+		this.isMeta = isMeta;
+	},
+
 });
 
 StNode.subclass('StInvokableNode', {
@@ -169,11 +185,15 @@ StNode.subclass('StClassNode', {
 	
 	isClass: true,
 	
-	initialize: function($super, className, methods, superclass) {
+	initialize: function($super, className, methodsAndProperties, superclassName) {
 		$super();
 		this.className = className;
-		this.methods = methods;
-		this.superclass = superclass;
+		this.superclassName = superclassName;
+		this.methods = [];
+		this.properties = [];
+		methodsAndProperties.forEach(function(ea) {
+			ea.isMethod ? this.methods.push(ea) : this.properties.push(ea);
+		}, this);
 	},
 
 	toString: function() {
