@@ -234,7 +234,7 @@ StNode.subclass('StLiteralNode', {
 	},
 
 	toString: function() {
-		return 'Literal(' + this.value.toString() + ')';
+		return 'Literal(' + (this.value ? this.value.toString() : 'UNDEFINED!') + ')';
 	},
 
 });

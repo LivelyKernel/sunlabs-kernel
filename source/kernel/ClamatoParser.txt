@@ -213,16 +213,13 @@ begin =
 json     trans*:props                                 -> props,
 /* ------------ own -------------- */
 this
-  -> 'self',
-
-literal :l =
-  -> { new StLiteralNode(l) },
+  -> new StVariableNode('self'),
   
-number =
-  literal,
+number :n =
+  -> { new StLiteralNode(n) },
 
 string :s =
-  -> s,
+  -> { new StLiteralNode(s) },
 
 get :x  =
   -> { new StVariableNode(x) },
@@ -231,12 +228,12 @@ getp  =
   getInstVar | getVarOfOtherObject,
 
 getInstVar =
-    trans:name trans:obj ?(obj == 'self')
-    -> { new StInstanceVariableNode('@' + name)  },
+    trans:what ?what.isLiteral trans:obj ?(obj.name == 'self')
+    -> { new StInstanceVariableNode('@' + what.value)  },
 
 getVarOfOtherObject =
-    trans:fieldName trans:obj ?(obj != 'self')
-    -> { new StKeywordMessageNode('getVar:', [new StLiteralNode(fieldName)], obj)  },
+    trans:what trans:obj
+    -> { new StKeywordMessageNode('getVar:', [what], obj)  },
 
 binop :op =
   trans:recv trans:arg

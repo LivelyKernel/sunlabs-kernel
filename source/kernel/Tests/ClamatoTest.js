@@ -390,7 +390,30 @@ test01bConvertInstVarGet: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
-test01cPropOfOtherObjIsConvertedIntoMethodSend: function() {
+test01cGetSelfInstVarWithExpression: function() {
+	var src = 'this[instVar]';
+	var result = this.convert(src, 'expr');
+	var expected = {
+		isMessage: true,
+		isKeyword: true,
+		messageName: 'getVar:',
+		receiver: {name: 'self'},
+		args: [{name: 'instVar'}],
+	};
+	this.assertNodeMatches(expected, result);
+},
+test01dGetSelfInstVarWithExpression: function() {
+	var src = 'this["instVar"]';
+	var result = this.convert(src, 'expr');
+	var expected = {
+		isVariable: true,
+		isInstance: true,
+		name: '@instVar'
+	};
+	this.assertNodeMatches(expected, result);
+},
+
+test01eGetSelfInstVarWithExpression: function() {
 	var src = 'x.instVar';
 	var result = this.convert(src, 'expr');
 	var expected = {
@@ -402,6 +425,20 @@ test01cPropOfOtherObjIsConvertedIntoMethodSend: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
+
+test01fConvertInstVarGet: function() {
+	var src = 'x["instVar"]';
+	var result = this.convert(src, 'expr');
+	var expected = {
+		isMessage: true,
+		isKeyword: true,
+		messageName: 'getVar:',
+		receiver: {name: 'x'},
+		args: [{value: 'instVar'}],
+	};
+	this.assertNodeMatches(expected, result);
+},
+
 
 test02aConvertMutliArgExpression: function() {
 	var src = 'foo.bar()';
@@ -478,7 +515,7 @@ test04aParseFunctionWithStatements: function() {
 testXXaConvertClassWithMethod: function() {
 	var src = 'Object.subclass(\'Foo\')';
 	var result = this.convert(src, 'expr');
-	var expected = {isClass: true, className: 'Foo'};
+	var expected = {isClass: true, className: {value: 'Foo'}};
 	this.assertNodeMatches(expected, result);
 },
 
@@ -487,36 +524,19 @@ testXXbConvertClassWithMethod: function() {
 	var result = this.convert(src, 'expr');
 	var expected = {
 		isClass: true,
-		className: 'Foo',
 		methods: [{methodName: 'x', args: ['a']}, {methodName: 'y'}]};
 	this.assertNodeMatches(expected, result);
 },
 testXXcConvertClassWithPropertiesAndMethod: function() {
 	var src = 'Object.subclass(\'Foo\', {\n x: 2,\ny: \'foo\', z: function() { 1 }})';
-	 result = this.convert(src, 'expr');
+	var result = this.convert(src, 'expr');
 	var expected = {
 		isClass: true,
-		className: 'Foo',
 		methods: [{methodName: 'z', args: []}],
 		properties: [{variable: {name: 'x'}, value: {value: 2}}, {isAssignment: true}]
 	};
 	this.assertNodeMatches(expected, result);
-},;
-	this.assertNodeMatches(expected, result);
-},{
-	var src = 'Object.subclass(\'Foo\', {\n x: 1,\ny: \'foo\', z: function() { 1 }})';
-	var result = this.convert(src, 'expr');
-	var expected = {
-		isClass: true,
-		className: 'Foo',
-		methods: [{methodName: 'z', args: []}],
-		properties: [{assignment: {variable: {}}]
-		//properties: [{assignment: {variable: {name: 'x'}, value: 2}}]
-	};
-	this.assertNodeMatches(expected, result);
 },
-
-
 
 
 });
