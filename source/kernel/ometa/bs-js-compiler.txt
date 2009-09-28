@@ -103,16 +103,16 @@ ometa BSJSParser <: Parser {
   funcRest     = "(" listOf(#formal, ','):fs ")" "{" srcElems:body "}"                           -> [#func, fs, body],
   sc           = spacesNoNl ('\n' | &'}' | end)
                | ";",
-  binding      = "name":n ( "=" expr
+  varBinding      = "name":n ( "=" expr
                           | empty -> [#get, 'undefined'] ):v                                     -> [#var, n, v],
   block        = "{" srcElems:ss "}"                                                             -> ss,
   stmt         = block
-               | "var" listOf(#binding, ','):bs sc                                               -> [#begin].concat(bs)
+               | "var" listOf(#varBinding, ','):bs sc                                               -> [#begin].concat(bs)
                | "if" "(" expr:c ")" stmt:t ( "else" stmt
                                             | empty -> [#get, 'undefined'] ):f                   -> [#if, c, t, f]
                | "while" "(" expr:c ")" stmt:s                                                   -> [#while,   c, s]
                | "do" stmt:s "while" "(" expr:c ")" sc                                           -> [#doWhile, s, c]
-               | "for" "(" ( "var" listOf(#binding, ','):vars -> [#multiVar, vars]
+               | "for" "(" ( "var" listOf(#varBinding, ','):vars -> [#multiVar, vars]
                            | expr
                            | empty -> [#get, 'undefined'] ):i
                        ";" ( expr
