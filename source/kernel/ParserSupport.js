@@ -107,39 +107,25 @@ StNode.subclass('StSequenceNode', {
 			this.children.length);
 	},
 });
+
+StNode.subclass('StInvokableNode', {
 	
-StNode.subclass('StBlockNode', {
+	isMethod: false,
 	
 	isBlock: true,
 	
 	initialize: function($super, sequence, args, declaredVars) {
 		$super();
-		this.sequence = sequence;
 		this.args = args;
-		this.declaredVars = declaredVars;
-	},
-	
-	toString: function() {
-		return Strings.format('%Block([%s], %s)',
-			this.args ? this.args.collect(function(ea) { return ea.toString() }).join(',') : 'none');
-			this.sequence.toString();
-	},
-});
-
-StNode.subclass('StMethodNode', {
-	
-	isMethod: true,
-	
-	initialize: function($super, methodName, isMeta, args, sequence, declaredVars) {
-		$super();
-		this.methodName = methodName;
-		this.args = args;
-		this.isMeta = isMeta;
 		this.sequence = sequence;
 		this.declaredVars = declaredVars;
+		this.isMeta = null;
+		this.methodName = null;
 	},
 	
 	setMethodName: function(methodName) {
+		this.isBlock = false;
+		this.isMethod = true;
 		this.methodName = methodName;
 	},
 
@@ -148,19 +134,22 @@ StNode.subclass('StMethodNode', {
 	},
 	
 	setMeta: function(isMeta) {
+		if (this.isBlock) throw dbgOn(new Error('StBlockNode cannot be meta/non meta'))
 		this.isMeta = isMeta;
 	},
 
 	toString: function() {
-		return Strings.format('%Method(%s(%s)%s)',
-			this.methodName,
+		return Strings.format('Method(%s(%s)%s)',
+			this.methodName ? this.methodName : 'BLOCK',
 			this.args ? this.args.collect(function(ea) { return ea.toString() }).join(',') : 'none',
 			this.isMeta ? 'isMeta' : '')
 	},
 
 });
 
-StMethodNode.subclass('StPrimitveMethodNode', {
+StInvokableNode.subclass('StPrimitveMethodNode', {
+	
+	isMethod: true,
 	
 	isPrimitive: true,
 	
