@@ -112,7 +112,7 @@ block =
 	opt(#declaredVars):declared
 	opt(#sequence):s
 	token(']')
-	-> { new StBlockNode(s, args, declared) },
+	-> { new StInvokableNode(s, args, declared) },
 
 blockArgs =
 	(token(':') variable:v -> v)+:vars token('|')
@@ -141,7 +141,7 @@ clamatoMethod =
 
 stMethodBody =
   opt(#declaredVars):vars opt(#sequence):seq
-	-> { new StMethodNode(null, null, null, seq, vars) },
+	-> { new StInvokableNode(seq, null, vars) },
 
 primitiveBody =
 	token('{') -> {$elf.count = 0}
@@ -198,7 +198,7 @@ ClamatoParser.isBinaryChar = function(c) {
 ometa JS2StConverter {
 trans      = [:t apply(t):ans]     -> ans,
 /* ----------- copied -------------- */
-begin    trans:x end                                  -> x,
+begin    ( trans | empty ):x end                      -> x,
 /* ---------- modified ----------- */
 string   :s                                           -> s,
 json     trans*:props                                 -> props,
@@ -230,13 +230,27 @@ binop :op =
 send  =
   classDef | normalSend,
 
-classDef :msg =
-   ?(msg == 'subclass') trans:superclass trans:name ( trans | empty -> [] ):body
-  -> { new StClassNode(name, body, superclass) },
-  
 normalSend :name  =
   trans:recv trans*:args
   -> { new StKeywordMessageNode(name + ':', args, recv) },
+
+classDef :msg =
+   ?(msg == 'subclass') trans:superclass trans:name ( trans | empty -> [] ):body
+  -> { new StClassNode(name, body, superclass) },
+
+func :args =
+  trans:body
+  -> {new StInvokableNode(body, args, [])},
+
+binding =
+  methodBinding | instVarBinding,
+
+methodBinding :name =
+  trans:invokable ?(invokable.isBlock)
+  -> {invokable.setMethodName(name); invokable},
+
+instVarBinding =
+  ?(false),
 
 test -> StClassNode
 }

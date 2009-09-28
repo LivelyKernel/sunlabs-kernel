@@ -344,20 +344,11 @@ parseJs: function(src, optRule) {
 	var rule = optRule || 'topLevel';
 	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src, this.errorCb());
 },
-convert: function(jsSrc) {
+convert: function(jsSrcOrAst) {
 	jsAst = stAst = null;
-	jsAst = this.parseJs(jsSrc);
+	jsAst = Object.isArray(jsSrcOrAst) ? jsSrcOrAst : this.parseJs(jsSrcOrAst);
 	stAst = this.jsAst2StAst(jsAst);
 	return stAst;
-},
-test01aConvertTempVarGet: function() {
-	var src = 'tempVar';
-	var result = this.convert(src);
-	var expected = {
-		isVariable: true,
-		name: 'tempVar'
-	};
-	this.assertNodeMatches(expected, result);
 },
 test01aConvertTempVarGet: function() {
 	var src = 'tempVar';
@@ -425,7 +416,31 @@ test02cConvertMutliArgExpression: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
-test03aConvertClass: function() {
+test03aParseSimpleMethod: function() {
+	// {foo: function() {}}
+	var ast = ["binding", "foo", ["func", [], ["begin"]]];
+	var result = this.convert(ast);
+	var expected = {
+		isMethod: true,
+		methodName: 'foo',
+		args: []
+	};
+	this.assertNodeMatches(expected, result);
+},
+test03bParseSimpleMethodWithArgs: function() {
+	// {foo: function(a, b) {}}
+	var ast = ["binding", "foo", ["func", ["a", "b"], ["begin"]]];
+	var result = this.convert(ast);
+	var expected = {
+		isMethod: true,
+		methodName: 'foo',
+		args: ['a', 'b']
+	};
+	this.assertNodeMatches(expected, result);
+},
+
+
+test04aConvertClass: function() {
 	var src = 'Object.subclass(\'Foo\')';
 	var result = this.convert(src);
 	var expected = {isClass: true, className: 'Foo'};
