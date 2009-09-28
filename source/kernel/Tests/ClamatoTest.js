@@ -320,9 +320,20 @@ setUp: function() {
 	this.js2StConverter = JS2StConverter;
 },
 
-assertNodeMatches: function(node, expectedSpec) {
+assertNodeMatches: function(expectedSpec, node) {
 	for (name in expectedSpec) {
-		this.assertEqual(expectedSpec[name], node[name]);
+		var expected = expectedSpec[name];
+		if (Object.isFunction(expected)) continue;
+		var actual = node[name];
+		switch (expected.constructor) {
+			case String:
+			case Boolean:
+			case Number: {
+				this.assertEqual(expected, actual, name + ' was expected to be ' + expected)
+				continue;
+			}
+		};
+		this.assertNodeMatches(expected, actual);
 	}
 },
 
@@ -333,13 +344,75 @@ parseJs: function(src, optRule) {
 	var rule = optRule || 'topLevel';
 	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src, this.errorCb());
 },
-
-test01ConvertClass: function() {
-	var src = 'Object.subclass(\'Foo\')';
-	var jsAst = this.parseJs(src);
-	var result = this.jsAst2StAst(jsAst);
-	this.assertNodeMatches(result, {isClass: true, className: 'Foo'});
+convert: function(jsSrc) {
+	jsAst = stAst = null;
+	jsAst = this.parseJs(jsSrc);
+	stAst = this.jsAst2StAst(jsAst);
+	return stAst;
 },
+test01aConvertTempVarGet: function() {
+	var src = 'tempVar';
+	var result = this.convert(src);
+	var expected = {
+		isVariable: true,
+		name: 'tempVar'
+	};
+	this.assertNodeMatches(expected, result);
+},
+test01cPropOfOtherObjIsConvertedIntoMethodSend: function() {
+	var src = 'x.instVar';
+	var result = this.convert(src);
+	var expected = {
+		isMessage: true,
+		isKeyword: true,
+		messageName: 'getVar:',
+		receiver: {name: 'x'},
+		args: [{value: 'instVar'}],
+	};
+	this.assertNodeMatches(expected, result);
+},
+
+test02aConvertMutliArgExpression: function() {
+	var src = 'foo.bar()';
+	var result = this.convert(src);
+	var expected = {
+		isKeyword: true,
+		messageName: 'bar:',
+		receiver: {isVariable: true, name: 'foo'},
+		args: []
+	};
+	this.assertNodeMatches(expected, result);
+},
+test02bConvertBinaryExpression: function() {
+	var src = 'a + 4';
+	var result = this.convert(src);
+	var expected = {
+		isBinary: true,
+		messageName: '+',
+		receiver: {isVariable: true, name: 'a'},
+		args: [{isLiteral: true, value: 4}]
+	};
+	this.assertNodeMatches(expected, result);
+},
+
+test02cConvertMutliArgExpression: function() {
+	var src = 'foo.bar(1, baz)';
+	var result = this.convert(src);
+	var expected = {
+		isKeyword: true,
+		messageName: 'bar:',
+		receiver: {isVariable: true, name: 'foo'},
+		args: [{isLiteral: true}, {isVariable: true}]
+	};
+	this.assertNodeMatches(expected, result);
+},
+test03aConvertClass: function() {
+	var src = 'Object.subclass(\'Foo\')';
+	var result = this.convert(src);
+	var expected = {isClass: true, className: 'Foo'};
+	this.assertNodeMatches({isClass: true, className: 'Foo'}, result);
+},
+
 
 });
 

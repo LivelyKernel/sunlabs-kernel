@@ -198,12 +198,45 @@ ClamatoParser.isBinaryChar = function(c) {
 ometa JS2StConverter {
 trans      = [:t apply(t):ans]     -> ans,
 /* ----------- copied -------------- */
-get      :x                                           -> x,
 begin    trans:x end                                  -> x,
 /* ---------- modified ----------- */
 string   :s                                           -> s,
 json     trans*:props                                 -> props,
 /* ------------ own -------------- */
-send :msg ?(msg == 'subclass') trans:superclass trans:name (trans | empty -> []):body -> {new StClassNode(name, body, superclass)},
-	test -> StClassNode
+this
+  -> 'self',
+
+number :n
+  -> { new StLiteralNode(n) },
+
+get :x  =
+  -> { new StVariableNode(x) },
+
+getp  =
+  getInstVar | getVarOfOtherObject,
+
+getInstVar =
+    trans:name trans:obj ?(obj == 'self')
+    -> { new StInstanceVariableNode('@' + name)  },
+
+getVarOfOtherObject =
+    trans:fieldName trans:obj ?(obj != 'self')
+    -> { new StKeywordMessageNode('getVar:', [new StLiteralNode(fieldName)], obj)  },
+
+binop :op =
+  trans:recv trans:arg
+  -> { new StBinaryMessageNode(op, [arg], recv) },
+
+send  =
+  classDef | normalSend,
+
+classDef :msg =
+   ?(msg == 'subclass') trans:superclass trans:name ( trans | empty -> [] ):body
+  -> { new StClassNode(name, body, superclass) },
+  
+normalSend :name  =
+  trans:recv trans*:args
+  -> { new StKeywordMessageNode(name + ':', args, recv) },
+
+test -> StClassNode
 }
