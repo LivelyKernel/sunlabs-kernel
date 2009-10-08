@@ -9,7 +9,11 @@ Widget.subclass('WikiNavigator', {
             // FIXME: assertion: */proxy/wiki is used as the repository
             // if URL.source.getDirectory() is http://localhost/livelyBranch/proxy/wiki/test/
             // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
-            if (!URL.source.toString().include("wiki")) return URL.source.getDirectory().toString();
+            
+			if (Config.wikiRepoUrl)
+				return Config.wikiRepoUrl;
+
+			if (!URL.source.toString().include("wiki")) return URL.source.getDirectory().toString(); 
 			var match = /(.*wiki).*/.exec(URL.source.getDirectory().toString());
 			if (match) {
             	return match[1];
@@ -302,6 +306,8 @@ login: function() {
 	},
 	
 	isActive: function() {
+		if (Config.wikiRepoUrl)
+			return true;
 	    // just look if url seems to point to a wiki file
         return this.model.getURL().toString().include("wiki");
 	},
