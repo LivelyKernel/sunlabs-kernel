@@ -618,6 +618,23 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
     
     
 });
+TestCase.subclass('ASelectionCopyAndPasteTest', {
+
+	testPasteSelection: function() {
+		var selection = new SelectionMorph(new Rectangle(0,0,10,10));
+		var source = '\
+<g type="Morph" id="11746:Morph" transform="translate(920,104)">\
+<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(255,0,0)"/>\
+<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
+<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field></g>';
+
+		var oldNum = WorldMorph.current().submorphs.length;
+		selection.pasteFromSource(source);		
+		this.assertEqual(oldNum + 1, WorldMorph.current().submorphs.length);
+	
+	},
+
+});
 
 
 TestCase.subclass('DomRecordTest', {

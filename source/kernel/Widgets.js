@@ -767,7 +767,6 @@ BoxMorph.subclass("SelectionMorph", {
     },
 	
 	/* Actions */
-
 	
 	copyAsXMLString: function() {
 		if (this.selectedMorphs.length == 0) {
@@ -802,8 +801,21 @@ BoxMorph.subclass("SelectionMorph", {
 	},
 	
 	doPaste: function() {
-
+		if (TextMorph.clipboardString) {
+			console.log("paste morphs...")
+			this.pasteFromSource(TextMorph.clipboardString);
+		}
 	},
+pasteFromSource: function(source){
+	
+var copier = new ComponentCopier();
+			var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);
+			morphs.each(function(ea) {
+				console.log("paste each: " + ea)
+				WorldMorph.current().addMorph(ea)
+			}, this)
+},
+
 	
 	doCut: function() {
 		

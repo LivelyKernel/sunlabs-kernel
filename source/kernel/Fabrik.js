@@ -2651,6 +2651,7 @@ Object.subclass('ComponentCopier', {
 		var worldNode = doc.childNodes[0].childNodes[0];
 		worldNode.appendChild(copy.rawNode);
 		var exporter = new Exporter(copy);
+		// todo: what about the SystemDictionary
 		var helpers = exporter.extendForSerialization();
 		var result = Exporter.stringify(copy.rawNode);
 		exporter.removeHelperNodes(helpers);
@@ -2664,7 +2665,7 @@ Object.subclass('ComponentCopier', {
                     '<rect x="0" y="0" width="800" height="600"/>' +          
                     source  +
                 '</g>'+ 
-            '</svg>', "text/xml");
+            '</svg>', /* "text/xml" */ "application/xml");
 	},
 
 	loadMorphsWithWorldTrunkFromSource: function(source) {

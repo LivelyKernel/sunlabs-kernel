@@ -3816,7 +3816,9 @@ Morph.subclass("PasteUpMorph", {
 	handle.mode = 'reshape';
         m.addMorph(handle);
         evt.hand.setMouseFocus(handle);
-    }
+    },
+
+
     
 });
 
