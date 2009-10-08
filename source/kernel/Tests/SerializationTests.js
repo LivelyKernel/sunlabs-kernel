@@ -602,21 +602,8 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
 	},
 	
 	
-	testCopySelectionAsXML: function() {
-		var selection = new SelectionMorph(new Rectangle(0,0,100,100));
-		var m1 = Morph.makeRectangle(new Rectangle(10,10,20,20));
-		var m2 = Morph.makeRectangle(new Rectangle(30,30,50,50));
-		selection.selectedMorphs = [m1, m2];
-		
-		var string = selection.copyAsXMLString();
-		
-		console.log(string);
-		// this.assert(false);
-		
-	}
-    
-    
-    
+
+        
 });
 TestCase.subclass('ASelectionCopyAndPasteTest', {
 	
@@ -643,7 +630,7 @@ TestCase.subclass('ASelectionCopyAndPasteTest', {
 		this.selection.pasteFromSource(source);		
 		this.assertEqual(oldNum + 1, this.morph.submorphs.length);	
 	},
-
+	
 	testPasteSelection: function() {
 		var source = '\
 			<g xmlns="http://www.w3.org/2000/svg" type="Morph" id="889:Morph" transform="translate(0,0)">\
@@ -665,10 +652,73 @@ TestCase.subclass('ASelectionCopyAndPasteTest', {
 		this.selection.pasteFromSource(source);		
 		this.assertEqual(this.morph.submorphs.length, oldNum + 2, "wrong number of morphs pasted");
 	},
+	
+	
+	testPasteMorph: function() {
+		var source = '\
+			<g type="Morph" id="11746:Morph" transform="translate(920,104)">\
+				<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(255,0,0)"/>\
+				<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
+				<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
+			</g>';
+		var oldNum = this.morph.submorphs.length;	
+		this.assertEqual(oldNum + 1, this.morph.submorphs.length);	
+	},
+	
+	
+	testPasteMorphWithStyle: function() {
+		var source = '\
+			<defs id="SystemDictionary">\
+				<linearGradient x1="0" y1="0" x2="0" y2="1" id="1394:lively.paint.LinearGradient">\
+					<stop offset="0" stop-color="rgb(169,193,208)"/>\
+					<stop offset="0.25" stop-color="rgb(83,130,161)"/>\
+					<stop offset="0.5" stop-color="rgb(169,193,208)"/>\
+					<stop offset="0.75" stop-color="rgb(83,130,161)"/>\
+					<stop offset="1" stop-color="rgb(83,130,161)"/>\
+				</linearGradient>\
+			</defs>\
+			<g type="Morph" id="11746:Morph" transform="translate(10,10)">\
+				<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="url(#1394:lively.paint.LinearGradient)"/>\
+				<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
+				<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
+			</g>';
+		var oldNum = this.morph.submorphs.length;
+		delete this.selection.pasteDestinationMorph;	
+		this.selection.pasteFromSource(source);		
+		this.assertEqual(oldNum + 1, this.morph.submorphs.length);	
+	},
 
 	testCalcTopLeftOfPoints: function() {
 		this.assertEqualState(pt(6,5), this.selection.calcTopLeftOfPoints([pt(10,30), pt(20,5), pt(6,17)]))
+	},
+
+	stringToXml: function(xmlString) {
+		return new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
+	},
+
+	testCopySelection: function() {
+		var m1 = Morph.makeRectangle(new Rectangle(10,10,20,20));
+		var m2 = Morph.makeRectangle(new Rectangle(30,30,50,50));
+		this.selection.selectedMorphs = [m1, m2];
+		var string = this.selection.copyAsXMLString();	
+		var xml = this.stringToXml(string);		
+		var selectionNode = xml.childNodes[0];
+	},
+
+	testCopySelectionWithStyle: function() {
+		var m1 = Morph.makeRectangle(new Rectangle(10,10,20,20));		
+		// m1.setFill(new lively.paint.LinearGradient(Color.white, Color.black));
+		
+		this.selection.selectedMorphs = [m1];
+		
+		var string = this.selection.copyAsXMLString();
+		
+		//var xml = this.stringToXml(string);		
+		//var selectionNode = xml.childNodes[0];
+		console.log(string);
+		// this.assert(false);
 	}
+
 
 });
 
