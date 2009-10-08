@@ -619,20 +619,56 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
     
 });
 TestCase.subclass('ASelectionCopyAndPasteTest', {
+	
+	setUp: function() {
+		this.selection = new SelectionMorph(new Rectangle(0,0,10,10));
+		this.morph = new Morph.makeRectangle(new Rectangle(0,0,100,100));
+		var morph = this.morph;
+		this.selection.pasteDestinationMorph = function() {return morph};
+	},
+	
+	tearDown: function() {
+		delete this.selection;
+		delete this.morph;
+	},
+
+	testPasteMorph: function() {
+		var source = '\
+			<g type="Morph" id="11746:Morph" transform="translate(920,104)">\
+				<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(255,0,0)"/>\
+				<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
+				<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
+			</g>';
+		var oldNum = this.morph.submorphs.length;
+		this.selection.pasteFromSource(source);		
+		this.assertEqual(oldNum + 1, this.morph.submorphs.length);	
+	},
 
 	testPasteSelection: function() {
-		var selection = new SelectionMorph(new Rectangle(0,0,10,10));
 		var source = '\
-<g type="Morph" id="11746:Morph" transform="translate(920,104)">\
-<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(255,0,0)"/>\
-<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
-<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field></g>';
-
-		var oldNum = WorldMorph.current().submorphs.length;
-		selection.pasteFromSource(source);		
-		this.assertEqual(oldNum + 1, WorldMorph.current().submorphs.length);
-	
+			<g xmlns="http://www.w3.org/2000/svg" type="Morph" id="889:Morph" transform="translate(0,0)">\
+				<rect x="0" y="0" width="10" height="10" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(0,255,0)"/>\
+				<g type="Morph" id="890:Morph" transform="translate(167,312)">\
+					<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(255,0,255)"/>\
+					<field name="origin" family="Point"><![CDATA[{"x":50,"y":50}]]></field>\
+					<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
+				</g>\
+				<g type="Morph" id="11746:Morph" transform="translate(920,104)">\
+					<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(255,0,0)"/>\
+					<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
+					<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
+				</g>\
+				<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
+				<field name="isSelectionContainer">true</field>\
+			</g>'
+		var oldNum = this.morph.submorphs.length;
+		this.selection.pasteFromSource(source);		
+		this.assertEqual(this.morph.submorphs.length, oldNum + 2, "wrong number of morphs pasted");
 	},
+
+	testCalcTopLeftOfPoints: function() {
+		this.assertEqualState(pt(6,5), this.selection.calcTopLeftOfPoints([pt(10,30), pt(20,5), pt(6,17)]))
+	}
 
 });
 

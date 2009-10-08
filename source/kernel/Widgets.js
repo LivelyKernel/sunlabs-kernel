@@ -793,32 +793,67 @@ BoxMorph.subclass("SelectionMorph", {
 		return result
 	},
 
+	pasteDestinationMorph: function() {
+		return WorldMorph.current();
+	},
+
 	doCopy: function() {
-		console.log("doCopy: Copy selection to system clipboard is not implemented yet.");
 		var source = this.copyAsXMLString();
-		console.log(source);
 		TextMorph.clipboardString = source;
 	},
 	
 	doPaste: function() {
 		if (TextMorph.clipboardString) {
-			console.log("paste morphs...")
+			// console.log("paste morphs...")
 			this.pasteFromSource(TextMorph.clipboardString);
 		}
 	},
-pasteFromSource: function(source){
 	
-var copier = new ComponentCopier();
-			var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);
-			morphs.each(function(ea) {
-				console.log("paste each: " + ea)
-				WorldMorph.current().addMorph(ea)
-			}, this)
-},
+	calcTopLeftOfPoints: function(points) {
+		var min_x;
+		var min_y;
+		points.each(function(ea) {
+			if (!min_x || ea.x < min_x)
+				min_x = ea.x;
+			if (!min_y || ea.y < min_y)
+				min_y = ea.y;
+		});
+		return pt(min_x, min_y)
+	},
+	
+	calcPasteOffsetFrom: function(morphs) {
+		if(morphs.length == 0)
+			return;
+		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
+		var lastMousePoint = WorldMorph.current().hands[0].lastMouseDownPoint 
 
+		if (lastMousePoint) {
+			return lastMousePoint.subPt(topLeft);
+		};
+	},
 	
+	pasteFromSource: function(source){
+		var copier = new ComponentCopier();
+		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);		
+		// unpack potential selection morph
+		if(morphs[0] && morphs[0].isSelectionContainer) {
+			morphs = morphs[0].submorphs
+		};
+		var copier = new Copier();
+		var offset = this.calcPasteOffsetFrom(morphs);
+		morphs.each(function(ea) {
+			var copy = ea.copy(copier);
+			this.pasteDestinationMorph().addMorph(copy)
+			if (offset) {
+				copy.moveBy(offset)
+			}	
+		}, this)
+	},
+
 	doCut: function() {
-		
+		console.log("cut selection")
+		this.doCopy();
+		this.remove();
 	},
     
 });
