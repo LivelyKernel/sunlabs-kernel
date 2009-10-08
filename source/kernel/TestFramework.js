@@ -195,9 +195,7 @@ Object.subclass('TestSuite', {
         testCase.runAll();
         var scheduledRunTests = new SchedulableAction(this, "runDelayed", null, 0);
         WorldMorph.current().scheduleForLater(scheduledRunTests, 0, false);
-	},
-	
-	
+	},	
 });
 
 
@@ -231,7 +229,9 @@ Object.subclass('TestResult', {
 	},
 	
 	runs: function() {
-			return this.failed.length + this.succeeded.length;
+		if (!this.failed) 
+			return 0; 
+		return this.failed.length + this.succeeded.length;
 	},
 	
 	toString: function() {
@@ -257,6 +257,8 @@ Object.subclass('TestResult', {
 	},
 	
 	shortResult: function() {
+		if (!this.failed)
+			return;
 		var time = Object.values(this.timeToRun).inject(0, function(sum, ea) {return sum + ea});
 		var msg = Strings.format('Tests run: %s -- Tests failed: %s -- Time: %ss',
 			this.runs(), this.failed.length, time/1000);

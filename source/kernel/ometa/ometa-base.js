@@ -66,7 +66,10 @@ try {
 */
 
 module('ometa/ometa-base.js').requires('ometa/lib.js').toRun(function() {
-    
+
+	this.log_ometa = false;	
+	var log = function(string) { if(this.log_meta) console.log(string); };
+
 // the failure exception
 
 // fail = { toString: function() { return "match failed" } }
@@ -511,7 +514,7 @@ Global.OMeta = {
     try {
 		var result = realArgs.length == 1 ? m._apply.call(m, realArgs[0]) : m._applyWithArgs.apply(m, realArgs)
 		if (m.input.arr)
-			console.log('Not all input processed: ' + m.input.arr.toArray().slice(m.input.idx));
+			log('Not all input processed: ' + m.input.arr.toArray().slice(m.input.idx));
 		return result;
 	} catch (f) {
       if (f == fail && matchFailed != undefined) {

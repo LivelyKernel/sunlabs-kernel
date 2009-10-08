@@ -409,6 +409,8 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
 
 thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserParsesCoreTest', {
             
+	shouldRun: false,
+	
     testParseCoreAlternativ: function() {
         // var url = URL.source.withFilename('Core.js');
         // var result = this.sut.parseFileFromUrl(url);
@@ -778,13 +780,22 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
         this.assertIdentity(result.stopIndex, src.length - 1);
 	},
 
+});
+
+thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTestLKFile', {
+	
+	shouldRun: false,
+	
+	setUp: function() {
+		this.sut = new OMetaParser();
+	},
+
 	testParseLKFileParserTxt: function() {
 		var fn = 'LKFileParser.txt';
 		var src = this.srcFromLinesOfFile(fn, 0, 9999);
 		var result = this.sut.parseSource(src, {fileName: fn});
 		//new ChangeList(fn, null, result).openIn(WorldMorph.current());
     },
-
 });
 
 thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTest', {
