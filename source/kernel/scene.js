@@ -181,7 +181,7 @@ Object.subclass('lively.data.Wrapper', {
 		return klass.prototype.doNotSerialize.include(prop) || this.isPropertyOnIgnoreListInClassHierarchy(prop, klass.superclass);
 	},
 	
-	prepareForSerialization: function(extraNodes) {
+	prepareForSerialization: function(extraNodes, optSystemDictionary) {
 		for (var prop in this) {
 			if (!this.hasOwnProperty(prop)) 
 				continue;
@@ -190,7 +190,7 @@ Object.subclass('lively.data.Wrapper', {
 			var m = this[prop];
 			if (m === this.constructor.prototype[prop])	 // save space
 				continue;
-			this.preparePropertyForSerialization(prop, m, extraNodes);
+			this.preparePropertyForSerialization(prop, m, extraNodes, optSystemDictionary);
 		}
 	},
 
@@ -204,7 +204,7 @@ Object.subclass('lively.data.Wrapper', {
 		// extraNodes.push(this.rawNode.appendChild(NodeFactory.createNL())); 
 	},
 	
-	prepareArrayPropertyForSerialization: function(prop, propValue, extraNodes) {
+	prepareArrayPropertyForSerialization: function(prop, propValue, extraNodes, optSystemDictionary) {
 		if (prop === 'submorphs')
 			return;	 // we'll deal manually
 		var arr = LivelyNS.create("array", {name: prop});
@@ -233,12 +233,13 @@ Object.subclass('lively.data.Wrapper', {
 			this.appendHelperNode(arr, extraNodes);
 		}	
 	},
-
-	prepareWrapperPropertyForSerialization: function(prop, propValue, extraNodes) {
+	
+	prepareWrapperPropertyForSerialization: function(prop, propValue, extraNodes, optSystemDictionary) {
 		if (prop === 'owner') 
 		return; // we'll deal manually
-		if (propValue instanceof lively.paint.Gradient || propValue	 instanceof lively.scene.Image) 
-			return; // these should sit in defs and be handled by restoreDefs()
+		if (propValue instanceof lively.paint.Gradient || propValue	 instanceof lively.scene.Image) {
+			return; // these should sit in defs and be handled by restoreDefs()	
+		}
 
 		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 		if (!propValue.rawNode) {
@@ -248,13 +249,13 @@ Object.subclass('lively.data.Wrapper', {
 			this.appendHelperNode(desc, extraNodes);;
 			if (prop === "ownerWidget") {
 				// console.log('recursing for field ' + prop);
-				propValue.prepareForSerialization(extraNodes);
+				propValue.prepareForSerialization(extraNodes, optSystemDictionary);
 				this.appendHelperNode(propValue.rawNode, extraNodes);
 			}
 		}
 	},
 	
-	prepareRelayPropertyForSerialization: function(prop, propValue, extraNodes) {
+	prepareRelayPropertyForSerialization: function(prop, propValue, extraNodes, optSystemDictionary) {
 		var delegate = propValue.delegate;
 		if (lively.data.Wrapper.isInstance(delegate)) { // FIXME: better instanceof
 			var desc = LivelyNS.create("relay", {name: prop, ref: delegate.id()});
@@ -270,15 +271,16 @@ Object.subclass('lively.data.Wrapper', {
 		}		
 	},
 
-	preparePropertyForSerialization: function(prop, propValue, extraNodes) {
+	preparePropertyForSerialization: function(prop, propValue, extraNodes, optSystemDictionary) {
+		// console.log("prepare property " + prop + ": " + optSystemDictionary)
 		if (propValue instanceof Function) {
 			return;
 		} else if (lively.data.Wrapper.isInstance(propValue)) { 
-			this.prepareWrapperPropertyForSerialization(prop, propValue, extraNodes)
+			this.prepareWrapperPropertyForSerialization(prop, propValue, extraNodes, optSystemDictionary)
 		} else if (propValue instanceof Relay) {
-			this.prepareRelayPropertyForSerialization(prop, propValue, extraNodes)
+			this.prepareRelayPropertyForSerialization(prop, propValue, extraNodes, optSystemDictionary)
 		} else if (propValue instanceof Array) {
-			this.prepareArrayPropertyForSerialization(prop, propValue, extraNodes) 
+			this.prepareArrayPropertyForSerialization(prop, propValue, extraNodes, optSystemDictionary) 
 		} else if (prop === 'rawNode' || prop === 'defs') { // necessary because nodes get serialized
 			return;
 		} else {

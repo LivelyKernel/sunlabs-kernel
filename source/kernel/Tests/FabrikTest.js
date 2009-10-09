@@ -2085,12 +2085,12 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
 
 // logMethod(Component.prototype, "onDeserialize");
 
-lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AComponentCopierTest', {
+lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AClipboardCopierTest', {
 	
 	setUp: function($super) {
 		$super();
 		this.sampleString = "Hello Copy and Paste";
-		this.copier = new ComponentCopier();
+		this.copier = new ClipboardCopier();
 	},
 	
 	createTextWidgetExample: function() {

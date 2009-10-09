@@ -997,12 +997,12 @@ BoxMorph.subclass('TextMorph', {
 		return this;
 	},
 	
-	prepareForSerialization: function($super, extraNodes) {
+	prepareForSerialization: function($super, extraNodes, optSystemDictionary) {
 		if (this.textSelection) {
 			this.textSelection.remove();
 			delete this.textSelection;
 		}
-		return $super(extraNodes);
+		return $super(extraNodes, optSystemDictionary);
     },
 
 	onDeserialize: function() {

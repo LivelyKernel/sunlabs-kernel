@@ -774,7 +774,7 @@ BoxMorph.subclass("SelectionMorph", {
 		};
 		
 		var copier = new Copier();
-		var doc = new ComponentCopier().createBaseDocument();
+		var doc = new ClipboardCopier().createBaseDocument();
 		var worldNode = doc.childNodes[0].childNodes[0];
 		
 		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
@@ -783,10 +783,13 @@ BoxMorph.subclass("SelectionMorph", {
 		this.selectedMorphs.each(function(ea) {
 			container.addMorph(ea.copy(copier));
 		})
-
+		
+		var systemDictionary =  container.rawNode.appendChild(NodeFactory.create("defs"));
+		systemDictionary.setAttribute("id", "SystemDictionary");
+		
 		worldNode.appendChild(container.rawNode);
 		var exporter = new Exporter(container);
-		var helpers = exporter.extendForSerialization();
+		var helpers = exporter.extendForSerialization(systemDictionary);
 		var result = Exporter.stringify(container.rawNode);
 		exporter.removeHelperNodes(helpers);
 	
@@ -832,13 +835,17 @@ BoxMorph.subclass("SelectionMorph", {
 		};
 	},
 	
+	
+	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
+	// TODO refactor
 	pasteFromSource: function(source){
-		var copier = new ComponentCopier();
+		var copier = new ClipboardCopier();
 		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);		
 		// unpack potential selection morph
 		if(morphs[0] && morphs[0].isSelectionContainer) {
 			morphs = morphs[0].submorphs
 		};
+		
 		var copier = new Copier();
 		var offset = this.calcPasteOffsetFrom(morphs);
 		morphs.each(function(ea) {

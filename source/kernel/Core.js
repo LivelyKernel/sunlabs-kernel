@@ -678,17 +678,21 @@ Object.subclass('Exporter', {
 		(rootMorph instanceof Morph) || console.log("weird, root morph is " + rootMorph);
 	},
 
-	extendForSerialization: function() {
+	extendForSerialization: function(optSystemDictionary) {
+		console.log("extendForSerialization " + optSystemDictionary)
+		
 		// decorate with all the extra needed to serialize correctly. Return the additional nodes, to be removed 
 		var helperNodes = [];
 
 		var exporter = this;
+	
 		this.rootMorph.withAllSubmorphsDo(function() { 
 			exporter.verbose && console.log("serializing " + this);
 
 			// TODO: merge this into the "prepareForSerialization"
+			// why ist this in the loop, and why does it break, when moving outside?
 			lively.data.Wrapper.collectSystemDictionaryGarbage(this.rootMorph);
-			this.prepareForSerialization(helperNodes);
+			this.prepareForSerialization(helperNodes, optSystemDictionary);
 			
 			// some formatting
 			var nl = NodeFactory.createNL();
@@ -1120,6 +1124,7 @@ Importer.marker = Object.extend(new Importer(), {
 });
 
 
+
 // ===========================================================================
 // Morph functionality
 // ===========================================================================
@@ -1380,14 +1385,25 @@ duplicate: function () {
 		importer.verbose && console.log("deserialized " + this);
 	},
 
-	prepareForSerialization: function($super, extraNodes) {
+	prepareForSerialization: function($super, extraNodes, optSystemDictionary) {	
 		// this is the morph to serialize
+		var fill = this.getFill();
+		if (optSystemDictionary && fill instanceof lively.paint.Gradient) {
+			var rawPropNode = optSystemDictionary.ownerDocument.getElementById(fill.id());
+			if (rawPropNode) {
+				// do nothing				
+			} else {
+				optSystemDictionary.appendChild(fill.rawNode.cloneNode(true));
+			};
+		};
+		
+		
 		if (Config.useTransformAPI) {
 			// gotta set it explicitly, it's not in SVG
 			this.setTrait("transform", this.getTransform().toAttributeValue());
 			// FIXME, remove?
 		}
-		return $super(extraNodes);
+		return $super(extraNodes, optSystemDictionary);
 	},
     
 	restorePersistentState: function(importer) {

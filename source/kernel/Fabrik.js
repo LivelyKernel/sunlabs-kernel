@@ -1965,7 +1965,7 @@ Widget.subclass('Component', {
 	},
 	
 	copyAsXMLString: function() {
-		return new ComponentCopier().copyAsXMLString(this)
+		return new ClipboardCopier().copyAsXMLString(this)
 	},
 	
 	
@@ -2635,13 +2635,15 @@ Component.subclass('FabrikComponent', {
 
 
 	pasteComponentFromXMLString: function(componentMorphsAsXmlString) {
-		var copier = new ComponentCopier();
+		var copier = new ClipboardCopier();
 		return copier.pasteComponentFromXMLStringIntoFabrik(componentMorphsAsXmlString, this);
 	}
 
 });
 
-Object.subclass('ComponentCopier', {
+// special copier for components...
+
+Object.subclass('ClipboardCopier', {
 
 	
 	copyAsXMLString: function(component) {
@@ -2670,8 +2672,20 @@ Object.subclass('ComponentCopier', {
 
 	loadMorphsWithWorldTrunkFromSource: function(source) {
     	var xml = this.createBaseDocument(source);
+		var systemDictionary = xml.getElementById("SystemDictionary");
 		var world = new Importer().loadWorldContents(xml);
 		// inspect(world)
+		var globalSystemDictionary = lively.data.Wrapper.prototype.dictionary();
+		
+		if(systemDictionary) {
+			$A(systemDictionary.childNodes).each(function(ea) {
+				var result = lively.data.FragmentURI.getElement(ea.id);
+				
+				// TODO: give the element a new id and map it, is there an implemnentation laying around somewhere here?
+				if(!result) 
+					globalSystemDictionary.appendChild(ea.cloneNode(true))
+			})
+		}
 		return world.submorphs
     },
 	
