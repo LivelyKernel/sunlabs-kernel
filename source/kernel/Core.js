@@ -25,25 +25,15 @@ var Loader = {
 		var node = document.getElementsByTagName("defs")[0];
 		if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
 		var exactUrl = Config.disableScriptCaching ? url + '?' + new Date().getTime() : url;
-			
-		if (true) {
-			var script = document.createElement('script');
-			script.id = url;
-			script.type = 'text/ecmascript';
-			script.src = exactUrl;
-			if (onLoadCb) script.onload = onLoadCb;
-		} else { // the following will work for HTML but not XHTML --> find a solution
-			var xmlNamespace = node.namespaceURI;
-			var script = document.createElementNS(xmlNamespace, 'script');
-			script.setAttributeNS(null, 'id', url);
-			script.setAttributeNS(null, 'type', 'text/ecmascript');		
-			if (xmlNamespace)
-				script.setAttributeNS(Namespace.XLINK, 'href', exactUrl);
-			else
-				script.setAttributeNS(null, 'src', exactUrl);
-			if (onLoadCb)
-				script.setAttributeNS(null, 'onload', onLoadCb);
-		}
+		var xmlNamespace = node.namespaceURI;
+		var script = document.createElementNS(xmlNamespace, 'script');
+		script.setAttributeNS(null, 'id', url);
+		script.setAttributeNS(null, 'type', 'text/ecmascript');
+		if (xmlNamespace)
+			script.setAttributeNS(Namespace.XLINK, 'href', exactUrl);
+		else
+			script.setAttributeNS(null, 'src', exactUrl);
+		script.setAttributeNS(null, 'onload', onLoadCb);
 		node.appendChild(script);
     },
     
