@@ -6,6 +6,9 @@ Object.subclass('StNode', {
 		return 'StNode';
 	},
 
+	toSmalltalk: function() {
+		return '';
+	},
 });
 
 StNode.subclass('StAssignmentNode', {
@@ -21,6 +24,10 @@ StNode.subclass('StAssignmentNode', {
 	toString: function() {
 		return Strings.format('Assignment(%s=%s)', this.variable.toString(), this.value.toString());
 	},
+	
+	toSmalltalk: function() {
+		return this.variable.name + ' := ' + this.value.toSmalltalk();
+	}
 });
 
 StNode.subclass('StCascadeNode', {
@@ -37,6 +44,17 @@ StNode.subclass('StCascadeNode', {
 		return Strings.format('Cascade(%s,[%s])',
 			this.receiver.toString(),
 			this.messages.collect(function(ea) { return ea.toString() }).join(','));
+	},
+	
+	toSmalltalk: function() {
+		var recv = this.receiver.toSmalltalk();
+		var rest = this.messages.collect(function(ea) {
+			var part = ea.toSmalltalk();
+			part = part.slice(recv.length);
+			while (part[0] == ' ') part = part.slice(1);
+			return '\t' + part;
+		}).join(';\n');
+		return recv + '\n' + rest;
 	}
 });
 
@@ -67,6 +85,9 @@ StMessageNode.subclass('StUnaryMessageNode', {
 			this.messageName);
 	},
 
+	toSmalltalk: function() {
+		return this.receiver.toSmalltalk() + ' ' + this.messageName;
+	},
 });
 
 StMessageNode.subclass('StBinaryMessageNode', {
@@ -79,6 +100,20 @@ StMessageNode.subclass('StBinaryMessageNode', {
 			this.messageName,
 			this.args.first().toString());
 	},
+	
+	toSmalltalk: function() {
+		var arg = this.args.first();
+		var argString = arg.toSmalltalk();
+		if (arg.isBinary || arg.isKeyword)
+			argString = '(' + argString + ')';
+		var receiverString = this.receiver.toSmalltalk();
+		if (this.receiver.isKeyword)
+			receiverString = '(' + receiverString + ')';
+		return Strings.format('%s %s %s',
+			receiverString,
+			this.messageName,
+			argString);
+	}
 });
 
 StMessageNode.subclass('StKeywordMessageNode', {
@@ -91,6 +126,25 @@ StMessageNode.subclass('StKeywordMessageNode', {
 			this.messageName,
 			this.args ? this.args.collect(function(ea) { return ea.toString() }).join(',') : 'no args');
 	},
+	
+	toSmalltalk: function() {
+		var result = this.receiver.toSmalltalk();
+		if (this.receiver.isKeyword) result = '(' + result + ')';
+		result += ' ';
+		var messageParts = this.messageName.split(':');
+		messageParts.pop(); //last is nothing
+		result += messageParts.zip(this.args).collect(function(ea) {
+			var arg;
+			if (ea[1]) {
+				arg = ea[1].toSmalltalk();
+				if (ea[1].isKeyword) arg = '(' + arg + ')';
+			} else {
+				arg = 'nil';
+			}
+			return ea[0] + ': ' + arg;
+		}).join(' ');
+		return result;
+	}
 
 });
 
@@ -106,6 +160,12 @@ StNode.subclass('StSequenceNode', {
 		return Strings.format('Sequence(%s statements)',
 			this.children.length);
 	},
+	
+	toSmalltalk: function(indent) {
+		indent = indent ? indent : '';
+		if (!this.children || this.children.length == 0) return '';
+		return this.children.collect(function(ea) { return indent + ea.toSmalltalk() }).join('.\n') + '.';
+	}
 });
 
 StNode.subclass('StPropertyNode', { /* for JS->St */
@@ -121,6 +181,10 @@ StNode.subclass('StPropertyNode', { /* for JS->St */
 	setMeta: function(isMeta) {
 		this.isMeta = isMeta;
 	},
+	
+	toSmalltalk: function() {
+		return (this.isMeta ? '+ ' : '- ') + this.assignment.toSmalltalk() + '.';
+	}
 
 });
 
@@ -160,6 +224,42 @@ StNode.subclass('StInvokableNode', {
 			this.args ? this.args.collect(function(ea) { return ea.toString() }).join(',') : 'none',
 			this.isMeta ? 'isMeta' : '')
 	},
+	
+	methodHeadString: function() {
+		var result = this.isMeta ? '+ ' : '- ';
+		if (!this.args || this.args.length == 0) return result + this.methodName;
+		if (this.args.length == 1) return result + this.methodName + ' ' + this.args.first();
+		var methodNameParts = this.methodName.split(':');
+		methodNameParts.pop(); // last is nothing
+		result += methodNameParts.zip(this.args).collect(function(ea) {
+			return ea[0] + ': ' + ea[1]
+		}).join(' ');
+		return result;
+	},
+	
+	declaredVarsString: function(indent) {
+		indent = indent ? indent : '';
+		if (!this.declaredVars || this.declaredVars.length == 0) return '';
+		return indent + Strings.format('| %s |\n',
+			this.declaredVars.collect(function(ea) {return ea.toSmalltalk()}).join(' '));
+	},
+		
+	toSmalltalk: function() {
+		var result = '';
+		if (this.isMethod) {
+			result += this.methodHeadString() + '\n';
+			result += this.declaredVarsString('\n\t');
+			result += this.sequence.toSmalltalk('\t');
+			return result;
+		}
+		result += '[';
+		if (this.args && this.args.length > 0)
+			result += ':'+ this.args.collect(function(ea) { return ea }).join(' :') + ' | ';
+		result += this.declaredVarsString();
+		result += this.sequence.toSmalltalk('\t');
+		result += ']'
+		return result;
+	}
 
 });
 
@@ -169,8 +269,9 @@ StInvokableNode.subclass('StPrimitveMethodNode', {
 	
 	isPrimitive: true,
 	
-	initialize: function($super, methodName, isMeta, args, primitiveBody) { //---------???????
-		$super(methodName, isMeta, args, null, null);
+	initialize: function($super, methodName, primitiveBody, args) {
+		$super(null, args, null);
+		this.setMethodName(methodName);
 		this.primitiveBody = primitiveBody;
 	},
 
@@ -178,6 +279,10 @@ StInvokableNode.subclass('StPrimitveMethodNode', {
 		return Strings.format('PrimitiveMethod(%s)',
 			this.methodName);
 	},
+	
+	toSmalltalk: function() {
+		return this.methodHeadString() + ' ' + this.primitiveBody;
+	}
 
 });
 
@@ -185,10 +290,10 @@ StNode.subclass('StClassNode', {
 	
 	isClass: true,
 	
-	initialize: function($super, className, methodsAndProperties, superclassName) {
+	initialize: function($super, className, methodsAndProperties, superclass) {
 		$super();
 		this.className = className;
-		this.superclassName = superclassName;
+		this.superclass = superclass;
 		this.methods = [];
 		this.properties = [];
 		methodsAndProperties.forEach(function(ea) {
@@ -200,6 +305,21 @@ StNode.subclass('StClassNode', {
 		return Strings.format('Class(%s)',
 			this.className);
 	},
+	
+	toSmalltalk: function() {
+		var result = '<' + this.className.value;
+		if (this.superclass) result += ':' + this.superclass.toSmalltalk();
+		result += '>\n\n';
+		if (this.properties.length > 0) {
+			result += this.properties.collect(function(ea) { return ea.toSmalltalk() }).join('\n\n');
+			result += '\n\n';
+		}
+		if (this.methods.length > 0) {
+			result += this.methods.collect(function(ea) { return ea.toSmalltalk() }).join('\n\n');
+		}
+		result += '\n\n';
+		return result;
+	}
 
 });
 
@@ -213,14 +333,21 @@ StNode.subclass('StVariableNode', {
 	},
 
 	toString: function() {
-		return Strings.format('Var(%s)',
-			this.name);
+		return Strings.format('Var(%s)', this.name);
 	},
+	
+	toSmalltalk: function() {
+		return this.name;
+	}
 });
 
 StVariableNode.subclass('StInstanceVariableNode', {
 	
 	isInstance: true,
+	
+	toSmalltalk: function() {
+		return this.name;
+	}
 
 });
 
@@ -236,7 +363,25 @@ StNode.subclass('StLiteralNode', {
 	toString: function() {
 		return 'Literal(' + (this.value ? this.value.toString() : 'UNDEFINED!') + ')';
 	},
+	
+	toSmalltalk: function() {
+		return Object.isString(this.value) ? '\'' + this.value.replace('\'', '\'\'') + '\'' : this.value;
+	}
 
+});
+
+StNode.subclass('StReturnNode', {
+
+	isReturn: true,
+	
+	initialize: function($super, value) {
+		$super();
+		this.value = value;
+	},
+
+	toSmalltalk: function() {
+		return '^ ' + this.value.toSmalltalk();
+	}
 });
 
 });
