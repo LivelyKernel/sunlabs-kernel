@@ -53,7 +53,11 @@ primary =
         | block),
 
 expression =
-  cascade | assignment | evaluation,
+  exit | cascade | assignment | evaluation,
+
+exit =
+  token('^') expression:e
+  -> { new StReturnNode(e) },
 
 assignment =
   (variable | instanceVariable):variable token(':=') expression:value
@@ -115,8 +119,8 @@ block =
 	-> { new StInvokableNode(s, args, declared) },
 
 blockArgs =
-	(token(':') variable:v -> v)+:vars token('|')
-	-> vars,
+	(token(':') identifier:arg -> arg)+:args token('|')
+	-> args,
 
 /*-----------------------------
 ------- method related  -------
@@ -130,7 +134,7 @@ declaredVars =
   -> vars,
 
 propertyOrMethod =
-  spaces ('-' -> false | '+' -> true):isMeta (property:p token('.') -> p| clamatoMethod):node
+  spaces ('-' -> false | '+' -> true):isMeta (property:p token('.') -> p | clamatoMethod):node
   -> { node.setMeta(isMeta); node },
   
 property =
@@ -155,7 +159,7 @@ primitiveBody =
 	( ~'}' char:c -> {if (c=='{') $elf.count++; c} | ?($elf.count > 0) token('}'):t -> {$elf.count--; t}
 	)*:body
 	token('}') (token('.') | empty)
-	-> { new StPrimitveMethodNode(null, null, null, '{' + body.join('') + '}') },
+	-> { new StPrimitveMethodNode(null, '{' + body.join('') + '}') },
 
 
 methodNameAndArgs =
@@ -171,9 +175,9 @@ methodNameAndArgs =
 -------- class related  -------
 ------------------------------*/
 clamatoClass =
-	token('<') identifier:name ( token(':') identifier:superclassName | empty) token('>')
+	token('<') (identifier:n -> {new StLiteralNode(n)}):name ( token(':') variable:superclass | empty) token('>')
 	spaces propertyOrMethod*:methodsAndProperties
-	-> { new StClassNode(name, methodsAndProperties, superclassName) },
+	-> { new StClassNode(name, methodsAndProperties, superclass) },
 
 clamatoClasses =
 	(clamatoClass)*:cls spaces end -> cls,
@@ -211,6 +215,9 @@ begin =
   -> { new StSequenceNode(xs) },
 /* ---------- modified ----------- */
 json     trans*:props                                 -> props,
+for -> false,
+continue -> false,
+var -> false,
 /* ------------ own -------------- */
 this
   -> new StVariableNode('self'),
@@ -222,7 +229,8 @@ string :s =
   -> { new StLiteralNode(s) },
 
 get :x  =
-  -> { new StVariableNode(x) },
+  -> { if (x == 'undefined' || x == 'null') x = 'nil';
+      new StVariableNode(x) },
 
 getp  =
   getInstVar | getVarOfOtherObject,
@@ -255,15 +263,31 @@ func :args =
   -> {new StInvokableNode(body, args, [])},
 
 binding =
-  methodBinding | propertyBinding,
+  methodBinding | propertyBinding | primitiveMethod,
 
 methodBinding :name =
   trans:invokable ?(invokable.isBlock)
   -> {invokable.setMethodName(name); invokable},
 
+primitiveMethod :name =
+  [ #func :args foreign(BSOMetaJSTranslator, #curlyTrans):body ]
+  -> { new StPrimitveMethodNode(name, body, args) },
+  
 propertyBinding :name =
   trans:value
   -> { new StAssignmentNode(new StVariableNode(name), value) },
+
+if =
+  trans:cond trans:t trans:f
+  -> {if (!t.isSequence) new StSequenceNode(t);
+      t = new StInvokableNode(t);
+      if (!f.isSequence) new StSequenceNode(f);
+      f = new StInvokableNode(f);
+      new StKeywordMessageNode('ifTrue:ifFalse:', [t,f], cond); },
+
+return
+  trans:expr
+  -> { new StReturnNode(expr) },
 
 test -> StClassNode
 }
