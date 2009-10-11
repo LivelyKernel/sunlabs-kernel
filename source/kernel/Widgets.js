@@ -3176,7 +3176,7 @@ Widget.subclass('ConsoleWidget', {
 	},
 
 	getInitialViewExtent: function(world, hint) {
-		return hint || pt(world.viewport().width - 60, 160); 
+		return hint || pt(world.viewport().width - 200, 160); 
 	},
 	
 	buildView: function(extent) {

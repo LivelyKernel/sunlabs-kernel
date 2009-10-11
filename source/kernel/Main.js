@@ -443,8 +443,9 @@ function populateWorldWithExamples(world) {
             Global.phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
         })
 
-    if (Config.showLivelyConsole  && window.console.consumers) {
-        new ConsoleWidget(50).openIn(world, pt(0, world.viewport().height - 210));
+    if (Config.showLivelyConsole && window.console.consumers) {
+        var consoleWidget = new ConsoleWidget(50).openIn(world, pt(0,0));
+		consoleWidget.setPosition(pt(0, world.viewport().height - consoleWidget.bounds().height + 20 /*magic number*/));
     }
 
     if (Config.showFabrik) {
