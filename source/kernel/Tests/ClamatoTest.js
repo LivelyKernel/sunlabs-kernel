@@ -1,5 +1,61 @@
 module('lively.Tests.ClamatoTest').requires('lively.TestFramework', 'lively.Ometa', 'lively.ClamatoParser').toRun(function() {
 
+TestCase.subclass('lively.Tests.ClamatoTest.ASTBaseTest', {
+
+errorCb: function() {
+	var test = this;
+	return function() {
+			OMetaSupport.handleErrorDebug.apply(Global,arguments);
+			test.assert(false, 'Couldn\'t parse');
+	 	}
+},
+setUp: function() {
+	this.jsParser = BSJSParser;
+	this.stParser = ClamatoParser;
+	this.js2StConverter = JS2StConverter;
+},
+
+assertNodeMatches: function(expectedSpec, node) {
+	for (name in expectedSpec) {
+		var expected = expectedSpec[name];
+		if (Object.isFunction(expected)) continue;
+		dbgOn(!node);
+		var actual = node[name];
+		switch (expected.constructor) {
+			case String:
+			case Boolean:
+			case Number: {
+				//dbgOn(expected != actual);
+				this.assertEqual(expected, actual, name + ' was expected to be ' + expected);
+				continue;
+			}
+		};
+		this.assertNodeMatches(expected, actual);
+	}
+},
+
+jsAst2StAst: function(jsAst) {
+	return OMetaSupport.matchWithGrammar(this.js2StConverter, "trans", jsAst, this.errorCb());
+},
+js2jsAst: function(src, optRule) {
+	var rule = optRule || 'topLevel';
+	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src, this.errorCb());
+},
+js2StAst: function(jsSrcOrAst, jsParseRule) {
+	jsAst = stAst = null;
+	jsAst = Object.isArray(jsSrcOrAst) ? jsSrcOrAst : this.js2jsAst(jsSrcOrAst, jsParseRule);
+	stAst = this.jsAst2StAst(jsAst);
+	return stAst;
+},
+
+st2st: function(src, rule) {
+	var errorcb = OMetaSupport.handleErrorDebug;
+	 stAst = OMetaSupport.matchAllWithGrammar(this.stParser, rule, src, errorcb)
+	return stAst.toSmalltalk();
+},
+
+});
+
 TestCase.subclass('lively.Tests.ClamatoTest.ClamatoParserTest', {
 setUp: function() {
 	this.parser = ClamatoParser;
@@ -230,15 +286,15 @@ test13aParseClass: function() {
 		ifFalse: [false].'
 	var result = this.parse('clamatoClass', src);
 	this.assert(result.isClass, 'not a class');
-	this.assertEqual('Object', result.className, 'wrong name');
+	this.assertEqual('Object', result.className.value, 'wrong name');
 	this.assertEqual(2, result.methods.length, 'wrong number of methods');
 },
 test13bParseClass: function() {
 	var src ='<ClassA:Object>';
 	var result = this.parse('clamatoClass', src);
 	this.assert(result.isClass, 'not a class');
-	this.assertEqual('ClassA', result.className, 'wrong name');
-	this.assertEqual('Object', result.superclassName, 'wrong name');
+	this.assertEqual('ClassA', result.className.value, 'wrong name');
+	this.assertEqual('Object', result.superclass.name, 'wrong name');
 	this.assertEqual(0, result.methods.length, 'wrong number of methods');
 },
 
@@ -280,15 +336,83 @@ test16aPropertyDefInClass: function() {
 	this.assertEqual('property1' , props[0].assignment.variable.name, 'not correct var name');
 	this.assert(props[1].isMeta, 'not meta');
 },
-
-
-
-
-
-
-
+test17aRecognizeReturn: function() {
+	var src = '- foo\nfalse ifTrue: [^1] ifFalse: [^2].';
+	 result = this.parse('propertyOrMethod', src);
+	this.assert(result.isMethod, 'not method');
+	this.assertEqual(1, result.sequence.children.length, 'not method');
+	var ifStmt = result.sequence.children.first();
+	this.assert(ifStmt.isKeyword, 'if false');
+	var return1 = ifStmt.args[0].sequence.children.first();
+	this.assert(return1.isReturn, 'not return 1');
+	this.assertEqual(1, return1.value.value, 'wrong value 1');
+	var return2 = ifStmt.args[1].sequence.children.first();
+	this.assert(return2.isReturn, 'not return21');
+	this.assertEqual(2, return2.value.value, 'wrong value 2');
+},
 
 });
+
+lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.StNodeToProgramStringTest', {
+
+test01Expressions: function() {
+	var originals = [
+		'x foo',
+		'x + 2',
+		'x foo: 1 bar: x',
+		'x foo: 2 + 3 + 4 foo: x foo',
+		'x foo: (y bar: 1)',
+		'x + (5 * 6) + (1 foo: 2)',
+		'abc := 1 + 2',
+		'xyz foo\n\tbar;\n\tbaz;\n\tyourself',
+		'[:a :b | | x y z |\n\t1 + 2.]',
+		'\'I\'\'m here\'',
+		'(x foo: 1) + @bla',
+		'(x foo: 1) bla: 2',
+		'(other toString: nil) + @bla'
+	];
+	originals.forEach(function(ea) {
+		var result = this.st2st(ea, 'expression');
+		this.assertEqual(ea, result);
+	}, this);
+},
+
+test02Sequences: function() {
+	var originals = [
+		'x foo.\n1 + 2.'
+	];
+	originals.forEach(function(ea) {
+		var result = this.st2st(ea,'sequence');
+		this.assertEqual(ea, result);
+	}, this);
+},
+
+test03Class: function() {
+	var src = '<ClassA:Object>\n\
+\n\
+- x := bla.\n\
+\n\
+- foo: xyz\n\
+	xyz + 3.\n\
+\n\
++ + foo\n\
+	self ++ foo.\n\n'
+	var result = this.st2st(src, 'clamatoClass');
+	this.assertEqual(src, result);
+},
+test04StToStResultUnequalSource: function() {
+	var jsToSt = [
+		['(x + 1) * 2', 'x + 1 * 2'],
+	];
+	jsToSt.forEach(function(stAndSt) {
+		var result = this.st2st(stAndSt[0], 'expression');
+		this.assertEqual(stAndSt[1], result);
+	}, this);
+},
+
+});
+
+
 TestCase.subclass('lively.Tests.ClamatoTest.ParseExistingSourcesTest', {
 shouldRun: true,
 setUp: function() {
@@ -321,59 +445,18 @@ testAll: function() {
 	}, this)
 },
 
-
-
 });
 
-TestCase.subclass('lively.Tests.ClamatoTest.JS2StConversionTest', {
+// --------------------
+// ----------------------------------------
+// --------------------
+
+lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.JS2StConversionTest', {
 shouldRun: true,
 
-errorCb: function() {
-	var test = this;
-	return function() {
-			OMetaSupport.handleErrorDebug.apply(Global,arguments);
-			test.assert(false, 'Couldn\'t parse');
-	 	}
-},
-setUp: function() {
-	this.jsParser = BSJSParser;
-	this.stParser = ClamatoParser;
-	this.js2StConverter = JS2StConverter;
-},
-
-assertNodeMatches: function(expectedSpec, node) {
-	for (name in expectedSpec) {
-		var expected = expectedSpec[name];
-		if (Object.isFunction(expected)) continue;
-		var actual = node[name];
-		switch (expected.constructor) {
-			case String:
-			case Boolean:
-			case Number: {
-				this.assertEqual(expected, actual, name + ' was expected to be ' + expected);
-				continue;
-			}
-		};
-		this.assertNodeMatches(expected, actual);
-	}
-},
-
-jsAst2StAst: function(jsAst) {
-	return OMetaSupport.matchWithGrammar(this.js2StConverter, "trans", jsAst, this.errorCb());
-},
-parseJs: function(src, optRule) {
-	var rule = optRule || 'topLevel';
-	return OMetaSupport.matchAllWithGrammar(this.jsParser, rule, src, this.errorCb());
-},
-convert: function(jsSrcOrAst, jsParseRule) {
-	jsAst = stAst = null;
-	jsAst = Object.isArray(jsSrcOrAst) ? jsSrcOrAst : this.parseJs(jsSrcOrAst, jsParseRule);
-	stAst = this.jsAst2StAst(jsAst);
-	return stAst;
-},
 test01aConvertTempVarGet: function() {
 	var src = 'tempVar';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isVariable: true,
 		name: 'tempVar'
@@ -382,7 +465,7 @@ test01aConvertTempVarGet: function() {
 },
 test01bConvertInstVarGet: function() {
 	var src = 'this.instVar';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isVariable: true,
 		isInstance: true,
@@ -392,7 +475,7 @@ test01bConvertInstVarGet: function() {
 },
 test01cGetSelfInstVarWithExpression: function() {
 	var src = 'this[instVar]';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isMessage: true,
 		isKeyword: true,
@@ -404,7 +487,7 @@ test01cGetSelfInstVarWithExpression: function() {
 },
 test01dGetSelfInstVarWithExpression: function() {
 	var src = 'this["instVar"]';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isVariable: true,
 		isInstance: true,
@@ -415,7 +498,7 @@ test01dGetSelfInstVarWithExpression: function() {
 
 test01eGetSelfInstVarWithExpression: function() {
 	var src = 'x.instVar';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isMessage: true,
 		isKeyword: true,
@@ -428,7 +511,7 @@ test01eGetSelfInstVarWithExpression: function() {
 
 test01fConvertInstVarGet: function() {
 	var src = 'x["instVar"]';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isMessage: true,
 		isKeyword: true,
@@ -442,7 +525,7 @@ test01fConvertInstVarGet: function() {
 
 test02aConvertMutliArgExpression: function() {
 	var src = 'foo.bar()';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isKeyword: true,
 		messageName: 'bar:',
@@ -453,7 +536,7 @@ test02aConvertMutliArgExpression: function() {
 },
 test02bConvertBinaryExpression: function() {
 	var src = 'a + 4';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isBinary: true,
 		messageName: '+',
@@ -465,7 +548,7 @@ test02bConvertBinaryExpression: function() {
 
 test02cConvertMutliArgExpression: function() {
 	var src = 'foo.bar(1, baz)';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isKeyword: true,
 		messageName: 'bar:',
@@ -477,7 +560,7 @@ test02cConvertMutliArgExpression: function() {
 test03aParseSimpleMethod: function() {
 	// {foo: function() {}}
 	var ast = ["binding", "foo", ["func", [], ["begin"]]];
-	var result = this.convert(ast);
+	var result = this.jsAst2StAst(ast);
 	var expected = {
 		isMethod: true,
 		methodName: 'foo',
@@ -489,7 +572,7 @@ test03aParseSimpleMethod: function() {
 test03bParseSimpleMethodWithArgs: function() {
 	// {foo: function(a, b) {}}
 	var ast = ["binding", "foo", ["func", ["a", "b"], ["begin"]]];
-	var result = this.convert(ast);
+	var result = this.jsAst2StAst(ast);
 	var expected = {
 		isMethod: true,
 		methodName: 'foo',
@@ -500,7 +583,7 @@ test03bParseSimpleMethodWithArgs: function() {
 },
 test04aParseFunctionWithStatements: function() {
 	var src = 'function() { 3 + 4; 4 + 7 }';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isBlock: true,
 		sequence: {children: [
@@ -509,19 +592,40 @@ test04aParseFunctionWithStatements: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
+test05aReturnStmtsInMethod: function() {
+	var src = '{x: function() { return 2 + 3 }}';
+	var result = this.js2StAst(src, 'expr');
+	var expected = [{
+		isMethod: true,
+		sequence: {children: [{isReturn: true}]}
+	}];
+	this.assertNodeMatches(expected, result);
+},
+test06aIfStmt: function() {
+	var src = 'if (1) { 1 } else { 2 }';
+	var result = this.js2StAst(src, 'stmt');
+	var expected = {
+		isKeyword: true,
+		messageName: 'ifTrue:ifFalse:',
+		receiver: {value: 1},
+		args: [{isBlock: true, sequence: {children: [{value: 1}]}},
+					{isBlock: true, sequence: {children: [{value: 2}]}}]
+		};
+	this.assertNodeMatches(expected, result);
+},
 
 
 
 testXXaConvertClassWithMethod: function() {
 	var src = 'Object.subclass(\'Foo\')';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {isClass: true, className: {value: 'Foo'}};
 	this.assertNodeMatches(expected, result);
 },
 
 testXXbConvertClassWithMethod: function() {
 	var src = 'Object.subclass(\'Foo\', {\n x: function(a) { 1 },\ny: function() {}})';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isClass: true,
 		methods: [{methodName: 'x', args: ['a']}, {methodName: 'y'}]};
@@ -529,7 +633,7 @@ testXXbConvertClassWithMethod: function() {
 },
 testXXcConvertClassWithPropertiesAndMethod: function() {
 	var src = 'Object.subclass(\'Foo\', {\n x: 2,\ny: \'foo\', z: function() { 1 }})';
-	var result = this.convert(src, 'expr');
+	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isClass: true,
 		methods: [{methodName: 'z', args: []}],
@@ -538,8 +642,22 @@ testXXcConvertClassWithPropertiesAndMethod: function() {
 	this.assertNodeMatches(expected, result);
 },
 
+testXYaConvertMethodWichCannotBeParsedToPrimitive: function() {
+	 body = '{for(var i=(0);(i < (10));i++){continue}}';
+	var src = 'Object.subclass(\'Foo\', { x: function(a , b) ' + body + '})';
+	var result = this.js2StAst(src, 'expr');
+	var expected = {
+		isClass: true,
+		methods: [{
+			methodName: 'x',
+			isPrimitive: true,
+			primitiveBody: body,
+			args: ['a', 'b']
+		}]
+	};
+	this.assertNodeMatches(expected, result);
+},
 
 });
-
 
 });
