@@ -21,11 +21,11 @@ assertNodeMatches: function(expectedSpec, node) {
 		if (Object.isFunction(expected)) continue;
 		dbgOn(!node);
 		var actual = node[name];
+		if (!expected && !actual) return;
 		switch (expected.constructor) {
 			case String:
 			case Boolean:
 			case Number: {
-				//dbgOn(expected != actual);
 				this.assertEqual(expected, actual, name + ' was expected to be ' + expected);
 				continue;
 			}
@@ -48,233 +48,240 @@ js2StAst: function(jsSrcOrAst, jsParseRule) {
 	return stAst;
 },
 
-st2st: function(src, rule) {
+st2stAst: function(src, rule) {
 	var errorcb = OMetaSupport.handleErrorDebug;
 	 stAst = OMetaSupport.matchAllWithGrammar(this.stParser, rule, src, errorcb)
-	return stAst.toSmalltalk();
+	return stAst;
 },
+st2st: function(src, rule) {
+	return this.st2stAst(src, rule).toSmalltalk();
+},
+
 
 });
 
-TestCase.subclass('lively.Tests.ClamatoTest.ClamatoParserTest', {
-setUp: function() {
-	this.parser = ClamatoParser;
-},
-parse: function(rule, src) {
-	var errorcb = OMetaSupport.handleErrorDebug;
-	return OMetaSupport.matchAllWithGrammar(this.parser, rule, src, errorcb);
-},
+lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.ClamatoParserTest', {
+
 test01ParseUnaryMessageSend: function() {
 	var src = 'x foo';
-	var result = this.parse('expression', src);
-	this.assert(result.isMessage, 'not a message node');
-	this.assert(result.isUnary , 'not unary');
-	this.assert(result.receiver.isVariable, 'receiver is not a variable');
-	this.assertEqual('x', result.receiver.name, 'wrong receiver name');
-	this.assertEqual('foo', result.messageName, 'wrong message name');
-	this.assertEqual(null, result.args);
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isMessage: true,
+		isUnary: true,
+		messageName: 'foo',
+		args: null,
+		receiver: {isVariable: true, name: 'x'},
+	}
+	this.assertNodeMatches(expected, result);
 },
 test02ParseBinaryMessageSend: function() {
 	var src = 'x ++ 1';
-	var result = this.parse('expression', src);
-	this.assert(result.isMessage, 'not a message node');
-	this.assert(result.isBinary , 'not binary');
-	this.assertEqual('x', result.receiver.name, 'wrong receiver name');
-	this.assertEqual('++', result.messageName, 'wrong message name');
-	this.assertEqual(1, result.args.length);
-	this.assert(result.args.first().isLiteral);
-	this.assertEqual(1, result.args.first().value);
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isMessage: true,
+		isBinary: true,
+		messageName: '++',
+		args: [{isLiteral: true, value: 1}],
+		receiver: {name: 'x'},
+	}
+	this.assertNodeMatches(expected, result);
 },
 test03aKeywordyMessageSend: function() {
 	var src = 'x foo: -42';
-	var result = this.parse('expression', src);
-	this.assert(result.isMessage, 'not a message node');
-	this.assert(result.isKeyword , 'not keyword');
-	this.assertEqual('foo:', result.messageName, 'wrong message name');
-	this.assertEqual(1, result.args.length);
-	this.assert(result.args.first().isLiteral);
-	this.assertEqual(-42, result.args.first().value);
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isMessage: true,
+		isKeyword: true,
+		messageName: 'foo:',
+		args: [{isLiteral: true, value: -42}],
+	}
+	this.assertNodeMatches(expected, result);
 },
 test03bKeywordyMessageSend: function() {
 	var src = 'x foo: 42 bar: blupf baz: 23';
-	var result = this.parse('expression', src);
-	this.assert(result.isMessage, 'not a message node');
-	this.assert(result.isKeyword , 'not keyword');
-	this.assertEqual('foo:bar:baz:', result.messageName, 'wrong message name');
-	this.assertEqual(3, result.args.length);
-	this.assert(result.args[0].isLiteral);
-	this.assertEqual(42, result.args[0].value);
-	this.assert(result.args[1].isVariable);
-	this.assertEqual('blupf', result.args[1].name);
-	this.assert(result.args[2].isLiteral);
-	this.assertEqual(23, result.args[2].value);
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isMessage: true,
+		isKeyword: true,
+		messageName: 'foo:bar:baz:',
+		args: [
+			{isLiteral: true, value: 42},
+			{isVariable: true, name: 'blupf'},
+			{isLiteral: true, value: 23},
+		],
+	}
+	this.assertNodeMatches(expected, result);
 },
 test03cKeywordAndBinary: function() {
 	var src = 'x + y foo: 1';
-	var result = this.parse('expression', src);
-	this.assert(result.isKeyword , 'not keyword');
-	this.assertEqual('foo:', result.messageName, 'wrong message name');
-	this.assert(result.args[0].isLiteral , 'not literal arg');
-	this.assert(result.receiver.isBinary , 'not binary receiver');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isKeyword: true,
+		messageName: 'foo:',
+		args: [{isLiteral: true, value: 1}],
+		receiver: {isBinary: true},
+	}
+	this.assertNodeMatches(expected, result);
 },
-
-
 test04aChainedUnaryMessages: function() {
 	var src = 'x foo bar';
-	var result = this.parse('expression', src);
-	this.assert(result.isMessage, 'not a message node');
-	this.assert(result.isUnary , 'not unary');
-	this.assertEqual('bar', result.messageName, 'wrong message name');
-	result = result.receiver;
-	this.assert(result.isMessage, 'not a message node 2');
-	this.assert(result.isUnary , 'not unary 2');
-	this.assertEqual('foo', result.messageName, 'wrong message name 2');
-	this.assert(result.receiver.isVariable , 'wrong receiver 2');
-},test04bChainedBinaryMessages: function() {
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isUnary: true, messageName: 'bar',
+		receiver: {isUnary: true, messageName: 'foo', receiver: {isVariable: true}},
+	};
+	this.assertNodeMatches(expected, result);
+},
+test04bChainedBinaryMessages: function() {
 	var src = 'x + 1 * 2';
-	var result = this.parse('expression', src);
-	this.assert(result.isMessage, 'not a message node');
-	this.assert(result.isBinary , 'not binary');
-	this.assertEqual('*', result.messageName, 'wrong message name');
-	this.assertEqual(2, result.args[0].value, 'wrong arg');
-	result = result.receiver;
-	this.assert(result.isMessage, 'not a message node 2');
-	this.assert(result.isBinary , 'not binary 2');
-	this.assertEqual('+', result.messageName, 'wrong message name 2');
-	this.assertEqual(1, result.args[0].value, 'wrong arg 2');
-	this.assert(result.receiver.isVariable , 'wrong receiver 2');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isBinary: true,
+		messageName: '*',
+		args: [{value: 2}],
+		receiver: {
+			isBinary: true,
+			messageName: '+',
+			args: [{value: 1}],
+			receiver: {isVariable: true}
+		},
+	};
+	this.assertNodeMatches(expected, result);
 },
 test05UnaryBinaryKeywordMessage: function() {
 	var src = 'x foo: 2--3 bar: 1 baz';
-	var result = this.parse('expression', src);
-	this.assert(result.isKeyword , 'not keyword');
-	this.assertEqual('foo:bar:', result.messageName, 'wrong message name');
-	this.assertEqual('x', result.receiver.name, 'wrong receiver name');
-	/* -------- */
-	this.assert(result.args[0].isBinary , 'first arg not binary');
-	this.assertEqual(2, result.args[0].receiver.value, 'first arg wrong receiver');
-	this.assertEqual(3, result.args[0].args[0].value, 'first arg wrong arg');
-	this.assertEqual('--', result.args[0].messageName, 'first arg wrong msgName');
-	/* -------- */
-	this.assert(result.args[1].isUnary , 'secon arg not unary');
-	this.assertEqual('baz', result.args[1].messageName, 'second arg wrong msgName');
-	this.assertEqual(1, result.args[1].receiver.value, 'second arg wrong receiver');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isKeyword: true,
+		messageName: 'foo:bar:',
+		receiver: {name: 'x'},
+		args: [
+			{isBinary: true, receiver: {value: 2}, messageName: '--', args: [{value: 3}]},
+			{isUnary: true, receiver: {value: 1}, messageName: 'baz'}
+		],
+	};
+	this.assertNodeMatches(expected, result);
 },
 test06aSubexpressionAndUnary: function() {
 	var src = '(x + y) foo';
-	var result = this.parse('expression', src);
-	this.assert(result.isUnary , 'not unary');
-	this.assertEqual('foo', result.messageName, 'wrong message name');
-	this.assert(result.receiver.isBinary , 'not binary');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isUnary: true, messageName: 'foo', receiver: {isBinary: true},
+	};
+	this.assertNodeMatches(expected, result);
 },
 test06bSubexpressionAndUnary: function() {
 	var src = 'x + (y foo: 1)';
-	var result = this.parse('expression', src);
-	this.assert(result.isBinary , 'not binary');
-	this.assertEqual('+', result.messageName, 'wrong message name');
-	this.assert(result.args[0].isKeyword , 'not Keyword');
-	this.assertEqual('foo:', result.args[0].messageName , 'wrong Keyword');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isBinary: true, messageName: '+',
+		args: [{isKeyword: true, messageName: 'foo:'}]
+	};
+	this.assertNodeMatches(expected, result);
 },
 test07aAssignment: function() {
 	var src = 'xyz := 1';
-	var result = this.parse('expression', src);
-	this.assert(result.isAssignment , 'no assignment');
-	this.assertEqual('xyz', result.variable.name, 'wrong var name');
-	this.assertEqual(1, result.value.value , 'wrong value');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isAssignment: true, variable: {name: 'xyz'}, value: {value: 1},
+	};
+	this.assertNodeMatches(expected, result);
 },
 test07bAssignment: function() {
 	var src = 'x := yz:=1';
-	var result = this.parse('expression', src);
-	this.assert(result.isAssignment , 'no assignment');
-	this.assertEqual('x', result.variable.name, 'wrong var name');
-	this.assert(result.value.isAssignment , 'value not assignment');
-	this.assertEqual('yz', result.value.variable.name, 'wrong var name 2');
-	this.assert(result.value.value.isLiteral , 'value.value not literal');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isAssignment: true,
+		variable: {name: 'x'},
+		value: {isAssignment: true, variable: {name: 'yz'}, value: {isLiteral: true}},
+	};
+	this.assertNodeMatches(expected, result);
 },
 test08aString: function() {
 	var string = ' this is a string';
 	var src = '\'' + string + '\'';
-	var result = this.parse('expression', src);
-	this.assert(result.isLiteral , 'no string');
-	this.assertEqual(string, result.value, 'didnt recognize string');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {isLiteral: true, value: string};
+	this.assertNodeMatches(expected, result);
 },
 test08bStringWithEscapedQuote: function() {
 	var string = 'That\'s fun';
 	var src = '\'That\'\'s fun\'';
-	var result = this.parse('expression', src);
-	this.assert(result.isLiteral , 'no string');
-	this.assertEqual(string, result.value, 'didnt recognize string');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {isLiteral: true, value: string};
+	this.assertNodeMatches(expected, result);
 },
 test08cEmptyString: function() {
 	var src = '\'\'';
-	var result = this.parse('expression', src);
-	this.assert(result.isLiteral , 'no string');
-	this.assertEqual('', result.value, 'didnt recognize string');
+	var result = this.st2stAst(src, 'expression');
+	var expected = {isLiteral: true, value: ''};
+	this.assertNodeMatches(expected, result);
 },
-
 test09aParseSequence: function() {
 	var src = 'x foo. x := 1+2. x + bar';
-	var result = this.parse('sequence', src);
-xx=result;
-	this.assert(result.isSequence , 'no sequence');
-	this.assertEqual(3, result.children.length, 'block squence length wrong');
-	this.assert(result.children[0].isUnary, 'wrong expression in block 1');
-	this.assert(result.children[1].isAssignment, 'wrong expression in block 2');
-	this.assert(result.children[2].isBinary, 'wrong expression in block 3');
+	var result = this.st2stAst(src, 'sequence');
+	var expected = {
+		isSequence: true,
+		children: [{isUnary: true}, {isAssignment: true}, {isBinary: true}]
+	};
+	this.assertNodeMatches(expected, result);
 },
-
 test10aParseBlockWithoutArgs: function() {
 	var src = '[1+ 3.  ]';
-	var result = this.parse('expression', src);
-	this.assert(result.isBlock , 'no block');
-	this.assertEqual(1, result.sequence.children.length, 'block squence wrong');
-	this.assert(result.sequence.children[0].isBinary, 'wrong expression in block');
+	var result = this.st2stAst(src, 'expression');
+	var expected = { isBlock: true, sequence: {children: [{isBinary: true}]} };
+	this.assertNodeMatches(expected, result);
 },
 test10bParseBlockWithDeclaredVariables: function() {
 	var src = '[:a |  |x yz | ]';
-	var result = this.parse('expression', src);
-	this.assert(result.isBlock , 'no block');
-	this.assertEqual(2, result.declaredVars.length, 'declaredVars length wrong');
-	this.assertEqual('x', result.declaredVars[0].name, 'first var');
-	this.assertEqual('yz', result.declaredVars[1].name, 'second var');
+	var result = this.st2stAst(src, 'expression');
+	var expected = { declaredVars: [{name: 'x'}, {name: 'yz'}] };
+	this.assertNodeMatches(expected, result);
 },
-
 test11aParseCommentsAsWithspace: function() {
 	var src = ' x+ "this is a comment" yz';
-	var result = this.parse('expression', src);
-	this.assert(result.isBinary , 'not binary');
-	this.assertEqual('x', result.receiver.name);
-	this.assertEqual('yz', result.args[0].name);
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isBinary: true,
+		receiver: {name: 'x'},
+		args: [{name: 'yz'}],
+	};
+	this.assertNodeMatches(expected, result);
 },
-
 test12aClamatoMethod: function() {
 	var src = '- foo\n\
 	@selector := \'xyz\'.\n\
 	self.';
-	var result = this.parse('propertyOrMethod', src);
-	this.assert(result.isMethod, 'not a method');
-	this.assertEqual('foo', result.methodName, 'wrong name');
-	this.assertEqual(2, result.sequence.children.length, 'wrong sequence');
-	this.assertIdentity(false, result.isMeta, 'meta method');
-	this.assert(result.sequence.children[0].isAssignment, 'wrong sequence 1');
-	this.assert(result.sequence.children[1].isVariable, 'wrong sequence 2');
+	var result = this.st2stAst(src, 'propertyOrMethod');
+	var expected = {
+		isMethod: true,
+		methodName: 'foo',
+		isMeta: false,
+		sequence: {children: [{isAssignment: true},{isVariable: true}]}
+	};
+	this.assertNodeMatches(expected, result);
 },
 test12bBinaryMethod: function() {
 	var src = '- ++ arg\n\
 	self + arg.';
-	var result = this.parse('propertyOrMethod', src);
-	this.assert(result.isMethod, 'not a method');
-	this.assertEqual('++', result.methodName, 'wrong name');
-	this.assertEqual('arg', result.args[0], 'wrong arg name');
+	var result = this.st2stAst(src, 'propertyOrMethod');
+	var expected = {
+		isMethod: true,
+		methodName: '++',
+		args: ['arg']
+	};
+	this.assertNodeMatches(expected, result);
 },
 test12cKeywordMethod: function() {
 	var src = '- foo: arg1 bar:arg2\n\
 	arg1 baz: arg2.';
-	var result = this.parse('propertyOrMethod', src);
-	this.assert(result.isMethod, 'not a method');
-	this.assertEqual('foo:bar:', result.methodName, 'wrong name');
-	this.assertEqual('arg1', result.args[0], 'wrong arg name');
-	this.assertEqual('arg2', result.args[1], 'wrong arg name');
+	var result = this.st2stAst(src, 'propertyOrMethod');
+	var expected = {
+		isMethod: true,
+		methodName: 'foo:bar:',
+		args: ['arg1', 'arg2']
+	};
+	this.assertNodeMatches(expected, result);
 },
 test13aParseClass: function() {
 	var src =
@@ -284,71 +291,86 @@ test13aParseClass: function() {
 	(self = true)\n\
 		ifTrue: aBlock\n\
 		ifFalse: [false].'
-	var result = this.parse('clamatoClass', src);
-	this.assert(result.isClass, 'not a class');
-	this.assertEqual('Object', result.className.value, 'wrong name');
-	this.assertEqual(2, result.methods.length, 'wrong number of methods');
+	var result = this.st2stAst(src, 'clamatoClass');
+	var expected = {
+		isClass: true,
+		className: {value: 'Object'},
+		methods: [{methodName: '='},{methodName: 'and:'}]
+	};
+	this.assertNodeMatches(expected, result);
 },
 test13bParseClass: function() {
 	var src ='<ClassA:Object>';
-	var result = this.parse('clamatoClass', src);
-	this.assert(result.isClass, 'not a class');
-	this.assertEqual('ClassA', result.className.value, 'wrong name');
-	this.assertEqual('Object', result.superclass.name, 'wrong name');
-	this.assertEqual(0, result.methods.length, 'wrong number of methods');
+	var result = this.st2stAst(src, 'clamatoClass');
+	var expected = {
+		isClass: true,
+		className: {value: 'ClassA'},
+		superclass: {name: 'Object'},
+		methods: []
+	};
+	this.assertNodeMatches(expected, result);
 },
 
 test14aParseJsPrimitive: function() {
 	var body = '{ this.bar() }';
 	var src = '- foo ' + body;
-	var result = this.parse('propertyOrMethod', src);
-	this.assert(result.isPrimitive, 'not a primitve');
-	this.assertEqual('foo', result.methodName, 'wrong name');
-	this.assertEqual(body, result.primitiveBody, 'wrong primBody');
+	var result = this.st2stAst(src, 'propertyOrMethod');
+	var expected = {
+		isPrimitive: true,
+		methodName: 'foo',
+		primitiveBody: body
+	};
+	this.assertNodeMatches(expected, result);
 },
 test14bParseJsPrimitive: function() {
 	var body = '{ (function() { 1 + 2})() }';
 	var src = '- foo ' + body;
-	var result = this.parse('propertyOrMethod', src);
-	this.assert(result.isPrimitive, 'not a primitve');
-	this.assertEqual('foo', result.methodName, 'wrong name');
-	this.assertEqual(body, result.primitiveBody, 'wrong primBody');
+	var result = this.st2stAst(src, 'propertyOrMethod');
+	var expected = {
+		isPrimitive: true,
+		methodName: 'foo',
+		primitiveBody: body
+	};
+	this.assertNodeMatches(expected, result);
 },
 test15aCascades: function() {
 	var src = 'x blupf; bla: 3';
-	var result = this.parse('expression', src);
-	this.assert(result.isCascade, 'no cascade');
-	this.assertEqual(2, result.messages.length);
-	this.assertEqual('blupf', result.messages[0].messageName);
-	this.assertEqual('x', result.messages[0].receiver.name);
-	this.assertEqual('bla:', result.messages[1].messageName);
-	this.assertEqual(1, result.messages[1].args.length);
-	this.assertEqual('x', result.messages[1].receiver.name);
+	var result = this.st2stAst(src, 'expression');
+	var expected = {
+		isCascade: true,
+		messages: [
+			{messageName: 'blupf', receiver: {name: 'x'}},
+			{messageName: 'bla:', receiver: {name: 'x'}, args: [{isLiteral: true}]},
+		]
+	};
+	this.assertNodeMatches(expected, result);
 },
 test16aPropertyDefInClass: function() {
 	var src = '<ClassA>\n- property1 := 1.\n+ property2 := 2.';
-	var result = this.parse('clamatoClass', src);
-	this.assert(result.isClass, 'no class');
-	var props = result.properties;
-	this.assertEqual(2, props.length, 'propertyDefs  length not 1');
-	this.assert(props[0].assignment.isAssignment, 'not assignment');
-	this.assert(!props[0].isMeta, 'not not meta');
-	this.assertEqual('property1' , props[0].assignment.variable.name, 'not correct var name');
-	this.assert(props[1].isMeta, 'not meta');
+	var result = this.st2stAst(src, 'clamatoClass');
+	var expected = {
+		isClass: true,
+		properties: [
+			{isMeta: false, assignment: {isAssignment: true, variable: {name: 'property1'}}},
+			{isMeta: true}]
+	};
+	this.assertNodeMatches(expected, result);
 },
 test17aRecognizeReturn: function() {
 	var src = '- foo\nfalse ifTrue: [^1] ifFalse: [^2].';
-	 result = this.parse('propertyOrMethod', src);
-	this.assert(result.isMethod, 'not method');
-	this.assertEqual(1, result.sequence.children.length, 'not method');
+	var result = this.st2stAst(src, 'propertyOrMethod');
+	var expected = {
+		isMethod: true,
+		sequence: {children: [{isKeyword: true}]}
+	};
+	this.assertNodeMatches(expected, result);
 	var ifStmt = result.sequence.children.first();
-	this.assert(ifStmt.isKeyword, 'if false');
 	var return1 = ifStmt.args[0].sequence.children.first();
-	this.assert(return1.isReturn, 'not return 1');
-	this.assertEqual(1, return1.value.value, 'wrong value 1');
 	var return2 = ifStmt.args[1].sequence.children.first();
-	this.assert(return2.isReturn, 'not return21');
-	this.assertEqual(2, return2.value.value, 'wrong value 2');
+	var expectedReturn1 = {isReturn: true, value: {value: 1}};
+	this.assertNodeMatches(expectedReturn1, return1);
+	var expectedReturn2 = {isReturn: true, value: {value: 2}};
+	this.assertNodeMatches(expectedReturn2, return2);
 },
 
 });
