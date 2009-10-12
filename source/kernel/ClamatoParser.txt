@@ -42,6 +42,10 @@ stringLiteral =
   '\'' (token('\'\'') -> '\'' | ~'\'' char)*:val '\''
   -> val.join(''),
 
+arrayLiteral =
+  token('#{') sequence:seq token('}')
+  -> { new StArrayLiteralNode(seq) },
+
 /*-----------------------------
 --------- expressions ---------
 ------------------------------*/
@@ -49,6 +53,7 @@ primary =
   spaces (variable
         | instanceVariable
         | literal
+        | arrayLiteral
         | '(' expression:e ')' -> e
         | block),
 
@@ -195,7 +200,9 @@ log:x
 	-> {console.log(x); true}
 }
 
-/* ----------- additional stuff ----------------*/
+/* =============================================
+   ============== additional stuff =============
+   ============================================= */
 
 ClamatoParser.isBinaryChar = function(c) {
   	// from Squeak's TypeTable
@@ -205,7 +212,7 @@ ClamatoParser.isBinaryChar = function(c) {
   	 ( x >= 126 && x <= 191) || x == 215 || x == 247 || x == 256
 }
 
-/* ----------- JS2St translation ----------------*/
+/* ============== JS2St translation =========== */
 
 ometa JS2StConverter {
 trans      = [:t apply(t):ans]     -> ans,

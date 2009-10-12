@@ -50,7 +50,8 @@ js2StAst: function(jsSrcOrAst, jsParseRule) {
 
 st2stAst: function(src, rule) {
 	var errorcb = OMetaSupport.handleErrorDebug;
-	 stAst = OMetaSupport.matchAllWithGrammar(this.stParser, rule, src, errorcb)
+	var stAst = OMetaSupport.matchAllWithGrammar(this.stParser, rule, src, errorcb);
+	if (!stAst) this.assert(false, 'Could not parse: ' + src);
 	return stAst;
 },
 st2st: function(src, rule) {
@@ -372,6 +373,16 @@ test17aRecognizeReturn: function() {
 	var expectedReturn2 = {isReturn: true, value: {value: 2}};
 	this.assertNodeMatches(expectedReturn2, return2);
 },
+test18aArrayLiteral: function() {
+	var src = '#{2. 4 foo. 1+2}';
+	 result = this.st2stAst(src, 'expression');
+	var expected = {
+		isArrayLiteral: true,
+		sequence: {children: [{isLiteral: true}, {isUnary: true}, {isBinary: true}]}
+	};
+	this.assertNodeMatches(expected, result);
+},
+
 
 });
 
@@ -387,11 +398,12 @@ test01Expressions: function() {
 		'x + (5 * 6) + (1 foo: 2)',
 		'abc := 1 + 2',
 		'xyz foo\n\tbar;\n\tbaz;\n\tyourself',
-		'[:a :b | | x y z |\n\t1 + 2.]',
+		'[:a :b | | x y z | 1 + 2.]',
 		'\'I\'\'m here\'',
 		'(x foo: 1) + @bla',
 		'(x foo: 1) bla: 2',
-		'(other toString: nil) + @bla'
+		'(other toString: nil) + @bla',
+		'#{1 + 2.3.}',
 	];
 	originals.forEach(function(ea) {
 		var result = this.st2st(ea, 'expression');
@@ -401,7 +413,7 @@ test01Expressions: function() {
 
 test02Sequences: function() {
 	var originals = [
-		'x foo.\n1 + 2.'
+		'x foo.1 + 2.'
 	];
 	originals.forEach(function(ea) {
 		var result = this.st2st(ea,'sequence');
@@ -443,8 +455,9 @@ setUp: function() {
 parse: function(rule, src) {
 	var test = this;
 	var errorcb = OMetaSupport.handleErrorDebug.wrap(function() {
-		var args = $A(arguments), procceed = args.shift();
-		proceed(args);
+		dbgOn(true);
+		var args = $A(arguments), proceed = args.shift();
+		proceed.apply(this,args);
 		test.assert(false, 'Couldn\'t parse file');
 	});
 	return OMetaSupport.matchAllWithGrammar(this.parser, rule, src, errorcb);

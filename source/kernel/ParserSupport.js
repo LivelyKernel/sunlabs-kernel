@@ -164,7 +164,7 @@ StNode.subclass('StSequenceNode', {
 	toSmalltalk: function(indent) {
 		indent = indent ? indent : '';
 		if (!this.children || this.children.length == 0) return '';
-		return this.children.collect(function(ea) { return indent + ea.toSmalltalk() }).join('.\n') + '.';
+		return this.children.collect(function(ea) { return ea.toSmalltalk() }).join('.' + indent) + '.';
 	}
 });
 
@@ -240,23 +240,24 @@ StNode.subclass('StInvokableNode', {
 	declaredVarsString: function(indent) {
 		indent = indent ? indent : '';
 		if (!this.declaredVars || this.declaredVars.length == 0) return '';
-		return indent + Strings.format('| %s |\n',
+		return indent + Strings.format('| %s |' + indent,
 			this.declaredVars.collect(function(ea) {return ea.toSmalltalk()}).join(' '));
 	},
 		
 	toSmalltalk: function() {
 		var result = '';
 		if (this.isMethod) {
-			result += this.methodHeadString() + '\n';
+			result += this.methodHeadString() + '\n\t';
 			result += this.declaredVarsString('\n\t');
-			result += this.sequence.toSmalltalk('\t');
+			result += this.sequence.toSmalltalk('\n\t');
 			return result;
 		}
 		result += '[';
 		if (this.args && this.args.length > 0)
 			result += ':'+ this.args.collect(function(ea) { return ea }).join(' :') + ' | ';
 		result += this.declaredVarsString();
-		result += this.sequence.toSmalltalk('\t');
+		result += ' ';
+		result += this.sequence.toSmalltalk();
 		result += ']'
 		return result;
 	}
@@ -368,6 +369,24 @@ StNode.subclass('StLiteralNode', {
 		return Object.isString(this.value) ? '\'' + this.value.replace('\'', '\'\'') + '\'' : this.value;
 	}
 
+});
+
+StNode.subclass('StArrayLiteralNode', {
+	
+	isArrayLiteral: true,
+	
+	initialize: function($super, sequence) {
+		$super();
+		this.sequence = sequence;
+	},
+	
+	toString: function() {
+		return '#{' + this.sequence.toString() + '}';
+	},
+	
+	toSmalltalk: function() {
+		return '#{' + this.sequence.toSmalltalk() + '}';
+	},
 });
 
 StNode.subclass('StReturnNode', {
