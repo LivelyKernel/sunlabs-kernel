@@ -733,9 +733,11 @@ store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
 	if (optHeadRev) {
 		var headers = optRequestHeaders ? optRequestHeaders : {};
 		//determine local path of resource
-		var local = new URL(this.getURL()).relativePathFrom(new URL(this.repoUrl));
+		//var local = new URL(this.getURL()).relativePathFrom(new URL(this.repoUrl));
+		var local = this.getURL().toString().substring(this.repoUrl.toString().length);
 		local = local.slice(1); // remove leading slash
 		var ifHeader = Strings.format('(["%s//%s"])', optHeadRev, local);
+		console.log('Creating if header: ' + ifHeader);
 		Object.extend(headers, {'If': ifHeader});
 	}
 	return $super(content, optSync, headers);
