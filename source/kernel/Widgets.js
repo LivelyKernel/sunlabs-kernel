@@ -540,6 +540,7 @@ BoxMorph.subclass("SelectionMorph", {
         this.reshapeName = "bottomRight";
         this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
         // this.shape.setStrokeDashArray([3,2]);
+
         return this;
     },
 
@@ -551,6 +552,12 @@ BoxMorph.subclass("SelectionMorph", {
 
 
     reshape: function($super, partName, newPoint, lastCall) {
+
+		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
+		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
+		// FIXME, other place Text, TextMorph>>onKeyDown
+		ClipboardHack.ensurePasteBuffer().select();
+		
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
         var result;
