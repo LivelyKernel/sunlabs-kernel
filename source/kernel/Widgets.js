@@ -4154,22 +4154,31 @@ Morph.subclass('NodeMorph', {
 	connectTo: function(otherNode) {
 		this.connectedNodesCache = null;
 		var con = new ConnectorMorph(this, otherNode);
-		var w = WorldMorph.current();
-		if (this.ownerChain().include(w))
-			w.addMorphBack(con);
+		this.ensureConnectionIsVisible(con);
 		this.connections.push(con);
 		otherNode.connectionsPointingToMe.push(con);
 		return con;
 	},
+	ensureConnectionToNodeIsVisible: function(node) {
+		this.ensureConnectionIsVisible(this.getConnectionToNode(node));
+	},
+	ensureConnectionIsVisible: function(connection) {
+		var w = WorldMorph.current();
+		if (this.ownerChain().include(w))
+			w.addMorphBack(connection);
+	},
 	disconnect: function(node) {
 		this.connectedNodesCache = null;
-		var c = this.connections.detect(function(ea) { return ea.getEndMorph() == node });
+		var c = this.getConnectionToNode(node);
 		if (!c) {
 			console.warn('Trying to disconnect nodes but couldn\'t find connection!');
 			return;
 		}
 		c.remove();
 		this.connections = this.connections.without(c);
+	},
+	getConnectionToNode: function(node) {
+		return this.connections.detect(function(ea) { return ea.getEndMorph() == node });
 	},
 	connectedNodes: function() {
 		if (!this.connectedNodesCache)
@@ -4182,8 +4191,6 @@ allConnectedNodes: function() {
 connectedNodesPointingToMe: function() {
 		return this.connectionsPointingToMe.collect(function(ea) { return ea.getStartMorph() });
 	},
-
-
 	isConnectedTo: function(otherNode) {
 		return this.connectedNodes().indexOf(otherNode) != -1;
 	},
