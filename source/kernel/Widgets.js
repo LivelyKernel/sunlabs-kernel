@@ -2818,6 +2818,14 @@ getVideoBounds: function() {
 });
 
 Object.extend(VideoMorph, {
+	openAndInteractivelyEmbed: function(pos) {
+		require('lively.Helper').toRun(function() { // for stringToXML
+			var v = new VideoMorph();
+			v.setPosition(pos);
+			v.openInWorld();
+			v.interactivelyEmbedVideo();
+		});
+	},
 	openStream: function(url) {
 		var m = new VideoMorph(new Rectangle(0,0,360,300));
 		m.openInWorld();

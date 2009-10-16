@@ -4152,10 +4152,7 @@ PasteUpMorph.subclass("WorldMorph", {
 					img.setFill(null);
 					img.openInWorld() }) }],
 			["Video Morph", function(evt) {
-				var v = new VideoMorph();
-				v.setPosition(evt.point());
-				v.openInWorld();
-				v.interactivelyEmbedVideo(); }],
+				VideoMorph.openAndInteractivelyEmbed(evt.point()) }],
 			["Layout Demo", function(evt) {
                 require('GridLayout.js').toRun(function() {
 					GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
