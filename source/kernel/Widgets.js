@@ -2694,7 +2694,14 @@ openExample: function() {
 
 	interactivelyEmbedVideo: function() {
 		var w = WorldMorph.current();
-		w.prompt('Paste HTML below.', this.embedVideo.bind(this));
+		w.prompt('Paste HTML or URL below.', this.embedVideoOrStream.bind(this));
+	},
+	
+	embedVideoOrStream: function(input) {
+		if (input.startsWith('http'))
+			this.embedStream(input);
+		else
+			this.embedVideo(input);
 	},
 	
 	embedVideo: function(stringifiedHTML) {
@@ -2827,9 +2834,11 @@ Object.extend(VideoMorph, {
 		});
 	},
 	openStream: function(url) {
-		var m = new VideoMorph(new Rectangle(0,0,360,300));
-		m.openInWorld();
-		m.embedStream(url);
+		require('lively.Helper').toRun(function() { // for stringToXML
+			var m = new VideoMorph(new Rectangle(0,0,360,300));
+			m.openInWorld();
+			m.embedStream(url);
+		});
 	}
 });
 
