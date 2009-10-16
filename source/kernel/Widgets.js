@@ -2684,7 +2684,6 @@ XenoMorph.subclass('VideoMorph', {
 
 	initialize: function($super, bounds) { 
 	$super(bounds || new Rectangle(0,0,100,100));
-	this.margin = 20;
 	this.applyStyle({fillOpacity: 0.6, borderColor: Color.black, borderWidth: 1});
     },
 openExample: function() {
@@ -2811,8 +2810,9 @@ updateCSS: function() {
 },
 
 getVideoBounds: function() {
+	var margin = 20;
 	var gt = this.getGlobalTransform();
-	return gt.transformRectToRect(this.innerBounds().insetBy(this.margin));
+	return gt.transformRectToRect(this.innerBounds().insetBy(margin));
 },
 
 });
