@@ -2682,10 +2682,17 @@ XenoMorph.subclass('VideoMorph', {
 	
 	useExperimentalRotation: false,
 
+	onDeserialize: function() {
+		var foreign = $A(this.rawNode.childNodes).select(function(ea) {
+			return ea.tagName == 'foreignObject' && ea !== this.foRawNode}, this);
+		foreign.forEach(function(ea) { this.rawNode.removeChild(ea) }, this);
+	},
+
 	initialize: function($super, bounds) { 
 	$super(bounds || new Rectangle(0,0,100,100));
 	this.applyStyle({fillOpacity: 0.6, borderColor: Color.black, borderWidth: 1});
     },
+
 openExample: function() {
 	this.embedVideo('<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>');
 	this.openInWorld();
@@ -2716,7 +2723,7 @@ openExample: function() {
 		this.setExtent(extent);
 	},
 	
-      embedMov: function(name) {
+	embedMov: function(name) {
       console.log('Embedding mov...');
       this.foRawNode.removeChild(this.foRawNode.firstChild);
       var extent = this.getExtent();
