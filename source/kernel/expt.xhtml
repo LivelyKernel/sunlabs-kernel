@@ -24,6 +24,13 @@
 <script>
 <![CDATA[
 
+/* -----------------------------------------------------
+ * The purpose of these changes is to replace SVG nodes
+ *  with dummy nodes so that code that depended on the SVG nodes
+ *  will still run, although without using the SVG graphics.
+ * -----------------------------------------------------
+ */
+
 NodeFactory.create =  function(name, attributes) {
     var element = emudom.document.createElementNS(Namespace.SVG, name);
     //return this.createNS(Namespace.SVG, name, attributes);  // doesn't work
