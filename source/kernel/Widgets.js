@@ -2693,9 +2693,14 @@ XenoMorph.subclass('VideoMorph', {
 	this.applyStyle({fillOpacity: 0.6, borderColor: Color.black, borderWidth: 1});
     },
 
-openExample: function() {
-	this.embedVideo('<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>');
-	this.openInWorld();
+openExample: function(worldOrNil) {
+	var thisMorph = this;
+	//require('lively.Helper').toRun(function() {  // for stringToXML
+	thisMorph.embedVideo('<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>');
+	//});
+	this.translateBy(pt(85, 85));
+	this.updateCSS();
+	(worldOrNil || WorldMorph.current()).addMorph(this);
 },
 
 

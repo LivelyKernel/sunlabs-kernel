@@ -343,8 +343,8 @@ function populateWorldWithExamples(world) {
                 });
             
             if (Config.showVideo())
-                require('Examples.js').toRun(function() {
-                    lm1.myWorld.addFramedMorph(new PlayerMorph(), "Player", pt(50, 20));
+                require('lively.Helper').toRun(function() {
+                    new VideoMorph().openExample(lm1.myWorld);
                 });
 	    
         }
