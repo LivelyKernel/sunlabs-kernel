@@ -983,8 +983,10 @@ PanelMorph.subclass('lively.Examples.Sun3DMorph', {
 // by Mike Hall in 1998.  The code is used here by permission.
 
 // Note: The code below has been translated from the original
-// Java implementation, so this is not an ideal example of a
-// truly "Morphic" application
+// Java implementation; it has nothing to do with morphic style
+// and should not be used as a model for a morphic application.
+// See "Fasteroids" is "Contributions.js" file for a sketch of
+// how it should be done.
 
 // FIXME: There are still problems with the coordinate space.
 // For instance, shooting is not as precise as in the original game.
@@ -1430,7 +1432,6 @@ ClipMorph.subclass("lively.Examples.asteroids.GameMorph", {
     }
 
     if (!(paused || this.owner.isCollapsed())) {
-
         // Move and process all sprites.
 
         updateShip();
@@ -1462,8 +1463,8 @@ ClipMorph.subclass("lively.Examples.asteroids.GameMorph", {
                 initAsteroids();
         }
 
-        // Update the screen and set the timer for the next loop.
-        // repaint();
+        // Update the screen (necessary because this doesn't use morphic for animation)
+        if (this.world().repaintCanvas) this.world().repaintCanvas();  // Needed for canvas (SVG is OK)
         
         // Update score
         showTextStrings();
