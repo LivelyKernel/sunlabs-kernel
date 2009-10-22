@@ -1695,14 +1695,15 @@ undrawSelection: function() {
 
 		var url = URL.ensureAbsoluteURL(link);
         // add require to LKWiki.js here
-        var wikiNav = new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
-        if (!wikiNav.isActive())
-            this.world().confirm("Please confirm link to " + url.toString(),
+        var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
+        if (wikiNav && wikiNav.isActive())
+			wikiNav.askToSaveAndNavigateToUrl(this.world());
+        else
+			this.world().confirm("Please confirm link to " + url.toString(),
                 function (answer) {
                     Config.askBeforeQuit = false;
                     window.location.assign(url.toString() + '?' + new Date().getTime());
                 }.bind(this));
-        else wikiNav.askToSaveAndNavigateToUrl(this.world());
     },
     
     onMouseUp: function(evt) {
