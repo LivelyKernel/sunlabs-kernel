@@ -1051,6 +1051,11 @@ this.Shape.subclass('lively.scene.Polygon', {
 	return this;
     },
 
+    copyFrom: function($super, copier, other) {
+      $super(copier, other);
+      this.setVertices(other.vertices());
+    },
+
     setVertices: function(vertlist) {
 	if (this.rawNode.points) {
 	    this.rawNode.points.clear();
@@ -1439,6 +1444,24 @@ this.Shape.subclass('lively.scene.Path', {
 	this.rawNode = NodeFactory.create("path");
 	this.setElements(elements || []);
 	return this;
+    },
+    
+    deserialize: function($super, importer, rawNode) {
+      $super(importer, rawNode);
+      var codeExtractor = /([A-Z])(-?[0-9]+(?:.[0-9]+)?|NaN),(-?[0-9]+(?:.[0-9]+)?|NaN)/;
+      var pathElementClasses = lively.scene.PathElement.allSubclasses();
+      var pathElementLiterals = this.rawNode.getAttributeNS(null, 'd').split(' ').reject(function(ea) { return !ea });
+      var elements = pathElementLiterals.collect(function(literal) {
+        var parts = codeExtractor.exec(literal);
+        var pathElementClass = pathElementClasses.detect(function(klass) { return klass.prototype.charCode == parts[1] });
+        return new pathElementClass(Number(parts[2]) || 0, Number(parts[3]) || 0)
+      });
+      this.setElements(elements);
+    },
+    
+    copyFrom: function($super, copier, other) {
+      $super(copier, other);
+      this.setElements(other.elements);
     },
 
     setElements: function(elts) {
