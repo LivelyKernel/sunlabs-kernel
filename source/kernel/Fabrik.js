@@ -347,7 +347,7 @@ Global.Fabrik = {
         var humidityPin = extractCondition.addPin('Humidity'); this.setPositionRel(pt(0.96, 0.6), humidityPin.morph);
         var windPin = extractCondition.addPin('Wind'); this.setPositionRel(pt(0.96, 0.8), windPin.morph);
         var imagePin = extractCondition.addPin('Image'); this.setPositionRel(pt(0.5, 0.96), imagePin.morph);
-        extractCondition.setFunctionBody('if (input) {\n var infos = input.js.current_conditions; \n this.setCondition(infos.condition); \n this.setTemp(infos.temp_c + "°C / " + infos.temp_f + "°F"); \n this.setHumidity(infos.humidity); \n this.setWind(infos.wind_condition); \n this.setImage("http:\/\/www.google.com/ig" + infos.icon);\n }');
+        extractCondition.setFunctionBody('if (input) {\n var infos = input.js.current_conditions; \n this.setCondition(infos.condition); \n this.setTemp(infos.temp_c + "°C / " + infos.temp_f + "°F"); \n this.setHumidity(infos.humidity); \n this.setWind(infos.wind_condition); \n this.setImage("http:\/\/www.google.com" + infos.icon);\n }');
                 
         // add the 'UI'
         var extent = pt(80,50);
