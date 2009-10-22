@@ -716,6 +716,11 @@ var Functions = {
 		} 
 		return a;
     },
+	timeToRun: function(func) {
+		var startTime = (new Date()).getTime();	
+		func();
+		return new Date().getTime() - startTime;
+	}
 };
     
 var Properties = {
