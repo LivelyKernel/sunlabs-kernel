@@ -3316,7 +3316,10 @@ BoxMorph.subclass("TitleBarMorph", {
 		},
     
     initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
-	if (optSuppressControls)  this.barHeight = this.shortBarHeight; // for dialog boxes
+	if (optSuppressControls)  {  // for dialog boxes
+	  this.suppressControls = true;
+	  this.barHeight = this.shortBarHeight;
+  }
 	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
 	
         $super(bounds);
@@ -3346,7 +3349,7 @@ BoxMorph.subclass("TitleBarMorph", {
         }
         label.applyStyle(this.labelStyle);
         this.label = this.addMorph(label);
-	if (!optSuppressControls) {
+	if (!this.suppressControls) {
             var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
             this.closeButton =  this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange));
 	    this.menuButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue));
@@ -3358,6 +3361,7 @@ BoxMorph.subclass("TitleBarMorph", {
     },
     
     connectButtons: function(w) {
+      if (this.suppressControls) return;
 	this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
 	this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
 	this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
