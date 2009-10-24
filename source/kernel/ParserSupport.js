@@ -32,6 +32,15 @@ Object.subclass('StNode', {
 	toSmalltalk: function() {
 		return '';
 	},
+	
+	mangleMethodName: function(name) {
+	  return name.replace(/:/g, '_');
+	},
+	
+	toJavaScript: function() {
+		return '';
+	},
+	
 });
 
 StNode.subclass('StAssignmentNode', {
@@ -50,6 +59,10 @@ StNode.subclass('StAssignmentNode', {
 	
 	toSmalltalk: function() {
 		return this.variable.name + ' := ' + this.value.toSmalltalk();
+	},
+	
+	toJavaScript: function() {
+	  return this.variable.toJavaScript() + ' = ' + this.value.toJavaScript();
 	}
 });
 
@@ -78,6 +91,21 @@ StNode.subclass('StCascadeNode', {
 			return '\t' + part;
 		}).join(';\n');
 		return recv + '\n' + rest;
+	},
+	
+	toJavaScript: function() {
+	  if (this.receiver.isVariable || this.receiver.isLiteral) {
+	      return this.messages.collect(function(ea) {
+    		  return ea.toJavaScript()
+    		}).join(';\n') + ';\n';
+	  };
+	  var recv = this.receiver.toJavaScript();
+	  var result = 'var cascadeHelper = ' + recv + ';\n';
+		result += this.messages.collect(function(ea) {
+			return 'cascadeHelper.' + ea.toJavaScriptWithoutReceiver();
+		}).join(';\n') + ';\n';
+		return result;
+		
 	}
 });
 
@@ -95,6 +123,10 @@ StNode.subclass('StMessageNode', {
 	setReceiver: function(receiver) {
 		this.receiver = receiver;
 	},
+	
+	toJavaScriptWithoutReceiver: function() {
+	  throw new Error('Subclass responsibility');
+	}
 
 });
 
@@ -111,6 +143,15 @@ StMessageNode.subclass('StUnaryMessageNode', {
 	toSmalltalk: function() {
 		return this.receiver.toSmalltalk() + ' ' + this.messageName;
 	},
+	
+	toJavaScript: function() {
+		return this.receiver.toJavaScript() + '.' + this.messageName + '()';
+	},
+	
+	toJavaScriptWithoutReceiver: function() {
+	  return this.messageName + '()';
+	}
+	
 });
 
 StMessageNode.subclass('StBinaryMessageNode', {
@@ -136,7 +177,22 @@ StMessageNode.subclass('StBinaryMessageNode', {
 			receiverString,
 			this.messageName,
 			argString);
-	}
+	},
+	
+	toJavaScript: function() {
+	  var arg = this.args.first();
+		var argString = arg.toJavaScript();
+		if (arg.isBinary || arg.isKeyword)
+			argString = '(' + argString + ')';
+		var receiverString = this.receiver.toJavaScript();
+		if (this.receiver.isKeyword || this.receiver.isBinary)
+			receiverString = '(' + receiverString + ')';
+		return Strings.format('%s %s %s',
+			receiverString,
+			this.messageName,
+			argString);
+	},
+		
 });
 
 StMessageNode.subclass('StKeywordMessageNode', {
@@ -167,8 +223,24 @@ StMessageNode.subclass('StKeywordMessageNode', {
 			return ea[0] + ': ' + arg;
 		}).join(' ');
 		return result;
-	}
+	},
+		
+	toJavaScript: function() {
+	  var result = this.receiver.toJavaScript();
+		if (this.receiver.isBinary) result = '(' + result + ')';
+		result += '.';
+		result += this.toJavaScriptWithoutReceiver();
+		return result;
+	},
 
+  toJavaScriptWithoutReceiver: function() {
+		var result = this.mangleMethodName(this.messageName);
+		result += '(';
+		result += this.args.collect(function(ea) { return ea.toJavaScript() }).join(',');
+		result += ')';
+		return result;
+  },
+  
 });
 
 StNode.subclass('StSequenceNode', {
@@ -185,10 +257,23 @@ StNode.subclass('StSequenceNode', {
 	},
 	
 	toSmalltalk: function(indent) {
-		indent = indent ? indent : '';
+		indent = Object.isString(indent) ? indent : '';
 		if (!this.children || this.children.length == 0) return '';
-		return this.children.collect(function(ea) { return ea.toSmalltalk() }).join('.' + indent) + '.';
-	}
+		return this.children.collect(function(ea) { return indent + ea.toSmalltalk() }).join('.') + '.';
+	},
+	
+	toJavaScript: function(indent, returnLast) {
+	  indent = Object.isString(indent) ? indent : '';
+		if (!this.children || this.children.length == 0) return '';
+		var firsts = this.children.slice(0,this.children.length - 1)
+		var last = this.children.last();
+		var result = firsts.collect(function(ea) { return indent + ea.toJavaScript() }).join(';');
+		if (firsts.length > 0) result += ';';
+		result += indent + (returnLast ? 'return ' : '') + last.toJavaScript();  
+		return result;
+		
+	},
+
 });
 
 StNode.subclass('StPropertyNode', { /* for JS->St */
@@ -207,6 +292,10 @@ StNode.subclass('StPropertyNode', { /* for JS->St */
 	
 	toSmalltalk: function() {
 		return (this.isMeta ? '+ ' : '- ') + this.assignment.toSmalltalk() + '.';
+	},
+	
+	toJavaScript: function() {
+	  return this.assignment.variable.toJavaScript() + ': ' + this.assignment.value.toJavaScript() + ','
 	}
 
 });
@@ -261,7 +350,7 @@ StNode.subclass('StInvokableNode', {
 	},
 	
 	declaredVarsString: function(indent) {
-		indent = indent ? indent : '';
+		indent = Object.isString(indent) ? indent : '';
 		if (!this.declaredVars || this.declaredVars.length == 0) return '';
 		return indent + Strings.format('| %s |' + indent,
 			this.declaredVars.collect(function(ea) {return ea.toSmalltalk()}).join(' '));
@@ -270,7 +359,7 @@ StNode.subclass('StInvokableNode', {
 	toSmalltalk: function() {
 		var result = '';
 		if (this.isMethod) {
-			result += this.methodHeadString() + '\n\t';
+			result += this.methodHeadString();
 			result += this.declaredVarsString('\n\t');
 			result += this.sequence.toSmalltalk('\n\t');
 			return result;
@@ -283,7 +372,32 @@ StNode.subclass('StInvokableNode', {
 		result += this.sequence.toSmalltalk();
 		result += ']'
 		return result;
-	}
+	},
+		
+	toJavaScriptMethodHeader: function() {
+    var result = '';
+	  if (this.isMethod) result += this.mangleMethodName(this.methodName) + ': ';
+	  result += 'function(';
+		if (this.args && this.args.length > 0)
+			result += this.args.collect(function(ea) { return ea }).join(',');
+		result += ') ';
+		return result;
+	},
+	
+	toJavaScript: function() {
+	  var result = '';
+	  result += this.toJavaScriptMethodHeader();
+    result += '{';
+		if (this.declaredVars && this.declaredVars.length > 0) {
+		  result += ' var ';
+		  result += this.declaredVars.collect(function(ea) {return ea.toJavaScript()}).join(',');
+		  result += ';';
+		}
+    result += this.sequence.toJavaScript(' '/*indent*/, true /*returnLast*/);
+    result += ' }';
+		if (this.isMethod) result += ',';
+		return result;
+	},
 
 });
 
@@ -306,7 +420,15 @@ StInvokableNode.subclass('StPrimitveMethodNode', {
 	
 	toSmalltalk: function() {
 		return this.methodHeadString() + ' ' + this.primitiveBody;
-	}
+	},
+	
+	toJavaScript: function() {
+		var result = '';
+	  result += this.toJavaScriptMethodHeader();
+	  result += this.primitiveBody;
+	  result += ','
+	  return result;
+	},
 
 });
 
@@ -343,6 +465,55 @@ StNode.subclass('StClassNode', {
 		}
 		result += '\n\n';
 		return result;
+	},
+	
+	instMethods: function() {
+	  return this.methods.select(function(ea) { return !ea.isMeta });
+	},
+	
+	instProperties: function() {
+	  return this.properties.select(function(ea) { return !ea.isMeta });
+	},
+	
+	classMethods: function() {
+	  return this.methods.select(function(ea) { return ea.isMeta });
+	},
+	
+	classProperties: function() {
+	  return this.properties.select(function(ea) { return ea.isMeta });
+	},
+	
+	methodsAndPropertiesToJavaScript: function(methods, properties) {
+	  var result = '';
+	  if (properties.length > 0) {
+	    result += '\n';
+			result += properties.collect(function(ea) { return ea.toJavaScript() }).join('\n');
+			result += '\n';
+		}
+	  if (methods.length > 0) {
+	    if (properties.length == 0) result += '\n';
+			result += methods.collect(function(ea) { return ea.toJavaScript() }).join('\n\n');
+			result += '\n';
+		}
+		return result;
+	},
+	
+	toJavaScript: function() {
+	  var result = this.superclass ? this.superclass.toJavaScript() : 'Object';
+	  result += '.subclass('
+	  result += this.className.toJavaScript();
+	  result += ', {';
+	  result += this.methodsAndPropertiesToJavaScript(this.instMethods(), this.instProperties());
+		result += '});\n';
+		var classMethods = this.classMethods(), classProperties = this.classProperties();
+		if (classMethods.length == 0 && classProperties.length == 0)
+		  return result;
+		result += 'Object.extend(';
+		result += this.className.value;
+		result += ', {'
+		result += this.methodsAndPropertiesToJavaScript(classMethods, classProperties);
+		result += '});\n'
+		return result;
 	}
 
 });
@@ -362,7 +533,11 @@ StNode.subclass('StVariableNode', {
 	
 	toSmalltalk: function() {
 		return this.name;
-	}
+	},
+	
+	toJavaScript: function() {
+		return this.name;
+	},
 });
 
 StVariableNode.subclass('StInstanceVariableNode', {
@@ -371,7 +546,11 @@ StVariableNode.subclass('StInstanceVariableNode', {
 	
 	toSmalltalk: function() {
 		return this.name;
-	}
+	},
+	
+	toJavaScript: function() {
+		return 'this.' + this.name.substring(1,this.name.length); // without @
+	},
 
 });
 
@@ -389,8 +568,12 @@ StNode.subclass('StLiteralNode', {
 	},
 	
 	toSmalltalk: function() {
-		return Object.isString(this.value) ? '\'' + this.value.replace('\'', '\'\'') + '\'' : this.value;
-	}
+		return Object.isString(this.value) ? '\'' + this.value.replace(/'/g, '\'\'') + '\'' : this.value;
+	},
+
+	toJavaScript: function() {
+		return Object.isString(this.value) ? '\'' + this.value.replace(/''/g, "\\\\'") + '\'' : this.value;
+	},
 
 });
 
@@ -410,6 +593,10 @@ StNode.subclass('StArrayLiteralNode', {
 	toSmalltalk: function() {
 		return '#{' + this.sequence.toSmalltalk() + '}';
 	},
+	
+	toJavaScript: function() {
+	  return '[' + this.sequence.children.collect(function(ea) { return ea.toJavaScript() }).join(',') + ']';
+	}
 });
 
 StNode.subclass('StReturnNode', {
@@ -423,7 +610,13 @@ StNode.subclass('StReturnNode', {
 
 	toSmalltalk: function() {
 		return '^ ' + this.value.toSmalltalk();
-	}
+	},
+	
+	toJavaScript: function() {
+	  WorldMorph.current().notify('"^" currently not supported ... ');
+	  return this.value.toJavaScript();
+	},
+	
 });
 
 });

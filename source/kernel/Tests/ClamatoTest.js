@@ -50,12 +50,19 @@ js2StAst: function(jsSrcOrAst, jsParseRule) {
 
 st2stAst: function(src, rule) {
 	var errorcb = OMetaSupport.handleErrorDebug;
-	var stAst = OMetaSupport.matchAllWithGrammar(this.stParser, rule, src, errorcb);
+	stAst = OMetaSupport.matchAllWithGrammar(this.stParser, rule, src, errorcb);
 	if (!stAst) this.assert(false, 'Could not parse: ' + src);
 	return stAst;
 },
 st2st: function(src, rule) {
 	return this.st2stAst(src, rule).toSmalltalk();
+},
+st2js: function(src, rule) {
+	var result = this.st2stAst(src, rule);
+	if (Object.isArray(result))
+		return result.invoke('toJavaScript').join('');
+	else
+		return result.toJavaScript();
 },
 
 
@@ -430,7 +437,22 @@ test03Class: function() {
 	xyz + 3.\n\
 \n\
 + + foo\n\
-	self ++ foo.\n\n'
+	self ++ foo.\n\n';
+	var result = this.st2st(src, 'clamatoClass');
+	this.assertEqual(src, result);
+},{
+	var src = '<ClassA:Object>\n\
+\n\
+- x := bla.\n\
+\n\
+- foo: xyz\n\
+	xyz + 3.\n\
+\n\
++ + foo\n\';
+
+	var result = this.st2st(src, 'clamatoClass');
+	this.assertEqual(src, result);
+
 	var result = this.st2st(src, 'clamatoClass');
 	this.assertEqual(src, result);
 },
@@ -598,7 +620,7 @@ test03aParseSimpleMethod: function() {
 	var result = this.jsAst2StAst(ast);
 	var expected = {
 		isMethod: true,
-		methodName: 'foo',
+		methodName: 'foo:',
 		args: [],
 		sequence: {children: []}
 	};
@@ -610,7 +632,7 @@ test03bParseSimpleMethodWithArgs: function() {
 	var result = this.jsAst2StAst(ast);
 	var expected = {
 		isMethod: true,
-		methodName: 'foo',
+		methodName: 'foo:',
 		args: ['a', 'b'],
 		sequence: {children: []}
 	};
@@ -663,7 +685,7 @@ testXXbConvertClassWithMethod: function() {
 	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isClass: true,
-		methods: [{methodName: 'x', args: ['a']}, {methodName: 'y'}]};
+		methods: [{methodName: 'x:', args: ['a']}, {methodName: 'y:'}]};
 	this.assertNodeMatches(expected, result);
 },
 testXXcConvertClassWithPropertiesAndMethod: function() {
@@ -671,7 +693,7 @@ testXXcConvertClassWithPropertiesAndMethod: function() {
 	var result = this.js2StAst(src, 'expr');
 	var expected = {
 		isClass: true,
-		methods: [{methodName: 'z', args: []}],
+		methods: [{methodName: 'z:', args: []}],
 		properties: [{variable: {name: 'x'}, value: {value: 2}}, {isAssignment: true}]
 	};
 	this.assertNodeMatches(expected, result);
@@ -692,6 +714,186 @@ testXYaConvertMethodWichCannotBeParsedToPrimitive: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
+
+});
+
+lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.St2JSConversionTest', {
+shouldRun: true,
+test01aConvertTempVarGet: function() {
+	var src = 'tempVar';
+	var result = this.st2js(src, 'expression');
+	var expected = src;
+	this.assertEqual(expected, result);
+},
+test02aConvertInstVar: function() {
+	var src = '@instVar';
+	result = this.st2js(src, 'expression');
+	var expected = 'this.instVar';
+	this.assertEqual(expected, result);
+},
+test03aConvertLiteralString: function() {
+	var src = "'foo''bar'";
+	var result = this.st2js(src, 'expression');
+	var expected = "'foo\'bar'";
+	this.assertEqual(expected, result);
+},
+
+
+test03bArrayLiteral: function() {
+	var src = '#{1+ 2. y. 3}';
+	var result = this.st2js(src, 'expression');
+	var expected = '[1 + 2,y,3]';
+	this.assertEqual(expected, result);
+},
+
+
+
+test04aConvertAssignment: function() {
+	var src = 'x := 1';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x = 1';
+	this.assertEqual(expected, result);
+},
+test05aConvertCascade: function() {
+	var src = 'x foo; bar: 2';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x.foo();\nx.bar_(2);\n';
+	this.assertEqual(expected, result);
+},
+test05bConvertCascadeWithNonPrimitiveRecevier: function() {
+	var src = '(1+ 2) foo; bar: 2';
+	var result = this.st2js(src, 'expression');
+	var expected = 'var cascadeHelper = 1 + 2;\ncascadeHelper.foo();\ncascadeHelper.bar_(2);\n';
+	this.assertEqual(expected, result);
+},
+
+test06aConvertBinary: function() {
+	var src = 'x foo';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x.foo()';
+	this.assertEqual(expected, result);
+},
+test06bConvertBinary: function() {
+	var src = 'x + 3';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x + 3';
+	this.assertEqual(expected, result);
+},
+test06cConvertKeyword: function() {
+	var src = 'x foo: 1 bar: y';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x.foo_bar_(1,y)';
+	this.assertEqual(expected, result);
+},
+test07aChainedBinary: function() {
+	var src = 'x + 3 * 4';
+	var result = this.st2js(src, 'expression');
+	var expected = '(x + 3) * 4';
+	this.assertEqual(expected, result);
+},
+test07bChainedUnaries: function() {
+	var src = 'x foo bar';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x.foo().bar()';
+	this.assertEqual(expected, result);
+},
+test07cChainedUnaryAndBinary: function() {
+	var src = 'x foo + x bar';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x.foo() + x.bar()';
+	this.assertEqual(expected, result);
+},
+test07dChainedKeyword: function() {
+	var src = '(x foo: 123 bar: y) baz: 2';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x.foo_bar_(123,y).baz_(2)';
+	this.assertEqual(expected, result);
+},
+test07eChainedBinaryAndKeyword: function() {
+	var src = '1 + x foo: y';
+	var result = this.st2js(src, 'expression');
+	var expected = '(1 + x).foo_(y)';
+	this.assertEqual(expected, result);
+},
+test07fChainedBinaryAndKeyword2: function() {
+	var src = 'x foo: y + 2';
+	var result = this.st2js(src, 'expression');
+	var expected = 'x.foo_(y + 2)';
+	this.assertEqual(expected, result);
+},
+test08aSequence: function() {
+	var src = '1 + 2. 3+4';
+	var result = this.st2js(src, 'sequence');
+	var expected = '1 + 2;3 + 4';
+	this.assertEqual(expected, result);
+},
+
+test10aBlock: function() {
+	var src = '[:a :b | | c d | 1 + 2]';
+	var result = this.st2js(src, 'expression');
+	var expected = 'function(a,b) { var c,d; return 1 + 2 }';
+	this.assertEqual(expected, result);
+},
+test11aClamatoMethod: function() {
+	var src = '- foo\n\
+	@selector := \'xyz\'.\n\
+	self.';
+	var result = this.st2js(src, 'propertyOrMethod');
+	var expected = 'foo: function() { this.selector = \'xyz\'; return self },';
+	this.assertEqual(expected, result);
+},
+test11bProperty: function() {
+	var src = '- property1 := 1.';
+	var result = this.st2js(src, 'propertyOrMethod');
+	var expected = 'property1: 1,';
+	this.assertEqual(expected, result);
+},
+test11cPrimtiveMethod: function() {
+	var body = '{ body; 1+2; }';
+	var src = '- foo ' + body;
+	var result = this.st2js(src, 'propertyOrMethod');
+	var expected = 'foo: function() ' + body + ',';
+	this.assertEqual(expected, result);
+},
+test12aClassWithOneMethod:  function () {
+	var src = '<MyClass>\n- foo: x bar: y\n\t1 + 2. self foo: x + y.'
+	var result = this.st2js(src, 'clamatoClass');
+	var expected = 'Object.subclass(\'MyClass\', {\nfoo_bar_: function(x,y) { 1 + 2; return self.foo_(x + y) },\n});\n';
+	this.assertEqual(expected, result);
+},
+test12bSubclass:  function () {
+	var src = '<MyClass:Foo>'
+	var result = this.st2js(src, 'clamatoClass');
+	var expected = 'Foo.subclass(\'MyClass\', {});\n';
+	this.assertEqual(expected, result);
+},
+test12cClassPropertiesAndMethod: function() {
+	var src = '<MyClass>\n- foo 1.\n- bar := 4.'
+	var result = this.st2js(src, 'clamatoClass');
+	var expected = 'Object.subclass(\'MyClass\', {\nbar: 4,\nfoo: function() { return 1 },\n});\n';
+	this.assertEqual(expected, result);
+},
+test12dMetaClass: function() {
+	var src = '<MyClass>\n- foo 1.\n+ foo 23 * 5.\n+ bar := 4.'
+	var result = this.st2js(src, 'clamatoClass');
+	var expected = 'Object.subclass(\'MyClass\', {\nfoo: function() { return 1 },\n});\nObject.extend(MyClass, {\nbar: 4,\nfoo: function() { return 23 * 5 },\n});\n';
+	this.assertEqual(expected, result);
+},
+
+
+
+testXXaResultOfCollect: function() {
+	var src = 'arr collect: [:ea | ea asString + 29]';
+	var result = this.st2js(src, 'expression');
+	var expected = 'arr.collect_(function(ea) { return ea.asString() + 29 })';
+	this.assertEqual(expected, result);
+},
+testXXbJsParserCanConsumeComplexExample: function() {
+	var src = '<Class:Foo>\n-foo 1.\n- bar := 4.\n+foo: y\n\t| x | x := 1 + y. x.\n\n<SecondClass>\n- foo: x bar:y x + y';
+	var js = this.st2js(src, 'clamatoClasses');
+	this.assert(this.js2jsAst(js)); // just try to parse it 
+},
+
 
 });
 
