@@ -1350,7 +1350,7 @@ BoxMorph.subclass("TextListMorph", {
             selectionContent = item.textString;
             this.scrollItemIntoView(item);
         }
-        shouldUpdateModel && this.setSelection(selectionContent);
+        shouldUpdateModel && this.setSelection(selectionContent, true);
     },
 
     appendList: function(newItems) {
