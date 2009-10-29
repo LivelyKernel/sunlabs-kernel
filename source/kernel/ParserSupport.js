@@ -21,7 +21,7 @@
  */
 
 
-module('ParserSupport.js').requires().toRun(function() {
+module('ParserSupport.js').requires('lively.ide').toRun(function() {
 
 Object.subclass('StNode', {
 
@@ -141,6 +141,11 @@ StNode.subclass('StPropertyNode', { /* for JS->St */
 	setMeta: function(isMeta) {
 		this.isMeta = isMeta;
 	},
+	
+	toString: function() {
+	  return Strings.format('Property(%s)',
+			this.assignment.variable.name);
+	},
 });
 
 StNode.subclass('StInvokableNode', {
@@ -220,6 +225,32 @@ StNode.subclass('StClassNode', {
 	},	
 });
 
+StNode.subclass('StFileNode', {
+  
+  isFile: true,
+  
+  initialize: function($super, classes) {
+    $super();
+    this.classes = classes || [];
+  },
+  
+  toString: function() {
+		return Strings.format('StFileNode(%s, %s classes)',
+		  this.fileName || 'no filename', this.classes.length);
+	},
+	
+  setFileName: function(fileName) {
+    this.fileName = fileName;
+    this.classes.forEach(function(klass) {
+      klass.fileName = fileName;
+      klass.methods.concat(klass.properties).forEach(function(member) {
+        member.fileName = fileName;
+      });
+    })
+  },
+  
+});
+  
 StNode.subclass('StVariableNode', {
 	
 	isVariable: true,
@@ -289,13 +320,29 @@ StNode.addMethods({
   },
 
   mangleMethodName: function(name) {
-    return name.replace(/:/g, '_');
+    return $A(name).collect(function(ea) {
+      if (ea == ':') return '';
+      if (ClamatoParser.isBinaryChar(ea)) return this.mangleBinaryChar(ea);
+      return ea
+    }, this).join('');
   },
-
+  
+  mangleBinaryChar: function(character) {
+    switch (character) {
+      case '+': return '_plus_';
+      case '-': return '_minus_';
+      default: throw new Error('Cannot mangle binary char ' + character);
+    }  
+  },
+  
   toJavaScript: function() {
     return '';
   },
 
+  eval: function() {
+    return eval(this.toJavaScript());
+  },
+  
 });
 
 StAssignmentNode.addMethods({
@@ -323,18 +370,20 @@ StCascadeNode.addMethods({
       return recv + '\n' + rest;
     },
 
-    toJavaScript: function() {
+    toJavaScript: function(indent, isReturn) {
+      var messages;
+      var result = '';
       if (this.receiver.isVariable || this.receiver.isLiteral) {
-        return this.messages.collect(function(ea) {
-          return ea.toJavaScript()
-          }).join(';\n') + ';\n';
-      };
-      var recv = this.receiver.toJavaScript();
-      var result = 'var cascadeHelper = ' + recv + ';\n';
-      result += this.messages.collect(function(ea) {
-        return 'cascadeHelper.' + ea.toJavaScriptWithoutReceiver();
-      }).join(';\n') + ';\n';
-      return result;
+        messages = this.messages.collect(function(ea) { return ea.toJavaScript() });
+      } else {
+        var recv = this.receiver.toJavaScript();
+        result = 'var cascadeHelper = ' + recv + ';\n';
+        messages = this.messages.collect(function(ea) { return 'cascadeHelper.' + ea.toJavaScriptWithoutReceiver() })
+      } 
+      var firsts = messages.slice(0,messages.length - 1)
+      var last = messages.last();
+      return result + firsts.join(';\n') + ';\n' + (isReturn ? 'return ' : '') + last + ';\n';
+      // what about return?
     },
 
 });
@@ -449,7 +498,7 @@ StSequenceNode.addMethods({
     var last = this.children.last();
     var result = firsts.collect(function(ea) { return indent + ea.toJavaScript() }).join(';');
     if (firsts.length > 0) result += ';';
-    result += indent + (returnLast ? 'return ' : '') + last.toJavaScript();  
+    result += indent + (returnLast && !last.isCascade ? 'return ' : '') + last.toJavaScript(indent, returnLast);  
     return result;
   },
 
@@ -518,6 +567,7 @@ StInvokableNode.addMethods({
 
     toJavaScript: function() {
       var result = '';
+      if (this.isBlock) result += '(';
       result += this.toJavaScriptMethodHeader();
       result += '{';
       if (this.declaredVars && this.declaredVars.length > 0) {
@@ -527,6 +577,7 @@ StInvokableNode.addMethods({
       }
     result += this.sequence.toJavaScript(' '/*indent*/, true /*returnLast*/);
     result += ' }';
+    if (this.isBlock) result += ')';
     if (this.isMethod) result += ',';
     return result;
   },
@@ -616,7 +667,14 @@ StClassNode.addMethods({
   }
 
 });
-
+StFileNode.addMethods({
+  toSmalltalk: function() {
+    return this.classes.collect(function(ea) { return ea.toSmalltalk() }).join('');
+  },
+  toJavaScript: function() {
+    return this.classes.collect(function(ea) { return ea.toJavaScript() }).join('');
+  }
+});
 StVariableNode.addMethods({
 
   toSmalltalk: function() {
@@ -675,5 +733,295 @@ StReturnNode.addMethods({
   },
 
 });
-   
+
+/* ==============================
+   ======= Browser support ======
+   ============================== */
+StNodeBrowserSupportMixin = {
+  startIndex: null,
+  stopIndex: null,
+  type: null, // fore remembering the grammar rule used for parsing
+  directSubElements: function() { throw new Error('Overwrite me!') },
+  adoptStateFrom: function() { throw new Error('Overwrite me!') },
+  eq: function(other) {
+  	if (this == other) return true;
+  	if (this.constructor != other.constructor) return false;
+  	return this.fileName == other.fileName &&
+  		this.stopIndex == other.stopIndex &&
+  		this.getSourceCode() == other.getSourceCode();
+  },
+  subElements: function(depth) {
+  if (!depth || depth === 1)
+  	return this.directSubElements(); 
+  return this.directSubElements().inject([], function(all, ea) { return all.push(ea); all.concat(ea.subElements(depth-1)) });
+  },
+  flattened: function() {
+    return this.directSubElements().inject([this], function(all, ea) { return all.concat(ea.flattened()) });
+  },
+  reparse: function(newSource) {
+    // reparse creates a new ast node but does not replace this with it but just adopt this to
+    // its properties
+    //dbgOn(true)
+    if (!this.type)
+      throw dbgOn(new Error('Don\'t know the rule to parse ST source!'));
+    var ast = OMetaSupport.matchAllWithGrammar(ClamatoParser, this.type, newSource, true);
+    ast && ast.flattened().forEach(function(ea) {
+      ea.sourceControl = this.sourceControl;
+      ea.fileName = this.fileName;
+    }, this);
+		return ast;
+  },
+  reparseAndCheck: function(newString) {
+		var newMe = this.reparse(newString);
+		if (!newMe) dbgOn(true);
+		if (!newMe || newMe.type !== this.type) {
+			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
+				this.name, this.type, newMe.type, newMe.stopLine());
+			console.warn(msg);
+			WorldMorph.current().alert(msg);
+			return null;
+		}
+		return newMe;
+	},
+  updateIndices: function(newSource, newMe) {    
+    this.checkConsistency();
+    // started parsing at 0
+    var prevStop = this.stopIndex;
+    var newStop = this.startIndex + newSource.length - 1; 
+    var delta = newStop - prevStop;
+
+    this.stopIndex = newStop;    // self
+
+    var mySubElements = newMe.flattened();
+    mySubElements.forEach(function(ea) {
+      ea.startIndex += this.startIndex;
+      ea.stopIndex += this.startIndex;
+    }, this);
+    
+    this.adoptStateFrom(newMe);
+    
+    // update fragments which follow after this or where this is a part of
+    this.fragmentsOfOwnFile().without(mySubElements).each(function(ea) {
+      if (ea.stopIndex < prevStop) return;
+      ea.stopIndex += delta;
+      if (ea.startIndex <= prevStop) return;
+      ea.startIndex += delta;
+    });
+    
+  },
+  getSourceControl: lively.ide.FileFragment.prototype.getSourceControl,
+  getFileString: lively.ide.FileFragment.prototype.getFileString, // _fallbackSrc
+  getSourceCode: lively.ide.FileFragment.prototype.getSourceCode,
+  fragmentsOfOwnFile: lively.ide.FileFragment.prototype.fragmentsOfOwnFile,
+  findOwnerFragment: lively.ide.FileFragment.prototype.findOwnerFragment,
+  checkConsistency: lively.ide.FileFragment.prototype.checkConsistency,
+  getSourceCodeWithoutSubElements: lively.ide.FileFragment.prototype.getSourceCodeWithoutSubElements,
+  putSourceCode: lively.ide.FileFragment.prototype.putSourceCode,
+  buildNewFileString: lively.ide.FileFragment.prototype.buildNewFileString,
+  getSourceControl: lively.ide.FileFragment.prototype.getSourceControl,
+};
+StFileNode.addMethods(StNodeBrowserSupportMixin);
+StClassNode.addMethods(StNodeBrowserSupportMixin);
+StInvokableNode.addMethods(StNodeBrowserSupportMixin);
+StPropertyNode.addMethods(StNodeBrowserSupportMixin);
+
+StNode.addMethods({
+  getName: function() {
+    return this.toString();
+  },
+});
+StFileNode.addMethods({
+  directSubElements: function() {
+    return this.classes;
+  },
+  adoptStateFrom: function(other) {
+    console.assert(this.constructor == other.constructor);
+    this.classes = other.classes;
+  },
+});
+StClassNode.addMethods({
+  directSubElements: function() {
+    return this.methods.concat(this.properties);
+  },
+  adoptStateFrom: function(other) {
+    console.assert(this.constructor == other.constructor);
+    this.className = other.className;
+		this.superclass = other.superclass;	
+    this.methods = other.methods;
+    this.properties = other.properties;
+  },
+});
+StInvokableNode.addMethods({
+  directSubElements: function() { return [] },
+  adoptStateFrom: function(other) {
+    console.assert(this.constructor == other.constructor);
+    this.args = other.args;
+		this.sequence = other.sequence;
+		this.declaredVars = other.declaredVars;
+		this.isMeta = other.isMeta;
+		this.methodName = other.methodName;
+  },
+  simpleName: function() { return this.methodName },
+});
+StPropertyNode.addMethods({
+  directSubElements: function() { return [] },
+  adoptStateFrom: function(other) {
+    console.assert(this.constructor == other.constructor);
+    this.assignment = other.assignment;
+		this.isMeta = other.isMeta;
+  },
+  simpleName: function() { return this.assignment.variable.name },
+})
+
+
+lively.ide.CompleteFileFragmentNode.subclass('StBrowserFileNode', {
+  childNodes: function() {
+    if (!this.target) return [];
+    var browser = this.browser;
+    return this.target.directSubElements().collect(function(ea) {
+      return new StBrowserClassNode(ea, browser);
+    });
+  },
+  buttonSpecs: function() {
+    return [];
+  },
+	loadModule: function($super) {
+	  require('lively.ClamatoParser').toRun(function() { $super() });
+	},
+  // saveSource: function($super, newSource, sourceControl) {
+  saveSource: function(/*$super,*/newSource, sourceControl) {
+	  // FIXME ugly hack. Somehow when using super two bound functions are passed in...
+    // $super(newSource, sourceControl);
+	  this.target.putSourceCode(newSource);
+    this.savedSource = this.target.getSourceCode();
+    
+	  var stFilename = this.target.fileName;
+	  var stFileNode = sourceControl.modules[stFilename];
+	  if (!stFileNode)
+	    throw new Error('Couldn\’t find file node for ' + this.asString());
+	  var jsFilename = stFilename.slice(0, stFilename.lastIndexOf('.'));
+	  jsFilename += '.js';
+	  var jsSource = stFileNode.toJavaScript();
+	  sourceControl.putSourceCodeForFile(jsFilename, jsSource);
+	  return true;
+	},
+	evalSource: function(newSource) {
+    var code = this.target.toJavaScript();
+    console.log('Evaluating:');
+    console.log(code);
+    eval(code);
+    return true;
+  },
+})
+
+lively.ide.ClassFragmentNode.subclass('StBrowserClassNode', {
+  childNodes: function() {
+    var browser = this.browser;
+    var self = this;
+    return this.target.directSubElements().collect(function(ea) {
+      return new StBrowserMemberNode(ea, browser, self);
+    });
+  },
+  
+  menuSpec: function() {
+    
+  },
+  
+  saveSource: StBrowserFileNode.prototype.saveSource,
+  
+  evalSource: function(newSource) {
+    var code = this.target.toJavaScript();
+    console.log('Evaluating:');
+    console.log(code);
+    eval(code);
+    return true;
+  },
+      
+    asString: function() {
+      return this.target.className.value;
+    },
+});
+
+lively.ide.FileFragmentNode.subclass('StBrowserMemberNode', {
+
+  asString: function() {
+    //FIXME add lines
+    return this.target.simpleName();
+  },
+  
+  saveSource: StBrowserFileNode.prototype.saveSource,
+  
+  evalSource: function(newSource) {
+    var parent = this.target.findOwnerFragment();
+    if (!parent)
+      throw new Error('Could not find owner of' + this.asString());
+    var code = parent.toJavaScript();
+    console.log('Evaluating:');
+    console.log(code);
+    eval(code);
+    return true;
+  },
+  
+  menuSpec: function($super) {
+    return [];
+  },
+
+});
+
+/* ===================
+   ======= Eval ======
+   =================== */
+TextMorph.addMethods({
+  tryBoundEval: function (str) {
+    var result;
+    try { result = this.boundEval(str); }
+    catch (e) {
+      if (Config.suppressSmalltalkEval) {
+        this.world().alert("exception " + e);
+        return
+      }
+      try {
+        var ast = OMetaSupport.matchAllWithGrammar(ClamatoParser, 'sequence', str, true);
+        console.log('Evaluating: ' + ast.toJavaScript());
+        result = ast.eval();
+      } catch(e) {
+        console.log('Error: ' + e);
+        this.world().alert("Smalltalk exception " + e);
+      }
+    }
+    return result;
+  }
+});
+/* ============================
+   ======= World support ======
+   ============================ */
+Object.addMethods({
+  getVar: function(name) {
+    return this[name];
+  },
+  setVarvalue: function(name, value) {
+    return this[name] = value;
+  },
+});
+Morph.addMethods({
+  getSubmorphs: function() {
+    return this.submorphs;
+  },
+});
+
+Array.addMethods({
+  at: function(index) {
+    return this[index];
+  },
+  atput: function(index, object) {
+    return this[index] = object;
+  }
+});
+
+Function.addMethods({
+  value: function(argOrNothing) {
+    return this(argOrNothing);
+  }
+});
+
 });

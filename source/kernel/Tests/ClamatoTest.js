@@ -440,21 +440,6 @@ test03Class: function() {
 	self ++ foo.\n\n';
 	var result = this.st2st(src, 'clamatoClass');
 	this.assertEqual(src, result);
-},{
-	var src = '<ClassA:Object>\n\
-\n\
-- x := bla.\n\
-\n\
-- foo: xyz\n\
-	xyz + 3.\n\
-\n\
-+ + foo\n\';
-
-	var result = this.st2st(src, 'clamatoClass');
-	this.assertEqual(src, result);
-
-	var result = this.st2st(src, 'clamatoClass');
-	this.assertEqual(src, result);
 },
 test04StToStResultUnequalSource: function() {
 	var jsToSt = [
@@ -719,6 +704,8 @@ testXYaConvertMethodWichCannotBeParsedToPrimitive: function() {
 
 lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.St2JSConversionTest', {
 shouldRun: true,
+colonReplacement: '',
+
 test01aConvertTempVarGet: function() {
 	var src = 'tempVar';
 	var result = this.st2js(src, 'expression');
@@ -745,6 +732,13 @@ test03bArrayLiteral: function() {
 	var expected = '[1 + 2,y,3]';
 	this.assertEqual(expected, result);
 },
+test03cNumberLiteral: function() {
+	var src = '1 + 0.1';
+	var result = this.st2js(src, 'expression');
+	var expected = '1 + 0.1';
+	this.assertEqual(expected, result);
+},
+
 
 
 
@@ -757,13 +751,20 @@ test04aConvertAssignment: function() {
 test05aConvertCascade: function() {
 	var src = 'x foo; bar: 2';
 	var result = this.st2js(src, 'expression');
-	var expected = 'x.foo();\nx.bar_(2);\n';
+	var expected = 'x.foo();\nx.bar_(2);\n'.replace(/_/g, this.colonReplacement);
 	this.assertEqual(expected, result);
 },
+test05bReturnCascade: function() {
+	var src = '[x foo; bar]';
+	var result = this.st2js(src, 'expression');
+	var expected = '(function() { x.foo();\nreturn x.bar();\n })';
+	this.assertEqual(expected, result);
+},
+
 test05bConvertCascadeWithNonPrimitiveRecevier: function() {
 	var src = '(1+ 2) foo; bar: 2';
 	var result = this.st2js(src, 'expression');
-	var expected = 'var cascadeHelper = 1 + 2;\ncascadeHelper.foo();\ncascadeHelper.bar_(2);\n';
+	var expected = 'var cascadeHelper = 1 + 2;\ncascadeHelper.foo();\ncascadeHelper.bar_(2);\n'.replace(/_/g, this.colonReplacement);
 	this.assertEqual(expected, result);
 },
 
@@ -782,7 +783,7 @@ test06bConvertBinary: function() {
 test06cConvertKeyword: function() {
 	var src = 'x foo: 1 bar: y';
 	var result = this.st2js(src, 'expression');
-	var expected = 'x.foo_bar_(1,y)';
+	var expected = 'x.foo_bar_(1,y)'.replace(/_/g, this.colonReplacement);;
 	this.assertEqual(expected, result);
 },
 test07aChainedBinary: function() {
@@ -806,19 +807,19 @@ test07cChainedUnaryAndBinary: function() {
 test07dChainedKeyword: function() {
 	var src = '(x foo: 123 bar: y) baz: 2';
 	var result = this.st2js(src, 'expression');
-	var expected = 'x.foo_bar_(123,y).baz_(2)';
+	var expected = 'x.foo_bar_(123,y).baz_(2)'.replace(/_/g, this.colonReplacement);;
 	this.assertEqual(expected, result);
 },
 test07eChainedBinaryAndKeyword: function() {
 	var src = '1 + x foo: y';
 	var result = this.st2js(src, 'expression');
-	var expected = '(1 + x).foo_(y)';
+	var expected = '(1 + x).foo_(y)'.replace(/_/g, this.colonReplacement);;
 	this.assertEqual(expected, result);
 },
 test07fChainedBinaryAndKeyword2: function() {
 	var src = 'x foo: y + 2';
 	var result = this.st2js(src, 'expression');
-	var expected = 'x.foo_(y + 2)';
+	var expected = 'x.foo_(y + 2)'.replace(/_/g, this.colonReplacement);;
 	this.assertEqual(expected, result);
 },
 test08aSequence: function() {
@@ -831,7 +832,7 @@ test08aSequence: function() {
 test10aBlock: function() {
 	var src = '[:a :b | | c d | 1 + 2]';
 	var result = this.st2js(src, 'expression');
-	var expected = 'function(a,b) { var c,d; return 1 + 2 }';
+	var expected = '(function(a,b) { var c,d; return 1 + 2 })';
 	this.assertEqual(expected, result);
 },
 test11aClamatoMethod: function() {
@@ -858,7 +859,7 @@ test11cPrimtiveMethod: function() {
 test12aClassWithOneMethod:  function () {
 	var src = '<MyClass>\n- foo: x bar: y\n\t1 + 2. self foo: x + y.'
 	var result = this.st2js(src, 'clamatoClass');
-	var expected = 'Object.subclass(\'MyClass\', {\nfoo_bar_: function(x,y) { 1 + 2; return self.foo_(x + y) },\n});\n';
+	var expected = 'Object.subclass(\'MyClass\', {\nfoo_bar_: function(x,y) { 1 + 2; return self.foo_(x + y) },\n});\n'.replace(/_/g, this.colonReplacement);;
 	this.assertEqual(expected, result);
 },
 test12bSubclass:  function () {
@@ -880,12 +881,10 @@ test12dMetaClass: function() {
 	this.assertEqual(expected, result);
 },
 
-
-
 testXXaResultOfCollect: function() {
 	var src = 'arr collect: [:ea | ea asString + 29]';
 	var result = this.st2js(src, 'expression');
-	var expected = 'arr.collect_(function(ea) { return ea.asString() + 29 })';
+	var expected = 'arr.collect_((function(ea) { return ea.asString() + 29 }))'.replace(/_/g, this.colonReplacement);
 	this.assertEqual(expected, result);
 },
 testXXbJsParserCanConsumeComplexExample: function() {
@@ -894,7 +893,99 @@ testXXbJsParserCanConsumeComplexExample: function() {
 	this.assert(this.js2jsAst(js)); // just try to parse it 
 },
 
-
 });
 
+TestCase.subclass('lively.Test.ClamatoTest.SmalltalkBrowserTest', {
+/*
+StFileNode(foo.st, 2 classes):0-302
+Class(Literal(Object)):0-115
+Method(toString(none)):31-64
+Method(+(other)):67-112
+Property(myProperty):10-28
+Class(Literal(ClassA)):116-302
+Method(helloWorld(none)):133-250
+Method(printSomething(none)):253-302
+*/
+  dummySource: '<Object>\n\
+\n\
+- myProperty := \'\'.\n\
+\n\
+- toString\n\
+    \'Some wild object\'.\n\
+\n\
+- + other\n\
+    self toString + other to String.\n\
+\n\
+\n\
+<ClassA:Object>\n\
+\n\
+- helloWorld\n\
+    | string |\n\
+    string := \'I\'\'m an object\'.\n\
+    string := string + \'A smalltalky object!\'.\n\
+    string.\n\
+\n\
+- printSomething\n\
+    console log: self helloWorld.',
+    
+  setUp: function($super) {
+    $super();
+	var src = this.dummySource;
+    var db = new AnotherSourceDatabase();
+    db.cachedFullText['foo.st'] = this.dummySource;
+    db.putSourceCodeFor = function(fileFragment, newFileString) { db.cachedFullText['foo.st'] = newFileString };
+    this.root = db.addModule('foo.st', src);
+    this.db = db;
+		// we don't want to see alert
+    // this.oldAlert = WorldMorph.prototype.alert;
+    // WorldMorph.prototype.alert = Functions.Null;    
+  },
+  tearDown: function($super) {
+		$super();
+    // WorldMorph.prototype.alert = this.oldAlert;
+	},
+  fragmentDetect: function(block) {
+		return this.root.flattened().detect(function(ea) { return block(ea) });
+	},
+printAllIndexes: function() {
+	this.root.flattened().forEach(function(ea) {
+		console.log(ea.toString() + ':' + ea.startIndex + '-' + ea.stopIndex);
+	})
+},
+
+  test01ChangeMethod: function() {
+    var node = this.fragmentDetect(function(ea) { return ea.methodName == 'toString'});
+	var newSource = '- toString\n    \'Some object\'.';
+    node.putSourceCode(newSource);
+    this.assertEqual(node.startIndex, 31);
+    this.assertEqual(node.stopIndex, 64-5);
+	node = this.fragmentDetect(function(ea) { return ea.methodName == '+'});
+    this.assertEqual(node.startIndex, 67-5);
+    this.assertEqual(node.stopIndex, 112-5);
+	node = this.fragmentDetect(function(ea) { return ea.className && ea.className.value == 'Object'});
+	this.assertEqual(node.startIndex, 0);
+	this.assertEqual(node.stopIndex, 115-5);
+	node = this.fragmentDetect(function(ea) { return ea.className && ea.className.value == 'ClassA'});
+	this.assertEqual(node.startIndex, 116-5);
+	this.assertEqual(node.stopIndex, 302-5);
+  },
+
+test02ChangeClass: function() {
+	var node = this.fragmentDetect(function(ea) { return ea.className && ea.className.value == 'Object'});
+	var newSource = '<Object>\n\n- myProperty := \'\'.\n\n- toString\n    \'Some object\'.\n\n- + other\n    self toString + other to String.\n\n\n'; // same change as in test 1
+    node.putSourceCode(newSource);
+	this.assertEqual(node.startIndex, 0);
+	this.assertEqual(node.stopIndex, 115-5);
+	node = this.fragmentDetect(function(ea) { return ea.methodName == 'toString'});
+    this.assertEqual(node.startIndex, 31);
+    this.assertEqual(node.stopIndex, 64-5);
+	node = this.fragmentDetect(function(ea) { return ea.methodName == '+'});
+    this.assertEqual(node.startIndex, 67-5);
+    this.assertEqual(node.stopIndex, 112-5);
+	node = this.fragmentDetect(function(ea) { return ea.className && ea.className.value == 'ClassA'});
+	this.assertEqual(node.startIndex, 116-5);
+	this.assertEqual(node.stopIndex, 302-5);
+  },
+
+});
 });

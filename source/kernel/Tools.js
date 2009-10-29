@@ -1899,13 +1899,9 @@ ChangeList.subclass('SourceDatabase', {
     
     getFileContentsAsync: function(fileName, action, beSync) {
 	// DI:  This should be simplified - I removed timing (meaningless here for async)
-	// rk: made async optional, added measure of timing again. Even in async mode it might be
-	//     interesting how long it takes to read a file
+	// rk: made async optional
 	// convenient helper method
-	var ms = new Date().getTime();
 	var actionWrapper = function(fileString) {
-	    ms = new Date().getTime() - ms;
-            console.log(fileName + " read in " + ms + " ms.");
 	    action.call(this, fileString);
 	}.bind(this);
 	
@@ -1932,12 +1928,13 @@ ChangeList.subclass('SourceDatabase', {
 		// ometaFileNames = ometaFileNames.collect(function(ea) { return 'ometa/' + ea });
 		var ometaFileNames = [];
 		/* filter */
-        var jsFiles = kernelFileNames.concat(testFileNames).concat(ometaFileNames);
-		jsFiles = jsFiles.select(function(ea) { return ea.endsWith('.js') || ea.endsWith('.lkml') || ea.endsWith('.txt') });
-        jsFiles = jsFiles.uniq();
+        var files = kernelFileNames.concat(testFileNames).concat(ometaFileNames);
+        var acceptedFileNames = /.*\.(st|js|lkml|txt|ometa|st)/
+		files = files.select(function(ea) { return acceptedFileNames.test(ea) });
+        files = files.uniq();
         var rejects = ["test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js", 'JSON.js'];
-		jsFiles = jsFiles.reject(function(ea) { return rejects.include(ea) });
-		return jsFiles;
+		files = files.reject(function(ea) { return rejects.include(ea) });
+		return files;
     },
 
 });

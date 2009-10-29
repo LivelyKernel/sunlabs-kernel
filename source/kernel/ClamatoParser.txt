@@ -58,8 +58,8 @@ literal =
   -> { new StLiteralNode(v) },
 
 numberLiteral =
-  ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:ns
-  -> {sign * Number(ns.inject('', function(num, ea) { return num + ea })) },
+  ('+' -> 1 | '-' -> {-1} | empty -> 1):sign digit+:num1 ('.' digit+ | empty -> '0'):num2
+  -> {sign * Number(num1.concat(['.']).concat(num2).inject('', function(num, ea) { return num + ea })) },
 
 stringLiteral =
   '\'' (token('\'\'') -> '\'' | ~'\'' char)*:val '\''
@@ -162,8 +162,13 @@ declaredVars =
   -> vars,
 
 propertyOrMethod =
-  spaces ('-' -> false | '+' -> true):isMeta (property:p token('.') -> p | clamatoMethod):node
-  -> { node.setMeta(isMeta); node },
+  pos:start spaces ('-' -> false | '+' -> true):isMeta (property:p token('.') -> p | clamatoMethod):node pos:end spaces
+  -> {  node.setMeta(isMeta);
+		node.type = 'propertyOrMethod';
+		node.startIndex = start;
+		node.stopIndex = end-1;
+		node
+	},
   
 property =
   assignment:assgn
@@ -203,12 +208,24 @@ methodNameAndArgs =
 -------- class related  -------
 ------------------------------*/
 clamatoClass =
-	token('<') (identifier:n -> {new StLiteralNode(n)}):name ( token(':') variable:superclass | empty) token('>')
-	spaces propertyOrMethod*:methodsAndProperties
-	-> { new StClassNode(name, methodsAndProperties, superclass) },
+	pos:p token('<') (identifier:n -> {new StLiteralNode(n)}):name ( token(':') variable:superclass | empty) token('>')
+	spaces propertyOrMethod*:methodsAndProperties spaces
+	-> { var klass = new StClassNode(name, methodsAndProperties, superclass);
+		klass.type = 'clamatoClass'
+		klass.startIndex = p;
+		klass.stopIndex = $elf.pos()-1;
+		klass
+	},
 
 clamatoClasses =
-	(clamatoClass)*:cls spaces end -> cls,
+	pos:p (clamatoClass)*:cls end
+	-> {
+		var all = new StFileNode(cls);
+		all.type = 'clamatoClasses';
+		all.startIndex = p;
+		all.stopIndex = $elf.pos()-1;
+		all
+	},
 
 /*-----------------------------
 ------------ helper  ----------

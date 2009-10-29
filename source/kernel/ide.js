@@ -507,7 +507,7 @@ asListItem: function() {
 		var success = this.evalSource(newSource);
 		msgSpec = success ?
 			{msg: 'Successfully evaluated ' + this.target.getName(), color: Color.green} :
-			{msg: 'Eval disabled for' + this.target.getName(), color: Color.black}
+			{msg: 'Eval disabled for ' + this.target.getName(), color: Color.black}
 	} catch(e) {
 		msgSpec = {msg: 'Error evaluating ' + this.target.getName() + ': ' + e, color: Color.red, delay: 5}
 	}
@@ -611,7 +611,8 @@ isNodeTypeFilter: true,
 			console.log('nodeTypeFilter has no classes!!!');
 			return nodes;
 		}
-		return nodes.select(function(ea) { return k.include(ea.constructor) || ea instanceof lively.ide.ChangeNode });
+		return nodes.select(function(ea) { return k.include(ea.constructor)
+			|| ea instanceof lively.ide.ChangeNode || ea instanceof StBrowserClassNode});
 	}
 });
 
@@ -767,6 +768,10 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
 			} else if (fn.endsWith('.lkml')) {
 				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser, this));
+			} else if (fn.endsWith('.st')) {
+			  require('lively.ParserSupport').toRun(function() {
+			    nodes.push(new StBrowserFileNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
+			  }.bind(this))
 			}
 		};
 		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
@@ -815,6 +820,8 @@ ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
 ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
     
     sourceString: function() {
+      if (!this.target)
+        return 'entity not loaded';
         this.savedSource = this.target.getSourceCode();
 		return this.savedSource;
     },
@@ -829,11 +836,11 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 		return this.browser.showLines;
 	},
 
-    saveSource: function(newSource, sourceControl) {
-        this.target.putSourceCode(newSource);
-		this.savedSource = this.target.getSourceCode(); // assume that users sees newSource after that
-        return true;
-    },
+  saveSource: function($super, newSource, sourceControl) {
+    this.target.putSourceCode(newSource);
+    this.savedSource = this.target.getSourceCode(); // assume that users sees newSource after that
+    return true;
+  },
 
 	menuSpec: function($super) {
 	var spec = $super();
@@ -1986,7 +1993,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
     rootFragmentForModule: function(moduleName) {
         if (!Object.isString(moduleName))
             throw dbgOn(new Error('Don\'t know what to do with ' + moduleName));
-		return this.modules[moduleName];
+		    return this.modules[moduleName];
     },
     
     addModule: function(fileName, fileString) {
@@ -2006,10 +2013,12 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		var root;
 		if (fileName.endsWith('.js')) {
 			root = this.parseJs(fileName, fileString);
-		} else if (fileName.endsWith('.txt')) {
+		} else if (fileName.endsWith('.txt') || fileName.endsWith('.ometa')) {
 			root = this.parseOmeta(fileName, fileString);
 		} else if (fileName.endsWith('.lkml')) {
 			root = this.parseLkml(fileName, fileString);
+		} else if (fileName.endsWith('.st')) {
+			root = this.parseSt(fileName, fileString);
 		} else { 
 			throw dbgOn(new Error('Don\'t know how to parse ' + fileName))
 		}
@@ -2037,16 +2046,29 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 	parseLkml: function(fileName, fileString) {
 		return ChangeSet.fromFile(fileName, fileString);
 	},
+parseSt: function(fileName, fileString) {
+	var ast = OMetaSupport.matchAllWithGrammar(ClamatoParser, "clamatoClasses", fileString, true);
+	if (!ast) {
+	  console.warn('Couldn\'t parse ' + fileName);
+	  return null;
+	}
+	ast.setFileName(fileName);
+	return ast;
+},
+
 
     putSourceCodeFor: function(fileFragment, newFileString) {
-        if (!(fileFragment instanceof lively.ide.FileFragment)) throw dbgOn(new Error('Strange fragment'));
-        newFileString = newFileString.replace(/\r/gi, '\n');  // change all CRs to LFs
-        console.log("Saving " + fileFragment.fileName + "...");
-        new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
-                ).put(URL.source.withFilename(fileFragment.fileName), newFileString);
-        this.cachedFullText[fileFragment.fileName] = newFileString;
-        console.log("... " + newFileString.length + " bytes saved.");
-    },
+	this.putSourceCodeForFile(fileFragment.fileName, newFileString);
+},
+putSourceCodeForFile: function(filename, content) {
+	content = content.replace(/\r/gi, '\n');  // change all CRs to LFs
+	console.log("Saving " + filename + "...");
+	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"})
+		.put(URL.source.withFilename(filename), content);
+	this.cachedFullText[filename] = content;
+	console.log("... " + content.length + " bytes saved.");
+},
+
     
 	searchFor: function(str) {
 		var allFragments = Object.values(tools.SourceControl.modules)
@@ -2426,6 +2448,7 @@ ide.FileFragment.addMethods({
 	},
 
 });
+
 ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 
 	isError: true,
