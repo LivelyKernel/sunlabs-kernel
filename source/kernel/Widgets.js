@@ -763,7 +763,7 @@ BoxMorph.subclass("SelectionMorph", {
     },
 
 	onKeyPress: function(evt) {
-        console.log("SelectionMorph onKeyPress " + this + " ---  " + evt )
+        // console.log("SelectionMorph onKeyPress " + this + " ---  " + evt )
 
 		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
 			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled

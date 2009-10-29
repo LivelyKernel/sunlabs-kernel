@@ -3817,19 +3817,22 @@ Morph.subclass("PasteUpMorph", {
         return null; 
     },
 
-    makeSelection: function(evt) {  //default behavior is to grab a submorph
-        if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
-		if (evt.hand.isKeyDown("S"))
-			console.log("TODO: implement share creation here");
-        var m = new SelectionMorph(evt.point().asRectangle());
-        this.world().addMorph(m);
-        this.world().currentSelection = m;
-        var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, m, "bottomRight");
-	handle.setExtent(pt(0, 0));
-	handle.mode = 'reshape';
-        m.addMorph(handle);
-        evt.hand.setMouseFocus(handle);
-    },
+	makeSelection: function(evt) {	//default behavior is to grab a submorph
+		if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
+		if (evt.hand.isKeyDown("S")) {
+			var m = Morph.makeRectangle(evt.point().asRectangle());
+			// todo implement connector and text from graffle too....
+		} else {
+			var m = new SelectionMorph(evt.point().asRectangle());
+			this.world().currentSelection = m;
+		}
+		this.world().addMorph(m);
+		var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, m, "bottomRight");
+		handle.setExtent(pt(0, 0));
+		handle.mode = 'reshape';
+		m.addMorph(handle);
+		evt.hand.setMouseFocus(handle);
+	},
 
 
     
