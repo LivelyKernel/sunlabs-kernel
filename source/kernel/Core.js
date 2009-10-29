@@ -3819,6 +3819,8 @@ Morph.subclass("PasteUpMorph", {
 
     makeSelection: function(evt) {  //default behavior is to grab a submorph
         if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
+		if (evt.hand.isKeyDown("S"))
+			console.log("TODO: implement share creation here");
         var m = new SelectionMorph(evt.point().asRectangle());
         this.world().addMorph(m);
         this.world().currentSelection = m;
@@ -5139,23 +5141,40 @@ Morph.subclass("HandMorph", {
 	} else return false;
     },
 
+	isKeyDown: function(character) {
+		if (!this.keysDown)
+			return false;
+		return this.keysDown[character]
+	},
+
     handleKeyboardEvent: function(evt) { 
         if (this.hasSubmorphs())  {
             if (evt.type == "KeyDown" && this.moveSubmorphs(evt)) return;
             else if (evt.type == "KeyPress" && this.transformSubmorphs(evt)) return;
         }
-
         // manual bubbling up b/c the event won't bubble by itself    
         for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
             if (responder.takesKeyboardFocus()) {
                 var handler = responder[evt.handlerName()];
                 if (handler) {
-                    if (handler.call(responder, evt)) 
+                    if (handler.call(responder, evt))
                         break; // event consumed?
                 }
             }
-        } 
-	this.blockBrowserKeyBindings(evt);
+        }
+		// remember key down for mouse events
+		if (!this.keysDown) {
+			this.keysDown = {};
+		};
+		if(evt.type == "KeyDown") {
+ 			// console.log("handleKeyboardEvent KeyDown " + evt.getKeyChar())
+			this.keysDown[evt.getKeyChar()] = true;
+		};
+		if(evt.type == "KeyUp") {
+ 			// console.log("handleKeyboardEvent KeyUp " + evt.getKeyChar());
+			this.keysDown[evt.getKeyChar()] = false;
+		};
+		this.blockBrowserKeyBindings(evt);
     },
 
     blockBrowserKeyBindings: function(evt) {
