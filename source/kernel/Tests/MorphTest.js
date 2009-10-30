@@ -376,11 +376,15 @@ TestCase.subclass('NodeMorphTest', {
 	
 	setUp: function() {
 		this.spec = {maxDist: 100, minDist: 50, step: 20};
+		var owner = Morph.makeRectangle(new Rectangle(0,0,10,10))
+		owner.worldPoint = function(p) {return p};
 		for (var i = 1; i <=3; i++) {
 			var m = new NodeMorph(new Rectangle(0,0,20,20));
 			m.configure(this.spec);
 			m.setPosition(pt(0,0));
+			owner.addMorph(m); // need owner for world position calculation...
 			this['node' + i] = m; 
+			
 		}
 	},
 assertEqualPt: function(p1, p2) { // sometimes the optimized functions are not 100% precise

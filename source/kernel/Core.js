@@ -3821,7 +3821,22 @@ Morph.subclass("PasteUpMorph", {
 		if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
 		if (evt.hand.isKeyDown("S")) {
 			var m = Morph.makeRectangle(evt.point().asRectangle());
-			// todo implement connector and text from graffle too....
+		} else if (evt.hand.isKeyDown("T")) {
+			var m = new TextMorph(evt.point().asRectangle());
+			//m.setFill(null);
+			m.setBorderWidth(0);
+		} else if (evt.hand.isKeyDown("C")) {
+			// TODO: refactor this out...
+			var n1 = new NodeMorph(evt.point().asRectangle().expandBy(5));
+			n1.setFill(Color.gray);
+			var n2 = new NodeMorph(evt.point().asRectangle().expandBy(5));
+			n2.setFill(Color.gray);
+			this.world().addMorph(n1);
+			this.world().addMorph(n2);
+			var c = new ConnectorMorph(n1, n2);
+			this.world().addMorph(c);
+			evt.hand.grabMorph(n2,evt);
+			return;
 		} else {
 			var m = new SelectionMorph(evt.point().asRectangle());
 			this.world().currentSelection = m;

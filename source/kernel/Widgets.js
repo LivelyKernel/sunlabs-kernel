@@ -4016,34 +4016,47 @@ Morph.subclass('ConnectorMorph', {
 		this.setStartMorph(morph1);
 		this.setEndMorph(morph2);
 	},
+	
 	onDeserialize: function() {
 		this.setStartMorph(this.startMorph);
 		this.setEndMorph(this.endMorph);
 	},
+	
 	getStartMorph: function() { return this.startMorph },
+	
 	getEndMorph: function() { return this.endMorph },
+	
 	setStartMorph: function(morph) {
 		this.startMorph = morph;
 		if (morph) this.register(morph, 'Start');
 	},	
+	
 	setEndMorph: function(morph) {	
 		this.endMorph = morph;
 		if (morph) this.register(morph, 'End');
 	},
-	getStartPos: function() { return this.shape.vertices().first() },
-	getEndPos: function() { return this.shape.vertices().last() },
+	
+	getStartPos: function() { 
+		return this.shape.vertices().first() 
+	},
+	
+	getEndPos: function() { 
+		return this.shape.vertices().last() 
+	},
+	
 	setStartPos: function(p) {
 		var v = this.shape.vertices(); v[0] = p; this.setVertices(v);
 	},
+	
 	setEndPos: function(p) {
 		var v = this.shape.vertices(); v[v.length-1] = p; this.setVertices(v);
 	},
-setCustomColor: function(color) {
-	this.applyStyle({borderColor: color});
-	this.arrow.head.applyStyle({fill: color});
-},
 
-	
+	setCustomColor: function(color) {
+		this.applyStyle({borderColor: color});
+		this.arrow.head.applyStyle({fill: color});
+	},
+
 	register: function(morph, startOrEnd) {
 		var con = this;
 		morph.changed = morph.changed.wrap(function (proceed) {
@@ -4052,6 +4065,7 @@ setCustomColor: function(color) {
 		});
 		con.updatePos(startOrEnd); // kickstart
 	},
+	
 	unregister: function(startOrEnd) {
 		var getMorphSelector = 'get' + startOrEnd + 'Morph';
 		var morph = this[getMorphSelector]();
@@ -4063,6 +4077,7 @@ setCustomColor: function(color) {
 	},
 
 	updatePos: function(startOrEnd) {
+
 		/*if (!this.getStartMorph() || !this.getEndMorph())
 			return;
 		var center = this.getStartMorph().getCenter();
@@ -4074,13 +4089,17 @@ setCustomColor: function(color) {
 		var getMorphSelector = 'get' + startOrEnd + 'Morph';
 		var setPosSelector = 'set' + startOrEnd + 'Pos';
 		var morph = this[getMorphSelector]();
-		this[setPosSelector](morph.getCenter());
-		this.arrow && this.arrow.pointFromTo(this.getStartPos(), this.getEndPos());
-
+		if (morph.owner) {
+			var newPos = morph.owner.worldPoint(morph.getCenter())
+			this[setPosSelector](newPos);
+			this.arrow && this.arrow.pointFromTo(this.getStartPos(), this.getEndPos());
+		}
 	},
+	
 	toString: function() {
 		return Strings.format("#<ConnectorMorph:%s->%s>", this.getStartMorph(), this.getEndMorph());
 	},
+	
 	remove: function($super) {
 		$super();
 		this.unregister('Start');
