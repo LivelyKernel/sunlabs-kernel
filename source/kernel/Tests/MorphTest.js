@@ -387,25 +387,26 @@ TestCase.subclass('NodeMorphTest', {
 			
 		}
 	},
-assertEqualPt: function(p1, p2) { // sometimes the optimized functions are not 100% precise
-	this.assert(Math.abs(p1.x-p2.x) < 0.01, 'point.x! ' + p1.x + ' vs. ' + p2.x);
-	this.assert(Math.abs(p1.y-p2.y) < 0.01, 'point.y! '  + p1.y + ' vs. ' + p2.y);
-},
 
+	assertEqualPt: function(p1, p2) { // sometimes the optimized functions are not 100% precise
+		this.assert(Math.abs(p1.x-p2.x) < 0.01, 'point.x! ' + p1.x + ' vs. ' + p2.x);
+		this.assert(Math.abs(p1.y-p2.y) < 0.01, 'point.y! '  + p1.y + ' vs. ' + p2.y);
+	},
 
 	testNodeConnectorForTwoNodeMorphs: function() {
 		var connector = new ConnectorMorph(this.node1, this.node2);
 		this.assertEqual(connector.getStartPos(), this.node1.getCenter());
 		this.assertEqual(connector.getEndPos(), this.node2.getCenter());
 	},
-testConnectorMovesWithMorphs: function() {
+
+	testConnectorMovesWithMorphs: function() {
 		var connector = new ConnectorMorph(this.node1, this.node2);
 		this.node1.setPosition(pt(200,200));
 		this.assertEqual(connector.getStartPos(), this.node1.getCenter());
 		this.assertEqual(connector.getEndPos(), this.node2.getCenter());
-},
+	},
 
-testUnregisterNode: function() {
+	testUnregisterNode: function() {
 		var orig = this.node1.changed;
 		var connector = new ConnectorMorph(this.node1, this.node2);
 		this.assert(this.node1.changed != orig);
@@ -415,46 +416,52 @@ testUnregisterNode: function() {
 		this.assert(this.node1.getPosition() != connector.getStartPos());
 	},
 
-testComputeRepulsionWithOneNode1: function() {
+	testComputeRepulsionWithOneNode1: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(150,100));
 		var result = this.node1.forceOfMorphs([this.node2]);
 		this.assertEqualPt(result, pt(-20, 0));
 	},
-testComputeRepulsionWithOneNode2: function() {
+
+	testComputeRepulsionWithOneNode2: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(175,100));
 		var result = this.node1.forceOfMorphs([this.node2]);
 		this.assertEqualPt(result, pt(-20, 0));
 	},
-testComputeRepulsionWithOneNode3: function() {
+
+	testComputeRepulsionWithOneNode3: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(201,100));
 		var result = this.node1.forceOfMorphs([this.node2]);
 		this.assertEqualPt(result, pt(0, 0));
 	},
-testComputeRepulsion1: function() {
+
+	testComputeRepulsion1: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(60,100));
 		this.node3.setPosition(pt(140,100));
 		var result = this.node1.forceOfMorphs([this.node2, this.node3]);
 		this.assertEqual(result, pt(0, 0)); // maxRepuslion = 20, minDist = 50, maxDist=100
 	},
-testComputeRepulsion2: function() {
+
+	testComputeRepulsion2: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(120,100));
 		this.node3.setPosition(pt(100,80));
 		var result = this.node1.forceOfMorphs([this.node2, this.node3]);
 		this.assertEqualPt(result, Point.polar(20, pt(-1,1).theta())); // maxRepuslion = 20, minDist = 50, maxDist=100
 	},
-testConnectNodes1: function() {
+
+	testConnectNodes1: function() {
 		this.node1.connectTo(this.node2);
 		this.assert(this.node1.connectedNodes().include(this.node2), 'node1->node2');
 		this.assert(!this.node2.connectedNodes().include(this.node1), 'node2 -> node1 1');
 		this.assert(this.node1.isConnectedTo(this.node2), 'node1->node2 *2');
 		this.assert(!this.node2.isConnectedTo(this.node1), 'node2->node1 2');
 	},
-testConnectNodes2: function() {
+
+	testConnectNodes2: function() {
 		this.node1.connectTo(this.node2);
 		this.node2.connectTo(this.node1);
 		this.assert(this.node1.connectedNodes().include(this.node2), 'node1->node2');
@@ -462,14 +469,15 @@ testConnectNodes2: function() {
 		this.assert(this.node1.isConnectedTo(this.node2), 'node1->node2 *2');
 		this.assert(this.node2.isConnectedTo(this.node1), 'node2->node1 2');
 	},
-testConnectNodes3: function() {
+
+	testConnectNodes3: function() {
 		this.node1.connectTo(this.node2);
 		this.node2.remove();
 		this.assertEqual(this.node1.connectedNodes().length, 0);
 	},
 
 
-testDisconnectNodes1: function() {
+	testDisconnectNodes1: function() {
 		var con = this.node1.connectTo(this.node2);
 		this.assert(this.node1.isConnectedTo(this.node2), 'node1->node2');
 		this.node1.disconnect(this.node2);
@@ -479,7 +487,7 @@ testDisconnectNodes1: function() {
 	},
 
 
-testComputeAttraction1: function() {
+	testComputeAttraction1: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(150,100)); // = minDist, no attraction
 		this.node1.connectTo(this.node2);
@@ -487,14 +495,16 @@ dbgOn(true);
 		var result = this.node1.forceOfMorphs([this.node2]);
 		this.assertEqualPt(result, pt(0, 0));
 	},
-testComputeAttraction2: function() {
+
+	testComputeAttraction2: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(175,100)); // = maxDist/2, half of max attraction
 		this.node1.connectTo(this.node2);
 		var result = this.node1.forceOfMorphs([this.node2]);
 		this.assertEqualPt(result, pt(0, 0)); // maxRepuslion = 20, minDist = 50, maxDist=100
 	},
-testComputeAttraction3: function() {
+
+	testComputeAttraction3: function() {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(60,100));
 		this.node3.setPosition(pt(140,100)); // both nodes pull on node1
@@ -503,15 +513,6 @@ testComputeAttraction3: function() {
 		var result = this.node1.forceOfMorphs([this.node2, this.node3]);
 		this.assertEqual(result, pt(0, 0)); // maxRepuslion = 20, minDist = 50, maxDist=100
 	},
-
-
-
-
-
-
-
-
-
 });
 
 // logMethod(Morph.prototype, "morphToGrabOrReceive");

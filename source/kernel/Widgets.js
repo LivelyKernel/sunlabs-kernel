@@ -4005,7 +4005,12 @@ Morph.subclass('ConnectorMorph', {
 	style: NodeStyle.connector,//{borderColor: Color.rgb(230,230,230), borderWidth: 1},
 	
 	initialize: function($super, morph1, morph2) {
-		var vertices = [morph1.getCenter(), morph2.getCenter()];
+		var startPoint  = pt(0,0);
+		var endPoint = pt(10,10);
+		if (morph1) startPoint =  morph1.getCenter();
+		if (morph2) endPoint = morph2.getCenter();
+		
+		var vertices = [startPoint, endPoint];
 		vertices.invoke('subPt', vertices[0]);
 		$super(new lively.scene.Polyline(vertices));
 
@@ -4013,14 +4018,26 @@ Morph.subclass('ConnectorMorph', {
 		this.arrow = this.addMorph(new ArrowHeadMorph(null,null, null, 30, 8));
 		this.arrow.head.applyStyle(NodeStyle.connector);
 
+        this.closeAllToDnD();    
+
 		this.setStartMorph(morph1);
 		this.setEndMorph(morph2);
 	},
 	
+    
 	onDeserialize: function() {
 		this.setStartMorph(this.startMorph);
 		this.setEndMorph(this.endMorph);
 	},
+	
+	// I don't know who sends this, but by intercepting here I can stop him.... drag me
+    // logStack shows no meaningfull results here
+    translateBy: function($super, delta) {
+		//logStack();
+		//$super(delta)
+    },
+	
+	handlesMouseDown: Functions.True,
 	
 	getStartMorph: function() { return this.startMorph },
 	
