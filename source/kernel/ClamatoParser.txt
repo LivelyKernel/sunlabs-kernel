@@ -261,7 +261,7 @@ begin =
   trans*:xs end
   -> { new StSequenceNode(xs) },
 /* ---------- modified ----------- */
-json     trans*:props                                 -> props,
+json  =   trans*:props                                 -> props,
 for -> false,
 continue -> false,
 var -> false,
@@ -332,7 +332,7 @@ if =
       f = new StInvokableNode(f);
       new StKeywordMessageNode('ifTrue:ifFalse:', [t,f], cond); },
 
-return
+return =
   trans:expr
   -> { new StReturnNode(expr) },
 
