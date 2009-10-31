@@ -644,6 +644,16 @@ using().run(function() {\nMorph.addMethods({})\n})\n});';
 		// this.assertEqual(result.length, 1); 
         this.assert(result[1].isError, 'no Error');
     },
+testFailingRegex: function() {
+	//var src = "toSmalltalk: function() {\nreturn Object.isString(this.value) ? '\\'' + this.value.replace(/'/g, '\'\'') + '\'' : this.value;\n},";
+	var src = "toSmalltalk: function() { return /'/ },";
+	var result = this.sut.callOMeta('propertyDef', src);
+	this.assert(result, 'not recognized');
+	this.assertEqual(result.name, 'toSmalltalk');
+	this.assertIdentity(result.startIndex, 0);
+	this.assertIdentity(result.stopIndex, src.length - 1);
+},
+
 
 });
 

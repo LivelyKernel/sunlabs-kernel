@@ -150,6 +150,24 @@ Global.ChunkParser = {
     return this.next;
   },
 
+  backup: function() {
+    this.backupRecorded = true;
+    this.backupInput = this.ometaParser.input;
+    this.backupNext = this.next;
+    this.backupNextNext = this.nextNext;
+    this.backupCounter = this.counter;
+    this.backupResult = this.result;
+  },
+  
+  useBackup: function() {
+    if (!this.backupRecorded) throw dbgOn(new Error('Using Chunk parser backup but did not record it!'));
+    this.ometaParser.input = this.backupInput;
+    this.next = this.backupNext;
+    this.nextNext = this.backupNextNext;
+    this.counter = this.backupCounter;
+    this.result = this.backupResult;
+  },
+  
   parseEscapedChar: function() {
     while (this.next === '\\') {
         this.makeStep();
@@ -158,11 +176,9 @@ Global.ChunkParser = {
   },
 
   parseComment: function() {
-    var comment1Opened;
-    var comment2Opened;
     if (this.next !== '/') return false;
-    if (this.nextNext === '/') comment1Opened = true;
-    if (this.nextNext === '*') comment2Opened = true;
+    var comment1Opened = this.nextNext === '/';
+    var comment2Opened = this.nextNext === '*'
     if (!comment1Opened && !comment2Opened) return;
     this.makeStep(); this.makeStep();
     while (true) { // this seems to crash Safari/Webkit, using do while below
@@ -172,7 +188,7 @@ Global.ChunkParser = {
       this.makeStep();
     }
   },
-
+  
   parseString: function() {
     var string1Opened;
     var string2Opened;
@@ -188,9 +204,27 @@ Global.ChunkParser = {
       this.makeStep();
     }
   },
+
+  parseRegex: function() {
+    var regexOpen = this.next === '/' && this.nextNext !== '*' && this.nextNext !== '/';
+    if (!regexOpen) return;
+    this.backup();
+    this.makeStep();
+    while (true) {
+      this.parseEscapedChar();
+      // Assume regex are on one line
+      if (this.next === '\n' || this.next === '\r') {
+        this.useBackup();
+        return;
+      }
+      if (this.next === '/') return;
+      this.makeStep();
+    }
+  },
   
   parseRest: function() {
     this.parseEscapedChar();
+	this.parseRegex();
     this.parseString();
     this.parseComment();
     if (this.next === this.chunkEnd && this.counter === 0) // end
