@@ -601,23 +601,26 @@ lively.ide.NodeFilter.subclass('lively.ide.NodeTypeFilter', {
 isNodeTypeFilter: true,
 
 
-	initialize: function(nodeClassesToFilter) {
-		this.nodeClasses = nodeClassesToFilter;
+	initialize: function(attrsThatShouldBeTrue) {
+		this.attributes = attrsThatShouldBeTrue;
 	},	
 
 	apply: function(nodes) {
-	    var k = this.nodeClasses;
-		if (!k){
-			console.log('nodeTypeFilter has no classes!!!');
+	    var attrs = this.attributes;
+		if (!attrs) {
+			console.log('nodeTypeFilter has no attributes!!!');
 			return nodes;
 		}
-		return nodes.select(function(ea) { return k.include(ea.constructor)
-			|| ea instanceof lively.ide.ChangeNode || ea instanceof StBrowserClassNode});
+		return nodes.select(function(node) {
+			return attrs.any(function(attr) { return node[attr] });
+		});
 	}
 });
 
 Object.extend(lively.ide.NodeTypeFilter, {
-	defaultInstance: function() { return new lively.ide.NodeTypeFilter([lively.ide.ClassFragmentNode]) }
+defaultInstance: function() {
+	return new lively.ide.NodeTypeFilter(['isClassNode', 'isGrammarNode', 'isChangeNode']);
+},
 });
 
  
@@ -764,7 +767,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 			var fn = allFiles[i];
 			if (fn.endsWith('.js')) {
 				nodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
-			} else if (fn.endsWith('.txt')) {
+			} else if (fn.endsWith('.txt') || fn.endsWith('.ometa')) {
 				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
 			} else if (fn.endsWith('.lkml')) {
 				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser, this));
@@ -898,12 +901,12 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 			if (type === 'klassDef' || type === 'klassExtensionDef')
 				return ide.ClassFragmentNode;
 			if (type === 'functionDef')
-				return ide.FunctionFragmentNode; 
+				return ide.FunctionFragmentNode;
 			return ide.ObjectFragmentNode;
 		}
-		return this.target.subElements(2).collect(function(ea) {
-			return new (typeToClass(ea.type))(ea, browser);
-		})
+		return this.target.subElements(2)
+		  .select(function(ea) { return ['klassDef','klassExtensionDef','functionDef','objectDef'].include(ea.type) })
+		  .collect(function(ea) { return new (typeToClass(ea.type))(ea, browser) })
     },
  
     buttonSpecs: function() {
@@ -911,15 +914,14 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		var b = this.browser;
 		var f = b['get'+pane+'Filters']().detect(function(ea) { return ea.isNodeTypeFilter });
 		if (!f) {
-
 			f = lively.ide.NodeTypeFilter.defaultInstance();
 			b.installFilter(f, pane);
 			console.log('installing filter.......');
 		}
-		var configFilter = function(classes) {f.nodeClasses = classes}
-        return [{label: 'classes', action: configFilter.curry([lively.ide.ClassFragmentNode, lively.ide.OMetaGrammarNode])},
-                    {label: 'functions', action: configFilter.curry([lively.ide.FunctionFragmentNode])},
-                    {label: 'objects', action: configFilter.curry([lively.ide.ObjectFragmentNode])}];
+		var configFilter = function(attrs) {f.attributes = attrs}
+        return [{label: 'classes', action: configFilter.curry(['isClassNode', 'isGrammarNode', 'isChangeNode'])},
+                    {label: 'functions', action: configFilter.curry(['isFunctionNode'])},
+                    {label: 'objects', action: configFilter.curry(['isObjectNode'])}];
     },
     
     sourceString: function($super) {
@@ -1039,6 +1041,8 @@ ometaNodes.forEach(function(ea) { console.log(ea.target.name) });
 
 ide.FileFragmentNode.subclass('lively.ide.OMetaGrammarNode', {
 
+	isGrammarNode: true,
+	
 	childNodes: function() {
 		var def = this.target;
 		var browser = this.browser;
@@ -1062,6 +1066,8 @@ evalSource: function(newSource) {
 
 ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
  
+  isClassNode: true,
+  
     childNodes: function() {
         var classFragment = this.target;
         var browser = this.browser;
@@ -1118,7 +1124,9 @@ handleDrop: function(nodeDroppedOntoMe) {
 });
  
 ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
- 
+
+	isObjectNode: true,
+	
     childNodes: function() {
         if (!this.target.subElements()) return [];
         // FIXME duplication with ClassFragmentNode
@@ -1196,11 +1204,15 @@ asString: function($super) {
  
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 
+	isFunction: true,
+	
 	menuSpec: ide.ClassElemFragmentNode.prototype.menuSpec, // FIXME
 
 });
 ide.BrowserNode.subclass('lively.ide.ChangeNode', {
 
+  isChangeNode: true,
+  
 	documentation: 'Abstract node for Changes/ChangeSet nodes',
 asString: function() {
 		return this.target.getName() + (this.target.automaticEvalEnabled() ? '' : ' (disabled)');
@@ -1760,13 +1772,19 @@ parseNonFile: function(source) {
 	couldNotGoForward: function(descr, specialDescr) {
 		dbgOn(true);
 		console.warn('Could not go forward before line ' + this.findLineNo(this.lines, this.ptr));
-		var lastAdded = this.changeList.last();
-		var responsible = lastAdded.flattened().detect(function(ea) { return ea.subElements() && ea.subElements().include(descr) });
-		if (!responsible && lastAdded === descr) responsible = this.changeList;
-		if (!responsible) throw new Error('Couldn\'t find last added descriptor');
-		responsible.pop();
 		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1, this.fileName);
-		responsible.push(errorDescr);
+		var lastAdded = this.changeList.last();
+		var responsible = lastAdded.flattened().detect(function(ea) { return ea.subElements(1) && ea.subElements(1).include(descr) });
+		if (responsible) {
+		  responsible._subElements.pop();
+		  responsible._subElements.push(errorDescr);
+		} else if (lastAdded === descr) {
+		  responsible = this.changeList;
+		  responsible.pop();
+		  responsible.push(errorDescr);
+		} else {
+		  throw new Error('Couldn\'t find last added descriptor');
+		}
 		this.ptr = errorDescr.stopIndex + 1;
 	},
 
@@ -2047,6 +2065,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		return ChangeSet.fromFile(fileName, fileString);
 	},
 parseSt: function(fileName, fileString) {
+	if (!Global['ClamatoParser']) return null;
 	var ast = OMetaSupport.matchAllWithGrammar(ClamatoParser, "clamatoClasses", fileString, true);
 	if (!ast) {
 	  console.warn('Couldn\'t parse ' + fileName);
