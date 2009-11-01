@@ -52,9 +52,9 @@ panelSpec: [
 
     allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
     filterPlaces: ['Root', 'Pane1', 'Pane2', 'Pane3'],
-    formals: ["Pane1Content", "Pane1Selection", "Pane1Choicer", "Pane1Menu", "Pane1Filters",
-              "Pane2Content", "Pane2Selection", "Pane2Choicer", "Pane2Menu", "Pane2Filters",
-              "Pane3Content", "Pane3Selection", "Pane3Choicer", "Pane3Menu", "Pane3Filters",
+    formals: ["Pane1Content", "Pane1Selection", "Pane1Menu", "Pane1Filters",
+              "Pane2Content", "Pane2Selection", "Pane2Menu", "Pane2Filters",
+              "Pane3Content", "Pane3Selection", "Pane3Menu", "Pane3Filters",
               "SourceString", "StatusMessage", "RootFilters"],
     commands: function() {
         return [];
@@ -84,7 +84,9 @@ panelSpec: [
         this.relayToModel(model, spec);
 		this.filterPlaces.forEach(function(ea) {  /*identity filter*/	
 			this['set' + ea + 'Filters']([new lively.ide.NodeFilter()]);
-		}, this)
+		}, this);
+
+		this.buttonCommands = [];
     },
  
     buildView: function (extent) {
@@ -138,10 +140,18 @@ panelSpec: [
         var btns = cmds.forEach(function(cmd, i) {
             var btn = new ButtonMorph(new Rectangle(i*width, y, width, height));
 			btn.setLabel(cmd.asString());
-			var btnModel = {action: function(val) { if (!val) cmd.trigger(); btn.setLabel(cmd.asString()); }};
-			btn.connectModel({model: btnModel, setValue: 'action'});
+			var btnModel = {
+				action: function(val) { if (!val) cmd.trigger(); btn.setLabel(cmd.asString()); },
+				/*UGLY hack, btn has no real model*/
+				setIsActive: function(val) { btn.onIsActiveUpdate(val) },
+				getIsActive: function(val) { return cmd.isActive() }
+			};
+			btn.connectModel({model: btnModel, setValue: 'action', setIsActive: 'setIsActive', getIsActive: 'getIsActive'});
+			cmd.button = btn;
 			morph.addMorph(btn);
+			btnModel.setIsActive(cmd.isActive());
         })
+		this.buttonCommands = cmds;
 	},
 
     showButtons: function(evt, morph, paneName) {
@@ -298,6 +308,8 @@ selectionInPane: function(pane) {
         this.setPane1Menu(this.commandMenuSpec('Pane1').concat(node.menuSpec()));
 		this.setPane2Menu(this.commandMenuSpec('Pane2'));
 		this.setPane3Menu(this.commandMenuSpec('Pane3'));
+
+		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
     },
  
     onPane2SelectionUpdate: function(node) {
@@ -313,6 +325,8 @@ selectionInPane: function(pane) {
 
 		this.setPane2Menu(this.commandMenuSpec('Pane2').concat(node.menuSpec()));
 		this.setPane3Menu(this.commandMenuSpec('Pane3'));
+
+		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
     },
  
     onPane3SelectionUpdate: function(node) {
@@ -324,6 +338,8 @@ selectionInPane: function(pane) {
 		this.updateTitle();
 
 		this.setPane3Menu(this.commandMenuSpec('Pane3').concat(node.menuSpec()));
+
+		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
     },
  
     onSourceStringUpdate: function(methodString, source) {
@@ -652,7 +668,8 @@ commands: function() {
 			lively.ide.ShowLineNumbersCommand,
 			lively.ide.RefreshCommand,
 			lively.ide.EvaluateCommand,
-			lively.ide.SortCommand]
+			lively.ide.SortCommand,
+			lively.ide.ViewSourceCommand]
     },
 sourceDatabase: function() {
 	return this.rootNode().target;
@@ -1056,6 +1073,8 @@ ide.FileFragmentNode.subclass('lively.ide.OMetaGrammarNode', {
 
 ide.FileFragmentNode.subclass('lively.ide.OMetaRuleNode', {
 
+isMemberNode: true,
+
 evalSource: function(newSource) {
 	var def = this.target.buildNewFileString(newSource);
 	lively.ide.CompleteOmetaFragmentNode.prototype.evalSource(def);
@@ -1144,6 +1163,8 @@ ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
  
 ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 
+    isMemberNode: true,
+    
 	menuSpec: function($super) {
 		var menu = $super();
 		var fragment = this.target;
@@ -1296,6 +1317,8 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetNode', {
 });
 
 ide.ChangeNode.subclass('lively.ide.ChangeSetClassNode', {
+
+	isClassNode: true,
 	
 	childNodes: function() {
 		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
@@ -1393,13 +1416,11 @@ DoitChange.addMethods({
 
 ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 
-	wantsButton: function() {
-		return true;
-	},
+	isActive: Functions.True,
 
-	asString: function() {
-		return 'Load all'
-	},
+	wantsButton: Functions.True,
+
+	asString: function() { return 'Load all' },
 
 	trigger: function() {
 		var srcCtrl = tools.SourceControl;
@@ -1413,13 +1434,11 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 
 ide.BrowserCommand.subclass('lively.ide.ShowLineNumbersCommand', {
 	
-	wantsButton: function() {
-		return true;
-	},
+	isActive: Functions.True,
 
-	asString: function() {
-		return 'LineNo'
-	},
+	wantsButton: Functions.True,
+
+	asString: function() { return 'LineNo' },
 
 	trigger: function() {
 		this.browser.showLines = !this.browser.showLines;
@@ -1430,13 +1449,11 @@ ide.BrowserCommand.subclass('lively.ide.ShowLineNumbersCommand', {
 
 ide.BrowserCommand.subclass('lively.ide.RefreshCommand', {
 
-	wantsButton: function() {
-		return true;
-	},
+	isActive: Functions.True,
 
-	asString: function() {
-		return 'Refresh'
-	},
+	wantsButton: Functions.True,
+
+	asString: function() { return 'Refresh' },
 
 	trigger: function() {
 		this.browser.allChanged();
@@ -1446,9 +1463,9 @@ ide.BrowserCommand.subclass('lively.ide.RefreshCommand', {
 
 ide.BrowserCommand.subclass('lively.ide.EvaluateCommand', {
 
-	wantsButton: function() {
-		return true;
-	},
+	isActive: Functions.True,
+
+	wantsButton: Functions.True,
 
 	asString: function() {
 		if (this.browser.evaluate) return 'Eval on';
@@ -1461,6 +1478,8 @@ ide.BrowserCommand.subclass('lively.ide.EvaluateCommand', {
 
 });
 ide.BrowserCommand.subclass('lively.ide.ChangesGotoChangeSetCommand', {
+
+	isActive: Functions.True,
 
 	wantsButton: function() {
 		return false;//true;
@@ -1481,9 +1500,9 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 
 	filter: new lively.ide.SortFilter(),
 
-	wantsButton: function() {
-		return true;
-	},
+	isActive: Functions.True,
+
+	wantsButton: Functions.True,
 
 	asString: function() {
 		if (this.browserIsSorting()) return 'Unsort';
@@ -1509,13 +1528,11 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 });
 lively.ide.BrowserCommand.subclass('lively.ide.BrowseWorldCommand', {
 
-	wantsButton: function() {
-		return true;
-	},
+	isActive: Functions.True,
 
-	asString: function() {
-		return 'Browse world...';
-	},
+	wantsButton: Functions.True,
+
+	asString: function() { return 'Browse world...' },
 
 	trigger: function() {
 		var w = WorldMorph.current();
@@ -1527,11 +1544,20 @@ lively.ide.BrowserCommand.subclass('lively.ide.BrowseWorldCommand', {
 	},
 
 });
+lively.ide.BrowserCommand.subclass('lively.ide.ViewSourceCommand', {
+
+	isActive: function() { return this.browser.selectedNode() && this.browser.selectedNode().isMemberNode },
+
+	wantsButton: Functions.True,
+
+	asString: function() { return 'View as...' },
+
+	trigger: function() {},
+
+});
 lively.ide.BrowserCommand.subclass('lively.ide.SaveChangesCommand', {
 
-	wantsButton: function() {
-		return true;
-	},
+	wantsButton: Functions.True,
 
 	asString: function() {
 		return 'Push changes back';
@@ -1553,9 +1579,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.SaveChangesCommand', {
 });
 ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
 
-	wantsMenu: function() {
-		return true;
-	},
+	wantsMenu: Functions.True,
 
 	isActive: function(pane) {
 		return this.browser.selectionInPane('Pane1') instanceof lively.ide.ChangeSetNode && pane == 'Pane2' ||
@@ -1610,9 +1634,7 @@ addDoit: function() {
 });
 lively.ide.BrowserCommand.subclass('lively.ide.ClassChangeMenuCommand', {
 
-	wantsMenu: function() {
-		return true;
-	},
+	wantsMenu: Functions.True,
 
 	isActive: function(pane) {
 		var sel = this.browser.selectedNode();

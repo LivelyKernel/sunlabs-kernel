@@ -915,6 +915,9 @@ lively.ide.CompleteFileFragmentNode.subclass('StBrowserFileNode', {
 })
 
 lively.ide.ClassFragmentNode.subclass('StBrowserClassNode', {
+  
+  isClassNode: true,
+  
   childNodes: function() {
     var browser = this.browser;
     var self = this;
@@ -944,6 +947,8 @@ lively.ide.ClassFragmentNode.subclass('StBrowserClassNode', {
 
 lively.ide.FileFragmentNode.subclass('StBrowserMemberNode', {
 
+  isMemberNode: true,
+  
   asString: function() {
     //FIXME add lines
     return this.target.simpleName();

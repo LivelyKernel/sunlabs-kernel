@@ -220,7 +220,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
     testParseClassAndMethods: function() {  // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
                   '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
-                  'formals: ["Pane1Content",\n\t\t"Pane1Selection", "Pane1Choicer"],\n' +
+                  'formals: ["Pane1Content",\n\t\t"Pane1Selection"],\n' +
                   '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
                   '})';
         this.sut.src = src;
