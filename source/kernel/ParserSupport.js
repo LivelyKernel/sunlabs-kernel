@@ -976,7 +976,7 @@ TextMorph.addMethods({
     var result;
     try { result = this.boundEval(str); }
     catch (e) {
-      if (Config.suppressSmalltalkEval) {
+      if (Config.suppressSmalltalkEval || !Global['ClamatoParser']) {
         this.world().alert("exception " + e);
         return
       }
