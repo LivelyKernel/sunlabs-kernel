@@ -322,7 +322,7 @@ StNode.addMethods({
   mangleMethodName: function(name) {
     return $A(name).collect(function(ea) {
       if (ea == ':') return '';
-      if (ClamatoParser.isBinaryChar(ea)) return this.mangleBinaryChar(ea);
+      if (SmalltalkParser.isBinaryChar(ea)) return this.mangleBinaryChar(ea);
       return ea
     }, this).join('');
   },
@@ -764,7 +764,7 @@ StNodeBrowserSupportMixin = {
     //dbgOn(true)
     if (!this.type)
       throw dbgOn(new Error('Don\'t know the rule to parse ST source!'));
-    var ast = OMetaSupport.matchAllWithGrammar(ClamatoParser, this.type, newSource, true);
+    var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, this.type, newSource, true);
     ast && ast.flattened().forEach(function(ea) {
       ea.sourceControl = this.sourceControl;
       ea.fileName = this.fileName;
@@ -886,7 +886,7 @@ lively.ide.CompleteFileFragmentNode.subclass('StBrowserFileNode', {
     return [];
   },
 	loadModule: function($super) {
-	  require('lively.ClamatoParser').toRun(function() { $super() });
+	  require('lively.SmalltalkParser').toRun(function() { $super() });
 	},
   // saveSource: function($super, newSource, sourceControl) {
   saveSource: function(/*$super,*/newSource, sourceControl) {
@@ -981,12 +981,12 @@ TextMorph.addMethods({
     var result;
     try { result = this.boundEval(str); }
     catch (e) {
-      if (Config.suppressSmalltalkEval || !Global['ClamatoParser']) {
+      if (Config.suppressSmalltalkEval || !Global['SmalltalkParser']) {
         this.world().alert("exception " + e);
         return
       }
       try {
-        var ast = OMetaSupport.matchAllWithGrammar(ClamatoParser, 'sequence', str, true);
+        var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, 'sequence', str, true);
         console.log('Evaluating: ' + ast.toJavaScript());
         result = ast.eval();
       } catch(e) {

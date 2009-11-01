@@ -21,7 +21,7 @@
  */
 
 
-ometa ClamatoParser <: Parser {
+ometa SmalltalkParser <: Parser {
   
 /*-----------------------------
 ----- recognizing tokens ------
@@ -38,7 +38,7 @@ unaryId =
   -> x,
 
 binaryOp =
-  spaces (char:c ?(ClamatoParser.isBinaryChar(c)) -> c)+:cs
+  spaces (char:c ?(SmalltalkParser.isBinaryChar(c)) -> c)+:cs
   -> cs.join(''),
   
 keywordPart =
@@ -162,7 +162,7 @@ declaredVars =
   -> vars,
 
 propertyOrMethod =
-  pos:start spaces ('-' -> false | '+' -> true):isMeta (property:p token('.') -> p | clamatoMethod):node pos:end spaces
+  pos:start spaces ('-' -> false | '+' -> true):isMeta (property:p token('.') -> p | method):node pos:end spaces
   -> {  node.setMeta(isMeta);
 		node.type = 'propertyOrMethod';
 		node.startIndex = start;
@@ -175,7 +175,7 @@ property =
   -> { new StPropertyNode(assgn) },
 
   
-clamatoMethod =
+method =
 	methodNameAndArgs:nameAndArgs (primitiveBody | stMethodBody):methodNode
 	-> {
 		methodNode.setMethodName(nameAndArgs[0]);
@@ -207,21 +207,21 @@ methodNameAndArgs =
 /*-----------------------------
 -------- class related  -------
 ------------------------------*/
-clamatoClass =
+smalltalkClass =
 	pos:p token('<') (identifier:n -> {new StLiteralNode(n)}):name ( token(':') variable:superclass | empty) token('>')
 	spaces propertyOrMethod*:methodsAndProperties spaces
 	-> { var klass = new StClassNode(name, methodsAndProperties, superclass);
-		klass.type = 'clamatoClass'
+		klass.type = 'smalltalkClass'
 		klass.startIndex = p;
 		klass.stopIndex = $elf.pos()-1;
 		klass
 	},
 
-clamatoClasses =
-	pos:p (clamatoClass)*:cls end
+smalltalkClasses =
+	pos:p (smalltalkClass)*:cls end
 	-> {
 		var all = new StFileNode(cls);
-		all.type = 'clamatoClasses';
+		all.type = 'smalltalkClasses';
 		all.startIndex = p;
 		all.stopIndex = $elf.pos()-1;
 		all
@@ -244,7 +244,7 @@ log:x
    ============== additional stuff =============
    ============================================= */
 
-ClamatoParser.isBinaryChar = function(c) {
+SmalltalkParser.isBinaryChar = function(c) {
   	// from Squeak's TypeTable
   	var x = c.charCodeAt(0);
   	return (x >= 1 && x <= 8) || x == 11 || (x >= 14 && x <= 29) || x == 31 || x == 33 || x == 37 ||

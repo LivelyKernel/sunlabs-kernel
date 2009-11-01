@@ -2087,8 +2087,8 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		return ChangeSet.fromFile(fileName, fileString);
 	},
 parseSt: function(fileName, fileString) {
-	if (!Global['ClamatoParser']) return null;
-	var ast = OMetaSupport.matchAllWithGrammar(ClamatoParser, "clamatoClasses", fileString, true);
+	if (!Global['SmalltalkParser']) return null;
+	var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, "smalltalkClasses", fileString, true);
 	if (!ast) {
 	  console.warn('Couldn\'t parse ' + fileName);
 	  return null;

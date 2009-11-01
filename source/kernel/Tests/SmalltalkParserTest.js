@@ -1,6 +1,6 @@
-module('lively.Tests.ClamatoTest').requires('lively.TestFramework', 'lively.Ometa', 'lively.ClamatoParser').toRun(function() {
+module('lively.Tests.SmalltalkParserTest').requires('lively.TestFramework', 'lively.Ometa', 'lively.SmalltalkParser').toRun(function() {
 
-TestCase.subclass('lively.Tests.ClamatoTest.ASTBaseTest', {
+TestCase.subclass('lively.Tests.SmalltalkParserTest.ASTBaseTest', {
 
 errorCb: function() {
 	var test = this;
@@ -11,7 +11,7 @@ errorCb: function() {
 },
 setUp: function() {
 	this.jsParser = BSJSParser;
-	this.stParser = ClamatoParser;
+	this.stParser = SmalltalkParser;
 	this.js2StConverter = JS2StConverter;
 },
 
@@ -68,7 +68,7 @@ st2js: function(src, rule) {
 
 });
 
-lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.ClamatoParserTest', {
+lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.SmalltalkTheParserTest', {
 
 test01ParseUnaryMessageSend: function() {
 	var src = 'x foo';
@@ -256,7 +256,7 @@ test11aParseCommentsAsWithspace: function() {
 	};
 	this.assertNodeMatches(expected, result);
 },
-test12aClamatoMethod: function() {
+test12aSmalltalkMethod: function() {
 	var src = '- foo\n\
 	@selector := \'xyz\'.\n\
 	self.';
@@ -299,7 +299,7 @@ test13aParseClass: function() {
 	(self = true)\n\
 		ifTrue: aBlock\n\
 		ifFalse: [false].'
-	var result = this.st2stAst(src, 'clamatoClass');
+	var result = this.st2stAst(src, 'smalltalkClass');
 	var expected = {
 		isClass: true,
 		className: {value: 'Object'},
@@ -309,7 +309,7 @@ test13aParseClass: function() {
 },
 test13bParseClass: function() {
 	var src ='<ClassA:Object>';
-	var result = this.st2stAst(src, 'clamatoClass');
+	var result = this.st2stAst(src, 'smalltalkClass');
 	var expected = {
 		isClass: true,
 		className: {value: 'ClassA'},
@@ -355,7 +355,7 @@ test15aCascades: function() {
 },
 test16aPropertyDefInClass: function() {
 	var src = '<ClassA>\n- property1 := 1.\n+ property2 := 2.';
-	var result = this.st2stAst(src, 'clamatoClass');
+	var result = this.st2stAst(src, 'smalltalkClass');
 	var expected = {
 		isClass: true,
 		properties: [
@@ -393,7 +393,7 @@ test18aArrayLiteral: function() {
 
 });
 
-lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.StNodeToProgramStringTest', {
+lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.StNodeToProgramStringTest', {
 
 test01Expressions: function() {
 	var originals = [
@@ -438,7 +438,7 @@ test03Class: function() {
 \n\
 + + foo\n\
 	self ++ foo.\n\n';
-	var result = this.st2st(src, 'clamatoClass');
+	var result = this.st2st(src, 'smalltalkClass');
 	this.assertEqual(src, result);
 },
 test04StToStResultUnequalSource: function() {
@@ -454,10 +454,10 @@ test04StToStResultUnequalSource: function() {
 });
 
 
-TestCase.subclass('lively.Tests.ClamatoTest.ParseExistingSourcesTest', {
+TestCase.subclass('lively.Tests.SmalltalkParserTest.ParseExistingSourcesTest', {
 shouldRun: true,
 setUp: function() {
-	this.parser = ClamatoParser;
+	this.parser = SmalltalkParser;
 },
 parse: function(rule, src) {
 	var test = this;
@@ -483,7 +483,7 @@ testAll: function() {
 	this.urls.forEach(function(url) {
 		console.log('...... Parsing: ' + url);
 		var content = FileDirectory.getContent(url);
-		this.parse('clamatoClasses', content);
+		this.parse('smalltalkClasses', content);
 	}, this)
 },
 
@@ -493,7 +493,7 @@ testAll: function() {
 // ----------------------------------------
 // --------------------
 
-lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.JS2StConversionTest', {
+lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.JS2StConversionTest', {
 shouldRun: true,
 
 test01aConvertTempVarGet: function() {
@@ -702,7 +702,7 @@ testXYaConvertMethodWichCannotBeParsedToPrimitive: function() {
 
 });
 
-lively.Tests.ClamatoTest.ASTBaseTest.subclass('lively.Tests.ClamatoTest.St2JSConversionTest', {
+lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.St2JSConversionTest', {
 shouldRun: true,
 colonReplacement: '',
 
@@ -835,7 +835,7 @@ test10aBlock: function() {
 	var expected = '(function(a,b) { var c,d; return 1 + 2 })';
 	this.assertEqual(expected, result);
 },
-test11aClamatoMethod: function() {
+test11aSmalltalkMethod: function() {
 	var src = '- foo\n\
 	@selector := \'xyz\'.\n\
 	self.';
@@ -858,25 +858,25 @@ test11cPrimtiveMethod: function() {
 },
 test12aClassWithOneMethod:  function () {
 	var src = '<MyClass>\n- foo: x bar: y\n\t1 + 2. self foo: x + y.'
-	var result = this.st2js(src, 'clamatoClass');
+	var result = this.st2js(src, 'smalltalkClass');
 	var expected = 'Object.subclass(\'MyClass\', {\nfoo_bar_: function(x,y) { 1 + 2; return self.foo_(x + y) },\n});\n'.replace(/_/g, this.colonReplacement);;
 	this.assertEqual(expected, result);
 },
 test12bSubclass:  function () {
 	var src = '<MyClass:Foo>'
-	var result = this.st2js(src, 'clamatoClass');
+	var result = this.st2js(src, 'smalltalkClass');
 	var expected = 'Foo.subclass(\'MyClass\', {});\n';
 	this.assertEqual(expected, result);
 },
 test12cClassPropertiesAndMethod: function() {
 	var src = '<MyClass>\n- foo 1.\n- bar := 4.'
-	var result = this.st2js(src, 'clamatoClass');
+	var result = this.st2js(src, 'smalltalkClass');
 	var expected = 'Object.subclass(\'MyClass\', {\nbar: 4,\nfoo: function() { return 1 },\n});\n';
 	this.assertEqual(expected, result);
 },
 test12dMetaClass: function() {
 	var src = '<MyClass>\n- foo 1.\n+ foo 23 * 5.\n+ bar := 4.'
-	var result = this.st2js(src, 'clamatoClass');
+	var result = this.st2js(src, 'smalltalkClass');
 	var expected = 'Object.subclass(\'MyClass\', {\nfoo: function() { return 1 },\n});\nObject.extend(MyClass, {\nbar: 4,\nfoo: function() { return 23 * 5 },\n});\n';
 	this.assertEqual(expected, result);
 },
@@ -889,13 +889,13 @@ testXXaResultOfCollect: function() {
 },
 testXXbJsParserCanConsumeComplexExample: function() {
 	var src = '<Class:Foo>\n-foo 1.\n- bar := 4.\n+foo: y\n\t| x | x := 1 + y. x.\n\n<SecondClass>\n- foo: x bar:y x + y';
-	var js = this.st2js(src, 'clamatoClasses');
+	var js = this.st2js(src, 'smalltalkClasses');
 	this.assert(this.js2jsAst(js)); // just try to parse it 
 },
 
 });
 
-TestCase.subclass('lively.Test.ClamatoTest.SmalltalkBrowserTest', {
+TestCase.subclass('lively.Test.SmalltalkParserTest.SmalltalkBrowserTest', {
 /*
 StFileNode(foo.st, 2 classes):0-302
 Class(Literal(Object)):0-115
