@@ -789,7 +789,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 			} else if (fn.endsWith('.lkml')) {
 				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser, this));
 			} else if (fn.endsWith('.st')) {
-			  require('lively.ParserSupport').toRun(function() {
+			  require('lively.SmalltalkParserSupport').toRun(function() {
 			    nodes.push(new StBrowserFileNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
 			  }.bind(this))
 			}
