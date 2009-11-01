@@ -81,7 +81,7 @@ BoxMorph.subclass('ButtonMorph', {
 },
     
     onMouseDown: function(evt) {
-		if (!this.getIsActive()) return;
+		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
         this.requestKeyboardFocus(evt.hand);
         if (!this.toggle) {
             this.setValue(true); 
@@ -92,7 +92,7 @@ BoxMorph.subclass('ButtonMorph', {
     onMouseMove: Functions.Empty,
 
     onMouseUp: function(evt) {
-		if (!this.getIsActive()) return;
+		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
         var newValue = this.toggle ? !this.getValue() : false;
         this.setValue(newValue); 
 	// the following should happen in response
@@ -148,7 +148,7 @@ onIsActiveUpdate: function(isActive) {
     setHasKeyboardFocus: Functions.K, 
 
     onKeyDown: function(evt) {
-		if (!this.getIsActive()) return;
+		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
         switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
@@ -161,7 +161,7 @@ onIsActiveUpdate: function(isActive) {
     },
 
     onKeyUp: function(evt) {
-		if (!this.getIsActive()) return;
+		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
         var newValue = this.toggle ? !this.getValue() : false;
         switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
