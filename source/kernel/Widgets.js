@@ -51,7 +51,7 @@ BoxMorph.subclass('ButtonMorph', {
     toggle: false, //if true each push toggles the model state 
     styleClass: ['button'],
     
-    formals: ["Value"],
+    formals: ["Value", "IsActive"],
 
 
     // A ButtonMorph is the simplest widget
@@ -60,9 +60,9 @@ BoxMorph.subclass('ButtonMorph', {
         this.baseFill = null;
         $super(initialBounds);
 	if (Config.selfConnect) {
-            var model = Record.newNodeInstance({Value: false});
+            var model = Record.newNodeInstance({Value: false, IsActive: true});
 	    // this default self connection may get overwritten by, eg, connectModel()...
-	    this.relayToModel(model, {Value: "Value"});
+	    this.relayToModel(model, {Value: "Value", IsActive: "IsActive"});
 	}
         // Styling
         this.applyLinkedStyles();
@@ -76,9 +76,12 @@ BoxMorph.subclass('ButtonMorph', {
     },
 
 
-    handlesMouseDown: function(evt) { return !evt.isCommandKey() && evt.isLeftMouseButtonDown() },
+    handlesMouseDown: function(evt) {
+	return !evt.isCommandKey() && evt.isLeftMouseButtonDown();
+},
     
     onMouseDown: function(evt) {
+		if (!this.getIsActive()) return;
         this.requestKeyboardFocus(evt.hand);
         if (!this.toggle) {
             this.setValue(true); 
@@ -89,6 +92,7 @@ BoxMorph.subclass('ButtonMorph', {
     onMouseMove: Functions.Empty,
 
     onMouseUp: function(evt) {
+		if (!this.getIsActive()) return;
         var newValue = this.toggle ? !this.getValue() : false;
         this.setValue(newValue); 
 	// the following should happen in response
@@ -133,12 +137,18 @@ BoxMorph.subclass('ButtonMorph', {
 	if (this.toggle) console.log("got updated with value " + value);
 	this.changeAppearanceFor(value);
     },
+onIsActiveUpdate: function(isActive) {
+	if (!this.label) return;
+	this.label.applyStyle({ textColor: (isActive ? Color.black : Color.gray.darker()) });
+},
+
 
     takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus
     
     setHasKeyboardFocus: Functions.K, 
 
     onKeyDown: function(evt) {
+		if (!this.getIsActive()) return;
         switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
         case Event.KEY_SPACEBAR:
@@ -151,6 +161,7 @@ BoxMorph.subclass('ButtonMorph', {
     },
 
     onKeyUp: function(evt) {
+		if (!this.getIsActive()) return;
         var newValue = this.toggle ? !this.getValue() : false;
         switch (evt.getKeyCode()) {
         case Event.KEY_RETURN:
