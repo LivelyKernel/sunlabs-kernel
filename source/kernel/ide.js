@@ -502,7 +502,7 @@ asListItem: function() {
 
  
     sourceString: function() {
-        return '-----'
+        return this.browser.emptyText
     },
  
 	hasSimilarTarget: function(other) {
@@ -1189,6 +1189,24 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]
     	].concat(menu);
 	},
+sourceString: function($super) {
+	var src = $super();
+	var view = this.browser.viewAs;
+	if (!view) return src;
+	if (view != 'javascript' && view != 'smalltalk')
+		return 'unknown source view';
+	var browserNode = this;
+	var result = 'loading Smalltalk module, click again on list item';
+	require('lively.SmalltalkParser').toRun(function() {
+		var jsSrc = '{' + src + '}' // as literal object
+		var jsAst = OMetaSupport.matchAllWithGrammar(BSOMetaJSParser, "topLevel", jsSrc, true);
+	  jsAst = jsAst[1][1] // access the binding, not the json object nor sequence node
+		var stAst = OMetaSupport.matchWithGrammar(JS2StConverter, "trans", jsAst, true);
+		result = view == 'javascript' ? stAst.toJavaScript() : stAst.toSmalltalk();
+	});
+	return result
+},
+
 
 	evalSource: function(newSource) {
 		if (!this.browser.evaluate) return false;
@@ -1303,11 +1321,6 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetNode', {
     
     sourceString: function($super) {
 		return '';
-/*		this.loadModule();
-        //if (!this.target) return '';
-		var src = $super();
-		if (src.length > this.maxStringLength && !this.showAll) return '';
-        return src;*/
     },
     
     asString: function() {
@@ -1552,7 +1565,21 @@ lively.ide.BrowserCommand.subclass('lively.ide.ViewSourceCommand', {
 
 	asString: function() { return 'View as...' },
 
-	trigger: function() {},
+	trigger: function() {
+	var browser = this.browser;
+	var world = WorldMorph.current();
+	var spec = [
+		{caption: 'default', value: undefined},
+		{caption: 'javascript', value: 'javascript'},
+		{caption: 'smalltalk', value: 'smalltalk'}];
+	var items = spec.collect(function(ea) {
+	  return [ea.caption,function(evt) {
+				browser.viewAs = ea.value;
+				browser.selectedNode().signalTextChange() }]
+	});
+	var menu = new MenuMorph(items);
+	menu.openIn(world,world.firstHand().getPosition());
+},
 
 });
 lively.ide.BrowserCommand.subclass('lively.ide.SaveChangesCommand', {

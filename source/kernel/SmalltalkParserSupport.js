@@ -953,6 +953,12 @@ lively.ide.FileFragmentNode.subclass('StBrowserMemberNode', {
     //FIXME add lines
     return this.target.simpleName();
   },
+sourceString: function($super) {
+	if (this.browser.viewAs == 'javascript')
+		return this.target.toJavaScript();
+	return $super();
+},
+
   
   saveSource: StBrowserFileNode.prototype.saveSource,
   
