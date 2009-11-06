@@ -1003,7 +1003,7 @@ BoxMorph.subclass('TextMorph', {
 			delete this.textSelection;
 		}
 		return $super(extraNodes, optSystemDictionary);
-    },
+	},
 
 	onDeserialize: function() {
 		// the morph gets lost when it is not hung into the dom 
@@ -1088,7 +1088,7 @@ BoxMorph.subclass('TextMorph', {
 			this.wrap = style;
 		}
 	},
-    
+	
 	beLabel: function(styleMods) {
 		// Note default style is applied first, then any additional specified
 		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
@@ -1190,7 +1190,7 @@ BoxMorph.subclass('TextMorph', {
 		return items;
 	},
 
-    editMenuItems: function(evt) {
+	editMenuItems: function(evt) {
 	return [
 		["cut (x)", this.doCut.bind(this)],
 		["copy (c)", this.doCopy.bind(this)],
@@ -1219,162 +1219,161 @@ BoxMorph.subclass('TextMorph', {
 				if (!filename) return;
 				var req = new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"});
 				req.put(URL.source.withFilename(filename), this.xml || this.textString);
-	    		}.bind(this));
-        	}]
+				}.bind(this));
+			}]
 		]
-    },
-
-    // TextMorph composition functions
-    textTopLeft: function() { 
-	if (!(this.padding instanceof Rectangle)) console.log('padding is ' + this.padding);
-        return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
-    },
-    
-    ensureRendered: function() { // created on demand and cached
-		// tag: newText
-        if (this.ensureTextString() == null) return null;
-//        if (!this.textContent.rawNode.firstChild)  this.renderText(this.textTopLeft(), this.compositionWidth());
-        if (!this.lines)  this.renderText(this.textTopLeft(), this.compositionWidth());
-        return this.textContent; 
-    },
-
-    resetRendering: function() {
-		// tag: newText
-	this.textContent.replaceRawNodeChildren(null);
-	this.textContent.setFill(this.textColor);
-	this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
-	this.font.applyTo(this.textContent);
-	this.lines = null;
-	this.lineNumberHint = 0;
 	},
 
-    renderAfterReplacement: function(replacementHints) {
-	// tag: newText
-	// DI:  The entire text composition scheme here should be replaced by something simpler
-	// However, until that time, I have put in added logic to speed up editing in large bodies of text.
-	//	We look at the lines of text as follows...
-	//
-	//		A:  Lines preceding the replacement, and that are unchanged
-	//			Note that a preceding line can be affected if it has word-break spillover
-	//		B:  Lines following A, including the replacement, and up to C
-	//		C:  Lines following the replacement, and that are unchanged, except for Y-position
+	// TextMorph composition functions
+	textTopLeft: function() { 
+		if (!(this.padding instanceof Rectangle)) console.log('padding is ' + this.padding);
+		return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
+	},
+	
+	ensureRendered: function() { // created on demand and cached
+		// tag: newText
+		if (this.ensureTextString() == null) return null;
+//		  if (!this.textContent.rawNode.firstChild)	 this.renderText(this.textTopLeft(), this.compositionWidth());
+		if (!this.lines)  this.renderText(this.textTopLeft(), this.compositionWidth());
+		return this.textContent; 
+	},
 
-	if (Config.useOldText) return this.composeAfterEdits();  // In case of emergency
-	var test = false && this.textString.startsWith("P = new");  // Check out all the new logic in this case
-	if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
-	if (test) console.log("Last line y before = " + this.lines.last().topLeft.y);
+	resetRendering: function() {
+		// tag: newText
+		this.textContent.replaceRawNodeChildren(null);
+		this.textContent.setFill(this.textColor);
+		this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
+		this.font.applyTo(this.textContent);
+		this.lines = null;
+		this.lineNumberHint = 0;
+	},
 
-	// The hints tell what range of the prior text got replaced, and how large was the replacement
-	var selStart = replacementHints.selStart;  // JS substring convention: [1,2] means str[1] alone
-	var selStop = replacementHints.selStop;
-	var repLength = replacementHints.repLength;
-	var repStop = selStart + repLength;
-	var delta =  repLength - (selStop+1 - selStart);  // index in string after replacement rel to before
-	if (test) console.log(", selStart = " + selStart + ", selStop = " + selStop + ", repLength = " + repLength + ", repStop = " + repStop + ", delta = " + delta);
+	renderAfterReplacement: function(replacementHints) {
+		// tag: newText
+		// DI:	The entire text composition scheme here should be replaced by something simpler
+		// However, until that time, I have put in added logic to speed up editing in large bodies of text.
+		//	We look at the lines of text as follows...
+		//
+		//		A:	Lines preceding the replacement, and that are unchanged
+		//			Note that a preceding line can be affected if it has word-break spillover
+		//		B:	Lines following A, including the replacement, and up to C
+		//		C:	Lines following the replacement, and that are unchanged, except for Y-position
 
-	var compositionWidth = this.compositionWidth();
+		if (Config.useOldText) return this.composeAfterEdits();	 // In case of emergency
+		var test = false && this.textString.startsWith("P = new");	// Check out all the new logic in this case
+		if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
+		if (test) console.log("Last line y before = " + this.lines.last().topLeft.y);
 
-	// It is assumed that this textMorph is still fully rendered for the text prior to replacement
-	// Thus we can determine the lines affected by the change
-	var lastLineNoOfA = Math.max(this.lineNumberForIndex(selStart) - 1, -1);  // -1 means no lines in A
-	if (lastLineNoOfA >= 0 && !this.lines[lastLineNoOfA].endsWithNewLine()) lastLineNoOfA-- ;
-	if (test) console.log("Replacing from " + selStart + " in line " + this.lineNumberForIndex(selStart) + " preserving lines 0 through " + lastLineNoOfA);
+		// The hints tell what range of the prior text got replaced, and how large was the replacement
+		var selStart = replacementHints.selStart;  // JS substring convention: [1,2] means str[1] alone
+		var selStop = replacementHints.selStop;
+		var repLength = replacementHints.repLength;
+		var repStop = selStart + repLength;
+		var delta =	 repLength - (selStop+1 - selStart);  // index in string after replacement rel to before
+		if (test) console.log(", selStart = " + selStart + ", selStop = " + selStop + ", repLength = " + repLength + ", repStop = " + repStop + ", delta = " + delta);
 
-	var testEarlyEnd = function (lineStart) {
-		//  Brilliant test looks for lines that begin at the same character as lineStart, thus indicating
-		//  a line at which we can stop composing, and simply reuse the prior lines after updating
-		if (lineStart <= repStop) return false;  // Not beyond the replacement yet
-		var oldLineNo = this.lineNumberForIndex(lineStart - delta);  // --- do we need to check < 0 here?
-		if (oldLineNo < 0) return false;
-		var match = (this.lines[oldLineNo].startIndex + delta) == lineStart;
-		if (test) console.log("At index " + lineStart + ", earlyEnd returns " + match);
-		return match }
+		var compositionWidth = this.compositionWidth();
 
-    var oldFirstLine = this.lines[lastLineNoOfA+1];  // The first line that may change
-	// Note: do we need font at starting index??
-	var newLines = this.composeLines(oldFirstLine.startIndex, oldFirstLine.topLeft, compositionWidth, this.font, testEarlyEnd.bind(this));
-	for (var i = 0; i < newLines.length; i++) newLines[i].render(this.textContent);
-	if (test) console.log("Size of lines before = " + (lastLineNoOfA+1));
-	if (test) console.log("Size of new lines = " + newLines.length);
-	if (test) console.log("stopIndex = " + newLines.last().getStopIndex() + ", overall last = " + (this.textString.length-1));
+		// It is assumed that this textMorph is still fully rendered for the text prior to replacement
+		// Thus we can determine the lines affected by the change
+		var lastLineNoOfA = Math.max(this.lineNumberForIndex(selStart) - 1, -1);  // -1 means no lines in A
+		if (lastLineNoOfA >= 0 && !this.lines[lastLineNoOfA].endsWithNewLine()) lastLineNoOfA-- ;
+		if (test) console.log("Replacing from " + selStart + " in line " + this.lineNumberForIndex(selStart) + " preserving lines 0 through " + lastLineNoOfA);
 
-	var lastLineInB = newLines.last();
-	if (lastLineInB && lastLineInB.getStopIndex() < this.textString.length-1) {
-		//  Composition stopped before the end, presumably because of our brilliant test
-		var firstLineNoInC = this.lineNumberForIndex(lastLineInB.getNextStartIndex() - delta);
-		if (test) console.log("lineNumberForIndex(" + (lastLineInB.getNextStartIndex() - delta) + ") = " + firstLineNoInC);	
-		var firstLineInC = this.lines[firstLineNoInC];
-		var Ydelta = lastLineInB.topLeft.y + lastLineInB.lineHeight() - firstLineInC.topLeft.y;
-		if (test) console.log ("lastLineInB.topLeft.y / lastLineInB.lineHeight() / firstLineInC.topLeft.y");
-		if (test) console.log (lastLineInB.topLeft.y + " / " + lastLineInB.lineHeight() + " / " + firstLineInC.topLeft.y);
+		var testEarlyEnd = function (lineStart) {
+			//	Brilliant test looks for lines that begin at the same character as lineStart, thus indicating
+			//	a line at which we can stop composing, and simply reuse the prior lines after updating
+			if (lineStart <= repStop) return false;	 // Not beyond the replacement yet
+			var oldLineNo = this.lineNumberForIndex(lineStart - delta);	 // --- do we need to check < 0 here?
+			if (oldLineNo < 0) return false;
+			var match = (this.lines[oldLineNo].startIndex + delta) == lineStart;
+			if (test) console.log("At index " + lineStart + ", earlyEnd returns " + match);
+			return match 
+		}
 
-		//  Update the remaining old lines, adjusting indices and Y-values as well
-		for (var i = firstLineNoInC; i < this.lines.length; i++)
+		var oldFirstLine = this.lines[lastLineNoOfA+1];	 // The first line that may change
+		// Note: do we need font at starting index??
+		var newLines = this.composeLines(oldFirstLine.startIndex, oldFirstLine.topLeft, compositionWidth, this.font, testEarlyEnd.bind(this));
+		for (var i = 0; i < newLines.length; i++) newLines[i].render(this.textContent);
+		if (test) console.log("Size of lines before = " + (lastLineNoOfA+1));
+		if (test) console.log("Size of new lines = " + newLines.length);
+		if (test) console.log("stopIndex = " + newLines.last().getStopIndex() + ", overall last = " + (this.textString.length-1));
+
+		var lastLineInB = newLines.last();
+		if (lastLineInB && lastLineInB.getStopIndex() < this.textString.length-1) {
+			//	Composition stopped before the end, presumably because of our brilliant test
+			var firstLineNoInC = this.lineNumberForIndex(lastLineInB.getNextStartIndex() - delta);
+			if (test) console.log("lineNumberForIndex(" + (lastLineInB.getNextStartIndex() - delta) + ") = " + firstLineNoInC); 
+			var firstLineInC = this.lines[firstLineNoInC];
+			var Ydelta = lastLineInB.topLeft.y + lastLineInB.lineHeight() - firstLineInC.topLeft.y;
+			if (test) console.log ("lastLineInB.topLeft.y / lastLineInB.lineHeight() / firstLineInC.topLeft.y");
+			if (test) console.log (lastLineInB.topLeft.y + " / " + lastLineInB.lineHeight() + " / " + firstLineInC.topLeft.y);
+
+			//	Update the remaining old lines, adjusting indices and Y-values as well
+			for (var i = firstLineNoInC; i < this.lines.length; i++)
 			this.lines[i].adjustAfterEdits(this.textString, this.textStyle, delta, Ydelta);
-		if (test) console.log("Size of lines after = " + (this.lines.length-firstLineNoInC));
-		newLines = newLines.concat(this.lines.slice(firstLineNoInC));
-		//  Release rawNodes for the deleted lines (just up to firstLineNoInC)
-		for (var i = lastLineNoOfA+1; i < firstLineNoInC; i++)
+			if (test) console.log("Size of lines after = " + (this.lines.length-firstLineNoInC));
+			newLines = newLines.concat(this.lines.slice(firstLineNoInC));
+			//	Release rawNodes for the deleted lines (just up to firstLineNoInC)
+			for (var i = lastLineNoOfA+1; i < firstLineNoInC; i++)
 			this.lines[i].removeRawNodes();
-	} else {
-		//  Release rawNodes for the deleted lines (all beyond lastLineNoOfA)
-		for (var i = lastLineNoOfA+1; i < this.lines.length; i++)
+		} else {
+			//	Release rawNodes for the deleted lines (all beyond lastLineNoOfA)
+			for (var i = lastLineNoOfA+1; i < this.lines.length; i++)
 			this.lines[i].removeRawNodes();
-	}
-	//	Update the textString reference in lines retained before the replacement
-	for (var i = 0; i <= lastLineNoOfA; i++) 
+		}
+		//	Update the textString reference in lines retained before the replacement
+		for (var i = 0; i <= lastLineNoOfA; i++) 
 		this.lines[i].adjustAfterEdits(this.textString, this.textStyle, 0, 0);
 
-	this.lines = this.lines.slice(0, lastLineNoOfA+1).concat(newLines);
+		this.lines = this.lines.slice(0, lastLineNoOfA+1).concat(newLines);
 
-	if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
-	if (test) console.log("Last line y after = " + this.lines.last().topLeft.y);
+		if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
+		if (test) console.log("Last line y after = " + this.lines.last().topLeft.y);
 
-	this.bounds(null, true);  // Call bounds now to set fullBounds and avoid re-rendering
+		this.bounds(null, true);  // Call bounds now to set fullBounds and avoid re-rendering
 	},
 
+	ensureTextString: function() { 
+		// may be overrridden
+		return this.textString; 
+	}, 
 
-
-    ensureTextString: function() { 
-        // may be overrridden
-        return this.textString; 
-    }, 
-
-    // return the bounding rectangle for the index-th character in textString    
-    getCharBounds: function(index) {
+	// return the bounding rectangle for the index-th character in textString	 
+	getCharBounds: function(index) {
 		// tag: newText
-        this.ensureRendered();
-        if (this.lines) {
-            var line = this.lineForIndex(index);
-            // KP: note copy to avoid inadvertent modifications
-            return line == null ? null : line.getBounds(index).copy(); 
-        } else return null;
-    },
+		this.ensureRendered();
+		if (this.lines) {
+			var line = this.lineForIndex(index);
+			// KP: note copy to avoid inadvertent modifications
+			return line == null ? null : line.getBounds(index).copy(); 
+		} else return null;
+	},
 
-    // compose the lines if necessary and then render them
-    renderText: function(topLeft, compositionWidth) {
+	// compose the lines if necessary and then render them
+	renderText: function(topLeft, compositionWidth) {
 		// tag: newText
-	// Note:  This seems to be a spacer for one-line texts, as in a list of texts,
-	//    not an interline spacing for lines in a paragraph.
-	var defaultInterline = (lively.Text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
+		// Note:  This seems to be a spacer for one-line texts, as in a list of texts,
+		//	  not an interline spacing for lines in a paragraph.
+		var defaultInterline = (lively.Text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
 
-	this.lines = this.composeLines(0, topLeft.addXY(0, defaultInterline/2), compositionWidth, this.font);
-	for (var i = 0; i < this.lines.length; i++) this.lines[i].render(this.textContent);
-    },
+		this.lines = this.composeLines(0, topLeft.addXY(0, defaultInterline/2), compositionWidth, this.font);
+		for (var i = 0; i < this.lines.length; i++) this.lines[i].render(this.textContent);
+	},
 
-    composeLines: function(initialStartIndex, initialTopLeft, compositionWidth, font, testEarlyEnd) {
+	composeLines: function(initialStartIndex, initialTopLeft, compositionWidth, font, testEarlyEnd) {
 		// tag: newText
 		// compose and return in an array, lines in the text beginning at initialStartIndex
-//	console.log("composeLines(" + initialStartIndex + "): " + this.textString.substring(0,10) + "...");
-// if (this.textString.startsWith("funct") && initialStartIndex == 0) lively.lang.Execution.showStack();
+		//	console.log("composeLines(" + initialStartIndex + "): " + this.textString.substring(0,10) + "...");
+		// if (this.textString.startsWith("funct") && initialStartIndex == 0) lively.lang.Execution.showStack();
 		var lines = new Array();
 		var startIndex = initialStartIndex;
 		var stopIndex = this.textString.length - 1;
 		var chunkStream = new lively.Text.ChunkStream(this.textString, this.textStyle, startIndex);
 		var topLeft = initialTopLeft;
 		while (startIndex <= stopIndex) {
-			var line = new lively.Text.TextLine(this.textString, this.textStyle, startIndex, 
-							topLeft, font, new TextEmphasis({}));
+			var line = new lively.Text.TextLine(this.textString, this.textStyle, 
+				startIndex, topLeft, font, new TextEmphasis({}));
 			line.setTabWidth(this.tabWidth, this.tabsAsSpaces);
 			line.compose(compositionWidth, chunkStream);
 			line.adjustAfterComposition(this.textString, compositionWidth);
@@ -1385,10 +1384,11 @@ BoxMorph.subclass('TextMorph', {
 			if (testEarlyEnd && testEarlyEnd(startIndex)) break
 		}
 		return lines;
-    },
-lineNumberSearch: function(lineFunction) {
-        // A linear search, starting at the same place as last time.
-        if (!this.lines) return -1;
+	},
+
+	lineNumberSearch: function(lineFunction) {
+		// A linear search, starting at the same place as last time.
+		if (!this.lines) return -1;
 		var lineNo = this.lineNumberHint;
 		if (! lineNo || lineNo < 0 || lineNo >= this.lines.length) lineNo = 0;
 
@@ -1396,130 +1396,133 @@ lineNumberSearch: function(lineFunction) {
 			var test = lineFunction(this.lines[lineNo]);
 			if (test == 0) {this.lineNumberHint = lineNo;  return lineNo; }
 			if (test < 0) lineNo--;
-				else lineNo++;
+			else lineNo++;
 		}
 		return -1;
 	},
 
-
-    // find what line contains the index 'stringIndex'
-    lineNumberForIndex: function(stringIndex) {
+	// find what line contains the index 'stringIndex'
+	lineNumberForIndex: function(stringIndex) {
 		return this.lineNumberSearch( function(line) { return line.testForIndex(stringIndex); });	},
 
-    lineForIndex: function(stringIndex) {
-        return this.lines[this.lineNumberForIndex(stringIndex)];
-    },
+	lineForIndex: function(stringIndex) {
+		return this.lines[this.lineNumberForIndex(stringIndex)];
+	},
 
-    // find what line contains the y value in character metric space
-    lineNumberForY: function(y) {
-		return this.lineNumberSearch( function(line) { return line.testForY(y); });    },
-    lineForY: function(y) {
-        var i = this.lineNumberForY(y);
-	if (i < 0) return null;
-	return this.lines[i];
-    },
-    
-    hit: function(x, y) {
-        var line = this.lineForY(y);
-        return line == null ? -1 : line.indexForX(x); 
-    },
+	// find what line contains the y value in character metric space
+	lineNumberForY: function(y) {
+		return this.lineNumberSearch( function(line) { return line.testForY(y); });	   
+	},
 
-    setTabWidth: function(width, asSpaces) {
-        this.tabWidth = width;
-        this.tabsAsSpaces = asSpaces;
-    },
+	lineForY: function(y) {
+		var i = this.lineNumberForY(y);
+		if (i < 0) return null;
+		return this.lines[i];
+	},
+	
+	hit: function(x, y) {
+		var line = this.lineForY(y);
+		return line == null ? -1 : line.indexForX(x); 
+	},
 
-    compositionWidth: function() {
-	var padding = this.padding;
-        if (this.wrap == thisModule.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
-        else return 9999; // Huh??
-    },
+	setTabWidth: function(width, asSpaces) {
+		this.tabWidth = width;
+		this.tabsAsSpaces = asSpaces;
+	},
 
-    // DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
-    fitText: function() { 
-        if (this.wrap == thisModule.WrapStyle.Normal) this.fitHeight();
-        else this.fitWidth();
-    },
+	compositionWidth: function() {
+		var padding = this.padding;
+		if (this.wrap == thisModule.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
+		else return 9999; // Huh??
+	},
 
-    lineHeight: function() {
-	return this.font.getSize() * lively.Text.TextLine.prototype.lineHeightFactor;
-    },
+	// DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
+	fitText: function() { 
+		if (this.wrap == thisModule.WrapStyle.Normal) 
+			this.fitHeight();
+		else 
+			this.fitWidth();
+	},
 
-    fitHeight: function() { //Returns true iff height changes
-        // Wrap text to bounds width, and set height from total text height
-	if (!this.textString || this.textString.length <= 0) return;
-        var jRect = this.getCharBounds(this.textString.length - 1);
-    
-        if (jRect == null) { 
-            console.log("char bounds is null"); 
-            return; 
-        }
-        
-        // console.log('last char is ' + jRect.inspect() + ' for string ' + this.textString);
-        var maxY = Math.max(this.lineHeight(), jRect.maxY());
-    
-	var padding  = this.padding;
-        if (this.shape.bounds().maxY() == maxY + padding.top()) 
-            return; // No change in height  // *** check that this converges
-    
-        var bottomY = padding.top() + maxY;
-    
-        var oldBounds = this.shape.bounds();
-        this.shape.setBounds(oldBounds.withHeight(bottomY - oldBounds.y))
+	lineHeight: function() {
+		return this.font.getSize() * lively.Text.TextLine.prototype.lineHeightFactor;
+	},
 
-        this.adjustForNewBounds();
-    },
+	fitHeight: function() { //Returns true iff height changes
+		// Wrap text to bounds width, and set height from total text height
+		if (!this.textString || this.textString.length <= 0) return;
+		var jRect = this.getCharBounds(this.textString.length - 1);
 
-    fitWidth: function() {
-        // Set morph bounds based on max text width and height
-        
-        var jRect = this.getCharBounds(0);
-        if (jRect == null) { 
-            console.log("fitWidth failure on TextMorph.getCharBounds");
-            var s = this.shape;
-            s.setBounds(s.bounds().withHeight(this.lineHeight()));
-            return; 
-        }
-    
-        var x0 = jRect.x;
-        var y0 = jRect.y;
-        var maxX = jRect.maxX();  
-        var maxY = jRect.maxY();
-    
-        // DI: really only need to check last char before line breaks...
-        // ... and last character
-        var s = this.textString;
-        var iMax = s.length - 1;
-        for (var i = 0; i <= iMax; i++) {
-            var c = this.textString[Math.min(i+1, iMax)];
-            if (i == iMax || c == "\n" || c == "\r") {
-                jRect = this.getCharBounds(i);
-                if (jRect == null) { console.log("null bounds at char " + i); return false; }
-                if (jRect.width < 100) { // line break character gets extended to comp width
-                    maxX = Math.max(maxX, jRect.maxX());
-                    maxY = Math.max(maxY, jRect.maxY()); 
-                }
-            }
-        }
-        
-        // if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return;
-        // No change in width *** check convergence
-	var padding = this.padding;
-        var bottomRight = padding.topLeft().addXY(maxX,maxY);
+		if (jRect == null) { 
+			console.log("char bounds is null"); 
+			return; 
+		}
+
+		// console.log('last char is ' + jRect.inspect() + ' for string ' + this.textString);
+		var maxY = Math.max(this.lineHeight(), jRect.maxY());
+
+		var padding	 = this.padding;
+		if (this.shape.bounds().maxY() == maxY + padding.top()) 
+			return; // No change in height	// *** check that this converges
+
+		var bottomY = padding.top() + maxY;
+
+		var oldBounds = this.shape.bounds();
+		this.shape.setBounds(oldBounds.withHeight(bottomY - oldBounds.y))
+
+		this.adjustForNewBounds();
+	},
+
+	fitWidth: function() {
+		// Set morph bounds based on max text width and height
+
+		var jRect = this.getCharBounds(0);
+		if (jRect == null) { 
+			console.log("fitWidth failure on TextMorph.getCharBounds");
+			var s = this.shape;
+			s.setBounds(s.bounds().withHeight(this.lineHeight()));
+			return; 
+		}
+
+		var x0 = jRect.x;
+		var y0 = jRect.y;
+		var maxX = jRect.maxX();  
+		var maxY = jRect.maxY();
+
+		// DI: really only need to check last char before line breaks...
+		// ... and last character
+		var s = this.textString;
+		var iMax = s.length - 1;
+		for (var i = 0; i <= iMax; i++) {
+			var c = this.textString[Math.min(i+1, iMax)];
+			if (i == iMax || c == "\n" || c == "\r") {
+				jRect = this.getCharBounds(i);
+				if (jRect == null) { console.log("null bounds at char " + i); return false; }
+				if (jRect.width < 100) { // line break character gets extended to comp width
+					maxX = Math.max(maxX, jRect.maxX());
+					maxY = Math.max(maxY, jRect.maxY()); 
+				}
+			}
+		}
+
+		// if (this.innerBounds().width==(maxX-x0) && this.innerBounds().height==(maxY-y0)) return;
+		// No change in width *** check convergence
+		var padding = this.padding;
+		var bottomRight = padding.topLeft().addXY(maxX,maxY);
 
 
-        // DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
-	var b = this.shape.bounds();
-        if (this.wrap == thisModule.WrapStyle.None) {
-            this.shape.setBounds(b.withHeight(bottomRight.y - b.y));
-        } else if (this.wrap == thisModule.WrapStyle.Shrink) {
-            this.shape.setBounds(b.withBottomRight(bottomRight));
-        }
+		// DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
+		var b = this.shape.bounds();
+		if (this.wrap == thisModule.WrapStyle.None) {
+			this.shape.setBounds(b.withHeight(bottomRight.y - b.y));
+		} else if (this.wrap == thisModule.WrapStyle.Shrink) {
+			this.shape.setBounds(b.withBottomRight(bottomRight));
+		}
 
-    },
+	},
 
-    showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
-    
+	showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
+	
 	getTextSelection: function() {
 		if (!this.textSelection) {
 			this.initializeTextSelection();
@@ -1536,125 +1539,124 @@ lineNumberSearch: function(lineFunction) {
 	},
 
 	selectionStyle: function() {
-	// This is just a way into the lively.Text namespace; not an access to this selectionMorph
-	return TextSelectionMorph.prototype.style
+		// This is just a way into the lively.Text namespace; not an access to this selectionMorph
+		return TextSelectionMorph.prototype.style
 	},
-undrawSelection: function() {
+
+	undrawSelection: function() {
 		if (!this.textSelection) return
 		this.textSelection.undraw(); 
 	},
 
-
-    drawSelection: function(noScroll) { // should really be called buildSelection now
-        if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
-            return;
-        }
+	drawSelection: function(noScroll) { // should really be called buildSelection now
+		if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
+			return;
+		}
 
 		this.undrawSelection();
-        var selection = this.getTextSelection();
+		var selection = this.getTextSelection();
 
-        var jRect;
-        if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
-            jRect = this.getCharBounds(this.selectionRange[0]-1);
-            if (jRect) {
-                jRect = jRect.translatedBy(pt(jRect.width,0));
-            }
-        } else {
-            jRect = this.getCharBounds(this.selectionRange[0]);
-        }
-        
-        if (jRect == null) {
-	    if (this.textString.length > 0) {
-		// console.log("text box failure in drawSelection index = " + this.selectionRange[0] + "text is: " + this.textString.substring(0, Math.min(15,this.textString.length)) + '...'); 
-	    }
-			return;
-        }
-    
-        var r1 = this.lineRect(jRect.withWidth(1));
-        if (this.hasNullSelection()) {
-            var r2 = r1.translatedBy(pt(-1,0)); 
-        } else {
-            jRect = this.getCharBounds(this.selectionRange[1]);
-            if (jRect == null)  {
-			    return;
+		var jRect;
+		if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
+			jRect = this.getCharBounds(this.selectionRange[0]-1);
+			if (jRect) {
+				jRect = jRect.translatedBy(pt(jRect.width,0));
 			}
-            
-            var r2 = this.lineRect(jRect);
-            r2 = r2.translatedBy(pt(r2.width - 1, 0)).withWidth(1); 
-        }
-    
-        if (this.lineNo(r2) == this.lineNo(r1)) {
-            selection.addRectangle(r1.union(r2));
-        } else { // Selection is on two or more lines
-            var localBounds = this.shape.bounds();
-	    var padding = this.padding;
-            r1 = r1.withBottomRight(pt(localBounds.maxX() - padding.left(), r1.maxY()));
-            r2 = r2.withBottomLeft(pt(localBounds.x + padding.left(), r2.maxY()));
-            selection.addRectangle(r1);
-            selection.addRectangle(r2);
-       
-            if (this.lineNo(r2) != this.lineNo(r1) + 1) {
-                // Selection spans 3 or more lines; fill the block between top and bottom lines
-                selection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
-            }
-        }
+		} else {
+			jRect = this.getCharBounds(this.selectionRange[0]);
+		}
+
+		if (jRect == null) {
+			if (this.textString.length > 0) {
+				// console.log("text box failure in drawSelection index = " + this.selectionRange[0] + "text is: " + this.textString.substring(0, Math.min(15,this.textString.length)) + '...'); 
+			}
+			return;
+		}
+
+		var r1 = this.lineRect(jRect.withWidth(1));
+		if (this.hasNullSelection()) {
+			var r2 = r1.translatedBy(pt(-1,0)); 
+		} else {
+			jRect = this.getCharBounds(this.selectionRange[1]);
+			if (jRect == null)	{
+				return;
+			}
+
+			var r2 = this.lineRect(jRect);
+			r2 = r2.translatedBy(pt(r2.width - 1, 0)).withWidth(1); 
+		}
+
+		if (this.lineNo(r2) == this.lineNo(r1)) {
+			selection.addRectangle(r1.union(r2));
+		} else { // Selection is on two or more lines
+			var localBounds = this.shape.bounds();
+			var padding = this.padding;
+			r1 = r1.withBottomRight(pt(localBounds.maxX() - padding.left(), r1.maxY()));
+			r2 = r2.withBottomLeft(pt(localBounds.x + padding.left(), r2.maxY()));
+			selection.addRectangle(r1);
+			selection.addRectangle(r2);
+
+			if (this.lineNo(r2) != this.lineNo(r1) + 1) {
+				// Selection spans 3 or more lines; fill the block between top and bottom lines
+				selection.addRectangle(Rectangle.fromAny(r1.bottomRight(), r2.topLeft()));
+			}
+		}
 
 		// scrolling here can cause circularity with bounds calc
-	if (!noScroll) this.scrollSelectionIntoView();
-    },
-    
+		if (!noScroll) this.scrollSelectionIntoView();
+	},
 
-    lineNo: function(r) { //Returns the line number of a given rectangle
-        return this.lineNumberForY(r.center().y);
-   },
-    
-    lineRect: function(r) { //Returns a new rect aligned to text lines
-	var line = this.lines[Math.min(Math.max(this.lineNo(r), 0), this.lines.length - 1)];
-	return new Rectangle(r.x, line.getTopY() - line.interline()/2, r.width, line.lineHeight());
-    },
-    
-    charOfPoint: function(localP) {  //Sanitized hit function
-        // DI: Nearly perfect now except past last char if not EOL
-        // Note that hit(x,y) expects x,y to be in morph coordinates,
-        // but y should have 2 subtracted from it.
-        // Also getBnds(i) reports rectangles that need 2 added to their y values.
-        // GetBounds(i) returns -1 above and below the text bounds, and
-        // 0 right of the bounds, and leftmost character left of the bounds.
-        var tl = this.textTopLeft();
-        var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
-        var px = Math.min(px, this.innerBounds().maxX()-1); // nor right of bounds
-        var py = localP.y - 2;
-        var hit = this.hit(px, py);
-        var charIx = this.hit(px, py);
-        var len = this.textString.length;
-    
-        // hit(x,y) returns -1 above and below box -- return 1st char or past last
-        if (charIx < 0) return py < tl.y ? 0 : len;
-  
-        if (charIx == 0 && this.getCharBounds(len-1).topRight().lessPt(localP))
-            return len;
+	lineNo: function(r) { //Returns the line number of a given rectangle
+		return this.lineNumberForY(r.center().y);
+	},
+	
+	lineRect: function(r) { //Returns a new rect aligned to text lines
+		var line = this.lines[Math.min(Math.max(this.lineNo(r), 0), this.lines.length - 1)];
+		return new Rectangle(r.x, line.getTopY() - line.interline()/2, r.width, line.lineHeight());
+	},
+	
+	charOfPoint: function(localP) {	 //Sanitized hit function
+		// DI: Nearly perfect now except past last char if not EOL
+		// Note that hit(x,y) expects x,y to be in morph coordinates,
+		// but y should have 2 subtracted from it.
+		// Also getBnds(i) reports rectangles that need 2 added to their y values.
+		// GetBounds(i) returns -1 above and below the text bounds, and
+		// 0 right of the bounds, and leftmost character left of the bounds.
+		var tl = this.textTopLeft();
+		var px = Math.max(localP.x, tl.x); // ensure no returns of 0 left of bounds
+		var px = Math.min(px, this.innerBounds().maxX()-1); // nor right of bounds
+		var py = localP.y - 2;
+		var hit = this.hit(px, py);
+		var charIx = this.hit(px, py);
+		var len = this.textString.length;
 
-        // It's a normal character hit
-        // People tend to click on gaps rather than character centers...
-        var cRect = this.getCharBounds(charIx);
-        if (cRect != null && px > cRect.center().x) {
-            return Math.min(charIx + 1, len);
-        }
-        return charIx;
-    },
-    
-    // TextMorph mouse event functions 
-    handlesMouseDown: function(evt) {
-        // Do selecting if click is in selectable area
-        if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) return false;
-        var selectableArea = this.openForDragAndDrop ? this.innerBounds() : this.shape.bounds();
-	return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
-    },
+		// hit(x,y) returns -1 above and below box -- return 1st char or past last
+		if (charIx < 0) return py < tl.y ? 0 : len;
 
-    onMouseDown: function(evt) {
+		if (charIx == 0 && this.getCharBounds(len-1).topRight().lessPt(localP))
+			return len;
+
+		// It's a normal character hit
+		// People tend to click on gaps rather than character centers...
+		var cRect = this.getCharBounds(charIx);
+		if (cRect != null && px > cRect.center().x) {
+			return Math.min(charIx + 1, len);
+		}
+		return charIx;
+	},
+	
+	// TextMorph mouse event functions 
+	handlesMouseDown: function(evt) {
+		// Do selecting if click is in selectable area
+		if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) return false;
+		var selectableArea = this.openForDragAndDrop ? this.innerBounds() : this.shape.bounds();
+		return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
+	},
+
+	onMouseDown: function(evt) {
 		var link = this.linkUnderMouse(evt);
 		if (link && !evt.isCtrlDown()) { // there has to be a way to edit links!
-	        console.log("follow link")
+			console.log("follow link")
 			this.doLinkThing(evt, link);
 			return true;
 		}
@@ -1667,187 +1669,188 @@ undrawSelection: function() {
 			var charIx = this.charOfPoint(this.localize(evt.mousePoint));
 			this.startSelection(charIx);
 		}
-        this.requestKeyboardFocus(evt.hand);
-        return true; 
-    },
+		this.requestKeyboardFocus(evt.hand);
+		return true; 
+	},
 
-    onMouseMove: function($super, evt) {  
-        if (this.isSelecting) return this.extendSelectionEvt(evt);
-	if (this.linkUnderMouse(evt)) evt.hand.lookLinky();
+	onMouseMove: function($super, evt) {  
+		if (this.isSelecting) return this.extendSelectionEvt(evt);
+		if (this.linkUnderMouse(evt)) evt.hand.lookLinky();
 		else evt.hand.lookNormal();
-        return $super(evt);        
-    },
+		return $super(evt);		   
+	},
 
-    
-	linkUnderMouse: function(evt) {  
+	linkUnderMouse: function(evt) {	 
 		// Return null or a link encoded in the text
 		if (!this.textStyle) return null;
 		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-		return this.textStyle.valueAt(charIx).link;       
-    },
-    doLinkThing: function(evt, link) { 
-        // Later this should set a flag like isSelecting, so that we can highlight the 
-	// link during mouseDown and then act on mouseUp.
-	// For now, we just act on mouseDown
-        evt.hand.lookNormal();
+		return this.textStyle.valueAt(charIx).link;		  
+	},
+
+	doLinkThing: function(evt, link) { 
+		// Later this should set a flag like isSelecting, so that we can highlight the 
+		// link during mouseDown and then act on mouseUp.
+		// For now, we just act on mouseDown
+		evt.hand.lookNormal();
 		evt.hand.setMouseFocus(null);
-		evt.stop();  // else weird things happen when return from this link by browser back button
+		evt.stop();	 // else weird things happen when return from this link by browser back button
 
 		var url = URL.ensureAbsoluteURL(link);
-        // add require to LKWiki.js here
-        var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
-        if (wikiNav && wikiNav.isActive())
+		// add require to LKWiki.js here
+		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
+		if (wikiNav && wikiNav.isActive())
 			wikiNav.askToSaveAndNavigateToUrl(this.world());
-        else
-			this.world().confirm("Please confirm link to " + url.toString(),
-                function (answer) {
-                    Config.askBeforeQuit = false;
-                    window.location.assign(url.toString() + '?' + new Date().getTime());
-                }.bind(this));
-    },
-    
-    onMouseUp: function(evt) {
-        this.isSelecting = false;
-    
-        // If not a repeated null selection then done after saving previous selection
-        if ( (this.selectionRange[1] != this.selectionRange[0] - 1) ||
-            (this.priorSelection[1] != this.priorSelection[0] - 1) ||
-            (this.selectionRange[0] != this.priorSelection[0]) ) {
-		this.previousSelection = this.priorSelection;
-		return;
-	}
-        
-        // It is a null selection, repeated in the same place -- select word or range
-        if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
-            this.setSelectionRange(0, this.textString.length); 
-        } else {
-            this.selectionRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
-        }
-        
-        this.setSelection(this.getSelectionString());
-        this.drawSelection(); 
-    },
-    
-    // TextMorph text selection functions
-
-    startSelection: function(charIx) {  
-        // We hit a character, so start a selection...
-        // console.log('start selection @' + charIx);
-        this.priorSelection = this.selectionRange;
-        this.selectionPivot = charIx;
-        this.setNullSelectionAt(charIx);
-        
-        // KP: was this.world().worldState.keyboardFocus = this; but that's an implicitly defined prop in Transmorph, bug?
-        // KP: the following instead??
-        // this.world().firstHand().setKeyboardFocus(this);
-    },
-
-    extendSelectionEvt: function(evt) { 
-        var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-        // console.log('extend selection @' + charIx);
-        if (charIx < 0) return;
-        this.setSelectionRange(this.selectionPivot, charIx); 
-    },
-    
-    selectionString: function() { // Deprecated
-        return this.getSelectionString(); 
-    },
-    getSelectionString: function() {
-        return this.textString.substring(this.selectionRange[0], this.selectionRange[1] + 1); 
-    },
-    getSelectionText: function() {
-	return this.textStyle ? 
-	    this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
-	    : new thisModule.Text(this.getSelectionString());
-    },
-
-    // FIXME integrate into model of TextMorph
-    setRichText: function(text) {
-        if (!(text instanceof lively.Text.Text)) throw dbgOn(new Error('Not text'));
-        this.textStyle = text.style;
-        this.setTextString(text.string);
-    },
-    
-    getRichText: function() {
-        return new thisModule.Text(this.textString, this.textStyle); 
-    },
-
-    replaceSelectionWith: function(replacement) { 
-        if (! this.acceptInput) return;
-	var strStyle = this.textStyle;
-	var repStyle = replacement.style;
-	var oldLength = this.textString.length;
+		else
+		this.world().confirm("Please confirm link to " + url.toString(),
+		function (answer) {
+			Config.askBeforeQuit = false;
+			window.location.assign(url.toString() + '?' + new Date().getTime());
+		}.bind(this));
+	},
 	
-	if (! this.typingHasBegun) { // save info for 'More' command
-	    this.charsReplaced = this.getSelectionString();
-	    this.lastFindLoc = this.selectionRange[0] + replacement.length;
-	}
+	onMouseUp: function(evt) {
+		this.isSelecting = false;
 
-	var selStart = this.selectionRange[0];  // JS substring convention: [1,2] means str[1] alone
-	var selStop = this.selectionRange[1];
-	var repLength = replacement.asString().length;
-	var replacementHints = {selStart: selStart, selStop: selStop, repLength: repLength};
-	if (this.textString.length == 0) replacementHints = null;  // replacement logic fails in this case
+		// If not a repeated null selection then done after saving previous selection
+		if ( (this.selectionRange[1] != this.selectionRange[0] - 1) ||
+		(this.priorSelection[1] != this.priorSelection[0] - 1) ||
+		(this.selectionRange[0] != this.priorSelection[0]) ) {
+			this.previousSelection = this.priorSelection;
+			return;
+		}
 
-	// Splice the style array if any	
-	if (strStyle || repStyle) { 
-	    if (!strStyle) strStyle = new RunArray([oldLength],  [new TextEmphasis({})]);
-	    if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
-	    var beforeStyle = strStyle.slice(0, selStart);
-	    var afterStyle = strStyle.slice(selStop+1, oldLength);
-	    this.textStyle = beforeStyle.concat(repStyle).concat(afterStyle);
-	}		
-	if (this.textStyle && this.textStyle.values.all(function(ea) {return !ea})) this.textStyle = null;
+		// It is a null selection, repeated in the same place -- select word or range
+		if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
+			this.setSelectionRange(0, this.textString.length); 
+		} else {
+			this.selectionRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
+		}
 
-	// Splice the textString
-	var before = this.textString.substring(0,selStart); 
-	var after = this.textString.substring(selStop+1, oldLength);
-	this.setTextString(before.concat(replacement.asString(),after), replacementHints);
-
-        if(selStart == -1 && selStop == -1) {  // FixMe -- this shouldn't happen
-            this.setSelectionRange(0,0); // symptom fix of typing into a "very empty" string
-        };
+		this.setSelection(this.getSelectionString());
+		this.drawSelection(); 
+	},
 	
-	// Compute new selection, and display
-	var selectionIndex = this.selectionRange[0] + replacement.length;
-	this.setNullSelectionAt(selectionIndex); 
+	// TextMorph text selection functions
 
-	this.showChangeClue();		
-    },
+	startSelection: function(charIx) {	
+		// We hit a character, so start a selection...
+		// console.log('start selection @' + charIx);
+		this.priorSelection = this.selectionRange;
+		this.selectionPivot = charIx;
+		this.setNullSelectionAt(charIx);
 
-    setNullSelectionAt: function(charIx) { 
-        this.setSelectionRange(charIx, charIx); 
-    },
-    
-    hasNullSelection: function() { 
-        return this.selectionRange[1] < this.selectionRange[0]; 
-    },
+		// KP: was this.world().worldState.keyboardFocus = this; but that's an implicitly defined prop in Transmorph, bug?
+		// KP: the following instead??
+		// this.world().firstHand().setKeyboardFocus(this);
+	},
 
-    setSelectionRange: function(piv, ext) { 
-        this.selectionRange = (ext >= piv) ? [piv, ext - 1] : [ext, piv - 1];
-        this.setSelection(this.getSelectionString());
-        this.drawSelection(); 
+	extendSelectionEvt: function(evt) { 
+		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+		// console.log('extend selection @' + charIx);
+		if (charIx < 0) return;
+		this.setSelectionRange(this.selectionPivot, charIx); 
+	},
+	
+	selectionString: function() { // Deprecated
+		return this.getSelectionString(); 
+	},
+	
+	getSelectionString: function() {
+		return this.textString.substring(this.selectionRange[0], this.selectionRange[1] + 1); 
+	},
+	
+	getSelectionText: function() {
+		return this.textStyle ? 
+		this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
+		: new thisModule.Text(this.getSelectionString());
+	},
+
+	// FIXME integrate into model of TextMorph
+	setRichText: function(text) {
+		if (!(text instanceof lively.Text.Text)) throw dbgOn(new Error('Not text'));
+		this.textStyle = text.style;
+		this.setTextString(text.string);
+	},
+	
+	getRichText: function() {
+		return new thisModule.Text(this.textString, this.textStyle); 
+	},
+
+	replaceSelectionWith: function(replacement) { 
+		if (! this.acceptInput) return;
+		var strStyle = this.textStyle;
+		var repStyle = replacement.style;
+		var oldLength = this.textString.length;
+
+		if (! this.typingHasBegun) { // save info for 'More' command
+			this.charsReplaced = this.getSelectionString();
+			this.lastFindLoc = this.selectionRange[0] + replacement.length;
+		}
+
+		var selStart = this.selectionRange[0];	// JS substring convention: [1,2] means str[1] alone
+		var selStop = this.selectionRange[1];
+		var repLength = replacement.asString().length;
+		var replacementHints = {selStart: selStart, selStop: selStop, repLength: repLength};
+		if (this.textString.length == 0) replacementHints = null;  // replacement logic fails in this case
+
+		// Splice the style array if any	
+		if (strStyle || repStyle) { 
+			if (!strStyle) strStyle = new RunArray([oldLength],	 [new TextEmphasis({})]);
+			if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
+			var beforeStyle = strStyle.slice(0, selStart);
+			var afterStyle = strStyle.slice(selStop+1, oldLength);
+			this.textStyle = beforeStyle.concat(repStyle).concat(afterStyle);
+		}		
+		if (this.textStyle && this.textStyle.values.all(function(ea) {return !ea})) this.textStyle = null;
+
+		// Splice the textString
+		var before = this.textString.substring(0,selStart); 
+		var after = this.textString.substring(selStop+1, oldLength);
+		this.setTextString(before.concat(replacement.asString(),after), replacementHints);
+
+		if(selStart == -1 && selStop == -1) {  // FixMe -- this shouldn't happen
+			this.setSelectionRange(0,0); // symptom fix of typing into a "very empty" string
+		};
+
+		// Compute new selection, and display
+		var selectionIndex = this.selectionRange[0] + replacement.length;
+		this.setNullSelectionAt(selectionIndex); 
+
+		this.showChangeClue();		
+	},
+
+	setNullSelectionAt: function(charIx) { 
+		this.setSelectionRange(charIx, charIx); 
+	},
+	
+	hasNullSelection: function() { 
+		return this.selectionRange[1] < this.selectionRange[0]; 
+	},
+
+	setSelectionRange: function(piv, ext) { 
+		this.selectionRange = (ext >= piv) ? [piv, ext - 1] : [ext, piv - 1];
+		this.setSelection(this.getSelectionString());
+		this.drawSelection(); 
 	this.typingHasBegun = false;  // New selection starts new typing
-    },
+	},
 
-    // TextMorph keyboard event functions
-    takesKeyboardFocus: Functions.True,         // unlike, eg, cheapMenus
+	// TextMorph keyboard event functions
+	takesKeyboardFocus: Functions.True,			// unlike, eg, cheapMenus
+	
+	setHasKeyboardFocus: function(newSetting) { 
+		this.hasKeyboardFocus = newSetting;
+		return newSetting;
+	},
+	
+	onFocus: function($super, hand) { 
+		$super(hand);
+		this.drawSelection();
+	},
 
-    
-    setHasKeyboardFocus: function(newSetting) { 
-        this.hasKeyboardFocus = newSetting;
-        return newSetting;
-    },
-    
-    onFocus: function($super, hand) { 
-        $super(hand);
-        this.drawSelection();
-    },
-
-    onBlur: function($super, hand) {
-        $super(hand);
+	onBlur: function($super, hand) {
+		$super(hand);
 		if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
-    },
+	},
 
 	onKeyDown: function(evt) {
 		if (!this.acceptInput) return;
@@ -1867,7 +1870,7 @@ undrawSelection: function() {
 			if (selecting) textMorph.extendSelection(newPos);
 			else textMorph.startSelection(newPos);
 			evt.stop();
-            return true;
+			return true;
 		};
 		
 		switch (evt.getKeyCode()) {
@@ -1905,10 +1908,10 @@ undrawSelection: function() {
 				return moveCursor(newPos);
 			}
 			case Event.KEY_UP: {
-   	        	var lineNo = this.lineNumberForIndex(Math.min(pos, this.textString.length-1));
+				var lineNo = this.lineNumberForIndex(Math.min(pos, this.textString.length-1));
 				if (lineNo <= 0) { // cannot move up
 					evt.stop();
-		            return true;
+					return true;
 				}
 				var line = this.lines[lineNo];
 				var lineIndex = pos - line.startIndex;
@@ -1916,11 +1919,11 @@ undrawSelection: function() {
 				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
 				return moveCursor(newPos);
 			}
-        	case Event.KEY_DOWN: {
+			case Event.KEY_DOWN: {
 				var lineNo = this.lineNumberForIndex(pos);
 				if (lineNo >= this.lines.length - 1) { // cannot move down
 					evt.stop();
-		            return true;
+					return true;
 				}
 				var line = this.lines[lineNo];
 				if (!line) {
@@ -1928,15 +1931,15 @@ undrawSelection: function() {
 						evt.stop();
 						return true
 				}
-				var lineIndex = pos  - line.startIndex;
+				var lineIndex = pos	 - line.startIndex;
 				var newLine = this.lines[lineNo + 1];
 				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
 				return moveCursor(newPos);
 			}
 			case Event.KEY_TAB: {
-		    	this.replaceSelectionfromKeyboard("\t");
-		    	evt.stop();
-		    	return true;
+				this.replaceSelectionfromKeyboard("\t");
+				evt.stop();
+				return true;
 			}
 			case Event.KEY_BACKSPACE: {
 				// Backspace deletes current selection or prev character
@@ -1952,114 +1955,121 @@ undrawSelection: function() {
 			}
 		}
 
-        // have to process commands in keydown...
-        if (evt.isCommandKey()) {
-            if (this.processCommandKeys(evt)) { 
+		// have to process commands in keydown...
+		if (evt.isCommandKey()) {
+			if (this.processCommandKeys(evt)) { 
 				evt.stop();
 				return true;
-	    	} 
-        }
+			} 
+		}
 		return false;
-    },
-     
-    onKeyPress: function(evt) {
-        if (!this.acceptInput) return true;
+	},
+	 
+	onKeyPress: function(evt) {
+		if (!this.acceptInput) return true;
 
 		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
 			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
 			return;
 		};	
 		
-        // cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-        if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
-            //AltGr pressed
-            if (this.processCommandKeys(evt)) {
+		// cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
+		if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
+			//AltGr pressed
+			if (this.processCommandKeys(evt)) {
 		evt.stop();
 		return true;
-	    }
-        }  else if (/*!evt.isCommandKey() &&*/ !evt.isMetaDown()) {
-            this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
-            evt.stop(); // done
-	    return true;
-        }
+		}
+		}  else if (/*!evt.isCommandKey() &&*/ !evt.isMetaDown()) {
+			this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
+			evt.stop(); // done
+		return true;
+		}
 	return false;
-    },
-    
-    replaceSelectionfromKeyboard: function(replacement) {
-        if (!this.acceptInput) return;        
+	},
+	
+	replaceSelectionfromKeyboard: function(replacement) {
+		if (!this.acceptInput) return;		  
 
-        if (this.typingHasBegun)  this.charsTyped += replacement;
-        	else  this.charsTyped = replacement;
+		if (this.typingHasBegun)  this.charsTyped += replacement;
+			else  this.charsTyped = replacement;
 
 		this.replaceSelectionWith(replacement);
 		// Note:  typingHasBegun will get reset here by replaceSelection
 
-		this.typingHasBegun = true;  // For undo and select-all commands        
-    },
-    
-    doCut: function() {
-	TextMorph.clipboardString = this.getSelectionString(); 
-        this.replaceSelectionWith("");
-    },
-    doCopy: function() {
-	TextMorph.clipboardString = this.getSelectionString(); 
-    },
-    doPaste: function() {
-        if (TextMorph.clipboardString) this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
-    },
-
-    doSelectAll: function(fromKeyboard) {
-        if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
-	    this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
-	} else { // Select All
-            this.setSelectionRange(0, this.textString.length); 
-	}
-    },
-    doMore: function() {
-        if (this.charsReplaced) {
-	    this.searchForFind(this.charsReplaced, this.selectionRange[0]);
-	    if (this.getSelectionString() != this.charsReplaced) return;
-	    var holdChars = this.charsReplaced;  // Save charsReplaced
-	    this.replaceSelectionWith(this.charsTyped); 
-	    this.charsReplaced = holdChars ;  // Restore charsReplaced after above
-	}
-    },
-    doExchange: function() {
-	var sel1 = this.selectionRange;
-	var sel2 = this.previousSelection;
-
-	var d = 1;  // direction current selection will move
-	if (sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
-	if (sel1[1] >= sel2[0]) return; // ranges must not overlap
+		this.typingHasBegun = true;	 // For undo and select-all commands		
+	},
 	
-	var fullText = (this.textStyle) ? this.getRichText() : this.textString;
-	var txt1 = fullText.substring(sel1[0], sel1[1]+1);
-	var txt2 = fullText.substring(sel2[0], sel2[1]+1);
-	var between = fullText.substring(sel1[1]+1, sel2[0]);
+	doCut: function() {
+		TextMorph.clipboardString = this.getSelectionString(); 
+		this.replaceSelectionWith("");
+	},
+
+	doCopy: function() {
+		TextMorph.clipboardString = this.getSelectionString(); 
+	},
+
+	doPaste: function() {
+		if (TextMorph.clipboardString) this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
+	},
+
+	doSelectAll: function(fromKeyboard) {
+		if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
+			this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
+		} else { // Select All
+			this.setSelectionRange(0, this.textString.length); 
+		}
+	},
+
+	doMore: function() {
+		if (this.charsReplaced) {
+			this.searchForFind(this.charsReplaced, this.selectionRange[0]);
+			if (this.getSelectionString() != this.charsReplaced) return;
+			var holdChars = this.charsReplaced;	 // Save charsReplaced
+			this.replaceSelectionWith(this.charsTyped); 
+			this.charsReplaced = holdChars ;  // Restore charsReplaced after above
+		}
+	},
+
+	doExchange: function() {
+		var sel1 = this.selectionRange;
+		var sel2 = this.previousSelection;
+
+		var d = 1;	// direction current selection will move
+		if (sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
+		if (sel1[1] >= sel2[0]) return; // ranges must not overlap
+
+		var fullText = (this.textStyle) ? this.getRichText() : this.textString;
+		var txt1 = fullText.substring(sel1[0], sel1[1]+1);
+		var txt2 = fullText.substring(sel2[0], sel2[1]+1);
+		var between = fullText.substring(sel1[1]+1, sel2[0]);
+
+		var d1 = (txt2.size() + between.size());  // amount to move sel1
+		var d2 = (txt1.size() + between.size());  // amount to move sel2
+		var newSel = [sel1[0]+d1, sel1[1]+d1];
+		var newPrev = [sel2[0]-d2, sel2[1]-d2];
+		if (d < 0) { var t = newSel;  newSel = newPrev;	 newPrev = t; }
+		var replacement = txt2.concat(between.concat(txt1));
+		this.setSelectionRange(sel1[0], sel2[1]+1);	 // select range including both selections
+		this.replaceSelectionWith(replacement);	 // replace by swapped text
+		this.setSelectionRange(newSel[0], newSel[1]+1);
+		this.previousSelection = newPrev;
+		this.undoSelectionRange = d>0 ? sel1 : sel2;
+	},
+
+	doFind: function() {
+		this.world().prompt("Enter the text you wish to find...", 
+			function(response) {
+				return this.searchForFind(response, this.selectionRange[1]);
+			}.bind(this));
+	},
+
+	doFindNext: function() {
+		if (this.lastSearchString)
+		this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
+	},
 	
-	var d1 = (txt2.size() + between.size());  // amount to move sel1
-	var d2 = (txt1.size() + between.size());  // amount to move sel2
-	var newSel = [sel1[0]+d1, sel1[1]+d1];
-	var newPrev = [sel2[0]-d2, sel2[1]-d2];
-	if (d < 0) { var t = newSel;  newSel = newPrev;  newPrev = t; }
-	var replacement = txt2.concat(between.concat(txt1));
-	this.setSelectionRange(sel1[0], sel2[1]+1);  // select range including both selections
-	this.replaceSelectionWith(replacement);  // replace by swapped text
-	this.setSelectionRange(newSel[0], newSel[1]+1);
-	this.previousSelection = newPrev;
-	this.undoSelectionRange = d>0 ? sel1 : sel2;
-    },
-    doFind: function() {
-        this.world().prompt("Enter the text you wish to find...",
-			    function(response)
-			    {return this.searchForFind(response, this.selectionRange[1]); }
-			    .bind(this));
-    },
-    doFindNext: function() {
-        if (this.lastSearchString)
-	    this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
-    },
-    doSearch: function() {
+	doSearch: function() {
 		var whatToSearch = this.getSelectionString();
 		if (lively.Tools.SourceControl) {
 			lively.Tools.SourceControl.browseReferencesTo(whatToSearch);
@@ -2088,156 +2098,166 @@ undrawSelection: function() {
 			new SimpleInspector(inspectee).openIn(this.world(), this.world().hands.first().getPosition())
 	},
 	
-    doDoit: function() {
-        var strToEval = this.getSelectionString(); 
-        if (strToEval.length == 0)
-            strToEval = this.pvtCurrentLineString();
-        this.tryBoundEval(strToEval);
-    },
-    // eval selection or current line if selection is emtpy
-    doPrintit: function() {
-	var strToEval = this.getSelectionString();
-	if (strToEval.length == 0)
-	    strToEval = this.pvtCurrentLineString();
-	this.setNullSelectionAt(this.selectionRange[1] + 1);
-	var prevSelection = this.selectionRange[0];
-	var result = "" + this.tryBoundEval(strToEval);
-	isPrintIt=true;
-	this.replaceSelectionWith(" " + result);
-	this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
-    },
-    doSave: function() {
-        this.saveContents(this.textString); 
+	doDoit: function() {
+		var strToEval = this.getSelectionString(); 
+		if (strToEval.length == 0)
+			strToEval = this.pvtCurrentLineString();
+		this.tryBoundEval(strToEval);
+	},
+
+	// eval selection or current line if selection is emtpy
+	doPrintit: function() {
+		var strToEval = this.getSelectionString();
+		if (strToEval.length == 0)
+			strToEval = this.pvtCurrentLineString();
+		this.setNullSelectionAt(this.selectionRange[1] + 1);
+		var prevSelection = this.selectionRange[0];
+		var result = "" + this.tryBoundEval(strToEval);
+		isPrintIt=true;
+		this.replaceSelectionWith(" " + result);
+		this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
+	},
+
+	doSave: function() {
+		this.saveContents(this.textString); 
 		this.hideChangeClue();
-    },
-    tryBoundEval: function (str) {
-	var result;
-	try { result = this.boundEval(str); }
-	catch (e) { this.world().alert("exception " + e); }
-	return result;
-    },
-    doHelp: function() {
-	WorldMorph.current().notify("Help is on the way...\n" +
-				    "...but not today.");
-    },
-    doUndo: function() {
-	if (this.undoTextString) {
-            var t = this.selectionRange;
-	    this.selectionRange = this.undoSelectionRange;
-	    this.undoSelectionRange = t;
-            t = this.textString;
-	    this.setTextString(this.undoTextString);
-	    this.undoTextString = t;
-	}
-	if (this.undoTextStyle) {
-            t = this.textStyle;
-	    this.textStyle = this.undoTextStyle;
-	    this.undoTextStyle = t;
-	}
-    },
-    processCommandKeys: function(evt) {  //: Boolean (was the command processed?)
-	var key = evt.getKeyChar();
-	// console.log('command ' + key);
+	},
 
-	// ARRGH FIXME
-	if (key == 'I' && evt.isShiftDown()) {
-		this.doInspect(); return true; // Inspect
-	};
+	tryBoundEval: function (str) {
+		var result;
+		try { result = this.boundEval(str); }
+		catch (e) { this.world().alert("exception " + e); }
+		return result;
+	},
 
-	if (key) key = key.toLowerCase();
-        switch (key) {
-	case "a": { this.doSelectAll(true); return true; } // SelectAll
-	case "x": { this.doCut(); return true; } // Cut
-	case "c": { this.doCopy(); return true; } // Copy
-	case "v": { this.doPaste(); return true; } // Paste
-	case "m": { this.doMore(); return true; } // More (repeat replacement)
-	case "e": { this.doExchange(); return true; } // Exchange
-	case "f": { this.doFind(); return true; } // Find
-	case "g": { this.doFindNext(); return true; } // Find aGain
-	case "w": { this.doSearch(); return true; } // Where (search in system source code)
-	case "d": { this.doDoit(); return true; } // Doit
-	case "p": { this.doPrintit(); return true; } // Printit
-	case "s": { this.doSave(); return true; } // Save
-            
-            // Typeface
-	case "b": { this.emphasizeBoldItalic({style: 'bold'}); return true; }
- 	case "i": { this.emphasizeBoldItalic({style: 'italic'}); return true; }
-	    
-	    // Font Size
-	// rk: prevents curly/square brackets on german keyboards
-        // case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
-        // case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
-        // case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
-        // case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
-        // case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
-	    
-	    // Text Alignment
-	case "l": { this.emphasizeSelection({align: 'left'}); return true; }
-	case "r": { this.emphasizeSelection({align: 'right'}); return true; }
-	case "h": { this.emphasizeSelection({align: 'center'}); return true; }
-	case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
+	doHelp: function() {
+		WorldMorph.current().notify("Help is on the way...\n" +
+		"...but not today.");
+	},
 
- 	case "u": { this.linkifySelection(evt); return true; }  // add link attribute
- 	case "o": { this.colorSelection(evt); return true; }  // a bit of local color
-	    
-	case "z": { this.doUndo(); return true; }  // Undo
-        }
-        
-        // Font Size
-        switch(evt.getKeyCode()) {
-        case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.fontSize*=0.8).roundTo(1)}); return true; }
-        case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.fontSize*=1.2).roundTo(1)}); return true; }
-        }
-        
-	//if (evt.type == "KeyPress") {
-        var bracketIndex = this.locale.charSet.leftBrackets.indexOf(key);
-	
-        if (bracketIndex >= 0) {
-	    this.addOrRemoveBrackets(bracketIndex); 
-	    return true;
-        } 
-	//}
-        return false;
-    },
-    linkifySelection: function(emph) {
-        this.world().prompt("Enter the link you wish to find...",
-			    function(response) {
-			        /*if (!response.startsWith('http://'))
+	doUndo: function() {
+		if (this.undoTextString) {
+			var t = this.selectionRange;
+			this.selectionRange = this.undoSelectionRange;
+			this.undoSelectionRange = t;
+			t = this.textString;
+			this.setTextString(this.undoTextString);
+			this.undoTextString = t;
+		}
+		if (this.undoTextStyle) {
+			t = this.textStyle;
+			this.textStyle = this.undoTextStyle;
+			this.undoTextStyle = t;
+		}
+	},
+
+	processCommandKeys: function(evt) {	 //: Boolean (was the command processed?)
+		var key = evt.getKeyChar();
+		// console.log('command ' + key);
+
+		// ARRGH FIXME
+		if (key == 'I' && evt.isShiftDown()) {
+			this.doInspect(); return true; // Inspect
+		};
+
+		if (key) key = key.toLowerCase();
+		switch (key) {
+			case "a": { this.doSelectAll(true); return true; } // SelectAll
+			case "x": { this.doCut(); return true; } // Cut
+			case "c": { this.doCopy(); return true; } // Copy
+			case "v": { this.doPaste(); return true; } // Paste
+			case "m": { this.doMore(); return true; } // More (repeat replacement)
+			case "e": { this.doExchange(); return true; } // Exchange
+			case "f": { this.doFind(); return true; } // Find
+			case "g": { this.doFindNext(); return true; } // Find aGain
+			case "w": { this.doSearch(); return true; } // Where (search in system source code)
+			case "d": { this.doDoit(); return true; } // Doit
+			case "p": { this.doPrintit(); return true; } // Printit
+			case "s": { this.doSave(); return true; } // Save
+
+			// Typeface
+			case "b": { this.emphasizeBoldItalic({style: 'bold'}); return true; }
+			case "i": { this.emphasizeBoldItalic({style: 'italic'}); return true; }
+
+			// Font Size
+			// rk: prevents curly/square brackets on german keyboards
+			// case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
+			// case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
+			// case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
+			// case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
+			// case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
+
+			// Text Alignment
+			case "l": { this.emphasizeSelection({align: 'left'}); return true; }
+			case "r": { this.emphasizeSelection({align: 'right'}); return true; }
+			case "h": { this.emphasizeSelection({align: 'center'}); return true; }
+			case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
+
+			case "u": { this.linkifySelection(evt); return true; }	// add link attribute
+			case "o": { this.colorSelection(evt); return true; }  // a bit of local color
+
+			case "z": { this.doUndo(); return true; }  // Undo
+		}
+
+		// Font Size
+		switch(evt.getKeyCode()) {
+			case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.fontSize*=0.8).roundTo(1)}); return true; }
+			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.fontSize*=1.2).roundTo(1)}); return true; }
+		}
+
+		//if (evt.type == "KeyPress") {
+		var bracketIndex = this.locale.charSet.leftBrackets.indexOf(key);
+
+		if (bracketIndex >= 0) {
+			this.addOrRemoveBrackets(bracketIndex); 
+			return true;
+		} 
+		//}
+		return false;
+	},
+
+	linkifySelection: function(emph) {
+		this.world().prompt("Enter the link you wish to find...",
+				function(response) {
+					/*if (!response.startsWith('http://'))
 						response = URL.source.notSvnVersioned().withFilename(response).toString();*/
-			        this.emphasizeSelection( {color: "blue", link: response} );
-			    }.bind(this));
-    },
-    colorSelection: function(evt) {
-	var colors = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'gray', 'white'];
-	var items = colors.map( function(c) {return [c, this, "setSelectionColor", c] }.bind(this));
-	new MenuMorph(items, this).openIn(this.world(), evt.hand.position(), false, "Choose a color for this selection");
-    },
-    setSelectionColor: function(c, evt) {
-	// Color parameter can be a string like 'red' or an actual color
-	var color = c;
-	if (c == 'brown') color = Color.orange.darker();
-	if (c == 'violet') color = Color.magenta;
-	if (c == 'gray') color = Color.darkGray;
-	this.emphasizeSelection( {color: color} );
-        this.requestKeyboardFocus(evt.hand);
-    },
-    pvtCurrentLineString: function() {
-        var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
-        if (lineNumber == -1) lineNumber = 0; 
-        var line = this.lines[lineNumber];
-        return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));      
-    },
-    
-    //     setFill: function(fill) {
-    // this.shape.setFill(fill);
-    //      },
+					this.emphasizeSelection( {color: "blue", link: response} );
+				}.bind(this));
+	},
+
+	colorSelection: function(evt) {
+		var colors = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'gray', 'white'];
+		var items = colors.map( function(c) {return [c, this, "setSelectionColor", c] }.bind(this));
+		new MenuMorph(items, this).openIn(this.world(), evt.hand.position(), false, "Choose a color for this selection");
+	},
+
+	setSelectionColor: function(c, evt) {
+		// Color parameter can be a string like 'red' or an actual color
+		var color = c;
+		if (c == 'brown') color = Color.orange.darker();
+		if (c == 'violet') color = Color.magenta;
+		if (c == 'gray') color = Color.darkGray;
+		this.emphasizeSelection( {color: color} );
+		this.requestKeyboardFocus(evt.hand);
+	},
+
+	pvtCurrentLineString: function() {
+		var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
+		if (lineNumber == -1) lineNumber = 0; 
+		var line = this.lines[lineNumber];
+		return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));		 
+	},
+	
+	// setFill: function(fill) {
+	//    this.shape.setFill(fill);
+	// },
 });
 
 TextMorph.addMethods({
 	
 	extendSelection: function(charIx) {
 		if (charIx < 0) return;
-        this.setSelectionRange(this.selectionPivot, charIx);
+		this.setSelectionRange(this.selectionPivot, charIx);
 	},
 
 	getCursorPos: function() {
@@ -2256,17 +2276,17 @@ TextMorph.addMethods({
 });
 
 Object.extend(TextMorph, {
-    
-    fromLiteral: function(literal) {
-	var morph = new TextMorph(new Rectangle(0,0,0,0), literal.content || "");
-	literal.textColor && morph.setTextColor(literal.textColor);
-	literal.label && morph.beLabel();
-	return morph;
-    }
+	
+	fromLiteral: function(literal) {
+		var morph = new TextMorph(new Rectangle(0,0,0,0), literal.content || "");
+		literal.textColor && morph.setTextColor(literal.textColor);
+		literal.label && morph.beLabel();
+		return morph;
+	}
 
 
 });
-    
+	
 TextMorph.addMethods({ // change clue additions
 
 	addChangeClue: function(useChangeClue) {
@@ -2297,44 +2317,46 @@ TextMorph.addMethods({ // change clue additions
 // TextMorph accessor functions
 TextMorph.addMethods({
 
-    emphasizeSelection: function(emph) {
-	if (this.hasNullSelection()) return;
-	var txt = new thisModule.Text(this.textString, this.textStyle);
-	txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);
-	this.textStyle = txt.style;
-	// console.log("emphasizeSelection result: " + this.textStyle);
-	this.composeAfterEdits();
-    },
-    emphasizeBoldItalic: function(emph) {
-	// Second assertion of bold or italic *undoes* that emphasis in the current selection
-	if (this.hasNullSelection()) return;
-	var currentEmphasis = this.getSelectionText().style.values[0];  // at first char
-	if (currentEmphasis.style == null) return this.emphasizeSelection(emph);
-	if (emph.style == 'bold' && currentEmphasis.style.startsWith('bold')) return this.emphasizeSelection({style: 'unbold'});
-	if (emph.style == 'italic' && currentEmphasis.style.endsWith('italic')) return this.emphasizeSelection({style: 'unitalic'});
-	this.emphasizeSelection(emph);
-    },
-    pvtUpdateTextString: function(replacement, replacementHints) {
-	// tag: newText
-	// Note:  -delayComposition- is now ignored everyhere
-        replacement = replacement || "";    
-	if(!this.typingHasBegun) { 
-            // Mark for undo, but not if continuation of type-in
-	    this.undoTextString = this.textString;
-	    this.undoSelectionRange = this.selectionRange;
-	    if (this.textStyle) this.undoTextStyle = this.textStyle.clone();
-	}
-	// DI: Might want to put the maxSafeSize test in clients
-	dbgOn(!replacement.truncate);
-        this.textString = replacement.truncate(this.maxSafeSize);
-        this.composeAfterEdits(replacementHints);
-    },
-    
-    composeAfterEdits: function(replacementHints) {
+	emphasizeSelection: function(emph) {
+		if (this.hasNullSelection()) return;
+		var txt = new thisModule.Text(this.textString, this.textStyle);
+		txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);
+		this.textStyle = txt.style;
+		// console.log("emphasizeSelection result: " + this.textStyle);
+		this.composeAfterEdits();
+	},
+
+	emphasizeBoldItalic: function(emph) {
+		// Second assertion of bold or italic *undoes* that emphasis in the current selection
+		if (this.hasNullSelection()) return;
+		var currentEmphasis = this.getSelectionText().style.values[0];	// at first char
+		if (currentEmphasis.style == null) return this.emphasizeSelection(emph);
+		if (emph.style == 'bold' && currentEmphasis.style.startsWith('bold')) return this.emphasizeSelection({style: 'unbold'});
+		if (emph.style == 'italic' && currentEmphasis.style.endsWith('italic')) return this.emphasizeSelection({style: 'unitalic'});
+		this.emphasizeSelection(emph);
+	},
+
+	pvtUpdateTextString: function(replacement, replacementHints) {
+		// tag: newText
+		// Note:  -delayComposition- is now ignored everyhere
+		replacement = replacement || "";	
+		if(!this.typingHasBegun) { 
+			// Mark for undo, but not if continuation of type-in
+			this.undoTextString = this.textString;
+			this.undoSelectionRange = this.selectionRange;
+			if (this.textStyle) this.undoTextStyle = this.textStyle.clone();
+		}
+		// DI: Might want to put the maxSafeSize test in clients
+		dbgOn(!replacement.truncate);
+		this.textString = replacement.truncate(this.maxSafeSize);
+		this.composeAfterEdits(replacementHints);
+	},
+	
+	composeAfterEdits: function(replacementHints) {
 		// tag: newText
 		var oneLiner = (this.lines == null) || (this.lines.length <= 1)
 
-		// this.changed();  // Needed to invalidate old bounds in canvas
+		// this.changed();	// Needed to invalidate old bounds in canvas
 		// But above causes too much to happen; instead just do...
 		this.invalidRect(this.innerBounds());  // much faster
 
@@ -2343,158 +2365,157 @@ TextMorph.addMethods({
 		// Note: renderAfterReplacement will call bounds pre-emptively to avoid re-rendering
 		if (replacementHints) this.renderAfterReplacement(replacementHints);
 			else this.lines = null;
-		this.changed();  // will cause bounds to be called, and hence re-rendering
+		this.changed();	 // will cause bounds to be called, and hence re-rendering
 		if (oneLiner) this.bounds();  // Force a redisplay
-    },
-    
-    saveContents: function(contentString) {    
-        if (!this.modelPlug && !this.formalModel) {
-	    // FIXME: remove hack
-            eval(contentString); 
-            this.world().changed(); 
-            return; // Hack for browser demo
-        } else if (!this.autoAccept) {
-            this.setText(contentString, true);
-       }
-    },
-    acceptChanges: function() {    
-	    this.textBeforeChanges = this.textString; 
-    },
-    
-    boundEval: function(str) {    
-        // Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
-        var ctx = this.getDoitContext() || this;
-        return (interactiveEval.bind(ctx))(str);
-    },
-    
-    addOrRemoveBrackets: function(bracketIndex) {
-        var left = this.locale.charSet.leftBrackets[bracketIndex];
-        var right = this.locale.charSet.rightBrackets[bracketIndex];
-        
-        if (bracketIndex == 0) { left = "/*"; right = "*/"; }
-    
-        var i1 = this.selectionRange[0];
-        var i2 = this.selectionRange[1];
-        
-        if (i1 - left.length >= 0 && this.textString.substring(i1-left.length,i1) == left &&
-            i2 + right.length < this.textString.length && this.textString.substring(i2+1,i2+right.length+1) == right) {
-            // selection was already in brackets -- remove them
-            var before = this.textString.substring(0,i1-left.length);
-            var replacement = this.textString.substring(i1,i2+1);
-            var after = this.textString.substring(i2+right.length+1,this.textString.length);
-            this.setTextString(before.concat(replacement,after));
-            this.setSelectionRange(before.length,before.length+replacement.length); 
-        } else { // enclose selection in brackets
-            var before = this.textString.substring(0,i1);
-            var replacement = this.textString.substring(i1,i2+1);
-            var after = this.textString.substring(i2+1,this.textString.length); 
-            this.setTextString(before.concat(left,replacement,right,after));
-            this.setSelectionRange(before.length+left.length,before.length+left.length+replacement.length); 
-        }
-    },
-    
-    getFontFamily: function() {
-        return this.font.getFamily();
-    },
-    
-    setFontFamily: function(familyName) {
-        this.fontFamily = familyName;
-        this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
-        this.layoutChanged();
-        this.changed();
-    },
-    
-    getFontSize: function() { return this.fontSize; },
+	},
+	
+	saveContents: function(contentString) {	   
+		if (!this.modelPlug && !this.formalModel) {
+		// FIXME: remove hack
+			eval(contentString); 
+			this.world().changed(); 
+			return; // Hack for browser demo
+		} else if (!this.autoAccept) {
+			this.setText(contentString, true);
+	   }
+	},
 
-    setFontSize: function(newSize) {
-	if (newSize == this.fontSize && this.font)  // make sure this.font is inited
-	    return;
-        this.fontSize = newSize;
-        this.font = thisModule.Font.forFamily(this.fontFamily, newSize);
-        this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
-        this.layoutChanged();
-        this.changed();
-    },
-    
-    setTextString: function(replacement, replacementHints) {
-        if (Object.isString(replacement)) replacement = String(replacement); 
-        if (this.autoAccept) this.setText(replacement);
-        this.pvtUpdateTextString(replacement, replacementHints); 
-    },
-    
-    updateTextString: function(newStr) {
-        this.pvtUpdateTextString(newStr);
-	this.resetScrollPane(); 
-    },
-    
-    resetScrollPane: function() {
-        var sp = this.enclosingScrollPane();
+	acceptChanges: function() {	   
+		this.textBeforeChanges = this.textString; 
+	},
+	
+	boundEval: function(str) {	  
+		// Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
+		var ctx = this.getDoitContext() || this;
+		return (interactiveEval.bind(ctx))(str);
+	},
+	
+	addOrRemoveBrackets: function(bracketIndex) {
+		var left = this.locale.charSet.leftBrackets[bracketIndex];
+		var right = this.locale.charSet.rightBrackets[bracketIndex];
+		
+		if (bracketIndex == 0) { left = "/*"; right = "*/"; }
+	
+		var i1 = this.selectionRange[0];
+		var i2 = this.selectionRange[1];
+		
+		if (i1 - left.length >= 0 && this.textString.substring(i1-left.length,i1) == left &&
+			i2 + right.length < this.textString.length && this.textString.substring(i2+1,i2+right.length+1) == right) {
+			// selection was already in brackets -- remove them
+			var before = this.textString.substring(0,i1-left.length);
+			var replacement = this.textString.substring(i1,i2+1);
+			var after = this.textString.substring(i2+right.length+1,this.textString.length);
+			this.setTextString(before.concat(replacement,after));
+			this.setSelectionRange(before.length,before.length+replacement.length); 
+		} else { // enclose selection in brackets
+			var before = this.textString.substring(0,i1);
+			var replacement = this.textString.substring(i1,i2+1);
+			var after = this.textString.substring(i2+1,this.textString.length); 
+			this.setTextString(before.concat(left,replacement,right,after));
+			this.setSelectionRange(before.length+left.length,before.length+left.length+replacement.length); 
+		}
+	},
+	
+	getFontFamily: function() {
+		return this.font.getFamily();
+	},
+	
+	setFontFamily: function(familyName) {
+		this.fontFamily = familyName;
+		this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
+		this.layoutChanged();
+		this.changed();
+	},
+	
+	getFontSize: function() { return this.fontSize; },
+
+	setFontSize: function(newSize) {
+		if (newSize == this.fontSize && this.font)	// make sure this.font is inited
+			return;
+		this.fontSize = newSize;
+		this.font = thisModule.Font.forFamily(this.fontFamily, newSize);
+		this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
+		this.layoutChanged();
+		this.changed();
+	},
+	
+	setTextString: function(replacement, replacementHints) {
+		if (Object.isString(replacement)) replacement = String(replacement); 
+		if (this.autoAccept) this.setText(replacement);
+		this.pvtUpdateTextString(replacement, replacementHints); 
+	},
+	
+	updateTextString: function(newStr) {
+		this.pvtUpdateTextString(newStr);
+		this.resetScrollPane(); 
+	},
+	
+	resetScrollPane: function() {
+		var sp = this.enclosingScrollPane();
 		if (sp) {
 			sp.scrollToTop();
 		}
-    },
-    
-    scrollSelectionIntoView: function() { 
-	var sp = this.enclosingScrollPane();
-	if (! sp) return;
-	var selRect = this.getCharBounds(this.selectionRange[this.hasNullSelection() ? 0 : 1]);
-	sp.scrollRectIntoView(selRect); 
-    },
-    
-    enclosingScrollPane: function() { 
-        // Need a cleaner way to do this
-        if (! (this.owner instanceof ClipMorph)) return null;
-	var sp = this.owner.owner;
-	if (! (sp instanceof ScrollPane)) return null;
-	return sp;
-    },
-
-    onTextUpdate: function(string) {
-	this.updateTextString(string);
-	this.textBeforeChanges = string;
-	this.hideChangeClue();
-    },
-
-    onSelectionUpdate: function(string) {
-	this.searchForFind(string, 0);
-    },
-    
-    updateView: function(aspect, controller) {
-        var p = this.modelPlug;
-	if (!p) return;
+	},
 	
-        if (aspect == p.getText  || aspect == 'all') {
-	    this.onTextUpdate(this.getText());
-	} else if (aspect == p.getSelection || aspect == 'all') {
-	    this.onSelectionUpdate(this.getSelection());
-	}
-    },
-    
-    onHistoryCursorUpdate: Functions.Empty,
+	scrollSelectionIntoView: function() { 
+		var sp = this.enclosingScrollPane();
+		if (! sp) return;
+		var selRect = this.getCharBounds(this.selectionRange[this.hasNullSelection() ? 0 : 1]);
+		sp.scrollRectIntoView(selRect); 
+	},
+	
+	enclosingScrollPane: function() { 
+		// Need a cleaner way to do this
+		if (! (this.owner instanceof ClipMorph)) return null;
+		var sp = this.owner.owner;
+		if (! (sp instanceof ScrollPane)) return null;
+		return sp;
+	},
 
-    onHistoryUpdate: Functions.Empty,
+	onTextUpdate: function(string) {
+		this.updateTextString(string);
+		this.textBeforeChanges = string;
+		this.hideChangeClue();
+	},
 
-    searchForFind: function(str, start) {
-	this.requestKeyboardFocus(this.world().firstHand());
-	var i1 = this.textString.indexOf(str, start);
-	if (i1 < 0) i1 = this.textString.indexOf(str, 0); // wrap
-	if (i1 >= 0) this.setSelectionRange(i1, i1+str.length);
+	onSelectionUpdate: function(string) {
+		this.searchForFind(string, 0);
+	},
+	
+	updateView: function(aspect, controller) {
+		var p = this.modelPlug;
+		if (!p) return;
+
+		if (aspect == p.getText	 || aspect == 'all') {
+			this.onTextUpdate(this.getText());
+		} else if (aspect == p.getSelection || aspect == 'all') {
+			this.onSelectionUpdate(this.getSelection());
+		}
+	},
+	
+	onHistoryCursorUpdate: Functions.Empty,
+
+	onHistoryUpdate: Functions.Empty,
+
+	searchForFind: function(str, start) {
+		this.requestKeyboardFocus(this.world().firstHand());
+		var i1 = this.textString.indexOf(str, start);
+		if (i1 < 0) i1 = this.textString.indexOf(str, 0); // wrap
+		if (i1 >= 0) this.setSelectionRange(i1, i1+str.length);
 		else this.setNullSelectionAt(0);
-	this.lastSearchString = str;
-	this.lastFindLoc = i1;
-    }
-    
+		this.lastSearchString = str;
+		this.lastFindLoc = i1;
+	}
+	
 });
-
 
 Object.extend(TextMorph, {
-    makeLabel: function(labelString, styleIfAny) {
-	var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
-	label.beLabel(styleIfAny);
-	return label;
-    }
+	makeLabel: function(labelString, styleIfAny) {
+		var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
+		label.beLabel(styleIfAny);
+		return label;
+	}
 });
-
 
 TextMorph.subclass('PrintMorph', {
     documentation: "TextMorph that converts its model value to string using toString(), and from a string using eval()",

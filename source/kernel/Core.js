@@ -4618,18 +4618,17 @@ PasteUpMorph.subclass("WorldMorph", {
 			       optLoc || this.positionForNewMorph().subPt(displ));
     },
 
-    addTextWindow: function(spec) {
-	// FIXME: typecheck the spec 
-	if (Object.isString(spec.valueOf())) spec = {content: spec}; // convenience
-	var extent = spec.extent || pt(500, 200);
-	
-	var pane  = 
-	    this.internalAddWindow(newTextPane(extent.extentAsRectangle(), spec.content || ""),
-				  spec.title, spec.position);
-	if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
-	if (spec.plug) pane.connectModel(spec.plug, true);
-	return pane;
-    },
+	addTextWindow: function(spec) {
+		// FIXME: typecheck the spec 
+		if (Object.isString(spec.valueOf())) spec = {content: spec}; // convenience
+		var extent = spec.extent || pt(500, 200);
+		var pane = this.internalAddWindow(
+				newTextPane(extent.extentAsRectangle(), spec.content || ""),
+				spec.title, spec.position);
+		if (spec.acceptInput !== undefined) pane.innerMorph().acceptInput = spec.acceptInput;
+		if (spec.plug) pane.connectModel(spec.plug, true);
+		return pane;
+	},
 
     addTextListWindow: function(spec) {
 	// FIXME: typecheck the spec 
