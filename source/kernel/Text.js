@@ -2371,8 +2371,8 @@ TextMorph.addMethods({
 	
 	saveContents: function(contentString) {	   
 		if (!this.modelPlug && !this.formalModel) {
-		// FIXME: remove hack
-			eval(contentString); 
+			// FIXME: remove hack
+			this.tryBoundEval(contentString); 
 			this.world().changed(); 
 			return; // Hack for browser demo
 		} else if (!this.autoAccept) {

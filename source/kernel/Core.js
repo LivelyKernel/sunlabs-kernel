@@ -4568,28 +4568,35 @@ PasteUpMorph.subclass("WorldMorph", {
 	}
     },
 
-    alert: function(varargs) {
-        var fill = this.getFill();
-        this.setFill(Color.black); // poor man's modal dialog
+	alert: function(varargs) {
+		var fill = this.getFill();
+		// poor man's modal dialog made a little more modal
+		var modalDialog = Morph.makeRectangle(this.bounds());
+		modalDialog.setFill(Color.black);
+		modalDialog.setFillOpacity(0.5);
+		modalDialog.okToBeGrabbedBy =  Functions.Null;
+		this.addMorph(modalDialog);
 
-        var menu = new MenuMorph([["OK", function() { this.world().setFill(fill); this.remove() }]]);
-        menu.onMouseUp = function(/*...*/) { 
-            if (!this.stayUp) this.world().setFill(fill); // cleanup
-	    Class.getPrototype(this).onMouseUp.apply(this, arguments);
-        };
+		var menu = new MenuMorph([["OK", function() { this.world().setFill(fill); this.remove() }]]);
+		menu.onMouseUp = function(/*...*/) { 
+			if (!this.stayUp) this.world().setFill(fill); // cleanup
+			Class.getPrototype(this).onMouseUp.apply(this, arguments);
+			modalDialog.remove();
+		};
 
-	var caption = Strings.formatFromArray($A(arguments));
-        menu.openIn(this, this.viewport().center(), true, caption); 
-	menu.label.wrapStyle = lively.Text.WrapStyle.Normal;
-	if (false) {
-	    // FIXME: how to center?
-	    var txt = new Text(menu.label.textString, menu.label.textStyle);
-	    txt.emphasize({align: 'center'}, 0, menu.label.textString.length);
-	    menu.label.textStyle = txt.style;
-	}
-	menu.label.fitText();
-        menu.scaleBy(2.5);
-    }.logErrors('alert'),
+		var caption = Strings.formatFromArray($A(arguments));
+		menu.openIn(modalDialog, this.viewport().center(), true, caption); 
+		
+		menu.label.wrapStyle = lively.Text.WrapStyle.Normal;
+		if (false) {
+			// FIXME: how to center?
+			var txt = new Text(menu.label.textString, menu.label.textStyle);
+			txt.emphasize({align: 'center'}, 0, menu.label.textString.length);
+			menu.label.textStyle = txt.style;
+		}
+		menu.label.fitText();
+		menu.scaleBy(2.5);
+	}.logErrors('alert'),
 
     prompt: function(message, callback, defaultInput) {
 	var model = Record.newPlainInstance({Message: message, Input: defaultInput || "", Result: null});
