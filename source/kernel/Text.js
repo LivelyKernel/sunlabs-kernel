@@ -2369,10 +2369,60 @@ TextMorph.addMethods({
 		if (oneLiner) this.bounds();  // Force a redisplay
 	},
 	
+	handleFirstJSLintError: function(error, pos) {
+		console.log("handleFirstJSLintError "+ error.reason + " at " + pos)
+		this.setSelectionRange(pos, pos);
+		if (Config.showJSLintErrorsInline) {
+			var replacement = "/* " + error.reason + " */"
+			this.replaceSelectionWith(replacement);
+			this.setSelectionRange(pos, pos + replacement.length);
+		}
+	},
+	
+	computePositionFromLogicalLinesAndCharacters: function(lines, line, linePos) {
+		var pos = 0;
+		for(var i=0; i < (line - 1); i++) {
+			pos = pos + lines[i].length + 1
+		}
+		return pos + linePos
+	},
+	
+	handleJSLintErrors: function(errors, lines) {
+		errors.each(function(ea) {
+		    console.log("jslint error on line " + ea.line + " at position " + ea.character + ": " + ea.reason)
+			LastErrors = errors;
+			LastContentString = lines;
+		}.bind(this));
+	
+		if (errors.length > 0) {
+			// for(int i=0; i<ea.line)
+			var pos = this.computePositionFromLogicalLinesAndCharacters(lines, errors[0].line, errors[0].character)
+			this.handleFirstJSLintError(errors[0], pos)
+		}
+	},
+	
+	jslintContents: function(contentString) {
+		var lines = contentString.split(/[\n\r]/)
+		JSLINT(lines);
+		var errors = JSLINT.errors.select(function(ea){
+			return ea && ea.id == "(error)"
+		});
+		this.handleJSLintErrors(errors, lines)
+		return errors.length == 0	
+	},
+	
 	saveContents: function(contentString) {	   
 		if (!this.modelPlug && !this.formalModel) {
 			// FIXME: remove hack
-			this.tryBoundEval(contentString); 
+			if (Config.enableJSLINT) {
+				require('lively.jslint').toRun(function(){
+					if(this.jslintContents(contentString)) {
+						this.tryBoundEval(contentString);
+					}
+				}.bind(this))
+			} else { 
+				this.tryBoundEval(contentString);
+			}
 			this.world().changed(); 
 			return; // Hack for browser demo
 		} else if (!this.autoAccept) {
