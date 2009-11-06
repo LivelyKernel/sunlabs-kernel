@@ -894,7 +894,7 @@ BoxMorph.subclass('TextMorph', {
 	
 	documentation: "Container for Text",
 	doNotSerialize: ['charsTyped', 'charsReplaced', 'delayedComposition', 'focusHalo', 'lastFindLoc', 'lines', 'priorSelection', 'previousSelection', 
-		'selectionRange', 'selectionPivot','typingHasBegun', 'undoSelectionRange', 'undoTextString'],
+		'selectionRange', 'selectionPivot','typingHasBegun', 'undoSelectionRange', 'undoTextString', '_statusMorph'],
 
 	// these are prototype variables
 	fontSize:	Config.defaultFontSize	 || 12,
@@ -2090,7 +2090,7 @@ BoxMorph.subclass('TextMorph', {
 		if (strToEval.length == 0)
 			strToEval = this.pvtCurrentLineString();
 		try {
-			var inspectee = this.tryBoundEval(strToEval);
+			var inspectee = this.tryParseAndBoundEval(strToEval);
 		} catch (e) {
 			"eval error in doInspect " + e
 		};
@@ -2098,24 +2098,27 @@ BoxMorph.subclass('TextMorph', {
 			new SimpleInspector(inspectee).openIn(this.world(), this.world().hands.first().getPosition())
 	},
 	
-	doDoit: function() {
+	pvtStringAndOffsetToEval: function() {
 		var strToEval = this.getSelectionString(); 
-		if (strToEval.length == 0)
+		var offset = this.selectionRange[0];
+		if (strToEval.length == 0) {
 			strToEval = this.pvtCurrentLineString();
-		this.tryBoundEval(strToEval);
+			offset = this.pvtCurrentLine().startIndex;
+		}
+		return {str: strToEval, offset: offset}
+	},
+	
+	doDoit: function() {
+		var s = this.pvtStringAndOffsetToEval();
+		this.tryParseAndBoundEval(s.str, s.offset);
 	},
 
 	// eval selection or current line if selection is emtpy
 	doPrintit: function() {
-		var strToEval = this.getSelectionString();
-		if (strToEval.length == 0)
-			strToEval = this.pvtCurrentLineString();
-		this.setNullSelectionAt(this.selectionRange[1] + 1);
-		var prevSelection = this.selectionRange[0];
-		var result = "" + this.tryBoundEval(strToEval);
-		isPrintIt=true;
-		this.replaceSelectionWith(" " + result);
-		this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
+		var s = this.pvtStringAndOffsetToEval();
+		this.tryParseAndBoundEval(s.str, s.offset, true);
+		// this.replaceSelectionWith(" " + result);
+		// this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
 	},
 
 	doSave: function() {
@@ -2123,10 +2126,34 @@ BoxMorph.subclass('TextMorph', {
 		this.hideChangeClue();
 	},
 
-	tryBoundEval: function (str) {
+	tryParseAndBoundEval: function(str, offset, printIt) {
+		if (Config.enableJSLINT) {
+			require('lively.jslint').toRun(function(){
+				if(this.jslintContents(str, offset)) {
+					this.tryBoundEval(str, offset, printIt);
+				}
+			}.bind(this))
+		} else {
+			this.tryBoundEval(str, offset, printIt)
+		}
+	},
+
+	tryBoundEval: function (str, offset, printIt) {
 		var result;
-		try { result = this.boundEval(str); }
-		catch (e) { this.world().alert("exception " + e); }
+		try { 
+			result = this.boundEval(str);
+			if (printIt) {
+				this.setNullSelectionAt(this.selectionRange[1] + 1);
+				var prevSelection = this.selectionRange[0];
+				var replacement = " " + result
+				this.replaceSelectionWith(replacement);
+				this.setSelectionRange(prevSelection, prevSelection + replacement.length);
+			}
+		} catch (e) {
+			offset = offset || 0;
+			this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
+			this.setStatusMessage("" + e, Color.red); 
+		}
 		return result;
 	},
 
@@ -2241,10 +2268,14 @@ BoxMorph.subclass('TextMorph', {
 		this.requestKeyboardFocus(evt.hand);
 	},
 
-	pvtCurrentLineString: function() {
+	pvtCurrentLine: function() {
 		var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
 		if (lineNumber == -1) lineNumber = 0; 
-		var line = this.lines[lineNumber];
+		return this.lines[lineNumber];
+	},
+
+	pvtCurrentLineString: function() {
+		var line = this.pvtCurrentLine();
 		return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));		 
 	},
 	
@@ -2371,6 +2402,7 @@ TextMorph.addMethods({
 	
 	// copied from ide.js
 	setStatusMessage: function(msg, color, delay) {
+		console.log("status: " + msg)
 		if (!this._statusMorph) {
 			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
 			this._statusMorph.applyStyle({borderWidth: 0})
@@ -2381,8 +2413,16 @@ TextMorph.addMethods({
 		statusMorph.setTextColor(color || Color.black);
 		statusMorph.setFill(Color.gray);
 		// statusMorph.centerAt(this.innerBounds().center());
-		statusMorph.setPosition(this.getCharBounds(this.selectionRange[0]).bottomRight());
-		(function() { statusMorph.remove() }).delay(delay || 2);
+		
+		try {
+			var pos = this.getCharBounds(this.selectionRange[0]).bottomRight();
+			statusMorph.setPosition(pos);
+		} catch(e) {
+			console.log("problems: " + e)
+		};
+		(function() { 
+			console.log("remove status")
+			statusMorph.remove() }).delay(delay || 2);
 	},
 	
 	handleFirstJSLintError: function(error, pos) {
@@ -2393,11 +2433,11 @@ TextMorph.addMethods({
 			this.replaceSelectionWith(replacement);
 			this.setSelectionRange(pos, pos + replacement.length);
 		} else {
-			this.setStatusMessage(error.reason, Color.red);
+			this.setStatusMessage(error.reason, Color.orange);
 		}
 	},
 	
-	computePositionFromLogicalLinesAndCharacters: function(lines, line, linePos) {
+	pvtPositionInString: function(lines, line, linePos) {
 		var pos = 0;
 		for(var i=0; i < (line - 1); i++) {
 			pos = pos + lines[i].length + 1
@@ -2405,7 +2445,7 @@ TextMorph.addMethods({
 		return pos + linePos
 	},
 	
-	handleJSLintErrors: function(errors, lines) {
+	handleJSLintErrors: function(errors, lines, offset) {
 		errors.each(function(ea) {
 		    console.log("jslint error on line " + ea.line + " at position " + ea.character + ": " + ea.reason)
 			LastErrors = errors;
@@ -2414,33 +2454,25 @@ TextMorph.addMethods({
 	
 		if (errors.length > 0) {
 			// for(int i=0; i<ea.line)
-			var pos = this.computePositionFromLogicalLinesAndCharacters(lines, errors[0].line, errors[0].character)
+			offset = offset || 0;
+			var pos = offset + this.pvtPositionInString(lines, errors[0].line, errors[0].character)
 			this.handleFirstJSLintError(errors[0], pos)
 		}
 	},
 	
-	jslintContents: function(contentString) {
+	jslintContents: function(contentString, offset) {
 		var lines = contentString.split(/[\n\r]/)
 		JSLINT(lines);
 		var errors = JSLINT.errors.select(function(ea){
 			return ea && ea.id == "(error)"
 		});
-		this.handleJSLintErrors(errors, lines)
+		this.handleJSLintErrors(errors, lines, offset)
 		return errors.length == 0	
 	},
 	
 	saveContents: function(contentString) {	   
 		if (!this.modelPlug && !this.formalModel) {
-			// FIXME: remove hack
-			if (Config.enableJSLINT) {
-				require('lively.jslint').toRun(function(){
-					if(this.jslintContents(contentString)) {
-						this.tryBoundEval(contentString);
-					}
-				}.bind(this))
-			} else { 
-				this.tryBoundEval(contentString);
-			}
+			this.tryParseAndBoundEval(contentString);
 			this.world().changed(); 
 			return; // Hack for browser demo
 		} else if (!this.autoAccept) {
