@@ -1343,11 +1343,12 @@ BoxMorph.subclass('TextMorph', {
 	getCharBounds: function(index) {
 		// tag: newText
 		this.ensureRendered();
-		if (this.lines) {
-			var line = this.lineForIndex(index);
-			// KP: note copy to avoid inadvertent modifications
-			return line == null ? null : line.getBounds(index).copy(); 
-		} else return null;
+		if (!this.lines) return null;
+		var line = this.lineForIndex(index);
+		// KP: note copy to avoid inadvertent modifications
+		var bounds = line == null ? null : line.getBounds(index);
+		if (bounds) return bounds.copy(); 
+		return null;
 	},
 
 	// compose the lines if necessary and then render them
@@ -2085,17 +2086,21 @@ BoxMorph.subclass('TextMorph', {
 	},
 	
 	doInspect: function() {
-		// console.log("do inspect")
-		var strToEval = this.getSelectionString(); 
-		if (strToEval.length == 0)
-			strToEval = this.pvtCurrentLineString();
+		console.log("do inspect")
+		var s = this.pvtStringAndOffsetToEval();
 		try {
-			var inspectee = this.tryParseAndBoundEval(strToEval);
+			var inspectee = this.tryBoundEval(s.str, s.offset);
 		} catch (e) {
-			"eval error in doInspect " + e
+			console.log("eval error in doInspect " + e)
 		};
-		if (inspectee)
-			new SimpleInspector(inspectee).openIn(this.world(), this.world().hands.first().getPosition())
+		if (inspectee) {
+			try {
+				new SimpleInspector(inspectee).openIn(this.world(), this.world().hands.first().getPosition())
+			} catch(e) {
+				this.setStatusMessage("could not open inspector on " + inspectee);
+				console.log("Error during opending an inspector:"+ e);
+			}
+		}
 	},
 	
 	pvtStringAndOffsetToEval: function() {
@@ -2116,7 +2121,7 @@ BoxMorph.subclass('TextMorph', {
 	// eval selection or current line if selection is emtpy
 	doPrintit: function() {
 		var s = this.pvtStringAndOffsetToEval();
-		this.tryParseAndBoundEval(s.str, s.offset, true);
+		this.tryBoundEval(s.str, s.offset, true);
 		// this.replaceSelectionWith(" " + result);
 		// this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
 	},
@@ -2151,6 +2156,7 @@ BoxMorph.subclass('TextMorph', {
 			}
 		} catch (e) {
 			offset = offset || 0;
+			console.log("error set selection ")
 			this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
 			this.setStatusMessage("" + e, Color.red); 
 		}
@@ -2413,11 +2419,13 @@ TextMorph.addMethods({
 		statusMorph.setTextColor(color || Color.black);
 		statusMorph.setFill(Color.gray);
 		// statusMorph.centerAt(this.innerBounds().center());
-		
+		statusMorph.ignoreEvents();
+
 		try {
-			var pos = this.getCharBounds(this.selectionRange[0]).bottomRight();
+			var pos = this.getCharBounds(this.selectionRange[0]).bottomLeft();
 			statusMorph.setPosition(pos);
 		} catch(e) {
+			statusMorph.centerAt(this.innerBounds().center());
 			console.log("problems: " + e)
 		};
 		(function() { 
@@ -2464,7 +2472,7 @@ TextMorph.addMethods({
 		var lines = contentString.split(/[\n\r]/)
 		JSLINT(lines);
 		var errors = JSLINT.errors.select(function(ea){
-			return ea && ea.id == "(error)"
+			return ea && ea.id != "(error)" // TODO HACK customize JS Lint so that it is not opstrusive...
 		});
 		this.handleJSLintErrors(errors, lines, offset)
 		return errors.length == 0	
