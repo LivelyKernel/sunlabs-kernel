@@ -2369,6 +2369,22 @@ TextMorph.addMethods({
 		if (oneLiner) this.bounds();  // Force a redisplay
 	},
 	
+	// copied from ide.js
+	setStatusMessage: function(msg, color, delay) {
+		if (!this._statusMorph) {
+			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
+			this._statusMorph.applyStyle({borderWidth: 0})
+		}
+		var statusMorph = this._statusMorph;
+		statusMorph.textString = msg;
+		this.addMorph(statusMorph);
+		statusMorph.setTextColor(color || Color.black);
+		statusMorph.setFill(Color.gray);
+		// statusMorph.centerAt(this.innerBounds().center());
+		statusMorph.setPosition(this.getCharBounds(this.selectionRange[0]).bottomRight());
+		(function() { statusMorph.remove() }).delay(delay || 2);
+	},
+	
 	handleFirstJSLintError: function(error, pos) {
 		console.log("handleFirstJSLintError "+ error.reason + " at " + pos)
 		this.setSelectionRange(pos, pos);
@@ -2376,6 +2392,8 @@ TextMorph.addMethods({
 			var replacement = "/* " + error.reason + " */"
 			this.replaceSelectionWith(replacement);
 			this.setSelectionRange(pos, pos + replacement.length);
+		} else {
+			this.setStatusMessage(error.reason, Color.red);
 		}
 	},
 	
