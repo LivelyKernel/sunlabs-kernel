@@ -4097,6 +4097,8 @@ Morph.subclass('ConnectorMorph', {
 	unregister: function(startOrEnd) {
 		var getMorphSelector = 'get' + startOrEnd + 'Morph';
 		var morph = this[getMorphSelector]();
+		if (!morph)
+			return;
 		if (morph.rebuildChangeMethod)
 			morph.rebuildChangeMethod();
 		else
