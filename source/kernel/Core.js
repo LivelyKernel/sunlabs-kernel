@@ -5190,6 +5190,18 @@ Morph.subclass("HandMorph", {
 	},
 
     handleKeyboardEvent: function(evt) { 
+		// console.log("event: " + evt )
+		if(evt.type == "KeyUp") {
+ 			// console.log("handleKeyboardEvent KeyUp " + evt.getKeyChar());
+			this.keysDown[evt.getKeyChar()] = false;
+			// hack, around weired events when command is pressed
+			if (evt.getKeyCode() == 91) {
+				// console.log("clear keydown list...")
+				this.keysDown = {};
+			};
+				
+		};
+
         if (this.hasSubmorphs())  {
             if (evt.type == "KeyDown" && this.moveSubmorphs(evt)) return;
             else if (evt.type == "KeyPress" && this.transformSubmorphs(evt)) return;
@@ -5211,10 +5223,6 @@ Morph.subclass("HandMorph", {
 		if(evt.type == "KeyDown") {
  			// console.log("handleKeyboardEvent KeyDown " + evt.getKeyChar())
 			this.keysDown[evt.getKeyChar()] = true;
-		};
-		if(evt.type == "KeyUp") {
- 			// console.log("handleKeyboardEvent KeyUp " + evt.getKeyChar());
-			this.keysDown[evt.getKeyChar()] = false;
 		};
 		this.blockBrowserKeyBindings(evt);
     },
