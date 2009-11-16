@@ -3984,12 +3984,16 @@ Morph.subclass('ArrowHeadMorph', {
         length = length || 16;
         width = width || 12;
 
-        var verts = [pt(0,0), pt(-length, 0.5* width), pt(-length, -0.5 * width)];
+		var offset = 0.2;
+        var verts = [pt(offset* length, 0), pt((-1.0 + offset)* length , 0.5* width), pt((-1 + offset) * length, -0.5 * width)];
         var poly = new lively.scene.Polygon(verts);
         // FIXME: positioning hack, remove the following
         this.head = this.addMorph(new Morph(poly));
-        this.head.applyStyle(NodeStyle.connector);
         
+		this.head.applyStyle(NodeStyle.connector);
+		this.head.setFill(lineColor); // JL: style vs. explict color?        
+        this.head.setBorderColor(lineColor);
+
         this.setPosition(this.head.getPosition());
         this.setExtent(this.head.getExtent());
         this.ignoreEvents();
