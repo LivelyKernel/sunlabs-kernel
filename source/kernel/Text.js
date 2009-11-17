@@ -2164,14 +2164,14 @@ BoxMorph.subclass('TextMorph', {
 		} catch (e) {
 			offset = offset || 0;
 			if (e.expressionEndOffset) {
-				console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
+				// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
 				this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
 			} else if (e.line) {
 				var lineOffset = this.lineNumberForIndex(offset);
-				console.log("line: " + e.line + " offset: " + lineOffset)
+				// console.log("line: " + e.line + " offset: " + lineOffset)
 				var line = this.lines[e.line + lineOffset - 1]
 				if (line.startIndex) {
-					console.log(" set to  " + line.startIndex)
+					// console.log(" set to  " + line.startIndex)
 					this.setSelectionRange(line.startIndex, line.getStopIndex());
 				}
 			}
@@ -2437,9 +2437,7 @@ TextMorph.addMethods({
 		statusMorph.setFill(Color.gray);
 		// statusMorph.centerAt(this.innerBounds().center());
 		statusMorph.ignoreEvents();
-
 		try {
-			console.log("selectionRange " + this.selectionRange[0])
 			var pos = this.getCharBounds(this.selectionRange[0]).bottomLeft();
 			statusMorph.setPosition(pos);
 		} catch(e) {
