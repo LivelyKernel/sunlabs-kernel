@@ -1835,6 +1835,7 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	setSelectionRange: function(piv, ext) { 
+		// console.log("setSelectionRange(" + piv + ", " + ext, ")")
 		this.selectionRange = (ext >= piv) ? [piv, ext - 1] : [ext, piv - 1];
 		this.setSelection(this.getSelectionString());
 		this.drawSelection(); 
@@ -2162,8 +2163,18 @@ BoxMorph.subclass('TextMorph', {
 			}
 		} catch (e) {
 			offset = offset || 0;
-			console.log("error set selection ")
-			this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
+			if (e.expressionEndOffset) {
+				console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
+				this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
+			} else if (e.line) {
+				var lineOffset = this.lineNumberForIndex(offset);
+				console.log("line: " + e.line + " offset: " + lineOffset)
+				var line = this.lines[e.line + lineOffset - 1]
+				if (line.startIndex) {
+					console.log(" set to  " + line.startIndex)
+					this.setSelectionRange(line.startIndex, line.getStopIndex());
+				}
+			}
 			this.setStatusMessage("" + e, Color.red); 
 		}
 		return result;
@@ -2428,6 +2439,7 @@ TextMorph.addMethods({
 		statusMorph.ignoreEvents();
 
 		try {
+			console.log("selectionRange " + this.selectionRange[0])
 			var pos = this.getCharBounds(this.selectionRange[0]).bottomLeft();
 			statusMorph.setPosition(pos);
 		} catch(e) {

@@ -435,28 +435,30 @@ onPane3ContentUpdate: function(items, source) {
 		if (n3) title += ':' + n3.asString();
 		window.setTitle(title);
 	},
-commandMenuSpec: function(pane) {
-	var result = this.commands()
-		.collect(function(ea) { return new ea(this) }, this)
-		.select(function(ea) { return ea.wantsMenu() && ea.isActive(pane) })
-		.inject([], function(all, ea) { return all.concat(ea.trigger()) });
-	if (result.length > 0)
-		result.push(['-------']);
-	return result;
-},
-setStatusMessage: function(msg, color, delay) {
-	var s = this.panel.sourcePane;	
-	if (!this._statusMorph) {
-		this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
-		this._statusMorph.applyStyle({borderWidth: 0})
-	}
-	var statusMorph = this._statusMorph;
-	statusMorph.textString = msg;
-	s.addMorph(statusMorph);
-	statusMorph.setTextColor(color || Color.black);
-	statusMorph.centerAt(s.innerBounds().center());
-	(function() { statusMorph.remove() }).delay(delay || 2);
-},
+
+	commandMenuSpec: function(pane) {
+		var result = this.commands()
+			.collect(function(ea) { return new ea(this) }, this)
+			.select(function(ea) { return ea.wantsMenu() && ea.isActive(pane) })
+			.inject([], function(all, ea) { return all.concat(ea.trigger()) });
+		if (result.length > 0)
+			result.push(['-------']);
+		return result;
+	},
+
+	setStatusMessage: function(msg, color, delay) {
+		var s = this.panel.sourcePane;	
+		if (!this._statusMorph) {
+			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
+			this._statusMorph.applyStyle({borderWidth: 0})
+		}
+		var statusMorph = this._statusMorph;
+		statusMorph.textString = msg;
+		s.addMorph(statusMorph);
+		statusMorph.setTextColor(color || Color.black);
+		statusMorph.centerAt(s.innerBounds().center());
+		(function() { statusMorph.remove() }).delay(delay || 2);
+	},
 
 
 
