@@ -917,7 +917,6 @@ BoxMorph.subclass('TextMorph', {
 	lineNumberHint: 0,
 	hasKeyboardFocus: false,
 	useChangeClue: false,
-	
 
 	formals: {
 		Text: { byDefault: ""},
@@ -1011,7 +1010,14 @@ BoxMorph.subclass('TextMorph', {
 		if (this.useChangeClue && !this.changeClue)
 			this.addChangeClue(true);
 	},
-
+	
+	acceptsDropping: function() {
+		// using text morphs as containers feels extremly weired, especially when the fill 
+		// and bounds are not visible like in the wiki
+		// Is there a demo or other rules that needs that behavior? 
+		return false
+	}, 
+	
 	bounds: function($super, ignoreTransients, hasBeenRendered) {
 		// tag: newText
 		if (this.fullBounds != null) return this.fullBounds;
