@@ -5614,6 +5614,13 @@ ClipboardHack = {
 		outerBody.appendChild(buffer);
 		return buffer;
 	},
+	
+	selectPasteBuffer: function() {
+		var buffer = ClipboardHack.ensurePasteBuffer();
+		if (buffer) {
+			buffer.select();
+		}
+	},
 
 	tryClipboardAction: function(evt, target) {
         // Copy and Paste Hack that works in Webkit/Safari

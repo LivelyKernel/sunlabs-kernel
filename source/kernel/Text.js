@@ -1865,7 +1865,7 @@ BoxMorph.subclass('TextMorph', {
 		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
 		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
 		// FIXME, other place Widgets, SelectionMorph>>reshape
-		ClipboardHack.ensurePasteBuffer().select();
+		ClipboardHack.selectPasteBuffer;
 		
 		var selecting = evt.isShiftDown();
 		var selectionStopped = !this.hasNullSelection() && !selecting;

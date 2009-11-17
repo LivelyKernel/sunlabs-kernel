@@ -567,7 +567,7 @@ BoxMorph.subclass("SelectionMorph", {
 		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
 		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
 		// FIXME, other place Text, TextMorph>>onKeyDown
-		ClipboardHack.ensurePasteBuffer().select();
+		ClipboardHack.selectPasteBuffer();
 		
         // Initial selection might actually move in another direction than toward bottomRight
         // This code watches that and changes the control point if so
