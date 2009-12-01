@@ -1677,6 +1677,7 @@ BoxMorph.subclass('TextMorph', {
 			this.startSelection(charIx);
 		}
 		this.requestKeyboardFocus(evt.hand);
+		ClipboardHack.selectPasteBuffer();
 		return true; 
 	},
 
@@ -1723,6 +1724,7 @@ BoxMorph.subclass('TextMorph', {
 		(this.priorSelection[1] != this.priorSelection[0] - 1) ||
 		(this.selectionRange[0] != this.priorSelection[0]) ) {
 			this.previousSelection = this.priorSelection;
+			ClipboardHack.selectPasteBuffer();
 			return;
 		}
 
@@ -1735,6 +1737,7 @@ BoxMorph.subclass('TextMorph', {
 
 		this.setSelection(this.getSelectionString());
 		this.drawSelection(); 
+		ClipboardHack.selectPasteBuffer();
 	},
 	
 	// TextMorph text selection functions
