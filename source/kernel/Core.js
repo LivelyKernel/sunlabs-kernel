@@ -736,6 +736,7 @@ Object.extend(Exporter, {
     shrinkWrapMorph: function(morph) {
 	var importer = new Importer();
 	var newDoc = importer.getBaseDocument();
+	newDoc.getElementsByTagName("title")[0].textContent = document.title; // persist the title
 	// FIXME this should go to another place?
 	this.addSystemDictionary(newDoc);
 	importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
