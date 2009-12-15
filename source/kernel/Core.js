@@ -949,8 +949,14 @@ Copier.subclass('Importer', {
 	var wrapperType = lively.data.Wrapper.getEncodedType(rawNode);
 	
 	if (!wrapperType || !Class.forName(wrapperType)) {
-	    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
-					   rawNode.tagName, rawNode.parentNode, wrapperType));
+		if (Config.silentFailOnWrapperClassNotFound) {
+			console.log(Strings.format("ERROR: node %s (parent %s) cannot be a morph of %s",
+	    		   	rawNode.tagName, rawNode.parentNode, wrapperType));
+			return new Morph(this, rawNode)
+		} else {
+		    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
+		    	rawNode.tagName, rawNode.parentNode, wrapperType));	    
+		}
 	}
 
 	return new (Class.forName(wrapperType))(this, rawNode);
