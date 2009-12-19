@@ -4124,6 +4124,7 @@ PasteUpMorph.subclass("WorldMorph", {
 		menu.addItem(["arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }]);
         	menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
 	}
+	      menu.addItem(["resize world", this.resizeByUser]);
         menu.addItem(["restart system", this.restart]);
         return menu;
     },
@@ -4701,7 +4702,20 @@ PasteUpMorph.subclass("WorldMorph", {
 
     reactiveAddMorph: function(morph, relatedMorph) { 	// add morph in response to a user action, make it prominent
 	return this.addMorphAt(morph, this.positionForNewMorph(relatedMorph));
-    }
+    },
+    
+    resizeByUser: function() {
+      var world = this;
+      var cb = function(newSizePtLiteral) {
+    	  try {
+    	    var newPoint = eval(newSizePtLiteral);
+    	    basicResize(world, world.canvas(), newPoint.x, newPoint.y);
+        } catch(e) {
+    	    world.alert('Wrong input ' +  newSizePtLiteral);
+  		  }
+    	};
+    	world.prompt('Enter extent', cb, world.bounds().bottomRight().toString());
+    },
 
 });
 
@@ -5662,6 +5676,12 @@ ClipboardHack = {
 
 }
 
+basicResize = function(world, canvas, newWidth, newHeight) {
+  canvas.setAttribute("width", newWidth);
+	canvas.setAttribute("height", newHeight);
+	world.setExtent(pt(newWidth, newHeight));
+  world.fullBounds = new Rectangle(0, 0, newWidth, newHeight);
+};
 
 window.onresize = function(evt) {
 	if (!Config.onWindowResizeUpdateWorldBounds) return; 
@@ -5675,11 +5695,6 @@ window.onresize = function(evt) {
 	var canvas = world.rawNode.parentNode;
     var newWidth = h.clientWidth - 4;
     var newHeight = h.clientHeight-  4;
-
-	canvas.setAttribute("width", newWidth);
-	canvas.setAttribute("height", newHeight);
-	world.setExtent(pt(newWidth, newHeight) )
-    world.fullBounds = new Rectangle(0,0,newWidth, newHeight)
 };
 
 console.log('loaded Core.js');
