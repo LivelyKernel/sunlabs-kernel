@@ -983,24 +983,56 @@ sourceString: function($super) {
    ======= Eval ======
    =================== */
 TextMorph.addMethods({
-  tryBoundEval: function (str) {
-    var result;
-    try { result = this.boundEval(str); }
-    catch (e) {
-      if (Config.suppressSmalltalkEval || !Global['SmalltalkParser']) {
-        this.world().alert("exception " + e);
+  tryBoundEval: function (str, offset, printIt) {
+
+    var result, self = this;
+
+    function jsEval() {
+      result = self.boundEval(str);
+      if (printIt) printResult();
+    };
+
+    function jsCatch(e) {
+      offset = offset || 0;
+    	if (e.expressionEndOffset) {
+    		self.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
+    	} else if (e.line) {
+    		var lineOffset = self.lineNumberForIndex(offset);
+    		var line = self.lines[e.line + lineOffset - 1]
+    		if (line.startIndex)
+    			self.setSelectionRange(line.startIndex, line.getStopIndex());
+    	}
+    	self.setStatusMessage("" + e, Color.red); 
+    }
+
+    function stEval() {
+      var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, 'sequence', str, true);
+      console.log('Evaluating: ' + ast.toJavaScript());
+      result = ast.eval();
+      if (printIt) printResult();
+    };
+
+    function stCatch(e) {
+      self.setStatusMessage("Smalltalk exception " + e, Color.red); 
+    };
+
+    function printResult() {
+      self.setNullSelectionAt(self.selectionRange[1] + 1);
+  		var prevSelection = self.selectionRange[0];
+  		var replacement = " " + result
+  		self.replaceSelectionWith(replacement);
+  		self.setSelectionRange(prevSelection, prevSelection + replacement.length);
+    }
+
+  	try { jsEval() }
+  	catch (e) {
+  	  if (Config.suppressSmalltalkEval || !Global['SmalltalkParser']) {
+        jsCatch(e);
         return
       }
-      try {
-        var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, 'sequence', str, true);
-        console.log('Evaluating: ' + ast.toJavaScript());
-        result = ast.eval();
-      } catch(e) {
-        console.log('Error: ' + e);
-        this.world().alert("Smalltalk exception " + e);
-      }
-    }
-    return result;
+      try { stEval() } catch(stE) { stCatch(stE) }
+  	}
+  	return result;
   }
 });
 /* ============================
