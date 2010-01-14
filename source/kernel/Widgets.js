@@ -543,6 +543,8 @@ BoxMorph.subclass("SelectionMorph", {
 
     removeWhenEmpty: true,
 
+	openForDragAndDrop: false,
+
 	takesKeyboardFocus: Functions.True, 
     
     initialize: function($super, viewPort, defaultworldOrNull) {

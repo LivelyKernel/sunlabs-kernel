@@ -1052,8 +1052,8 @@ Object.extend(Function.prototype, {
 	    try {
 		return proceed.apply(this, args); 
 	    } catch (er) {
-		if (prefix) console.warn("%s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
-		else console.warn("%s %s", er, er.stack || "");
+		if (prefix) console.warn("ERROR: %s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
+		else console.warn("ERROR: %s %s", er, er.stack || "");
 		logStack();
 		// lively.lang.Execution.showStack();
 		throw er;

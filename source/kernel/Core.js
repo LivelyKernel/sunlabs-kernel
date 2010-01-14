@@ -2667,6 +2667,7 @@ Morph.addMethods({
     addFocusHalo: function() {
 	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
 	this.focusHalo = Morph.makeRectangle(this.localBorderBounds().expandBy(this.focusHaloInset));
+	this.focusHalo.name = "FocusHalo";
 	this.focusHalo.isEpimorph = true;  // Do this before adding the halo
 	this.addMorph(this.focusHalo);
 	this.focusHalo.applyStyle(this.focusStyle);
@@ -2946,6 +2947,9 @@ putMeInAWindow: function(loc) {
 	// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
 	// If droppingMorph is not null, then check that this is a willing recipient (else null)
 	        
+	if (this.isEpimorph)
+		return null;
+	
 	if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
 	// First check all the submorphs, front first
 	for (var i = this.submorphs.length - 1; i >= 0; i--) {
@@ -3825,46 +3829,10 @@ Morph.subclass("PasteUpMorph", {
     },
 
 	makeSelection: function(evt) {	//default behavior is to grab a submorph
-		var m;
 		if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
 		
-		if (Config.enableGraffleShortCuts) {
-			if (evt.hand.isKeyDown("S")) {
-				var m = Morph.makeRectangle(evt.point().asRectangle());
-			} else if (evt.hand.isKeyDown("T")) {
-				var m = new TextMorph(evt.point().asRectangle());
-				m.setBorderWidth(0);
-			} else if (evt.hand.isKeyDown("L")) {
-				var m = Morph.makeLine([pt(-1,-1), pt(0,0)], 1, Color.black);
-				m.setPosition(evt.point());
-				this.world().addMorph(m);
-				var handle = m.makeHandle(evt.point(), 1, evt)
-				m.addMorph(handle);
-			
-				//evt.hand.setMouseFocus(handle);
-				//var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, m, 1);
-			
-				evt.hand.setMouseFocus(handle);
-				return
-			} else if (evt.hand.isKeyDown("C")) {
-				// TODO: make connectors real connectors...
-				var n1 = new NodeMorph(evt.point().asRectangle().expandBy(5));
-				n1.setFill(Color.gray);
-				this.world().addMorph(n1);
-				var n2 = new NodeMorph(evt.point().asRectangle().expandBy(5));
-				n2.setFill(Color.gray);
-				this.world().addMorph(n2);
-				var c = new ConnectorMorph(null, n2);
-				c.setStartPos(evt.point());
-				this.world().addMorph(c);
-				evt.hand.grabMorph(n2,evt);
-				return;
-			}
-		}
-		if (!m) { 
-			var m = new SelectionMorph(evt.point().asRectangle());
-			this.world().currentSelection = m;
-		}
+		var m = new SelectionMorph(evt.point().asRectangle());
+		this.world().currentSelection = m;
 		
 		this.world().addMorph(m);
 		var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, m, "bottomRight");
