@@ -3236,6 +3236,8 @@ Widget.subclass('ConsoleWidget', {
 		panel.ownerWidget = this; // to serialize the widget
 		this.panel = panel;
 
+		panel.commandLine.suppressHandles = true;
+
 		var model = this.getModel();
 		var m = panel.messagePane;
 	
@@ -3258,7 +3260,10 @@ Widget.subclass('ConsoleWidget', {
 		return panel;
 	},
 
-	evaluate: interactiveEval.bind(this.ctx),
+	evaluate: function(string){
+		var result = this.panel.commandLine.tryBoundEval(string)
+		return result
+	},
 	
 	onLogMessagesUpdate: function() {
 		// do nothing... onDeserialize seem to need it

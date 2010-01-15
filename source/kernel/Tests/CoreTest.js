@@ -304,13 +304,48 @@ TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
 		var morphCopy = morph.copy(new Copier());
 		this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");
 	},
-
-
-
-
-
 });
 
+
+TestCase.subclass("Alively.Tests.CoreTest.EncodeWrapperJSONTest", {
+
+	setUp: function() {
+		this.ref = WorldMorph.current();
+		this.value = [this.ref];
+	},
+		
+	testEncodeWrapper: function() {
+		this.string = JSON.serialize(this.value, Converter.wrapperAndNodeEncodeFilter)
+		this.assertEqual(this.string, '["url(#' + WorldMorph.current().id() + ')"]', "url does not match")
+	},
+	
+	testDecodeWrapper: function() {
+		this.string = JSON.serialize(this.value, Converter.wrapperAndNodeEncodeFilter)
+		this.value2 = JSON.unserialize(this.string, Converter.wrapperAndNodeDecodeFilter)
+		this.assertIdentity(this.value2[0], this.ref, "ref is not identical")
+	},
+
+	testDecodeWrapperComplex: function() {
+		this.value = [3, [this.ref, 4, {bla: this.ref}]]
+		this.string = JSON.serialize(this.value, Converter.wrapperAndNodeEncodeFilter)
+		this.value2 = JSON.unserialize(this.string, Converter.wrapperAndNodeDecodeFilter)
+	},
+
+	testResolveUriToObject: function() {
+		var root = Morph.makeRectangle(new Rectangle(0,0,500,500));
+		var child =  Morph.makeRectangle(new Rectangle(0,0,100,100));
+		root.addMorph(child);
+		this.assertIdentity(root.resolveUriToObject(child.id()), child, "relove is broken")
+	},
+	
+	testStoreReferenceInRecordField: function() {
+		var ref = WorldMorph.current();
+		var record = Record.newNodeInstance({Foo: null, Bar: null});
+		record.setBar([3, ref]);
+		this.assertIdentity(record.getBar()[1], ref, "deep referencing in node records is broken")
+	},	
+	
+})
 
 
 

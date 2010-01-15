@@ -419,6 +419,12 @@ Object.subclass('lively.data.Wrapper', {
     	}, this);
     },
 
+	resolveUriToObject: function(uri) {
+		if (this.id() == uri)
+			return this;
+		return null
+	}
+
 });
 
 Object.extend(lively.data.Wrapper, {

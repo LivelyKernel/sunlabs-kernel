@@ -2326,7 +2326,7 @@ TextMorph.addMethods({
 			return this.selectionRange[1]+1; // selection expands right
 		if (this.selectionPivot < this.selectionRange[1]+1 && this.selectionPivot > this.selectionRange[0])
 			return this.selectionRange[0]; // selection pivot in middle of sel
-		console.log('Can\'t find current position in text');
+		// console.log('Can\'t find current position in text');
 		return this.selectionRange[0];
 	},
 
@@ -2441,14 +2441,19 @@ TextMorph.addMethods({
 		// statusMorph.centerAt(this.innerBounds().center());
 		statusMorph.ignoreEvents();
 		try {
-			var pos = this.getCharBounds(this.selectionRange[0]).bottomLeft();
+			var bounds = this.getCharBounds(this.selectionRange[0]);
+			if (bounds) {
+				var pos = bounds.bottomLeft();
+			} else {
+				pos = pt(0, 20);
+			}
 			statusMorph.setPosition(pos);
 		} catch(e) {
 			statusMorph.centerAt(this.innerBounds().center());
 			console.log("problems: " + e)
 		};
 		(function() { 
-			console.log("remove status")
+			// console.log("remove status")
 			statusMorph.remove() }).delay(delay || 2);
 	},
 	

@@ -2352,7 +2352,10 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 	    		    if (value == 'NaN') return NaN;
 	    		    if (value == 'undefined') return undefined;
 	    		    if (value == 'null') return null;
-	    		    return JSON.unserialize(value);
+					// jl: fixes a bug but wrapperAndNodeDecodeFilter is not clever enought... 
+					// so waiting for pending refactoring
+	    		    // return JSON.unserialize(value, Converter.wrapperAndNodeDecodeFilter);
+					return JSON.unserialize(value);
 	            }
 		    }
 		} else {

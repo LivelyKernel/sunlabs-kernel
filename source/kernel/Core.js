@@ -263,6 +263,24 @@ var Converter = {
 	return value;
     },
 
+	wrapperAndNodeDecodeFilter:  function(baseObj, key) {
+		var value = baseObj[key];
+		// console.log("wrapperAndNodeDecodeFilter: " + baseObj + " key: " + key + " value: " + baseObj[key]);
+		if (Object.isString(value)) {
+			var uri = lively.data.FragmentURI.parse(value)
+			if (uri) {
+				// resolve uri to an object
+				// Search the world, because we don't have an general URI resolver
+				var obj = WorldMorph.current().resolveUriToObject(uri)
+				if (obj)
+					return obj;
+				else
+					return value;
+			}
+		}
+		return Converter.nodeDecodeFilter(baseObj, key)
+    },
+
     nodeEncodeFilter: function(baseObj, key) {
         var value = baseObj[key];
 		if (!value) return value;
@@ -1509,8 +1527,23 @@ duplicate: function () {
             var n = helperNodes[i];
             n.parentNode.removeChild(n);
         }
-    }
+    },
 
+	resolveUriToObject: function(uri) {
+		if (this.id() == uri)
+			return this;
+		if (this.ownerWidget) {
+			var result = this.ownerWidget.resolveUriToObject(uri)
+			if (result)
+				return result;
+		};	
+		for (var i=0; i < this.submorphs.length; i++) {
+			var result = this.submorphs[i].resolveUriToObject(uri);
+			if (result)
+				return result;
+		}
+		return null
+	}
 });
 
 Morph.addMethods({  // tmp copy
