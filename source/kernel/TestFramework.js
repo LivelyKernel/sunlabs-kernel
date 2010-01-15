@@ -297,7 +297,7 @@ Object.subclass('TestResult', {
 	
 	failureList: function() {
 		var result = this.failed.collect(function(ea) {
-			return ea.classname + '.' + ea.selector + '\n  -->' + ea.err.constructor.type + ":" + ea.err.message  +
+			return ea.classname + '.' + ea.selector + '\n  -->' + ea.err.constructor.name + ":" + ea.err.message  +
 	            ' in ' + this.getFileNameFromError(ea.err) + 
 	            (ea.err.line ? ' ( Line '+ ea.err.line + ')' : "");
 		}, this);
@@ -627,7 +627,7 @@ Widget.subclass('ErrorStackViewer', {
  */
 
 Global.printError = function printError(e) {
-   var s = "" + e.constructor.type + ": ";
+   var s = "" + e.constructor.name + ": ";
    for (i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
    return s
 }
