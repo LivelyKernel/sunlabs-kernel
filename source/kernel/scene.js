@@ -1615,7 +1615,7 @@ this.Shape.subclass('lively.scene.Group', {
     },
 
     setBounds: function(bnds) {
-	console.log('doing nothing to set bounds on group');
+		// console.log('doing nothing to set bounds on group');
     },
 
     containsPoint: function(p) {

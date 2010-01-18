@@ -3,6 +3,28 @@ module('lively.Connector').requires('cop.Layers').toRun(function() {
 
 createLayer("ConnectorMorphLayer");
 createLayer("NodeMorphLayer");
+createLayer("FindMorphLayer");
+
+/**
+ *  Little Helper Layer to allow TextMorphs to be used as valid connector points
+ *  even if they don't want to be dragged or dropped
+ *  TODO: seperated the find Morph from event and drag and drop behavior
+ */
+layerClass(FindMorphLayer, TextMorph, {
+	acceptsDropping: function(){
+		return true
+	}
+})
+
+Morph.makeConnector = function(startPoint) {
+	var m = Morph.makeLine([pt(-1,-1), pt(0,0)], 1, Color.black);
+	m.setWithLayers([ConnectorMorphLayer]);
+	m.setupConnector();
+	m.setGlobalStartPos(startPoint);
+	m.setGlobalEndPos(startPoint);
+	m.updateArrow()
+	return m
+}
 
 layerClass(NodeMorphLayer, Morph, {
 	changed: function(proceed, part) {
@@ -55,6 +77,15 @@ layerClass(ConnectorMorphLayer, HandleMorph, {
 		return result;
 	},
 
+	onMouseMove: function(proceed, evt) {
+		var result = proceed(evt);
+		// Fabrik connectors intercepted the setVertices in the shape
+		// but instance wrappers are fragile but shapes have no "owner" references
+		if (this.owner)
+			this.owner.updateArrow();
+		return result;
+	},
+
 	connectToMorph: function(proceed, newMorph) {
 		if (newMorph)
 			newMorph.setWithLayers([NodeMorphLayer]);
@@ -94,7 +125,10 @@ layerClass(ConnectorMorphLayer, HandleMorph, {
 
 	findMorphUnderMe: function(){	
 		var evt = newFakeMouseEvent(this.getGlobalPosition());
-		var result = this.world().morphToGrabOrReceive(evt, this, true);
+		var result;
+		withLayers([FindMorphLayer], function(){
+			result = this.world().morphToGrabOrReceive(evt, this, true);
+		}.bind(this));
 		if (result instanceof WorldMorph)
 			return undefined;
 		return result;
@@ -107,8 +141,28 @@ layerClass(ConnectorMorphLayer, HandleMorph, {
 	}
 });
 
-
 layerClass(ConnectorMorphLayer, Morph, {
+	
+	setupConnector: function() {
+		var lineColor = Color.black;
+		this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
+		this.addMorph(this.arrowHead);
+		this.updateArrow()
+	},
+
+	setVertices: function(proceed, verts) {
+  		proceed(verts);
+		this.updateArrow();
+	},
+
+  	updateArrow: function() {
+		if (!this.arrowHead)
+			return;
+        var v = this.shape.vertices();
+        var toPos = v[v.length-1];
+        var fromPos = v[v.length-2];
+        this.arrowHead.pointFromTo(fromPos, toPos);
+   	},
 
 	get openForDragAndDrop() {
 		return false;
@@ -204,17 +258,26 @@ layerClass(ConnectorMorphLayer, Morph, {
 		v[v.length-1] = p; 
 		this.setVertices(v);
 	},
+	
+	localize: function(proceed, p) {
+		if (!this.world())
+			return p;
+		else
+			return proceed(p)
+	},
 
 	setGlobalStartPos: function(proceed, p) {
 		// console.log("set start pos " + p);
+		
 		this.setStartPos(this.localize(p));
 	},
 
 	setGlobalEndPos: function(proceed, p) {
 		// console.log("line " + this + " set end pos " + p );
+		
 		this.setEndPos(this.localize(p));
+		
 	},
-
 
 	getGlobalStartPos: function(proceed, p) {
 		return this.worldPoint(this.getStartPos());
