@@ -27,6 +27,13 @@ Morph.makeConnector = function(startPoint) {
 }
 
 layerClass(NodeMorphLayer, Morph, {
+	
+	isPropertyOnIgnoreList: function(proceed, prop) {
+		if (prop == "delayUpdateConnectors")
+			return true;
+		return proceed(prop)
+	},
+	
 	changed: function(proceed, part) {
 		proceed(part);
 		this.triggerUpdateConnectors();	 
@@ -48,10 +55,14 @@ layerClass(NodeMorphLayer, Morph, {
 	},
 	
 	updateConnectors: function() {
-		this.getConnectorMorphs().each(function(ea) {
-			ea.updateConnection();
-		});
-		this.delayUpdateConnectors = false;
+		try {
+			this.getConnectorMorphs().each(function(ea) {
+				ea.updateConnection();
+			});
+		} finally {
+			// ensure that, a bug in the update process does not break the triggering of new updates
+			this.delayUpdateConnectors = false; 
+		}
 	},
 
 	connectLineMorph: function(proceed, line) {
