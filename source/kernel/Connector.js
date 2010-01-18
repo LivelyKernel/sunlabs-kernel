@@ -40,12 +40,17 @@ layerClass(NodeMorphLayer, Morph, {
 		}
 	},
 
-	updateConnectors: function() {
+	getConnectorMorphs: function() {
 		if(this.connectorMorphs) {
-			this.connectorMorphs.each(function(ea) {
-				ea.updateConnection();
-			});
+			return this.connectorMorphs.select(function(ea) { return ea && ea.updateConnection})
 		}
+		return []
+	},
+	
+	updateConnectors: function() {
+		this.getConnectorMorphs().each(function(ea) {
+			ea.updateConnection();
+		});
 		this.delayUpdateConnectors = false;
 	},
 
