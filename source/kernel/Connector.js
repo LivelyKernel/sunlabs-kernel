@@ -16,12 +16,13 @@ layerClass(FindMorphLayer, TextMorph, {
 	}
 })
 
-Morph.makeConnector = function(startPoint) {
+Morph.makeConnector = function(startPoint, endPoint) {
+	endPoint = endPoint || startPoint;
 	var m = Morph.makeLine([pt(-1,-1), pt(0,0)], 1, Color.black);
 	m.setWithLayers([ConnectorMorphLayer]);
 	m.setupConnector();
 	m.setGlobalStartPos(startPoint);
-	m.setGlobalEndPos(startPoint);
+	m.setGlobalEndPos(endPoint);
 	m.updateArrow()
 	return m
 }
