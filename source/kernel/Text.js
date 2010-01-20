@@ -2176,7 +2176,7 @@ BoxMorph.subclass('TextMorph', {
 				var lineOffset = this.lineNumberForIndex(offset);
 				// console.log("line: " + e.line + " offset: " + lineOffset)
 				var line = this.lines[e.line + lineOffset - 1]
-				if (line.startIndex) {
+				if (line && line.startIndex) {
 					// console.log(" set to  " + line.startIndex)
 					this.setSelectionRange(line.startIndex, line.getStopIndex());
 				}

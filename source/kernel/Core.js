@@ -3870,26 +3870,27 @@ Morph.subclass("PasteUpMorph", {
         $super(evt, hasFocus); 
     },
 
-    onMouseDown: function PasteUpMorph$onMouseDown($super, evt) {  //default behavior is to grab a submorph
-	$super(evt);
-        var m = this.morphToReceiveEvent(evt);
-        if (Config.usePieMenus) {
-		if (m.handlesMouseDown(evt)) return false;
-		m.showPieMenu(evt, m);
-		return true;
-	}
-	if (m == null) { 
-            this.makeSelection(evt); 
-            return true; 
-        } else if (!evt.isCommandKey() && evt.isLeftMouseButtonDown()) {
-            if (m === this.world()) { 
-                this.makeSelection(evt); 
-                return true; 
-            } else if (m.handlesMouseDown(evt)) return false;
-        }
-        evt.hand.grabMorph(m, evt);
-        return true; 
-    },
+	onMouseDown: function PasteUpMorph$onMouseDown($super, evt) {  //default behavior is to grab a submorph
+		$super(evt);
+		var m = this.morphToReceiveEvent(evt);
+		if (Config.usePieMenus) {
+			if (m.handlesMouseDown(evt)) return false;
+			m.showPieMenu(evt, m);
+			return true;
+		}
+		if (m == null) { 
+			this.makeSelection(evt); 
+			return true; 
+		} else if (!evt.isCommandKey() && evt.isLeftMouseButtonDown()) {
+			if (m === this.world()) { 
+				this.makeSelection(evt); 
+				return true; 
+			} else if (m.handlesMouseDown(evt)) 
+				return false;
+		}
+		evt.hand.grabMorph(m, evt);
+		return true; 
+	},
 
     okToBeGrabbedBy: function(evt) {
         // Paste-ups, especially the world, cannot be grabbed normally
@@ -3908,6 +3909,7 @@ Morph.subclass("PasteUpMorph", {
 		handle.mode = 'reshape';
 		m.addMorph(handle);
 		evt.hand.setMouseFocus(handle);
+		evt.hand.setKeyboardFocus(handle);
 	},
 
 
