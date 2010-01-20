@@ -1702,17 +1702,20 @@ BoxMorph.subclass('TextMorph', {
 		evt.hand.lookNormal();
 		evt.hand.setMouseFocus(null);
 		evt.stop();	 // else weird things happen when return from this link by browser back button
-
 		var url = URL.ensureAbsoluteURL(link);
 		// add require to LKWiki.js here
 		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
-		if (wikiNav && wikiNav.isActive())
+		var isExternalLink = url.hostname != document.location.hostname;
+		if (wikiNav && wikiNav.isActive() && !isExternalLink)
 			wikiNav.askToSaveAndNavigateToUrl(this.world());
 		else
-		this.world().confirm("Please confirm link to " + url.toString(),
+			this.world().confirm("Please confirm link to " + url.toString(),
 		function (answer) {
 			Config.askBeforeQuit = false;
-			window.location.assign(url.toString() + '?' + new Date().getTime());
+			if (isExternalLink)
+				window.location.assign(url.toString());
+			else
+				window.location.assign(url.toString() + '?' + new Date().getTime());
 		}.bind(this));
 	},
 	
