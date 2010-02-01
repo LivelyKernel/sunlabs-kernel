@@ -1706,17 +1706,21 @@ BoxMorph.subclass('TextMorph', {
 		// add require to LKWiki.js here
 		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
 		var isExternalLink = url.hostname != document.location.hostname;
-		if (wikiNav && wikiNav.isActive() && !isExternalLink)
-			wikiNav.askToSaveAndNavigateToUrl(this.world());
-		else
-			this.world().confirm("Please confirm link to " + url.toString(),
-		function (answer) {
+		
+		var followLink = function (answer) {
 			Config.askBeforeQuit = false;
 			if (isExternalLink)
 				window.location.assign(url.toString());
 			else
 				window.location.assign(url.toString() + '?' + new Date().getTime());
-		}.bind(this));
+		}.bind(this);
+		
+		if (Config.quietFollowLink) followLink();
+		
+		if (wikiNav && wikiNav.isActive() && !isExternalLink)
+			wikiNav.askToSaveAndNavigateToUrl(this.world());
+		else
+			this.world().confirm("Please confirm link to " + url.toString(), followLink);
 	},
 	
 	onMouseUp: function(evt) {

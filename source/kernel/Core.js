@@ -4814,13 +4814,13 @@ Morph.subclass("HandMorph", {
 
     initialize: function($super, local) {
         $super(new lively.scene.Polygon([pt(0,0), pt(9,5), pt(5,9), pt(0,0)]));
-	this.applyStyle({fill: local ? Color.primary.blue : Color.primary.red, borderColor: Color.black, borderWidth: 1});
+		this.applyStyle({fill: local ? Color.primary.blue : Color.primary.red, borderColor: Color.black, borderWidth: 1});
 	
         this.isLocal = local;
 
         this.keyboardFocus = null;
         this.mouseFocus = null;
-	this.mouseFocusChanges_ = 0; // count mouse focus changes until reset
+		this.mouseFocusChanges_ = 0; // count mouse focus changes until reset
         this.mouseOverMorph = null;
         this.lastMouseEvent = null;
         this.lastMouseDownPoint = pt(0,0);
@@ -4833,16 +4833,18 @@ Morph.subclass("HandMorph", {
 
         this.priorPoint = null;
         this.owner = null;
-	this.boundMorph = null; // surrounds bounds
-	this.layoutChangedCount = 0; // to prevent recursion on layoutChanged
+		this.boundMorph = null; // surrounds bounds
+		this.layoutChangedCount = 0; // to prevent recursion on layoutChanged
 	
-	this.formalModel =  Record.newPlainInstance({GlobalPosition: null});
+		this.formalModel =  Record.newPlainInstance({GlobalPosition: null});
 	
         return this;
     },
+
     lookNormal: function(morph) {
         this.shape.setVertices([pt(0,0), pt(9,5), pt(5,9), pt(0,0)]);
     },
+
     lookLinky: function(morph) {
         this.shape.setVertices([pt(0,0), pt(18,10), pt(10,18), pt(0,0)]);
     },
@@ -4858,16 +4860,16 @@ Morph.subclass("HandMorph", {
     },
     
     resetMouseFocusChanges: function() {
-	var result = this.mouseFocusChanges_;
-	this.mouseFocusChanges_ = 0;
-	return result;
+		var result = this.mouseFocusChanges_;
+		this.mouseFocusChanges_ = 0;
+		return result;
     },
 
     setMouseFocus: function(morphOrNull) {
         //console.log('setMouseFocus: ' + morphOrNull);
-    this.mouseFocus = morphOrNull;
-	this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
-	this.mouseFocusChanges_ ++;
+    	this.mouseFocus = morphOrNull;
+		this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
+		this.mouseFocusChanges_ ++;
     },
     
     setKeyboardFocus: function(morphOrNull) {
@@ -4915,35 +4917,35 @@ Morph.subclass("HandMorph", {
     }.logErrors('Event Handler'),
 
     armProfileFor: function(evtType) { 
-	this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
+		this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
     },
 
-    makeAMove: function() {
-	// Process a null mouseMove event -- no change in x, y
-	// Allows simulations to respond where, eg, a morph moves under the mouse
-	// Note: Fabrik generates also Mouse events with newFakeMouseEvent; to be merged
-	var last = this.lastMouseEvent;
-	if (!last) return;
-	var nullMove = new Event(last.rawEvent);
-	nullMove.type = "MouseMove";
-	nullMove.hand = this;
-	// console.log("last = " + Object.inspect(this.lastMouseEvent));
-	// console.log("null = " + Object.inspect(nullMove));
-	this.reallyHandleMouseEvent(nullMove);
-	this.lastMouseEvent = last;  // Restore -- necess??
-    },
+	makeAMove: function() {
+		// Process a null mouseMove event -- no change in x, y
+		// Allows simulations to respond where, eg, a morph moves under the mouse
+		// Note: Fabrik generates also Mouse events with newFakeMouseEvent; to be merged
+		var last = this.lastMouseEvent;
+		if (!last) return;
+		var nullMove = new Event(last.rawEvent);
+		nullMove.type = "MouseMove";
+		nullMove.hand = this;
+		// console.log("last = " + Object.inspect(this.lastMouseEvent));
+		// console.log("null = " + Object.inspect(nullMove));
+		this.reallyHandleMouseEvent(nullMove);
+		this.lastMouseEvent = last;  // Restore -- necess??
+	},
 
-    handleMouseEvent: function HandMorph$handleMouseEvent(evt) {
-	if(!Config.debugExtras || !this.profileArmed || this.profileArmed != evt.type) {
-		// Profile not armed or event doesnt match
-		return this.reallyHandleMouseEvent(evt);
-	}
-	// Run profile during handling of this event
-	this.profileArmed = null;  // Only this once
-	var result;
-	lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this), this.profilingOptions );
-	return result;
-    },
+	handleMouseEvent: function HandMorph$handleMouseEvent(evt) {
+		if(!Config.debugExtras || !this.profileArmed || this.profileArmed != evt.type) {
+			// Profile not armed or event doesnt match
+			return this.reallyHandleMouseEvent(evt);
+		}
+		// Run profile during handling of this event
+		this.profileArmed = null;  // Only this once
+		var result;
+		lively.lang.Execution.trace(function() { result = this.reallyHandleMouseEvent(evt) }.bind(this), this.profilingOptions );
+		return result;
+	},
 
     reallyHandleMouseEvent: function HandMorph$reallyHandleMouseEvent(evt) { 
 		// console.log("reallyHandleMouseEvent " + evt + " focus " +  this.mouseFocus);
@@ -5019,108 +5021,109 @@ Morph.subclass("HandMorph", {
             }
         }
         this.lastMouseEvent = evt; 
-	return true;
+		return true;
     },
     
     checkMouseOverAndOut: function(newMouseOverMorph, evt) {
-	if (newMouseOverMorph === this.mouseOverMorph) return false;
+		if (newMouseOverMorph === this.mouseOverMorph) return false;
 
-	// if over a new morph, send onMouseOut, onMouseOver
-	if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
-	this.mouseOverMorph = newMouseOverMorph;
-	// console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
-	if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
-	return true;
-    },
+		// if over a new morph, send onMouseOut, onMouseOver
+		if (this.mouseOverMorph) this.mouseOverMorph.onMouseOut(evt);
+		this.mouseOverMorph = newMouseOverMorph;
+		// console.log('msOverMorph set to: ' + Object.inspect(this.mouseOverMorph));
+		if (this.mouseOverMorph) this.mouseOverMorph.onMouseOver(evt);
+		return true;
+	},
 
     layoutChanged: function($super) {
-	this.layoutChangedCount ++;
-	try {
-	    $super();
-	    if (this.layoutChangedCount == 1) {
-		Config.showGrabHalo && this.updateGrabHalo();
-	    }
-	} finally {
-	    this.layoutChangedCount --;
-	}
+		this.layoutChangedCount ++;
+		try {
+			$super();
+			if (this.layoutChangedCount == 1) {
+				Config.showGrabHalo && this.updateGrabHalo();
+			}
+		} finally {
+			this.layoutChangedCount --;
+		}
     },
 
 
     showAsGrabbed: function(grabbedMorph) {
-	// At this time, there are three separate hand-effects:
-	//  1. applyDropShadowFilter, if it works, will cause the graphics engine to put a nice
-	//	gaussian blurred drop-shadow on morphs that are grabbed by the hand
-	//  2. showGrabHalo will cause a halo object to be put at the end of the hand's
-	//	submorph list for every grabbed morph (has property 'morphTrackedByHalo')
-	//  3. useShadowMorphs will cause a shadowCopy of each grabbed morph to be put
-	//	at the end of the hand's submorph list (has property 'isHandMorphShadow')
-	// So, if everything is working right, the hand's submorph list looks like:
-	//	front -> Mc, Mb, Ma, Ha, Sa, Hb, Sb, Hc, Sc <- back [note front is last ;-]
-	// Where M's are grabbed morphs, H's are halos if any, and S's are shadows if any
+		// At this time, there are three separate hand-effects:
+		//  1. applyDropShadowFilter, if it works, will cause the graphics engine to put a nice
+		//	   gaussian blurred drop-shadow on morphs that are grabbed by the hand
+		//  2. showGrabHalo will cause a halo object to be put at the end of the hand's
+		//	   submorph list for every grabbed morph (has property 'morphTrackedByHalo')
+		//  3. useShadowMorphs will cause a shadowCopy of each grabbed morph to be put
+		//	   at the end of the hand's submorph list (has property 'isHandMorphShadow')
+		// So, if everything is working right, the hand's submorph list looks like:
+		//	front -> Mc, Mb, Ma, Ha, Sa, Hb, Sb, Hc, Sc <- back [note front is last ;-]
+		// Where M's are grabbed morphs, H's are halos if any, and S's are shadows if any
 
         if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
 
-	if (Config.showGrabHalo) {
-	    var bounds = grabbedMorph.bounds(true);
-	    var halo = this.addMorphBack(Morph.makeRectangle(bounds).applyStyle({fill: null, borderWidth: 0.5 }));
-	    halo.morphTrackedByHalo = grabbedMorph;
-	    halo.shape.setStrokeDashArray(String([3,2]));
-	    halo.setLineJoin(lively.scene.LineJoins.Round);
-	    halo.ignoreEvents();
+		if (Config.showGrabHalo) {
+		    var bounds = grabbedMorph.bounds(true);
+		    var halo = this.addMorphBack(Morph.makeRectangle(bounds).applyStyle({fill: null, borderWidth: 0.5 }));
+		    halo.morphTrackedByHalo = grabbedMorph;
+		    halo.shape.setStrokeDashArray(String([3,2]));
+		    halo.setLineJoin(lively.scene.LineJoins.Round);
+		    halo.ignoreEvents();
 
-	    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
-	    idLabel.applyStyle(this.grabHaloLabelStyle);
-	    halo.addMorph(idLabel);
-	    idLabel.align(idLabel.bounds().bottomLeft(), halo.innerBounds().topRight());
+		    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
+		    idLabel.applyStyle(this.grabHaloLabelStyle);
+		    halo.addMorph(idLabel);
+		    idLabel.align(idLabel.bounds().bottomLeft(), halo.innerBounds().topRight());
 	    
-	    var pos = grabbedMorph.getPosition();
-	    var posLabel = new TextMorph(pt(20, 10).extentAsRectangle(), "").beLabel();
-	    posLabel.applyStyle(this.grabHaloLabelStyle);
-	    halo.positionLabel = halo.addMorph(posLabel);
+		    var pos = grabbedMorph.getPosition();
+		    var posLabel = new TextMorph(pt(20, 10).extentAsRectangle(), "").beLabel();
+		    posLabel.applyStyle(this.grabHaloLabelStyle);
+		    halo.positionLabel = halo.addMorph(posLabel);
 
-	this.updateGrabHalo();
-	}
+			this.updateGrabHalo();
+		}
         if (this.useShadowMorphs) {
-		var shadow = grabbedMorph.shadowCopy();
-		shadow.isHandMorphShadow = true;
-		this.addMorphBack(shadow);
-		shadow.moveBy(pt(8, 8));
-	}
+			var shadow = grabbedMorph.shadowCopy();
+			shadow.isHandMorphShadow = true;
+			this.addMorphBack(shadow);
+			shadow.moveBy(pt(8, 8));
+		}
     },
 
     showAsUngrabbed: function(grabbedMorph) {
-	if (this.applyDropShadowFilter) grabbedMorph.applyFilter(null);
+		if (this.applyDropShadowFilter) grabbedMorph.applyFilter(null);
     },
     
     alignToGrid: function() {
         if(!Config.showGrabHalo) return;
         var grid = function(a) {
-            return a - (a % (Config.alignToGridSpace || 5))};
-	this.submorphs.forEach(function(halo) {
-	    if (halo.morphTrackedByHalo) { // this is a tracking halo
-        	if (!halo.orgSubmorphPosition)
-		    halo.orgSubmorphPosition = halo.morphTrackedByHalo.getPosition();
-		var oldPos = this.worldPoint(halo.orgSubmorphPosition);
-		var gridPos = pt(grid(oldPos.x), grid(oldPos.y));
-		halo.morphTrackedByHalo.setPosition(this.localize(gridPos));
-	    }
-	}.bind(this));
+            return a - (a % (Config.alignToGridSpace || 5))
+		};
+		this.submorphs.forEach(function(halo) {
+		    if (halo.morphTrackedByHalo) { // this is a tracking halo
+	        	if (!halo.orgSubmorphPosition)
+			    halo.orgSubmorphPosition = halo.morphTrackedByHalo.getPosition();
+			var oldPos = this.worldPoint(halo.orgSubmorphPosition);
+			var gridPos = pt(grid(oldPos.x), grid(oldPos.y));
+			halo.morphTrackedByHalo.setPosition(this.localize(gridPos));
+		    }
+		}.bind(this));
     },
 
     updateGrabHalo: function Morph$updateGrabHalo() {
-	// Note there may be several grabHalos, and drop shadows as well
-	// See the comment in showAsGrabbed 
-	this.submorphs.forEach(function(halo) {
-	    if (halo.morphTrackedByHalo) { // this is a tracking halo
-		halo.setBounds(halo.morphTrackedByHalo.bounds(true).expandBy(3));
-		if (halo.positionLabel) {
-		    var pos = this.worldPoint(halo.morphTrackedByHalo.getPosition());
-		    var posLabel = halo.positionLabel;
-		    posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
-		    posLabel.align(posLabel.bounds().bottomCenter(), halo.innerBounds().topLeft());
-		}
-	    }
-	}.bind(this));
+		// Note there may be several grabHalos, and drop shadows as well
+		// See the comment in showAsGrabbed 
+		this.submorphs.forEach(function(halo) {
+		    if (halo.morphTrackedByHalo) { // this is a tracking halo
+				halo.setBounds(halo.morphTrackedByHalo.bounds(true).expandBy(3));
+				if (halo.positionLabel) {
+				    var pos = this.worldPoint(halo.morphTrackedByHalo.getPosition());
+				    var posLabel = halo.positionLabel;
+				    posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
+				    posLabel.align(posLabel.bounds().bottomCenter(), halo.innerBounds().topLeft());
+				}
+		    }
+		}.bind(this));
     },
 
     grabMorph: function(grabbedMorph, evt) { 
@@ -5158,33 +5161,35 @@ Morph.subclass("HandMorph", {
     
     addMorphAsGrabbed: function(grabbedMorph) { 
         this.addMorph(grabbedMorph);
-	this.showAsGrabbed(grabbedMorph);
+		this.showAsGrabbed(grabbedMorph);
     },
     
     dropMorphsOn: function(receiver) {
-	if (receiver !== this.world()) this.unbundleCarriedSelection();
-	if (this.logDnD) console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
-	this.carriedMorphsDo( function(m) {
-		m.dropMeOnMorph(receiver);
-		this.showAsUngrabbed(m);
-	});
-	this.shadowMorphsDo( function(m) { m.stopAllStepping(); });
-	this.removeAllMorphs() // remove any shadows or halos
+		if (receiver !== this.world()) 
+			this.unbundleCarriedSelection();
+		if (this.logDnD) 
+			console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
+		this.carriedMorphsDo( function(m) {
+			m.dropMeOnMorph(receiver);
+			this.showAsUngrabbed(m);
+		});
+		this.shadowMorphsDo( function(m) { m.stopAllStepping(); });
+		this.removeAllMorphs() // remove any shadows or halos
     },
 
     carriedMorphsDo: function(func) {
-	// Evaluate func for only those morphs that are being carried,
-	// as opposed to, eg, halos or shadows
-	this.submorphs.clone().reverse().forEach(function(m) {
-	    if (!m.morphTrackedByHalo && !m.isHandMorphShadow) func.call(this, m);
-	}.bind(this));
+		// Evaluate func for only those morphs that are being carried,
+		// as opposed to, eg, halos or shadows
+		this.submorphs.clone().reverse().forEach(function(m) {
+		    if (!m.morphTrackedByHalo && !m.isHandMorphShadow) func.call(this, m);
+		}.bind(this));
     },
 
     shadowMorphsDo: function(func) { 
-	// Evaluate func for only those morphs that are shadows,
-	this.submorphs.clone().reverse().forEach(function(m) {
-	    if (m.isHandMorphShadow) func.call(this, m);
-	}.bind(this));
+		// Evaluate func for only those morphs that are shadows,
+		this.submorphs.clone().reverse().forEach(function(m) {
+		    if (m.isHandMorphShadow) func.call(this, m);
+		}.bind(this));
     },
 
     unbundleCarriedSelection: function() {
