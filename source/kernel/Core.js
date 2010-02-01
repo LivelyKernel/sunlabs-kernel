@@ -5248,27 +5248,27 @@ Morph.subclass("HandMorph", {
     },
 
     transformSubmorphs: function(evt) {
-	var fun = null;
-        switch (evt.getKeyChar()) {
-        case '>':
-	    fun = function(m) { m.setScale(m.getScale()*1.1) };
-	    break;
-        case '<':
-	    fun = function(m) { m.setScale(m.getScale()/1.1) };
-	    break;
-        case ']':
-	    fun = function(m) { m.setRotation(m.getRotation() + 2*Math.PI/16) };
-	    break;
-        case '[':
-            fun = function(m) { m.setRotation(m.getRotation() - 2*Math.PI/16) };
-	    break;
-        }
-	if (fun) {
-	    this.submorphs.forEach(fun);
-	    evt.stop();
-	    return true;
-	} else return false;
-    },
+		var fun = null;
+		switch (evt.getKeyChar()) {
+			case '>':
+				fun = function(m) { m.setScale(m.getScale()*1.1) };
+				break;
+			case '<':
+				fun = function(m) { m.setScale(m.getScale()/1.1) };
+				break;
+			case ']':
+				fun = function(m) { m.setRotation(m.getRotation() + 2*Math.PI/16) };
+				break;
+			case '[':
+				fun = function(m) { m.setRotation(m.getRotation() - 2*Math.PI/16) };
+				break;
+		}
+		if (fun) {
+			this.submorphs.forEach(fun);
+			evt.stop();
+			return true;
+		} else return false;
+	},
 
 	isKeyDown: function(character) {
 		if (!this.keysDown)
@@ -5315,31 +5315,31 @@ Morph.subclass("HandMorph", {
     },
 
     blockBrowserKeyBindings: function(evt) {
-	switch (evt.getKeyCode()) {
-		case Event.KEY_SPACEBAR: // [don't] scroll
-	    	// stop keypress but don't try to stop preceeding keydown,
-	    	// which would prevent keypress from firing and being handled by Text etc
-	    	if (evt.type == "KeyPress") evt.stop();
-	    	break;
-	    case Event.KEY_BACKSPACE: // [don't] go to the previous page 
-	    	evt.stop();
-	    	break;
-		case 22:
-		case 3:
-		case 24:
-			if (evt.isCtrlDown() && evt.type == "KeyPress") evt.preventDefault(); // ctrl+x, ctrl+c, or ctrl+v pressed
-			break;
-		}
-	switch (evt.getKeyChar()) {
-	case "[":
-	case "]":
-	    if (evt.isMetaDown() && evt.type == "KeyPress") {
-		// Safari would want to navigate the history
-		evt.preventDefault();
-		break;
-	    }
-	}
-	
+		switch (evt.getKeyCode()) {
+			case Event.KEY_SPACEBAR: // [don't] scroll
+		    	// stop keypress but don't try to stop preceeding keydown,
+		    	// which would prevent keypress from firing and being handled by Text etc
+		    	if (evt.type == "KeyPress") evt.stop();
+		    	break;
+		    case Event.KEY_BACKSPACE: // [don't] go to the previous page 
+		    	evt.stop();
+		    	break;
+			case 22:
+			case 3:
+			case 24:
+				if (evt.isCtrlDown() && evt.type == "KeyPress") 
+					evt.preventDefault(); // ctrl+x, ctrl+c, or ctrl+v pressed
+				break;
+			}
+		switch (evt.getKeyChar()) {
+			case "[":
+			case "]":
+		    	if (evt.isMetaDown() && evt.type == "KeyPress") {
+					// Safari would want to navigate the history
+					evt.preventDefault();
+					break;
+		    }
+		}	
     },
 
     bounds: function($super) {
@@ -5350,31 +5350,32 @@ Morph.subclass("HandMorph", {
         else return $super();
     },
 
-    insertMorph: function(m, isFront) {
-	// overrides Morph.prototype.insertMorph
-	var insertionPt = this.submorphs.length == 0 ? this.shape.rawNode :
-	    isFront ? this.submorphs.last().rawNode : this.submorphs.first().rawNode;
-        // the last one, so drawn last, so front
+	insertMorph: function(m, isFront) {
+		// overrides Morph.prototype.insertMorph
+		var insertionPt = this.submorphs.length == 0 ? 
+			this.shape.rawNode :
+			(isFront ? this.submorphs.last().rawNode : this.submorphs.first().rawNode);
+			// the last one, so drawn last, so front
 	
-	this.rawNode.insertBefore(m.rawNode, insertionPt);
+		this.rawNode.insertBefore(m.rawNode, insertionPt);
 
-	if (isFront)
-            this.submorphs.push(m);
-	else
-            this.submorphs.unshift(m);
-	m.owner = this;
-	return m;
-    },
+		if (isFront)
+			this.submorphs.push(m);
+		else
+			this.submorphs.unshift(m);
+		m.owner = this;
+		return m;
+	},
     
     toString: function($super) { 
         var superString = $super();
         var extraString = Strings.format(", local=%s,id=%s", this.isLocal, this.id());
-        if (!this.hasSubmorphs()) return superString + ", an empty hand" + extraString;
+        if (!this.hasSubmorphs()) 
+			return superString + ", an empty hand" + extraString;
         return Strings.format("%s, a hand carrying %s%s", superString, this.topSubmorph(), extraString);
     }
     
 });
-
 
 Morph.subclass('LinkMorph', {
 
