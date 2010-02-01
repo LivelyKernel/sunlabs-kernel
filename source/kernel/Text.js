@@ -1693,7 +1693,7 @@ BoxMorph.subclass('TextMorph', {
 					evt.hand.indicator = "edit";
 					evt.hand.lookNormal();
 					evt.hand.removeIndicatorMorph();
-					var morph = evt.hand.ensusreIndicatorMorph();
+					var morph = evt.hand.ensureIndicatorMorph();
 					morph.setTextString("edit");
 					morph.setTextColor(Color.red);
 				}
@@ -1702,7 +1702,7 @@ BoxMorph.subclass('TextMorph', {
 					evt.hand.indicator = link;
 					evt.hand.lookLinky();
 					evt.hand.removeIndicatorMorph();
-					var morph = evt.hand.ensusreIndicatorMorph();
+					var morph = evt.hand.ensureIndicatorMorph();
 					morph.setTextString(link);
 					morph.setExtent(pt(300,20));
 					morph.setTextColor(Color.blue);

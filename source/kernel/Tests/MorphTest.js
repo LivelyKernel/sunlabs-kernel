@@ -183,7 +183,7 @@ TestCase.subclass('HandMorphTest', {
     
 	testRemoveIndicatorMorph: function () {
 		var hand = new HandMorph();
-		hand.ensusreIndicatorMorph();
+		hand.ensureIndicatorMorph();
 
 		var indicatorMorph = hand.indicatorMorph;
 		hand.removeIndicatorMorph();
@@ -194,7 +194,7 @@ TestCase.subclass('HandMorphTest', {
 
 	testEnsusreIndicatorMorph: function () {
 		var hand = new HandMorph()
-		hand.ensusreIndicatorMorph();
+		hand.ensureIndicatorMorph();
 		this.assert(hand.indicatorMorph, "no info text");
 		this.assert(hand.submorphs.include(hand.indicatorMorph), 
 			"info text not in submorphs");

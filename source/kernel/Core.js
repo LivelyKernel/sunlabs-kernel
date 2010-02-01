@@ -5388,7 +5388,7 @@ Morph.subclass("HandMorph", {
 		this.indicatorMorph = undefined;
 	},
 
-	ensusreIndicatorMorph: function() {
+	ensureIndicatorMorph: function() {
 		if (this.indicatorMorph)
 			return this.indicatorMorph;
 		var morph = new TextMorph(new Rectangle(0,0,100,20));
