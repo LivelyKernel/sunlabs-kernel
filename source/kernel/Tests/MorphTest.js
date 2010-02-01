@@ -181,7 +181,25 @@ TestCase.subclass('HandMorphTest', {
         this.assert(hand.mouseOverMorph === morph, "morph is not mouseOverMorph");        
     },
     
-    
+	testRemoveIndicatorMorph: function () {
+		var hand = new HandMorph();
+		hand.ensusreIndicatorMorph();
+
+		var indicatorMorph = hand.indicatorMorph;
+		hand.removeIndicatorMorph();
+		this.assert(!hand.indicatorMorph, "info text is still there");
+		this.assert(!hand.submorphs.include(indicatorMorph), 
+			"info morph still in submorphs");
+	},
+
+	testEnsusreIndicatorMorph: function () {
+		var hand = new HandMorph()
+		hand.ensusreIndicatorMorph();
+		this.assert(hand.indicatorMorph, "no info text");
+		this.assert(hand.submorphs.include(hand.indicatorMorph), 
+			"info text not in submorphs");
+	},
+
     tearDown: function(){
         if(this.morph) this.morph.remove();
         if(this.morph2) this.morph2.remove();
@@ -514,6 +532,7 @@ dbgOn(true);
 		this.assertEqual(result, pt(0, 0)); // maxRepuslion = 20, minDist = 50, maxDist=100
 	},
 });
+
 
 // logMethod(Morph.prototype, "morphToGrabOrReceive");
 // logMethod(Morph.prototype, "onMouseOut");

@@ -269,4 +269,3 @@ if (false) {
 }
 
 Config.confirmNavigation = false; // don't show confirmation dialog when navigating a link
-

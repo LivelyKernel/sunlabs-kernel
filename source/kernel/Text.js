@@ -1663,7 +1663,7 @@ BoxMorph.subclass('TextMorph', {
 	onMouseDown: function(evt) {
 		var link = this.linkUnderMouse(evt);
 		if (link && !evt.isCtrlDown()) { // there has to be a way to edit links!
-			console.log("follow link")
+			console.log("follow link " + link)
 			this.doLinkThing(evt, link);
 			return true;
 		}
@@ -1680,12 +1680,48 @@ BoxMorph.subclass('TextMorph', {
 		ClipboardHack.selectPasteBuffer();
 		return true; 
 	},
-
-	onMouseMove: function($super, evt) {  
+	
+	onMouseMove: function($super, evt) { 
+		// console.log("mouse move " + evt.mousePoint)
 		if (this.isSelecting) return this.extendSelectionEvt(evt);
-		if (this.linkUnderMouse(evt)) evt.hand.lookLinky();
-		else evt.hand.lookNormal();
+		var link = this.linkUnderMouse(evt);
+		// TODO refactor ito into HandleMorph
+		// but this is a good place to evalutate what a mouse indicators should look like..
+		if (link && this.containsPoint(evt.mousePoint)) { // there is onMouseMove after the onMouseOut
+			if (evt.isCtrlDown()) {
+				if (evt.hand.indicator != "edit") {
+					evt.hand.indicator = "edit";
+					evt.hand.lookNormal();
+					evt.hand.removeIndicatorMorph();
+					var morph = evt.hand.ensusreIndicatorMorph();
+					morph.setTextString("edit");
+					morph.setTextColor(Color.red);
+				}
+			} else {
+				if (evt.hand.indicator != link) {
+					evt.hand.indicator = link;
+					evt.hand.lookLinky();
+					evt.hand.removeIndicatorMorph();
+					var morph = evt.hand.ensusreIndicatorMorph();
+					morph.setTextString(link);
+					morph.setExtent(pt(300,20));
+					morph.setTextColor(Color.blue);
+				}
+			}
+		} else {
+			evt.hand.lookNormal();
+			evt.hand.removeIndicatorMorph();
+			evt.hand.indicator = undefined;			
+		};
 		return $super(evt);		   
+	},
+
+	onMouseOut: function($super, evt) {
+		$super(evt);
+		// console.log("mouse out " + evt.mousePoint)
+		evt.hand.lookNormal();
+		evt.hand.removeIndicatorMorph();
+		evt.hand.indicator = undefined;
 	},
 
 	linkUnderMouse: function(evt) {	 
@@ -1694,7 +1730,7 @@ BoxMorph.subclass('TextMorph', {
 		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
 		return this.textStyle.valueAt(charIx).link;		  
 	},
-
+	
 	doLinkThing: function(evt, link) { 
 		// Later this should set a flag like isSelecting, so that we can highlight the 
 		// link during mouseDown and then act on mouseUp.
@@ -1715,14 +1751,15 @@ BoxMorph.subclass('TextMorph', {
 				window.location.assign(url.toString() + '?' + new Date().getTime());
 		}.bind(this);
 		
-		if (Config.quietFollowLink) followLink();
+		if (!Config.confirmNavigation) 
+			return followLink();
 		
 		if (wikiNav && wikiNav.isActive() && !isExternalLink)
 			wikiNav.askToSaveAndNavigateToUrl(this.world());
 		else
 			this.world().confirm("Please confirm link to " + url.toString(), followLink);
-	},
-	
+	},	
+
 	onMouseUp: function(evt) {
 		this.isSelecting = false;
 

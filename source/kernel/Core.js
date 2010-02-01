@@ -5275,20 +5275,27 @@ Morph.subclass("HandMorph", {
 			return false;
 		return this.keysDown[character]
 	},
+	
+	forgetKeyDown: function(evt) {
+		this.keysDown[evt.getKeyChar()] = false;
+		// hack, around weired events when command is pressed
+		if (evt.getKeyCode() == 91) {
+			// console.log("clear keydown list...")
+			this.keysDown = {};
+		
+		};
+	},
+
+	rememberKeyDown: function(evt) {
+ 		//console.log("remember KeyDown " + evt.getKeyChar())
+		this.keysDown[evt.getKeyChar()] = true;
+	},
 
     handleKeyboardEvent: function(evt) { 
 		// console.log("event: " + evt )
 		if(evt.type == "KeyUp") {
- 			// console.log("handleKeyboardEvent KeyUp " + evt.getKeyChar());
-			this.keysDown[evt.getKeyChar()] = false;
-			// hack, around weired events when command is pressed
-			if (evt.getKeyCode() == 91) {
-				// console.log("clear keydown list...")
-				this.keysDown = {};
-			};
-				
+ 			this.forgetKeyDown(evt);			
 		};
-
         if (this.hasSubmorphs())  {
             if (evt.type == "KeyDown" && this.moveSubmorphs(evt)) return;
             else if (evt.type == "KeyPress" && this.transformSubmorphs(evt)) return;
@@ -5308,12 +5315,11 @@ Morph.subclass("HandMorph", {
 			this.keysDown = {};
 		};
 		if(evt.type == "KeyDown") {
- 			// console.log("handleKeyboardEvent KeyDown " + evt.getKeyChar())
-			this.keysDown[evt.getKeyChar()] = true;
+			this.rememberKeyDown(evt);
 		};
 		this.blockBrowserKeyBindings(evt);
     },
-
+	
     blockBrowserKeyBindings: function(evt) {
 		switch (evt.getKeyCode()) {
 			case Event.KEY_SPACEBAR: // [don't] scroll
@@ -5373,9 +5379,37 @@ Morph.subclass("HandMorph", {
         if (!this.hasSubmorphs()) 
 			return superString + ", an empty hand" + extraString;
         return Strings.format("%s, a hand carrying %s%s", superString, this.topSubmorph(), extraString);
-    }
-    
+    },
+
+	removeIndicatorMorph: function() {
+		if (!this.indicatorMorph)
+			return;
+		this.indicatorMorph.remove();
+		this.indicatorMorph = undefined;
+	},
+
+	ensusreIndicatorMorph: function() {
+		if (this.indicatorMorph)
+			return this.indicatorMorph;
+		var morph = new TextMorph(new Rectangle(0,0,100,20));
+		morph.setPosition(this.shape.bounds().bottomRight().addPt(pt(-5,-5)))
+		morph.ignoreEvents();
+		morph.isEpimorph = true;
+		morph.setBorderWidth(0);
+		morph.setFill(null);
+		this.indicatorMorph = morph;
+		this.addMorph(morph);
+		return morph
+	},
+
+	hasSubmorphs: function() {
+		if (this.submorphs.length == 0)
+			return false;
+		else
+			return this.submorphs.reject(function(ea) {return ea.isEpimorph}).length != 0;
+	},
 });
+
 
 Morph.subclass('LinkMorph', {
 
