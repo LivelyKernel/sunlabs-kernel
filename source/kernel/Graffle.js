@@ -41,6 +41,21 @@ layerClass(GraffleLayer, PasteUpMorph, {
 	}
 });
 
+layerClass(GraffleLayer, SelectionMorph, {
+	onKeyDown: function(proceed, evt) {
+		var map = {S: "shape", C: "connect", T: "text"};
+		var mode = map[evt.getKeyChar()];				
+		if (mode)
+			evt.hand.ensureIndicatorMorph().setTextString(mode);
+		return proceed(evt)
+	},
+
+	onKeyUp: function(proceed, evt) {
+		evt.hand.ensureIndicatorMorph().setTextString("")
+		return proceed(evt)
+	},
+});
+
 
 /*
  * 
