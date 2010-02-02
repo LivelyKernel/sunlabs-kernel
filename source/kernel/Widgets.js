@@ -1989,7 +1989,11 @@ Morph.subclass("MenuMorph", {
         var menuRect = this.bounds();  //includes caption if any
         // Intersect with parentMorph bounds to get visible region.  Note we need shape.bounds,
         // since parentMorph.bounds() would include stick-outs, including this menu!
-        var visibleRect = menuRect.intersection(this.owner.shape.bounds()); 
+		// TODO: hide it somewhere...
+		var offset = -20;
+		var bounds = pt(window.pageXOffset,  window.pageYOffset).extent(
+			pt(window.innerWidth + offset, window.innerHeight + offset));        
+		var visibleRect = menuRect.intersection(bounds);
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
         if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
