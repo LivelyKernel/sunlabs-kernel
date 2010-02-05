@@ -2860,165 +2860,178 @@ BoxMorph.subclass('LabeledTextMorph', {
 
 Object.subclass('RunArray', {
 	// A run-coded array for storing text emphasis codes
-    initialize: function(runs, vals) {
-	this.runs = runs;  // An array with the length of each run
-	this.values = vals;   // An array with the value at each run (an emphasis object)
-	this.lastIndex = 0;  // A cache that allows streaming in linear time
-	this.lastRunIndex = 0;  // Run index corresponding to lastIndex
-    },
-    valueAt: function(index) {
-	var m = this.markAt(index);
-	return this.values[m.runIndex];
-    },
-    runLengthAt: function(index) {
-	var m = this.markAt(index);
-	return this.runs[m.runIndex] - m.offset;
-    },
-    markAt: function(index) {
-	// Returns a 'mark' with .runIndex and .offset properties
-	// Cache not loaded, or past index -- start over
-	var runIndex = 0;
-	var offset = index;
-	if (this.lastIndex && this.lastIndex <= index) {
-	    // Cache loaded and before index -- start there
-	    runIndex = this.lastRunIndex;
-	    offset = index-this.lastIndex;
-	}
-	while (runIndex < this.runs.length-1 && offset >= this.runs[runIndex]) {
-	    offset = offset - this.runs[runIndex];
-	    runIndex ++;
-	}
-	// OK, we're there.  Cache this state and call the function
-	this.lastRunIndex = runIndex;
-	this.lastIndex = index - offset;
-	//console.log("index = " + index + "; runIndex = " + runIndex + "; offset = " + offset);
-	//console.log("this.lastRunIndex = " + this.lastRunIndex + "; this.lastIndex  = " + this.lastIndex);
-	return {runIndex: runIndex, offset: offset};
-    },
-    slice: function(start, beyondStop) {  // Just like Array.slice()
-	var stop = beyondStop-1;
-	// return the subrange from start to stop
-	if (stop < start) return new RunArray([0], [null]);
-	mStart = this.markAt(start);
-	mStop = this.markAt(stop);
-	if (mStart.runIndex == mStop.runIndex) {
-	    newRuns = [mStop.offset - mStart.offset +1];
-	} else {
-	    newRuns = this.runs.slice(mStart.runIndex, mStop.runIndex+1);
-	    newRuns[0] -= mStart.offset;
-	    newRuns[newRuns.length-1] = mStop.offset + 1;
-	}
-	return new RunArray(newRuns, this.values.slice(mStart.runIndex, mStop.runIndex + 1));
-    },
-    substring: function(start, beyondStop) {  // echo string protocol
-	return this.slice(start, beyondStop);
-    },
-    concat: function(other) {  // Just like Array.concat()
-	if (other.empty()) return new RunArray(this.runs, this.values);
-	if (this.empty()) return new RunArray(other.runs, other.values);
-	if (!this.equalValues(this.valueAt(this.length()-1),  other.valueAt(0))) {
-	    // DI: above test faster if use values directly
-	    // values differ at seam, so it's simple...
-	    return new RunArray(this.runs.concat(other.runs),
-				this.values.concat(other.values));
-	}
-	var newValues = this.values.concat(other.values.slice(1));
-	var newRuns = this.runs.concat(other.runs.slice(1));
-	newRuns[this.runs.length-1] = this.runs[this.runs.length-1] + other.runs[0];
-	return new RunArray(newRuns, newValues);
-    },
-    asArray: function() {
-	var result = new Array(this.length());
-	for (var i = 0; i<this.length(); i++) result[i] = this.valueAt(i);
-	return result;
-    },
-    length: function() {
-	var len = 0;
-	this.runs.forEach(function(runLength) { len += runLength; });
-	return len;
-    },
-    clone: function() {
-	// OK to share vecause we never store into runs or values
-	return new RunArray(this.runs, this.values);
-    },
-    empty: function() {
-	return this.runs.length == 1 && this.runs[0] == 0;
-    },
-    mergeStyle: function(emph, start, stop) {
-	// Note stop is end index, not +1 like slice
-	if (start == null) return this.mergeAllStyle(emph);
-	var newRun = this.slice(start, stop+1).mergeAllStyle(emph);
-	if (start > 0) newRun = this.slice(0, start).concat(newRun);
-	if (stop < this.length()-1) newRun = newRun.concat(this.slice(stop+1, this.length()));
-	return newRun.coalesce();
-    },
-    
-    mergeAllStyle: function(emph) {
-	// Returns a new runArray with values merged with emph throughout
-	var newValues = this.values.map(function(each) {return emph.merge(each); });
-	// Note: this may cause == runs that should be coalesced
-	// ...but we catch most of these in mergeStyle
-	return new RunArray(this.runs, newValues).coalesce();
-    },
-    coalesce: function() {
-	// Returns a copy with adjacent equal values coalesced
-	// Uses extra slice to copy arrays rather than alter in place
-	var runs = this.runs.slice(0);  // copy because splice will alter
-	var values = this.values.slice(0);  // ditto
-	var i = 0;
-	while (i < runs.length-1) {
-	    if (this.equalValues(values[i], values[i+1]) ) {
-		values.splice(i+1,1);
-		var secondRun = runs[i+1];
-		runs.splice(i+1,1);
-		runs[i] += secondRun;
-	    } else i++;
-	}
-	return new RunArray(runs, values);
-    },
-    
-    equalValues: function(s1, s2) {
-	// values are style objs like {style: 'bold', fontSize: 14}
-	if (typeof s1 == "number" && typeof s2 == "number") return s1 == s2;  // used for testing
-	var match = true;
-	Properties.forEachOwn(s1, function(p, v) {match = match && s2[p] == v});
-	if (! match) return false;
-	// Slow but sure...
-	Properties.forEachOwn(s2, function(p, v) {match = match && s1[p] == v});
-	return match;
-    },
-    toString: function() {
-	return "runs = " + this.runs + ";  values = " + this.values;
-    },
-    toLiteral: function() {
-	return {runs: this.runs.clone(), values: this.values.clone() }
-    }
+	initialize: function(runs, vals) {
+		this.runs = runs;  // An array with the length of each run
+		this.values = vals;   // An array with the value at each run (an emphasis object)
+		this.lastIndex = 0;  // A cache that allows streaming in linear time
+		this.lastRunIndex = 0;  // Run index corresponding to lastIndex
+	},
 
+	valueAt: function(index) {
+		var m = this.markAt(index);
+		return this.values[m.runIndex];
+	},
+
+	runLengthAt: function(index) {
+		var m = this.markAt(index);
+		return this.runs[m.runIndex] - m.offset;
+	},
+
+	markAt: function(index) {
+		// Returns a 'mark' with .runIndex and .offset properties
+		// Cache not loaded, or past index -- start over
+		var runIndex = 0;
+		var offset = index;
+		if (this.lastIndex && this.lastIndex <= index) {
+			// Cache loaded and before index -- start there
+			runIndex = this.lastRunIndex;
+			offset = index-this.lastIndex;
+		}
+		while (runIndex < this.runs.length-1 && offset >= this.runs[runIndex]) {
+			offset = offset - this.runs[runIndex];
+			runIndex ++;
+		}
+		// OK, we're there.  Cache this state and call the function
+		this.lastRunIndex = runIndex;
+		this.lastIndex = index - offset;
+		//console.log("index = " + index + "; runIndex = " + runIndex + "; offset = " + offset);
+		//console.log("this.lastRunIndex = " + this.lastRunIndex + "; this.lastIndex  = " + this.lastIndex);
+		return {runIndex: runIndex, offset: offset};
+	},
+
+	slice: function(start, beyondStop) {  // Just like Array.slice()
+		var stop = beyondStop-1;
+		// return the subrange from start to stop
+		if (stop < start) return new RunArray([0], [null]);
+		mStart = this.markAt(start);
+		mStop = this.markAt(stop);
+		if (mStart.runIndex == mStop.runIndex) {
+			newRuns = [mStop.offset - mStart.offset +1];
+		} else {
+			newRuns = this.runs.slice(mStart.runIndex, mStop.runIndex+1);
+			newRuns[0] -= mStart.offset;
+			newRuns[newRuns.length-1] = mStop.offset + 1;
+		}
+		return new RunArray(newRuns, this.values.slice(mStart.runIndex, mStop.runIndex + 1));
+	},
+
+	substring: function(start, beyondStop) {  // echo string protocol
+		return this.slice(start, beyondStop);
+	},
+
+	concat: function(other) {  // Just like Array.concat()
+		if (other.empty()) return new RunArray(this.runs, this.values);
+		if (this.empty()) return new RunArray(other.runs, other.values);
+		if (!this.equalValues(this.valueAt(this.length()-1),  other.valueAt(0))) {
+			// DI: above test faster if use values directly
+			// values differ at seam, so it's simple...
+			return new RunArray(this.runs.concat(other.runs),
+			this.values.concat(other.values));
+		}
+		var newValues = this.values.concat(other.values.slice(1));
+		var newRuns = this.runs.concat(other.runs.slice(1));
+		newRuns[this.runs.length-1] = this.runs[this.runs.length-1] + other.runs[0];
+		return new RunArray(newRuns, newValues);
+	},
+
+	asArray: function() {
+		var result = new Array(this.length());
+		for (var i = 0; i<this.length(); i++) result[i] = this.valueAt(i);
+		return result;
+	},
+
+	length: function() {
+		var len = 0;
+		this.runs.forEach(function(runLength) { len += runLength; });
+		return len;
+	},
+
+	clone: function() {
+		// OK to share vecause we never store into runs or values
+		return new RunArray(this.runs, this.values);
+	},
+	empty: function() {
+		return this.runs.length == 1 && this.runs[0] == 0;
+	},
+
+	mergeStyle: function(emph, start, stop) {
+		// Note stop is end index, not +1 like slice
+		if (start == null) return this.mergeAllStyle(emph);
+		var newRun = this.slice(start, stop+1).mergeAllStyle(emph);
+		if (start > 0) newRun = this.slice(0, start).concat(newRun);
+		if (stop < this.length()-1) newRun = newRun.concat(this.slice(stop+1, this.length()));
+		return newRun.coalesce();
+	},
+    
+	mergeAllStyle: function(emph) {
+		// Returns a new runArray with values merged with emph throughout
+		var newValues = this.values.map(function(each) {return emph.merge(each); });
+		// Note: this may cause == runs that should be coalesced
+		// ...but we catch most of these in mergeStyle
+		return new RunArray(this.runs, newValues).coalesce();
+	},
+
+	coalesce: function() {
+		// Returns a copy with adjacent equal values coalesced
+		// Uses extra slice to copy arrays rather than alter in place
+		var runs = this.runs.slice(0);  // copy because splice will alter
+		var values = this.values.slice(0);  // ditto
+		var i = 0;
+		while (i < runs.length-1) {
+			if (this.equalValues(values[i], values[i+1]) ) {
+				values.splice(i+1,1);
+				var secondRun = runs[i+1];
+				runs.splice(i+1,1);
+				runs[i] += secondRun;
+			} else i++;
+		}
+		return new RunArray(runs, values);
+	},
+    
+	equalValues: function(s1, s2) {
+		// values are style objs like {style: 'bold', fontSize: 14}
+		if (typeof s1 == "number" && typeof s2 == "number") return s1 == s2;  // used for testing
+		var match = true;
+		Properties.forEachOwn(s1, function(p, v) {match = match && s2[p] == v});
+		if (! match) return false;
+		// Slow but sure...
+		Properties.forEachOwn(s2, function(p, v) {match = match && s1[p] == v});
+		return match;
+	},
+
+    toString: function() {
+		return "runs = " + this.runs + ";  values = " + this.values;
+    },
+
+    toLiteral: function() {
+		return {runs: this.runs.clone(), values: this.values.clone() }
+    }
 });
+
 Object.extend(RunArray, {
 
     fromLiteral: function(literal) {
-	return new RunArray(literal.runs, literal.values);
+		return new RunArray(literal.runs, literal.values);
     },
 
-    test: function(a) {
-	var ra = new RunArray(a, a); // eg [3, 1, 2], [3, 1, 2]
-	console.log("RunArray test for " + ra + " = " + ra.asArray());
-	for (var i = 0; i < ra.length(); i++) {
-	    var m = ra.markAt(i);
-	    // console.log(i + ":  run = " + m.runIndex + ", offset = " + m.offset);
+	test: function(a) {
+		var ra = new RunArray(a, a); // eg [3, 1, 2], [3, 1, 2]
+		console.log("RunArray test for " + ra + " = " + ra.asArray());
+		for (var i = 0; i < ra.length(); i++) {
+			var m = ra.markAt(i);
+			// console.log(i + ":  run = " + m.runIndex + ", offset = " + m.offset);
+		}
+		for (var i = 0; i <= ra.length(); i++) {
+			// break into all possible pairs, join them, and check
+			var ra1 = ra.slice(0, i);
+			var ra2 = ra.slice(i, ra.length());
+			var ra3 = ra1.concat(ra2);
+			// console.log(i + ": " + ra1 + " || " + ra2 + " = " + ra3);
+			for (var j = 0; i <= ra.length(); i++) {
+				if (ra3.valueAt(j) != ra.valueAt(j)) console.log("***RunArray failing test***");
+			}
+		}
 	}
-	for (var i = 0; i <= ra.length(); i++) {
-	    // break into all possible pairs, join them, and check
-	    var ra1 = ra.slice(0, i);
-	    var ra2 = ra.slice(i, ra.length());
-	    var ra3 = ra1.concat(ra2);
-	    // console.log(i + ": " + ra1 + " || " + ra2 + " = " + ra3);
-	    for (var j = 0; i <= ra.length(); i++) {
-		if (ra3.valueAt(j) != ra.valueAt(j)) console.log("***RunArray failing test***");
-	    }
-	}
-    }
 });
 //RunArray.test([3, 1, 2]);
 
