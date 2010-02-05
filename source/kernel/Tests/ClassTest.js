@@ -7,6 +7,7 @@ TestCase.subclass('ClassTest', {
 		this.assert(Dummy1.isSubclassOf(TestCase));
 		this.assert(Global["Dummy1"]);
 	},
+		
 	testIsSuperclassDeep: function() {
 		TestCase.subclass('Dummy1', {});
 		Dummy1.subclass('Dummy2', {});
@@ -43,7 +44,7 @@ TestCase.subclass('ClassTest', {
 	testSuperMethodsAreAssignedCorrectly: function() {
 	    var className = 'DummyTestSuperMethods';
 	    this.assert(!Global[className], 'Test already there');
-		f1 = function ($super) { 1; };
+		var f1 = function ($super) { 1; };
 	
 	    Object.subclass(className, {
             a: f1,
@@ -52,7 +53,28 @@ TestCase.subclass('ClassTest', {
         var aSource = Global[className].prototype.a.toString();
         delete Global[className];
         this.assertEqual(aSource, f1.toString());
-	}
+	},
+	
+	testSubclassingDoesNotReplaceExistingClass: function() {
+		var className = 'DummyTestOverrideSubclass';
+	    this.assert(!Global[className], 'Test already there');
+		try {
+	    
+			Object.subclass(className, {
+            	a: function () {return 1;},
+			});
+			var oldClass = Global[className];
+			this.assert(oldClass, 'class is not there there');
+			Object.subclass(className, {
+				b: function() {return 2;},
+			})
+			var newClass = Global[className];
+			this.assertIdentity(oldClass, newClass , 'class identity changed...');
+		} finally {
+			delete Global[className];
+		}
+	},
+	
 });
 
 TestCase.subclass('NamespaceTest', {
