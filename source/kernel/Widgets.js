@@ -1866,7 +1866,7 @@ Morph.subclass("MenuMorph", {
 
     addItem: function(item, index) {
         var item = this.addPseudoMorph(this.checkItem(item));
-        if (!index) { this.items.push(item); return }
+        if (!index && (index != 0)) { this.items.push(item); return }
         if (index > this.items.length || index < 0) throw dbgOn(new Error('Strange index'));
         var parts = this.items.partition(function(ea, i) { return i < index });
         parts[0].push(item);
