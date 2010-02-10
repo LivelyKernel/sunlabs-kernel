@@ -73,10 +73,14 @@ a.plain:after, div.navigation a:after, div.copyright a:after {
 	text-decoration: none;
 	background: transparent; }
 
+
+img.logoimage1 {
+  width: 90px; }
+
 div.logo1 {
 	position: absolute; 
 	top: -100px; 
-	left: 0px; }
+	left: 35px; }
 
 div.logo2 {
 	position: relative;
@@ -141,7 +145,7 @@ div.banner {
 	margin-bottom: 20px; }
 
 div.banner1 {
-	font-size: x-large;
+	font-size: xx-large;
 	font-weight: bold; }
 
 div.banner2 {
@@ -150,8 +154,8 @@ div.banner2 {
 
 /* for centered banners */
 div.banner3 {
-  padding-top: 15px;
-	font-size: x-large;
+  padding-top: 10px;
+	font-size: xx-large;
 	font-weight: bold; }
 
 span.paper-title {
