@@ -370,6 +370,8 @@ Object.extend(Function.prototype, {
 		// specially, see Prototype.js documentation for "Class.create()" for details.
 		// derived from Class.Methods.addMethods() in prototype.js
 		var ancestor = this.superclass && this.superclass.prototype;
+		
+		var className = this.constructor.name || "Anonymous";
 
 		for (var property in source) {
 
@@ -403,6 +405,10 @@ Object.extend(Function.prototype, {
 						originalFunction: method
 					});
 				})();
+			}
+			if (Object.isFunction(value)) {
+				// remember name for profiling in WebKit
+				value.displayName = className +"$" + property;
 			}
 			this.prototype[property] = value;
 		
@@ -620,147 +626,145 @@ var Class = {
 
 };
 
-
-
- 
 var Strings = {
-    documentation: "Convenience methods on strings",
-    
-    format: function() {
+	documentation: "Convenience methods on strings",
+	
+	format: function Strings$format() {
 	return this.formatFromArray($A(arguments));
-    },
-    
-    // adapted from firebug lite
-    formatFromArray: function(objects) {
-	var self = objects.shift();
-        if(!self) {console.log("Error in Strings>>formatFromArray, self is undefined")};
+	},
+	
+	// adapted from firebug lite
+	formatFromArray: function Strings$formatFromArray(objects) {
+		var self = objects.shift();
+		if(!self) {console.log("Error in Strings>>formatFromArray, self is undefined")};
 
-	function appendText(object, string) {
-	    return "" + object;
-	}
+		function appendText(object, string) {
+			return "" + object;
+		}
 	
-	function appendObject(object, string) {
-	    return "" + object;
-	}
+		function appendObject(object, string) {
+			return "" + object;
+		}
 	
-	function appendInteger(value, string) {
-	    return value.toString();
-	}
+		function appendInteger(value, string) {
+			return value.toString();
+		}
 	
-	function appendFloat(value, string, precision) {
-	    if (precision > -1) return value.toFixed(precision);
-	    else return value.toString();
-	}
+		function appendFloat(value, string, precision) {
+			if (precision > -1) return value.toFixed(precision);
+			else return value.toString();
+		}
 	
-	var appenderMap = {s: appendText, d: appendInteger, i: appendInteger, f: appendFloat}; 
-	var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
+		var appenderMap = {s: appendText, d: appendInteger, i: appendInteger, f: appendFloat}; 
+		var reg = /((^%|[^\\]%)(\d+)?(\.)([a-zA-Z]))|((^%|[^\\]%)([a-zA-Z]))/; 
 	
-	function parseFormat(fmt) {
-	    var oldFmt = fmt;
-	    var parts = [];
-	    
-	    for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
-		var type = m[8] || m[5];
-		var appender = type in appenderMap ? appenderMap[type] : appendObject;
-		var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
-		parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
-		parts.push({appender: appender, precision: precision});
+		function parseFormat(fmt) {
+			var oldFmt = fmt;
+			var parts = [];
 		
-		fmt = fmt.substr(m.index + m[0].length);
-	    }
-	    if (fmt)
-                parts.push(fmt.toString());
-	    
-	    return parts;
-	};
+			for (var m = reg.exec(fmt); m; m = reg.exec(fmt)) {
+			var type = m[8] || m[5];
+			var appender = type in appenderMap ? appenderMap[type] : appendObject;
+			var precision = m[3] ? parseInt(m[3]) : (m[4] == "." ? -1 : 0);
+			parts.push(fmt.substr(0, m[0][0] == "%" ? m.index : m.index + 1));
+			parts.push({appender: appender, precision: precision});
+		
+			fmt = fmt.substr(m.index + m[0].length);
+			}
+			if (fmt)
+					parts.push(fmt.toString());
+		
+			return parts;
+		};
 	
-	var parts = parseFormat(self);
-	var str = "";
-	var objIndex = 0;
+		var parts = parseFormat(self);
+		var str = "";
+		var objIndex = 0;
 	
-	for (var i = 0; i < parts.length; ++i) {
-	    var part = parts[i];
-	    if (part && typeof(part) == "object") {
-		var object = objects[objIndex++];
-		str += (part.appender || appendText)(object, str, part.precision);
-	    } else {
-		str += appendText(part, str);
-	    }
+		for (var i = 0; i < parts.length; ++i) {
+			var part = parts[i];
+			if (part && typeof(part) == "object") {
+			var object = objects[objIndex++];
+			str += (part.appender || appendText)(object, str, part.precision);
+			} else {
+			str += appendText(part, str);
+			}
+		}
+		return str;
+	},
+
+	withDecimalPrecision: function(str, precision) {
+		var floatValue = parseFloat(str);
+		return isNaN(floatValue) ? str : floatValue.toFixed(precision);
 	}
-	return str;
-    },
-
-    withDecimalPrecision: function(str, precision) {
-	var floatValue = parseFloat(str);
-	return isNaN(floatValue) ? str : floatValue.toFixed(precision);
-    }
-
 };
 
 
-
-
-
-
 var Functions = {
-    documentation: "collection of reusable functions",
+	documentation: "collection of reusable functions",
 
-    Empty: function() {},
-    K: function(arg) { return arg; },
-    Null: function() { return null; },
-    False: function() { return false; },
-    True: function() { return true; },
-	all: function(object) {
+	Empty: function() {},
+
+	K: function(arg) { return arg; },
+
+	Null: function Functions$Null() { return null; },
+
+	False: function Functions$False() { return false; },
+
+	True: function Functions$True() { return true; },
+
+	all: function Functions$all(object) {
 		var a = [];
-		for (var name in object) {  
-	    	if (object[name] instanceof Function)
+		for (var name in object) {	
+			if (object[name] instanceof Function)
 				a.push(name);
 		} 
 		return a;
-    },
-	timeToRun: function(func) {
-		var startTime = (new Date()).getTime();	
+	},
+
+	timeToRun: function Functions$timeToRun(func) {
+		var startTime = (new Date()).getTime(); 
 		func();
 		return new Date().getTime() - startTime;
 	}
 };
-    
+	
 var Properties = {
-    documentation: "convenience property access functions",
+	documentation: "convenience property access functions",
 
-    all: function(object, predicate) {
-	var a = [];
-	for (var name in object) {  
-	    if (!(object[name] instanceof Function) && (predicate ? predicate(name, object) : true)) {
-		a.push(name);
-	    }
-	} 
-	return a;
-    },
-    
-    own: function(object) {
-	var a = [];
-	for (var name in object) {  
-	    if (object.hasOwnProperty(name)) {
-		var value = object[name];
-		if (!(value instanceof Function))
-		    a.push(name);
-	    }
-	} 
-	return a;
-    },
+	all: function Properties$all(object, predicate) {
+		var a = [];
+		for (var name in object) {	
+			if (!(object[name] instanceof Function) && (predicate ? predicate(name, object) : true)) {
+			a.push(name);
+			}
+		} 
+		return a;
+	},
+	
+	own: function Properties$own(object) {
+		var a = [];
+		for (var name in object) {	
+			if (object.hasOwnProperty(name)) {
+			var value = object[name];
+			if (!(value instanceof Function))
+				a.push(name);
+			}
+		} 
+		return a;
+	},
 
-    forEachOwn: function forEachOwn(object, func, context) {
-	for (var name in object) {
-	    if (object.hasOwnProperty(name)) {
-		var value = object[name];
-		if (!(value instanceof Function)) {
-		    var result = func.call(context || this, name, value);
-		    // cont && cont.call(context || this, result); 
+	forEachOwn: function Properties$forEachOwn(object, func, context) {
+		for (var name in object) {
+			if (object.hasOwnProperty(name)) {
+				var value = object[name];
+				if (!(value instanceof Function)) {
+					var result = func.call(context || this, name, value);
+					// cont && cont.call(context || this, result); 
+				}
+			}
 		}
-	    }
 	}
-    }
 };
 
 
