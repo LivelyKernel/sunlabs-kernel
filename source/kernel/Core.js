@@ -216,7 +216,7 @@ var Converter = {
 
 
     toBoolean: function toBoolean(string) {
-	return string && string == 'true';
+		return string && string == 'true';
     },
 
     fromBoolean: function fromBoolean(object) {
@@ -255,13 +255,13 @@ var Converter = {
         return Rectangle.inset(t, l, b, r);
     },
 
-    wrapperAndNodeEncodeFilter: function(baseObj, key) {
-	var value = baseObj[key];
-	if (value instanceof lively.data.Wrapper) return value.uri();
-	if (value instanceof Document || value instanceof Element || value instanceof DocumentType)
-        return JSON.serialize({XML: Exporter.stringify(value)});
-	return value;
-    },
+	wrapperAndNodeEncodeFilter: function(baseObj, key) {
+		var value = baseObj[key];
+		if (value instanceof lively.data.Wrapper) return value.uri();
+		if (value instanceof Document || value instanceof Element || value instanceof DocumentType)
+			return JSON.serialize({XML: Exporter.stringify(value)});
+		return value;
+	},
 
 	wrapperAndNodeDecodeFilter:  function(baseObj, key) {
 		var value = baseObj[key];
@@ -729,95 +729,93 @@ Object.subclass('Exporter', {
 		this.removeHelperNodes(helpers);
 		return result;
 	}
-
-
 });
 
 Object.extend(Exporter, {
 
-    stringify: function(node) {
-	return node ? new XMLSerializer().serializeToString(node) : null;
-    },
+	stringify: function(node) {
+		return node ? new XMLSerializer().serializeToString(node) : null;
+	},
 
-    stringifyArray: function(nodes, conj) {
-	return nodes.map(function(n) { return Exporter.stringify(n) }).join(conj);
-    },
+	stringifyArray: function(nodes, conj) {
+		return nodes.map(function(n) { return Exporter.stringify(n) }).join(conj);
+	},
 
-    shrinkWrapNode: function(node) {
-	// FIXME deal with subdirectories: rewrite the base doc and change xlink:href for scripts
-	var importer = new Importer();
-	var newDoc = importer.getBaseDocument();
-	importer.canvas(newDoc).appendChild(newDoc.importNode(node, true));
-	return newDoc;
-    },
+	shrinkWrapNode: function(node) {
+		// FIXME deal with subdirectories: rewrite the base doc and change xlink:href for scripts
+		var importer = new Importer();
+		var newDoc = importer.getBaseDocument();
+		importer.canvas(newDoc).appendChild(newDoc.importNode(node, true));
+		return newDoc;
+	},
 
-    shrinkWrapMorph: function(morph) {
-	var importer = new Importer();
-	var newDoc = importer.getBaseDocument();
-	newDoc.getElementsByTagName("title")[0].textContent = document.title; // persist the title
-	// FIXME this should go to another place?
-	this.addSystemDictionary(newDoc);
-	importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
-	return newDoc;
-    },
-    
-    addSystemDictionary: function(doc) {
+	shrinkWrapMorph: function(morph) {
+		var importer = new Importer();
+		var newDoc = importer.getBaseDocument();
+		newDoc.getElementsByTagName("title")[0].textContent = document.title; // persist the title
+		// FIXME this should go to another place?
+		this.addSystemDictionary(newDoc);
+		importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
+		return newDoc;
+	},
+	
+	addSystemDictionary: function(doc) {
 		var dict = lively.data.Wrapper.dictionary;
-        if (!dict) return;
+		if (!dict) return;
 		var preExisting = doc.getElementById(dict.id);
 		if (preExisting)
 			preExisting.parentNode.removeChild(preExisting);
-        var newDict = dict.cloneNode(true);
-        doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(newDict, true));
-    },
+		var newDict = dict.cloneNode(true);
+		doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(newDict, true));
+	},
 
-    saveDocumentToFile: function(doc, filename) {
-	if (!filename) return null;
-	if (!filename.endsWith('.xhtml')) {
-	    filename += ".xhtml";
-	    console.log("changed url to " + filename + " for base " + URL.source);
-	}
+	saveDocumentToFile: function(doc, filename) {
+		if (!filename) return null;
+		if (!filename.endsWith('.xhtml')) {
+			filename += ".xhtml";
+			console.log("changed url to " + filename + " for base " + URL.source);
+		}
 
-	var url = URL.source.withFilename(filename);
-	
-	var status = new Resource(Record.newPlainInstance({URL: url})).store(doc, true).getStatus();
-	
-	if (status.isSuccess()) {
-	    console.log("success publishing world at " + url + ", status " + status.code());
-	    return url;
-	} else {
-	    WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code());
+		var url = URL.source.withFilename(filename);
+
+		var status = new Resource(Record.newPlainInstance({URL: url})).store(doc, true).getStatus();
+
+		if (status.isSuccess()) {
+			console.log("success publishing world at " + url + ", status " + status.code());
+			return url;
+		} else {
+			WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code());
+		}
+		return null;
+	},
+
+	saveNodeToFile: function(node, filename) {
+		return this.saveDocumentToFile(this.shrinkWrapNode(node), filename);
 	}
-	return null;
-    },
-    
-    saveNodeToFile: function(node, filename) {
-	return this.saveDocumentToFile(this.shrinkWrapNode(node), filename);
-    }
 
 });
 
 Object.subclass('Copier', {
-    documentation: "context for performing deep copy of objects",
+	documentation: "context for performing deep copy of objects",
 
-    wrapperMap: null,
+	wrapperMap: null,
 
-    toString: function() { 
-	return "#<Copier>"; 
-    },
+	toString: function() { 
+		return "#<Copier>"; 
+	},
 
-    initialize: function() {
-	this.wrapperMap = {};
-    },
+	initialize: function() {
+		this.wrapperMap = {};
+	},
 
-    addMapping: function(oldId, newMorph) {
-	dbgOn(!this.wrapperMap);
-	this.wrapperMap[oldId] = newMorph; 
-    },
+	addMapping: function(oldId, newMorph) {
+		dbgOn(!this.wrapperMap);
+		this.wrapperMap[oldId] = newMorph; 
+	},
 
-    lookup: function(oldId) {
-	return this.wrapperMap[oldId];
-    },
+	lookup: function(oldId) {
+		return this.wrapperMap[oldId];
+	},
 	
 	lookUpOrCopy: function(original) {
 		if (!original) 
@@ -877,69 +875,69 @@ Copier.subclass('Importer', {
 
     verbose: !!Config.verboseImport,
     
-    toString: function() {
-	return "#<Importer>";
-    },
+	toString: function() {
+		return "#<Importer>";
+	},
 
-    initialize: function($super) {
-	$super();
-	this.scripts = [];
-	this.models = [];
-	this.patchSites = [];
-    },
+	initialize: function($super) {
+		$super();
+		this.scripts = [];
+		this.models = [];
+		this.patchSites = [];
+	},
 
-    canvas: function(doc) {
-	// find the first "svg" element with id "canvas"
-	var elements = doc.getElementsByTagName("svg");
-	for (var i = 0; i < elements.length; i++) {
-	    var el = elements.item(i);
-	    if (el.getAttribute("id") == "canvas") {
-		return el;
-	    }
-	}
-	console.log("canvas not found in document " + doc);
-	return null;
-    },
+	canvas: function(doc) {
+		// find the first "svg" element with id "canvas"
+		var elements = doc.getElementsByTagName("svg");
+		for (var i = 0; i < elements.length; i++) {
+			var el = elements.item(i);
+			if (el.getAttribute("id") == "canvas") {
+				return el;
+			}
+		}
+		console.log("canvas not found in document " + doc);
+		return null;
+	},
 
-    getBaseDocument: function() {
-	// FIXME memoize
-	var rec = Record.newPlainInstance({URL: URL.source});
-	var req = new Resource(rec).fetch(true);
-	var status = req.getStatus();
-	if (!status.isSuccess()) {
-	    console.log("failure retrieving  " + URL.source + ", status " + status);
-	    return null;
-	} else {
-	    var doc = req.getResponseXML();
-	    this.clearCanvas(doc);
-	    return doc;
-	}
-    },
+	getBaseDocument: function() {
+		// FIXME memoize
+		var rec = Record.newPlainInstance({URL: URL.source});
+		var req = new Resource(rec).fetch(true);
+		var status = req.getStatus();
+		if (!status.isSuccess()) {
+			console.log("failure retrieving  " + URL.source + ", status " + status);
+			return null;
+		} else {
+			var doc = req.getResponseXML();
+			this.clearCanvas(doc);
+			return doc;
+		}
+	},
 
     
-    canvasContent: function(doc) {
-        var canvas = this.canvas(doc);
-        var elements = [];
-	for (var node = canvas.firstChild; node != null; node = node.nextSibling) {
-           switch (node.localName) {
-           case "g":
-               elements.push(node);
-               break;
-           }
-	}
-	return elements;
-    },
-    
-    clearCanvas: function(doc) {
-	var canvas = this.canvas(doc);
-	var node = canvas.firstChild;
-	while (node) {
-	    var toRemove = node;
-	    node = node.nextSibling;
-	    if (toRemove.localName == "g") 
-		canvas.removeChild(toRemove);
-	}
-    },
+	canvasContent: function(doc) {
+		var canvas = this.canvas(doc);
+		var elements = [];
+		for (var node = canvas.firstChild; node != null; node = node.nextSibling) {
+			switch (node.localName) {
+				case "g":
+				elements.push(node);
+				break;
+			}
+		}
+		return elements;
+	},
+
+	clearCanvas: function(doc) {
+		var canvas = this.canvas(doc);
+		var node = canvas.firstChild;
+		while (node) {
+			var toRemove = node;
+			node = node.nextSibling;
+			if (toRemove.localName == "g") 
+				canvas.removeChild(toRemove);
+		}
+	},
 
 	resizeCanvasToFitWorld: function(world) {
 		console.log('Resizing SVG canvas');
@@ -950,192 +948,192 @@ Copier.subclass('Importer', {
 		if (canvas.clientHeight != world.bounds().height)
 			canvas.setAttribute("height", world.bounds().height);
 	},
-	
-    startScripts: function(world) {
-	this.verbose && console.log("start scripts %s in %s", this.scripts, world);
-	// sometimes there are null values in this.scripts. Filter them out
-	this.scripts.select(function(ea) {return ea}).forEach(function(s) { s.start(world); });
-    },
+
+	startScripts: function(world) {
+		this.verbose && console.log("start scripts %s in %s", this.scripts, world);
+		// sometimes there are null values in this.scripts. Filter them out
+		this.scripts.select(function(ea) {return ea}).forEach(function(s) { s.start(world); });
+	},
     
     addPatchSite: function(wrapper, name, ref, optIndex) {
-	this.patchSites.push([wrapper, name, ref, optIndex]);
+		this.patchSites.push([wrapper, name, ref, optIndex]);
     },
     
     importWrapperFromNode: function(rawNode) {
-	///console.log('making morph from %s %s', node, LivelyNS.getType(node));
-	// call reflectively b/c 'this' is not a Visual yet. 
-	var wrapperType = lively.data.Wrapper.getEncodedType(rawNode);
+		///console.log('making morph from %s %s', node, LivelyNS.getType(node));
+		// call reflectively b/c 'this' is not a Visual yet. 
+		var wrapperType = lively.data.Wrapper.getEncodedType(rawNode);
 	
-	if (!wrapperType || !Class.forName(wrapperType)) {
-		if (Config.silentFailOnWrapperClassNotFound) {
-			console.log(Strings.format("ERROR: node %s (parent %s) cannot be a morph of %s",
-	    		   	rawNode.tagName, rawNode.parentNode, wrapperType));
-			return new Morph(this, rawNode)
-		} else {
-		    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
-		    	rawNode.tagName, rawNode.parentNode, wrapperType));	    
+		if (!wrapperType || !Class.forName(wrapperType)) {
+			if (Config.silentFailOnWrapperClassNotFound) {
+				console.log(Strings.format("ERROR: node %s (parent %s) cannot be a morph of %s",
+		    		   	rawNode.tagName, rawNode.parentNode, wrapperType));
+				return new Morph(this, rawNode)
+			} else {
+			    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
+			    	rawNode.tagName, rawNode.parentNode, wrapperType));	    
+			}
 		}
-	}
 
-	return new (Class.forName(wrapperType))(this, rawNode);
-	/*
-	try {
+		return new (Class.forName(wrapperType))(this, rawNode);
+		/*
+		try {
 
-	} catch (er) {
-	    console.log("%s instantiating type %s from node %s", er, 
-			wrapperType, Exporter.stringify(rawNode));
-	    throw er;
-	}*/
-    },
+		} catch (er) {
+		    console.log("%s instantiating type %s from node %s", er, 
+				wrapperType, Exporter.stringify(rawNode));
+		    throw er;
+		}*/
+	},
 
     importWrapperFromString: function(string) {
-	return this.importWrapperFromNode(this.parse(string));
+		return this.importWrapperFromNode(this.parse(string));
     },
 
-    parse: function(string) {
-	var parser = new DOMParser();
-	var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
-	if (xml.documentElement.tagName == "html") {
-	    throw new Error("xml parse error: " + Exporter.stringify(xml.documentElement));
-	} 
-	return document.importNode(xml.documentElement, true);
-    },
+	parse: function(string) {
+		var parser = new DOMParser();
+		var xml = parser.parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");
+		if (xml.documentElement.tagName == "html") {
+			throw new Error("xml parse error: " + Exporter.stringify(xml.documentElement));
+		} 
+		return document.importNode(xml.documentElement, true);
+	},
 
-    importFromNodeList: function(nodes) {
-	var morphs = [];
-	for (var i = 0; i < nodes.length; i++) {
-	    var node = nodes[i];
-	    // console.log("found node " + Exporter.stringify(node));
-	    if (node.localName != "g")  continue;
-	    morphs.push(this.importWrapperFromNode(node.ownerDocument === Global.document ? 
-						   node : Global.document.importNode(node, true)));
-	}
-	return morphs;
-    },
+	importFromNodeList: function(nodes) {
+		var morphs = [];
+		for (var i = 0; i < nodes.length; i++) {
+			var node = nodes[i];
+			// console.log("found node " + Exporter.stringify(node));
+			if (node.localName != "g")  continue;
+			morphs.push(this.importWrapperFromNode(node.ownerDocument === Global.document ? 
+				node : Global.document.importNode(node, true)));
+		}
+		return morphs;
+	},
 
-    finishImport: function(world) {
-	if (Config.resizeScreenToWorldBounds) {
-		// when called without delay the call to canvas.clientWidth/Height
-		// causes the simple subworld to disappear
-		// (call toRemoveo 'early', SVG not yet initialized?)
-		this.resizeCanvasToFitWorld.curry(world).delay(2);
-	}
-	this.patchReferences();
-	this.hookupModels();
-	this.runDeserializationHooks();
-	try {
-	    this.startScripts(world);
-	} catch (er) {
-	    console.log("scripts failed: " + er);
-	}
-    },
+	finishImport: function(world) {
+		if (Config.resizeScreenToWorldBounds) {
+			// when called without delay the call to canvas.clientWidth/Height
+			// causes the simple subworld to disappear
+			// (call toRemoveo 'early', SVG not yet initialized?)
+			this.resizeCanvasToFitWorld.curry(world).delay(2);
+		}
+		this.patchReferences();
+		this.hookupModels();
+		this.runDeserializationHooks();
+		try {
+			this.startScripts(world);
+		} catch (er) {
+			console.log("scripts failed: " + er);
+		}
+	},
 
     patchReferences: function() {
-	for (var i = 0, N = this.patchSites.length; i < N; i++) {
-	    var site = this.patchSites[i];
-	    var wrapper = site[0];
-	    var name = site[1];
-	    var ref = site[2];
-	    var index = site[3];
-	    var found;
-	    if (index !== undefined) {
-		if (!wrapper[name]) wrapper[name] = [];
-		else if (!(wrapper[name] instanceof Array)) throw new Error('whoops, serialization problem?');
-		found = (wrapper[name])[index] = this.lookup(ref);
-	    } else {
-		found = wrapper[name] = this.lookup(ref);
-	    }
-	    if (!found  && name === 'clip') {
-	        // last hope, not clean
-                found = wrapper[name] = new lively.scene.Clip(this, Global.document.getElementById(ref));
-                if (found) console.warn('Found reference somehow but not in the way it was intended to be found!!!')
-	    }
-	    if (!found) {
-		console.warn("no value found for field %s ref %s in wrapper %s", name, ref, wrapper);
-	    } else {
-		//console.log("found " + name + "=" + found + " and assigned to " + wrapper);
-	    }
-	}
+		for (var i = 0, N = this.patchSites.length; i < N; i++) {
+		    var site = this.patchSites[i];
+		    var wrapper = site[0];
+		    var name = site[1];
+		    var ref = site[2];
+		    var index = site[3];
+		    var found;
+		    if (index !== undefined) {
+				if (!wrapper[name]) {
+					wrapper[name] = [];
+				} else if (!(wrapper[name] instanceof Array)) { 
+					throw new Error('whoops, serialization problem?');
+				}
+				found = (wrapper[name])[index] = this.lookup(ref);
+		    } else {
+				found = wrapper[name] = this.lookup(ref);
+		    }
+			if (!found  && name === 'clip') {
+				// last hope, not clean
+				found = wrapper[name] = new lively.scene.Clip(this, Global.document.getElementById(ref));
+				if (found) console.warn('Found reference somehow but not in the way it was intended to be found!!!')
+			}
+		    if (!found) {
+				console.warn("no value found for field %s ref %s in wrapper %s", name, ref, wrapper);
+		    } else {
+				//console.log("found " + name + "=" + found + " and assigned to " + wrapper);
+		    }
+		}
     },
 
-    hookupModels: function() {
-	Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
-	    if (wrapper.reconnectModel) {// instanceof View
-		var m = wrapper.reconnectModel();
-		m && console.log('connecting model on ' + wrapper + " model " + m);
-	    }
-	});
-    },
+	hookupModels: function() {
+		Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
+			if (wrapper.reconnectModel) {// instanceof View
+				var m = wrapper.reconnectModel();
+				m && console.log('connecting model on ' + wrapper + " model " + m);
+			}
+		});
+	},
 
-    runDeserializationHooks: function() {
-	Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
-	    if (wrapper.onDeserialize) {
-		wrapper.onDeserialize();
-	    }
-	    // collect scripts
-	    if (wrapper.activeScripts) this.scripts = this.scripts.concat(wrapper.activeScripts);
-	}, this);
-    },
+	runDeserializationHooks: function() {
+		Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
+			if (wrapper.onDeserialize) {
+				wrapper.onDeserialize();
+			}
+			// collect scripts
+			if (wrapper.activeScripts) this.scripts = this.scripts.concat(wrapper.activeScripts);
+		}, this);
+	},
 
 
-    loadWorldInSubworld: function(doc) {
-	var nodes = this.canvasContent(doc);
-	if (!nodes) {
-	    WorldMorph.current().alert('no morphs found');
-	    return null;
-	}
-	var world = new WorldMorph(WorldMorph.current().canvas());
-	var morphs = this.importFromNodeList(nodes);
+	loadWorldInSubworld: function(doc) {
+		var nodes = this.canvasContent(doc);
+		if (!nodes) {
+			WorldMorph.current().alert('no morphs found');
+			return null;
+		}
+		var world = new WorldMorph(WorldMorph.current().canvas());
+		var morphs = this.importFromNodeList(nodes);
 
-	morphs.forEach(function(morph) {
-	    if (morph instanceof WorldMorph) morph.submorphs.clone().forEach(function(m) { world.addMorph(m) });
-	    else world.addMorph(morph);
-	});
+		morphs.forEach(function(morph) {
+			if (morph instanceof WorldMorph) morph.submorphs.clone().forEach(function(m) { world.addMorph(m) });
+			else world.addMorph(morph);
+		});
 	
-	// post addition
-	this.finishImport(world);
-	
-	var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
-	link.addPathBack();
-	return world;
-    },
+		// post addition
+		this.finishImport(world);
 
-    loadWorldContentsInCurrent: function(doc) {
-	var world = this.loadWorldContents(doc);
-	// FIXME? scripts have started already ?
-	world.submorphs.clone().forEach(function(m) { 
-	    WorldMorph.current().addMorph(m) 
-	});
-    },
+		var link = WorldMorph.current().reactiveAddMorph(new LinkMorph(world));
+		link.addPathBack();
+		return world;
+	},
+
+	loadWorldContentsInCurrent: function(doc) {
+		var world = this.loadWorldContents(doc);
+		// FIXME? scripts have started already ?
+		world.submorphs.clone().forEach(function(m) { 
+			WorldMorph.current().addMorph(m) 
+		});
+	},
     
-    loadWorldContents: function(doc) { 
-	// possibly doc === Global.document; 
-	var world = null;
-	var morphs = this.importFromNodeList(this.canvasContent(doc));
-	
-	if (!(0 in morphs)) 
-	    return null;
+	loadWorldContents: function(doc) { 
+		// possibly doc === Global.document; 
+		var world = null;
+		var morphs = this.importFromNodeList(this.canvasContent(doc));
 
-	var canvas = this.canvas(doc);
-	
-	if (morphs[0] instanceof WorldMorph) {
-	    world = morphs[0];	
-	    if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
-	} else {
-	    // no world, create one and add all the serialized morphs to it.
-	    world = new WorldMorph(canvas);
-	    // this adds a the WorldMorph's <g> at the end of the list
-	    canvas.appendChild(world.rawNode);
-	    // the following will reparent all the existing morphs under the WorldMorph's <g>
-	    morphs.clone().forEach(function(m) { world.addMorph(m); });
+		if (!(0 in morphs)) 
+			return null;
+
+		var canvas = this.canvas(doc);
+
+		if (morphs[0] instanceof WorldMorph) {
+			world = morphs[0];	
+			if (morphs.length > 1) console.log("more than one top level morph following a WorldMorph, ignoring remaining morphs");
+		} else {
+			// no world, create one and add all the serialized morphs to it.
+			world = new WorldMorph(canvas);
+			// this adds a the WorldMorph's <g> at the end of the list
+			canvas.appendChild(world.rawNode);
+			// the following will reparent all the existing morphs under the WorldMorph's <g>
+			morphs.clone().forEach(function(m) { world.addMorph(m); });
+		}
+		this.finishImport(world);
+
+		return world;
 	}
-	this.finishImport(world);
-	
-	return world;
-    }
-
-    
-
 });
 
 Importer.marker = Object.extend(new Importer(), {
@@ -1151,49 +1149,49 @@ Importer.marker = Object.extend(new Importer(), {
 
 Object.subclass('MouseHandlerForDragging', {
 
-    handleMouseEvent: function(evt, targetMorph) {
-	if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
-	evt.hand.resetMouseFocusChanges();
+	handleMouseEvent: function(evt, targetMorph) {
+		if (evt.type == "MouseDown") evt.hand.setMouseFocus(targetMorph);
+		evt.hand.resetMouseFocusChanges();
 
-	var handler = targetMorph[evt.handlerName()];
-	if (handler) handler.call(targetMorph, evt, targetMorph);
+		var handler = targetMorph[evt.handlerName()];
+		if (handler) handler.call(targetMorph, evt, targetMorph);
 
-	if (evt.type == "MouseUp") {
-	    // cancel focus unless it was set in the handler
-	    if (evt.hand.resetMouseFocusChanges() == 0) {
-		evt.hand.setMouseFocus(null);
-	    }
-	}
-	return true; 
-    },
+		if (evt.type == "MouseUp") {
+			// cancel focus unless it was set in the handler
+			if (evt.hand.resetMouseFocusChanges() == 0) {
+				evt.hand.setMouseFocus(null);
+			}
+		}
+		return true; 
+	},
 
     handlesMouseDown: Functions.False
 });
 
 Object.subclass('MouseHandlerForRelay', {
 
-    initialize: function (target, eventSpec) {
-	//  Send events to a different target, with different methods
-	//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
-	this.target = target;
-	this.eventSpec = eventSpec || {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"};
-    },
+	initialize: function (target, eventSpec) {
+		//  Send events to a different target, with different methods
+		//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
+		this.target = target;
+		this.eventSpec = eventSpec || {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"};
+	},
 
-    handleMouseEvent: function(evt, originalTarget) {
-	if (evt.type == "MouseDown") evt.hand.setMouseFocus(originalTarget);
-	evt.hand.resetMouseFocusChanges();
-	
-	var handler = this.target[this.eventSpec[evt.handlerName()]];
-	if (handler) handler.call(this.target, evt, originalTarget);
+	handleMouseEvent: function(evt, originalTarget) {
+		if (evt.type == "MouseDown") evt.hand.setMouseFocus(originalTarget);
+		evt.hand.resetMouseFocusChanges();
 
-	if (evt.type == "MouseUp") {
-	    // cancel focus unless it was set in the handler
-	    if (evt.hand.resetMouseFocusChanges() == 0) {
-		evt.hand.setMouseFocus(null);
-	    }
-	}
-	return true; 
-    },
+		var handler = this.target[this.eventSpec[evt.handlerName()]];
+		if (handler) handler.call(this.target, evt, originalTarget);
+
+		if (evt.type == "MouseUp") {
+			// cancel focus unless it was set in the handler
+			if (evt.hand.resetMouseFocusChanges() == 0) {
+				evt.hand.setMouseFocus(null);
+			}
+		}
+		return true; 
+	},
 
     handlesMouseDown: Functions.True
 
@@ -1230,63 +1228,64 @@ lively.data.Wrapper.subclass('Morph', {
 
     nextNavigableSibling: null, // keyboard navigation
 
-    internalInitialize: function(rawNode, shouldAssign) {
-	this.rawNode = rawNode;
-	this.submorphs = [];
-	this.owner = null;
-	if (shouldAssign) {
- 	    LivelyNS.setType(this.rawNode, this.getType());
-	    this.setId(this.newId());
-	}
-    },
+	internalInitialize: function(rawNode, shouldAssign) {
+		this.rawNode = rawNode;
+		this.submorphs = [];
+		this.owner = null;
+		if (shouldAssign) {
+			LivelyNS.setType(this.rawNode, this.getType());
+			this.setId(this.newId());
+		}
+	},
 
     initialize: function(shape) {
-	//console.log('initializing morph %s %s', initialBounds, shapeType);
-	this.internalInitialize(NodeFactory.create("g"), true);
-	dbgOn(!shape.bounds);
-	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
-	if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
-	this.origin = shape.origin();
-	shape.translateBy(this.origin.negated());
-	this.initializePersistentState(shape);
-	this.initializeTransientState();
+		//console.log('initializing morph %s %s', initialBounds, shapeType);
+		this.internalInitialize(NodeFactory.create("g"), true);
+		dbgOn(!shape.bounds);
+		// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
+		if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
+		this.origin = shape.origin();
+		shape.translateBy(this.origin.negated());
+		this.initializePersistentState(shape);
+		this.initializeTransientState();
     },
 
-    shallowCopy: function () {
-	// Return a copy of this morph with no submorphs, but 
-	//  with the same shape and shape attributes as this
-	return new Morph(this.shape.copy()); 
-    },
-duplicate: function () { 
-	// Return a full copy of this morph and its submorphs, with owner == null
-	var copy = this.copy(new Copier());
-	copy.owner = null;
-	return copy;
-    },
+	shallowCopy: function () {
+		// Return a copy of this morph with no submorphs, but 
+		//  with the same shape and shape attributes as this
+		return new Morph(this.shape.copy()); 
+	},
 
-    initializePersistentState: function(shape) {
-	// a rect shape by default, will change later
-	this.shape = shape;
-	this.rawNode.appendChild(this.shape.rawNode);
-	if (this.styleClass) { // inherited from prototype
-	    var attr = this.styleClass.join(' ');
-	    this.rawNode.setAttribute("class", attr);
-	    // Safari needs the explicit assignment (perhaps the names have to be real stylesheets).
-	    this.rawNode.className.baseVal = attr;
-	}
-	this.applyStyle(this.style);
-	return this;
-    },
+	duplicate: function () { 
+		// Return a full copy of this morph and its submorphs, with owner == null
+		var copy = this.copy(new Copier());
+		copy.owner = null;
+		return copy;
+	},
+
+	initializePersistentState: function(shape) {
+		// a rect shape by default, will change later
+		this.shape = shape;
+		this.rawNode.appendChild(this.shape.rawNode);
+		if (this.styleClass) { // inherited from prototype
+			var attr = this.styleClass.join(' ');
+			this.rawNode.setAttribute("class", attr);
+			// Safari needs the explicit assignment (perhaps the names have to be real stylesheets).
+			this.rawNode.className.baseVal = attr;
+		}
+		this.applyStyle(this.style);
+		return this;
+	},
 
     // setup various things 
-    initializeTransientState: function() { 
-	this.fullBounds = null; // a Rectangle in owner coordinates
-	// this includes the shape as well as any submorphs
-	// cached here and lazily computed by bounds(); invalidated by layoutChanged()
+	initializeTransientState: function() { 
+		this.fullBounds = null; // a Rectangle in owner coordinates
+		// this includes the shape as well as any submorphs
+		// cached here and lazily computed by bounds(); invalidated by layoutChanged()
 
-	// this.created = false; // exists on server now
-	// some of this stuff may become persistent
-    },
+		// this.created = false; // exists on server now
+		// some of this stuff may become persistent
+	},
     
 	copySubmorphsFrom: function(copier, other) {
 			
@@ -1546,52 +1545,52 @@ duplicate: function () {
 	}
 });
 
-Morph.addMethods({  // tmp copy
+Morph.addMethods({	// tmp copy
 
-    getStyleClass: function() {
-	return this.styleClass || [];
-    },
+	getStyleClass: function() {
+		return this.styleClass || [];
+	},
 
-    setStyleClass: function(value) {
-	var attr;
-	if (value instanceof Array) {
-	    this.styleClass = value;
-	    attr = value.join(' ');
-	} else {
-	    this.styleClass = [value];
-	    attr = String(value);
+	setStyleClass: function(value) {
+		var attr;
+		if (value instanceof Array) {
+			this.styleClass = value;
+			attr = value.join(' ');
+		} else {
+			this.styleClass = [value];
+			attr = String(value);
+		}
+		this.rawNode.setAttribute("class", attr);
+	},
+
+	canvas: function() {
+		if (!UserAgent.usableOwnerSVGElement) {
+			// so much for multiple worlds on one page
+			return Global.document.getElementById("canvas");
+		} else {
+			return (this.rawNode && this.rawNode.ownerSVGElement) || Global.document.getElementById("canvas");
+		}
+	},
+
+	setVisible: function(flag) { // FIXME delegate to sceneNode when conversion finished
+		if (flag) this.rawNode.removeAttributeNS(null, "display");
+		else this.rawNode.setAttributeNS(null, "display", "none");
+		return this;
+	},
+
+	isVisible: function() { // FIXME delegate to sceneNode when conversion finished
+		// Note: this may not be correct in general in SVG due to inheritance,
+		// but should work in LIVELY.
+		var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
+		return hidden == false;
+	},
+
+	applyFilter: function(filterUri) {// FIXME delegate to sceneNode when conversion finished
+		if (filterUri) 
+			this.rawNode.setAttributeNS(null, "filter", filterUri);
+		else
+		this.rawNode.removeAttributeNS(null, "filter");
 	}
-	this.rawNode.setAttribute("class", attr);
-    },
-
-    canvas: function() {
-	if (!UserAgent.usableOwnerSVGElement) {
-	    // so much for multiple worlds on one page
-	    return Global.document.getElementById("canvas");
-	} else {
-	    return (this.rawNode && this.rawNode.ownerSVGElement) || Global.document.getElementById("canvas");
-	}
-    },
-    
-    setVisible: function(flag) { // FIXME delegate to sceneNode when conversion finished
-	if (flag) this.rawNode.removeAttributeNS(null, "display");
-	else this.rawNode.setAttributeNS(null, "display", "none");
-	return this;
-    },
-    
-    isVisible: function() { // FIXME delegate to sceneNode when conversion finished
-	// Note: this may not be correct in general in SVG due to inheritance,
-	// but should work in LIVELY.
-	var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
-	return hidden == false;
-    },
-
-    applyFilter: function(filterUri) {// FIXME delegate to sceneNode when conversion finished
-	if (filterUri) 
-	    this.rawNode.setAttributeNS(null, "filter", filterUri);
-	else
-	    this.rawNode.removeAttributeNS(null, "filter");
-    }
 });
 
 
@@ -1612,70 +1611,72 @@ Morph.addMethods({
 // Functions for change management
 Object.extend(Morph, {
     
-    onLayoutChange: function(fieldName) { 
-	return function layoutChangeAdvice(/* arguments*/) {
-	    var priorExtent = this.innerBounds().extent();
-	    this.changed();
-	    var args = $A(arguments);
-	    var proceed = args.shift();
-	    var result = proceed.apply(this, args);
-	    this.layoutChanged(priorExtent);
-	    this.changed(); 
-	    return result;
-	}
-    },
+	onLayoutChange: function(fieldName) { 
+		return function layoutChangeAdvice(/* arguments*/) {
+			var priorExtent = this.innerBounds().extent();
+			this.changed();
+			var args = $A(arguments);
+			var proceed = args.shift();
+			var result = proceed.apply(this, args);
+			this.layoutChanged(priorExtent);
+			this.changed(); 
+			return result;
+		}
+	},
 
-    fromLiteral: function(literal) {
-	var morph = new Morph(literal.shape);
-	if (literal.submorphs) {
-	    if (Object.isArray(literal.submorphs))
-		morph.setSubmorphs(literal.submorphs);
-	    else throw new TypeError();
+	fromLiteral: function(literal) {
+		var morph = new Morph(literal.shape);
+		if (literal.submorphs) {
+			if (Object.isArray(literal.submorphs))
+				morph.setSubmorphs(literal.submorphs);
+			else throw new TypeError();
+		}
+		if (literal.transforms) {
+			morph.setTransforms(literal.transforms);
+		}
+		return morph;
 	}
-	if (literal.transforms) {
-	    morph.setTransforms(literal.transforms);
-	}
-	return morph;
-    }
 
 });
 
 // Functions for manipulating the visual attributes of Morphs
 Morph.addMethods({
 
-    setFill: function(fill) {
-	this.shape.setFill(fill);
-	this.changed();
-    },
-
-    getFill: function() {
-	return this.shape.getFill();
-    },
-
-    setBorderColor: function(newColor) {
-	this.shape.setStroke(newColor);
-	// this.changed();
+	setFill: function(fill) {
+		this.shape.setFill(fill);
+		this.changed();
 	},
 
-    getBorderColor: function() {
-	return new Color(Importer.marker, this.shape.getStroke());
-    },
+	getFill: function() {
+		return this.shape.getFill();
+	},
 
-    setBorderWidth: function(newWidth) {
-	// this.changed();
-	if (Config.chromeBorderPatch && newWidth == 0) this.shape.setStrokeWidth(0.01); 
-	else this.shape.setStrokeWidth(newWidth); 
-	// this.changed();
-    },
-    
-    getBorderWidth: function() {
-	return this.shape.getStrokeWidth() || 0; // FIXME: fix defaults logic
-    },
+	setBorderColor: function(newColor) {
+		this.shape.setStroke(newColor);
+		// this.changed();
+	},
 
-    shapeRoundEdgesBy: function(r) {
-	this.shape.roundEdgesBy(r);
-	this.changed();
-    },
+	getBorderColor: function() {
+		return new Color(Importer.marker, this.shape.getStroke());
+	},
+
+	setBorderWidth: function(newWidth) {
+		// this.changed();
+		if (Config.chromeBorderPatch && newWidth == 0) 
+			this.shape.setStrokeWidth(0.01); 
+		else 
+			this.shape.setStrokeWidth(newWidth); 
+		// this.changed();
+	},
+
+	getBorderWidth: function() {
+		return this.shape.getStrokeWidth() || 0; // FIXME: fix defaults logic
+	},
+
+	shapeRoundEdgesBy: function(r) {
+		this.shape.roundEdgesBy(r);
+		this.changed();
+	},
 
     setFillOpacity: function(op) { this.shape.setFillOpacity(op); },
 
@@ -1685,148 +1686,148 @@ Morph.addMethods({
 
     setLineCap: function(capType) { this.shape.setLineCap(capType); },
 
-    applyStyle: function(specs) { // note: use reflection instead?
-	for (var i = 0; i < arguments.length; i++) {
-	    var spec = arguments[i];
-	    if(!spec) return;  // dbgOn(!spec);
-	    if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
-	    if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
-	    if (spec.fill !== undefined) this.setFill(spec.fill);
-	    if (spec.opacity !== undefined) {
-		this.setFillOpacity(spec.opacity);
-		this.setStrokeOpacity(spec.opacity); 
-	    }
-	    if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
-	    if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
+	applyStyle: function(specs) { // note: use reflection instead?
+		for (var i = 0; i < arguments.length; i++) {
+			var spec = arguments[i];
+			if(!spec) return;  // dbgOn(!spec);
+			if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
+			if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
+			if (spec.fill !== undefined) this.setFill(spec.fill);
+			if (spec.opacity !== undefined) {
+				this.setFillOpacity(spec.opacity);
+				this.setStrokeOpacity(spec.opacity); 
+			}
+			if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
+			if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
 
-	    if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
-		this.shape.roundEdgesBy(spec.borderRadius);
-	    }
-	}
-	return this;
-    },
+			if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
+				this.shape.roundEdgesBy(spec.borderRadius);
+			}
+		}
+		return this;
+	},
 
-    makeStyleSpec: function() {
-	// Adjust all visual attributes specified in the style spec
-	var spec = { };
-	spec.borderWidth = this.getBorderWidth();
-	spec.borderColor = this.getBorderColor();
-	spec.fill = this.getFill();
-	if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
-	spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
-	spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
-	return spec;
-    },
+	makeStyleSpec: function() {
+		// Adjust all visual attributes specified in the style spec
+		var spec = { };
+		spec.borderWidth = this.getBorderWidth();
+		spec.borderColor = this.getBorderColor();
+		spec.fill = this.getFill();
+		if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
+		spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
+		spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
+		return spec;
+	},
 
-    applyStyleNamed: function(name) {
-	this.applyStyle(this.styleNamed(name));
-    },
+	applyStyleNamed: function(name) {
+		this.applyStyle(this.styleNamed(name));
+	},
 
-    styleNamed: function(name) {
-	// Look the name up in the Morph tree, else in current world
-	if (this.displayTheme) return this.displayTheme[name];
-	if (this.owner) return this.owner.styleNamed(name);
-	if (WorldMorph.current()) return WorldMorph.current().styleNamed(name);
-	return WorldMorph.prototype.displayThemes.lively[name]; // FIXME for onDeserialize, when no world exists yet
-    },
+	styleNamed: function(name) {
+		// Look the name up in the Morph tree, else in current world
+		if (this.displayTheme) return this.displayTheme[name];
+		if (this.owner) return this.owner.styleNamed(name);
+		if (WorldMorph.current()) return WorldMorph.current().styleNamed(name);
+		return WorldMorph.prototype.displayThemes.lively[name]; // FIXME for onDeserialize, when no world exists yet
+	},
 
-    linkToStyles: function(styleClassList, optSupressApplication) {
-	// Record the links for later updates, and apply them now
-	this.setStyleClass(styleClassList);
-	if (!optSupressApplication) this.applyLinkedStyles();
-	return this;
-    },
+	linkToStyles: function(styleClassList, optSupressApplication) {
+		// Record the links for later updates, and apply them now
+		this.setStyleClass(styleClassList);
+		if (!optSupressApplication) this.applyLinkedStyles();
+		return this;
+	},
 
-    applyLinkedStyles: function() {
-	// Apply all the styles to which I am linked, in order
-	var styleClasses = this.getStyleClass();
-	if (!styleClasses) return;
-	for (var i = 0; i < styleClasses.length; i++) {
-	    this.applyStyleNamed(styleClasses[i]); 
-	}
-    },
+	applyLinkedStyles: function() {
+		// Apply all the styles to which I am linked, in order
+		var styleClasses = this.getStyleClass();
+		if (!styleClasses) return;
+		for (var i = 0; i < styleClasses.length; i++) {
+			this.applyStyleNamed(styleClasses[i]); 
+		}
+	},
 
-    // NOTE:  The following four methods should all be factored into a single bit of reshaping logic
-    applyFunctionToShape: function() {  // my kingdom for a Smalltalk block!
-	var args = $A(arguments);
-	var func = args.shift();
-	func.apply(this.shape, args);
-	this.adjustForNewBounds();
-    }.wrap(Morph.onLayoutChange('shape')),
+	// NOTE:  The following four methods should all be factored into a single bit of reshaping logic
+	applyFunctionToShape: function() {  // my kingdom for a Smalltalk block!
+		var args = $A(arguments);
+		var func = args.shift();
+		func.apply(this.shape, args);
+		this.adjustForNewBounds();
+	}.wrap(Morph.onLayoutChange('shape')),
 
-    internalSetShape: function(newShape) {
-	if (!newShape.rawNode) {
-	    console.log('newShape is ' + newShape);
-	    lively.lang.Execution.showStack();
-	}
-	
-	this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
-	this.shape = newShape;
-	this.adjustForNewBounds();
-    },
+	internalSetShape: function(newShape) {
+		if (!newShape.rawNode) {
+			console.log('newShape is ' + newShape);
+			lively.lang.Execution.showStack();
+		}
 
-    setShape: function(newShape) {
-	this.internalSetShape(newShape);
-    }.wrap(Morph.onLayoutChange('shape')),
+		this.rawNode.replaceChild(newShape.rawNode, this.shape.rawNode);
+		this.shape = newShape;
+		this.adjustForNewBounds();
+	},
 
-    reshape: function(partName, newPoint, lastCall) {
-	try {
-	    return this.shape.reshape(partName,newPoint,lastCall); 
-	} finally {
-	    // FIXME: consider converting polyline to polygon when vertices merge.
-	    this.adjustForNewBounds();
-	}
-    }.wrap(Morph.onLayoutChange('shape')),
+	setShape: function(newShape) {
+		this.internalSetShape(newShape);
+	}.wrap(Morph.onLayoutChange('shape')),
 
-    setVertices: function(newVerts) {
-	// particular to polygons
-	this.shape.setVertices(newVerts);
-	this.adjustForNewBounds();
-    }.wrap(Morph.onLayoutChange('shape')),
+	reshape: function(partName, newPoint, lastCall) {
+		try {
+			return this.shape.reshape(partName,newPoint,lastCall); 
+		} finally {
+			// FIXME: consider converting polyline to polygon when vertices merge.
+			this.adjustForNewBounds();
+		}
+	}.wrap(Morph.onLayoutChange('shape')),
+
+	setVertices: function(newVerts) {
+		// particular to polygons
+		this.shape.setVertices(newVerts);
+		this.adjustForNewBounds();
+	}.wrap(Morph.onLayoutChange('shape')),
 
 });
 
 Object.subclass('LayoutManager', {
 
     setBounds: function(target, newRect) {
-	// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
-	// This is so that layout management can move things around without triggering redundant or
-	// recursive calls on adjustForNewBounds(q.v.)
+		// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
+		// This is so that layout management can move things around without triggering redundant or
+		// recursive calls on adjustForNewBounds(q.v.)
 
-	// All calls on morph.setBounds should be converted to two calls as above (or just one if,
-	// eg, only the extent or position is changing).
+		// All calls on morph.setBounds should be converted to two calls as above (or just one if,
+		// eg, only the extent or position is changing).
 
-	// Of course setBounds remains entirely valid as a message to the *shape* object and, 
-	// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
-	// but adjustForNewBounds will only need to be called from setExtent.
+		// Of course setBounds remains entirely valid as a message to the *shape* object and, 
+		// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
+		// but adjustForNewBounds will only need to be called from setExtent.
 
-	// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
-	// since the caller must do it otherwise.  This would simplify things overall.
+		// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
+		// since the caller must do it otherwise.  This would simplify things overall.
 
-	// DI:  Note that there is an inconsistency here, in that we are reading and comparing
-	// the full bounds, yet if we set extent, it only affects the shape (ie, innerBounds)
+		// DI:  Note that there is an inconsistency here, in that we are reading and comparing
+		// the full bounds, yet if we set extent, it only affects the shape (ie, innerBounds)
 	
-	var priorBounds = target.bounds();
+		var priorBounds = target.bounds();
 
-	if (!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
-	    target.setPosition(newRect.topLeft());
-	}
-	if (!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
-	    // FIXME some shapes don't support setFromRect
-	    target.shape.setBounds(newRect.extent().extentAsRectangle());
- 	    target.adjustForNewBounds();
-	}
+		if (!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
+		    target.setPosition(newRect.topLeft());
+		}
+		if (!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
+		    // FIXME some shapes don't support setFromRect
+		    target.shape.setBounds(newRect.extent().extentAsRectangle());
+	 	    target.adjustForNewBounds();
+		}
     },
 
-    setExtent: function(target, newExtent) {
-	target.setBounds(target.getPosition().extent(newExtent));
-    },
+	setExtent: function(target, newExtent) {
+		target.setBounds(target.getPosition().extent(newExtent));
+	},
 
-    setPosition: function(target, newPosition) {
-	var delta = newPosition.subPt(target.getPosition());
-	target.translateBy(delta);
-	return delta;
-    },
+	setPosition: function(target, newPosition) {
+		var delta = newPosition.subPt(target.getPosition());
+		target.translateBy(delta);
+		return delta;
+	},
 
     layoutChanged: function(target) {
 	
@@ -1836,152 +1837,146 @@ Object.subclass('LayoutManager', {
     },
 
     removeMorph: function(supermorph, submorph) {
-	// new behavior:
-	supermorph.layoutChanged();
+		// new behavior:
+		supermorph.layoutChanged();
     },
 
+	leftMarginOf: function(morph) {
+		return morph.margin ? morph.margin.left() : 0;
+	},
 
-    leftMarginOf: function(morph) {
-	return morph.margin ? morph.margin.left() : 0;
-    },
+	rightMarginOf: function(morph) {
+		return morph.margin ? morph.margin.right() : 0;
+	},
 
-    rightMarginOf: function(morph) {
-	return morph.margin ? morph.margin.right() : 0;
-    },
+	topMarginOf: function(morph) {
+		return morph.margin ? morph.margin.top() : 0;
+	},
 
-    topMarginOf: function(morph) {
-	return morph.margin ? morph.margin.top() : 0;
-    },
+	bottomMarginOf: function(morph) {
+		return morph.margin ? morph.margin.bottom() : 0;
+	},
 
-    bottomMarginOf: function(morph) {
-	return morph.margin ? morph.margin.bottom() : 0;
-    },
-
-    
     rightPaddingOf: function(morph) {
-	return morph.padding ? morph.padding.right() : 0;
+		return morph.padding ? morph.padding.right() : 0;
     },
 
-    leftPaddingOf: function(morph) {
-	return morph.padding ? morph.padding.left() : 0;
-    },
+	leftPaddingOf: function(morph) {
+		return morph.padding ? morph.padding.left() : 0;
+	},
 
-    topPaddingOf: function(morph) {
-	return morph.padding ? morph.padding.top() : 0;
-    },
+	topPaddingOf: function(morph) {
+		return morph.padding ? morph.padding.top() : 0;
+	},
 
-    bottomPaddingOf: function(morph) {
-	return morph.padding ? morph.padding.bottom() : 0;
-    }
+	bottomPaddingOf: function(morph) {
+		return morph.padding ? morph.padding.bottom() : 0;
+	}
     
 });
 
 LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 
-    beforeAddMorph: function(supermorph, submorph, isFront) {
-	if (submorph.isEpimorph) return;
-	
-	// runs before submorph is added
-	var dx = this.leftMarginOf(submorph);
-	var dy;
-	var last = supermorph.topSubmorph();
-	
-	if (!last) {
-	    dx += this.leftPaddingOf(supermorph);
-	    dy =  this.topPaddingOf(supermorph);
-	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
-	} else {
-	    dx += this.rightMarginOf(last);
-	    dy = 0;
-	    submorph.align(submorph.bounds().topLeft(), last.bounds().topRight());
-	    submorph.translateBy(pt(dx, dy));
+	beforeAddMorph: function(supermorph, submorph, isFront) {
+		if (submorph.isEpimorph) return;
+
+		// runs before submorph is added
+		var dx = this.leftMarginOf(submorph);
+		var dy;
+		var last = supermorph.topSubmorph();
+
+		if (!last) {
+			dx += this.leftPaddingOf(supermorph);
+			dy =  this.topPaddingOf(supermorph);
+			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
+		} else {
+			dx += this.rightMarginOf(last);
+			dy = 0;
+			submorph.align(submorph.bounds().topLeft(), last.bounds().topRight());
+			submorph.translateBy(pt(dx, dy));
+		}
 	}
-    }
 
 });
 
 
 LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 
-    beforeAddMorph: function(supermorph, submorph, isFront) {
-	if (submorph.isEpimorph) return;
-	// runs before submorph is added
-	var dx;
-	var dy = this.topMarginOf(submorph);
-	var last = supermorph.topSubmorph();
+	beforeAddMorph: function(supermorph, submorph, isFront) {
+		if (submorph.isEpimorph) return;
+		// runs before submorph is added
+		var dx;
+		var dy = this.topMarginOf(submorph);
+		var last = supermorph.topSubmorph();
 
-	if (!last) {
-	    dx = this.leftPaddingOf(supermorph);
-	    dy += this.topPaddingOf(supermorph);
-	    submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
-	} else {
-	    dx = 0;
-	    dy += this.bottomMarginOf(last);
-	    submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
-	    //submorph.translateBy(pt(dx, dy));
-	}
-    },
-
-
+		if (!last) {
+			dx = this.leftPaddingOf(supermorph);
+			dy += this.topPaddingOf(supermorph);
+			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
+		} else {
+			dx = 0;
+			dy += this.bottomMarginOf(last);
+			submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
+			//submorph.translateBy(pt(dx, dy));
+		}
+	},
 
 });
 
 
-
-
-
 Morph.addMethods({
     
-    layoutManager: new LayoutManager(), // singleton
+	layoutManager: new LayoutManager(), // singleton
 
-    setBounds: function(newRect) {
- 	//this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
-	this.layoutManager.setBounds(this, newRect);
-    }.wrap(Morph.onLayoutChange('shape')),
-    
-    setExtent: function(newExtent) {
-	this.layoutManager.setExtent(this, newExtent);
-    },
+	setBounds: function(newRect) {
+		//this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
+		this.layoutManager.setBounds(this, newRect);
+	}.wrap(Morph.onLayoutChange('shape')),
 
-    getExtent: function(newRect) { return this.shape.bounds().extent() },
+	setExtent: function(newExtent) {
+		this.layoutManager.setExtent(this, newExtent);
+	},
 
-    containsPoint: function(p) { 
-	// p is in owner coordinates
-	if (!this.bounds().containsPoint(p)) return false;
-	return this.shape.containsPoint(this.relativize(p)); 
-    },
+	getExtent: function(newRect) { return this.shape.bounds().extent() },
 
-    containsWorldPoint: function(p) { // p is in world coordinates
-	if (this.owner == null) return this.containsPoint(p);
-	return this.containsPoint(this.owner.localize(p)); 
-    },
+	containsPoint: function(p) { 
+		// p is in owner coordinates
+		if (!this.bounds().containsPoint(p)) return false;
+		return this.shape.containsPoint(this.relativize(p)); 
+	},
 
-    fullContainsPoint: function(p) { // p is in owner coordinates
-	return this.bounds().containsPoint(p); 
-    },
+	containsWorldPoint: function(p) { // p is in world coordinates
+		if (this.owner == null) return this.containsPoint(p);
+		return this.containsPoint(this.owner.localize(p)); 
+	},
 
-    fullContainsWorldPoint: function(p) { // p is in world coordinates
-	if (this.owner == null) return this.fullContainsPoint(p);
-	return this.fullContainsPoint(this.owner.localize(p)); 
-    },
+	fullContainsPoint: function(p) { // p is in owner coordinates
+		return this.bounds().containsPoint(p); 
+	},
 
-    addNonMorph: function(node) {
-	if (node instanceof lively.data.Wrapper) throw new Error("add rawNode, not the wrapper itself");
-	return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
-    },
+	fullContainsWorldPoint: function(p) { // p is in world coordinates
+		if (this.owner == null) return this.fullContainsPoint(p);
+		return this.fullContainsPoint(this.owner.localize(p)); 
+	},
 
-    addWrapper: function(w) {
-	if (w && w.rawNode) {
-	    this.addNonMorph(w.rawNode);
-	    return w;
-	} else return null;
-    },
+	addNonMorph: function(node) {
+		if (node instanceof lively.data.Wrapper) throw new Error("add rawNode, not the wrapper itself");
+		return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
+	},
 
-    addPseudoMorph: function(pseudomorph) {
-	if (pseudomorph instanceof Global.PseudoMorph) {
-	    return this.addMorph(pseudomorph);
-	} else throw new Error(pseudomorph + " is not a PseudoMorph");
-    },
+	addWrapper: function(w) {
+		if (w && w.rawNode) {
+			this.addNonMorph(w.rawNode);
+			return w;
+		} else return null;
+	},
+
+	addPseudoMorph: function(pseudomorph) {
+		if (pseudomorph instanceof Global.PseudoMorph) {
+			return this.addMorph(pseudomorph);
+		} else 
+			throw new Error(pseudomorph + " is not a PseudoMorph");
+	},
 
 });
 
@@ -1990,52 +1985,52 @@ Morph.addMethods({
 
     addMorph: function(morph) { return this.addMorphFrontOrBack(morph, true) },
 
-    addMorphAt: function(morph, position) {
-	var morph = this.addMorphFrontOrBack(morph, true);
-	morph.setPosition(position);
-	return morph;
-    },
+	addMorphAt: function(morph, position) {
+		var morph = this.addMorphFrontOrBack(morph, true);
+		morph.setPosition(position);
+		return morph;
+	},
 
     addMorphFront: function(morph) { return this.addMorphFrontOrBack(morph, true) },
 
     addMorphBack: function(morph) { return this.addMorphFrontOrBack(morph, false) },
 
-    addMorphFrontOrBack: function(m, isFront) {
-	console.assert(m instanceof Morph, "not an instance");
-	if (m.owner) {
-	    var tfm = m.transformForNewOwner(this);
-	    m.owner.removeMorph(m); // KP: note not m.remove(), we don't want to stop stepping behavior
-	    m.setTransform(tfm); 
-	    // FIXME transform is out of date
-	    // morph.setTransform(tfm); 
-	    // m.layoutChanged(); 
-	} 
-	this.layoutManager.beforeAddMorph(this, m, isFront);
-	this.insertMorph(m, isFront);
-	m.changed();
-	m.layoutChanged();
-	this.layoutChanged();
-	return m;
-    },
-
-    setSubmorphs: function(morphs) {
-	console.assert(morphs instanceof Array, "not an array");
-	if (morphs != null) {
-	    this.submorphs = [].concat(morphs);
-	    this.submorphs.forEach(function (m) { 
+	addMorphFrontOrBack: function(m, isFront) {
+		console.assert(m instanceof Morph, "not an instance");
 		if (m.owner) {
-		    var tfm = m.transformForNewOwner(this);
-		    m.owner.removeMorph(m);
-		    m.setTransform(tfm); 
+			var tfm = m.transformForNewOwner(this);
+			m.owner.removeMorph(m); // KP: note not m.remove(), we don't want to stop stepping behavior
+			m.setTransform(tfm); 
+			// FIXME transform is out of date
+			// morph.setTransform(tfm); 
+			// m.layoutChanged(); 
 		} 
-		this.rawNode.appendChild(m.rawNode); 
-		m.owner = this;
+		this.layoutManager.beforeAddMorph(this, m, isFront);
+		this.insertMorph(m, isFront);
 		m.changed();
 		m.layoutChanged();
-	    }, this);
-	}
-	this.layoutChanged();
-    },
+		this.layoutChanged();
+		return m;
+	},
+
+	setSubmorphs: function(morphs) {
+		console.assert(morphs instanceof Array, "not an array");
+		if (morphs != null) {
+			this.submorphs = [].concat(morphs);
+			this.submorphs.forEach(function (m) { 
+				if (m.owner) {
+					var tfm = m.transformForNewOwner(this);
+					m.owner.removeMorph(m);
+					m.setTransform(tfm); 
+				} 
+				this.rawNode.appendChild(m.rawNode); 
+				m.owner = this;
+				m.changed();
+				m.layoutChanged();
+			}, this);
+		}
+		this.layoutChanged();
+	},
 
     indexOfSubmorph: function(m) {
 		if (this.submorphs.length == 0) return -1;  // no submorphs at all
@@ -2044,309 +2039,308 @@ Morph.addMethods({
     	return -1;  // not there
 	},
 
-    insertMorph: function(m, isFront) { // low level, more like Node.insertBefore?
-	var insertionPt = this.submorphs.length == 0 ? null : // if no submorphs, append to nodes
-	    isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
-	// the last one, so drawn last, so front
-	this.rawNode.insertBefore(m.rawNode, insertionPt);
+	insertMorph: function(m, isFront) { // low level, more like Node.insertBefore?
+		var insertionPt = this.submorphs.length == 0 ? null : // if no submorphs, append to nodes
+		isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
+		// the last one, so drawn last, so front
+		this.rawNode.insertBefore(m.rawNode, insertionPt);
 
-	if (isFront)
-	    this.submorphs.push(m);
-	else
-	    this.submorphs.unshift(m);
-	m.owner = this;
-	return m;
+		if (isFront)
+			this.submorphs.push(m);
+		else
+		this.submorphs.unshift(m);
+		m.owner = this;
+		return m;
+	},
+
+	removeMorph: function(m) {// FIXME? replaceMorph() with remove as a special case
+
+		var index = this.submorphs.indexOf(m);
+		if (index < 0) {
+			m.owner !== this && console.log("%s has owner %s that is not %s?", m, m.owner, this);
+			return null;
+		}
+
+		m.removeRawNode();
+		var spliced = this.submorphs.splice(index, 1);
+		if (spliced instanceof Array) spliced = spliced[0];
+		if (m !== spliced) {
+			console.log("invariant violated removing %s, spliced %s", m, spliced);
+		}
+
+		// cleanup, move to ?
+		m.owner = null;
+		m.setHasKeyboardFocus(false);
+
+		this.layoutManager.removeMorph(this, m);
+		return m;
     },
 
+	removeAllMorphs: function() {
+		this.changed();
+		this.submorphs.invoke('removeRawNode');
+		this.submorphs.clear();
+		this.layoutChanged(); 
+	},
 
-    removeMorph: function(m) {// FIXME? replaceMorph() with remove as a special case
+	hasSubmorphs: function() {
+		return this.submorphs.length != 0;
+	},
 
-	var index = this.submorphs.indexOf(m);
-	if (index < 0) {
-	    m.owner !== this && console.log("%s has owner %s that is not %s?", m, m.owner, this);
-	    return null;
-	}
+	remove: function() {
+		// Note this is the only removal method that stops stepping fo the morph structure
+		if (!this.owner) return null;  // already removed
 
-	m.removeRawNode();
-	var spliced = this.submorphs.splice(index, 1);
-	if (spliced instanceof Array) spliced = spliced[0];
-	if (m !== spliced) {
-	    console.log("invariant violated removing %s, spliced %s", m, spliced);
-	}
-	
-	// cleanup, move to ?
-	m.owner = null;
-	m.setHasKeyboardFocus(false);
+		this.stopAllStepping();
+		this.changed();
+		this.owner.removeMorph(this);
 
-	this.layoutManager.removeMorph(this, m);
-	return m;
-    },
+		return this;
+	},
 
-    removeAllMorphs: function() {
-	this.changed();
-	this.submorphs.invoke('removeRawNode');
-	this.submorphs.clear();
-	this.layoutChanged(); 
-    },
+	withAllSubmorphsDo: function(func, rest) {
+		// Call the supplied function on me and all of my submorphs by recursion.
+		var args = $A(arguments);
+		args.shift();
+		func.apply(this, args);
+		for (var i = 0; i < this.submorphs.length; i++) {
+			this.submorphs[i].withAllSubmorphsDo(func, rest);
+		}
+	},
 
-    hasSubmorphs: function() {
-	return this.submorphs.length != 0;
-    },
+	invokeOnAllSubmorphs: function(selector, rest) {
+		var args = $A(arguments);
+		args.shift();
+		var func = this[selector];
+		func.apply(this, args);
+		for (var i = 0; i < this.submorphs.length; i++)
+		this.submorphs[i].invokeOnAllSubmorphs(selector, rest);
+	},
 
-    remove: function() {
-	// Note this is the only removal method that stops stepping fo the morph structure
-	if (!this.owner) return null;  // already removed
+	topSubmorph: function() {
+		// the morph on top is the last one in the list
+		return this.submorphs.last();
+	},
 
-	this.stopAllStepping();
-	this.changed();
-	this.owner.removeMorph(this);
+	// morph gets an opportunity to shut down when WindowMorph closes 
+	shutdown: function() {
+		this.remove();
+	},
 
-	return this;
-    },
-
-    withAllSubmorphsDo: function(func, rest) {
-	// Call the supplied function on me and all of my submorphs by recursion.
-	var args = $A(arguments);
-	args.shift();
-	func.apply(this, args);
-	for (var i = 0; i < this.submorphs.length; i++) {
-	    this.submorphs[i].withAllSubmorphsDo(func, rest);
-	}
-    },
-
-    invokeOnAllSubmorphs: function(selector, rest) {
-	var args = $A(arguments);
-	args.shift();
-	var func = this[selector];
-	func.apply(this, args);
-	for (var i = 0; i < this.submorphs.length; i++)
-	    this.submorphs[i].invokeOnAllSubmorphs(selector, rest);
-    },
-
-    topSubmorph: function() {
-	// the morph on top is the last one in the list
-	return this.submorphs.last();
-    },
-
-    // morph gets an opportunity to shut down when WindowMorph closes 
-    shutdown: function() {
-	this.remove();
-    },
-
-    okToDuplicate: Functions.True  // default is OK
+	okToDuplicate: Functions.True  // default is OK
 
 });
 
 // Morph bindings to its parent, world, canvas, etc.
 Morph.addMethods({
 
-    world: function() {
-	return this.owner ? this.owner.world() : null;
-    },
+	world: function() {
+		return this.owner ? this.owner.world() : null;
+	},
 
-    validatedWorld: function() {
-	// Return the world that this morph is in, checking that it hasn't been removed
-	if (this.owner == null) return null;
-	if (this.owner.indexOfSubmorph(this) < 0) return null;
-	return this.owner.validatedWorld();
-    },
+	validatedWorld: function() {
+		// Return the world that this morph is in, checking that it hasn't been removed
+		if (this.owner == null) return null;
+		if (this.owner.indexOfSubmorph(this) < 0) return null;
+		return this.owner.validatedWorld();
+	},
 
 	openInWorld: function(loc) {
         WorldMorph.current().addMorph(this);
         loc && this.setPosition(loc);
     },
 	
-    toString: function() {
-	try {
-	    return Strings.format("%s(%s)", this.rawNode && this.id() || "" , 
-				  this.shape ? "[" + this.shape.bounds().toTuple() + "]" : "");
-	} catch (e) {
-	    //console.log("toString failed on %s", [this.id(), this.getType()]);
-	    return "#<Morph?{" + e + "}>";
-	}
-    },
+	toString: function() {
+		try {
+			return Strings.format("%s(%s)", this.rawNode && this.id() || "" , 
+			this.shape ? "[" + this.shape.bounds().toTuple() + "]" : "");
+		} catch (e) {
+			//console.log("toString failed on %s", [this.id(), this.getType()]);
+			return "#<Morph?{" + e + "}>";
+		}
+	},
 
-    inspect: function() {
-	try {
-	    return this.toString();
-	} catch (err) {
-	    return "#<inspect error: " + err + ">";
-	}
-    },
+	inspect: function() {
+		try {
+			return this.toString();
+		} catch (err) {
+			return "#<inspect error: " + err + ">";
+		}
+	},
 
     // Morph coordinate transformation functions
 
     // SVG has transform so renamed to getTransform()
     getTransform: function() {
-	if (this.pvtCachedTransform) return this.pvtCachedTransform;
+		if (this.pvtCachedTransform) return this.pvtCachedTransform;
 	
-	if (Config.useTransformAPI) {
-	    var impl = this.rawNode.transform.baseVal.consolidate();
-	    this.pvtCachedTransform = new lively.scene.Similitude(impl ? impl.matrix : null); // identity if no transform specified
-	} else {
-	    // parse the attribute: by Dan Amelang
-	    var s = this.rawNode.getAttributeNS(null, "transform");
-	    //console.log('recalculating transform from ' + s);
-	    var matrix = null;
-	    var match = s && s.match(/(\w+)\s*\((.*)\)/);
-	    if (match) {
-		matrix = this.canvas().createSVGMatrix();
-		var args = match[2].split(/(?:\s|,)+/).
-		map(function(n) { return parseFloat(n) || 0; });
-		switch (match[1]) {
-		case 'matrix':
-		    matrix.a = args[0]; matrix.b = args[1];
-		    matrix.c = args[2]; matrix.d = args[3];
-		    matrix.e = args[4]; matrix.f = args[5];
-		    break;
-		case 'translate':
-		    matrix = matrix.translate(args[0], args[1] || 0); // may be just one arg
-		    break;
-		case 'scale':
-		    matrix = matrix.scaleNonUniform(args[0], args[1] || 1.0);
-		    break;
-		case 'rotate':
-		    // FIXME check:
-		    matrix = matrix.translate(-args[1], -args[2]).rotate(args[0]).translate(args[1], args[2]);
-		    console.log('made ' + matrix + ' from ' + args);
-		    break;
-		case 'skewX':
-		    matrix = matrix.skewX(args[0]);
-		    break;
-		case 'skewY':
-		    matrix = matrix.setSkewY(args[0]);
-		    break;
+		if (Config.useTransformAPI) {
+		    var impl = this.rawNode.transform.baseVal.consolidate();
+		    this.pvtCachedTransform = new lively.scene.Similitude(impl ? impl.matrix : null); // identity if no transform specified
+		} else {
+		    // parse the attribute: by Dan Amelang
+		    var s = this.rawNode.getAttributeNS(null, "transform");
+		    //console.log('recalculating transform from ' + s);
+		    var matrix = null;
+		    var match = s && s.match(/(\w+)\s*\((.*)\)/);
+		    if (match) {
+			matrix = this.canvas().createSVGMatrix();
+			var args = match[2].split(/(?:\s|,)+/).
+			map(function(n) { return parseFloat(n) || 0; });
+			switch (match[1]) {
+			case 'matrix':
+			    matrix.a = args[0]; matrix.b = args[1];
+			    matrix.c = args[2]; matrix.d = args[3];
+			    matrix.e = args[4]; matrix.f = args[5];
+			    break;
+			case 'translate':
+			    matrix = matrix.translate(args[0], args[1] || 0); // may be just one arg
+			    break;
+			case 'scale':
+			    matrix = matrix.scaleNonUniform(args[0], args[1] || 1.0);
+			    break;
+			case 'rotate':
+			    // FIXME check:
+			    matrix = matrix.translate(-args[1], -args[2]).rotate(args[0]).translate(args[1], args[2]);
+			    console.log('made ' + matrix + ' from ' + args);
+			    break;
+			case 'skewX':
+			    matrix = matrix.skewX(args[0]);
+			    break;
+			case 'skewY':
+			    matrix = matrix.setSkewY(args[0]);
+			    break;
+			}
+		    }
+		    this.pvtCachedTransform = new lively.scene.Similitude(matrix);
 		}
-	    }
-	    this.pvtCachedTransform = new lively.scene.Similitude(matrix);
-	}
-	return this.pvtCachedTransform;
+		return this.pvtCachedTransform;
     },
 
-    pvtSetTransform: function(tfm) {
-	this.origin = tfm.getTranslation();
-	this.rotation = tfm.getRotation().toRadians();
-	this.scalePoint = tfm.getScalePoint();
-	// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
-	if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
-	this.transformChanged();
-    },
+	pvtSetTransform: function(tfm) {
+		this.origin = tfm.getTranslation();
+		this.rotation = tfm.getRotation().toRadians();
+		this.scalePoint = tfm.getScalePoint();
+		// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
+		if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
+		this.transformChanged();
+	},
 
-    setTransforms: function(array) {
-	// FIXME update origin/rotation/scale etc?
-	// collapse the transforms and apply the result?
-	lively.scene.Node.prototype.setTransforms.call(this, array);
-	this.transformChanged();
-    },
+	setTransforms: function(array) {
+		// FIXME update origin/rotation/scale etc?
+		// collapse the transforms and apply the result?
+		lively.scene.Node.prototype.setTransforms.call(this, array);
+		this.transformChanged();
+	},
 
     setTransform: function(tfm) { this.pvtSetTransform(tfm); }.wrap(Morph.onLayoutChange('transform')),
 
-    transformToMorph: function(other) {
-	// getTransformToElement has issues on some platforms
-	dbgOn(!other);
-	if (Config.useGetTransformToElement) {
-	    return this.rawNode.getTransformToElement(other.rawNode);
-	} else {
-	    var tfm = this.getGlobalTransform();
-	    var inv = other.getGlobalTransform().createInverse();
-	    //console.log("own global: " + tfm + " other inverse " + inv);
-	    tfm.preConcatenate(inv);
-	    //console.log("transforming " + this + " to " + tfm);
-	    return tfm;
-	}
-    },
-
-    getGlobalTransform: function() {
-	var globalTransform = new lively.scene.Similitude();
-	var world = this.world();
-	// var trace = [];
-	for (var morph = this; morph != world; morph = morph.owner) {
-	    globalTransform.preConcatenate(morph.getTransform());
-	    // trace.push(globalTransform.copy());
-	}
-	// console.log("global transform trace [" + trace + "] for " + this);
-	return globalTransform;
-    },
-
-    translateBy: function(delta) {
-	this.changed();
-	this.origin = this.origin.addPt(delta);
-	// this.layoutChanged();
-	// Only position has changed; not extent.  Thus no internal layout is needed
-	this.transformChanged();
-	if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
-	// DI: I don't think this can affect owner.  It may increase fullbounds
-	//     due to stickouts, but not the bounds for layout...
-	if (this.owner /* && this.owner !== this.world() */ && !this.isEpimorph) this.owner.layoutChanged(); 
-	this.changed();
-	return this; 
-    },
-
-    setRotation: function(theta) { // in radians
-	this.rotation = theta;
-	// layoutChanged will cause this.transformChanged();
-    }.wrap(Morph.onLayoutChange('rotation')),
-    
-    setScale: function(scale/*:float*/) { 
-	// While scalePoint carries both x- and y-scaling,
-	//    getScale() and setScale() allow the use of simple, er, scalars
-	this.setScalePoint(pt(scale, scale));
-    },
-
-    setScalePoint: function(sp) { 
-	this.scalePoint = sp;
-	// layoutChanged will cause this.transformChanged();
-    }.wrap(Morph.onLayoutChange('scale')),
-
-    gettranslation: function() { 
-	return this.getTransform().getTranslation(); 
-    },
-
-    getRotation: function() { 
-	// Note: the actual transform disambiguates scale and rotation as though scale.x > 0
-	var rot = this.getTransform().getRotation().toRadians(); 
-	if (this.scalePoint.x >= 0) return rot;
-
-	// if scale.x is negative, then we have to decode the difference
-	if (rot < 0) return rot + Math.PI;
-	return rot - Math.PI;
+	transformToMorph: function(other) {
+		// getTransformToElement has issues on some platforms
+		dbgOn(!other);
+		if (Config.useGetTransformToElement) {
+			return this.rawNode.getTransformToElement(other.rawNode);
+		} else {
+			var tfm = this.getGlobalTransform();
+			var inv = other.getGlobalTransform().createInverse();
+			//console.log("own global: " + tfm + " other inverse " + inv);
+			tfm.preConcatenate(inv);
+			//console.log("transforming " + this + " to " + tfm);
+			return tfm;
+		}
 	},
 
-    getScale: function() {
-	return this.getTransform().getScale(); 
-    },
+	getGlobalTransform: function() {
+		var globalTransform = new lively.scene.Similitude();
+		var world = this.world();
+		// var trace = [];
+		for (var morph = this; morph != world; morph = morph.owner) {
+			globalTransform.preConcatenate(morph.getTransform());
+			// trace.push(globalTransform.copy());
+		}
+		// console.log("global transform trace [" + trace + "] for " + this);
+		return globalTransform;
+	},
 
-    moveBy: function(delta) {
-	this.translateBy(delta);
-    },
+	translateBy: function(delta) {
+		this.changed();
+		this.origin = this.origin.addPt(delta);
+		// this.layoutChanged();
+		// Only position has changed; not extent.  Thus no internal layout is needed
+		this.transformChanged();
+		if (this.fullBounds != null) this.fullBounds = this.fullBounds.translatedBy(delta);
+		// DI: I don't think this can affect owner.  It may increase fullbounds
+		//     due to stickouts, but not the bounds for layout...
+		if (this.owner /* && this.owner !== this.world() */ && !this.isEpimorph) this.owner.layoutChanged(); 
+		this.changed();
+		return this; 
+	},
 
-    rotateBy: function(delta) {
-	this.setRotation(this.getRotation()+delta);
-    },
+	setRotation: function(theta) { // in radians
+		this.rotation = theta;
+		// layoutChanged will cause this.transformChanged();
+	}.wrap(Morph.onLayoutChange('rotation')),
+    
+	setScale: function(scale/*:float*/) { 
+		// While scalePoint carries both x- and y-scaling,
+		//    getScale() and setScale() allow the use of simple, er, scalars
+		this.setScalePoint(pt(scale, scale));
+	},
 
-    scaleBy: function(factor) {
-	// Perform a linear scaling (based on x scale) by the given factor
-	this.setScale(this.getScale()*factor);
-    },
-    beClipMorph: function() {
-	// For simple morphs (rectangles, ellipses, polygons) this will cause all submorphs
-	// to be clipped to the shape of this morph.
-	// Note: the bounds function should probably be copied from ClipMorph as
-	//		part of this mutation
-	var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
-	this.clip = new lively.scene.Clip(this.shape);
-	defs.appendChild(this.clip.rawNode);
-	this.clip.applyTo(this);
-	this.isClipMorph = true;
-    },
+	setScalePoint: function(sp) { 
+		this.scalePoint = sp;
+		// layoutChanged will cause this.transformChanged();
+	}.wrap(Morph.onLayoutChange('scale')),
 
-    throb: function() {
-	this.scaleBy(this.getScale() <= 1 ? 2 : 0.9);
-    },
+	gettranslation: function() { 
+		return this.getTransform().getTranslation(); 
+	},
 
-    align: function(p1, p2) {
-	return this.translateBy(p2.subPt(p1)); 
-    },
+	getRotation: function() { 
+		// Note: the actual transform disambiguates scale and rotation as though scale.x > 0
+		var rot = this.getTransform().getRotation().toRadians(); 
+		if (this.scalePoint.x >= 0) return rot;
+
+		// if scale.x is negative, then we have to decode the difference
+		if (rot < 0) return rot + Math.PI;
+		return rot - Math.PI;
+	},
+
+	getScale: function() {
+		return this.getTransform().getScale(); 
+	},
+
+	moveBy: function(delta) {
+		this.translateBy(delta);
+	},
+
+	rotateBy: function(delta) {
+		this.setRotation(this.getRotation()+delta);
+	},
+
+	scaleBy: function(factor) {
+		// Perform a linear scaling (based on x scale) by the given factor
+		this.setScale(this.getScale()*factor);
+	},
+	beClipMorph: function() {
+		// For simple morphs (rectangles, ellipses, polygons) this will cause all submorphs
+		// to be clipped to the shape of this morph.
+		// Note: the bounds function should probably be copied from ClipMorph as
+		//		part of this mutation
+		var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
+		this.clip = new lively.scene.Clip(this.shape);
+		defs.appendChild(this.clip.rawNode);
+		this.clip.applyTo(this);
+		this.isClipMorph = true;
+	},
+
+	throb: function() {
+		this.scaleBy(this.getScale() <= 1 ? 2 : 0.9);
+	},
+
+	align: function(p1, p2) {
+		return this.translateBy(p2.subPt(p1)); 
+	},
 
     centerAt: function(p) {
 	return this.align(this.bounds().center(), p); 
@@ -2354,70 +2348,70 @@ Morph.addMethods({
 
 	getCenter: function() { return this.bounds().center() },
 
-    moveOriginBy: function(delta) {
-	// This method changes the origin (and thus center of rotation) without changing any other effect
-	// To center a rectangular morph, use m.moveOriginBy(m.innerBounds().center())
-	this.origin = this.origin.addPt(delta);
-	this.shape.translateBy(delta.negated());
-	this.submorphs.forEach(function (ea) { ea.translateBy(delta.negated()); });
-    },
+	moveOriginBy: function(delta) {
+		// This method changes the origin (and thus center of rotation) without changing any other effect
+		// To center a rectangular morph, use m.moveOriginBy(m.innerBounds().center())
+		this.origin = this.origin.addPt(delta);
+		this.shape.translateBy(delta.negated());
+		this.submorphs.forEach(function (ea) { ea.translateBy(delta.negated()); });
+	},
 
-    // Animated moves for, eg, window collapse/expand
-    animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn) {
-	if (nSteps <= 0) return;
-	var loc = this.position();
-	var delta = destination.subPt(loc).scaleBy(1/nSteps);
-	var path = [];
-	for (var i = 1; i<=nSteps; i++) { loc = loc.addPt(delta); path.unshift(loc); }
-	this.animatedFollowPath(path, msPer, callBackFn);
-    },
+	// Animated moves for, eg, window collapse/expand
+	animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn) {
+		if (nSteps <= 0) return;
+		var loc = this.position();
+		var delta = destination.subPt(loc).scaleBy(1/nSteps);
+		var path = [];
+		for (var i = 1; i<=nSteps; i++) { loc = loc.addPt(delta); path.unshift(loc); }
+		this.animatedFollowPath(path, msPer, callBackFn);
+	},
 
-    animatedFollowPath: function(path, msPer, callBackFn) {
-	var spec = {path: path.clone(), callBack: callBackFn};
-	spec.action = this.startStepping(msPer, 'animatedPathStep', spec);
-	
-    },
+	animatedFollowPath: function(path, msPer, callBackFn) {
+		var spec = {path: path.clone(), callBack: callBackFn};
+		spec.action = this.startStepping(msPer, 'animatedPathStep', spec);
 
-    animatedPathStep: function(spec) {
-	if (spec.path.length >= 1) this.setPosition(spec.path.pop());
-	if (spec.path.length >= 1) return;
-	spec.action.stop(this.world());
-	spec.callBack.call(this);
-    },
+	},
+
+	animatedPathStep: function(spec) {
+		if (spec.path.length >= 1) this.setPosition(spec.path.pop());
+		if (spec.path.length >= 1) return;
+		spec.action.stop(this.world());
+		spec.callBack.call(this);
+	},
 
     // toggle fisheye effect on/off
-    toggleFisheye: function() { 
-	// if fisheye is true, we need to scale the morph to original size
-	if (this.fishEye) {
-	    this.setScale(this.getScale() / this.fisheyeScale);
-	    this.setFisheyeScale(1.0);
-	}
-	// toggle fisheye
-	this.fishEye = !this.fishEye;
-    },
+	toggleFisheye: function() { 
+		// if fisheye is true, we need to scale the morph to original size
+		if (this.fishEye) {
+			this.setScale(this.getScale() / this.fisheyeScale);
+			this.setFisheyeScale(1.0);
+		}
+		// toggle fisheye
+		this.fishEye = !this.fishEye;
+	},
 
-    // sets the scaling factor for the fisheye between 1..fisheyeGrowth
-    setFisheyeScale: function (newScale) {
-	// take the original centerpoint
-	var p = this.bounds().center();
+	// sets the scaling factor for the fisheye between 1..fisheyeGrowth
+	setFisheyeScale: function (newScale) {
+		// take the original centerpoint
+		var p = this.bounds().center();
 
-	this.fisheyeScale = newScale;
-	this.pvtCachedTransform = null;
-	this.layoutChanged();  
-	this.changed();
-
-	// if the fisheye was on move the fisheye'd morph by the difference between 
-	// original center point and the new center point divided by 2
-	if (this.fishEye) {
-	    // (new.center - orig.center)/2
-	    var k = this.bounds().center().subPt(p).scaleBy(.5).negated();
-	    if (!pt(0,0).eqPt(k)) {
-		this.setPosition(this.position().addPt(k));
+		this.fisheyeScale = newScale;
+		this.pvtCachedTransform = null;
 		this.layoutChanged();  
 		this.changed();
-	    }
-	}
-    },
+
+		// if the fisheye was on move the fisheye'd morph by the difference between 
+		// original center point and the new center point divided by 2
+		if (this.fishEye) {
+			// (new.center - orig.center)/2
+			var k = this.bounds().center().subPt(p).scaleBy(.5).negated();
+			if (!pt(0,0).eqPt(k)) {
+				this.setPosition(this.position().addPt(k));
+				this.layoutChanged();  
+				this.changed();
+			}
+		}
+	},
 
     // Experimental radial "black hole" scrolling feature: When
     // an object comes close enough to the "event horizon" (specified
@@ -2426,116 +2420,116 @@ Morph.addMethods({
     // while positive values expand and restore the display back to its 
     // original state.  For further information, see  
     // Sun Labs Technical Report SMLI TR-99-74, March 1999.
-    moveRadially: function(towardsPoint, howMuch) {
-	var position = this.getPosition();
-	var relativePt = position.subPt(towardsPoint);
-	var distance = towardsPoint.dist(position);
-	if (!this.inBlackHole) this.inBlackHole = 0;
+	moveRadially: function(towardsPoint, howMuch) {
+		var position = this.getPosition();
+		var relativePt = position.subPt(towardsPoint);
+		var distance = towardsPoint.dist(position);
+		if (!this.inBlackHole) this.inBlackHole = 0;
 
-	// The object disappears entirely when it is less than 5 pixels away
-	// The 'inBlackHole' counter keeps track of how many levels deep
-	// the object is in the black hole, allowing the display to be
-	// restored correctly.
-	if (distance <= 5) {
-	    if (howMuch < 0) {
-		this.inBlackHole++;
-		this.setScale(0);
-	    } else {
-		this.inBlackHole--;            
-	    }
-	} 
+		// The object disappears entirely when it is less than 5 pixels away
+		// The 'inBlackHole' counter keeps track of how many levels deep
+		// the object is in the black hole, allowing the display to be
+		// restored correctly.
+		if (distance <= 5) {
+			if (howMuch < 0) {
+				this.inBlackHole++;
+				this.setScale(0);
+			} else {
+				this.inBlackHole--;            
+			}
+		} 
 
-	if (this.inBlackHole == 0) {
-	    // Start shrinking the object when it is closer than 200 pixels away
-	    if (distance > 5 && distance < 200) this.setScale(distance/200);
-	    else if (distance >= 200 && this.getScale() != 1) this.setScale(1);
+		if (this.inBlackHole == 0) {
+			// Start shrinking the object when it is closer than 200 pixels away
+			if (distance > 5 && distance < 200) this.setScale(distance/200);
+			else if (distance >= 200 && this.getScale() != 1) this.setScale(1);
 
-	    // Calculate new location for the object
-	    var theta = Math.atan2(relativePt.y, relativePt.x);
-	    var newDistance = distance + howMuch;
-	    if (newDistance < 0) newDistance = 1;    
-	    var newX = newDistance * Math.cos(theta);
-	    var newY = newDistance * Math.sin(theta);
-	    this.setPosition(towardsPoint.addPt(pt(newX,newY)));
+			// Calculate new location for the object
+			var theta = Math.atan2(relativePt.y, relativePt.x);
+			var newDistance = distance + howMuch;
+			if (newDistance < 0) newDistance = 1;    
+			var newX = newDistance * Math.cos(theta);
+			var newY = newDistance * Math.sin(theta);
+			this.setPosition(towardsPoint.addPt(pt(newX,newY)));
+		}
 	}
-    }
-
 });
 
 Morph.addMethods({     // particle behavior
 
-    bounceInOwnerBounds: function() {
-	this.bounceInBounds(this.owner.innerBounds());
-    },
-    bounceInBounds: function(ob) {
-	// typcially ob = this.owner.innerBounds()
-	// Bounce by reversing the component of velocity that put us out of bounds
-	if (!this.velocity) return;  // Can't bounce without a velocity vector
+	bounceInOwnerBounds: function() {
+		this.bounceInBounds(this.owner.innerBounds());
+	},
+	
+	bounceInBounds: function(ob) {
+		// typcially ob = this.owner.innerBounds()
+		// Bounce by reversing the component of velocity that put us out of bounds
+		if (!this.velocity) return;  // Can't bounce without a velocity vector
 
-	// We take care to only reverse the direction if it's wrong,
-	//	but we move in any case, since we might be deeply out of bounds
-	var b = this.bounds();
-	if (b.x < ob.x) {
-	    if (this.velocity.x < 0) this.velocity = this.velocity.scaleByPt(pt(-1, 1));
-	    this.moveBy(this.velocity);
+		// We take care to only reverse the direction if it's wrong,
+		//	but we move in any case, since we might be deeply out of bounds
+		var b = this.bounds();
+		if (b.x < ob.x) {
+			if (this.velocity.x < 0) this.velocity = this.velocity.scaleByPt(pt(-1, 1));
+			this.moveBy(this.velocity);
+		}
+		if (b.maxX() > ob.maxX()) {
+			if (this.velocity.x > 0) this.velocity = this.velocity.scaleByPt(pt(-1, 1));
+			this.moveBy(this.velocity);
+		}
+		if (b.y < ob.y) {
+			if (this.velocity.y < 0) this.velocity = this.velocity.scaleByPt(pt(1, -1));
+			this.moveBy(this.velocity);
+		}
+		if (b.maxY() > ob.maxY()) {
+			if (this.velocity.y > 0) this.velocity = this.velocity.scaleByPt(pt(1, -1));
+			this.moveBy(this.velocity);
+		}
+	},
+	
+	stepByVelocities: function() {
+		if (this.velocity) this.moveBy(this.velocity);
+		if (this.angularVelocity) this.rotateBy(this.angularVelocity);
+	},
+	
+	stepAndBounce: function() {  // convenience for tile scripting
+		this.stepByVelocities();
+		this.bounceInOwnerBounds();
 	}
-	if (b.maxX() > ob.maxX()) {
-	    if (this.velocity.x > 0) this.velocity = this.velocity.scaleByPt(pt(-1, 1));
-	    this.moveBy(this.velocity);
-	}
-	if (b.y < ob.y) {
-	    if (this.velocity.y < 0) this.velocity = this.velocity.scaleByPt(pt(1, -1));
-	    this.moveBy(this.velocity);
-	}
-	if (b.maxY() > ob.maxY()) {
-	    if (this.velocity.y > 0) this.velocity = this.velocity.scaleByPt(pt(1, -1));
-	    this.moveBy(this.velocity);
-	}
-    },
-    stepByVelocities: function() {
-        if (this.velocity) this.moveBy(this.velocity);
-        if (this.angularVelocity) this.rotateBy(this.angularVelocity);
-    },
-    stepAndBounce: function() {  // convenience for tile scripting
-        this.stepByVelocities();
-        this.bounceInOwnerBounds();
-    }
-
 });
 
 
 Morph.addMethods({     // help handling
 
-    getHelpText: Functions.Null,  // override to supply help text
+	getHelpText: Functions.Null,  // override to supply help text
 
+	showHelp: function(evt) {
 
-    showHelp: function(evt) {
+		if (this.suppressBalloonHelp) return false;
+		if (this.owner instanceof HandMorph) return false;
+		var helpText = this.getHelpText();
+		if (!helpText) return false;
 
-	if (this.suppressBalloonHelp) return false;
-	if (this.owner instanceof HandMorph) return false;
-	var helpText = this.getHelpText();
-	if (!helpText) return false;
+		// Create only one help balloon at a time
+		if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.point())) {
+			this.helpBalloonMorph.setPosition(this.window().localize(evt.point()));
+			return false;
+		} else {
+			var width = Math.min(helpText.length * 20, 260); // some estimate of width.
+			var window = this.window();
+			var pos = window.localize(evt.point());
+			this.helpBalloonMorph = new TextMorph(pos.addXY(10, 10).extent(pt(width, 20)), helpText);
+			window.addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
+			return true;
+		}
+	},
 
-	// Create only one help balloon at a time
-	if (this.helpBalloonMorph && !this.helpBalloonMorph.getPosition().eqPt(evt.point())) {
-	    this.helpBalloonMorph.setPosition(this.window().localize(evt.point()));
-	    return false;
-	} else {
-	    var width = Math.min(helpText.length * 20, 260); // some estimate of width.
-	    var window = this.window();
-	    var pos = window.localize(evt.point());
-	    this.helpBalloonMorph = new TextMorph(pos.addXY(10, 10).extent(pt(width, 20)), helpText);
-	    window.addMorph(this.helpBalloonMorph.beHelpBalloonFor(this));
-	    return true;
+	hideHelp: function() {
+		if (!this.helpBalloonMorph)  
+			return;
+		this.helpBalloonMorph.remove();
+		delete this.helpBalloonMorph;
 	}
-    },
-
-    hideHelp: function() {
-	if (!this.helpBalloonMorph)  
-	    return;
-	this.helpBalloonMorph.remove();
-	delete this.helpBalloonMorph;
-    }
 
 });
 
@@ -2544,171 +2538,170 @@ Morph.addMethods({     // help handling
 // Morph mouse event handling functions
 Morph.addMethods({
 
-    // KP: equivalent of the DOM capture phase
-    // KP: hasFocus is true if the receiver is the hands's focus (?)
-    captureMouseEvent: function Morph$captureMouseEvent(evt, hasFocus) {
-	// Dispatch this event to the frontmost receptive morph that contains it
-	// Note boolean return for event consumption has not been QA'd
-	// if we're using the fisheye... 
-	if (this.fishEye) {
-	    // get the distance to the middle of the morph and check if we're 
-	    // close enough to start the fisheye
-	    var size = Math.max(this.bounds().width, this.bounds().height);
+	// KP: equivalent of the DOM capture phase
+	// KP: hasFocus is true if the receiver is the hands's focus (?)
+	captureMouseEvent: function Morph$captureMouseEvent(evt, hasFocus) {
+		// Dispatch this event to the frontmost receptive morph that contains it
+		// Note boolean return for event consumption has not been QA'd
+		// if we're using the fisheye... 
+		if (this.fishEye) {
+			// get the distance to the middle of the morph and check if we're 
+			// close enough to start the fisheye
+			var size = Math.max(this.bounds().width, this.bounds().height);
 
-	    var dist = evt.mousePoint.dist(this.bounds().center()) / this.fisheyeProximity;
-	    if (dist <= size) {
-		// the fisheye factor is between 1..fisheyeGrowth
-		this.setFisheyeScale(1 + this.fisheyeGrowth * Math.abs(dist/size - 1));
-	    } else {
-		// just a precaution to make sure fisheye scaling isn't 
-		// affecting its surrounding any more
-		this.setFisheyeScale(1.0);
-	    }
-	}
-	if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
+			var dist = evt.mousePoint.dist(this.bounds().center()) / this.fisheyeProximity;
+			if (dist <= size) {
+				// the fisheye factor is between 1..fisheyeGrowth
+				this.setFisheyeScale(1 + this.fisheyeGrowth * Math.abs(dist/size - 1));
+			} else {
+				// just a precaution to make sure fisheye scaling isn't 
+				// affecting its surrounding any more
+				this.setFisheyeScale(1.0);
+			}
+		}
+		if (hasFocus) return this.mouseHandler.handleMouseEvent(evt, this);
 
-	if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
-	
-	if (this.hasSubmorphs()) {
-	    // If any submorph handles it (ie returns true), then return
-	    for (var i = this.submorphs.length - 1; i >= 0; i--) {
-		if (this.submorphs[i].captureMouseEvent(evt, false)) return true;
-	    }
-	}
-	if (this.mouseHandler == null)
-	    return false;
+		if (!evt.priorPoint || !this.fullContainsWorldPoint(evt.priorPoint)) return false;
 
-	if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
-	    return false;
+		if (this.hasSubmorphs()) {
+			// If any submorph handles it (ie returns true), then return
+			for (var i = this.submorphs.length - 1; i >= 0; i--) {
+				if (this.submorphs[i].captureMouseEvent(evt, false)) return true;
+			}
+		}
+		if (this.mouseHandler == null)
+			return false;
 
-
-	return this.mouseHandler.handleMouseEvent(evt, this); 
-    },
+		if (!evt.priorPoint || !this.shape.containsPoint(this.localize(evt.priorPoint))) 
+			return false;
 
 
-    areEventsIgnored: function() {
-	return this.getTrait("pointer-events") == "none";
-    },
+		return this.mouseHandler.handleMouseEvent(evt, this); 
+	},
 
-    ignoreEvents: function() { // will not respond nor get focus
-	this.mouseHandler = null;
-	this.setTrait("pointer-events", "none");
-	return this;
-    },
 
-    enableEvents: function() {
-	this.mouseHandler = MouseHandlerForDragging.prototype;
-	this.removeTrait("pointer-events");
-	
-	return this;
-    },
+	areEventsIgnored: function() {
+		return this.getTrait("pointer-events") == "none";
+	},
 
-    relayMouseEvents: function(target, eventSpec) {
-	this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
-    },
+	ignoreEvents: function() { // will not respond nor get focus
+		this.mouseHandler = null;
+		this.setTrait("pointer-events", "none");
+		return this;
+	},
 
-    handlesMouseDown: function(evt) {
-	if (this.mouseHandler == null || evt.isCommandKey()) return false;  //default behavior
-	return this.mouseHandler.handlesMouseDown(); 
-    },
+	enableEvents: function() {
+		this.mouseHandler = MouseHandlerForDragging.prototype;
+		this.removeTrait("pointer-events");
 
-    onMouseDown: function(evt) { 
-	this.hideHelp();
-    }, //default behavior
+		return this;
+	},
 
-    onMouseMove: function(evt, hasFocus) { //default behavior
-	if (evt.mouseButtonPressed && this==evt.hand.mouseFocus && this.owner && this.owner.openForDragAndDrop) { 
-	    this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
-	} // else this.checkForControlPointNear(evt);
-	if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
-    },
+	relayMouseEvents: function(target, eventSpec) {
+		this.mouseHandler = new MouseHandlerForRelay(target, eventSpec); 
+	},
 
-    onMouseUp: function(evt) { }, //default behavior
+	handlesMouseDown: function(evt) {
+		if (this.mouseHandler == null || evt.isCommandKey()) return false;	//default behavior
+		return this.mouseHandler.handlesMouseDown(); 
+	},
 
-    considerShowHelp: function(oldEvt) {
-        // if the mouse has not moved reasonably
-	var hand = oldEvt.hand;
-	if (!hand) return; // this is not an active world so it doesn't have a hand
-        else if (hand.getPosition().dist(oldEvt.mousePoint) < 10)
-            this.showHelp(oldEvt);
-    },
-    
-    delayShowHelp: function(evt) {
-        var scheduledHelp = new SchedulableAction(this, "considerShowHelp", evt, 0);
-        if (this.world())
-            this.world().scheduleForLater(scheduledHelp, Config.ballonHelpDelay || 1000, false);
-    },
-
-    onMouseOver: function(evt) {
-        this.delayShowHelp(evt);
-    }, 
-
-    onMouseOut: function(evt) { 
+	onMouseDown: function(evt) { 
 		this.hideHelp();
-    }, 
+	}, //default behavior
 
-    onMouseWheel: function(evt) { 
-    }, // default behavior
+	onMouseMove: function(evt, hasFocus) { //default behavior
+		if (evt.mouseButtonPressed && this==evt.hand.mouseFocus && this.owner && this.owner.openForDragAndDrop) { 
+			this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
+		} // else this.checkForControlPointNear(evt);
+		if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
+	},
 
-    takesKeyboardFocus: Functions.False,
+	onMouseUp: function(evt) { }, //default behavior
 
-    setHasKeyboardFocus: Functions.False, // no matter what, say no
+	considerShowHelp: function(oldEvt) {
+		// if the mouse has not moved reasonably
+		var hand = oldEvt.hand;
+		if (!hand) return; // this is not an active world so it doesn't have a hand
+		else if (hand.getPosition().dist(oldEvt.mousePoint) < 10)
+		this.showHelp(oldEvt);
+	},
 
-    requestKeyboardFocus: function(hand) {
-	if (this.takesKeyboardFocus()) {
-	    if (this.setHasKeyboardFocus(true)) {
-		hand.setKeyboardFocus(this);
+	delayShowHelp: function(evt) {
+		var scheduledHelp = new SchedulableAction(this, "considerShowHelp", evt, 0);
+		if (this.world())
+			this.world().scheduleForLater(scheduledHelp, Config.ballonHelpDelay || 1000, false);
+	},
+
+	onMouseOver: function(evt) {
+		this.delayShowHelp(evt);
+	}, 
+
+	onMouseOut: function(evt) { 
+		this.hideHelp();
+	}, 
+
+	onMouseWheel: function(evt) {}, // default behavior
+
+	takesKeyboardFocus: Functions.False,
+
+	setHasKeyboardFocus: Functions.False, // no matter what, say no
+
+	requestKeyboardFocus: function(hand) {
+		if (this.takesKeyboardFocus()) {
+			if (this.setHasKeyboardFocus(true)) {
+				hand.setKeyboardFocus(this);
+				return true;
+			}
+		}
+		return false;
+	},
+
+	relinquishKeyboardFocus: function(hand) {
+		hand.setKeyboardFocus(null);
+		return this.setHasKeyboardFocus(false); 
+	},
+
+	onFocus: function(hand) {
+		this.addFocusHalo();
+	},
+
+	onBlur: function(hand) {
+		this.removeFocusHalo();
+	},
+
+	removeFocusHalo: function() {
+		if (!this.focusHalo) return false;
+		//this.focusHalo.removeRawNode();
+		this.focusHalo.remove();
+		this.focusHalo = null;
 		return true;
-	    }
+	},
+
+	focusHaloInset: 2,
+
+	focusStyle: {
+		fill: null, 
+		borderColor: Color.blue,
+		strokeOpacity: 0.3
+	},
+
+	adjustFocusHalo: function() {
+		this.focusHalo.setBounds(this.localBorderBounds().expandBy(this.focusHaloInset));
+	},
+
+	addFocusHalo: function() {
+		if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
+		this.focusHalo = Morph.makeRectangle(this.localBorderBounds().expandBy(this.focusHaloInset));
+		this.focusHalo.name = "FocusHalo";
+		this.focusHalo.isEpimorph = true;  // Do this before adding the halo
+		this.addMorph(this.focusHalo);
+		this.focusHalo.applyStyle(this.focusStyle);
+		this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
+		this.focusHalo.setLineJoin(lively.scene.LineJoins.Round);
+		this.focusHalo.ignoreEvents();
+		return true;
 	}
-	return false;
-    },
-
-    relinquishKeyboardFocus: function(hand) {
-	hand.setKeyboardFocus(null);
-	return this.setHasKeyboardFocus(false); 
-    },
-
-    onFocus: function(hand) {
-	this.addFocusHalo();
-    },
-
-    onBlur: function(hand) {
-	this.removeFocusHalo();
-    },
-
-    removeFocusHalo: function() {
-	if (!this.focusHalo) return false;
-	//this.focusHalo.removeRawNode();
-	this.focusHalo.remove();
-	this.focusHalo = null;
-	return true;
-    },
-
-    focusHaloInset: 2,
-
-    focusStyle: {
-	fill: null, 
-	borderColor: Color.blue,
-	strokeOpacity: 0.3
-    },
-    
-    adjustFocusHalo: function() {
-	this.focusHalo.setBounds(this.localBorderBounds().expandBy(this.focusHaloInset));
-    },
-
-    addFocusHalo: function() {
-	if (this.focusHalo || this.focusHaloBorderWidth <= 0) return false;
-	this.focusHalo = Morph.makeRectangle(this.localBorderBounds().expandBy(this.focusHaloInset));
-	this.focusHalo.name = "FocusHalo";
-	this.focusHalo.isEpimorph = true;  // Do this before adding the halo
-	this.addMorph(this.focusHalo);
-	this.focusHalo.applyStyle(this.focusStyle);
-	this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
-	this.focusHalo.setLineJoin(lively.scene.LineJoins.Round);
-	this.focusHalo.ignoreEvents();
-	return true;
-    }
 
 });
 
@@ -2716,196 +2709,194 @@ Morph.addMethods({
 // Morph grabbing and menu functionality
 Morph.addMethods({
 
-    checkForControlPointNear: function(evt) {
-	if (this.suppressHandles) return false; // disabled
-	if (this.owner == null) return false; // can't reshape the world
-	var partName = this.shape.partNameNear(this.localize(evt.point()));
-	if (partName == null) return false;
+	checkForControlPointNear: function(evt) {
+		if (this.suppressHandles) return false; // disabled
+		if (this.owner == null) return false; // can't reshape the world
+		var partName = this.shape.partNameNear(this.localize(evt.point()));
+		if (partName == null) return false;
 
-	var loc = this.shape.partPosition(partName);
-	var handle = this.makeHandle(loc, partName, evt.hand);
-	if (!handle) return false;  // makeHandle variants may return null
+		var loc = this.shape.partPosition(partName);
+		var handle = this.makeHandle(loc, partName, evt.hand);
+		if (!handle) return false;  // makeHandle variants may return null
 
-	this.addMorph(handle);  
-	handle.showHelp(evt);
-	if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
-	evt.hand.setMouseFocus(handle);
-	return true; 
-    },
-    
-    makeHandle: function(position, partName, evt) { // can be overriden
-	var handleShape = Object.isString(partName) || partName >= 0 ? lively.scene.Rectangle : lively.scene.Ellipse;
-	return new HandleMorph(position, handleShape, evt.hand, this, partName);
-    },
+		this.addMorph(handle);  
+		handle.showHelp(evt);
+		if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
+		evt.hand.setMouseFocus(handle);
+		return true; 
+	},
 
+	makeHandle: function(position, partName, evt) { // can be overriden
+		var handleShape = Object.isString(partName) || partName >= 0 ? lively.scene.Rectangle : lively.scene.Ellipse;
+		return new HandleMorph(position, handleShape, evt.hand, this, partName);
+	},
 
     copySubmorphsOnGrab: false, // acts as a palette if true.
     
     // May be overridden to preempt (by returning null) the default action of grabbing me
     // or to otherwise prepare for being grabbed or find a parent to grab instead
     okToBeGrabbedBy: function(evt) {
-	return this; 
+		return this; 
     },
 
-    editMenuItems: function(evt) { 
-	return [];  // Overridden by, eg, TextMorph
-    },
+	editMenuItems: function(evt) { 
+		return [];  // Overridden by, eg, TextMorph
+	},
 
-    showMorphMenu: function(evt) {
-	var menu = this.morphMenu(evt);
-	menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
-    },
+	showMorphMenu: function(evt) {
+		var menu = this.morphMenu(evt);
+		menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
+	},
 
-    morphMenu: function(evt) {
-	var items = [
-	    ["remove", this.remove],
-	    ["drill", this.showOwnerChain.curry(evt)],
-	    ["grab", this.pickMeUp.curry(evt)],
-	    ["drag", this.dragMe.curry(evt)],
-	    ["edit style", function() { new StylePanel(this).open()}],
-	    ["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
-	    ["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
-					      browser.openIn(this.world(), evt.point());
-					      browser.getModel().setClassName(this.getType());
-					    }]
-	];
-	if (this.okToDuplicate())
-	    items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
+	morphMenu: function(evt) {
+		var items = [
+			["remove", this.remove],
+			["drill", this.showOwnerChain.curry(evt)],
+			["grab", this.pickMeUp.curry(evt)],
+			["drag", this.dragMe.curry(evt)],
+			["edit style", function() { new StylePanel(this).open()}],
+			["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
+			["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
+				browser.openIn(this.world(), evt.point());
+				browser.getModel().setClassName(this.getType());}]
+			];
+		if (this.okToDuplicate())
+			items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
 
-	if (this.getModel() instanceof SyntheticModel)
-	    items.push( ["show Model dump", this.addModelInspector.curry(this)]);
+		if (this.getModel() instanceof SyntheticModel)
+			items.push( ["show Model dump", this.addModelInspector.curry(this)]);
 
-	var menu = new MenuMorph(items, this);
-	menu.addLine();
-	menu.addItems(this.subMenuItems(evt));
-	return menu;
-},
+		var menu = new MenuMorph(items, this);
+		menu.addLine();
+		menu.addItems(this.subMenuItems(evt));
+		return menu;
+	},
 
-subMenuItems: function(evt) {
-	var propertiesItems =  [
-	    ["reset rotation", this.setRotation.curry(0)],
-	    ["reset scaling", this.setScale.curry(1)],
-	    [((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
-	    [(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
-	    ["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
-	    [(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }]
-	];
-	var windowItems = [
-	    ["put me in a window", this.putMeInAWindow.curry(this.position())], 
-	    ["put me in a tab", this.putMeInATab.curry(this.position())],
-	    ["put me in the open", this.putMeInTheWorld.curry(this.position())],
-	    ["show Lively markup", this.addSvgInspector.curry(this)],
-	    ["package", function(evt) {  // FIXME insert package morph in exactly the same position?
-			new PackageMorph(this).openIn(this.world(), evt.point()); this.remove(); } ],
-	    ["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
-	];
-	return [
-            ['Properties', propertiesItems],
-            ['Window and World', windowItems]
-	]
-    },
+	subMenuItems: function(evt) {
+		var propertiesItems =  [
+			["reset rotation", this.setRotation.curry(0)],
+			["reset scaling", this.setScale.curry(1)],
+			[((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
+			[(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
+			["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
+			[(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }]
+		];
+		var windowItems = [
+			["put me in a window", this.putMeInAWindow.curry(this.position())], 
+			["put me in a tab", this.putMeInATab.curry(this.position())],
+			["put me in the open", this.putMeInTheWorld.curry(this.position())],
+			["show Lively markup", this.addSvgInspector.curry(this)],
+			["package", function(evt) {  // FIXME insert package morph in exactly the same position?
+				new PackageMorph(this).openIn(this.world(), evt.point()); this.remove(); } ],
+			["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
+		];
+		return [
+			['Properties', propertiesItems],
+			['Window and World', windowItems]
+		]
+	},
 
     showPieMenu: function(evt) {
     	var menu, targetMorph = this;
-	var items = [
-		['make tile ([])', function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)],
-		['duplicate (o-->o)', function(evt) {
-			evt.hand.setPosition(menu.mouseDownPoint);
-			menu.targetMorph.copyToHand(evt.hand);
-			var theCopy = evt.hand.submorphs[0];
-			PieMenuMorph.setUndo(function() { theCopy.remove(); });  // Why doesn't this work??
-			}],
-		['move (o-->)', function(evt) {
-			var oldPos = targetMorph.getPosition();
-			PieMenuMorph.setUndo(function() { targetMorph.setPosition(oldPos); });
-			evt.hand.setPosition(menu.mouseDownPoint);
-			evt.hand.addMorph(menu.targetMorph);
-			if (menu.targetMorph instanceof SelectionMorph)  // Fixme:  This should be in SelectionMorph
-				menu.targetMorph.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); });
-			}],
-		['scale (o < O)', function(evt) {
-			var oldScale = targetMorph.getScale();
-			PieMenuMorph.setUndo(function() { targetMorph.setScale(oldScale); });
-			menu.addHandleTo(targetMorph, evt, 'scale');
-			}],
-		['rotate (G)', function(evt) {
-			var oldRotation = targetMorph.getRotation();
-			PieMenuMorph.setUndo(function() { targetMorph.setRotation(oldRotation); });
-			menu.addHandleTo(targetMorph, evt, 'rotate');
-			}],
-		['delete (X)', function(evt) {
-			var oldOwner = targetMorph.owner;
-			PieMenuMorph.setUndo(function() { oldOwner.addMorph(targetMorph); });
-			targetMorph.remove();
-			}],
-		['undo (~)', function(evt) { PieMenuMorph.doUndo(); }],
-		['edit style (<>)', function() { new StylePanel(this).open()}]
-	];
-	menu = new PieMenuMorph(items, this, 0.5);
-	menu.open(evt);
+		var items = [
+			['make tile ([])', function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)],
+			['duplicate (o-->o)', function(evt) {
+				evt.hand.setPosition(menu.mouseDownPoint);
+				menu.targetMorph.copyToHand(evt.hand);
+				var theCopy = evt.hand.submorphs[0];
+				PieMenuMorph.setUndo(function() { theCopy.remove(); });  // Why doesn't this work??
+				}],
+			['move (o-->)', function(evt) {
+				var oldPos = targetMorph.getPosition();
+				PieMenuMorph.setUndo(function() { targetMorph.setPosition(oldPos); });
+				evt.hand.setPosition(menu.mouseDownPoint);
+				evt.hand.addMorph(menu.targetMorph);
+				if (menu.targetMorph instanceof SelectionMorph)  // Fixme:  This should be in SelectionMorph
+					menu.targetMorph.selectedMorphs.forEach( function(m) { evt.hand.addMorph(m); });
+				}],
+			['scale (o < O)', function(evt) {
+				var oldScale = targetMorph.getScale();
+				PieMenuMorph.setUndo(function() { targetMorph.setScale(oldScale); });
+				menu.addHandleTo(targetMorph, evt, 'scale');
+				}],
+			['rotate (G)', function(evt) {
+				var oldRotation = targetMorph.getRotation();
+				PieMenuMorph.setUndo(function() { targetMorph.setRotation(oldRotation); });
+				menu.addHandleTo(targetMorph, evt, 'rotate');
+				}],
+			['delete (X)', function(evt) {
+				var oldOwner = targetMorph.owner;
+				PieMenuMorph.setUndo(function() { oldOwner.addMorph(targetMorph); });
+				targetMorph.remove();
+				}],
+			['undo (~)', function(evt) { PieMenuMorph.doUndo(); }],
+			['edit style (<>)', function() { new StylePanel(this).open()}]
+		];
+		menu = new PieMenuMorph(items, this, 0.5);
+		menu.open(evt);
     },
 
-    dragMe: function(evt) {
-	var offset = this.getPosition().subPt(this.owner.localize(evt.point()));
-	var mouseRelay= {
-		captureMouseEvent: function(e) { 
-			if (e.type == "MouseMove")  this.setPosition(this.owner.localize(e.hand.getPosition()).addPt(offset));
-			if (e.type == "MouseDown" || e.type == "MouseUp")  e.hand.setMouseFocus(null); 
+	dragMe: function(evt) {
+		var offset = this.getPosition().subPt(this.owner.localize(evt.point()));
+		var mouseRelay= {
+			captureMouseEvent: function(e) { 
+				if (e.type == "MouseMove")  this.setPosition(this.owner.localize(e.hand.getPosition()).addPt(offset));
+				if (e.type == "MouseDown" || e.type == "MouseUp")  e.hand.setMouseFocus(null); 
 			}.bind(this),
 		};
-	evt.hand.setMouseFocus(mouseRelay);
-    },
+		evt.hand.setMouseFocus(mouseRelay);
+	},
 
-putMeInAWindow: function(loc) {
-	var c = this.immediateContainer();
-	var w = this.world();
-	var wm = new WindowMorph(this.windowContent(), this.windowTitle());
-	// Position it so the content stays in place
-	w.addMorphAt(wm, loc.subPt(wm.contentOffset));
-	if (c) c.remove();
-    },
+	putMeInAWindow: function(loc) {
+		var c = this.immediateContainer();
+		var w = this.world();
+		var wm = new WindowMorph(this.windowContent(), this.windowTitle());
+		// Position it so the content stays in place
+		w.addMorphAt(wm, loc.subPt(wm.contentOffset));
+		if (c) c.remove();
+	},
 
-    putMeInATab: function(loc) {
-	var c = this.immediateContainer();
-	var w = this.world();
-	var wm = new TabbedPanelMorph(this.windowContent(), this.windowTitle());
-	w.addMorphAt(wm, wm.getPosition());
-	if (c) c.remove();
-    },
+	putMeInATab: function(loc) {
+		var c = this.immediateContainer();
+		var w = this.world();
+		var wm = new TabbedPanelMorph(this.windowContent(), this.windowTitle());
+		w.addMorphAt(wm, wm.getPosition());
+		if (c) c.remove();
+	},
 
-    putMeInTheWorld: function(loc) {
-	var c = this.immediateContainer();
-	var loc = c ? c.position().addPt(c.contentOffset) : this.position();
-	this.world().addMorphAt(this, loc);
-	if (c) c.remove();
-    },
+	putMeInTheWorld: function(loc) {
+		var c = this.immediateContainer();
+		var loc = c ? c.position().addPt(c.contentOffset) : this.position();
+		this.world().addMorphAt(this, loc);
+		if (c) c.remove();
+	},
 
-    immediateContainer: function() { // Containers override to return themselves
-	if (this.owner) return this.owner.immediateContainer();
-	else return null;
-    },
+	immediateContainer: function() { // Containers override to return themselves
+		if (this.owner) return this.owner.immediateContainer();
+		else return null;
+	},
 
-    windowContent: function() {
-	return this; // Default response, overridden by containers
-    },
+	windowContent: function() {
+		return this; // Default response, overridden by containers
+	},
 
-    windowTitle: function() {
-	return Object.inspect(this).truncate(); // Default response, overridden by containers
-    },
+	windowTitle: function() {
+		return Object.inspect(this).truncate(); // Default response, overridden by containers
+	},
 
-    toggleDnD: function(loc) {
-        // console.log(this + ">>toggleDnD");
-	this.openForDragAndDrop = !this.openForDragAndDrop;
-    },
+	toggleDnD: function(loc) {
+		// console.log(this + ">>toggleDnD");
+		this.openForDragAndDrop = !this.openForDragAndDrop;
+	},
 
-    openDnD: function(loc) {
-	this.openForDragAndDrop = true;
-    },
+	openDnD: function(loc) {
+		this.openForDragAndDrop = true;
+	},
 
-    closeDnD: function(loc) {
-        // console.log(this + ">>closeDnD");
-	this.openForDragAndDrop = false;
-    },
+	closeDnD: function(loc) {
+		// console.log(this + ">>closeDnD");
+		this.openForDragAndDrop = false;
+	},
 
     closeAllToDnD: function(loc) {
         // console.log(this + ">>closeAllDnD");
@@ -2915,133 +2906,136 @@ putMeInAWindow: function(loc) {
         this.submorphs.forEach( function(ea) { ea.closeAllToDnD(); });
     },
 
-    openAllToDnD: function() {
-	// Open this and all submorphs to drag and drop
-	this.withAllSubmorphsDo( function() { this.openDnD(); });
-    },
-    
-    dropMeOnMorph: function(receiver) {
-        receiver.addMorph(this); // this removes me from hand
-    },
+	openAllToDnD: function() {
+		// Open this and all submorphs to drag and drop
+		this.withAllSubmorphsDo( function() { this.openDnD(); });
+	},
 
-    pickMeUp: function(evt) {
-	var offset = evt.hand.getPosition().subPt(evt.point());
-	this.moveBy(offset);
-	evt.hand.addMorphAsGrabbed(this);
-    },
+	dropMeOnMorph: function(receiver) {
+		receiver.addMorph(this); // this removes me from hand
+	},
 
-    notify: function(msg, loc) {
-	if (!loc) loc = this.world().positionForNewMorph();
-	new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
-    },
+	pickMeUp: function(evt) {
+		var offset = evt.hand.getPosition().subPt(evt.point());
+		this.moveBy(offset);
+		evt.hand.addMorphAsGrabbed(this);
+	},
 
-    showOwnerChain: function(evt) {
-	var items = this.ownerChain().reverse().map(
-	    function(each) { return [Object.inspect(each).truncate(), function(evt2) { each.showMorphMenu(evt) }]; });
-	new MenuMorph(items, this).openIn(this.world(), evt.point(), false, "Top item is topmost");
-    },
+	notify: function(msg, loc) {
+		if (!loc) loc = this.world().positionForNewMorph();
+		new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
+	},
 
-    copyToHand: function(hand) {
-	// Function.prototype.shouldTrace = true;
-	var copy = this.copy(new Copier());
-	// when copying submorphs, make sure that the submorph that becomes a top-level morph 
-	// reappears in the same location as its original.
-	console.log('copied %s', copy);
-	copy.owner = null; // so following addMorph will just leave the tfm alone
-	this.owner.addMorph(copy); // set up owner as the original parent so that...        
-	hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
-	hand.showAsGrabbed(copy);
-	// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
-    },
+	showOwnerChain: function(evt) {
+		var items = this.ownerChain().reverse().map(
+			function(each) { 
+				return [Object.inspect(each).truncate(), function(evt2) { each.showMorphMenu(evt) }]; 
+			});
+		new MenuMorph(items, this).openIn(this.world(), evt.point(), false, "Top item is topmost");
+	},
 
-    shadowCopy: function(hand) {
-	// This is currently an expensive and error-prone deep copy
-	// Better would be a shallow copy unless there are submorphs outside bounds
-	var copy;
-	try { copy = this.copy(new Copier()); }
+	copyToHand: function(hand) {
+		// Function.prototype.shouldTrace = true;
+		var copy = this.copy(new Copier());
+		// when copying submorphs, make sure that the submorph that becomes a top-level morph 
+		// reappears in the same location as its original.
+		console.log('copied %s', copy);
+		copy.owner = null; // so following addMorph will just leave the tfm alone
+		this.owner.addMorph(copy); // set up owner as the original parent so that...        
+		hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
+		hand.showAsGrabbed(copy);
+		// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
+	},
+
+	shadowCopy: function(hand) {
+		// This is currently an expensive and error-prone deep copy
+		// Better would be a shallow copy unless there are submorphs outside bounds
+		var copy;
+		try { copy = this.copy(new Copier()); }
 		catch (e) { copy = Morph.makeRectangle(this.bounds()); }
-	copy.withAllSubmorphsDo( function() {
-		if (this.fill || this.getFill()) this.setFill(Color.black);
+		copy.withAllSubmorphsDo( function() {
+			if (this.fill || this.getFill()) this.setFill(Color.black);
 			else this.setFill(null);
-		if (this.getBorderColor()) this.setBorderColor(Color.black);
-		this.setFillOpacity(0.3);
-		this.setStrokeOpacity(0.3);
-	});
-	copy.owner = null; // so later addMorph will just leave the tfm alone
-	return copy;
-    },
+			if (this.getBorderColor()) this.setBorderColor(Color.black);
+			this.setFillOpacity(0.3);
+			this.setStrokeOpacity(0.3);
+		});
+		copy.owner = null; // so later addMorph will just leave the tfm alone
+		return copy;
+	},
 
-    morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
-	return this.morphToGrabOrReceive(evt, droppingMorph, true);
-    },
+	morphToGrabOrReceiveDroppingMorph: function(evt, droppingMorph) {
+		return this.morphToGrabOrReceive(evt, droppingMorph, true);
+	},
 
-    morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
-	// If checkForDnD is false, return the morph to receive this mouse event (or null)
-	// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
-	// If droppingMorph is not null, then check that this is a willing recipient (else null)
-	        
-	if (this.isEpimorph)
-		return null;
-	
-	if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
-	// First check all the submorphs, front first
-	for (var i = this.submorphs.length - 1; i >= 0; i--) {
-	    var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
-	    if (hit != null) { 
-		return hit;  // hit a submorph
-	    }
-	};
+	morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
+		// If checkForDnD is false, return the morph to receive this mouse event (or null)
+		// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
+		// If droppingMorph is not null, then check that this is a willing recipient (else null)
 
-	// Check if it's really in this morph (not just fullBounds)
-	if (!this.containsWorldPoint(evt.mousePoint)) return null;
+		if (this.isEpimorph)
+			return null;
 
-	// If no DnD check, then we have a hit (unless no handler in which case a miss)
-	if (!checkForDnD) return this.mouseHandler ? this : null;
+		if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
+		// First check all the submorphs, front first
+		for (var i = this.submorphs.length - 1; i >= 0; i--) {
+			var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
+			if (hit != null) { 
+				return hit;  // hit a submorph
+			}
+		};
 
-	// On drops, check that this is a willing recipient
-	if (droppingMorph != null) {
-	    return this.acceptsDropping(droppingMorph) ? this : null;
-	} else {
-	    // On grabs, can't pick up the world or morphs that handle mousedown
-	    // DI:  I think the world is adequately checked for now elsewhere
-	    // else return (!evt.isCommandKey() && this === this.world()) ? null : this; 
-	    return this;
+		// Check if it's really in this morph (not just fullBounds)
+		if (!this.containsWorldPoint(evt.mousePoint)) return null;
+
+		// If no DnD check, then we have a hit (unless no handler in which case a miss)
+		if (!checkForDnD) return this.mouseHandler ? this : null;
+
+		// On drops, check that this is a willing recipient
+		if (droppingMorph != null) {
+			return this.acceptsDropping(droppingMorph) ? this : null;
+		} else {
+			// On grabs, can't pick up the world or morphs that handle mousedown
+			// DI:  I think the world is adequately checked for now elsewhere
+			// else return (!evt.isCommandKey() && this === this.world()) ? null : this; 
+			return this;
+		}
+
+	},
+
+	morphToReceiveEvent: function(evt) {
+		// This should replace morphToGrabOrReceive... in Hand where events
+		// must be displatched to morphs that are closed to DnD
+		return this.morphToGrabOrReceive(evt, null, false);
+	},
+
+	ownerChain: function() {
+		// Return an array of me and all my owners
+		// First item is, eg, world; last item is me
+		if (!this.owner) return [this];
+		var owners = this.owner.ownerChain();
+		owners.push(this);
+		return owners;
+	},
+
+	acceptsDropping: function(morph) { 
+		return this.openForDragAndDrop && !(morph instanceof WindowMorph);
 	}
-
-    },
-
-    morphToReceiveEvent: function(evt) {
-	// This should replace morphToGrabOrReceive... in Hand where events
-	// must be displatched to morphs that are closed to DnD
-	return this.morphToGrabOrReceive(evt, null, false);
-    },
-
-    ownerChain: function() {
-	// Return an array of me and all my owners
-	// First item is, eg, world; last item is me
-	if (!this.owner) return [this];
-	var owners = this.owner.ownerChain();
-	owners.push(this);
-	return owners;
-    },
-
-    acceptsDropping: function(morph) { 
-	return this.openForDragAndDrop && !(morph instanceof WindowMorph);
-    }
 
 });
 
 Morph.subclass('PseudoMorph', {
     description: "This hack to make various objects serializable, despite not being morphs",
     
-    initialize: function($super) {
-	$super(new lively.scene.Group());
-	this.setVisible(false);
-    }
+	initialize: function($super) {
+		$super(new lively.scene.Group());
+		this.setVisible(false);
+	}
 
 });
 
-
+// TODO: Is this still used?
+// Deprecated?
 PseudoMorph.subclass('Invocation', {
     initialize: function($super, actor, scriptName, argIfAny) {
 	$super();
@@ -3100,64 +3094,65 @@ Morph.addMethods({
 
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
 
-    stopStepping: function() {
-	if (!this.activeScripts) return;
-	// ignore null values
-	this.activeScripts.select(function (ea) { return ea }).invoke('stop', this.world());
-	this.activeScripts = null;
-    },
-stopSteppingScriptNamed: function(sName) {
-	if (!this.activeScripts) return;
-	this.activeScripts.select(function (ea) { return ea.scriptName == sName }).invoke('stop', this.world());
-	this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
-	if (this.activeScripts.length == 0) this.activeScripts = null;
-    },
+	stopStepping: function() {
+		if (!this.activeScripts) return;
+		// ignore null values
+		this.activeScripts.select(function (ea) { return ea }).invoke('stop', this.world());
+		this.activeScripts = null;
+	},
+	
+	stopSteppingScriptNamed: function(sName) {
+		if (!this.activeScripts) return;
+		this.activeScripts.select(function (ea) { return ea.scriptName == sName }).invoke('stop', this.world());
+		this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
+		if (this.activeScripts.length == 0) this.activeScripts = null;
+	},
 
-    startStepping: function(stepTime, scriptName, argIfAny) {
-	if (!scriptName) 
-	    throw Error("Old code");
-	var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
-	this.addActiveScript(action);
-	action.start(this.world());
-	return action;
-    },
+	startStepping: function(stepTime, scriptName, argIfAny) {
+		if (!scriptName) 
+			throw Error("Old code");
+		var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
+		this.addActiveScript(action);
+		action.start(this.world());
+		return action;
+	},
 
-    addActiveScript: function(action) {
-	// Every morph carries a list of currently active actions (alarms and repetitive scripts)
-	if (!this.activeScripts) this.activeScripts = [action];
-	else this.activeScripts.push(action);
-	if (!action.rawNode.parentNode) 
-	    this.addMorph(action);
-	return this;
-	// if we're deserializing the rawNode may already be in the markup
-    },
+	addActiveScript: function(action) {
+		// Every morph carries a list of currently active actions (alarms and repetitive scripts)
+		if (!this.activeScripts) this.activeScripts = [action];
+		else this.activeScripts.push(action);
+		if (!action.rawNode.parentNode) 
+			this.addMorph(action);
+		return this;
+		// if we're deserializing the rawNode may already be in the markup
+	},
 
     stopAllStepping: function() {  // For me and all my submorphs 
-	this.withAllSubmorphsDo( function() { this.stopStepping(); });
+		this.withAllSubmorphsDo( function() { this.stopStepping(); });
     },
 
     suspendAllActiveScripts: function() {  // For me and all my submorphs
-	this.withAllSubmorphsDo( function() { this.suspendActiveScripts(); });
+		this.withAllSubmorphsDo( function() { this.suspendActiveScripts(); });
     },
 
-    suspendActiveScripts: function() {
-	if (this.activeScripts) { 
-	    this.suspendedScripts = this.activeScripts.clone();
-	    this.stopStepping();
+	suspendActiveScripts: function() {
+		if (this.activeScripts) { 
+			this.suspendedScripts = this.activeScripts.clone();
+			this.stopStepping();
+		}
+	},
+
+	resumeAllSuspendedScripts: function() {
+		var world = WorldMorph.current();
+		this.withAllSubmorphsDo( function() {
+			if (this.suspendedScripts) {
+				// ignore null values
+				this.suspendedScripts.select(function (ea) { return ea }).invoke('start', world);
+				this.activeScripts = this.suspendedScripts;
+				this.suspendedScripts = null;
+			}
+		});
 	}
-    },
-
-    resumeAllSuspendedScripts: function() {
-	var world = WorldMorph.current();
-	this.withAllSubmorphsDo( function() {
-	    if (this.suspendedScripts) {
-	    // ignore null values
-		this.suspendedScripts.select(function (ea) { return ea }).invoke('start', world);
-		this.activeScripts = this.suspendedScripts;
-		this.suspendedScripts = null;
-	    }
-	});
-    }
 
 });
 
@@ -3165,55 +3160,55 @@ stopSteppingScriptNamed: function(sName) {
 Morph.addMethods({ 
     
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
-    bounds: function(ignoreTransients) {
-	if (this.fullBounds != null) return this.fullBounds;
+	bounds: function(ignoreTransients) {
+		if (this.fullBounds != null) return this.fullBounds;
 
-	var tfm = this.getTransform();
-	var fullBounds = this.localBorderBounds(tfm);
+		var tfm = this.getTransform();
+		var fullBounds = this.localBorderBounds(tfm);
 
-	var subBounds = this.submorphBounds(ignoreTransients);
-	if (subBounds != null) {
-	    // could be simpler when no rotation...
-	    fullBounds = fullBounds.union(tfm.transformRectToRect(subBounds));
-	}
+		var subBounds = this.submorphBounds(ignoreTransients);
+		if (subBounds != null) {
+			// could be simpler when no rotation...
+			fullBounds = fullBounds.union(tfm.transformRectToRect(subBounds));
+		}
 
-	if (fullBounds.width < 3 || fullBounds.height < 3) {
-	    // Prevent Horiz or vert lines from being ungrabable
-	    fullBounds = fullBounds.expandBy(3); 
-	}
-	this.fullBounds = fullBounds;
-	return fullBounds; 
-    },
+		if (fullBounds.width < 3 || fullBounds.height < 3) {
+			// Prevent Horiz or vert lines from being ungrabable
+			fullBounds = fullBounds.expandBy(3); 
+		}
+		this.fullBounds = fullBounds;
+		return fullBounds; 
+	},
     
-    submorphBounds: function(ignoreTransients) {
-	var subBounds = null;
-	for (var i = 0; i < this.submorphs.length; i++) {
-	    var m = this.submorphs[i];
-	    if ((ignoreTransients && m.isEpimorph))
-		continue;
-	    if (!m.isVisible()) {
-		continue;
-	    }
-	    subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));
-	}
-	return subBounds;
-    },
+	submorphBounds: function(ignoreTransients) {
+		var subBounds = null;
+		for (var i = 0; i < this.submorphs.length; i++) {
+			var m = this.submorphs[i];
+			if ((ignoreTransients && m.isEpimorph))
+				continue;
+			if (!m.isVisible()) {
+				continue;
+			}
+			subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));
+		}
+		return subBounds;
+	},
     
     // innerBounds returns the bounds of this morph only, and in local coordinates
     innerBounds: function() { 
-	return this.shape.bounds();
+		return this.shape.bounds();
     },
     
-    localBorderBounds: function(optTfm) {
-	// defined by the external edge of the border
-	// if optTfm is defined, transform the vertices first, then take the union
-	dbgOn(!this.shape);
-	var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
-	
-	// double border margin for polylines to account for elbow protrusions
-	bounds = bounds.expandBy(this.getBorderWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
-	return bounds;
-    },
+	localBorderBounds: function(optTfm) {
+		// defined by the external edge of the border
+		// if optTfm is defined, transform the vertices first, then take the union
+		dbgOn(!this.shape);
+		var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
+
+		// double border margin for polylines to account for elbow protrusions
+		bounds = bounds.expandBy(this.getBorderWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
+		return bounds;
+	},
     
     
     /** 
@@ -3223,152 +3218,151 @@ Morph.addMethods({
 
     // map local point to world coordinates
     worldPoint: function(pt) { 
-	return pt.matrixTransform(this.transformToMorph(this.world())); 
+		return pt.matrixTransform(this.transformToMorph(this.world())); 
     },
 
-    // map owner point to local coordinates
-    relativize: function(pt) { 
-	if (!this.owner) { 
-	    throw new Error('no owner; call me after adding to a morph? ' + this);
-	}
-	try {
-	    return pt.matrixTransform(this.owner.transformToMorph(this)); 
-	} catch (er) {
-	    // console.info("ignoring relativize wrt/%s", this);
-	    return pt;
-	}
-    },
+	// map owner point to local coordinates
+	relativize: function(pt) { 
+		if (!this.owner) { 
+			throw new Error('no owner; call me after adding to a morph? ' + this);
+		}
+		try {
+			return pt.matrixTransform(this.owner.transformToMorph(this)); 
+		} catch (er) {
+			// console.info("ignoring relativize wrt/%s", this);
+			return pt;
+		}
+	},
 
     // map owner rectangle to local coordinates
     relativizeRect: function(r) { 
-	return rect(this.relativize(r.topLeft()), this.relativize(r.bottomRight()));
+		return rect(this.relativize(r.topLeft()), this.relativize(r.bottomRight()));
     },
 
     // map world point to local coordinates
-    localize: function(pt) {
-	if (pt == null) console.log('null pt');   
-	if (this.world() == null) {
- 	    console.log('ERROR in '+  this.id() +' localize: '+ pt + ' this.world() is null');   
-		printStack();
-	    return pt;
-	}
-	return pt.matrixTransform(this.world().transformToMorph(this));
-    },
+	localize: function(pt) {
+		if (pt == null) console.log('null pt');   
+		if (this.world() == null) {
+			console.log('ERROR in '+  this.id() +' localize: '+ pt + ' this.world() is null');   
+			printStack();
+			return pt;
+		}
+		return pt.matrixTransform(this.world().transformToMorph(this));
+	},
 
     // map local point to owner coordinates
-    localizePointFrom: function(pt, otherMorph) {   
-	try {
-	    return pt.matrixTransform(otherMorph.transformToMorph(this));
-	} catch (er) {
-	    // lively.lang.Execution.showStack();
-	    console.log("problem " + er + " on " + this + " other " + otherMorph);
-	    return pt;
-	}
-    },
+	localizePointFrom: function(pt, otherMorph) {   
+		try {
+			return pt.matrixTransform(otherMorph.transformToMorph(this));
+		} catch (er) {
+			// lively.lang.Execution.showStack();
+			console.log("problem " + er + " on " + this + " other " + otherMorph);
+			return pt;
+		}
+	},
 
     transformForNewOwner: function(newOwner) {
-	return new lively.scene.Similitude(this.transformToMorph(newOwner));
+		return new lively.scene.Similitude(this.transformToMorph(newOwner));
     },
 
-    changed: function() {
-	// Note most morphs don't need this in SVG, but text needs the 
-	// call on bounds() to trigger layout on new bounds
-	if(this.owner) this.owner.invalidRect(this.bounds());
-    },
-invalidRect: function() {
-	// Do nothing (handled by SVG).  Overridden in canvas.
+	changed: function() {
+		// Note most morphs don't need this in SVG, but text needs the 
+		// call on bounds() to trigger layout on new bounds
+		if(this.owner) this.owner.invalidRect(this.bounds());
+	},
+
+	invalidRect: function() {
+		// Do nothing (handled by SVG).  Overridden in canvas.
     },
 
-    
     layoutOnSubmorphLayout: function(submorph) {
-	// override to return false, in which case layoutChanged() will not be propagated to
-	// the receiver when a submorph's layout changes. 
-	return true;
+		// override to return false, in which case layoutChanged() will not be propagated to
+		// the receiver when a submorph's layout changes. 
+		return true;
     },
 
-    transformChanged: function() {
-	var scalePt = this.scalePoint;
-	if (this.fisheyeScale != 1) scalePt = scalePt.scaleBy(this.fisheyeScale);
-	this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, scalePt);
-	this.pvtCachedTransform.applyTo(this.rawNode);
+	transformChanged: function() {
+		var scalePt = this.scalePoint;
+		if (this.fisheyeScale != 1) scalePt = scalePt.scaleBy(this.fisheyeScale);
+		this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, scalePt);
+		this.pvtCachedTransform.applyTo(this.rawNode);
+	},
 
-    },
+	layoutChanged: function Morph$layoutChanged() {
+		// layoutChanged() is called whenever the cached fullBounds may have changed
+		// It invalidates the cache, which will be recomputed when bounds() is called
+		// Naturally it must be propagated up its owner chain.
+		// Note the difference in meaning from adjustForNewBounds()
+		// KP: the following may or may not be necessary:
 
-    layoutChanged: function Morph$layoutChanged() {
-	// layoutChanged() is called whenever the cached fullBounds may have changed
-	// It invalidates the cache, which will be recomputed when bounds() is called
-	// Naturally it must be propagated up its owner chain.
-	// Note the difference in meaning from adjustForNewBounds()
-	// KP: the following may or may not be necessary:
+		this.transformChanged(); // DI: why is this here?
+		if(! this.fullBounds) return;  // already called
 
-	this.transformChanged(); // DI: why is this here?
-	if(! this.fullBounds) return;  // already called
-	
-	this.fullBounds = null;
-	if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
-	    this.owner.layoutChanged();
+		this.fullBounds = null;
+		if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
+			this.owner.layoutChanged();
+		}
+		this.layoutManager.layoutChanged(this);
+	},
+
+	adjustForNewBounds: function() {
+		// adjustForNewBounds() is called whenever the innerBounds may have changed in extent
+		//  -- it should really be called adjustForNewExtent --
+		// Depending on the morph and its layoutManager, it may then re-layout its
+		// submorphs and, in the process, propagate the message down to leaf morphs (or not)
+		// Of course a change in innerBounds implies layoutChanged() as well,
+		// but, for now, these are called separately.
+		// NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
+		// adjustForNewBounds() *must never be called from* a layout operation;
+		// The layout process should only move and resize submorphs, but never change the innerBounds
+
+		// If this method is overridden by a subclass, it should call super as well
+		if (this.focusHalo) this.adjustFocusHalo();
+	},
+
+	position: function() { // Deprecated -- use getPosition
+		return this.shape.bounds().topLeft().addPt(this.origin); 
+	},
+
+	getPosition: function() {
+		return this.shape.bounds().topLeft().addPt(this.origin); 
+	},
+
+	setPosition: function(newPosition) {
+		this.layoutManager.setPosition(this, newPosition);
 	}
-	this.layoutManager.layoutChanged(this);
-    },
-
-    adjustForNewBounds: function() {
-	// adjustForNewBounds() is called whenever the innerBounds may have changed in extent
-	//  -- it should really be called adjustForNewExtent --
-	// Depending on the morph and its layoutManager, it may then re-layout its
-	// submorphs and, in the process, propagate the message down to leaf morphs (or not)
-	// Of course a change in innerBounds implies layoutChanged() as well,
-	// but, for now, these are called separately.
-	// NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
-	// adjustForNewBounds() *must never be called from* a layout operation;
-	// The layout process should only move and resize submorphs, but never change the innerBounds
-
-	// If this method is overridden by a subclass, it should call super as well
-	if (this.focusHalo) this.adjustFocusHalo();
-    },
-
-    position: function() { // Deprecated -- use getPosition
-	return this.shape.bounds().topLeft().addPt(this.origin); 
-    },
-
-    getPosition: function() {
-	return this.shape.bounds().topLeft().addPt(this.origin); 
-    },
-
-    setPosition: function(newPosition) {
-	this.layoutManager.setPosition(this, newPosition);
-    }
 
 });
 
 // Inspectors for Morphs
 Morph.addMethods({
 
-    addSvgInspector: function() {
-	var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
-	var txt = this.world().addTextWindow({
-	    content: xml,
-	    title: "XML dump", 
-	    position: this.world().positionForNewMorph(this)
-	});
-	txt.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
-    },
+	addSvgInspector: function() {
+		var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
+		var txt = this.world().addTextWindow({
+			content: xml,
+			title: "XML dump", 
+			position: this.world().positionForNewMorph(this)
+		});
+		txt.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
+	},
 
-    addModelInspector: function() {
-	var model = this.getModel();
-	if (model instanceof SyntheticModel) {
-	    var variables = model.variables();
-	    var list = [];
-	    for (var i = 0; i < variables.length; i++) {
-		var varName = variables[i];
-		list.push(varName + " = " + model.get(varName));
-	    }
-	    this.world().addTextListWindow({
-		content: list,
-		title: "Simple Model dump",
-		position: this.world().positionForNewMorph(this)
-	    });
+	addModelInspector: function() {
+		var model = this.getModel();
+		if (model instanceof SyntheticModel) {
+			var variables = model.variables();
+			var list = [];
+			for (var i = 0; i < variables.length; i++) {
+				var varName = variables[i];
+				list.push(varName + " = " + model.get(varName));
+			}
+			this.world().addTextListWindow({
+				content: list,
+				title: "Simple Model dump",
+				position: this.world().positionForNewMorph(this)
+			});
+		}
 	}
-    }
 });
 
 
@@ -5580,50 +5574,49 @@ LinkMorph.subclass('ExternalLinkMorph', {
 
     documentation: "A link to a different web page, presumably containing another LK",
 
-    style: {borderColor: Color.black, fill: new lively.paint.RadialGradient([new lively.paint.Stop(0, Color.green), 
+    style: { borderColor: Color.black, fill: new lively.paint.RadialGradient([new lively.paint.Stop(0, Color.green), 
 									     new lively.paint.Stop(1, Color.yellow)])},
     
     initialize: function($super, url, position) {
-	$super(null, position || pt(0, 0));
-	this.url = url;
-	this.win = null; // browser window
+		$super(null, position || pt(0, 0));
+		this.url = url;
+		this.win = null; // browser window
     },
 
     makeNewWorld: Functions.Null, 
     
     addPathBack: Functions.Null,
 
-    enterMyWorld: function(evt) {
-	if (evt.isCommandKey()) {
-	    this.world().confirm("Leave current runtime to enter another page?", function (answer) {
-		if (answer) Global.location = this.url.toString();
-		else console.log("cancelled loading " + this.url);
-	    });
-	} else {
-	    if (this.win && !this.win.closed) this.win.focus();
-	    else this.win = Global.window.open(this.url);
-	}
-    },
+	enterMyWorld: function(evt) {
+		if (evt.isCommandKey()) {
+			this.world().confirm("Leave current runtime to enter another page?", function (answer) {
+				if (answer) Global.location = this.url.toString();
+				else console.log("cancelled loading " + this.url);
+			});
+		} else {
+			if (this.win && !this.win.closed) this.win.focus();
+			else this.win = Global.window.open(this.url);
+		}
+	},
     
     getHelpText: function() {
-	return "Click to enter " + this.url;
+		return "Click to enter " + this.url;
     },
 
-
-    morphMenu: function($super, evt) { 
-	var menu = $super(evt);
-	menu.addItem(["set link target...", function() {
-	    this.world().prompt("Set new target file", function(answer) {
-		this.url = URL.source.withFilename(answer);
-	    }.bind(this), URL.source.toString());
-	}]);
-	return menu;
-    }
+	morphMenu: function($super, evt) { 
+		var menu = $super(evt);
+		menu.addItem(["set link target...", function() {
+			this.world().prompt("Set new target file", function(answer) {
+				this.url = URL.source.withFilename(answer);
+			}.bind(this), URL.source.toString());
+		}]);
+		return menu;
+	}
     
 });
 
  function interactiveEval(text) {
-     // FIXME for compatibility, load jQuery for some interactive conveniences
+    // FIXME for compatibility, load jQuery for some interactive conveniences
 	// ECMAScript 3rd edition, section 12.4: 
 	// “Note that an ExpressionStatement cannot start with an opening curly brace because that might make it ambiguous with a Block.“
 	//text = '(' + text + ')'; // workaround for that issue
@@ -5668,53 +5661,54 @@ Morph.subclass('BoxMorph', {
     margin: new Rectangle(0, 0, 0, 0), // between morph border and its 
 
     initialize: function($super, initialBounds) {
-	$super(new lively.scene.Rectangle(initialBounds));
+		$super(new lively.scene.Rectangle(initialBounds));
     },
         // ??
     innerBounds: function() { 
         return this.shape.bounds().insetByRect(this.padding);
     },
 
-    applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
-	$super(spec);
-	if (spec.padding !== undefined) {
-	    if (!(spec.padding instanceof Rectangle)) 
-		throw new TypeError(spec.padding + ' not a Rectangle');
-	    this.padding = spec.padding;
+	applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
+		$super(spec);
+		if (spec.padding !== undefined) {
+			if (!(spec.padding instanceof Rectangle)) 
+				throw new TypeError(spec.padding + ' not a Rectangle');
+			this.padding = spec.padding;
+		}
 	}
-    }
 
 });
 
 BoxMorph.subclass('ContainerMorph', {
     documentation: "Box morph whose shape grows to contain all its submrphs",
-    initialize: function($super,rect) {
-	$super(rect);//new Rectangle(0,0,0,0));
-    },
+
+	initialize: function($super,rect) {
+		$super(rect);//new Rectangle(0,0,0,0));
+	},
 
     initializeTransientState: function($super) {
         $super();
         this.priorExtent = this.innerBounds().extent();
     },
 
-    addMorph: function($super, m, isFront) {
-	var ret = $super(m, isFront);
-	this.shape.setBounds(this.submorphBounds(true).outsetByRect(this.padding));
-	return ret;
-    },
+	addMorph: function($super, m, isFront) {
+		var ret = $super(m, isFront);
+		this.shape.setBounds(this.submorphBounds(true).outsetByRect(this.padding));
+		return ret;
+	},
 
-    adjustForNewBounds: function ($super) {
-	// borrowed from PanelMorph
-        // Compute scales of old submorph extents in priorExtent, then scale up to new extent
-        $super();
-        var newExtent = this.innerBounds().extent();
-        var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
-	this.submorphs.forEach(function(sub) {
-	    sub.setPosition(sub.getPosition().scaleByPt(scalePt));
-            sub.setExtent(sub.getExtent().scaleByPt(scalePt));
-	});
-	this.priorExtent = newExtent;
-    },
+	adjustForNewBounds: function ($super) {
+		// borrowed from PanelMorph
+		// Compute scales of old submorph extents in priorExtent, then scale up to new extent
+		$super();
+		var newExtent = this.innerBounds().extent();
+		var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
+		this.submorphs.forEach(function(sub) {
+			sub.setPosition(sub.getPosition().scaleByPt(scalePt));
+			sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+		});
+		this.priorExtent = newExtent;
+	},
 
     
 });
