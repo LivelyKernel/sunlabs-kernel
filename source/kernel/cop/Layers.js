@@ -129,7 +129,7 @@ var lookupLayerdFunctionForObject = function(self, layer, obj, function_name, me
 	};
 }
 
-var executeWithLayers = function(base_function, self, layers, index, obj, function_name, args, methodType) {
+var executeWithLayers = function Layers$executeWithLayers(base_function, self, layers, index, obj, function_name, args, methodType) {
 	log("executeWithLayers(" + layers + ", " + obj + ", " + function_name+")");
 	if (index < layers.length) {
 		var layer = layers[layers.length - index - 1];
@@ -164,7 +164,7 @@ Global.makeFunctionLayerAware = function(base_obj, function_name) {
 		return;
 	};
 	// log("makeFunctionLayerAware: " + base_obj );
-	var wrapped_function = function() {
+	var wrapped_function = function Layers$makeFunctionLayerAwareWrapperFunction() {
 		var args = $A(arguments);
 		args.unshift(null); // empty proceed argument (performance optimisation uglyness)
 		return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
@@ -193,7 +193,7 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 		base_obj.__defineGetter__(property, getter);
 	}; 
 	if (!getter.isLayerAware) {
-		var wrapped_getter = function() {
+		var wrapped_getter =  function Layers$makeFunctionLayerAwareWrappedGetter() {
 			return executeWithLayers(getter, this, computerLayersFor(this), 0, base_obj, property, [null], 'getter');
 		};
 		wrapped_getter.isLayerAware = true;
@@ -209,7 +209,7 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 		base_obj.__defineSetter__(property, setter);
 	};
 	if (!setter.isLayerAware) {
-		var wrapped_setter = function() {
+		var wrapped_setter = function Layers$makeFunctionLayerAwareWrappedSetter() {
 			var args = $A(arguments);
 			args.unshift(null);
 			return executeWithLayers(setter, this, computerLayersFor(this), 0, base_obj, property, args, 'setter');
@@ -219,7 +219,7 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 	}
 };
 
-Global.getLayerDefinitionForObject = function(layer, object) {
+Global.getLayerDefinitionForObject = function Layers$getLayerDefinitionForObject(layer, object) {
 	log("getLayerDefinitionForObject(" + layer + "," + object +")")
 	if (!layer || !object)
 		return;
@@ -343,7 +343,7 @@ Global.layerClassAndSubclasses = function(layer, classObject, defs) {
 	})
 };
 
-computerLayersFor = function(obj) { 
+computerLayersFor = function Layers$computerLayersFor(obj) { 
 	if (obj && obj.activeLayers) {
 		// the object is now fully responsible for the layer composition
 		return obj.activeLayers(Global.currentLayers)
@@ -352,7 +352,7 @@ computerLayersFor = function(obj) {
 	return layers
 };
 
-Global.composeLayers = function(stack, index, obj) {
+Global.composeLayers = function Layers$composeLayers(stack, index, obj) {
 	// console.log("compose " + stack + " index: " + index)
 	if (index === undefined) {
 		index = stack.length - 1;
@@ -379,7 +379,7 @@ Global.composeLayers = function(stack, index, obj) {
 	throw new Error("Error: Problems in layer composition");
 };
 
-Global.currentLayers= function(obj) {
+Global.currentLayers= function Layers$currentLayers(obj) {
 	if (Global.LayerStack.length == 0) {
 		throw new Error("The default layer is missing");
 	};
@@ -412,7 +412,7 @@ Global.withLayers = function withLayers(layers, func) {
 	}
 };
 
-Global.withoutLayers = function(layers, func) {
+Global.withoutLayers = function withoutLayers(layers, func) {
 	LayerStack.push({withoutLayers: layers});
 	try {
 		func();
@@ -422,7 +422,7 @@ Global.withoutLayers = function(layers, func) {
 };
 
 // clear cached layer compositions
-var invalidateLayerComposition = function() {
+var invalidateLayerComposition = function Layers$invalidateLayerComposition() {
 	Global.LayerStack.each(function(ea) {
 		ea.composition = null;
 	});
@@ -461,13 +461,13 @@ Global.disableLayer = function(layer) {
 /* Example implementation of a layerable object */
 
 // encode layers as strings for serialization...
-var layerToStrings = function(layers) {
+var layerToStrings = function Laysers$layerToStrings(layers) {
 	if (layers) {
 		return layers.collect(function(ea) {return ea.getName()}) 
 	};
 };
 
-var stringsToLayer = function(strings) {
+var stringsToLayer = function Layers$stringsToLayer(strings) {
 	if (strings) {
 		return strings.collect(function(ea) {return Global[ea]}) 
 	};
@@ -497,7 +497,7 @@ LayerableObjectTrait = {
 		return [];
 	},
 
-	getActivatedLayers: function(optCallerList) {
+	getActivatedLayers: function LayerableObjectTrait$getActivatedLayers(optCallerList) {
 		var layers = this.getWithLayers();
 		var withoutLayers  = this.getWithoutLayers();		
 		var self= this;
