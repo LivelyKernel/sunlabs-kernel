@@ -312,135 +312,134 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
 
 Object.extend(Function.prototype, {
 
-    subclass: function(/*... */) {
-	// Main method of the LK class system.
+	subclass: function(/*... */) {
+		// Main method of the LK class system.
 
-	// {className} is the name of the new class constructor which this method synthesizes
-	// and binds to {className} in the Global namespace. 
-	// Remaining arguments are (inline) properties and methods to be copied into the prototype 
-	// of the newly created constructor.
+		// {className} is the name of the new class constructor which this method synthesizes
+		// and binds to {className} in the Global namespace. 
+		// Remaining arguments are (inline) properties and methods to be copied into the prototype 
+		// of the newly created constructor.
 
-	// modified from prototype.js
+		// modified from prototype.js
 	
-	var args = arguments;
-	var className = args[0];
-	var targetScope = Global;
-	var shortName = null;
-	if (className) {
-	    targetScope = Class.namespaceFor(className);
-	    shortName = Class.unqualifiedNameFor(className);
-	}  else {
-	    shortName = "anonymous_" + (Class.anonymousCounter ++);
-	    className = shortName;
-	}
-	
-	if (className && targetScope[shortName] && (targetScope[shortName].superclass === this)) {
-		// preserve the class to allow using the subclass construct in interactive development
-		var klass = targetScope[shortName]; 
-	} else {
-		var klass = Class.newInitializer(shortName);
-	};
-	
-	klass.superclass = this;
-
-	var protoclass = function() { }; // that's the constructor of the new prototype object
-	protoclass.prototype = this.prototype;
-
-	klass.prototype = new protoclass();
-	
-	klass.prototype.constructor = klass;
-	// KP: .name would be better but js ignores .name on anonymous functions
-	klass.prototype.constructor.type = className;
-
-	for (var i = 1; i < args.length; i++) {
-	    klass.addMethods(args[i] instanceof Function ? (args[i])() : args[i]);
-	}
-	if (!klass.prototype.initialize) {
-	    klass.prototype.initialize = Functions.Empty;
-	}
-
-	if (className) targetScope[shortName] = klass; // otherwise it's anonymous
-	return klass;
-    },
-
-    addMethods: function(source) {
-	// copy all the methods and properties from {source} into the
-	// prototype property of the receiver, which is intended to be
-	// a class constructor.  Method arguments named '$super' are treated
-	// specially, see Prototype.js documentation for "Class.create()" for details.
-	// derived from Class.Methods.addMethods() in prototype.js
-	var ancestor = this.superclass && this.superclass.prototype;
-
-	for (var property in source) {
-
-	    var getter = source.__lookupGetter__(property);
-	    if (getter) this.prototype.__defineGetter__(property, getter);
-	    var setter = source.__lookupSetter__(property);
-	    if (setter) this.prototype.__defineSetter__(property, setter);
-	    if (getter || setter)
-		continue;
-
-	    
-	    var value = source[property];
-	    // weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
-	    // regexp field values will return true. But they're not full-blown functions and don't 
-	    // inherit argumentNames from Function.prototype
-	    
-	    if (ancestor && Object.isFunction(value) && value.argumentNames
-		&& value.argumentNames().first() == "$super") {
-		(function() { // wrapped in a method to save the value of 'method' for advice
-        	    var method = value;
-                    var advice = (function(m) {
-        		return function callSuper() { 
-        		    return ancestor[m].apply(this, arguments);
-        		};
-		    })(property);
-		    advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
-	
-		    value = Object.extend(advice.wrap(method), {
-	                valueOf:  function() { return method },
-		        toString: function() { return method.toString() },
-		        originalFunction: method
-		    });
-	        })();
-	    }
-	    this.prototype[property] = value;
-	    
-	    if (property === "formals") {
-		// special property (used to be pins, but now called formals to disambiguate old and new style
-		Class.addPins(this, value);
-	    } else if (Object.isFunction(value)) {
-		for ( ; value; value = value.originalFunction) {
-		    if (value.methodName) {
-			//console.log("class " + this.prototype.constructor.type 
-			// + " borrowed " + value.qualifiedMethodName());
-		    }
-		    value.declaredClass = this.prototype.constructor.type;
-		    value.methodName = property;
+		var args = arguments;
+		var className = args[0];
+		var targetScope = Global;
+		var shortName = null;
+		if (className) {
+			targetScope = Class.namespaceFor(className);
+			shortName = Class.unqualifiedNameFor(className);
+		}  else {
+			shortName = "anonymous_" + (Class.anonymousCounter ++);
+			className = shortName;
 		}
-	    }
+	
+		if (className && targetScope[shortName] && (targetScope[shortName].superclass === this)) {
+			// preserve the class to allow using the subclass construct in interactive development
+			var klass = targetScope[shortName]; 
+		} else {
+			var klass = Class.newInitializer(shortName);
+		};
+	
+		klass.superclass = this;
+
+		var protoclass = function() { }; // that's the constructor of the new prototype object
+		protoclass.prototype = this.prototype;
+
+		klass.prototype = new protoclass();
+	
+		klass.prototype.constructor = klass;
+		// KP: .name would be better but js ignores .name on anonymous functions
+		klass.prototype.constructor.type = className;
+
+		for (var i = 1; i < args.length; i++) {
+			klass.addMethods(args[i] instanceof Function ? (args[i])() : args[i]);
+		}
+		if (!klass.prototype.initialize) {
+			klass.prototype.initialize = Functions.Empty;
+		}
+
+		if (className) targetScope[shortName] = klass; // otherwise it's anonymous
+		return klass;
+	},
+
+	addMethods: function(source) {
+		// copy all the methods and properties from {source} into the
+		// prototype property of the receiver, which is intended to be
+		// a class constructor.	 Method arguments named '$super' are treated
+		// specially, see Prototype.js documentation for "Class.create()" for details.
+		// derived from Class.Methods.addMethods() in prototype.js
+		var ancestor = this.superclass && this.superclass.prototype;
+
+		for (var property in source) {
+
+			var getter = source.__lookupGetter__(property);
+			if (getter) this.prototype.__defineGetter__(property, getter);
+			var setter = source.__lookupSetter__(property);
+			if (setter) this.prototype.__defineSetter__(property, setter);
+			if (getter || setter)
+			continue;
+
+			var value = source[property];
+			// weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
+			// regexp field values will return true. But they're not full-blown functions and don't 
+			// inherit argumentNames from Function.prototype
+		
+			if (ancestor && Object.isFunction(value) && value.argumentNames
+				&& value.argumentNames().first() == "$super") {
+				(function() { // wrapped in a method to save the value of 'method' for advice
+						var method = value;
+						var advice = (function(m) {
+						return function callSuper() { 
+							return ancestor[m].apply(this, arguments);
+						};
+					})(property);
+
+					advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
+	
+					value = Object.extend(advice.wrap(method), {
+							valueOf:  function() { return method },
+						toString: function() { return method.toString() },
+						originalFunction: method
+					});
+				})();
+			}
+			this.prototype[property] = value;
+		
+			if (property === "formals") {
+				// special property (used to be pins, but now called formals to disambiguate old and new style
+				Class.addPins(this, value);
+			} else if (Object.isFunction(value)) {
+				for ( ; value; value = value.originalFunction) {
+					if (value.methodName) {
+						//console.log("class " + this.prototype.constructor.type 
+						// + " borrowed " + value.qualifiedMethodName());
+					}
+					value.declaredClass = this.prototype.constructor.type;
+					value.methodName = property;
+				}
+			}
+		}
+		return this;
+	},
+
+	addProperties: function(spec, recordType) {
+		Class.addMixin(this, recordType.prototype.create(spec).prototype);
+	},
+
+	isSubclassOf: function(aClass) {
+		return this.superclasses().include(aClass);
+	},
+	
+	allSubclasses: function() {
+		return Global.classes(true).select(function(ea) { return ea.isSubclassOf(this) }.bind(this));
+	},
+	
+	superclasses: function() {
+		if (!this.superclass) return [];
+		if (this.superclass === Object) return [Object];
+		return this.superclass.superclasses().concat([this.superclass]);
 	}
-	return this;
-
-    },
-
-    addProperties: function(spec, recordType) {
-	Class.addMixin(this, recordType.prototype.create(spec).prototype);
-    },
-
-    isSubclassOf: function(aClass) {
-        return this.superclasses().include(aClass);
-    },
-    
-    allSubclasses: function() {
-        return Global.classes(true).select(function(ea) { return ea.isSubclassOf(this) }.bind(this));
-    },
-    
-    superclasses: function() {
-        if (!this.superclass) return [];
-        if (this.superclass === Object) return [Object];
-        return this.superclass.superclasses().concat([this.superclass]);
-    }
 
 });
 
