@@ -9,11 +9,16 @@ fullmenu = [
   ["index.html",              "Home", nil, "home"],
   ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Lively Wiki"],
   ["publications/index.html", "Publications"],
+  ["development/index.html", "Development"],
+  ["projects/index.html", "Projects", [
+       ["projects/livelyfabrik/index.html", "Lively Fabrik"],
+       ["projects/livelywiki/index.html",   "Lively Wiki"],
+#       ["projects/webwerkstatt/index.html", "WebWerkstatt"],
+  ]],
   ["list/index.html", "Mailing list"],
-  ["http://www.lively-kernel.org/repository/lively-kernel/trunk/source/kernel/",       "Repository"],
-  ["http://www.lively-kernel.org/trac",       "Trac"],
   ["imprint/index.html",      "Imprint"],
 ]
+
 
 def generate_banner(root)
   return  "<!-- -=-=-=-=-=-=-=-=-=-= BANNER -=-=-=-=-=-=-=-=-=-= -->
@@ -39,7 +44,6 @@ def generate_logo2(root)
     </a>
   </div>"
 end
-
 
 def generate_footer(root)
   return  "<!-- -=-=-=-=-=-=-=-=-=-= FOOTER -=-=-=-=-=-=-=-=-=-= -->
