@@ -7,7 +7,7 @@ require 'generate_navigation'
 
 fullmenu = [
   ["index.html",              "Home", nil, "home"],
-  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Lively Wiki"],
+  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki"],
   ["publications/index.html", "Publications"],
   ["development/index.html", "Development"],
   ["projects/index.html", "Projects", [
@@ -49,7 +49,7 @@ def generate_footer(root)
   return  "<!-- -=-=-=-=-=-=-=-=-=-= FOOTER -=-=-=-=-=-=-=-=-=-= -->
   <div class=\"copyright\">
     <p> 
-      &copy; 2006-2009 
+      &copy; 2006-2010 
       <a class=\"plain\" href=\"http://www.hpi.uni-potsdam.de/swa\" rel=\"external\">HPI Software Architecture Group</a> 
       <a class=\"plain\" href=\"http://validator.w3.org/check/referer\" rel=\"external\">&nbsp;&nbsp;&nbsp;&nbsp;</a> 
     </p>
