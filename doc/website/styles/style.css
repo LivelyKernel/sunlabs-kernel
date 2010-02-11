@@ -74,6 +74,7 @@ div.logo1 {
 div.logo2 {
 	position: relative;
 	padding: 10px;
+	padding-top: 20px;
 	width: 100px;
 	text-align: left; }
 
@@ -147,9 +148,12 @@ div.banner3 {
 	font-size: xx-large;
 	font-weight: bold; }
 
-span.paper-title {
+span.paper-title, span.coloredemph {
 	color: rgb(225, 110, 52);
 	font-style: italic; }
+
+span.colored {
+  	color: rgb(225, 110, 52); }
 
 span.name {
 	color: rgb(225, 110, 52);

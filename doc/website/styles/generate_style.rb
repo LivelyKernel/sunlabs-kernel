@@ -85,6 +85,7 @@ div.logo1 {
 div.logo2 {
 	position: relative;
 	padding: 10px;
+	padding-top: 20px;
 	width: 100px;
 	text-align: left; }
 
@@ -158,9 +159,12 @@ div.banner3 {
 	font-size: xx-large;
 	font-weight: bold; }
 
-span.paper-title {
+span.paper-title, span.coloredemph {
 	color: #{@heading_color};
 	font-style: italic; }
+
+span.colored {
+  	color: #{@heading_color}; }
 
 span.name {
 	color: #{@heading_color};

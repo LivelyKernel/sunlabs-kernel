@@ -7,9 +7,10 @@ require 'generate_navigation'
 
 fullmenu = [
   ["index.html",              "Home", nil, "home"],
+  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Lively Wiki"],
   ["publications/index.html", "Publications"],
+  ["list/index.html", "Mailing list"],
   ["http://www.lively-kernel.org/repository/lively-kernel/trunk/source/kernel/",       "Repository"],
-  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki"],
   ["http://www.lively-kernel.org/trac",       "Trac"],
   ["imprint/index.html",      "Imprint"],
 ]
@@ -31,11 +32,7 @@ def generate_logo1(root)
 end
 
 def generate_logo2(root)
-  return  "  <div class=\"logo2\">
-    <a class=\"plain\" href=\"http://research.sun.com/projects/lively/\" rel=\"external\">
-      <img class=\"logoimage1\" src=\"#{root}media/sun-logo.png\" alt=\"Lively Kernel at Sun Microsystem Laboratories\" />
-    </a>
-  </div>
+  return  " 
   <div class=\"logo2\">
     <a class=\"plain\" href=\"http://www.hpi.uni-potsdam.de/swa\" rel=\"external\">
       <img class=\"logoimage1\" src=\"#{root}media/hpi_logo_tranparent.png\" alt=\"Hasso-Plattner-Institut\" />
@@ -55,6 +52,9 @@ def generate_footer(root)
   </div>"
 end
 
+def title_base()
+  return "Lively Kernel"
+end
 
 update_navigation_menu(fullmenu, fullmenu)
 
