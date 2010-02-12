@@ -9,6 +9,7 @@ fullmenu = [
   ["index.html",              "Home", nil, "home"],
   ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki⇗"],
   ["publications/index.html", "Publications"],
+  ["presentations/index.html", "Presentations"],
   ["development/index.html", "Development"],
   ["projects/index.html", "Projects", [
 #       ["projects/webwerkstatt/index.html", "WebWerkstatt"],
