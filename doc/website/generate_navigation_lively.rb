@@ -7,12 +7,10 @@ require 'generate_navigation'
 
 fullmenu = [
   ["index.html",              "Home", nil, "home"],
-  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki"],
+  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki⇗"],
   ["publications/index.html", "Publications"],
   ["development/index.html", "Development"],
   ["projects/index.html", "Projects", [
-       ["projects/livelyfabrik/index.html", "Lively Fabrik"],
-       ["projects/livelywiki/index.html",   "Lively Wiki"],
 #       ["projects/webwerkstatt/index.html", "WebWerkstatt"],
   ]],
   ["list/index.html", "Mailing list"],
@@ -39,7 +37,8 @@ end
 def generate_logo2(root)
   return  " 
   <div class=\"logo2\">
-    <a class=\"plain\" href=\"http://www.hpi.uni-potsdam.de/swa\" rel=\"external\">
+    <!-- http://www.hpi.uni-potsdam.de/swa -->
+    <a class=\"plain\" href=\"http://www.hpi.uni-potsdam.de/willkommen.html?L=1\" rel=\"external\">
       <img class=\"logoimage1\" src=\"#{root}media/hpi_logo_tranparent.png\" alt=\"Hasso-Plattner-Institut\" />
     </a>
   </div>"
