@@ -4371,15 +4371,27 @@ SliderMorph.subclass('NodeEnergySlider', {
 		this.remove();
 	},
 });
-	
+
 /**
  * A Morph for marking regions 
  * - that does not accept the dropping of other morphs 
  * - and does only react on mouse clicks on the border
  */
+
+MouseHandlerForDragging.subclass('MarkerMorphMouseHandler', {
+	handleMouseEvent: function($super, evt, targetMorph) {
+		// console.log("handle event " + evt + ", " + targetMorph)
+		if (targetMorph && (!targetMorph.containsWorldPoint(evt.mousePoint)))
+			return false;
+		return $super(evt, targetMorph); 
+	},
+});
+
 Morph.subclass("MarkerMorph", {
 
 	openForDragAndDrop: false,
+
+	mouseHandler: MarkerMorphMouseHandler.prototype,
 
 	initialize: function($super, rectangle) {
 		$super(new lively.scene.Rectangle(rectangle))
