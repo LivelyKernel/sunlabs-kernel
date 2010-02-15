@@ -7,7 +7,7 @@ require 'generate_navigation'
 
 fullmenu = [
   ["index.html",              "Home", nil, "home"],
-  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki⇗"],
+  ["lively/index.html", "Lively"],
   ["publications/index.html", "Publications"],
   ["presentations/index.html", "Presentations"],
   ["development/index.html", "Development"],
@@ -15,6 +15,7 @@ fullmenu = [
 #       ["projects/webwerkstatt/index.html", "WebWerkstatt"],
   ]],
   ["list/index.html", "Mailing list"],
+  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki⇗"],
   ["imprint/index.html",      "Imprint"],
 ]
 
