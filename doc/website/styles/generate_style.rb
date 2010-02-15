@@ -192,6 +192,10 @@ a.imagelink:hover{
   background: transparent; 
 }
 
+table.examples td {
+  vertical-align: top;
+}
+
 "
 # border colors
 "
