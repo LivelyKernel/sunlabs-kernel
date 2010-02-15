@@ -30,8 +30,8 @@ end
 
 def generate_logo1(root)
   return "  <div class=\"logo1\">
-    <a class=\"plain\" href=\"http://www.lively-kernel.org/repository/lively-wiki/Engine.xhtml\" rel=\"external\">
-      <img class=\"logoimage1\" src=\"#{root}media/livelylogo-small.png\" alt=\"Engine Morph\" />
+    <a class=\"plain\" href=\"http://www.lively-kernel.org/\">
+      <img class=\"logoimage1\" src=\"#{root}media/livelylogo-small.png\" alt=\"http://www.lively-kernel.org/\" />
     </a>
   </div>\n"  
 end
