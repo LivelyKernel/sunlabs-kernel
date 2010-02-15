@@ -173,3 +173,11 @@ div.photos img {
 
 div.photos a:hover {
 	background: transparent; }
+
+a.imagelink {
+  background: transparent; 
+}
+a.imagelink:hover{
+  background: transparent; 
+}
+

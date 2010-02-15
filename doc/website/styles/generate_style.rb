@@ -184,7 +184,31 @@ div.photos img {
 
 div.photos a:hover {
 	background: transparent; }
+
+a.imagelink {
+  background: transparent; 
+}
+a.imagelink:hover{
+  background: transparent; 
+}
+
 "
+# border colors
+"
+a.imagelink img{
+  border: 2px;
+  border-style: solid;
+  border-color: gray;
+  background: transparent; 
+}
+
+a.imagelink:hover img{
+  border: 2px;
+  border-style:solid;
+  border-color: #{@text_color};
+}
+"
+
 
 
 File.open("style.css", "w") { |file|
