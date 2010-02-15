@@ -4662,7 +4662,7 @@ WorldMorph.addMethods({
 					var repo = new URL(input);
 					new ide.WikiCodeBrowser(repo).open()
 				};
-				world.prompt('Wiki base URL?', cb, 'http://livelykernel.sunlabs.com/repository/lively-wiki/');
+				world.prompt('Wiki base URL?', cb, 'http://www.lively-kernel.org/repository/lively-wiki/');
 				})}],
 			["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
 			["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],	
