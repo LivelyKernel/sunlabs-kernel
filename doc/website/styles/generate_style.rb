@@ -185,9 +185,15 @@ div.photos img {
 div.photos a:hover {
 	background: transparent; }
 
+a.imagelink img {
+  width: 180px;
+
+}
+
 a.imagelink {
   background: transparent; 
 }
+
 a.imagelink:hover{
   background: transparent; 
 }
