@@ -200,6 +200,7 @@ a.imagelink:hover{
 
 table.examples td {
   vertical-align: top;
+  padding: 10px;
 }
 
 "
