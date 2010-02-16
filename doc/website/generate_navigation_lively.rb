@@ -15,7 +15,8 @@ fullmenu = [
 #       ["projects/webwerkstatt/index.html", "WebWerkstatt"],
   ]],
   ["list/index.html", "Mailing list"],
-  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki⇗"],
+  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki"],
+  ["license/index.html", "License"],
   ["imprint/index.html",      "Imprint"],
 ]
 
