@@ -213,7 +213,7 @@ smalltalkClass =
 	-> { var klass = new StClassNode(name, methodsAndProperties, superclass);
 		klass.type = 'smalltalkClass'
 		klass.startIndex = p;
-		klass.stopIndex = $elf.pos()-1;
+		klass.stopIndex = this.pos()-1;
 		klass
 	},
 
@@ -223,7 +223,7 @@ smalltalkClasses =
 		var all = new StFileNode(cls);
 		all.type = 'smalltalkClasses';
 		all.startIndex = p;
-		all.stopIndex = $elf.pos()-1;
+		all.stopIndex = this.pos()-1;
 		all
 	},
 
@@ -317,7 +317,7 @@ methodBinding :name =
   -> {invokable.setMethodName(name); invokable},
 
 primitiveMethod :name =
-  [ #func :args foreign(BSOMetaJSTranslator, #curlyTrans):body ]
+  [ #func :args foreign(LKJSTranslator, #curlyTrans):body ]
   -> { new StPrimitveMethodNode(name, body, args) },
   
 propertyBinding :name =

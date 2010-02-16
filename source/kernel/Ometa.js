@@ -21,7 +21,7 @@
  */
 
 
-module('Ometa.js').requires('ometa/ometa-base.js', 'ometa/parser.js', 'ometa/bs-ometa-compiler.js', 'ometa/bs-ometa-js-compiler.js', 'ometa/bs-js-compiler.js', 'ometa/bs-ometa-optimizer.js').toRun(function() {
+module('Ometa.js').requires('ometa/ometa-base.js', 'ometa/lk-parser-extensions.js').toRun(function() {
                                            
 /*
     An Ometa Workspace like http://www.cs.ucla.edu/~awarth/ometa/.
@@ -55,15 +55,16 @@ OMetaSupport = {
     },
     
     translateToJs: function(src) {
-        var ometaSrc = OMetaSupport.matchAllWithGrammar(BSOMetaJSParser, "topLevel", src);
-        var jsSrc = OMetaSupport.matchWithGrammar(BSOMetaJSTranslator, "trans", ometaSrc);
+        var ometaSrc = OMetaSupport.matchAllWithGrammar(LKOMetaJSParser, "topLevel", src);
+        if (!ometaSrc) throw new Error('Problem in translateToJs: Cannot create OMeta Ast from source');
+        var jsSrc = OMetaSupport.matchWithGrammar(LKOMetaJSTranslator, "trans", ometaSrc);
         return jsSrc;
     },
     
     matchAllWithGrammar: function(grammar, rule, src, errorHandling) {
 		// errorHandling can be undefined or a callback or true (own error handle is used)
 		var errorFunc;
-		if (!errorHandling) errorFunc = OMetaSupport.handleError;
+		if (!errorHandling) errorFunc = OMetaSupport.handleErrorDebug;
 		else if (errorHandling instanceof Function) errorFunc = errorHandling
 		else errorFunc = OMetaSupport.handleErrorDebug;
         return grammar.matchAll(src, rule, null, errorFunc.curry(src, rule));
@@ -72,7 +73,7 @@ OMetaSupport = {
     matchWithGrammar: function(grammar, rule, src, errorHandling) {
 		// errorHandling can be undefined or a callback or true (own error handle is used)
 		var errorFunc;
-		if (!errorHandling) errorFunc = OMetaSupport.handleError;
+		if (!errorHandling) errorFunc = OMetaSupport.handleErrorDebug;
 		else if (errorHandling instanceof Function) errorFunc = errorHandling
 		else errorFunc = OMetaSupport.handleErrorDebug;
 		return grammar.match(src, rule, null, errorFunc.curry(src, rule));
@@ -85,7 +86,7 @@ OMetaSupport = {
         var startIndex = Math.max(0, errorIndex - charsBefore);
         var stopIndex = Math.min(src.length, errorIndex + charsAfter);
 
-		console.log('Last twenty Rules: ' + grammarInstance._ruleStack.slice(grammarInstance._ruleStack.length-20));
+		//console.log('Last twenty Rules: ' + grammarInstance._ruleStack && grammarInstance._ruleStack.slice(grammarInstance._ruleStack.length-20));
 		if (src.constructor === Array) {
 			console.log(src = '[' + src.toString() + ']');
 		} else {

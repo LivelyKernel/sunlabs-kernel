@@ -28,53 +28,36 @@ TestCase.subclass('TextTest', {
 });
 
 
-TestCase.subclass('OmetaLoadingTest', {
-
-    shouldRun: false,
-    
-    testLoadAllFiles: function() {
-        require('ometa/lib.js').toRun(function() {
-        module('ometa/lib.js').requires('ometa/ometa-base.js').toRun(function() {
-        module('ometa/ometa-base.js').requires('ometa/parser.js').toRun(function() {
-        module('ometa/parser.js').requires('ometa/bs-js-compiler.js').toRun(function() {
-        module('ometa/bs-js-compiler.js').requires('ometa/bs-ometa-compiler.js').toRun(function() {
-        module('ometa/bs-ometa-compiler.js').requires('ometa/bs-ometa-optimizer.js').toRun(function() {
-        module('ometa/bs-ometa-optimizer.js').requires('ometa/bs-ometa-js-compiler.js').toRun(function() {
-        // module('ometa/bs-ometa-js-compiler.js').requires('ometa/bs-project-list-parser.js').toRun(function() {
-        // module('ometa/bs-project-list-parser.js').requires('ometa/workspace.js').toRun(function() {
-        // module('ometa/ometa/workspace.js').requires('ometa/wiki.js').toRun(function() {
-        // })})})
-        })})})})})})});
-        
-    }
-});
-
-
 TestCase.subclass('OmetaTest', {
                         
     testBSOMetaJSParser: function() {
         var s = "3+ 4";
-        var tree = BSOMetaJSParser.matchAll(s, "topLevel");
+        var tree = LKOMetaJSParser.matchAll(s, "topLevel");
         this.assert(tree, " is defined");
-        this.assertEqual(toOmetaString(tree), "[begin, [binop, +, [number, 3], [number, 4]]]");
+        this.assertEqual(tree.toString(), "[begin, [binop, +, [number, 3], [number, 4]]]");
     },
 
     testBSOMetaJSTranslator: function() {
         var s = "3+ 4";    
-        var tree = BSOMetaJSParser.matchAll(s, "topLevel");
-        var result= BSOMetaJSTranslator.match(tree, "trans");
+        var tree = LKOMetaJSParser.matchAll(s, "topLevel");
+        var result= LKOMetaJSTranslator.match(tree, "trans");
         this.assertEqual(String(result), "((3) + (4))");
     },
     
     testOmetaSampleInterpreter: function() {
-        var calcSrc = BSOMetaJSParser.matchAll(OmetaTest.ometaSampleInterpeter, "topLevel");
-        var result = eval(BSOMetaJSTranslator.match(calcSrc, "trans"));
+        var calcSrc = LKOMetaJSParser.matchAll(OmetaTest.ometaSampleInterpeter, "topLevel");
+        var result = eval(LKOMetaJSTranslator.match(calcSrc, "trans"));
         this.assertEqual(result, 42);
     },
     
     testEvalOmeta: function() {
         this.assertEqual(OMetaSupport.ometaEval(OmetaTest.ometaSampleInterpeter), 42)
-    }
+    },
+
+	testOMetaUnderstandsNewExpr: function() {
+		var src = 'ometa Test { foo { new lively.Text() } }';
+		this.assert(OMetaSupport.matchAllWithGrammar(LKOMetaJSParser, "topLevel", src));
+	}
 });
 
 OmetaTest.ometaSampleInterpeter = "        ometa Calc {  \n\

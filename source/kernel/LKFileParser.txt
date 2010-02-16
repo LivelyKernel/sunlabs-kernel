@@ -25,43 +25,43 @@ ometa LKFileParser <: Parser {
   
     /* helper productions */
     log :msg -> { console.log(msg); true },
-    logPos -> { console.log($elf.pos()); true },
+    logPos -> { console.log(this.pos()); true },
     whereAreYou -> {
-	var charsBefore = 120; var charsAfter = 120; var src = $elf._originalInput;
-	var startIndex = Math.max(0, $elf.pos() - charsBefore);
-	var stopIndex = Math.min(src.length, $elf.pos() + charsAfter);
-	console.log(src.substring(startIndex, $elf.pos()) + '<--I am here-->' + src.substring($elf.pos(), stopIndex));
-                             console.log('Rules: ' + $elf._ruleStack);
-                             console.log('Stack: ' + $elf.stack);
+	var charsBefore = 120; var charsAfter = 120; var src = this._originalInput;
+	var startIndex = Math.max(0, this.pos() - charsBefore);
+	var stopIndex = Math.min(src.length, this.pos() + charsAfter);
+	console.log(src.substring(startIndex, this.pos()) + '<--I am here-->' + src.substring(this.pos(), stopIndex));
+                             console.log('Rules: ' + this._ruleStack);
+                             console.log('Stack: ' + this.stack);
                              true
 	},
     fromTo :x :y = seq(x) (~seq(y) char)*:cs seq(y) -> cs,
-    stackSize -> { $elf.stack.length },
-	num :x -> { $elf.stack.select(function(ea) { return ea === x }).length },
-	getStack -> { $elf.stack.clone() },
-	assignStack :s -> { $elf.stack = s },
+    stackSize -> { this.stack.length },
+	num :x -> { this.stack.select(function(ea) { return ea === x }).length },
+	getStack -> { this.stack.clone() },
+	assignStack :s -> { this.stack = s },
 	startTime -> { /*console.log('start measuring time'); new Date().getTime()*/ },
 	stopTime :t -> { /*console.log('time: ' + (new Date().getTime()-t) + ' ms');*/ true},
 	open :x = add(x) -> { x},
 	close :x :y = add(y) remove(y) remove(x) -> { y},
-	add :x = exactly(x) -> { $elf.stack.push(x) },
+	add :x = exactly(x) -> { this.stack.push(x) },
 	remove :x -> {
-	if ($elf.stack.length == 0) {
-		$elf.whereAreYou();
+	if (this.stack.length == 0) {
+		this.whereAreYou();
 		throw new Error('Stack is empty, cannot remove ' + x);
 	};
-	var rem = $elf.stack.pop();
+	var rem = this.stack.pop();
 	if (rem !== x) {
-		$elf.whereAreYou();
-		throw new Error('Unmatched ' + x + 'at: ' + $elf.pos() + ' instead found ' + rem + '; stack: ' + $elf.stack);
+		this.whereAreYou();
+		throw new Error('Unmatched ' + x + 'at: ' + this.pos() + ' instead found ' + rem + '; stack: ' + this.stack);
 	};
 	true
 },
 	everythingBut :x :y = ~exactly(x) ~exactly(y) anything:a -> a,
 	nonRecursive :x :y  = getStack:s open(x) everythingBut(x,y)*:a close(x, y) -> { x+ a.join('') + y }
-	                    			| assignStack(s) -> { $elf._manualFail() },
+	                    			| assignStack(s) -> { this._manualFail() },
 	recursive :x :y = getStack:s open(x) (  everythingBut(x,y) | recursive(x,y) )*:a close(x, y)    -> { x+ a.join('') + y }
-	                    | assignStack(s) -> { $elf._manualFail() },
+	                    | assignStack(s) -> { this._manualFail() },
 	chunk :x :y = basicChunk(x,y):a /*~~exactly(x) (nonRecursive(x,y) | recursive(x,y)):a*/ -> a,
 	
 /*	chunkWith :x :y :p  = ~~exactly(x) ( open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y }
@@ -94,22 +94,22 @@ ometa LKFileParser <: Parser {
     basicFunction = "function" spaces (name:n | empty) chunk('(', ')') spaces chunk('{', '}') -> n,
     func = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction -> fn,
     functionDef = pos:p ( func:fn | '(' func:fn ')' ) somethingRelated defEnd
--> { $elf._fragment(fn, 'functionDef', p, $elf.pos()-1) },
+-> { this._fragment(fn, 'functionDef', p, this.pos()-1) },
     
     staticProperty = pos:p namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' somethingBigRelated defEnd
--> { $elf._fragment(nsArr.last(), 'staticProperty', p, $elf.pos()-1, null, {className: nsArr.slice(0,nsArr.length-1).join('.'), _isStatic: true}) },
+-> { this._fragment(nsArr.last(), 'staticProperty', p, this.pos()-1, null, {className: nsArr.slice(0,nsArr.length-1).join('.'), _isStatic: true}) },
     
 	/* methods */
     methodModificationDef = pos:p nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
--> { $elf._fragment(spec.after, 'methodModificationDef', p, $elf.pos()-1, null, {className: spec.before, _isStatic: false}) },
+-> { this._fragment(spec.after, 'methodModificationDef', p, this.pos()-1, null, {className: spec.before, _isStatic: false}) },
     
     /* properties */
     
     protoDef = stackSize:s pos:p name:pName ':' spaces (basicFunction (somethingBigRelated | empty ) | somethingBigRelated) classElemDefEnd
--> { if ($elf.stack.length !== s) {
-		throw new Error('sth wrong with the stack: ' + $elf.stack + ' expected length: ' + s + ' actual length: ' + $elf.stack.length);
+-> { if (this.stack.length !== s) {
+		throw new Error('sth wrong with the stack: ' + this.stack + ' expected length: ' + s + ' actual length: ' + this.stack.length);
 	};
-	$elf._fragment(pName, 'protoDef', p, $elf.pos()-1, null, {_isStatic: false})
+	this._fragment(pName, 'protoDef', p, this.pos()-1, null, {_isStatic: false})
 },
 propertyDef = (protoDef | methodModificationDef | staticProperty): spec -> {spec.type = 'propertyDef'; spec},
 
@@ -124,11 +124,11 @@ propertyDef = (protoDef | methodModificationDef | staticProperty): spec -> {spec
 	klassName           = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
     klassDef = pos:p nsFollowedBy("subclass"):sName '(' klassName:kName restKlassDef:spec ')' defEnd
 				-> { spec.classElems.forEach(function(ea) { ea.className = kName });
-					   $elf._fragment(
+					   this._fragment(
 							kName,
 							'klassDef',
 							p,
-							$elf.pos()-1,
+							this.pos()-1,
 							spec.classElems,
 							{trait: spec.trait, superclassName: sName})
 					},
@@ -137,31 +137,31 @@ propertyDef = (protoDef | methodModificationDef | staticProperty): spec -> {spec
 | (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
 -> { clElems.forEach(function(ea) { ea.className = n; ea._isStatic = false }); {name: n, subElements: clElems } },
     klassExtensionDef   = pos:p basicKlassExt:spec defEnd
-                        -> { $elf._fragment(spec.name + ' (extension)', 'klassExtensionDef', p, $elf.pos()-1, spec.subElements, {trait: spec.trait}) },
+                        -> { this._fragment(spec.name + ' (extension)', 'klassExtensionDef', p, this.pos()-1, spec.subElements, {trait: spec.trait}) },
     
     /* 'object' stuff */
     restObjDef = classElems:propsAndMethodDescrs spaces
 -> { propsAndMethodDescrs.forEach(function(ea) { ea._isStatic = true }); propsAndMethodDescrs },
     objectDef = pos:p ( "var" spaces namespaceId:o | namespaceId:o) spaces '=' spaces restObjDef:propsAndMethodDescrs defEnd
--> { $elf._fragment(o, 'objectDef', p, $elf.pos()-1, propsAndMethodDescrs) },
+-> { this._fragment(o, 'objectDef', p, this.pos()-1, propsAndMethodDescrs) },
     
     /* ometa stuff */
     ometaParameter = ':' name:n spaces       -> n,
     ometaParameters =  ometaParameter*,
     ometaRuleDef = pos:p name:n spaces ometaParameters:a ('=' | "->") (~',' (chunk('(', ')') |  chunk('{', '}') | chunk('\'', '\'') | chunk('"', '"') | ~'}' anything))*:body ( ',' | empty )
--> { $elf._fragment(n, 'ometaRuleDef', p, $elf.pos()-1, [], {parameters: a}) },
+-> { this._fragment(n, 'ometaRuleDef', p, this.pos()-1, [], {parameters: a}) },
     ometaInherit = "<:" spaces name:sn -> sn
 						| empty -> { null },
     ometaDef = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' spaces (ometaRuleDef:d spaces -> d)*:defs spaces '}' defEnd
--> { $elf._fragment(n, 'ometaDef', p, $elf.pos()-1, defs, {superclassName: sn}) },
+-> { this._fragment(n, 'ometaDef', p, this.pos()-1, defs, {superclassName: sn}) },
                         
                     
     /* otherStuff */
-    // comment     = descriptor:d spacesNoNl /*(fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl*/   -> { d.stopIndex = $elf.pos()-1; d.type = 'comment'; d },
-    comment = pos:p space+ -> { $elf._fragment(null, 'comment', p, $elf.pos()-1) },
+    // comment     = descriptor:d spacesNoNl /*(fromTo('//', '\n') | fromTo('/*', '*/')) spacesNoNl*/   -> { d.stopIndex = this.pos()-1; d.type = 'comment'; d },
+    comment = pos:p space+ -> { this._fragment(null, 'comment', p, this.pos()-1) },
     
-    blankLine = pos:p (nl | (char:c ?(c.charCodeAt(0) === 32))* nl) -> { $elf._fragment(null, 'blankLine', p, $elf.pos()-1) },
-    unknown = pos:p somethingBigRelated defEnd -> { $elf._fragment(null, 'unknown', p, $elf.pos()-1) }
+    blankLine = pos:p (nl | (char:c ?(c.charCodeAt(0) === 32))* nl) -> { this._fragment(null, 'blankLine', p, this.pos()-1) },
+    unknown = pos:p somethingBigRelated defEnd -> { this._fragment(null, 'unknown', p, this.pos()-1) }
                         
 };
 

@@ -10,7 +10,7 @@ errorCb: function() {
 	 	}
 },
 setUp: function() {
-	this.jsParser = BSJSParser;
+	this.jsParser = LKJSParser;
 	this.stParser = SmalltalkParser;
 	this.js2StConverter = JS2StConverter;
 },
