@@ -2,32 +2,32 @@ module('lively.WikiWidget').requires('lively.Ometa','lively.WikiParser').toRun(f
 
 PanelMorph.subclass('WikiWidgetPanel', {
 
-  onDeserialize: function() {
-    //dbgOn(true)
-    var widget = new WikiWidget();
-    this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
-    this.owner.targetMorph.setPosition(this.getPosition());
-    this.owner.titleBar.contentMorph.applyStyle({fill: Color.white, borderWidth: 0.1, borderColor: Color.black});
+	onDeserialize: function() {
+    // dbgOn(true)
+		var widget = new WikiWidget();
+		this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
+		this.owner.targetMorph.setPosition(this.getPosition());
+		this.owner.titleBar.contentMorph.applyStyle({fill: Color.white, borderWidth: 0.1, borderColor: Color.black});
 
-    var wikiMarkup = this.storedEditContent;
+		var wikiMarkup = this.storedEditContent;
+		if (!wikiMarkup) console.warn('Deserializing WikiWidget: No wiki markup found!' )
+		widget.setEditContent(wikiMarkup || '');
 
-    var inner = this.body.submorphs[0].innerMorph();
-    if (inner.constructor == ContainerMorph) {
-      console.log('Deserializing WikiWidget: ReadMode');
-      widget.enableReadMode();
-      this.body.submorphs.forEach(function(ea) {
-        ea.remove();
-        widget.getBody().addMorph(ea);
-        }, this)
-    } else if (inner.constructor == TextMorph && !wikiMarkup) {
-        console.log('Deserializing WikiWidget: EditMode');
-        wikiMarkup = inner.textString;
-    }
-    if (!wikiMarkup) console.warn('Deserializing WikiWidget: No wiki markup found!' )
-      widget.setEditContent(wikiMarkup || '');
+		var inner = this.body.submorphs[0].innerMorph();
+		if (inner.constructor == ContainerMorph) {
+			console.log('Deserializing WikiWidget: ReadMode');
+			this.body.submorphs.forEach(function(ea) {
+				ea.remove();
+				widget.getBody().addMorph(ea);
+				}, this)
+			widget.enableReadMode();
+		} else if (inner.constructor == TextMorph && !wikiMarkup) {
+			console.log('Deserializing WikiWidget: EditMode');
+			wikiMarkup = inner.textString;
+		}
 
-    this.remove();      
-  }
+		this.remove();      
+	}
 });
 
 Widget.subclass('WikiWidget', {
