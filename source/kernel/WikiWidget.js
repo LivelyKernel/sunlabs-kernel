@@ -114,9 +114,12 @@ Widget.subclass('WikiWidget', {
     },
     editContentsToMorphs: function() {
       var markup = this.getEditContent().replace(/\r/g, '\n')
-      var result = OMetaSupport.matchAllWithGrammar(WikiParser, 'wikiTextDescription', markup);
+      var result;
+      var time = Functions.timeToRun(function() {
+        result = OMetaSupport.matchAllWithGrammar(WikiParser, 'wikiTextDescription', markup);
+      });
       if (!result) return null;
-      console.log('#morphs: ' + result.length);
+      console.log('#morphs: ' + result.length + ' time: ' + time);
       return result;
     },
     openIn: function($super, world, optLoc) {
