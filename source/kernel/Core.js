@@ -4701,7 +4701,7 @@ WorldMorph.addMethods({
 					toolMenuItems.splice(index, 1,
 						["-----"],
 						["Profiling help", function(evt) { this.openURLasText( URL.common.project.withRelativePath(
-							"/index.fcgi/wiki/ProfilingHelp?format=txt"), "Profiling help"); }],
+							"/trac/wiki/ProfilingHelp?format=txt"), "Profiling help"); }],
 						["Arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }],
 						["Arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }],
 						["Disable profiling", function() {

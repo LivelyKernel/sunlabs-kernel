@@ -220,7 +220,7 @@ URL.proxy = (function() {
 URL.common = {
     wiki:   URL.proxy.withFilename('lively-wiki/'),
     repository: URL.proxy.withFilename('lively-kernel/'),
-    project: URL.proxy.withFilename('lively-project/')  // currently livelykernel.sunlabs.com
+    project: URL.proxy.withFilename('lively-project/')  // currently lively-kernel.org
 };
 
 
