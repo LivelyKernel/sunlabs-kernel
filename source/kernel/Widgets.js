@@ -4395,9 +4395,9 @@ Morph.subclass("MarkerMorph", {
 
 	initialize: function($super, rectangle) {
 		$super(new lively.scene.Rectangle(rectangle))
-		this.applyStyle({borderWidth: 2, borderColor: Color.rgb(223,70,0), fill: null});
-		this.shape.setStrokeDashArray(String([9,7]));
 
+		this.applyStyle({borderWidth: 2, borderColor: Color.tangerine , fill: null});
+		this.shape.setStrokeDashArray("9,7");
 	},
 	
 	containsPoint: function($super, point) {

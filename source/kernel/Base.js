@@ -2239,6 +2239,7 @@ Object.extend(Color, {
 
 });
 
+
 Object.extend(Color, {
     darkGray: Color.gray.darker(),
     lightGray: Color.gray.lighter(),
@@ -2255,6 +2256,9 @@ Object.extend(Color, {
     //    purple: Color.rgb(131, 0, 201),
     //    magenta: Color.rgb(204, 0, 255),
     //    pink: Color.rgb(255, 30, 153),
+
+	tangerine: Color.rgb(242, 133, 0),
+
     primary: {
 	// Sun palette
 	blue: Color.rgb(0x53, 0x82, 0xA1),
