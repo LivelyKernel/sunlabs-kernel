@@ -129,6 +129,8 @@ var Loader = {
 		platformConsole = { log: function(msg) { } } // do nothing as a last resort
     }
     
+	if (Global.console.firebug !== undefined) return; // Firebug doesn't like to be overwritten
+	
  	// rebind to something that has all the calls, and forwards ti consumers...
 	Global.console = {
 	    
