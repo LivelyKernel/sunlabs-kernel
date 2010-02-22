@@ -177,10 +177,11 @@ lively.data.Wrapper.subclass('lively.storage.CollectionItem', {
 	asSVNVersionInfo: function() {
 		var r = this.rawNode;
 		// FIXME cleanup --> SVNResource>>pvtSetMetadataDoc
+		// rk 2/22/10: the namespace tag lp1 is required by Firefox
 		return new SVNVersionInfo({
-			rev: Number(r.getElementsByTagName('version-name')[0].textContent),
-			date: new Date(r.getElementsByTagName('getlastmodified')[0].textContent),
-			author: r.getElementsByTagName('creator-displayname')[0].textContent});
+			rev: Number(r.getElementsByTagName('lp1:version-name')[0].textContent),
+			date: new Date(r.getElementsByTagName('lp1:getlastmodified')[0].textContent),
+			author: r.getElementsByTagName('lp1:creator-displayname')[0].textContent});
 	},
 
 });
