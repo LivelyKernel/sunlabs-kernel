@@ -379,23 +379,23 @@ View.subclass('NetRequest', {
 	return new NetRequestStatus(this.method, this.url, this.transport);
     },
     
-    request: function(method, url, content) {
-	try {
-	    this.url = url;
-	    this.method = method.toUpperCase();	    
-	    this.transport.open(this.method, url.toString(), !this.isSync);
-	    Properties.forEachOwn(this.requestHeaders, function(p, value) {
-		this.transport.setRequestHeader(p, value);
-	    }, this);
-	    this.transport.send(content || undefined);
-	    return this;
-	} catch (er) {
-	    var status = this.getStatus();
-	    status.setException(er);
-	    this.setStatus(status);
-	    throw er;
-	}
-    },
+	request: function(method, url, content) {
+		try {
+			this.url = url;
+			this.method = method.toUpperCase();	    
+			this.transport.open(this.method, url.toString(), !this.isSync);
+			Properties.forEachOwn(this.requestHeaders, function(p, value) {
+				this.transport.setRequestHeader(p, value);
+			}, this);
+			this.transport.send(content || '');
+			return this;
+		} catch (er) {
+			var status = this.getStatus();
+			status.setException(er);
+			this.setStatus(status);
+			throw er;
+		}
+	},
     
     get: function(url) {
 	return this.request("GET", URL.makeProxied(url), null);
