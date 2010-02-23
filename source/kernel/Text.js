@@ -2011,22 +2011,20 @@ BoxMorph.subclass('TextMorph', {
 		}
 
 		// have to process commands in keydown...
-		if (evt.isCommandKey()) {
-			if (this.processCommandKeys(evt)) { 
-				evt.stop();
-				return true;
-			} 
+		if (evt.isCommandKey() && this.processCommandKeys(evt)) {
+			evt.stop();
+			return true;
 		}
-		return false;
+
+		return ClipboardHack.tryClipboardAction(evt, this);
+		
 	},
 	 
 	onKeyPress: function(evt) {
 		if (!this.acceptInput) return true;
 
-		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
-			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
-			return;
-		};	
+		if (ClipboardHack.tryClipboardAction(evt, this))
+			return true;
 		
 		// cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
 		if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
