@@ -95,7 +95,7 @@ Object.extend(Function.prototype, {
 	})
 });
 
-var lookupLayerdFunctionForObject = function(self, layer, obj, function_name, methodType, n) {
+var lookupLayeredFunctionForObject = function(self, layer, obj, function_name, methodType, n) {
 	if (layer) {
 		// we have to look for layers defintions for self, self.prototype, ... there may be layered methods 
 		// in a subclass of "obj"			
@@ -119,7 +119,7 @@ var lookupLayerdFunctionForObject = function(self, layer, obj, function_name, me
 			if (superclass) {
 				foundClass = superclass;
 				log("layered function is not found in this partial method, lookup for my prototype?")
-				return lookupLayerdFunctionForObject(superclass.prototype, layer, obj, function_name, methodType)
+				return lookupLayeredFunctionForObject(superclass.prototype, layer, obj, function_name, methodType)
 			} else {
 				log("obj has not prototype")
 			}
@@ -133,7 +133,7 @@ var executeWithLayers = function Layers$executeWithLayers(base_function, self, l
 	log("executeWithLayers(" + layers + ", " + obj + ", " + function_name+")");
 	if (index < layers.length) {
 		var layer = layers[layers.length - index - 1];
-		var layered_function = lookupLayerdFunctionForObject(self, layer, obj, function_name, methodType)
+		var layered_function = lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType)
 		if (layered_function) {
 			log("  found layered function: " + layered_function);
 			var new_proceed = function() {
