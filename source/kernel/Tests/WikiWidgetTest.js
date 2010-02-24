@@ -83,9 +83,12 @@ test05bLinkName: function() {
  	this.assertMatchesSpec(expected, result);
 	this.assert(result.first().getRichText().emphasisAt(5).link, 'myPage.xhtml');
 },
-
-
-
+test06DontRecognizeListInText: function() {
+ 	var text = "Jens *Draft* foo bar.";
+ 	result = this.translate(text);
+ 	var expected = [{textString: 'Jens 	• Draft<ERROR>*Draft* foo bar.</ERROR>'}];
+ 	this.assertMatchesSpec(expected, result);
+},
 
 
 });

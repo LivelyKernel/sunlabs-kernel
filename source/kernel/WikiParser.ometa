@@ -49,7 +49,11 @@ ometa WikiParser <: Parser {
 		list(spec)*,
 
 	atomicText :spec =
-		wordsNoParagraphEnd(spec) | bold(spec) | italic(spec) | link(spec) | list(spec),
+		wordsNoParagraphEnd(spec) | bold(spec) | italic(spec) | link(spec) | list(spec) | trash(spec),
+trash :spec =
+	~'\n' ~end {spec.add('<ERROR>')}
+	(char:c ?(c != '\n') {spec.add(c)})+ {spec.add('</ERROR>')},
+
 
 	character :spec = char:c -> spec.add(c),
 
