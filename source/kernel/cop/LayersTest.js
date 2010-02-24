@@ -429,7 +429,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 		var layer1 = {};
 		layerClass(layer1, cop.example.DummyClass, {
 			f: function(proceed, a, b) {
-				currentTest.execution.push("l1.f");
+				this.execution.push("l1.f");
 				// console.log("execute layer1 function for f");
 				return proceed() + a; 
 			},
@@ -441,7 +441,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 		withLayers([layer1], function() {
 			var r = object1.f(2,3);
 			this.assertEqual(r, 2, "result of f() failed");
-			this.assertEqual(currentTest.execution.toString(), ["d.f", "l1.f", "d.f"]);
+			this.assertEqual(object1.execution.toString(), ["d.f", "l1.f", "d.f"]);
 		}.bind(this))
   	},
 
@@ -563,9 +563,9 @@ TestCase.subclass('cop.tests.LayerTest', {
 		var layer3 = {toString: function(){return "l3"}};
 		withLayers([layer1, layer2, layer3], function() {
 			withoutLayers([layer2], function() {
-				this.assertEqual(currentLayers().toString(), "l1,l3");
+				this.assertEqual(currentLayers().toString(), ["l1","l3"].toString());
 				withLayers([layer2], function() {
-					this.assertEqual(currentLayers().toString(), "l1,l3,l2");
+					this.assertEqual(currentLayers().toString(), ["l1","l3","l2"].toString());
 				}.bind(this));
 			}.bind(this));
 		}.bind(this));
@@ -816,7 +816,7 @@ TestCase.subclass('cop.tests.LayerTestCase', {
 	}
 });
 
-cop.tests.LayerTestCase.subclass('Acop.tests.LayerSubclassingTest', {
+cop.tests.LayerTestCase.subclass('cop.tests.LayerSubclassingTest', {
 
 	testSetup: function() {
 		this.assert(this.dummyClass());
@@ -1027,7 +1027,7 @@ Object.subclass('cop.tests.MyClass', {
 	},
 });
 
-TestCase.subclass('Acop.tests.LayerStateTest', {
+TestCase.subclass('cop.tests.LayerStateTest', {
 
 	testMakePropertyLayerAware: function() {
 		var o = {a: 3};
@@ -1272,7 +1272,7 @@ LayerableObject.subclass("DummyOtherObject", {
 
 });
 
-TestCase.subclass('Acop.tests.LayerObjectActivationTest', {
+TestCase.subclass('cop.tests.LayerObjectActivationTest', {
 	
 	setUp: function() {
 		this.o = new DummyLayerableObject();
@@ -1356,7 +1356,7 @@ TestCase.subclass('Acop.tests.LayerObjectActivationTest', {
 	
 });
 
-TestCase.subclass('Acop.tests.ActiveLayersTest', {
+TestCase.subclass('cop.tests.ActiveLayersTest', {
 
 	testOverrideActiveLayers: function() {
 		var self = this;
@@ -1381,7 +1381,7 @@ TestCase.subclass('Acop.tests.ActiveLayersTest', {
 });
 
 
-cop.tests.LayerTestCase.subclass('Acop.tests.LayerActivationRestrictionTest', {
+cop.tests.LayerTestCase.subclass('cop.tests.LayerActivationRestrictionTest', {
 	
 	setUp: function($super) {
 		$super();
