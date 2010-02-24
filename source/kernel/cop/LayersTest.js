@@ -639,9 +639,9 @@ TestCase.subclass('cop.tests.LayerTest', {
 		var layer3 = {toString: function(){return "l3"}};
 		
 		var stack = [{}];
-		this.assertEqual(composeLayers(stack.clone()).toString(), "");
-		this.assertEqual(composeLayers([{}, {withLayers: [layer1]}]).toString(), "l1");
-		this.assertEqual(composeLayers([{}, {withLayers: [layer1]},{withLayers: [layer2, layer3]} ]).toString(), "l1,l2,l3");
+		this.assertEqual(composeLayers(stack.clone()).toString(), [].toString());
+		this.assertEqual(composeLayers([{}, {withLayers: [layer1]}]).toString(), ["l1"].toString());
+		this.assertEqual(composeLayers([{}, {withLayers: [layer1]},{withLayers: [layer2, layer3]} ]).toString(), ["l1","l2","l3"].toString());
   	},
 
 	testComposeLayersWithWithoutLayers: function() {
@@ -650,7 +650,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 		var layer3 = {toString: function(){return "l3"}};
 		
 		var stack = [{}];
-		this.assertEqual(composeLayers([{}, {withLayers: [layer1, layer2, layer3]},{withoutLayers: [layer2]}]).toString(), "l1,l3");
+		this.assertEqual(composeLayers([{}, {withLayers: [layer1, layer2, layer3]},{withoutLayers: [layer2]}]).toString(), ["l1","l3"].toString());
 		
   	},
 	
