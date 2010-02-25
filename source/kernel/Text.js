@@ -2004,6 +2004,11 @@ BoxMorph.subclass('TextMorph', {
 					evt.stop(); // do not use for browser navigation
 					return true;
 			}
+			case Event.KEY_RETURN: {
+				this.replaceSelectionfromKeyboard("\n");
+				evt.stop();
+				return true;
+			}
 			case Event.KEY_ESC: {
 				this.relinquishKeyboardFocus(this.world().firstHand());
 				return true;
@@ -2021,7 +2026,8 @@ BoxMorph.subclass('TextMorph', {
 	},
 	 
 	onKeyPress: function(evt) {
-		if (!this.acceptInput) return true;
+		if (!this.acceptInput)
+			return true;
 
 		if (ClipboardHack.tryClipboardAction(evt, this))
 			return true;
@@ -2030,15 +2036,18 @@ BoxMorph.subclass('TextMorph', {
 		if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
 			//AltGr pressed
 			if (this.processCommandKeys(evt)) {
-		evt.stop();
-		return true;
+				evt.stop();
+				return true;
+			}
 		}
-		}  else if (/*!evt.isCommandKey() &&*/ !evt.isMetaDown()) {
+		
+		if (!evt.isMetaDown()) {
 			this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
 			evt.stop(); // done
-		return true;
+			return true;
 		}
-	return false;
+		
+		return false;
 	},
 	
 	replaceSelectionfromKeyboard: function(replacement) {
