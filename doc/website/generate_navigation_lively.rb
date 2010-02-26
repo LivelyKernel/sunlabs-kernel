@@ -41,7 +41,8 @@ def generate_logo2(root)
   return  " 
   <div class=\"logo2\">
     <!-- http://www.hpi.uni-potsdam.de/swa -->
-    <a class=\"plain\" href=\"http://www.hpi.uni-potsdam.de/willkommen.html?L=1\" rel=\"external\">
+    <!-- http://www.hpi.uni-potsdam.de/willkommen.html?L=1 -->
+    <a class=\"plain\" href=\"http://www.hpi.uni-potsdam.de/swa\" rel=\"external\">
       <img class=\"logoimage1\" src=\"#{root}media/hpi_logo_tranparent.png\" alt=\"Hasso-Plattner-Institut\" />
     </a>
   </div>"
