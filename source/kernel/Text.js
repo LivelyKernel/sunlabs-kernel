@@ -1015,6 +1015,9 @@ BoxMorph.subclass('TextMorph', {
 		// using text morphs as containers feels extremly weired, especially when the fill 
 		// and bounds are not visible like in the wiki
 		// Is there a demo or other rules that needs that behavior? 
+		// rk: I find it often convenient to enable that behavior, e.g. when composing
+		// morphs for a class diagram. I think we should turn it on by default and provide
+		// an easy to reach menu option to disable it
 		return false
 	}, 
 	
