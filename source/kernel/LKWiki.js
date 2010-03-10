@@ -63,7 +63,8 @@ Widget.subclass('WikiNavigator', {
 	
 	buildView: function(extent) {
 	    var panel = PanelMorph.makePanedPanel(extent, [
-			['saveContentButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.2, 0.1, 0.6)],
+			['saveContentButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.2, 0.1, 0.35)],
+			['deletePageButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.55, 0.1, 0.25)],
 			//['lockButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.5, 0.1, 0.3)],
 			['registerButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.85, 0.2, 0.1, 0.3)],
 			['loginButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.85, 0.5, 0.1, 0.3)],
@@ -96,6 +97,9 @@ Widget.subclass('WikiNavigator', {
 		loginButton.setLabel("Login");
 		loginButton.connectModel(btnAction(function() {panel.remove(); this.login()}));
 
+		var deletePageButton = panel.deletePageButton;
+		deletePageButton.setLabel("Delete");
+		deletePageButton.connectModel(btnAction(function() { this.askToDeleteCurrentWorld() }));
 		/*
 		var lockButton = panel.lockButton;
 		lockButton.setLabel("Lock");
@@ -338,7 +342,22 @@ login: function() {
     worldExists: function(optURL) {
 		var url = optURL || this.model.getURL();
         return new NetRequest().beSync().get(url).getStatus().isSuccess();
-    }
+    },
+askToDeleteCurrentWorld: function() {
+	WorldMorph.current().confirm('Delete ' + this.model.getURL().toString() + '?', function(response) {
+		if (!response) return;
+		this.deleteCurrentWorld();
+	}.bind(this));
+},
+
+	
+	deleteCurrentWorld: function() {
+	return this.deleteWorld(this.model.getURL());
+},
+deleteWorld: function(url) {
+	return this.svnResource.store().getStatus();
+},
+
 });
 
 Object.extend(WikiNavigator, {

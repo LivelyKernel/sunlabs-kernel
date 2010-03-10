@@ -742,6 +742,15 @@ store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
 	}
 	return $super(content, optSync, headers);
 },
+del: function(sync, optRequestHeaders) {
+	var req = new NetRequest(Relay.newInstance({
+	    Status: "+RequestStatus"}, this));
+	if (sync) req.beSync();
+	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+	req.del(this.getURL());
+	return req;
+},
+
 
     
     fetchProperties: function($super, destModel, optSync, optRequestHeaders, rev) {
