@@ -4027,6 +4027,7 @@ PasteUpMorph.subclass("WorldMorph", {
 		}
 		$super(new lively.scene.Rectangle(bounds));
 
+		this.setDisplayTheme(this.displayTheme); // apply display theme
 
 		//gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");		     
 		this.enterCount = 0;
@@ -4037,7 +4038,8 @@ PasteUpMorph.subclass("WorldMorph", {
     initializeTransientState: function($super) {
         $super();
         this.hands = [];
-		this.setDisplayTheme(this.displayThemes[Config.defaultDisplayTheme]);
+		this.displayTheme = this.displayThemes[Config.defaultDisplayTheme]; // set display them without applying it
+		
 		this.withAllSubmorphsDo( function() { this.layoutChanged(); });  // Force installation of transforms
 
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
