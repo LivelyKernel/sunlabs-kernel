@@ -355,7 +355,7 @@ askToDeleteCurrentWorld: function() {
 	return this.deleteWorld(this.model.getURL());
 },
 deleteWorld: function(url) {
-	return this.svnResource.store().getStatus();
+	return this.svnResource.del().getStatus();
 },
 
 });
