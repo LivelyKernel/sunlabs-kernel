@@ -1,6 +1,11 @@
 
 module('lively.Connector').requires('cop.Layers').toRun(function() {
 
+// make morphs instance-specifically and structurally layerable
+Object.extend(Morph.prototype, LayerableObjectTrait);
+Morph.prototype.lookupLayersIn = ["owner"];
+
+
 createLayer("ConnectorMorphLayer");
 createLayer("NodeMorphLayer");
 createLayer("FindMorphLayer");
