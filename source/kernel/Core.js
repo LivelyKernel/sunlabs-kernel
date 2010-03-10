@@ -3920,68 +3920,12 @@ PasteUpMorph.subclass("WorldMorph", {
     documentation: "A Morphic world (a visual container of other morphs)",
     fill: Color.primary.blue,
     defaultExtent: pt(1280, 1024),
-    // Default themes for the theme manager    
-
+	styleClass: ['world'],
+	
+    // Default theme for the theme manager    
 	displayThemes: using(lively.paint).link({
-		primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
-			styleName: 'primitive',
-			titleBar: {
-				borderRadius: 0, 
-				borderWidth: 2, 
-				bordercolor: Color.black,
-				fill: Color.neutral.gray.lighter() 
-			},
-			slider: { 
-				borderColor: Color.black, 
-				borderWidth: 1, 
-				fill: Color.neutral.gray.lighter() 
-			},
-			button: {
-				borderColor: Color.black, 
-				borderWidth: 1, 
-				borderRadius: 0,
-				fill: Color.lightGray 
-			},
-			widgetPanel: {
-				borderColor: Color.red,
-				borderWidth: 2,
-				borderRadius: 0,
-				fill: Color.blue.lighter()
-			},
-			clock:		 {
-				borderColor: Color.black, 
-				borderWidth: 1,
-				fill: {$:"RadialGradient", 
-					stops: [{$:"Stop", offset: 0, color: Color.yellow.lighter(2)}, 
-							{$:"Stop", offset: 1, color: Color.yellow}]}
-			},
-			panel: { 
-				fill: Color.primary.blue.lighter(2),
-				borderWidth: 2,
-				borderColor: Color.black
-			},
-			link: { 
-				borderColor: Color.green, 
-				borderWidth: 1, 
-				fill: Color.blue
-			},
-			helpText: {
-				borderRadius: 15, 
-				fill: Color.primary.yellow.lighter(3), 
-				fillOpacity: .8
-			},
-			fabrik: { 
-				borderColor: Color.red, 
-				borderWidth: 2, 
-				borderRadius: 0, 
-				fill: Color.blue.lighter(), 
-				opacity: 1
-			}
-		},
-
 		lively: { // This is to be the style we like to show for our personality
 			styleName: 'lively',
-		
 			raisedBorder: { // conenience grouping
 				//borderWidth: 2,
 				borderColor: {$:"LinearGradient", 
@@ -3990,7 +3934,6 @@ PasteUpMorph.subclass("WorldMorph", {
 					vector: lively.paint.LinearGradient.SouthEast
 				}
 			},
-		
 			titleBar: { 
 				borderRadius: 8, 
 				borderWidth: 2, 
@@ -4051,109 +3994,51 @@ PasteUpMorph.subclass("WorldMorph", {
 				borderRadius: 2,
 				fill: Color.gray, 
 				opacity: 1
+			},
+			world: {
+				fill: {	$:"LinearGradient", 
+					stops: [{$:"Stop", offset: 0.00, color: Color.primary.blue.lighter()},
+							{$:"Stop", offset: 0.25, color: Color.primary.blue},
+							{$:"Stop", offset: 0.50, color: Color.primary.blue.lighter()},
+							{$:"Stop", offset: 0.75, color: Color.primary.blue},
+							{$:"Stop", offset: 1.00, color: Color.primary.blue} ]}
+				
 			}
 		},
 	
-		turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
-			styleName: 'turquoise',
-			titleBar: { 
-				borderRadius: 8, 
-				borderWidth: 2, 
-				bordercolor: Color.black,
-				fill: {$:"LinearGradient", 
-					stops: [{$:"Stop", offset: 0, color: Color.turquoise},
-							{$:"Stop", offset: 1, color: Color.turquoise.lighter(3)}]}
-			},
-			slider: { 
-				borderColor: Color.black, 
-				borderWidth: 1, 
-				fill: {$:"LinearGradient", 
-					stops: [{$:"Stop", offset:0, color: Color.turquoise.lighter(2)},
-							{$:"Stop", offset:1, color: Color.turquoise}]}
-			},
-			button: { 
-				borderColor: Color.neutral.gray.darker(), 
-				borderWidth: 2, 
-				borderRadius: 8,
-				fill: {$:"RadialGradient", 
-					stops: [{$:"Stop", offset: 0, color: Color.turquoise.lighter()},
-							{$:"Stop", offset: 1, color: Color.turquoise}]}
-			},
-			widgetPanel: { 
-				borderColor: Color.neutral.gray.darker(), 
-				borderWidth: 4,
-				fill: Color.turquoise.lighter(3), 
-				borderRadius: 16
-			},
-			clock: { 
-				borderColor: Color.black, 
-				borderWidth: 1,
-				fill: {$:"RadialGradient", 
-					stops: [{$:"Stop", offset: 0, color: Color.turquoise.lighter(2)},
-							{$:"Stop", offset: 1, color: Color.turquoise}]}
-			},
-			panel: {
-				fill: Color.primary.blue.lighter(2), 
-				borderWidth: 2, 
-				borderColor: Color.black
-			},
-			link: { 
-				borderColor: Color.green, 
-				borderWidth: 1, 
-				fill: Color.blue
-			},
-			helpText: { 
-				borderRadius: 15, 
-				fill: Color.primary.yellow.lighter(3), 
-				fillOpacity: .8
-			},
-			fabrik: { 
-				borderColor: Color.neutral.gray.darker(), 
-				borderWidth: 4,
-				fill: Color.turquoise.lighter(3), 
-				borderRadius: 16}
-			}
+		
 	}),
 	
-    initialize: function($super, canvas, backgroundImageId) {
-        var bounds = Rectangle.fromElement(canvas);
+	initialize: function($super, canvas, backgroundImageId) {
+		var bounds = Rectangle.fromElement(canvas);
+		// sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
+		// in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
+		if (bounds.width < 2) {
+			bounds.width = this.defaultExtent.x;
+		}
 
-        // sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
-        // in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
-        if (bounds.width < 2) {
-            bounds.width = this.defaultExtent.x;
-        }
+		if (bounds.height < 2) {
+			bounds.height = this.defaultExtent.y;
+		}
 
-        if (bounds.height < 2) {
-            bounds.height = this.defaultExtent.y;
-        }
+		if (backgroundImageId) {
+			var background = NodeFactory.create("use");
+			XLinkNS.setHref(background, backgroundImageId);
+			this.addNonMorph(background);
+		}
+		$super(new lively.scene.Rectangle(bounds));
 
-        if (backgroundImageId) {
-            var background = NodeFactory.create("use");
-	    XLinkNS.setHref(background, backgroundImageId);
-            this.addNonMorph(background);
-        }
-        $super(new lively.scene.Rectangle(bounds));
 
-	var colors = [Color.primary.blue.lighter(), Color.primary.blue];
-	this.setFill(using(lively.paint).link({
-	    $:"LinearGradient", 
-	    stops: [ {$:"Stop", offset: 0.00, color: colors[0]},
-		     {$:"Stop", offset: 0.25, color: colors[1]},
-		     {$:"Stop", offset: 0.50, color: colors[0]},
-		     {$:"Stop", offset: 0.75, color: colors[1]},
-		     {$:"Stop", offset: 1.00, color: colors[1]} ]
-	}));
-	//gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");		     
-	this.enterCount = 0;
-    },
+		//gradient.rawNode.setAttributeNS(null, "gradientTransform", "translate(0, -0.1) skewY(10)");		     
+		this.enterCount = 0;
+	},
 
 	doNotSerialize: ['hands', 'scheduledActions', 'lastStepTime', 'mainLoop', 'worldId', 'secondTick', 'currentScript', 'currentSelection' ],
 
     initializeTransientState: function($super) {
         $super();
         this.hands = [];
-        this.setDisplayTheme(this.displayThemes['lively']);
+		this.setDisplayTheme(this.displayThemes[Config.defaultDisplayTheme]);
 		this.withAllSubmorphsDo( function() { this.layoutChanged(); });  // Force installation of transforms
 
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated

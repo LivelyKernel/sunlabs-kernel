@@ -519,10 +519,12 @@ function main() {
         })
         return;
     } else {
-    	world = new WorldMorph(canvas); 
-       	// Create an empty world
-       	world.displayOnCanvas(canvas);
-       	console.log("created empty world");
+		require(Config.modulesOnWorldLoad).toRun(function() {
+    		world = new WorldMorph(canvas); 
+       		// Create an empty world
+       		world.displayOnCanvas(canvas);
+       		console.log("created empty world");
+		})
     }
 
 	browserSpecificFixes();
