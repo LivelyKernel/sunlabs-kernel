@@ -470,12 +470,10 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 	documentation: 'Hack for deserializing my browser widget',
 
 	onDeserialize: function($super) {
-$super()
-	(function delayedDeserialize(panel, widget) {
-		panel.owner.targetMorph = panel.owner.addMorph(widget.buildView(panel.getExtent()));
-		panel.owner.targetMorph.setPosition(panel.getPosition());
-		panel.remove();
-	})(this, new this.ownerWidget.constructor());
+		var widget = new this.ownerWidget.constructor();
+		this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
+		this.owner.targetMorph.setPosition(this.getPosition());
+		this.remove();
     },
 
 });
