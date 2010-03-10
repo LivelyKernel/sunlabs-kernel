@@ -3922,114 +3922,199 @@ PasteUpMorph.subclass("WorldMorph", {
     defaultExtent: pt(1280, 1024),
     // Default themes for the theme manager    
 
-    displayThemes: using(lively.paint).link({
-        primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
-            styleName:   'primitive',
-            titleBar:    { borderRadius: 0, borderWidth: 2, bordercolor: Color.black,
-                           fill: Color.neutral.gray.lighter() },
-	    
-            slider:      { borderColor: Color.black, borderWidth: 1, 
-                           fill: Color.neutral.gray.lighter() },
-            button:      { borderColor: Color.black, borderWidth: 1, borderRadius: 0,
-                           fill: Color.lightGray },
-            widgetPanel: { borderColor: Color.red, borderWidth: 2, borderRadius: 0,
-                           fill: Color.blue.lighter()},
-            clock:       { borderColor: Color.black, borderWidth: 1,
-                           fill: {$:"RadialGradient", stops: [{$:"Stop", offset: 0, color: Color.yellow.lighter(2)}, 
-							      {$:"Stop", offset: 1, color: Color.yellow}]}
-			 },
-            panel:       { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
-            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-            helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
-            fabrik:      { borderColor: Color.red, borderWidth: 2, borderRadius: 0, fill: Color.blue.lighter(), opacity: 1}
-        },
+	displayThemes: using(lively.paint).link({
+		primitive: { // Primitive look and feel -- flat fills and no rounding or translucency
+			styleName: 'primitive',
+			titleBar: {
+				borderRadius: 0, 
+				borderWidth: 2, 
+				bordercolor: Color.black,
+				fill: Color.neutral.gray.lighter() 
+			},
+			slider: { 
+				borderColor: Color.black, 
+				borderWidth: 1, 
+				fill: Color.neutral.gray.lighter() 
+			},
+			button: {
+				borderColor: Color.black, 
+				borderWidth: 1, 
+				borderRadius: 0,
+				fill: Color.lightGray 
+			},
+			widgetPanel: {
+				borderColor: Color.red,
+				borderWidth: 2,
+				borderRadius: 0,
+				fill: Color.blue.lighter()
+			},
+			clock:		 {
+				borderColor: Color.black, 
+				borderWidth: 1,
+				fill: {$:"RadialGradient", 
+					stops: [{$:"Stop", offset: 0, color: Color.yellow.lighter(2)}, 
+							{$:"Stop", offset: 1, color: Color.yellow}]}
+			},
+			panel: { 
+				fill: Color.primary.blue.lighter(2),
+				borderWidth: 2,
+				borderColor: Color.black
+			},
+			link: { 
+				borderColor: Color.green, 
+				borderWidth: 1, 
+				fill: Color.blue
+			},
+			helpText: {
+				borderRadius: 15, 
+				fill: Color.primary.yellow.lighter(3), 
+				fillOpacity: .8
+			},
+			fabrik: { 
+				borderColor: Color.red, 
+				borderWidth: 2, 
+				borderRadius: 0, 
+				fill: Color.blue.lighter(), 
+				opacity: 1
+			}
+		},
 
 		lively: { // This is to be the style we like to show for our personality
 			styleName: 'lively',
 		
 			raisedBorder: { // conenience grouping
-			//		borderWidth: 2,
-			borderColor: {$:"LinearGradient", 
-				stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
-					{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
+				//borderWidth: 2,
+				borderColor: {$:"LinearGradient", 
+					stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
+							{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
 					vector: lively.paint.LinearGradient.SouthEast
 				}
 			},
 		
 			titleBar: { 
-			borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
+				borderRadius: 8, 
+				borderWidth: 2, 
+				bordercolor: Color.black,
 				fill: {$:"LinearGradient", 
-				stops:[ {$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
-					{$:"Stop", offset: 0.5, color: Color.primary.blue},
-					{$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
-				vector: lively.paint.LinearGradient.SouthNorth }
+					stops: [{$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
+							{$:"Stop", offset: 0.5, color: Color.primary.blue},
+							{$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
+					vector: lively.paint.LinearGradient.SouthNorth 
+				}
 			},
-		
 			slider: { 
-			borderColor: Color.black, borderWidth: 1, 
+				borderColor: Color.black, 
+				borderWidth: 1, 
 				fill: {$: "LinearGradient", 
-				stops: [ {$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
-					{$:"Stop", offset: 1, color: Color.primary.blue}] }
+					stops: [{$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
+							{$:"Stop", offset: 1, color: Color.primary.blue}]
+				}
 			},
 			button: { 
-			borderColor: Color.neutral.gray, borderWidth: 0.3, borderRadius: 4,
+				borderColor: Color.neutral.gray, 
+				borderWidth: 0.3, borderRadius: 4,
 				fill: {$:"LinearGradient", 
-				stops: [ {$:"Stop", offset:0, color:Color.darkGray}, 
-						 {$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
-				vector: lively.paint.LinearGradient.SouthNorth }
+					stops: [{$:"Stop", offset:0, color:Color.darkGray}, 
+							{$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
+					vector: lively.paint.LinearGradient.SouthNorth }
 			},
-			widgetPanel: { borderColor: Color.blue, borderWidth: 4, borderRadius: 16,
-						   fill: Color.blue.lighter(), opacity: 0.4},
+			widgetPanel: { 
+				borderColor: Color.blue, 
+				borderWidth: 4, 
+				borderRadius: 16,
+				fill: Color.blue.lighter(), opacity: 0.4
+			},
 			clock: { 
-			borderColor: Color.black, borderWidth: 4,
-			fill: {$:"RadialGradient", 
-			stops: [{$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
-				{$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
+				borderColor: Color.black, borderWidth: 4,
+				fill: {$:"RadialGradient", 
+					stops: [{$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
+							{$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
 			},
-			panel:		 { fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
-			link:		 { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-			helpText:	 { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
-			// fabrik:		{ borderColor: Color.gray.lighter(), borderWidth: 2, borderRadius: 3,
-			//					   fill: Color.gray, opacity: 1}
-			fabrik:		 { borderColor: Color.gray.darker(), borderWidth: 1.0 , borderRadius: 2,
-						   fill: Color.gray, opacity: 1}
+			panel: {
+				fill: Color.primary.blue.lighter(2), 
+				borderWidth: 2, 
+				borderColor: Color.black
+			},
+			link: {
+				borderColor: Color.green, 
+				borderWidth: 1, 
+				fill: Color.blue
+			},
+			helpText: { 
+				borderRadius: 15, 
+				fill: Color.primary.yellow.lighter(3), 
+				fillOpacity: .8
+			},
+			fabrik: {
+				borderColor: Color.gray.darker(), 
+				borderWidth: 1.0 , 
+				borderRadius: 2,
+				fill: Color.gray, 
+				opacity: 1
+			}
 		},
 	
-        turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
-            styleName: 'turquoise',
-            titleBar:    { 
-		borderRadius: 8, borderWidth: 2, bordercolor: Color.black,
-                fill: {$:"LinearGradient", stops: [{$:"Stop", offset: 0, color: Color.turquoise},
-						   {$:"Stop", offset: 1, color: Color.turquoise.lighter(3)}] }
-	    },
-	    slider:      { 
-		borderColor: Color.black, borderWidth: 1, 
-		fill: {$:"LinearGradient", stops: [{$:"Stop", offset:0, color: Color.turquoise.lighter(2)},
-						   {$:"Stop", offset:1, color: Color.turquoise}]}
-	    },
-            button:      { 
-		borderColor: Color.neutral.gray.darker(), borderWidth: 2, borderRadius: 8,
-                fill: {$:"RadialGradient", stops:[{$:"Stop", offset: 0, color: Color.turquoise.lighter()},
-						  {$:"Stop", offset: 1, color: Color.turquoise}]}
-	    },
-            widgetPanel: { 
-		borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-                fill: Color.turquoise.lighter(3), borderRadius: 16
-	    },
-            clock: { 
-		borderColor: Color.black, borderWidth: 1,
-                fill: {$:"RadialGradient", stops:[{$:"Stop", offset: 0, color: Color.turquoise.lighter(2)},
-						  {$:"Stop", offset: 1, color: Color.turquoise}]}
-	    },
-	    panel:       {fill: Color.primary.blue.lighter(2), borderWidth: 2, borderColor: Color.black},
-            link:        { borderColor: Color.green, borderWidth: 1, fill: Color.blue},
-	    helpText:    { borderRadius: 15, fill: Color.primary.yellow.lighter(3), fillOpacity: .8},
-	    fabrik:      { borderColor: Color.neutral.gray.darker(), borderWidth: 4,
-                           fill: Color.turquoise.lighter(3), borderRadius: 16}
-        }
+		turquoise: { // Like turquoise, black and silver jewelry, [or other artistic style]
+			styleName: 'turquoise',
+			titleBar: { 
+				borderRadius: 8, 
+				borderWidth: 2, 
+				bordercolor: Color.black,
+				fill: {$:"LinearGradient", 
+					stops: [{$:"Stop", offset: 0, color: Color.turquoise},
+							{$:"Stop", offset: 1, color: Color.turquoise.lighter(3)}]}
+			},
+			slider: { 
+				borderColor: Color.black, 
+				borderWidth: 1, 
+				fill: {$:"LinearGradient", 
+					stops: [{$:"Stop", offset:0, color: Color.turquoise.lighter(2)},
+							{$:"Stop", offset:1, color: Color.turquoise}]}
+			},
+			button: { 
+				borderColor: Color.neutral.gray.darker(), 
+				borderWidth: 2, 
+				borderRadius: 8,
+				fill: {$:"RadialGradient", 
+					stops: [{$:"Stop", offset: 0, color: Color.turquoise.lighter()},
+							{$:"Stop", offset: 1, color: Color.turquoise}]}
+			},
+			widgetPanel: { 
+				borderColor: Color.neutral.gray.darker(), 
+				borderWidth: 4,
+				fill: Color.turquoise.lighter(3), 
+				borderRadius: 16
+			},
+			clock: { 
+				borderColor: Color.black, 
+				borderWidth: 1,
+				fill: {$:"RadialGradient", 
+					stops: [{$:"Stop", offset: 0, color: Color.turquoise.lighter(2)},
+							{$:"Stop", offset: 1, color: Color.turquoise}]}
+			},
+			panel: {
+				fill: Color.primary.blue.lighter(2), 
+				borderWidth: 2, 
+				borderColor: Color.black
+			},
+			link: { 
+				borderColor: Color.green, 
+				borderWidth: 1, 
+				fill: Color.blue
+			},
+			helpText: { 
+				borderRadius: 15, 
+				fill: Color.primary.yellow.lighter(3), 
+				fillOpacity: .8
+			},
+			fabrik: { 
+				borderColor: Color.neutral.gray.darker(), 
+				borderWidth: 4,
+				fill: Color.turquoise.lighter(3), 
+				borderRadius: 16}
+			}
 	}),
 	
-
     initialize: function($super, canvas, backgroundImageId) {
         var bounds = Rectangle.fromElement(canvas);
 
