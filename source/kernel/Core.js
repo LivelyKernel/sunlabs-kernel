@@ -1207,6 +1207,7 @@ lively.data.Wrapper.subclass('Morph', {
 	doNotSerialize: ['fullBounds'],
 
     // prototype vars
+	name: '',
     rotation: 0.0,
     scalePoint: pt(1,1),
 
@@ -1543,7 +1544,10 @@ lively.data.Wrapper.subclass('Morph', {
 				return result;
 		}
 		return null
-	}
+	},
+	
+	getName: function() { return this.name },
+	setName: function(str) { this.name = str },
 });
 
 Morph.addMethods({	// tmp copy
@@ -2775,6 +2779,7 @@ Morph.addMethods({
 
 	subMenuItems: function(evt) {
 		var propertiesItems =  [
+			["edit name...", function() { this.world().prompt('edit name', function(input) { this.setName(input) }.bind(this), this.getName()) }],
 			["reset rotation", this.setRotation.curry(0)],
 			["reset scaling", this.setScale.curry(1)],
 			[((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
