@@ -5778,5 +5778,7 @@ window.onresize = function(evt) {
     var newHeight = h.clientHeight-  4;
 };
 
+$morph = function getMorphNamedShortcut(name) { return WorldMorph.current().getMorphNamed(name) };
+
 console.log('loaded Core.js');
 
