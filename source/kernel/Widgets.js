@@ -180,6 +180,11 @@ onIsActiveUpdate: function(isActive) {
         this.addMorph(this.label);
         return this;
     },
+getLabel: function() {
+	if (!this.label) return '';
+	return this.label.textString
+    },
+
 
 	buttonAction: function(funcOrSelector, target) {
 		this.connectModel({
@@ -245,6 +250,57 @@ console.log("new ButtonBehaviorMorph 3 " + Object.inspect(this.shape));
     last: function () {}
 });
 
+ButtonMorph.subclass('ScriptableButtonMorph', {
+	
+	documentation: 'Takes a customizable script',
+
+	initialize: function($super, initialBounds) {
+		$super(initialBounds);
+		this.scriptSource = '';
+		return this;
+	},
+
+	setValue: function(value) {
+		if (value) this.doAction();
+	},
+
+	getSourceForEval: function() {
+		return '(function() { ' + this.scriptSource + '})';
+	},
+
+	doAction: function() {
+		try {
+			// console.log("eval : " + this.scriptSource)
+			var func = eval(this.getSourceForEval());
+			func.apply(this, [] /*arg array*/);
+		} catch(e) {
+			dbgOn(true);
+			console.log("error in script button: " + e + " script: " + this.scriptSource)
+		}
+	},
+
+	morphMenu: function($super, evt) {
+		var menu = $super(evt);
+		menu.addLine();
+		menu.addItem(["Edit script...", this.editScript]);
+		menu.addItem(["Edit label...", this.editLabel]);
+		return menu;  
+	},
+
+	editScript: function() {
+		this.world().prompt(
+			'Edit script',
+			function(input) { this.scriptSource = input }.bind(this),
+			this.scriptSource)
+	},
+editLabel: function() {
+		this.world().prompt(
+			'Edit label',
+			function(input) { this.setLabel(input) }.bind(this),
+			this.getLabel());
+	},
+
+});
 
 BoxMorph.subclass("ImageMorph", {
 
