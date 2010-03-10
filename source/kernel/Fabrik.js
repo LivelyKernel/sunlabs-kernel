@@ -2959,7 +2959,7 @@ Component.subclass('FunctionComponent', {
 	},
 
     parameterNames: function() {
-        return this.inputPins().collect(function(ea){return ea.getName().toLowerCase()}); 
+        return this.inputPins().collect(function(ea){return ea.getName().toLowerCase()});
     },  
 
     parameterValues: function() {
@@ -2967,7 +2967,7 @@ Component.subclass('FunctionComponent', {
     },  
 
     functionHeader: function() {
-        return  'function f(' + this.parameterNames() + ')';
+        return  'function f(' + this.parameterNames().join(',') + ')';
     },
 
     updateFunctionHeader: function() {
