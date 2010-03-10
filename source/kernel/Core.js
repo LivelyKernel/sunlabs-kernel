@@ -4514,6 +4514,11 @@ PasteUpMorph.subclass("WorldMorph", {
     	world.prompt('Enter extent', cb, world.bounds().bottomRight().toString());
     },
 
+	getMorphNamed: function(name) {
+		for (var i = 0; i < this.submorphs.length; i++)
+			if (this.submorphs[i].getName() === name)
+				return this.submorphs[i];
+	},
 });
 
 
