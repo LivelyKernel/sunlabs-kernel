@@ -175,7 +175,6 @@ Change.subclass('ChangeSet', {
 
     initialize: function(optName) {
 		// Keep track of an ordered list of Changes
-		this.changes = []; // necessary? xmlElement should be enough...
 		this.xmlElement = null;
 		this.name = optName || '';
 	},
@@ -309,13 +308,8 @@ Object.extend(ChangeSet, {
 
 	current: function() {
 		// Return the changeSet associated with the current world
-		var world = WorldMorph.current();
-		var chgs = world.changes;
-		if (!chgs) {
-			chgs = ChangeSet.fromWorld(world);
-			world.changes = chgs;
-		}
-		return chgs;
+		var worldOrNode = WorldMorph.current() || new Importer().canvasContent(Global.document)[0];
+		return ChangeSet.fromWorld(worldOrNode);
 	}
 
 });

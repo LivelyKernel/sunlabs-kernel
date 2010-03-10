@@ -371,7 +371,7 @@ Object.extend(Function.prototype, {
 		// derived from Class.Methods.addMethods() in prototype.js
 		var ancestor = this.superclass && this.superclass.prototype;
 		
-		var className = this.constructor.name || "Anonymous";
+		var className = this.type || "Anonymous";
 
 		for (var property in source) {
 
@@ -392,8 +392,11 @@ Object.extend(Function.prototype, {
 				(function() { // wrapped in a method to save the value of 'method' for advice
 						var method = value;
 						var advice = (function(m) {
-						return function callSuper() { 
-							return ancestor[m].apply(this, arguments);
+						return function callSuper() {
+							var method = ancestor[m];
+							if (!method)
+								throw new Error(Strings.format('Trying to call super of %s>>%s but super method non existing in %s', className, m, ancestor.constructor.type))
+							return method.apply(this, arguments);
 						};
 					})(property);
 

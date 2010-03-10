@@ -1448,7 +1448,6 @@ lively.data.Wrapper.subclass('Morph', {
         	var codes = node.getElementsByTagName("code");
         	for (var j = 0; j < codes.length; j++) { codeNodes.push(codes.item(j)) };
 			if (codeNodes.length > 1) console.warn('More than one code node');
-			if (codeNodes.length > 0) this.changes = ChangeSet.fromWorld(this);
 			// ChangeSet of World gets evaluated in main
     	}
 	},

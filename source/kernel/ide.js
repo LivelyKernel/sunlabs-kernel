@@ -95,7 +95,8 @@ panelSpec: [
 
         this.start();
  
-        var panel = PanelMorph.makePanedPanel(extent, this.panelSpec);
+		var panel = new lively.ide.BrowserPanel(extent);
+        PanelMorph.makePanedPanel(extent, this.panelSpec, panel);
  
         var model = this.getModel();
         var browser = this;
@@ -123,6 +124,7 @@ panelSpec: [
 		//panel.statusPane.connectModel(model.newRelay({Text: "-StatusMessage"}));
 		this.buildCommandButtons(panel);
  
+		panel.ownerWidget = this;
 	    this.panel = panel;
         return panel;
     },
@@ -263,7 +265,7 @@ selectionInPane: function(pane) {
     },
     
     childsFilteredAndAsListItems: function(node, filters) {
-    	return 	this.filterChildNodesOf(node, filters).collect(function(ea) { return ea.asListItem() });
+    	return 	this.filterChildNodesOf(node, filters || []).collect(function(ea) { return ea.asListItem() });
     },
 
     installFilter: function(filter, paneName) {
@@ -461,6 +463,20 @@ onPane3ContentUpdate: function(items, source) {
 	},
 
 
+
+});
+PanelMorph.subclass('lively.ide.BrowserPanel', {
+
+	documentation: 'Hack for deserializing my browser widget',
+
+	onDeserialize: function($super) {
+$super()
+	(function delayedDeserialize(panel, widget) {
+		panel.owner.targetMorph = panel.owner.addMorph(widget.buildView(panel.getExtent()));
+		panel.owner.targetMorph.setPosition(panel.getPosition());
+		panel.remove();
+	})(this, new this.ownerWidget.constructor());
+    },
 
 });
  
@@ -715,7 +731,7 @@ initialize: function($super, optWorldProxy) {
 	$super();
 	this.worldProxy = optWorldProxy;
 	this.changeSet = (optWorldProxy && optWorldProxy.getChangeSet()) ||
-		ChangeSet.fromWorld(WorldMorph.current());
+		ChangeSet.current();
 	this.evaluate = true;
 },
 
@@ -796,7 +812,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 			  }.bind(this))
 			}
 		};
-		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
+		nodes.push(ChangeSet.current().asNode(this.browser));
 		this._childNodes = nodes;
 		return nodes;
 	},
@@ -816,7 +832,7 @@ ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
 		if (!this.worldsWereFetched)
 			this.updateWithWorlds();
 		var nodes = [];
-		nodes.push(ChangeSet.fromWorld(WorldMorph.current()).asNode(this.browser));
+		nodes.push(ChangeSet.current().asNode(this.browser));
 		var proxies = this.target.getWorldProxies().select(function(ea) {
 			return ea.localName().endsWith('xhtml')
 		});
