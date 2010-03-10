@@ -2750,7 +2750,9 @@ Morph.addMethods({
 
 	showMorphMenu: function(evt) {
 		var menu = this.morphMenu(evt);
-		menu.openIn(this.world(), evt.point(), false, Object.inspect(this).truncate()); 
+		var menuCaption = this.getName() ? this.getName() + ' - ' : '';
+		menuCaption += Object.inspect(this).truncate();
+		menu.openIn(this.world(), evt.point(), false, menuCaption); 
 	},
 
 	morphMenu: function(evt) {
