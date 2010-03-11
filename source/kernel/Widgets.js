@@ -1787,9 +1787,6 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 	setFilter: function(regexp) {
 		this.filter = regexp;
 		this.updateList(this.itemList);
-		this.selectLineAt(this.selectedLineNo, false);
-		//var newList = this.applyFilter(this.itemList);
-		//this.updateList(newList);
 	},
 	clearFilter: function() {
 		this.setFilter(this.defaultFilter)
@@ -1798,6 +1795,9 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 		return items.select(function(item) {
 			return this.filter.test(item.string);
 		}, this);
+	},
+	filteredItemList: function() {
+		return this.applyFilter(this.itemList);
 	},
 	generateSubmorphs: function($super, itemList) {
 		$super(this.applyFilter(this.itemList))
@@ -1850,7 +1850,7 @@ DragnDropListMorph.subclass('FilterableListMorph', {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill();
             item.setFill(TextSelectionMorph.prototype.style.fill);
-            selectionContent = /*****/this.applyFilter(this.itemList)/*changed for filter*/[lineNo];
+            selectionContent = /*****/this.filteredItemList()/*changed for filter*/[lineNo];
             if (selectionContent.isListItem) {
 				selectionContent = selectionContent.value;
 			}
@@ -1866,7 +1866,7 @@ DragnDropListMorph.subclass('FilterableListMorph', {
         if (!Object.isString(selection)) {
             var item = this.itemList.detect(function(ea) { return ea.value === selection });
             if (item)
-                this.selectLineAt(/*****/this.applyFilter(this.itemList)/*changed for filter*/.indexOf(item));
+                this.selectLineAt(/*****/this.filteredItemList()/*changed for filter*/.indexOf(item));
             return
         }
         $super(selection);
