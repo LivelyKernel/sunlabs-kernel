@@ -1021,6 +1021,12 @@ BoxMorph.subclass('TextMorph', {
 		return false
 	}, 
 	
+	remove: function($super) {
+		if (this.world() && this.world().firstHand().keyboardFocus === this)
+			this.relinquishKeyboardFocus(this.world().firstHand());
+		return $super();
+	},
+	
 	bounds: function($super, ignoreTransients, hasBeenRendered) {
 		// tag: newText
 		if (this.fullBounds != null) return this.fullBounds;
@@ -2130,7 +2136,7 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	doFind: function() {
-		this.world().prompt("Enter the text you wish to find...", 
+		this.world() && this.world().prompt("Enter the text you wish to find...", 
 			function(response) {
 				return this.searchForFind(response, this.selectionRange[1]);
 			}.bind(this));

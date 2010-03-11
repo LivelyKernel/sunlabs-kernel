@@ -3278,21 +3278,21 @@ Dialog.subclass('PromptDialog', {
         return view;
     },
 
-    onInputUpdate: Functions.Empty, // shouldn't there be a better way?
+    onInputUpdate: function(input) { this.confirmed(true) },
 
     cancelled: function(value) {
         if (value == false) return;
         this.removeTopLevel();
-	this.setResult(false);
+		this.setResult(false);
     },
     
     confirmed: function(value) {
         if (value == false) return;
         this.removeTopLevel();
-	this.setResult(true);
+		this.setResult(true);
     },
 
-    buildView: function(extent, model) {
+	buildView: function(extent, model) {
         var panel = new PanelMorph(extent);
         this.panel = panel;
         panel.linkToStyles(["panel"]);
@@ -3304,12 +3304,11 @@ Dialog.subclass('PromptDialog', {
         r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
 
         panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
-        panel.inputLine.autoAccept = true;
-	
+
         panel.inputLine.connectModel({model: this, getText: "getInput", setText: "setInput"});
 	// FIXME is this necessary
 	if (this.getInput()) panel.inputLine.updateTextString(this.getInput());
-	
+
         var indent = extent.x - 2*70 - 3*this.inset;
         r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
         var okButton = panel.addMorph(new ButtonMorph(r)).setLabel("OK");
@@ -3319,7 +3318,8 @@ Dialog.subclass('PromptDialog', {
         var cancelButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
         cancelButton.connectModel({model: this, setValue: "cancelled"});
         return panel;
-    }
+    },
+
 });
 
 PromptDialog.test = function() {
