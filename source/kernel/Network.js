@@ -1022,7 +1022,12 @@ Object.extend(FileDirectory, {
 		url = new URL(url);
 		var dir = new FileDirectory(url.getDirectory());
 		return dir.fileContent(url.filename());
-	}
+	},
+	setContent: function(url, content) {
+		url = new URL(url);
+		var dir = new FileDirectory(url.getDirectory());
+		return dir.writeFileNamed(url.filename(), content || '');
+	},
 });
 
 console.log('loaded Network.js');
