@@ -3288,6 +3288,8 @@ Dialog.subclass('PromptDialog', {
     
     confirmed: function(value) {
         if (value == false) return;
+		if (this.getInput() != this.panel.inputLine.textString)
+			this.panel.inputLine.doSave();
         this.removeTopLevel();
 		this.setResult(true);
     },

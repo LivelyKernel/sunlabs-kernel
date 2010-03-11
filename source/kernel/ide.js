@@ -62,8 +62,8 @@ panelSpec: [
     
     initialize: function($super) { 
         $super();
-        // create empty onUpdate functions
         var panes = this.allPaneNames;
+        // create empty onUpdate functions
         panes.forEach(function(ea) {
             this['on' + ea + 'MenuUpdate'] = Functions.Null;
 			this['on' + ea + 'FiltersUpdate'] = Functions.Null;
@@ -298,7 +298,7 @@ selectionInPane: function(pane) {
 	
     onPane1SelectionUpdate: function(node) {
 	
-		this.panel['Pane2'] && this.panel['Pane2'].innerMorph().clearFilter(); // FIXME
+		this.panel['Pane2'] && this.panel['Pane2'].innerMorph().clearFilter(); // FIXME, lis filter, not a browser filter!
 		
         this.setPane2Selection(null, true);
         this.setPane2Content([this.emptyText]);
@@ -319,7 +319,7 @@ selectionInPane: function(pane) {
  
     onPane2SelectionUpdate: function(node) {
 	
-		this.panel['Pane3'] && this.panel['Pane3'].innerMorph().clearFilter(); // FIXME
+		this.panel['Pane3'] && this.panel['Pane3'].innerMorph().clearFilter(); // FIXME, lis filter, not a browser filter!
 	
         this.setPane3Selection(null);
         this.setPane3Content([this.emptyText]);        
