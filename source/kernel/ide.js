@@ -297,6 +297,9 @@ selectionInPane: function(pane) {
 	},
 	
     onPane1SelectionUpdate: function(node) {
+	
+		this.panel['Pane2'].innerMorph().clearFilter(); // FIXME
+		
         this.setPane2Selection(null, true);
         this.setPane2Content([this.emptyText]);
         if (!node) {
@@ -315,6 +318,9 @@ selectionInPane: function(pane) {
     },
  
     onPane2SelectionUpdate: function(node) {
+	
+		this.panel['Pane3'].innerMorph().clearFilter(); // FIXME
+	
         this.setPane3Selection(null);
         this.setPane3Content([this.emptyText]);        
         if (!node) {

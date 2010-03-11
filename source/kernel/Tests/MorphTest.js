@@ -86,9 +86,9 @@ TestCase.subclass('TextListMorphTest', {
 		var firstY = this.morph.submorphs[0].getPosition().y;
 		this.morph.appendList(["4","5","6"]);
 		this.assertEqual(this.morph.itemList.length, 4);
-		this.assertEqual(this.morph.submorphs[0].getPosition().y, firstY, "the layout did not get updated");
-
-
+		var resultPosY = Math.round(this.morph.submorphs[0].getPosition().y*100)/100
+		var roundedFirstY = Math.round(firstY*100)/100
+		this.assertEqual(resultPosY, roundedFirstY, "the layout did not get updated");
 	},
 
 
@@ -148,6 +148,24 @@ TestCase.subclass('ListMorphTest', {
         this.assertEqual(this.list.submorphs.length, 2, "wrong number of submorphs");
         this.assertEqual(this.list.submorphs.first().textString, "Hello", "wrong display of object");
     },
+
+});
+TestCase.subclass('FilterableListMorphTest', {
+
+test01FilterDoesNotModifyItems: function() {
+	var items = [{isListItem: true, string: 'a', value: 1},
+		{isListItem: true, string: 'b', value: 2},
+		{isListItem: true, string: 'c', value: 3}];
+	var list = new FilterableListMorph(new Rectangle(0,0,100,300), items);
+	this.assertEqual(3, list.submorphs.length);
+	this.assertEqual(3, list.itemList.length);
+	list.setFilter(/a|c/);
+	this.assertEqual(2, list.submorphs.length);
+	this.assertEqual(3, list.itemList.length);
+	list.setFilter(/.*/);
+	this.assertEqual(3, list.submorphs.length);
+	this.assertEqual(3, list.itemList.length);
+},
 
 });
 

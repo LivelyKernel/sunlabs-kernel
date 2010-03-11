@@ -1776,6 +1776,104 @@ Morph.addMethods({
     
 });
 
+DragnDropListMorph.subclass('FilterableListMorph', {
+	defaultFilter: /.*/i,
+	filter: /.*/i,
+	initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
+        $super(initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate);
+		this.clearFilter();
+    },
+	getFilter: function() { return this.filter },
+	setFilter: function(regexp) {
+		this.filter = regexp;
+		this.updateList(this.itemList);
+		this.selectLineAt(this.selectedLineNo, false);
+		//var newList = this.applyFilter(this.itemList);
+		//this.updateList(newList);
+	},
+	clearFilter: function() {
+		this.setFilter(this.defaultFilter)
+	},
+	applyFilter: function(items) {
+		return items.select(function(item) {
+			return this.filter.test(item.string);
+		}, this);
+	},
+	generateSubmorphs: function($super, itemList) {
+		$super(this.applyFilter(this.itemList))
+	},
+	onKeyDown: function($super, evt) {
+		if ($super(evt)) return true;
+		if (evt.isAltDown() && evt.getKeyChar() == 'F') {
+			this.showFilterDialog(evt);
+			evt.stop();
+			return true;
+		};
+		return false
+	},
+	showFilterDialog: function(evt) {
+		var w = this.world();
+		var regexString = this.filter.toString();
+		regexString = regexString.substring(1, regexString.length-2);
+		var acceptRegex = function(input) {
+			if (!input) input = '.*';
+			var evalString = '/' + input + '/i';
+			try {
+				var result = eval(evalString);
+				if (result.constructor != RegExp) return;
+				this.setFilter(result);
+			} catch(e) { console.log(e) }
+		}.bind(this);
+
+		w.prompt('Edit Filter', acceptRegex, regexString);
+	},
+	morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
+		// force to get the menu
+		if (evt.isRightMouseButtonDown()) return this;
+		return $super(evt, droppingMorph, checkForDnD);
+	},
+	morphMenu: function($super, evt) {
+		var menu = $super(evt);
+		menu.addItem(['set menu filter...', this.showFilterDialog], 0);
+		return menu;
+	},
+	// FIXME cleanup the two methods below
+	selectLineAt: function(lineNo, shouldUpdateModel) {  
+        if (this.selectedLineNo in this.submorphs) { 
+            this.submorphs[this.selectedLineNo].setFill(this.savedFill);
+        }
+
+        this.selectedLineNo = lineNo;
+
+        var selectionContent = null; 
+        if (lineNo in this.submorphs) {
+            var item = this.submorphs[lineNo];
+            this.savedFill = item.getFill();
+            item.setFill(TextSelectionMorph.prototype.style.fill);
+            selectionContent = /*****/this.applyFilter(this.itemList)/*changed for filter*/[lineNo];
+            if (selectionContent.isListItem) {
+				selectionContent = selectionContent.value;
+			}
+            this.scrollItemIntoView(item);
+        }
+        shouldUpdateModel && this.setSelection(selectionContent, true);
+    },
+    onSelectionUpdate: function($super, selection) {
+        if (!selection) {
+            this.selectLineAt(-1);
+            return;
+        }
+        if (!Object.isString(selection)) {
+            var item = this.itemList.detect(function(ea) { return ea.value === selection });
+            if (item)
+                this.selectLineAt(/*****/this.applyFilter(this.itemList)/*changed for filter*/.indexOf(item));
+            return
+        }
+        $super(selection);
+    },
+	
+});
+
 PseudoMorph.subclass('MenuItem', {
     
     initialize: function($super, name, closureOrMorph, selectorOrClosureArg, selectorArg) {
@@ -2582,7 +2680,8 @@ BoxMorph.subclass("ScrollPane", {
         }
 		if (this.scrollBar)
         	this.getScrollBar().setBounds(barBnds);
-    }
+    },
+
 });
 
 Global.newListPane = function(initialBounds) {
@@ -2598,7 +2697,7 @@ Global.newRealListPane = function(initialBounds, suppressSelectionOnUpdate) {
 };
 
 Global.newDragnDropListPane = function(initialBounds, suppressSelectionOnUpdate) {
-    return new ScrollPane(new DragnDropListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
+    return new ScrollPane(new FilterableListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
 };
 
 Global.newTextPane = function(initialBounds, defaultText) {
