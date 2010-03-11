@@ -2007,6 +2007,13 @@ BoxMorph.subclass('TextMorph', {
 					evt.stop(); // do not use for browser navigation
 					return true;
 			}
+			case Event.KEY_DELETE: {	// Delete deletes current selection or current character
+				if (this.hasNullSelection()) this.selectionRange[1] = Math.min(this.textString.length, this.selectionRange[1]+1);
+					this.replaceSelectionfromKeyboard("");
+				if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
+				evt.stop(); // do not use for browser navigation
+				return true;
+			}			
 			case Event.KEY_RETURN: {
 				this.replaceSelectionfromKeyboard("\n");
 				evt.stop();
