@@ -1384,6 +1384,19 @@ saveSource: function(newSource) {
         return true;
     },
 
+	menuSpec: function($super) {
+		var spec = $super();
+		var n = this;
+		var t = n.target;
+		spec.unshift(['set name', function() {
+			WorldMorph.current().prompt(
+				'Set doit name',
+				function(input) { t.setName(input);	n.signalChange(); },
+				t.getName())
+ 			}]);
+		return spec;
+	},
+
 });
 ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
 
@@ -1406,7 +1419,6 @@ childNodes: function($super) {
     },
     
     asString: function() {
-	x=this.target;
 		return this.worldProxy.localName() + (this.target == null ? ' (not loaded)' :  '');
 	},
 buttonSpecs: function() { return [] },
