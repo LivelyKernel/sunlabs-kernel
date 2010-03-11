@@ -95,7 +95,7 @@ Object.extend(Function.prototype, {
 	})
 });
 
-var lookupLayeredFunctionForObject = function(self, layer, obj, function_name, methodType, n) {
+var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType, n) {
 	if (layer) {
 		// we have to look for layers defintions for self, self.prototype, ... there may be layered methods 
 		// in a subclass of "obj"			
@@ -150,7 +150,7 @@ var executeWithLayers = function Layers$executeWithLayers(base_function, self, l
 	return base_function.apply(self, args);
 };
 
-Global.makeFunctionLayerAware = function(base_obj, function_name) {
+Global.makeFunctionLayerAware = function Layers$makeFunctionLayerAware(base_obj, function_name) {
 	if (!base_obj) throw new Error("can't layer an non existent object");
 
 	var base_function = base_obj[function_name];
@@ -236,7 +236,7 @@ var object_id_counter = 0; // hack, to work around absence of identity dictionar
 // because working with objects is a serialization problem in itself, perhaps we should restrict ourself in working with classes
 // So classes have names and names can be used as keys in dictionaries :-)
 
-Global.ensurePartialLayer = function(layer, object) {
+Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 	log("ensurePartialLayer(" + layer + ", " +object+ ")")
 	if (!layer)
 		throw new Error("in ensurePartialLayer: layer is nil")
@@ -259,6 +259,7 @@ Global.ensurePartialLayer = function(layer, object) {
 
 Global.layerMethod = function(layer, object,  property, func) {
 	ensurePartialLayer(layer, object)[property] = func;
+	func.displayName = property;
 	makeFunctionLayerAware(object, property);
 };
 
@@ -507,7 +508,7 @@ LayerableObjectTrait = {
 			throw new Error("cycle in getActivatedLayers")
 		};
 		optCallerList.push(this);
-		this.lookupLayersIn.each(function(ea){
+		this.lookupLayersIn.each(function Layers$getActivatedLayers$lookupLayersIn(ea){
 			if (self[ea] && self[ea].getActivatedLayers) {
 				var parentLayers = self[ea].getActivatedLayers(optCallerList).reject(
 					function(ea){return layers.include(ea)});
