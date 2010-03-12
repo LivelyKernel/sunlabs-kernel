@@ -24,8 +24,7 @@
 /**
  * Main.js.  System startup and demo loading.
  */
-// window.onload = function () {
-function main() {
+window.onload = function main() {
 using(lively.lang.Execution).run(function(exec) {
 
 //Note all demo set-up flags have been moved to defaultconfig.js
@@ -554,4 +553,4 @@ main.logCompletion("main").delay(Config.mainDelay);
 }.logCompletion("Main.js"));
 };
 
-window.addEventListener("DOMContentLoaded", main, false);
+// window.addEventListener("DOMContentLoaded", main, false);
