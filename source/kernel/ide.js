@@ -207,7 +207,7 @@ panelSpec: [
     
 	mySourceControl: function() {
 		var ctrl = lively.Tools.SourceControl;
-		if (!ctrl) throw dbgOn(new Error('Browser has no SourceControl!'));
+		if (!ctrl) throw new Error('Browser has no SourceControl!');
 		return ctrl;
 	},
 
@@ -1853,7 +1853,7 @@ parseNonFile: function(source) {
 
 
 	couldNotGoForward: function(descr, specialDescr) {
-		dbgOn(true);
+		//dbgOn(true);
 		console.warn('Could not go forward before line ' + this.findLineNo(this.lines, this.ptr));
 		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1, this.fileName);
 		var lastAdded = this.changeList.last();

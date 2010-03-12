@@ -409,7 +409,15 @@ var NodeFactory = {
 
     createCDATA: function(string) {
 	return Global.document.createCDATASection(string);
-    }
+    },
+
+	CDATAType: function() {
+		return Global.document.CDATA_SECTION_NODE;
+	},
+	
+	TextType: function() {
+		return Global.document.TEXT_NODE;
+	}
 
 
 };

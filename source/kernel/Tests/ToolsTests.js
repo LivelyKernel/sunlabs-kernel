@@ -1278,7 +1278,6 @@ testEquals: function() {
 	},
 testSetXMLElement: function() {
 	// ensure that ne is placed at the same pos as old
-	dbgOn(true);
 	var classChange = ClassChange.create('TestClass', 'Object');
 	var proto1 = new ProtoChange.create('test1', '123');
 	var proto2 = new ProtoChange.create('test2', '456');
@@ -1294,6 +1293,16 @@ testSetNewName: function() {
 		change.setName('myDoit');
 		this.assertEqual(change.getName(), 'myDoit');
 },
+testChangeHasCDATASection: function() {
+	var name = 'testChangeHasCDATASection_doit';
+	var source = '4+1';
+	var doit = DoitChange.create(source, name);
+	var element = doit.getXMLElement();
+	this.assertEqual(source, element.textContent);
+	this.assertEqual(1, element.childNodes.length);
+	this.assertEqual(element.CDATA_SECTION_NODE, element.childNodes[0].nodeType, 'node type');
+},
+
 
 
 	

@@ -78,8 +78,20 @@ setName: function(newName) {
 		return this.xmlElement.textContent;
 	},
 setDefinition: function(src) {
-	this.getXMLElement().textContent = src;
+	var cdata = this.getOrCreateCDATANode();
+	cdata.data = src;
 },
+getOrCreateCDATANode: function() {
+	var e = this.getXMLElement();
+	var cdataType = e.CDATA_SECTION_NODE;
+	for (var i = 0; i < e.childNodes.length; i++)
+		if (e.childNodes[i].nodeType == cdataType)
+			return e.childNodes[i]
+	var cdata = NodeFactory.createCDATA();
+	this.getXMLElement().appendChild(cdata);
+	return cdata;
+},
+
 disableAutomaticEval: function() {
 	this.getXMLElement().setAttributeNS(null, 'automaticEval', 'false');
 },
@@ -258,10 +270,7 @@ findOrCreateDefNodeOfWorld: function(doc) {
 
 addOrChangeElementNamed: function(name, source) {
 	var prev = this.subElements().detect(function(ea) { ea.getName() == name});
-	if (prev) {
-		prev.setDefinition(source);
-		return;
-	}
+	if (prev) { prev.setDefinition(source); return }
 	this.addChange(DoitChange.create(source, name));
 },
 
@@ -341,7 +350,7 @@ Change.subclass('ClassChange', {
 	evaluate: function() {
 		var superClassName = this.getSuperclassName();
 		if (!Class.forName(superClassName))
-			throw dbgOn(new Error('Could not find class ' + superClassName));
+			throw new Error('Could not find class ' + superClassName);
 		var className = this.getName();
 		if (Class.forName(className))
 			console.warn('Class' + klass + 'already defined! Evaluating class change regardless');
@@ -369,7 +378,9 @@ Object.extend(ClassChange, {
 		var element = LivelyNS.create('class');
 		element.setAttributeNS(null, 'name', name);
 		element.setAttributeNS(null, 'super', superClassName);
-		return new ClassChange(element);
+		var change = new ClassChange(element);
+		change.enableAutomaticEval();
+		return change;
 	},
 	
 });
@@ -381,7 +392,7 @@ Change.subclass('ProtoChange', {
 	evaluate: function() {
 		var className = this.getClassName();
 		var klass = Class.forName(className);
-		if (!klass) throw dbgOn(new Error('Could not find class of proto change' + this.getName()));
+		if (!klass) new Error('Could not find class of proto change' + this.getName());
 		var src = Strings.format('%s.addMethods({%s: %s})', className, this.getName(), this.getDefinition());
 		eval(src);
 		return klass.prototype[this.getName()];
@@ -407,8 +418,10 @@ Object.extend(ProtoChange, {
 		var element = LivelyNS.create('proto');
 		element.setAttributeNS(null, 'name', name);
 		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
-		element.textContent = source;
-		return new ProtoChange(element);
+		var change = new ProtoChange(element);
+		change.setDefinition(source || '');
+		change.enableAutomaticEval();
+		return change;
 	},
 	
 });
@@ -440,8 +453,10 @@ Object.extend(StaticChange, {
 		var element = LivelyNS.create('static');
 		element.setAttributeNS(null, 'name', name);
 		if (optClassName) element.setAttributeNS(null, 'className', optClassName);
-		element.textContent = source;
-		return new ProtoChange(element);
+		var change = new ProtoChange(element);
+		change.setDefinition(source);
+		change.enableAutomaticEval();
+		return change;
 	},
 
 });
@@ -470,8 +485,10 @@ Object.extend(DoitChange, {
 	create: function(source, optName) {
 		var element = LivelyNS.create('doit');
 		element.setAttributeNS(null, 'name', optName || 'aDoit');
-		element.textContent = source;
-		return new DoitChange(element);
+		var doit = new DoitChange(element);
+		doit.setDefinition(source || '');
+		doit.enableAutomaticEval();
+		return doit;
 	},
 
 });
@@ -485,9 +502,11 @@ Object.subclass('AnotherCodeMarkupParser', {
 	changeClasses: Change.allSubclasses().without(ChangeSet),
 
 	createChange: function(xmlElement) {
+		if (xmlElement.nodeType == NodeFactory.TextType() || xmlElement.nodeType == NodeFactory.CDATAType())
+			return null;
 		var klass = this.changeClasses.detect(function(ea) { return ea.isResponsibleFor(xmlElement) });
 		//if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
-		if (!klass) { console.warn(
+		if (!klass) { debugger; console.warn(
 				'Found no Change class for ' + Exporter.stringify(xmlElement).replace(/\n|\r/, ' ') +
 				'tag name: ' + xmlElement.tagName);
 			return null;
