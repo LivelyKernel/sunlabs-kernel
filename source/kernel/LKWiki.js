@@ -487,10 +487,12 @@ PanelMorph.subclass('LatestWikiChangesListPanel', {
 
 	documentation: 'Just a hack for deserializing my widget',
 
+	urlString: URL.source.getDirectory().toString(),
+	
 	onDeserialize: function($super) {
 	//	$super();
         // FIXME
-		var widget = new LatestWikiChangesList(URL.source.getDirectory())
+		var widget = new LatestWikiChangesList(new URL(this.urlString));
         this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
         this.owner.targetMorph.setPosition(this.getPosition());
         this.remove();
@@ -539,6 +541,8 @@ Widget.subclass('LatestWikiChangesList', {
 		m = panel.versionList;
 		m.connectModel(model.newRelay({List: "-VersionList", Selection: "+VersionSelection"}));
 
+		panel.urlString = this.getURL().toString(); // FIXME For serialization
+		
 		return panel;
 	},
 
@@ -553,20 +557,26 @@ Widget.subclass('LatestWikiChangesList', {
 	},
 
 	searchForNewestFiles: function() {
-		this.notify('Please wait, fetching files');
-		var webfile = new lively.storage.WebFile(this.getModel().newRelay({CollectionItems: "+DirectoryContent", RootNode: "-URL"}));
-		webfile.fetchContent(this.getURL());
+		this.notify('Please wait, fetching data');
+		var request = new NetRequest({model: this,  setResponseXML: 'onDirectoryContentUpdate'})
+		request.propfind(this.getURL().toString(), 'infinity')
 	},
 	
-	onDirectoryContentUpdate: function(colItems) {
-		this.notify('Please wait, fetching version infos');
+	onDirectoryContentUpdate: function(propfindXML) {
+		this.notify('Please wait, extracting version infos');
+
+		// extract
+		var rawNodes = new Query("/D:multistatus/D:response").findAll(propfindXML.documentElement);
+		var baseUrl = this.getURL();
+		var colItems = rawNodes.map(function(rawNode) { return new lively.storage.CollectionItem(rawNode, baseUrl) });
+
+		// filter and sort
 		colItems = colItems.select(function(ea) { return ea.shortName().match(this.getFilter()) }, this);
-		var t = new Date();
-		var list = colItems
+		var	list = colItems
 			.collect(function(ea) { return this.createListItemFor(ea) }, this)
-			.sort(function(a,b) { return b.value.versionInfo.rev - a.value.versionInfo.rev });
-		list = list.slice(0, this.maxListLength);
-		console.log('time: ' + (new Date()-t)/1000 + 's');
+			.sort(function(a,b) { return b.value.versionInfo.rev - a.value.versionInfo.rev })
+			.slice(0, this.maxListLength);
+
 		this.setVersionList(list);
 	},
 	
@@ -578,11 +588,11 @@ Widget.subclass('LatestWikiChangesList', {
 			value: {
 				colItem: colItem,
 				versionInfo: versionInfo,
-				urlString: this.getURL().toString() + colItem.shortName()
+				urlString: colItem.toURL().toString()
 			}
 		};
 	},
-
+	
 	refresh: function() {
 		this.searchForNewestFiles();
 	},
