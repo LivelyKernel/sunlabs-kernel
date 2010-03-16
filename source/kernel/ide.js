@@ -1002,7 +1002,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		menu.unshift(['add new file', function() {
 			var world = WorldMorph.current();
 			var createFileIfAbsent = function(filename) {
-				var dir = new FileDirectory(URL.source.getDirectory());
+				var dir = new FileDirectory(tools.SourceControl.codeBaseURL);
 				if (dir.fileOrDirectoryExists(filename)) {
 					world.notify('File ' + filename + ' already exists!');
 				} else {
@@ -1014,7 +1014,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 			};
 			world.prompt('Enter filename', createFileIfAbsent)}]);
 		menu.unshift(['remove', function() {
-			new FileDirectory(URL.source.getDirectory()).deleteFileNamed(node.moduleName);
+			new FileDirectory(tools.SourceControl.codeBaseURL).deleteFileNamed(node.moduleName);
 			browser.sourceDatabase().update();
 			browser.allChanged()}]);
 	return menu;
@@ -2057,7 +2057,7 @@ CodeParser.subclass('JsParser', {
 Object.extend(JsParser, {
 
     parseAndShowFileNamed: function(fileName) {
-        var chgList = new JsParser().parseFileFromUrl(URL.source.withFilename(fileName));
+        var chgList = new JsParser().parseFileFromUrl(tools.SourceControl.codeBaseURL.withFilename(fileName));
         new ChangeList(fileName, null, chgList).openIn(WorldMorph.current()); 
     }
     
@@ -2166,7 +2166,7 @@ putSourceCodeForFile: function(filename, content) {
 	content = content.replace(/\r/gi, '\n');  // change all CRs to LFs
 	console.log("Saving " + filename + "...");
 	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"})
-		.put(URL.source.withFilename(filename), content);
+		.put(this.codeBaseURL.withFilename(filename), content);
 	this.cachedFullText[filename] = content;
 	console.log("... " + content.length + " bytes saved.");
 },

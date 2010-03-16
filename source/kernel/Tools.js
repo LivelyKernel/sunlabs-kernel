@@ -1725,6 +1725,8 @@ ChangeList.subclass('SourceDatabase', {
     // want in a typical development session.  We may soon want more control
     // over this and a reasonable UI for such control.
 
+	codeBaseURL: new URL(Config.codeBase) || URL.source.getDirectory(),
+	
     initialize: function($super) {
         this.methodDicts = {};
         this.functionDefs = {};
@@ -1805,7 +1807,7 @@ ChangeList.subclass('SourceDatabase', {
         var editSpec = {repStart: startIndex, repStop: stopIndex, repLength: newString.length};
         console.log("Saving " + fileName + "...");
         new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"}
-                ).put(URL.source.withFilename(fileName), newFileString);
+                ).put(this.codeBaseURL.withFilename(fileName), newFileString);
         // Update cache contents and edit history
         this.cachedFullText[fileName] = newFileString;
         this.editHistory[fileName].push(editSpec);
@@ -1902,12 +1904,14 @@ ChangeList.subclass('SourceDatabase', {
 	// rk: made async optional
 	// convenient helper method
 	var actionWrapper = function(fileString) {
+		if (request.getStatus() >= 400)
+			throw dbgOn(new Error('Cannot read ' + fileName));
 	    action.call(this, fileString);
 	}.bind(this);
 	
 	var request = new NetRequest({model: {callback: actionWrapper}, setResponseText: 'callback'});
 	if (beSync) request.beSync();
-        request.get(URL.source.withFilename(fileName));
+        request.get(this.codeBaseURL.withFilename(fileName));
     },
     
     scanLKFiles: function(beSync) {
@@ -1920,7 +1924,7 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     interestingLKFileNames: function() {
-		var url = new URL(Config.codeBase) || URL.source;
+		var url = this.codeBaseURL;
         var kernelFileNames = new FileDirectory(url).filenames();
         var testFileNames = new FileDirectory(url.withFilename('Tests/')).filenames();
 		testFileNames = testFileNames.collect(function(ea) { return 'Tests/' + ea });
@@ -2115,7 +2119,7 @@ BasicCodeMarkupParser.subclass('CodeMarkupParser', ViewTrait, {
 
 Object.extend(CodeMarkupParser, {
     load: function(filename, callback) {
-	var parser = new CodeMarkupParser(URL.source.withFilename(filename));
+	var parser = new CodeMarkupParser(SourceDatabase.prototype.codeBaseURL.withFilename(filename));
 	if (callback) parser.onComplete = callback;
 	parser.parse();
     }
