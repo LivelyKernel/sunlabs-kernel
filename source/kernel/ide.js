@@ -2199,8 +2199,8 @@ putSourceCodeForFile: function(filename, content) {
     
     preLoadFileNames: function($super) {
 		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
-    return [ 'Tests/ToolsTests.js', 'test.js', 'Tests/MorphTest.js']
-    //return [];
+    // return [ 'Tests/ToolsTests.js', 'test.js', 'Tests/MorphTest.js']
+		return [];
     },
 
 	allFiles: function() {
