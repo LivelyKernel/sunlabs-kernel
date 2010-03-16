@@ -2498,7 +2498,7 @@ TextMorph.addMethods({
 		console.log("status: " + msg)
 		if (!this._statusMorph) {
 			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
-			this._statusMorph.applyStyle({borderWidth: 0})
+			this._statusMorph.applyStyle({borderWidth: 0, fillOpacity: 1})
 		}
 		var statusMorph = this._statusMorph;
 		statusMorph.textString = msg;

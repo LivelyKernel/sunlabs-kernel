@@ -460,23 +460,20 @@ lively.data.Wrapper.addMethods({
 	
 });
 
+lively.data.Wrapper.addMethods({
+	collectAllUsedFills: function(result) {
+		// do nothing
+		return result || [];
+	},
+});
+
 Object.extend(lively.data.Wrapper, {
 
-	collectFill: function(morph, result) {
-		var fill = morph.getFill();
-		if (fill instanceof lively.paint.Gradient)
-			result.push(fill);
-		morph.submorphs.each(function(ea) {
-			this.collectFill(ea, result)
-		}, this);
-		return result
-	},
-	
 	collectSystemDictionaryGarbage: function(rootMorph) {
 		"lively.data.Wrapper.collectSystemDictionaryGarbage()"
 		if (!rootMorph)
 			rootMorph = WorldMorph.current();
-		var usedFillIds = this.collectFill(rootMorph,[]).collect(function(ea){return ea.id()});
+		var usedFillIds = rootMorph.collectAllUsedFills([]).collect(function(ea){return ea.id()});
 		$A(new lively.data.Wrapper().dictionary().childNodes).each(function(ea) {
 			// console.log("GC considering " + ea)
 			if(['linearGradient', 'radialGradient'].include(ea.tagName) && !usedFillIds.include(ea.id)) {

@@ -1652,6 +1652,24 @@ Object.extend(Morph, {
 
 });
 
+
+// Fill Garbage Collection on Serialization...
+Morph.addMethods({
+	collectAllUsedFills: function($super, result) {
+		result = $super(result);
+		var fill = this.getFill();
+		if (fill instanceof lively.paint.Gradient)
+			result.push(fill);
+		if (this.submorphs) {
+			this.submorphs.each(function(ea) {
+				ea.collectAllUsedFills(result)
+			}, this);
+		}
+		// do nothing
+		return result
+	}
+});
+
 // Functions for manipulating the visual attributes of Morphs
 Morph.addMethods({
 
@@ -4066,6 +4084,16 @@ PasteUpMorph.subclass("WorldMorph", {
         return this;
     },
 
+	collectAllUsedFills: function($super, usedFills) {
+		usedFills = $super(usedFills);
+		Properties.forEachOwn(this.displayTheme,  function(ea) {
+			var style = this[ea]
+			if (style && (style.fill  instanceof lively.paint.Gradient)) {
+				usedFills.push(style.fill);
+			} 
+		}.bind(this.displayTheme))
+		return usedFills
+	},
     
     remove: function() {
         if (!this.rawNode.parentNode) return null;  // already removed
