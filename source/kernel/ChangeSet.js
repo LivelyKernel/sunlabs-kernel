@@ -198,7 +198,7 @@ Change.subclass('ChangeSet', {
 	},
 
 	initializeFromFile: function(fileName, fileString) {
-		if (!fileString) fileString = new FileDirectory(Config.codeBase || URL.source).fileContent(fileName);
+		if (!fileString) fileString = new FileDirectory(new URL(Config.codeBase) || URL.source).fileContent(fileName);
 		var doc = new DOMParser().parseFromString(fileString, "text/xml");
 		if (!this.reconstructFrom(doc))
 			throw dbgOn(new Error('Couldn\'t create ChangeSet from ' + fileName));
