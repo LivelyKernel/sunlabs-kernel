@@ -1920,8 +1920,9 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     interestingLKFileNames: function() {
-        var kernelFileNames = new FileDirectory(URL.source).filenames();
-        var testFileNames = new FileDirectory(URL.source.withFilename('Tests/')).filenames();
+		var url = new URL(Config.codeBase) || URL.source;
+        var kernelFileNames = new FileDirectory(url).filenames();
+        var testFileNames = new FileDirectory(url.withFilename('Tests/')).filenames();
 		testFileNames = testFileNames.collect(function(ea) { return 'Tests/' + ea });
 		/* OMeta */
 		// var ometaFileNames = new FileDirectory(URL.source.withFilename('ometa/')).filenames();
