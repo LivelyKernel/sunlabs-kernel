@@ -552,6 +552,28 @@ dbgOn(true);
 });
 
 
+// (new TestRunner()).openIn(this.world())
+TestCase.subclass("HTMLFontCharWidthCompositionTest", {
+
+	testFontComputeExtents: function() {
+		var font = lively.Text.Font.forFamily("Helvetica", 100);
+		var boldFont = lively.Text.Font.forFamily("Helvetica", 100, 'bold')
+		var extents;
+		var boldExtents;
+		extents = font.computeExtents(font.family, font.size);
+
+		var code = "l".charCodeAt(0);
+		var charWidthOfW =  extents[code]
+		this.assertEqualState(charWidthOfW, new lively.Text.CharacterInfo(22, 115), " char width of l is wrong");
+
+		boldExtents = font.computeExtents(boldFont.family, boldFont.size, boldFont.style);
+		var boldCharWidthOfW =  boldExtents[code]
+		this.assertEqualState(boldCharWidthOfW, new lively.Text.CharacterInfo(28, 115), " char width of bold l is wrong");
+		this.assert(charWidthOfW.width < boldCharWidthOfW.width, " bold l is not wider than regular l");
+	}
+})
+
+
 // logMethod(Morph.prototype, "morphToGrabOrReceive");
 // logMethod(Morph.prototype, "onMouseOut");
 // logMethod(Morph.prototype, "onMouseOver");

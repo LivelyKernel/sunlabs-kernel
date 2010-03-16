@@ -75,15 +75,15 @@ Object.subclass('lively.Text.Font', {
         return this.family + " " + this.getSize();
     },
 
-    getCharWidth: function(charString) {
+ 	getCharWidth: function(charString) {
         var code = charString.charCodeAt(0);
-        if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
-	var w = this.extents[code] ? this.extents[code].width : 4;
+        if (!this.extents) this.extents = this.computeExtents(this.family, this.size, this.style);
+			var w = this.extents[code] ? this.extents[code].width : 4;
         if (isNaN(w)) {
             console.warn('getCharWidth: no width for ' + charString);
 	    return 4;  // don't crash
         }
-	return w;
+		return w * 1;
     },
 
     getCharHeight: function(charString) {
@@ -108,31 +108,30 @@ Object.subclass('lively.Text.Font', {
 
 });
     
-(function() {
-    var cache = {};
-    
-    Object.extend(thisModule.Font, {
-	
+
+Object.extend(thisModule.Font, {
+	fontCache: {},
 	forFamily: function(familyName, size, style) {
-            var styleKey = 'n';
+		var cache = this.fontCache
+		var styleKey = 'n';
 		if (style == 'bold') styleKey = 'b';
 		if (style == 'italic') styleKey = 'i';
 		if (style == 'bold-italic') styleKey = 'bi';
-	    var key  = familyName + ":" + size + ":" + styleKey ;
-            var entry = cache[key];
-            if (entry) return entry;
-	    try { entry = new thisModule.Font(familyName, size, style);
-                } catch(er) {
-                    console.log("%s when looking for %s:%s", er, familyName, size);
-                    return null;
-                }
-	    cache[key] = entry;
-            return entry;
-        }
-    });
+		var key  = familyName + ":" + size + ":" + styleKey ;
+		var entry = cache[key];
+		if (entry) 
+			return entry;
+		try { 
+			entry = new thisModule.Font(familyName, size, style);
+		} catch(er) {
+			console.log("%s when looking for %s:%s", er, familyName, size);
+			return null;
+		}
+		cache[key] = entry;
+		return entry;
+	}
+});
     
-})();
-
     
 if (Config.fakeFontMetrics) { 
     
@@ -164,68 +163,69 @@ if (Config.fakeFontMetrics) {
 } else if (Config.fontMetricsFromHTML)  {
     
 thisModule.Font.addMethods({
+ 	computeExtents: function (family, size, style) {
+	        var extents = [];
+	        var body = null;
+	        var doc; // walk up the window chain to find the (X)HTML context
+	        for (var win = window; win; win = win.parent) {
+	            doc = win.document;
+	            var bodies = doc.documentElement.getElementsByTagName('body');
+	            if (bodies && bodies.length > 0) {
+	                body = bodies[0];
+	                break;
+	            }
+	        }
 
-    computeExtents: function(family, size) {
-        var extents = [];
-        var body = null;
-        var doc; // walk up the window chain to find the (X)HTML context
-        for (var win = window; win; win = win.parent) {
-            doc = win.document;
-            var bodies = doc.documentElement.getElementsByTagName('body');
-            if (bodies && bodies.length > 0) {
-                body = bodies[0];
-                break;
-            }
-        }
-	
-        if (!body) return [];
+	        if (!body) return [];
 
-        function create(name) {
-            // return doc.createElement(name);
-            return doc.createElementNS(Namespace.XHTML, name);
-        }
-	
-        var d = body.appendChild(create("div"));
-	
-        d.style.kerning    = 0;
-        d.style.fontFamily = family;
-        d.style.fontSize   = size + "px";
-	
-        var xWidth = -1;
-        var xCode = 'x'.charCodeAt(0);
-        for (var i = 33; i < 255; i++) {
-            var sub = d.appendChild(create("span"));
-            sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
-            extents[i] = new thisModule.CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
-            if (i == xCode) xWidth = extents[i].width;
-        }
+	        function create(name) {
+	            // return doc.createElement(name);
+	            return doc.createElementNS(Namespace.XHTML, name);
+	        }
+			// body = document.body
+	        var d = body.appendChild(create("div"));
 
-        if (xWidth < 0) { 
-            throw new Error('x Width is ' + xWidth);
-        }
+	        d.style.kerning    = 0;
+	        d.style.fontFamily = family;
+	        d.style.fontSize   = size + "px";
+			if (style) {
+				d.style.fontWeight = style;
+			}
+	        var xWidth = -1;
+	        var xCode = 'x'.charCodeAt(0);
+	        for (var i = 33; i < 255; i++) {
+	            var sub = d.appendChild(create("span"));
+	            sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
+	            extents[i] = new lively.Text.CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
+	            if (i == xCode) xWidth = extents[i].width;
+	        }
 
-        if (d.offsetWidth == 0) {
-            console.log("timing problems, expect messed up text for font %s", this);
-        }
-	
-        // handle spaces
-        var sub = d.appendChild(create("span"));
-        sub.appendChild(doc.createTextNode('x x'));
+	        if (xWidth < 0) { 
+	            throw new Error('x Width is ' + xWidth);
+	        }
 
-        var spaceWidth = sub.offsetWidth - xWidth*2;
-        console.log("font " + this + ': space width ' + spaceWidth + ' from ' + sub.offsetWidth + ' xWidth ' + xWidth);    
+	        if (d.offsetWidth == 0) {
+	            console.log("timing problems, expect messed up text for font %s", this);
+	        }
 
-        // tjm: sanity check as Firefox seems to do this wrong with certain values
-        if (spaceWidth > 100) {    
-            extents[(' '.charCodeAt(0))] = new thisModule.CharacterInfo(2*xWidth/3, sub.offsetHeight);
-        } else {
-            extents[(' '.charCodeAt(0))] = new thisModule.CharacterInfo(spaceWidth, sub.offsetHeight);
-        }
+	        // handle spaces
+	        var sub = d.appendChild(create("span"));
+	        sub.appendChild(doc.createTextNode('x x'));
 
-        //d.removeChild(span);
-        body.removeChild(d);
-        return extents;
-    }
+	        var spaceWidth = sub.offsetWidth - xWidth*2;
+	        console.log("font " + this + ': space width ' + spaceWidth + ' from ' + sub.offsetWidth + ' xWidth ' + xWidth);    
+
+	        // tjm: sanity check as Firefox seems to do this wrong with certain values
+	        if (spaceWidth > 100) {    
+	            extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(2*xWidth/3, sub.offsetHeight);
+	        } else {
+	            extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(spaceWidth, sub.offsetHeight);
+	        }
+
+	        //d.removeChild(span);
+	        body.removeChild(d);
+	        return extents;
+	    }
 });
 } else if (Config.fontMetricsFromSVG)  {
     
