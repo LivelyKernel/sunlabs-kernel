@@ -176,7 +176,7 @@ String.prototype.toProgramString = function() {
 // C-style tempnam function
 
 function tempnam(s) { return (s ? s : "_tmpnam_") + tempnam.n++ }
-tempnam.n = 0
+tempnam.n = 0;
 
 // unique tags for objects (useful for making "hash tables")
 
