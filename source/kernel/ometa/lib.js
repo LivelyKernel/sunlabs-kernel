@@ -180,14 +180,27 @@ tempnam.n = 0
 
 // unique tags for objects (useful for making "hash tables")
 
-getTag = function(x) { return (x === null || x === undefined) ? x : x.getTag() }
-Object.prototype.getTag = (function() {
-  var numIds = 0
-  return function() { return this.hasOwnProperty("_id_") ? this._id_ : this._id_ = "R" + numIds++ }
+(function defineGetTag() {
+	var numIds = 0;
+	Global.getTag = function(x) {
+		if (x === null || x === undefined) return x;
+		switch (typeof x) {
+			case 'object': return x.hasOwnProperty("_id_") ? x._id_ : x._id_ = "R" + numIds++;
+			case 'boolean': return x ? "Btrue" : "Bfalse";
+			case 'string': return "S" + x;
+			case ' number': return "N" + x;
+		}
+		throw new Error('Cannot determine tag for object ' + x);
+	}
 })()
-Boolean.prototype.getTag = function() { return this ? "Btrue" : "Bfalse" }
-String.prototype.getTag  = function() { return "S" + this }
-Number.prototype.getTag  = function() { return "N" + this }
+// getTag = function(x) { return (x === null || x === undefined) ? x : x.getTag() }
+// Object.prototype.getTag = (function() {
+//   var numIds = 0
+//   return function() { return this.hasOwnProperty("_id_") ? this._id_ : this._id_ = "R" + numIds++ }
+// })()
+// Boolean.prototype.getTag = function() { return this ? "Btrue" : "Bfalse" }
+// String.prototype.getTag  = function() { return "S" + this }
+// Number.prototype.getTag  = function() { return "N" + this }
 
 
 
