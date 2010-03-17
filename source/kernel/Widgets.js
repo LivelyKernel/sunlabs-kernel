@@ -2530,6 +2530,7 @@ BoxMorph.subclass("ScrollPane", {
 	    	this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
         if (this.menuButton)
             this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+		this.adjustForNewBounds();
     },
 
     submorphBounds: function() {
@@ -3361,8 +3362,6 @@ Widget.subclass('ConsoleWidget', {
 		this.ans = undefined; // last computed value
 		return this;
 	},
-
-
 
 	onDeserialize: function() {
 		this.clearList();
