@@ -188,7 +188,7 @@ tempnam.n = 0
 			case 'object': return x.hasOwnProperty("_id_") ? x._id_ : x._id_ = "R" + numIds++;
 			case 'boolean': return x ? "Btrue" : "Bfalse";
 			case 'string': return "S" + x;
-			case ' number': return "N" + x;
+			case 'number': return "N" + x;
 		}
 		throw new Error('Cannot determine tag for object ' + x);
 	}

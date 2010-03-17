@@ -693,7 +693,6 @@ testExtractLinks: function() {
 	var expected = this.linksOfSampleDoc.collect(function(ea) {return ea.getURL() });
 	var sut = new WikiNetworkAnalyzer(this.repoUrl);
 	var result = sut.extractLinksFromDocument(doc);
-result.forEach(function(ea) {console.log(ea)});
 	this.assertEqual(result.length, expected.length);
 	this.assertEqualState(result, expected);
 },
