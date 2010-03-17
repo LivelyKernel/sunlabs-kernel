@@ -194,10 +194,15 @@ Object.subclass('TestSuite', {
 	},
 	
 	setTestCases: function(testCaseClasses) {
-		// this.testCases = testCaseClasses.collect(function(ea) {
-		// 	return new ea(this.result);
-		// }, this);
 		this.testCaseClasses = testCaseClasses
+	},
+	
+	testCasesFromModule: function(m) {
+		if (!m) throw new Error('testCasesFromModule: Module not defined!');
+		var testClasses = m.classes().select(function(ea) {
+			return ea.isSubclassOf(TestCase) && ea.prototype.shouldRun;
+		});
+		this.setTestCases(testClasses);
 	},
 	
 	runAll: function() {
