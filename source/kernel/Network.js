@@ -1030,4 +1030,62 @@ Object.extend(FileDirectory, {
 	},
 });
 
+
+/*  Basic upload manager for single or multiple files (Safari 4 Compatible)
+ *	adapted from Andrea Giammarchi (webreflection.blogspot.com) original version (under MIT)
+ */
+Object.sublcass("FileUploadHelper", {
+	initialize: function() {
+		this.uploadFileMaxSize = 1024000;
+	},
+	
+	sendFile: function(handler){
+		if(this.uploadFileMaxSize < handler.file.fileSize) {
+			if(Object.isFunction(handler.onerror))
+				handler.onerror();
+			return;
+		};
+
+		var xhr = new XMLHttpRequest;
+		var upload = xhr.upload;
+		for(i = 0; i < length; i++) {
+			upload[split[i]] = (function(event){
+				return  function(rpe){
+					if(Object.isFunction(handler[event]))
+						handler[event].call(handler, rpe, xhr);
+				};
+			})(split[i]);
+
+			upload.onload = function(rpe){
+				if(handler.onreadystatechange === false){
+					if(Object.isFunction(handler.onload))
+						handler.onload(rpe, xhr);
+				} else {
+					setTimeout(function(){
+						if(xhr.readyState === 4){
+							if(Object.isFunction(handler.onload))
+								handler.onload(rpe, xhr);
+						} else
+							setTimeout(arguments.callee, 15);
+					}, 15);
+				}
+			};
+			xhr.open("PUT", this.urlForFileName(handler.file.fileName) , true);
+			xhr.setRequestHeader("If-Modified-Since", "Mon, 26 Jul 1997 05:00:00 GMT");
+			xhr.setRequestHeader("Cache-Control", "no-cache");
+			xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+			xhr.setRequestHeader("X-File-Name", handler.file.fileName);
+			xhr.setRequestHeader("X-File-Size", handler.file.fileSize);
+			xhr.setRequestHeader("Content-Type", "multipart/form-data");
+			xhr.send(handler.file);
+			return  handler;
+		}
+	},
+
+	urlForFileName: function(file) {
+		return file
+	}
+});
+
+
 console.log('loaded Network.js');
