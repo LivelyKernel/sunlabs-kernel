@@ -4584,15 +4584,12 @@ Morph.subclass("ProgressBarMorph", {
 		this.bar = Morph.makeRectangle(0,0,0,0)
 		$super(new lively.scene.Rectangle(bounds));
 		this.bar.applyStyle({fill: Color.darkGray, borderWidth: pt(0,0), borderColor: null})
+		this.bar.ignoreEvents();
+		
 		this.addMorph(this.bar);
 		this.applyStyle({fill: Color.gray})
-		this.setValue(0);
+		this.setValue(0.3);
 	},
-
-	initializeTransientState: function($super) {
-        $super();
-        this.bar.ignoreEvents();
-    },
 
 	setValue: function(number){
 		this.value = number;
