@@ -4578,6 +4578,44 @@ Morph.subclass("MarkerMorph", {
 
 });
 
+Morph.subclass("ProgressBarMorph", {
+
+	initialize: function($super, bounds) {
+		this.bar = Morph.makeRectangle(0,0,0,0)
+		$super(new lively.scene.Rectangle(bounds));
+		this.bar.applyStyle({fill: Color.darkGray, borderWidth: pt(0,0), borderColor: null})
+		this.addMorph(this.bar);
+		this.applyStyle({fill: Color.gray})
+		this.setValue(0);
+	},
+
+	initializeTransientState: function($super) {
+        $super();
+        this.bar.ignoreEvents();
+    },
+
+	setValue: function(number){
+		this.value = number;
+		this.updateBar(number);
+	},
+
+	getValue: function(){
+		return this.value;
+	},
+
+	updateBar: function(number){
+		var bounds = this.shape.bounds()
+		this.bar.setPosition(pt(0,0));
+		this.bar.setExtent(pt(Math.floor(number * bounds.width), bounds.height)) 	
+	},
+
+	adjustForNewBounds: function($super) {
+        $super();
+		this.updateBar(this.getValue())
+    },
+
+})
+
 // Usable Setup of a Widget - Record - Slider
 // this demonstrates some issues to be resolved 
 Widget.makeSlider = function(bounds, range) {

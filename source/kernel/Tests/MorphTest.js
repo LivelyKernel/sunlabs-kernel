@@ -574,6 +574,32 @@ TestCase.subclass("HTMLFontCharWidthCompositionTest", {
 })
 
 
+TestCase.subclass("ProgressBarMorphTest", {
+
+	setUp: function() {
+		var morphName = "TheProgressTestMorph";
+		if($morph(morphName))
+			$morph(morphName).remove();
+		this.progress = new ProgressBarMorph(new Rectangle(0,100,100,20));
+		this.progress.name = morphName
+		// this.progress.openInWorld()
+	},
+
+	testInitialize: function() {
+		this.progress.openInWorld()
+	},
+
+	testSetValue: function() {
+		this.progress.setValue(0.5);
+		this.assertEqual(this.progress.bar.bounds().width, 50, "bar has wrong width")
+
+		this.progress.setValue(0.75);
+		this.assertEqual(this.progress.bar.bounds().width, 75, "bar has wrong width")
+	}
+})
+
+
+
 // logMethod(Morph.prototype, "morphToGrabOrReceive");
 // logMethod(Morph.prototype, "onMouseOut");
 // logMethod(Morph.prototype, "onMouseOver");

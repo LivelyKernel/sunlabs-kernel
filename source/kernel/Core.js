@@ -4671,6 +4671,7 @@ WorldMorph.addMethods({
 		return [
 			["SliderMorph", function(evt) { world.addMorph(Widget.makeSlider(evt.point().extent(pt(120, 40))))}],
 			["ButtonMorph", function(evt) { world.addMorph(new ScriptableButtonMorph(evt.point().extent(pt(70, 30))))}],
+			["ProgressBarMorph", function(evt) { world.addMorph(new ProgressBarMorph(evt.point().extent(pt(70, 30))))}],
 			["Clock", function(evt) {
 				var m = world.addMorph(new ClockMorph(evt.point(), 50));
 				m.startSteppingScripts();}],
