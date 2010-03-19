@@ -1096,7 +1096,7 @@ Object.subclass("FileUploadHelper", {
 	    handler.current = 0;
 	    if(length){
 	        handler.file = handler.files[handler.current];
-	        sendFile(handler).onload = function(rpe, xhr){
+	        this.sendFile(handler).onload = function(rpe, xhr){
 	            if(++handler.current < length){
 	                handler.sent += handler.files[handler.current - 1].fileSize;
 	                handler.file = handler.files[handler.current];
