@@ -4578,6 +4578,11 @@ WorldMorph.addMethods({
 		var time = new Date().getTime() - start;
 		this.setStatusMessage("world saved to " + optURL + " in " + time + "ms", Color.green, 3)
 	},
+	
+	windowBounds: function() {
+		return pt(window.pageXOffset,  window.pageYOffset).extent(
+			pt(window.innerWidth, window.innerHeight))
+	},
 
 	setStatusMessage: function(msg, color, delay) {
 		console.log("status msg: " + msg)
@@ -4590,7 +4595,7 @@ WorldMorph.addMethods({
 		statusMorph.setTextColor(color || Color.black);
 		statusMorph.ignoreEvents();
 		this.addMorph(statusMorph);
-		statusMorph.align(statusMorph.bounds().topRight(), this.bounds().topRight());
+		statusMorph.align(statusMorph.bounds().topRight(), this.windowBounds().topRight());
 		(function() { 
 			// console.log("remove status")
 			statusMorph.remove() }).delay(delay || 4);
