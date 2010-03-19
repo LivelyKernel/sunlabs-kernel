@@ -1034,7 +1034,7 @@ Object.extend(FileDirectory, {
 /*  Basic upload manager for single or multiple files (Safari 4 Compatible)
  *	adapted from Andrea Giammarchi (webreflection.blogspot.com) original version (under MIT)
  */
-Object.sublcass("FileUploadHelper", {
+Object.subclass("FileUploadHelper", {
 	initialize: function() {
 		this.uploadFileMaxSize = 1024000;
 		this.prefix = ""
