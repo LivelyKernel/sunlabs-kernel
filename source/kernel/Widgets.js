@@ -2259,204 +2259,214 @@ Morph.subclass("MenuMorph", {
 
 BoxMorph.subclass("SliderMorph", {
 
-    documentation: "Slider/scroll control",
+	documentation: "Slider/scroll control",
 
-    mss: 12,  // minimum slider size
-    formals: { 
-	Value:        {byDefault: 0}, // from: function(value) { alert('from!' + value); return value;}}, 
-	SliderExtent: {mode: "-", byDefault: 0} 
-    },
-    style: {borderWidth: 1, borderColor: Color.black},
-    selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
-    
+	mss: 12,  // minimum slider size
+	formals: { 
+		Value:		  {byDefault: 0}, // from: function(value) { alert('from!' + value); return value;}}, 
+		SliderExtent: {mode: "-", byDefault: 0} 
+	},
+	style: {borderWidth: 1, borderColor: Color.black},
+	selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
+	
 
-    initialize: function($super, initialBounds, scaleIfAny) {
-        $super(initialBounds);
-        // this default self connection may get overwritten by, eg, connectModel()...
-	var modelClass = this.selfModelClass;
-        var model = new modelClass({}, {});
-	this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
-        this.valueScale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
-        var slider = Morph.makeRectangle(0, 0, this.mss, this.mss);
-        slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
-        this.slider = this.addMorph(slider);
-        this.slider.linkToStyles(['slider']);
-        this.adjustForNewBounds(); 
-        return this;
-    },
-    
-    onDeserialize: function() {
-        if (!this.slider) {
-            console.warn('no slider in %s, %s', this, this.textContent);
-           return;
-        }
-        this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
-    },
-    
-    vertical: function() {
-        var bnds = this.shape.bounds();
-        return bnds.height > bnds.width; 
-    },
-    
-    applyStyle: function($super, spec) {
-        $super(spec);
-        // need to call adjust to update graphics, but only after slider exists
-        if (this.slider) this.adjustForNewBounds(); 
-    },
-    
-    adjustForNewBounds: function($super) {
-        $super();
-        this.adjustSliderParts();
-    },
-    
-    adjustSliderParts: function($super) {
-        // This method adjusts the slider for changes in value as well as geometry
-        var val = this.getScaledValue();
-        var bnds = this.shape.bounds();
-        var ext = this.getSliderExtent(); 
+	initialize: function($super, initialBounds, scaleIfAny) {
+		$super(initialBounds);
+		// this default self connection may get overwritten by, eg, connectModel()...
+		var modelClass = this.selfModelClass;
+		var model = new modelClass({}, {});
+		this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
+		this.valueScale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
+		var slider = Morph.makeRectangle(0, 0, this.mss, this.mss);
+		slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
+		this.slider = this.addMorph(slider);
+		this.slider.linkToStyles(['slider']);
+		this.adjustForNewBounds();
+		this.adjustFill();
+		return this;
+	},
+
+ 	onDeserialize: function() {
+		if (!this.slider) {
+			console.warn('no slider in %s, %s', this, this.textContent);
+		   return;
+		}
+		this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
+		// TODO: remove this workarounds by serializing observer relationsships
+		if (this.formalModel && this.formalModel.addObserver) {
+			this.formalModel.addObserver(this)
+		}	
+	},
+	
+	vertical: function() {
+		var bnds = this.shape.bounds();
+		return bnds.height > bnds.width; 
+	},
+	
+	applyStyle: function($super, spec) {
+		$super(spec);
+		// need to call adjust to update graphics, but only after slider exists
+		if (this.slider) {
+			this.adjustForNewBounds(); 
+			this.adjustFill();
+		}
+	},
+	
+	adjustForNewBounds: function($super) {
+		$super();
+		this.adjustSliderParts();
+	},
+	
+	adjustSliderParts: function($super) {
+		// This method adjusts the slider for changes in value as well as geometry
+		var val = this.getScaledValue();
+		var bnds = this.shape.bounds();
+		var ext = this.getSliderExtent(); 
 
 	
-        if (this.vertical()) { // more vertical...
-            var elevPix = Math.max(ext*bnds.height, this.mss); // thickness of elevator in pixels
-            var topLeft = pt(0, (bnds.height - elevPix)*val);
-            var sliderExt = pt(bnds.width, elevPix); 
-        } else { // more horizontal...
-            var elevPix = Math.max(ext*bnds.width, this.mss); // thickness of elevator in pixels
-            var topLeft = pt((bnds.width - elevPix)*val, 0);
-            var sliderExt = pt(elevPix, bnds.height); 
-        }
-        this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt));
+		if (this.vertical()) { // more vertical...
+			var elevPix = Math.max(ext*bnds.height, this.mss); // thickness of elevator in pixels
+			var topLeft = pt(0, (bnds.height - elevPix)*val);
+			var sliderExt = pt(bnds.width, elevPix); 
+		} else { // more horizontal...
+			var elevPix = Math.max(ext*bnds.width, this.mss); // thickness of elevator in pixels
+			var topLeft = pt((bnds.width - elevPix)*val, 0);
+			var sliderExt = pt(elevPix, bnds.height); 
+		}
+		this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt));
 
-	//this.slider.shapeRoundEdgesBy((this.vertical() ? sliderExt.x : sliderExt.y)/2);
-	this.slider.shapeRoundEdgesBy(Math.min(sliderExt.x, sliderExt.y)/2);
+		//this.slider.shapeRoundEdgesBy((this.vertical() ? sliderExt.x : sliderExt.y)/2);
+		this.slider.shapeRoundEdgesBy(Math.min(sliderExt.x, sliderExt.y)/2);
+	},
+
+	adjustFill: function() {
+		var fill = this.slider.getFill();
+		var gfx = lively.paint;
+		if (fill instanceof lively.paint.LinearGradient) {
+			var direction = this.vertical() ? gfx.LinearGradient.EastWest : gfx.LinearGradient.NorthSouth;
+			var baseColor = fill.stops[0].color();
+			this.setFill(new gfx.LinearGradient([new gfx.Stop(0, baseColor, 1), 
+							 new gfx.Stop(0.5, baseColor.lighter(2)),
+							 new gfx.Stop(1, baseColor)], direction));
+			// FIXME: just flip the gradient
+			this.slider.setFill(
+				new gfx.LinearGradient([ new gfx.Stop(0, baseColor),
+				new gfx.Stop(1, fill.stops[1].color())], direction));
+			this.setBorderWidth(this.slider.getBorderWidth());
+		} else if (fill) {
+			this.setFill(fill.lighter());
+		}		
+	},
 	
+	sliderPressed: function(evt, slider) {
+		//	  Note: want setMouseFocus to also cache the transform and record the hitPoint.
+		//	  Ideally thereafter only have to say, eg, morph.setPosition(evt.hand.adjustedMousePoint)
+		this.hitPoint = this.localize(evt.mousePoint).subPt(this.slider.bounds().topLeft());
+	},
 	
-	var fill = this.slider.getFill();
-	var gfx = lively.paint;
-        if (fill instanceof lively.paint.LinearGradient) {
-            var direction = this.vertical() ? gfx.LinearGradient.EastWest : gfx.LinearGradient.NorthSouth;
-            var baseColor = fill.stops[0].color();
-	    this.setFill(new gfx.LinearGradient([new gfx.Stop(0, baseColor, 1), 
-						 new gfx.Stop(0.5, baseColor.lighter(2)),
-						 new gfx.Stop(1, baseColor)], direction));
-	    // FIXME: just flip the gradient
-            this.slider.setFill(new gfx.LinearGradient([ new gfx.Stop(0, baseColor),
-							 new gfx.Stop(1, fill.stops[1].color())], direction));
-	    this.setBorderWidth(this.slider.getBorderWidth());
-        } else if (fill) {
-            this.setFill(fill.lighter());
-        }
-    },
-    
-    sliderPressed: function(evt, slider) {
-        //    Note: want setMouseFocus to also cache the transform and record the hitPoint.
-        //    Ideally thereafter only have to say, eg, morph.setPosition(evt.hand.adjustedMousePoint)
-        this.hitPoint = this.localize(evt.mousePoint).subPt(this.slider.bounds().topLeft());
-    },
-    
-    sliderMoved: function(evt, slider) {
-        if (!evt.mouseButtonPressed) return;
+	sliderMoved: function(evt, slider) {
+		if (!evt.mouseButtonPressed) return;
 
-        // Compute the value from a new mouse point, and emit it
-        var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
-        var bnds = this.shape.bounds();
-        var ext = this.getSliderExtent(); 
-    
-        if (this.vertical()) { // more vertical...
-            var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
-            var newValue = p.y / (bnds.height-elevPix); 
-        } else { // more horizontal...
-            var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
-            var newValue = p.x / (bnds.width-elevPix); 
-        }
-        
-        if (isNaN(newValue)) newValue = 0;
-        this.setScaledValue(this.clipValue(newValue));
-        this.adjustForNewBounds(); 
-    },
+		// Compute the value from a new mouse point, and emit it
+		var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
+		var bnds = this.shape.bounds();
+		var ext = this.getSliderExtent(); 
+	
+		if (this.vertical()) { // more vertical...
+			var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
+			var newValue = p.y / (bnds.height-elevPix); 
+		} else { // more horizontal...
+			var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
+			var newValue = p.x / (bnds.width-elevPix); 
+		}
+		
+		if (isNaN(newValue)) newValue = 0;
+		this.setScaledValue(this.clipValue(newValue));
+		this.adjustForNewBounds(); 
+	},
 
-    sliderReleased: Functions.Empty,
-    
-    handlesMouseDown: function(evt) { return !evt.isCommandKey(); },
+	sliderReleased: Functions.Empty,
+	
+	handlesMouseDown: function(evt) { return !evt.isCommandKey(); },
 
-    onMouseDown: function(evt) {
-        this.requestKeyboardFocus(evt.hand);
-        var inc = this.getSliderExtent();
-        var newValue = this.getValue();
+	onMouseDown: function(evt) {
+		this.requestKeyboardFocus(evt.hand);
+		var inc = this.getSliderExtent();
+		var newValue = this.getValue();
 
-        var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
-        if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
-        else newValue -= inc;
-    
-        if (isNaN(newValue)) newValue = 0;
-        this.setScaledValue(this.clipValue(newValue));
-        this.adjustForNewBounds(); 
-    },
-    
-    onMouseMove: function($super, evt) {
-        // Overriden so won't drag me if mouse pressed
-        if (evt.mouseButtonPressed) return;
-        return $super(evt);
-    },
-    
-    clipValue: function(val) { 
-        return Math.min(1.0,Math.max(0,0,val.roundTo(0.0001))); 
-    },
+		var delta = this.localize(evt.mousePoint).subPt(this.slider.bounds().center());
+		if (this.vertical() ? delta.y > 0 : delta.x > 0) newValue += inc;
+		else newValue -= inc;
+	
+		if (isNaN(newValue)) newValue = 0;
+		this.setScaledValue(this.clipValue(newValue));
+		this.adjustForNewBounds(); 
+	},
+	
+	onMouseMove: function($super, evt) {
+		// Overriden so won't drag me if mouse pressed
+		if (evt.mouseButtonPressed) return;
+		return $super(evt);
+	},
+	
+	clipValue: function(val) { 
+		return Math.min(1.0,Math.max(0,0,val.roundTo(0.0001))); 
+	},
 
-    updateView: function(aspect, controller) { // obsolete soon ?
-        var p = this.modelPlug;
-	if (!p) return;
-	if (aspect == p.getValue || aspect == 'all') {
-	    this.onValueUpdate(this.getValue());
-	} else if (aspect == p.getSliderExtent || aspect == 'all')  {
-	    this.onSliderExtentUpdate(this.getSliderExtent()); 
+	updateView: function(aspect, controller) { // obsolete soon ?
+		var p = this.modelPlug;
+		if (!p) return;
+		if (aspect == p.getValue || aspect == 'all') {
+			this.onValueUpdate(this.getValue());
+		} else if (aspect == p.getSliderExtent || aspect == 'all')	{
+			this.onSliderExtentUpdate(this.getSliderExtent()); 
+		}
+	},
+
+	onSliderExtentUpdate: function(extent) {
+		this.adjustForNewBounds();
+	},
+
+	onValueUpdate: function(value) {
+		this.adjustForNewBounds();
+	},
+
+	getScaledValue: function() {
+		return (this.getValue() || 0) / this.valueScale; // FIXME remove 0
+	},
+
+	setScaledValue: function(value) {
+		return this.setValue(value * this.valueScale);
+	},
+	
+	takesKeyboardFocus: Functions.True,
+	
+	setHasKeyboardFocus: function(newSetting) { 
+		return newSetting; // no need to remember
+	},
+
+	onKeyPress: Functions.Empty,
+
+	onKeyDown: function(evt) {
+		var delta = 0;
+		if (this.vertical()) {
+			switch (evt.getKeyCode()) {
+			case Event.KEY_DOWN: delta = 1; break;
+			case Event.KEY_UP:	delta = -1; break;
+			default: return false;
+			} 
+		} else {
+			switch (evt.getKeyCode()) {
+			case Event.KEY_RIGHT: delta = 1;  break;	
+			case Event.KEY_LEFT:  delta = -1; break;
+			default: return false;
+			}	 
+		}
+		this.setScaledValue(this.clipValue(this.getScaledValue() + delta * (this.getSliderExtent())));
+		this.adjustForNewBounds();
+		evt.stop();
+		return true;
 	}
-    },
-
-    onSliderExtentUpdate: function(extent) {
-	this.adjustForNewBounds();
-    },
-
-    onValueUpdate: function(value) {
-	this.adjustForNewBounds();
-    },
-
-    getScaledValue: function() {
-        return (this.getValue() || 0) / this.valueScale; // FIXME remove 0
-    },
-
-    setScaledValue: function(value) {
-        return this.setValue(value * this.valueScale);
-    },
-    
-    takesKeyboardFocus: Functions.True,
-    
-    setHasKeyboardFocus: function(newSetting) { 
-        return newSetting; // no need to remember
-    },
-
-    onKeyPress: Functions.Empty,
-
-    onKeyDown: function(evt) {
-        var delta = 0;
-        if (this.vertical()) {
-            switch (evt.getKeyCode()) {
-            case Event.KEY_DOWN: delta = 1; break;
-            case Event.KEY_UP:  delta = -1; break;
-            default: return false;
-            } 
-        } else {
-            switch (evt.getKeyCode()) {
-            case Event.KEY_RIGHT: delta = 1;  break;    
-            case Event.KEY_LEFT:  delta = -1; break;
-            default: return false;
-            }    
-        }
-        this.setScaledValue(this.clipValue(this.getScaledValue() + delta * (this.getSliderExtent())));
-        this.adjustForNewBounds();
-        evt.stop();
-        return true;
-    }
 
 });
 
@@ -4568,6 +4578,30 @@ Morph.subclass("MarkerMorph", {
 
 });
 
+// Usable Setup of a Widget - Record - Slider
+// this demonstrates some issues to be resolved 
+Widget.makeSlider = function(bounds, range) {
+	
+	bounds = bounds || new Rectangle(0, 0, 100, 20)
+	range = range || 10.0;
+	
+	// Why are simple morphs not funcitonal without any model underneath?
+	
+	// Why should widgets not be graphical? 
+	// and when they are not where should we put them
+	var widget = new Widget();
+	// why could widgets and other morphs not act as a model?
+	var model = Record.newNodeInstance({Value: null,  SliderExtent: null});
+	widget.ownModel(model);
+
+	slider = new SliderMorph(bounds, range)
+	slider.connectModel(model);
+	slider.ownerWidget = widget 
+
+	// TODO 
+	model.addObserver(slider)
+	return slider
+}
 	
 }.logCompletion('loaded Widgets.js')); // end using
 

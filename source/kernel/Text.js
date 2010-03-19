@@ -2493,19 +2493,16 @@ TextMorph.addMethods({
 		if (oneLiner) this.bounds();  // Force a redisplay
 	},
 	
-	// copied from ide.js
 	setStatusMessage: function(msg, color, delay) {
 		console.log("status: " + msg)
 		if (!this._statusMorph) {
 			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
-			this._statusMorph.applyStyle({borderWidth: 0, fillOpacity: 1})
+			this._statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 1})
 		}
 		var statusMorph = this._statusMorph;
 		statusMorph.textString = msg;
-		this.addMorph(statusMorph);
+		this.world().addMorph(statusMorph);
 		statusMorph.setTextColor(color || Color.black);
-		statusMorph.setFill(Color.gray);
-		// statusMorph.centerAt(this.innerBounds().center());
 		statusMorph.ignoreEvents();
 		try {
 			var bounds = this.getCharBounds(this.selectionRange[0]);
@@ -2514,14 +2511,14 @@ TextMorph.addMethods({
 			} else {
 				pos = pt(0, 20);
 			}
-			statusMorph.setPosition(pos);
+			statusMorph.setPosition(this.worldPoint(pos));
 		} catch(e) {
-			statusMorph.centerAt(this.innerBounds().center());
+			statusMorph.centerAt(this.worldPoint(this.innerBounds().center()));
 			console.log("problems: " + e)
 		};
 		(function() { 
 			// console.log("remove status")
-			statusMorph.remove() }).delay(delay || 2);
+			statusMorph.remove() }).delay(delay || 4);
 	},
 	
 	handleFirstJSLintError: function(error, pos) {

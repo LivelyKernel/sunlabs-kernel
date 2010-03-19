@@ -4559,6 +4559,44 @@ PasteUpMorph.subclass("WorldMorph", {
 	},
 });
 
+// Give Feedback on Saving
+WorldMorph.addMethods({
+
+	promptAndSaveWorld: function() {
+		this.prompt("world file (.xhtml)", function(filename) {
+			var start = new Date().getTime();	
+			this.exportLinkedFile(filename);
+			var time = new Date().getTime() - start;
+			this.setStatusMessage("world save as " + filename + " in " + time + "ms", Color.green, 3)	
+		}.bind(this)); 
+	},
+
+	saveWorld: function(optURL) {
+		optURL = optURL || URL.source.filename()
+		var start = new Date().getTime();
+		Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this.world()), optURL);
+		var time = new Date().getTime() - start;
+		this.setStatusMessage("world saved to " + optURL + " in " + time + "ms", Color.green, 3)
+	},
+
+	setStatusMessage: function(msg, color, delay) {
+		console.log("status msg: " + msg)
+		if (!this._statusMorph) {
+			this._statusMorph = new TextMorph(pt(400,30).extentAsRectangle());
+			this._statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.5})
+		}
+		var statusMorph = this._statusMorph;
+		statusMorph.textString = msg;
+		statusMorph.setTextColor(color || Color.black);
+		statusMorph.ignoreEvents();
+		this.addMorph(statusMorph);
+		statusMorph.align(statusMorph.bounds().topRight(), this.bounds().topRight());
+		(function() { 
+			// console.log("remove status")
+			statusMorph.remove() }).delay(delay || 4);
+	},	
+});
+
 
 
 /**
@@ -4582,13 +4620,13 @@ WorldMorph.addMethods({
 				new NetRequest().put(URL.source.withFilename('auth'));
 				// sometimes the wikiBtn seems to break after an authenticate
 				if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
-			["publish world as ... ", function() { this.prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]
+			["publish world as ... ", function() { this.promptAndSaveWorld()}]
 		]);
 		if (URL.source.filename() != "index.xhtml") { 
 			// save but only if it's not the startup world
 			menu.addItem(["save current world to current URL", function() { 
-			menu.remove(); 
-			Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), URL.source.filename());
+				menu.remove(); 
+				this.saveWorld();
 			}]);
 		}
 		if(Config.debugExtras) {
