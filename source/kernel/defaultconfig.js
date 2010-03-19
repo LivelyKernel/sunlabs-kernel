@@ -243,8 +243,9 @@ Object.extend(Config, {
 	loadTests: [], //e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 	showTesterRunner: false,
 	// Modules
-	modulesBeforeChanges: ['LKWiki.js', 'ChangeSet.js'],
-	modulesOnWorldLoad: [  /*"Fabrik.js", 'TileScripting.js',*/ ],
+	modulesBeforeChanges: ['LKWiki.js', 'ChangeSet.js'], // evaluated first, even before ChangeSet of a world
+	modulesBeforeWorldLoad: [], // evaluated before all changes
+	modulesOnWorldLoad: [], // evaluated before ChangeSet initializer
 	codeBase: document.documentURI.substring(0, document.documentURI.lastIndexOf('/') + 1),
 	disableScriptCaching: false,
 	defaultDisplayTheme: 'lively'

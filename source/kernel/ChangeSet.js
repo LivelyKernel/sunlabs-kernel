@@ -140,7 +140,7 @@ parent: function() { return  new ClassChange(this.getXMLElement().parentNode) },
 		message += ' -- subelems: ' + this.subElements().length;
 		return message;
 	},
- 
+
     inspect: function() {
     	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
 	}
@@ -182,7 +182,7 @@ Change.addMethods({
 Change.subclass('ChangeSet', {
 
 	initializerName: 'initializer',
-
+	requirementsName: 'local requirements',
 
 
     initialize: function(optName) {
@@ -283,13 +283,25 @@ ensureHasInitializeScript: function() {
 	var content = '// this script is evaluated on world load';
 	this.addOrChangeElementNamed(this.initializerName, content);
 },
+ensureHasWorldRequirements: function() {
+	var requirements = this.subElementNamed(this.requirementsName);
+	if (requirements) return;
+	var content = '[]';
+	this.addSubElement(
+		DoitChange.create(content, this.requirementsName),
+		this.subElementNamed(this.initializerName)); // insert before initializer
+},
 evaluateAllButInitializer: function() {
 	this.subElements()
-		.select(function(ea) { return ea.getName() !== this.initializerName && ea.automaticEvalEnabled() }, this)
+		.select(function(ea) { return ea.getName() !== this.initializerName && ea.getName() !== this.requirementsName && ea.automaticEvalEnabled() }, this)
 		.forEach(function(ea) { ea.evaluate() });
 },
 evaluateInitializer: function() {
 	this.subElementNamed(this.initializerName).evaluate();
+},
+evaluateWorldRequirements: function() {
+	var list = this.subElementNamed(this.requirementsName).evaluate();
+	Config.modulesBeforeWorldLoad = Config.modulesBeforeWorldLoad.concat(list);
 },
 ensureCompatibility: function() {
 	var ps = this.subElementNamed('postscript');
@@ -308,6 +320,7 @@ Object.extend(ChangeSet, {
 		var cs = new ChangeSet('Local code').initializeFromWorldNode(node);
 		cs.ensureCompatibility();
 		cs.ensureHasInitializeScript();
+		cs.ensureHasWorldRequirements();
 		return cs;
 	},
 
@@ -362,8 +375,8 @@ Change.subclass('ClassChange', {
 asJs: function() {
 	var subElementString = '';
 	if (this.subElements().length > 0)
-		subElementString = '\n' + this.subElements().invoke('asJs').join('\n') + '\n';
-	return Strings.format('%s.subclass(\'%s\', {%s});',
+		subElementString = this.subElements().invoke('asJs').join('\n\n');
+	return Strings.format('%s.subclass(\'%s\', {\n\n%s\n\n});',
 		this.getSuperclassName(), this.getName(), subElementString);
 },
 
@@ -382,7 +395,7 @@ Object.extend(ClassChange, {
 		change.enableAutomaticEval();
 		return change;
 	},
-	
+
 });
 
 Change.subclass('ProtoChange', {
@@ -411,9 +424,9 @@ asJs: function() {
 
 
 Object.extend(ProtoChange, {
-	
+
 	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'proto' },
-	
+
 	create: function(name, source, optClassName) {
 		var element = LivelyNS.create('proto');
 		element.setAttributeNS(null, 'name', name);
@@ -423,7 +436,7 @@ Object.extend(ProtoChange, {
 		change.enableAutomaticEval();
 		return change;
 	},
-	
+
 });
 
 Change.subclass('StaticChange', {
