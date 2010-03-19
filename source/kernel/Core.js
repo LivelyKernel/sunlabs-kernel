@@ -4664,7 +4664,7 @@ WorldMorph.addMethods({
 	complexMorphsSubMenuItems: function(evt) {
 		var world = this.world();
 		return [
-			["SliderMorph", function(evt) { world.addMorph(new SliderMorph(evt.point().extent(pt(120, 40))))}],
+			["SliderMorph", function(evt) { world.addMorph(Widget.makeSlider(evt.point().extent(pt(120, 40))))}],
 			["ButtonMorph", function(evt) { world.addMorph(new ScriptableButtonMorph(evt.point().extent(pt(70, 30))))}],
 			["Clock", function(evt) {
 				var m = world.addMorph(new ClockMorph(evt.point(), 50));
