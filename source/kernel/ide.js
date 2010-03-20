@@ -491,7 +491,8 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 		if (!pane) return null;
 		var index = pane.selectedLineNo;
 		if (index === undefined) return null;
-		return pane.submorphs[index].textString;
+		var textItem = pane.submorphs[index];
+		return textItem && textItem.textString;
 	},
 
 	getSelectionSpec: function() {
