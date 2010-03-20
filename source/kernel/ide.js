@@ -477,11 +477,38 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 
 	onDeserialize: function($super) {
 		var widget = new this.ownerWidget.constructor();
+		var selection = this.getSelectionSpec();
 		this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
 		this.owner.targetMorph.setPosition(this.getPosition());
 		this.remove();
+		this.resetSelection(selection, widget);
     },
 
+	getPane: function(pane) { return this[pane] && this[pane].innerMorph() },
+	
+	getSelectionTextOfPane: function(pane) {
+		var pane = this.getPane(pane);
+		if (!pane) return null;
+		var index = pane.selectedLineNo;
+		if (index === undefined) return null;
+		return pane.submorphs[index].textString;
+	},
+
+	getSelectionSpec: function() {
+		var basicPaneName = 'Pane', spec = {}, i = 1;
+		while (1) {
+			var paneName = basicPaneName + i;
+			var sel = this.getSelectionTextOfPane(paneName);
+			if (!sel) return spec;
+			spec[paneName] = sel;
+			i++;
+		}			
+	},
+	
+	resetSelection: function(selectionSpec, widget) {
+		for (var paneName in selectionSpec)
+			widget.inPaneSelectNodeNamed(paneName, selectionSpec[paneName]);
+	},
 });
  
 Object.subclass('lively.ide.BrowserNode', {
