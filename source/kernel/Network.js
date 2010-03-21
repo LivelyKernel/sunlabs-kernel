@@ -1116,6 +1116,83 @@ Object.subclass("FileUploadHelper", {
 });
 
 
+Object.subclass('WebResource', {
+
+	initialize: function(url) {
+		this._url = new URL(url);
+		this.beSync();
+	},
+
+	getURL: function() { return this._url },
+
+	getName: function() { return this.getURL().filename() },
+
+	isSync: function() { return this._isSync },
+	
+	beSync: function() { this._isSync = true; return this },
+
+	beAsync: function() { this._isSync = false; return this },
+
+	getContent: function(rev, contentType) {
+		var resource = new SVNResource(
+			this.getURL().toString(),
+			Record.newPlainInstance({URL: this.getURL().toString(), ContentText: null}));
+		if (contentType)
+			resource.contentType = contentType;
+		resource.fetch(true, null, rev);
+		return resource.getContentText();
+	},
+
+	setContent: function(content, contentType) {
+		var resource = new Resource(Record.newPlainInstance({URL: this.getURL().toString()}));
+		if (contentType) resource.contentType = contentType;
+		resource.store(content, this.isSync());
+	},
+
+	exists: function(optCb) {
+		if (this.isSync())
+			return new NetRequest().beSync().get(this.getURL()).transport.status < 400;
+		var model = {
+			setStatus: function(status) { optCb && optCb(status.code < 400) }
+		}
+		return new NetRequest({model: model, setStatus: "setStatus"}).get(this.getURL());
+	},
+
+	isCollection: function() { return !this.getURL().isLeaf() },
+
+	copyTo: function(url) {
+		var otherResource = new WebResource(url);
+		otherResource.create();
+		new NetRequest().copy(this.getURL(), url, true /*overwrite*/);
+		return otherResource;
+	},
+
+	subElements: function() {
+		var webfile = new lively.storage.WebFile(Record.newPlainInstance({DirectoryList: [], RootNode: this.getURL()}));
+		webfile.fetchContent(this.getURL(), true);
+		var urls = webfile.getModel().getDirectoryList();
+		urls.shift();
+		return urls.collect(function(url) { return new WebResource(url) });
+	},
+
+	subCollections: function() {
+		return this.subElements().select(function(ea) { return ea.isCollection() });
+	},
+
+	subDocuments: function() {
+		return this.subElements().select(function(ea) { return !ea.isCollection() });
+	},
+
+	create: function() {
+		if (!this.isCollection()) { this.setContent(''); return }
+		new NetRequest().beSync().mkcol(this.getURL());
+	},
+
+	del: function() {
+		new NetRequest().beSync().del(this.getURL());
+	},
+
+});
 
 
 console.log('loaded Network.js');
