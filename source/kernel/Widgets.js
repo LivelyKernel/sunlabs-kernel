@@ -270,12 +270,11 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 
 	doAction: function() {
 		try {
-			// console.log("eval : " + this.scriptSource)
 			var func = eval(this.getSourceForEval());
 			func.apply(this, [] /*arg array*/);
 		} catch(e) {
-			dbgOn(true);
 			console.log("error in script button: " + e + " script: " + this.scriptSource)
+			throw e;
 		}
 	},
 
