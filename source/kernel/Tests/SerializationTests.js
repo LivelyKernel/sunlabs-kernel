@@ -10,7 +10,7 @@ Morph.subclass('DummyMorph', {
     },
     
     onDeserialize: function() {
-        this.onDesieralizeWasRun = true
+        this.onDeserializeWasRun = true
     }
 
 });
@@ -49,7 +49,7 @@ Widget.subclass('DummyWidget', {
     },
 
     onDeserialize: function() {
-        this.onDesieralizeWasRun = true
+        this.onDeserializeWasRun = true
     },
     
     open: function(){
@@ -118,8 +118,7 @@ TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
     },
 
 	fileContent: function(fileName) {
-		var dir = new FileDirectory(URL.source);
-		return dir.fileContent(fileName);
+		return new WebResource(URL.source.withFilename(fileName)).getContent();
 	},
 	
 	loadWorldFromFile: function(fileName) {
@@ -154,7 +153,7 @@ TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
 
 });
 
-thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
+thisModule.SerializationBaseTestCase.subclass('lively.Tests.SerializationTests.SerializationTest', {
    
     testWorldMorphOnCanvas: function() {
         this.assert(this.worldMorph, 'No WorldMorph');
@@ -228,10 +227,10 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
         var widget = morph1.myWidget;
         this.assertEqual(world.submorphs.length, 1, "world submorphs are wrong");
         this.assert(morph1 instanceof DummyMorph, " morph1 is no DummyMorph");
-        this.assert(morph1.onDesieralizeWasRun, "onDesieralize was not run");
+        this.assert(morph1.onDeserializeWasRun, "onDesieralize was not run");
 
         this.assert(widget instanceof DummyWidget, " widget is no DummyWidget");
-        this.assert(widget.onDesieralizeWasRun, "onDesieralize was not run in widget");
+        this.assert(widget.onDeserializeWasRun, "onDesieralize was not run in widget");
 
     },
     
@@ -605,7 +604,7 @@ thisModule.SerializationBaseTestCase.subclass('ASerializationTest', {
 
         
 });
-TestCase.subclass('ASelectionCopyAndPasteTest', {
+TestCase.subclass('lively.Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	
 	setUp: function() {
 		this.selection = new SelectionMorph(new Rectangle(0,0,10,10));
@@ -731,7 +730,7 @@ TestCase.subclass('ASelectionCopyAndPasteTest', {
 });
 
 
-TestCase.subclass('DomRecordTest', {
+TestCase.subclass('lively.Tests.SerializationTests.DomRecordTest', {
 
     testAddField: function() {
         this.model = Record.newNodeInstance({StaticField: null});
