@@ -350,6 +350,14 @@ var Converter = {
 		    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue.toLiteral())));
 		    return desc;
 		}
+		
+		if (propValue && propValue.toExpression) {
+		    desc.setAttributeNS(null, "family", propValue.constructor.type);
+			desc.setAttributeNS(null, "isExpression", true);
+		    desc.appendChild(NodeFactory.createCDATA(propValue.toExpression()));
+		    return desc;
+		}
+		
 		if (propValue.nodeType) {
 		    switch (propValue.nodeType) {
 		    case document.DOCUMENT_NODE:
@@ -4720,7 +4728,7 @@ WorldMorph.addMethods({
 	toolSubMenuItems: function(evt) {
 		var world = this.world();
 		var toolMenuItems = [
-			["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
+//			["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
 			["System code browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
 			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world, evt.point())})}],
 			["Wiki code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {
@@ -4728,8 +4736,12 @@ WorldMorph.addMethods({
 					var repo = new URL(input);
 					new ide.WikiCodeBrowser(repo).open()
 				};
-				world.prompt('Wiki base URL?', cb, 'http://www.lively-kernel.org/repository/lively-wiki/');
+				world.prompt('Wiki base URL?', cb, URL.source.getDirectory().toString());
 				})}],
+			["Switch code base...", function(evt) { require('lively.ide').toRun(function(unused, ide) {
+				var cb = function(input) { ide.startSourceControl().switchCodeBase(new URL(input)) };
+				world.prompt('New code base?', cb, URL.source.getDirectory().toString());
+				})}],				
 			["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
 			["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],	
 			["Enable profiling", function() {

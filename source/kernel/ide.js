@@ -2259,7 +2259,10 @@ putSourceCodeForFile: function(filename, content) {
 update: function() {
 	this._allFiles = null;
 },
-
+switchCodeBase: function(newCodeBaseURL) {
+	this.codeBaseURL = newCodeBaseURL;
+	this._allFiles = new WebResource(newCodeBaseURL).subDocuments().collect(function(ea) { return ea.getName() });
+},
 	
 });
  
