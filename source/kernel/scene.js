@@ -345,7 +345,7 @@ Object.subclass('lively.data.Wrapper', {
 			if (family) {
 				var cls = Class.forName(family);
 				if (!cls) throw new Error('uknown type ' + family);
-				return cls.fromLiteral(JSON.unserialize(value));
+				return cls.fromLiteral(JSON.unserialize(value), importer);
 			} else if (value === 'NaN') {
 				return  NaN; // JSON doesn't unserializes NaN
 			} else {
@@ -404,20 +404,21 @@ Object.subclass('lively.data.Wrapper', {
         this.actualModel = model;
     },
     
-    deserializeArrayFromNode: function(importer, node) {
-    	var name = LivelyNS.getAttribute(node, "name");
-    	this[name] = [];
-    	var index = 0;
-    	$A(node.getElementsByTagName("item")).forEach(function(elt) {
-    	    var ref = LivelyNS.getAttribute(elt, "ref");
-    	    if (ref) {
-    			importer.addPatchSite(this, name, ref, index);
-    	    } else {
-				this[name].push(this.deserializeValueFromNode(importer, node));
+	deserializeArrayFromNode: function(importer, node) {
+		var name = LivelyNS.getAttribute(node, "name");
+		this[name] = [];
+		var index = 0;
+		$A(node.getElementsByTagName("item")).forEach(function(elt) {
+		    var ref = LivelyNS.getAttribute(elt, "ref");
+		    if (ref) {
+				importer.addPatchSite(this, name, ref, index);
+		    } else {
+				// rk 3/22/10 node instead of elt was used, was that a bug?
+				this[name].push(this.deserializeValueFromNode(importer, elt));
 			}
-    	    index ++;
-    	}, this);
-    },
+		    index ++;
+		}, this);
+	},
 
 	resolveUriToObject: function(uri) {
 		if (this.id() == uri)
