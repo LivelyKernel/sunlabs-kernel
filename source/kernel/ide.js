@@ -697,6 +697,7 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 
 documentation: 'Browser for source code parsed from js files',
 viewTitle: "SystemBrowser",
+isSystemBrowser: true,
 
 initialize: function($super) {
 	$super();
@@ -1035,7 +1036,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 					world.notify('File ' + filename + ' already exists!');
 				} else {
 					dir.writeFileNamed(filename, '');
-					browser.sourceDatabase().update();
+					browser.sourceDatabase().addFile(filename);
 					browser.allChanged();
 					browser.inPaneSelectNodeNamed('Pane1', filename);
 				}
@@ -1043,7 +1044,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 			world.prompt('Enter filename', createFileIfAbsent)}]);
 		menu.unshift(['remove', function() {
 			new FileDirectory(tools.SourceControl.codeBaseURL).deleteFileNamed(node.moduleName);
-			browser.sourceDatabase().update();
+			browser.sourceDatabase().removeFile(node.moduleName);
 			browser.allChanged()}]);
 	return menu;
 },
@@ -2259,6 +2260,13 @@ putSourceCodeForFile: function(filename, content) {
 update: function() {
 	this._allFiles = null;
 },
+addFile: function(filename) {
+	this._allFiles.push(filename);
+},
+removeFile: function(filename) {
+	this._allFiles = this._allFiles.without(filename);
+},
+
 switchCodeBase: function(newCodeBaseURL) {
 	this.codeBaseURL = newCodeBaseURL;
 	this._allFiles = new WebResource(newCodeBaseURL).subDocuments().collect(function(ea) { return ea.getName() });
