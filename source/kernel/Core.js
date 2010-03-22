@@ -4715,6 +4715,13 @@ WorldMorph.addMethods({
 					world.addMorph(Morph.makeDefaultDuplicatorPanel(evt.point()))
 				}); 
 			}],
+			["FileUpload Morph", function(evt) { 
+				require('lively.FileUploadWidget').toRun(function(){
+					var morph = new FileUploadMorph();
+					world.addMorph(morph)
+					morph.setPosition(evt.point());
+				}); 
+			}],
 		];
 	},
 	
