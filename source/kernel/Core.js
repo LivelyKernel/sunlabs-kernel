@@ -350,14 +350,7 @@ var Converter = {
 		    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue.toLiteral())));
 		    return desc;
 		}
-		
-		if (propValue && propValue.toExpression) {
-		    desc.setAttributeNS(null, "family", propValue.constructor.type);
-			desc.setAttributeNS(null, "isExpression", true);
-		    desc.appendChild(NodeFactory.createCDATA(propValue.toExpression()));
-		    return desc;
-		}
-		
+				
 		if (propValue.nodeType) {
 		    switch (propValue.nodeType) {
 		    case document.DOCUMENT_NODE:
