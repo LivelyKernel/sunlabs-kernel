@@ -9,9 +9,9 @@ Object.subclass("FileUploadHelper", {
 		this.uploadFileMaxSize = 1024000;
 		this.prefix = ""
 	},
-	
+
 	sendFile: function(handler){
-		
+
 		if(this.uploadFileMaxSize < handler.file.fileSize) {
 			if(Object.isFunction(handler.onerror))
 				handler.onerror();
@@ -20,17 +20,14 @@ Object.subclass("FileUploadHelper", {
 
 		var xhr = new XMLHttpRequest;
 		var upload = xhr.upload;
-		
-		var split = "onabort.onerror.onloadstart.onprogress".split(".");
-        var length = split.length;
-		for(i = 0; i < length; i++) {
-			upload[split[i]] = (function(event){
-				return  function(rpe){
-					if(Object.isFunction(handler[event]))
-						handler[event].call(handler, rpe, xhr);
-				};
-			})(split[i]);
-		}
+
+
+		["onabort", "onerror", "onloadstart", "onprogress"].each(function(eachName){
+			upload[eachName] = function(rpe){
+				if(Object.isFunction(handler[eachName]))
+					handler[eachName].call(handler, rpe, xhr);
+			};
+		})
 
 		upload.onload = function(rpe){
 			if(handler.onreadystatechange === false){
@@ -75,7 +72,6 @@ Object.subclass("FileUploadHelper", {
 	        handler.file = handler.files[handler.current];
 	        var singleHandler = this.sendFile(handler);			
 			if (!singleHandler) {
-				console.log("Error: this.sendFile(handler);")
 				return
 			}
 			singleHandler.onload = function(rpe, xhr) {
@@ -91,12 +87,11 @@ Object.subclass("FileUploadHelper", {
 	    };
 	    return  handler;
 	},
-	
+
 	urlForFileName: function(file) {
 		return this.prefix + file
 	}
 });
-
 
 Morph.subclass('FileUploadMorph', {
 	suppressHandles: true,
