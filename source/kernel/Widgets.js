@@ -2842,7 +2842,7 @@ BoxMorph.subclass('XenoMorph', {
     adjustForNewBounds: function($super) {
         $super();
         var bounds = this.shape.bounds();
-	console.log("bounds " + bounds + " vs " + bounds.width + "," + bounds.height);
+		// console.log("bounds " + bounds + " vs " + bounds.width + "," + bounds.height);
         //this.foRawNode.setAttributeNS(null, "width", bounds.width);
         //this.foRawNode.setAttributeNS(null, "height", bounds.height);
 		//this.foRawNode.width = bounds.width;
