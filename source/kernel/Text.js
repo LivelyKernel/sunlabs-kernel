@@ -2044,9 +2044,6 @@ BoxMorph.subclass('TextMorph', {
 	onKeyPress: function(evt) {
 		if (!this.acceptInput)
 			return true;
-
-		if (ClipboardHack.tryClipboardAction(evt, this))
-			return true;
 		
 		// cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
 		if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here

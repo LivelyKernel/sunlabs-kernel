@@ -5843,7 +5843,7 @@ ClipboardHack = {
         	buffer.focus();
         	return true;
         };
-		console.log('Clipboard action not successful');
+		// console.log('Clipboard action not successful');
 		return false;
     },
 
