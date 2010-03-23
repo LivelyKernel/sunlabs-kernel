@@ -1903,6 +1903,10 @@ Object.subclass('lively.scene.Similitude', {
 		return p.matrixTransform(this, acc);
 	},
 
+	transformDirection: function(p, acc) {
+		return p.matrixTransformDirection(this, acc);
+	},
+
 	matrixTransformForMinMax: function(pt, minPt, maxPt) {
 		var x = this.a * pt.x + this.c * pt.y + this.e;
 		var y = this.b * pt.x + this.d * pt.y + this.f;
@@ -1981,10 +1985,10 @@ Object.subclass('lively.scene.Similitude', {
 Wrapper.subclass('lively.scene.Transform', {
 	// a more direct wrapper for SVGTransform
 	initialize: function(rawNode, targetNode) {
-	if (!rawNode) rawNode = locateCanvas().createSVGTransform();
-	this.rawNode = rawNode;
-	// we remember the target node so that we can inform it that we changed
-	this.targetNode = targetNode; 
+		if (!rawNode) rawNode = locateCanvas().createSVGTransform();
+		this.rawNode = rawNode;
+		// we remember the target node so that we can inform it that we changed
+		this.targetNode = targetNode; 
 	},
 
 	getTranslate: function() {
@@ -2061,16 +2065,15 @@ Wrapper.subclass('lively.scene.Transform', {
 			var delta = this.getTranslate();
 			return "translate(" + delta.x + "," + delta.y +")";
 		case SVGTransform.SVG_TRANSFORM_ROTATE:
-
 			var mx = this.rawNode.matrix;
 			if (mx.e || mx.f) {
-			var disp = pt(mx.e || 0, mx.f || 0);
-			var str = "translate(" + disp.x.toFixed(2) + "," + disp.y.toFixed(2) + ") "; 
-			str += "rotate(" + this.getAngle().toFixed(2) + ") ";
-			//str += "translate(" + (-disp.x).toFixed(2)  + ", " + (-disp.y).toFixed(2) + ")";
-			// FIXME, hmm.... wouldn't we want to transform back?
-			//console.log('format ' + str);
-			return str;
+				var disp = pt(mx.e || 0, mx.f || 0);
+				var str = "translate(" + disp.x.toFixed(2) + "," + disp.y.toFixed(2) + ") "; 
+				str += "rotate(" + this.getAngle().toFixed(2) + ") ";
+				//str += "translate(" + (-disp.x).toFixed(2)  + ", " + (-disp.y).toFixed(2) + ")";
+				// FIXME, hmm.... wouldn't we want to transform back?
+				//console.log('format ' + str);
+				return str;
 			} else return "rotate(" + this.getAngle()  +")"; // in degrees
 		case SVGTransform.SVG_TRANSFORM_SCALE:
 			return "scale(" + this.getScale() + ")";

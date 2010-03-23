@@ -57,7 +57,7 @@ TestCase.subclass('lively.Tests.CoreTest.ConnectModelTest', {
 	},
 
 });
-TestCase.subclass('Alively.Tests.CoreTest.TestModel', {
+TestCase.subclass('lively.Tests.CoreTest.TestModel', {
 
 	testSetterSource: function() {
 		var calls = 0; var test = this;
@@ -169,7 +169,7 @@ lively.data.Wrapper.subclass('DummyCopierObject', {
 	},
 });	
 
-TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
+TestCase.subclass('lively.Tests.CoreTest.CopierTest', {
 	
 	testSimpleCopy: function() {
 		var obj = new DummyCopierObject();
@@ -307,7 +307,7 @@ TestCase.subclass('Alively.Tests.CoreTest.CopierTest', {
 });
 
 
-TestCase.subclass("Alively.Tests.CoreTest.EncodeWrapperJSONTest", {
+TestCase.subclass("lively.Tests.CoreTest.EncodeWrapperJSONTest", {
 
 	setUp: function() {
 		this.ref = WorldMorph.current();
@@ -346,6 +346,7 @@ TestCase.subclass("Alively.Tests.CoreTest.EncodeWrapperJSONTest", {
 	},	
 	
 })
+
 
 
 

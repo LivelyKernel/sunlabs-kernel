@@ -1669,11 +1669,6 @@ Object.extend(Relay, {
 });
 
 namespace('lively');
-
-
-
-
-
 Global.console && Global.console.log("loaded basic library");
 
 
@@ -1685,15 +1680,15 @@ Object.subclass("Point", {
 	documentation: "2D Point",
 
 	initialize: function(x, y) {
-	this.x = x;
-	this.y = y;
-	return this;
+		this.x = x;
+		this.y = y;
+		return this;
 	},
 
 	deserialize: function(importer, string) { // reverse of toString
-	var array = string.slice(3, -1).split(',');
-	this.x = lively.data.Coordinate.parse(array[0]);
-	this.y = lively.data.Coordinate.parse(array[1]);
+		var array = string.slice(3, -1).split(',');
+		this.x = lively.data.Coordinate.parse(array[0]);
+		this.y = lively.data.Coordinate.parse(array[1]);
 	},
 
 	addPt: function(p) { return new Point(this.x + p.x, this.y + p.y); },
@@ -1775,6 +1770,13 @@ Object.subclass("Point", {
 		if (!acc) acc = pt(0, 0); // if no accumulator passed, allocate a fresh one
 		acc.x = mx.a * this.x + mx.c * this.y + mx.e;
 		acc.y = mx.b * this.x + mx.d * this.y + mx.f;
+		return acc;
+	},
+
+	matrixTransformDirection: function(mx, acc) {
+		if (!acc) acc = pt(0, 0); // if no accumulator passed, allocate a fresh one
+		acc.x = mx.a * this.x + mx.c * this.y ;
+		acc.y = mx.b * this.x + mx.d * this.y ;
 		return acc;
 	},
 
