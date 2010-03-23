@@ -5713,7 +5713,30 @@ Morph.addMethods({
     },
 });
 
+// For driving a Car... 
+Morph.addMethods({
 
+	moveForwardBy: function(amount) {
+		var nose = pt(1,0)
+		var dir = nose.matrixTransformDirection(this.getTransform()).normalized();
+		this.moveBy(dir.scaleBy(amount))
+	},
+
+	rotateAround: function(angle, center) {
+		var tfm = new lively.scene.Similitude().toMatrix();
+		tfm = tfm.translate(center.x, center.y);
+		tfm = tfm.rotate(angle)		
+		tfm = tfm.translate( -center.x, -center.y);
+	
+		var oldTfm = this.getTransform().toMatrix();		
+		var newTfm = tfm.multiply(oldTfm);
+		this.setTransform(new lively.scene.Similitude(newTfm));
+	},
+
+	turnBy: function(angle) {
+		this.rotateAround(angle, this.shape.bounds().center())		
+	}
+})
 
 
 // for Fabrik
