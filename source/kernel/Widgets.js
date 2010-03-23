@@ -591,255 +591,247 @@ Morph.subclass('HandleMorph', {
 });
 
 BoxMorph.subclass("SelectionMorph", {
-    documentation: 'selection "tray" object that allows multiple objects to be moved and otherwise '
-	+ 'manipulated simultaneously',
+	documentation: 'selection "tray" object that allows multiple objects to be moved and otherwise ' + 
+		'manipulated simultaneously',
 
-    style: {borderWidth: 1, borderColor: Color.blue, fill: Color.secondary.blue, fillOpacity: 0.1 },
+	style: {borderWidth: 1, borderColor: Color.blue, fill: Color.secondary.blue, fillOpacity: 0.1 },
 
-    removeWhenEmpty: true,
+	removeWhenEmpty: true,
 
 	openForDragAndDrop: false,
 
 	takesKeyboardFocus: Functions.True, 
-    
-    initialize: function($super, viewPort, defaultworldOrNull) {
-        $super(viewPort);
-        this.originalPoint = viewPort.topLeft();
-        this.reshapeName = "bottomRight";
-        this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
-        // this.shape.setStrokeDashArray([3,2]);
+	
+	initialize: function($super, viewPort, defaultworldOrNull) {
+		$super(viewPort);
+		this.originalPoint = viewPort.topLeft();
+		this.reshapeName = "bottomRight";
+		this.myWorld = defaultworldOrNull ? defaultworldOrNull : this.world();
+		// this.shape.setStrokeDashArray([3,2]);
+		return this;
+	},
 
-        return this;
-    },
+	initializeTransientState: function($super) {
+		$super();
+		this.selectedMorphs = [];
+		this.initialSelection = true;
+	},
 
-    initializeTransientState: function($super) {
-	$super();
-	this.selectedMorphs = [];
-        this.initialSelection = true;
-    },
-
-
-    reshape: function($super, partName, newPoint, lastCall) {
+	reshape: function($super, partName, newPoint, lastCall) {
 
 		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
 		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
 		// FIXME, other place Text, TextMorph>>onKeyDown
 		ClipboardHack.selectPasteBuffer();
 		
-        // Initial selection might actually move in another direction than toward bottomRight
-        // This code watches that and changes the control point if so
-        var result;
-        if (this.initialSelection) {
-            var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
-            if (selRect.width*selRect.height > 30) {
-                this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
-            }
-            this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
-            result = $super(this.reshapeName, newPoint, lastCall);
-        } else {
-            result = $super(partName, newPoint, lastCall);
-        }
-        this.selectedMorphs = [];
-        this.owner.submorphs.forEach(function(m) {
-            if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
-        }, this);
-        this.selectedMorphs.reverse();
-            
-        if (lastCall) this.initialSelection = false;
-        if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) {
-            this.remove();
-        };
-        var world = this.world();
-        if (world) {
-            world.firstHand().setKeyboardFocus(this);
-        };  
-        return result;
-    },
+		// Initial selection might actually move in another direction than toward bottomRight
+		// This code watches that and changes the control point if so
+		var result;
+		if (this.initialSelection) {
+			var selRect = new Rectangle.fromAny(pt(0,0), newPoint);
+			if (selRect.width*selRect.height > 30) {
+				this.reshapeName = selRect.partNameNearest(Rectangle.corners, newPoint);
+			}
+			this.setExtent(pt(0, 0)) // dont extend until we know what direction to grow
+			result = $super(this.reshapeName, newPoint, lastCall);
+		} else {
+			result = $super(partName, newPoint, lastCall);
+		}
+		this.selectedMorphs = [];
+		this.owner.submorphs.forEach(function(m) {
+			if (m !== this && this.bounds().containsRect(m.bounds())) this.selectedMorphs.push(m);
+		}, this);
+		this.selectedMorphs.reverse();
+			
+		if (lastCall) this.initialSelection = false;
+		if (lastCall && this.selectedMorphs.length == 0 && this.removeWhenEmpty) {
+			this.remove();
+		};
+		var world = this.world();
+		if (world) {
+			world.firstHand().setKeyboardFocus(this);
+		};	
+		return result;
+	},
 
-    morphMenu: function($super, evt) { 
-        var menu = $super(evt);
-        menu.keepOnlyItemsNamed(['duplicate', 'remove', 'reset rotation', 'reset scaling', 'inspect', 'edit style']);
-        menu.removeItemNamed('---');
-        menu.addLine();
-	menu.addItem(["align vertically", this.alignVertically]);
-        menu.addItem(["space vertically", this.spaceVertically]);
-        menu.addItem(["align horizontally", this.alignHorizontally]);
-        menu.addItem(["space horizontally", this.spaceHorizontally]);
-        menu.addItem(["align to grid...", this.alignToGrid]);
+	morphMenu: function($super, evt) { 
+		var menu = $super(evt);
+		menu.keepOnlyItemsNamed(['duplicate', 'remove', 'reset rotation', 'reset scaling', 'inspect', 'edit style']);
+		menu.removeItemNamed('---');
+		menu.addLine();
+		menu.addItem(["align vertically", this.alignVertically]);
+		menu.addItem(["space vertically", this.spaceVertically]);
+		menu.addItem(["align horizontally", this.alignHorizontally]);
+		menu.addItem(["space horizontally", this.spaceHorizontally]);
+		menu.addItem(["align to grid...", this.alignToGrid]);
+		return menu;
+	},
+	
+	remove: function() { 
+		this.selectedMorphs.invoke('remove');
+		this.removeOnlyIt();
+	},
+	
+	removeOnlyIt: function() {
+		if ( this.myWorld == null ) {
+			this.myWorld = this.world();
+		} 
+		this.myWorld.currentSelection = null;
+		// Class.getSuperPrototype(this).remove.call(this);
+		Morph.prototype.remove.call(this);
+	},
+	
+	// Note: the next four methods should be removed after we have gridding, i think (DI)
+	alignVertically: function() { 
+		// Align all morphs to same left x as the top one.
+		var morphs = this.selectedMorphs.slice(0).sort(function(m,n) {return m.position().y - n.position().y});
+		var minX = morphs[0].position().x;	// align to left x of top morph
+		morphs.forEach(function(m) { m.setPosition(pt(minX,m.position().y)) });
+	},
 
-        return menu;
-    },
-    
-    remove: function() { 
-        this.selectedMorphs.invoke('remove');
-        this.removeOnlyIt();
-    },
-    
-    removeOnlyIt: function() {
-        if ( this.myWorld == null ) {
-            this.myWorld = this.world();
-        } 
-        this.myWorld.currentSelection = null;
-        // Class.getSuperPrototype(this).remove.call(this);
-        Morph.prototype.remove.call(this);
-    },
-    
-    // Note: the next four methods should be removed after we have gridding, i think (DI)
-    alignVertically: function() { 
-	// Align all morphs to same left x as the top one.
-	var morphs = this.selectedMorphs.slice(0).sort(function(m,n) {return m.position().y - n.position().y});
-	var minX = morphs[0].position().x;  // align to left x of top morph
-	morphs.forEach(function(m) { m.setPosition(pt(minX,m.position().y)) });
-    },
-    alignHorizontally: function() { 
-	var minY = 9999;
-	this.selectedMorphs.forEach(function(m) { minY = Math.min(minY, m.position().y); });
-	this.selectedMorphs.forEach(function(m) { m.setPosition(pt(m.position().x, minY)) });
-    },
-    
-    spaceVertically: function() { 
-	// Sort the morphs vertically
-	var morphs = this.selectedMorphs.clone().sort(function(m,n) {return m.position().y - n.position().y});
-	// Align all morphs to same left x as the top one.
-	var minX = morphs[0].position().x;
-	var minY = morphs[0].position().y;
-	// Compute maxY and sumOfHeights
-	var maxY = minY;
-	var sumOfHeights = 0;
-	morphs.forEach(function(m) {
-		var ht = m.innerBounds().height;
-		sumOfHeights += ht;
-		maxY = Math.max(maxY, m.position().y + ht);
-	});
-	// Now spread them out to fit old top and bottom with even spacing between
-	var separation = (maxY - minY - sumOfHeights)/Math.max(this.selectedMorphs.length - 1, 1);
-	var y = minY;
-	morphs.forEach(function(m) {
-		m.setPosition(pt(minX, y));
-		y += m.innerBounds().height + separation;
-	});
-    },
+	alignHorizontally: function() { 
+		var minY = 9999;
+		this.selectedMorphs.forEach(function(m) { minY = Math.min(minY, m.position().y); });
+		this.selectedMorphs.forEach(function(m) { m.setPosition(pt(m.position().x, minY)) });
+	},
+	
+	spaceVertically: function() { 
+		// Sort the morphs vertically
+		var morphs = this.selectedMorphs.clone().sort(function(m,n) {return m.position().y - n.position().y});
+		// Align all morphs to same left x as the top one.
+		var minX = morphs[0].position().x;
+		var minY = morphs[0].position().y;
+		// Compute maxY and sumOfHeights
+		var maxY = minY;
+		var sumOfHeights = 0;
+		morphs.forEach(function(m) {
+			var ht = m.innerBounds().height;
+			sumOfHeights += ht;
+			maxY = Math.max(maxY, m.position().y + ht);
+		});
+		// Now spread them out to fit old top and bottom with even spacing between
+		var separation = (maxY - minY - sumOfHeights)/Math.max(this.selectedMorphs.length - 1, 1);
+		var y = minY;
+		morphs.forEach(function(m) {
+			m.setPosition(pt(minX, y));
+			y += m.innerBounds().height + separation;
+		});
+	},
 
-    spaceHorizontally: function() { 
-	// Sort the morphs vertically
-	var morphs = this.selectedMorphs.clone().sort(function(m, n) { 
-	    return m.position().x - n.position().x;
-	});
-	// Align all morphs to same left x as the top one.
-	var minX = morphs[0].position().x;
-	var minY = morphs[0].position().y;
-	// Compute maxX and sumOfWidths
-	var maxX = minY;
-	var sumOfWidths = 0;
-	morphs.forEach(function(m) {
-	    var wid = m.innerBounds().width;
-	    sumOfWidths += wid;
-	    maxX = Math.max(maxX, m.position().x + wid);
-	});	// Now spread them out to fit old top and bottom with even spacing between
-	var separation = (maxX - minX - sumOfWidths)/Math.max(this.selectedMorphs.length - 1, 1);
-	var x = minX;
-	morphs.forEach(function(m) {
-	    m.setPosition(pt(x, minY));
-	    x += m.innerBounds().width + separation;
-	});
-    },
+	spaceHorizontally: function() { 
+		// Sort the morphs vertically
+		var morphs = this.selectedMorphs.clone().sort(function(m, n) { 
+			return m.position().x - n.position().x;
+		});
+		// Align all morphs to same left x as the top one.
+		var minX = morphs[0].position().x;
+		var minY = morphs[0].position().y;
+		// Compute maxX and sumOfWidths
+		var maxX = minY;
+		var sumOfWidths = 0;
+		morphs.forEach(function(m) {
+			var wid = m.innerBounds().width;
+			sumOfWidths += wid;
+			maxX = Math.max(maxX, m.position().x + wid);
+		}); // Now spread them out to fit old top and bottom with even spacing between
+		var separation = (maxX - minX - sumOfWidths)/Math.max(this.selectedMorphs.length - 1, 1);
+		var x = minX;
+		morphs.forEach(function(m) {
+			m.setPosition(pt(x, minY));
+			x += m.innerBounds().width + separation;
+		});
+	},
  
-    copyToHand: function(hand) { 
-        this.selectedMorphs.invoke('copyToHand', hand);
-    },
-    
-    setBorderWidth: function($super, width) { 
-        if (!this.selectedMorphs)  $super(width);
-        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
-    },
-    
-    setFill: function($super, color) { 
-        if (!this.selectedMorphs)  $super(color);
-        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
-    },
-    
-    setBorderColor: function($super, color) { 
-        if (!this.selectedMorphs)  $super(color);
-        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
-    },
-    shapeRoundEdgesBy: function($super, r) { 
-        if (!this.selectedMorphs) $super(r);
-        else this.selectedMorphs.forEach( function(m) { if (m.shape.roundEdgesBy) m.shapeRoundEdgesBy(r); });
-    },
-    
-    setFillOpacity: function($super, op) { 
-        if (!this.selectedMorphs)  $super(op);
-        else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFillOpacity(op)});
-    },
-    
-    setStrokeOpacity: function($super, op) { 
-        if (!this.selectedMorphs) $super(op);
-        else this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});
-    },
+	copyToHand: function(hand) { 
+		this.selectedMorphs.invoke('copyToHand', hand);
+	},
+	
+	setBorderWidth: function($super, width) { 
+		if (!this.selectedMorphs)  $super(width);
+		else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderWidth(width)});
+	},
+	
+	setFill: function($super, color) { 
+		if (!this.selectedMorphs)  $super(color);
+		else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFill(color)});
+	},
+	
+	setBorderColor: function($super, color) { 
+		if (!this.selectedMorphs)  $super(color);
+		else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
+	},
+	shapeRoundEdgesBy: function($super, r) { 
+		if (!this.selectedMorphs) $super(r);
+		else this.selectedMorphs.forEach( function(m) { if (m.shape.roundEdgesBy) m.shapeRoundEdgesBy(r); });
+	},
+	
+	setFillOpacity: function($super, op) { 
+		if (!this.selectedMorphs)  $super(op);
+		else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setFillOpacity(op)});
+	},
+	
+	setStrokeOpacity: function($super, op) { 
+		if (!this.selectedMorphs) $super(op);
+		else this.selectedMorphs.invoke('callOnAllSubmorphs', function() { this.setStrokeOpacity(op)});
+	},
 
-    setTextColor: function(c) { 
-        if (!this.selectedMorphs) return;
-        this.selectedMorphs.forEach( function(m) { if (m.setTextColor) m.setTextColor(c); });
-    },
+	setTextColor: function(c) { 
+		if (!this.selectedMorphs) return;
+		this.selectedMorphs.forEach( function(m) { if (m.setTextColor) m.setTextColor(c); });
+	},
 
-    setFontSize: function(c) { 
-        if (!this.selectedMorphs) return;
-        this.selectedMorphs.forEach( function(m) { if (m.setFontSize) m.setFontSize(c); });
-    },
+	setFontSize: function(c) { 
+		if (!this.selectedMorphs) return;
+		this.selectedMorphs.forEach( function(m) { if (m.setFontSize) m.setFontSize(c); });
+	},
 
-    setFontFamily: function(c) { 
-        if (!this.selectedMorphs) return;
-        this.selectedMorphs.forEach( function(m) { if (m.setFontFamily) m.setFontFamily(c); });
-    },
+	setFontFamily: function(c) { 
+		if (!this.selectedMorphs) return;
+		this.selectedMorphs.forEach( function(m) { if (m.setFontFamily) m.setFontFamily(c); });
+	},
 
-    setRotation: function($super, theta) {
-        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
-            this.addMorph(this.selectedMorphs[i]);
-        }
-        $super(theta);
-        for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
-            this.world().addMorph(this.selectedMorphs[i]);
-        }
-    },
-    
-    setScale: function($super, scale) {
-        for (var i = 0; i < this.selectedMorphs.length; i++ ) {
-            this.addMorph(this.selectedMorphs[i]);
-        }
-        $super(scale);
-        for (var i = 0; i < this.selectedMorphs.length; i++ ) {
-            this.world().addMorph(this.selectedMorphs[i]);
-        }
-    },
-    
-    shadowCopy: function(hand) {
+	setRotation: function($super, theta) {
+		for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+			this.addMorph(this.selectedMorphs[i]);
+		}
+		$super(theta);
+		for ( var i = 0; i < this.selectedMorphs.length; i++ ) {
+			this.world().addMorph(this.selectedMorphs[i]);
+		}
+	},
+	
+	setScale: function($super, scale) {
+		for (var i = 0; i < this.selectedMorphs.length; i++ ) {
+			this.addMorph(this.selectedMorphs[i]);
+		}
+		$super(scale);
+		for (var i = 0; i < this.selectedMorphs.length; i++ ) {
+			this.world().addMorph(this.selectedMorphs[i]);
+		}
+	},
+	
+	shadowCopy: function(hand) {
 		var copy = Morph.makeRectangle(this.bounds())  // Don't show selection's shadow in the hand
 		copy.setFill(null);
 		copy.setBorderWidth(0);
 		return copy;
-    },
+	},
 
-    canRespondTo: function(methodName) {
+	canRespondTo: function(methodName) {
 		if (!this.selectedMorphs) return false;
 		if (methodName == 'shapeRoundEdgesBy') return this.selectedMorphs.any( function(m) { return m.shape.roundEdgesBy instanceof Function; });
 		return this.selectedMorphs.any( function(m) { return m[methodName] instanceof Function; });
-    },
+	},
 
-    okToBeGrabbedBy: function(evt) {
-        this.selectedMorphs.forEach( function(m) { evt.hand.addMorphAsGrabbed(m); });
-        return this;
-    },
+	okToBeGrabbedBy: function(evt) {
+		this.selectedMorphs.forEach( function(m) { evt.hand.addMorphAsGrabbed(m); });
+		return this;
+	},
 
-	onKeyPress: function(evt) {
-        // console.log("SelectionMorph onKeyPress " + this + " ---  " + evt )
-
-		if (evt.letItFallThrough != true && ClipboardHack.tryClipboardAction(evt, this)) {
-			evt.letItFallThrough = true; // let the other copy shortcut handler know that evt is handled
-			return;
-		};
-		
-		return false;
-    },
+	onKeyDown: function(evt) {
+		// console.log("SelectionMorph onKeyDown " + this + " ---  " + evt )		
+		return ClipboardHack.tryClipboardAction(evt, this);
+	},
 	
 	/* Actions */
 	
@@ -859,7 +851,7 @@ BoxMorph.subclass("SelectionMorph", {
 			container.addMorph(ea.copy(copier));
 		})
 		
-		var systemDictionary =  container.rawNode.appendChild(NodeFactory.create("defs"));
+		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
 		systemDictionary.setAttribute("id", "SystemDictionary");
 		
 		worldNode.appendChild(container.rawNode);
@@ -910,7 +902,6 @@ BoxMorph.subclass("SelectionMorph", {
 		};
 	},
 	
-	
 	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
 	// TODO refactor
 	pasteFromSource: function(source){
@@ -937,7 +928,7 @@ BoxMorph.subclass("SelectionMorph", {
 		this.doCopy();
 		this.remove();
 	},
-    
+	
 });
 
 // ===========================================================================
