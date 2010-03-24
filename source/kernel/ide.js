@@ -288,6 +288,7 @@ selectionInPane: function(pane) {
  
  	inPaneSelectNodeNamed: function(paneName,  nodeName) {
 			var nodes = this['get' + paneName + 'Content']();
+			if (!nodes) return null;
 			var wanted = nodes.detect(function(ea) { return ea && ea.string.include(nodeName) });
 			if (!wanted) return null;
 			var list = this.panel[paneName].innerMorph();
