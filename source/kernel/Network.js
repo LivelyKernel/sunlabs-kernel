@@ -1057,7 +1057,7 @@ Object.subclass('WebResource', {
 		return resource.getContentText();
 	},
 
-	getXML: function(rev, contentType) {
+	getDocument: function(rev, contentType) {
 		var resource = new SVNResource(
 			this.getURL().toString(),
 			Record.newPlainInstance({URL: this.getURL().toString(), ContentDocument: null}));
