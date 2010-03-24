@@ -5729,14 +5729,15 @@ Morph.addMethods({
 		this.moveBy(dir.scaleBy(amount))
 	},
 
+	// TODO: There is a bug in Safari (the matrix multiplication is the wrong way around)
+	// that is not taken into account here....
 	rotateAround: function(angle, center) {
 		var tfm = new lively.scene.Similitude().toMatrix();
 		tfm = tfm.translate(center.x, center.y);
 		tfm = tfm.rotate(angle)		
-		tfm = tfm.translate( -center.x, -center.y);
-	
-		var oldTfm = this.getTransform().toMatrix();		
-		var newTfm = tfm.multiply(oldTfm);
+		tfm = tfm.translate( -center.x, -center.y);	
+		var oldTfm = this.getTransform().toMatrix();
+		var newTfm = oldTfm.multiply(tfm);
 		this.setTransform(new lively.scene.Similitude(newTfm));
 	},
 
