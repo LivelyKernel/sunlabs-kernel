@@ -426,8 +426,9 @@ var NodeFactory = {
 XLinkNS = {
 	create: function(href, doc) {
 		var doc = doc || Global.document;
-		var node = NodeFactory.createNS(Namespace.SVG, 'script', {type: "text/ecmascript"});
-		XLinkNS.setHref(node, href);
+		var node = NodeFactory.createNS(null, 'script', {type: "text/ecmascript"});
+		node.setAttribute('xlink:href', href);
+		// XLinkNS.setHref(node, href);
 		return node;
 	},
     setHref: function(node, href) {
