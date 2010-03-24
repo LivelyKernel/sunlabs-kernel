@@ -428,7 +428,7 @@ XLinkNS = {
 		var doc = doc || Global.document;
 		var node = NodeFactory.createNS(null, 'script', {type: "text/ecmascript"});
 		node.setAttribute('xlink:href', href);
-		// XLinkNS.setHref(node, href);
+		// XLinkNS.setHref(node, href); // does not seem to work
 		return node;
 	},
     setHref: function(node, href) {
