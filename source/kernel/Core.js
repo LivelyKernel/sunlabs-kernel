@@ -4595,9 +4595,14 @@ WorldMorph.addMethods({
 	},
 	
 	windowBounds: function() {
-		return pt(Global.pageXOffset, Global.pageYOffset).extent(
-				pt(Global.document.documentElement.clientWidth,
-					Global.document.documentElement.clientHeight))
+		var topLeft = pt(Global.pageXOffset, Global.pageYOffset);
+		var width = Math.min(
+			Global.document.documentElement.clientWidth,
+			WorldMorph.current().getExtent().x);
+		var height = Math.min(
+			Global.document.documentElement.clientHeight,
+			WorldMorph.current().getExtent().y)
+		return topLeft.extent(pt(width, height))
 	},
 
 	setStatusMessage: function(msg, color, delay) {
