@@ -1236,6 +1236,11 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 		this.setVertices(v);
 	},
 
+	addPoint: function(point) {
+		// FIXME can this be done more efficiently? certainly...
+		this.setVertices(this.vertices().concat(point));
+	},
+	
 	// poorman's traits :)
 	bounds: this.Polygon.prototype.bounds,
 	origin: this.Polygon.prototype.origin,
