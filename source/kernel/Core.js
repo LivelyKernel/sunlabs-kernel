@@ -2161,6 +2161,18 @@ Morph.addMethods({
 		return this.submorphs.last();
 	},
 
+	getMorphNamed: function (name) {
+		for (var i = 0; i < this.submorphs.length; i++) {
+			var morph = this.submorphs[i];
+			if (morph.getName() === name) return morph;
+		}
+		for (var i = 0; i < this.submorphs.length; i++)  {
+			var morph = this.submorphs[i].getMorphNamed(name);
+			if (morph) return morph;
+		}
+		return null;
+	},
+
 	// morph gets an opportunity to shut down when WindowMorph closes 
 	shutdown: function() {
 		this.remove();
@@ -4588,25 +4600,21 @@ WorldMorph.addMethods({
 	},
 	
 	windowBounds: function() {
-		return pt(window.pageXOffset,  window.pageYOffset).extent(
-			pt(window.innerWidth, window.innerHeight))
+		return pt(Global.pageXOffset, Global.pageYOffset).extent(
+				pt(Global.document.documentElement.clientWidth,
+					Global.document.documentElement.clientHeight))
 	},
 
 	setStatusMessage: function(msg, color, delay) {
 		console.log("status msg: " + msg)
-		if (!this._statusMorph) {
-			this._statusMorph = new TextMorph(pt(400,30).extentAsRectangle());
-			this._statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.5})
-		}
-		var statusMorph = this._statusMorph;
+		var statusMorph = this._statusMorph || new TextMorph(pt(400,30).extentAsRectangle());
+		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.5});
 		statusMorph.textString = msg;
 		statusMorph.setTextColor(color || Color.black);
 		statusMorph.ignoreEvents();
 		this.addMorph(statusMorph);
 		statusMorph.align(statusMorph.bounds().topRight(), this.windowBounds().topRight());
-		(function() { 
-			// console.log("remove status")
-			statusMorph.remove() }).delay(delay || 4);
+		(function removeStatusMorph() { statusMorph.remove() }).delay(delay || 4);
 	},	
 });
 
