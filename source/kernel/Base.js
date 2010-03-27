@@ -1505,6 +1505,8 @@ Object.extend(Relay, {
 
 	newRelaySetter: function newRelaySetter(targetName, optConv) {
 		return function setterRelay(/*...*/) {
+			if (!this.delegate)
+				new Error("delegate in relay not existing " + targetName);
 			var impl = this.delegate[targetName];
 			if (!impl)
 				throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName));
@@ -1519,6 +1521,8 @@ Object.extend(Relay, {
 
 	newRelayGetter: function newRelayGetter(targetName, optConv) {
 		return function getterRelay(/*...*/) {
+			if (!this.delegate)
+				throw dbgOn(new Error("delegate in relay not existing " + targetName)); 
 			var impl = this.delegate[targetName];
 			if (!impl)
 				throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName)); 
@@ -2400,7 +2404,11 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 	removeRecordField: function(name) {
 		var fieldElement = this[name + "$Element"];
 		if (fieldElement) {
-			this.rawNode.removeChild(fieldElement);
+			try { // FIXME ... argh!!!
+				this.rawNode.removeChild(fieldElement);
+			} catch(e) {
+				console.warn('Cannot remove record field' + name + ' of ' + this + ' because ' + e);
+			}
 			delete this.fieldElement;
 		}
 	},
