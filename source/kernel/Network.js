@@ -218,9 +218,10 @@ URL.proxy = (function() {
 
 // FIXME: better names?
 URL.common = {
-    wiki:   URL.proxy.withFilename('lively-wiki/'),
-    repository: URL.proxy.withFilename('lively-kernel/'),
-    project: URL.proxy.withFilename('lively-project/')  // currently lively-kernel.org
+	wiki:   URL.proxy.withFilename('lively-wiki/'),
+	repository: URL.proxy.withFilename('lively-kernel/'),
+	project: URL.proxy.withFilename('lively-project/'),  // currently lively-kernel.org
+	domain: new URL(Global.document.location.protocol + '//' + Global.document.location.host)
 };
 
 
