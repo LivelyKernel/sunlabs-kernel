@@ -37,12 +37,10 @@ Object.subclass('TestCase', {
 
     shouldRun: true,
     
-	initialize: function(testResult) {
-		if (testResult) {
-			this.result = testResult;	 
-		} else {
-			this.result = new TestResult();	   
-		};
+	initialize: function(testResult, optTestSelector) {
+		this.result = testResult || new TestResult();
+		this.currentSelector = optTestSelector;
+		this.statusUpdateFunc = null;
 	},
 	
 	verbose: function() {
@@ -54,17 +52,29 @@ Object.subclass('TestCase', {
             console.log(aString);
 	},
 	
-	runAll: function() {
-	    var startTime = (new Date()).getTime();	
-		this.allTestSelectors().each(function(ea) {
-			this.runTest(ea)
+	createTests: function() {
+		return this.allTestSelectors().collect(function(sel) {
+			return new this.constructor(this.result, sel);
 		}, this);
-		this.result.setTimeToRun(this.name(), (new Date()).getTime() - startTime);
+	},
+	
+	runAll: function(statusUpdateFunc) {
+		var tests = this.createTests()
+		var t = Functions.timeToRun(function() {
+			tests.forEach(function(test) {
+				test.statusUpdateFunc = statusUpdateFunc;
+				test.runTest();
+			})
+		})
+		this.result.setTimeToRun(this.name(), t);
+		
 	},
 	
 	name: function() {
 	    return this.constructor.type
 	},
+	
+	id: function() { return this.name() + '>>' + this.currentSelector },
 	
 	setUp: function() {},
 	
@@ -72,24 +82,22 @@ Object.subclass('TestCase', {
 	
 	runTest: function(aSelector) {
 	    if (!this.shouldRun) return;
-		this.log('Running test: ' + aSelector);
+		this.currentSelector = aSelector || this.currentSelector;
+
+		this.running();
 		try {
-			this.currentSelector = aSelector;
-			// var startTimeTest = (new Date()).getTime();	
 			this.setUp();
-			this[aSelector]();
-			this.result.addSuccess(this.constructor.type, aSelector);
-			// this.log(' ++ succeeded ++ (' + ((new Date()).getTime() - startTimeTest) +"ms)" );
-			// this.log(' ++ succeeded ++');
+			this[this.currentSelector]();
+			this.result.addSuccess(this.constructor.type, this.currentSelector);
+			this.success();
 		} catch (e) {
-			this.result.addFailure(this.constructor.type, aSelector, e);
-			this.log(' -- failed -- ' + '(' + printError(e) + ')');
-			//if (!e.isAssertion) throw e;
+			this.result.addFailure(this.constructor.type, this.currentSelector, e);
+			this.failure(e);
 		} finally {
 			try {
 				this.tearDown();
 			} catch(e) {
-				this.log('Couldn\'t run tearDown for ' + aSelector + ' ' + printError(e));
+				this.log('Couldn\'t run tearDown for ' + this.id() + ' ' + printError(e));
 			}
 		}
 	},
@@ -104,35 +112,26 @@ Object.subclass('TestCase', {
 
     assert: function(bool, msg) {
         if (bool) return;
-        msg = msg || "unknown";
-        throw {isAssertion: true, message: " assert failed " + "(" + msg + ")"}
+        msg = " assert failed " + msg ? '(' + msg + ')' : '';
+		this.show(this.id() + msg);
+        throw {isAssertion: true, message: msg, toString: function() { return msg }}
     },
-        
-	assertEqual: function(firstValue, secondValue, msg){
+      
+	// deprecated!!!
+	assertEqual: function(firstValue, secondValue, msg) { this.assertEquals(firstValue, secondValue, msg) },
+	
+	assertEquals: function(firstValue, secondValue, msg){
 	    if (firstValue && firstValue.constructor === Point && secondValue &&
 	        secondValue.constructor === Point && firstValue.eqPt(secondValue)) return;
 		if (firstValue == secondValue) return;
-		/* Better call assert() and assemble error message
-		in AssertionError */
-		throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" != " + secondValue +") "};
+		this.assert(false, (msg ? msg : '') + ' (' + firstValue +' != ' + secondValue +')');
 	},
 	
 	assertIdentity: function(firstValue, secondValue, msg){
-		if(!(firstValue === secondValue))  {
-			/* Better call assert() and assemble error message
-			in AssertionError */
-			throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" !== " + secondValue +") "};
-		}
+		if(firstValue === secondValue) return
+		this.assert(false, (msg ? msg : '') + ' (' + firstValue +' !== ' + secondValue +')');
 	},
-	
-	assertIdentity: function(firstValue, secondValue, msg){
-		if(!(firstValue === secondValue))  {
-			/* Better call assert() and assemble error message
-			in AssertionError */
-			throw {isAssertion: true, message: (msg ? msg	 : "") + " (" + firstValue +" !== " + secondValue +") "};
-		}
-	},
-	
+
 	assertEqualState: function(leftObj, rightObj, msg) {
         msg = (msg ? msg : ' ') + leftObj + " != " + rightObj + " because ";
 		if (!leftObj && !rightObj) return;
@@ -182,7 +181,103 @@ Object.subclass('TestCase', {
 	toString: function($super) {
 	    return $super() + "(" + this.timeToRun +")"
 	},
+
+	show: function(string) { this.log(string) },
+
+	running: function() {
+		this.show('Running ' + this.id());
+		this.statusUpdateFunc && this.statusUpdateFunc(this, 'running');
+	},
+
+	success: function() {
+		this.show(this.id()+ ' done', 'color: green;');
+		this.statusUpdateFunc && this.statusUpdateFunc(this, 'success');
+	},
+
+	failure: function(error) {
+		this._errorOccured = true; 
+		var message = error.toString();
+		var file = error.sourceURL || error.fileName;
+		var line = error.line || error.lineNumber;
+		message += ' (' + file + ':' + line + ')';
+		message += ' in ' + this.id();
+		this.show(message , 'color: red;');
+		this.statusUpdateFunc && this.statusUpdateFunc(this, 'failure', message);
+	},
 	
+});
+
+TestCase.subclass('AsyncTestCase', {
+
+	initialize: function($super, testResult, testSelector) {
+		$super(testResult, testSelector);
+		this._maxWaitDelay = 1000; // ms
+		this._done = false;
+	},
+
+	setMaxWaitDelay: function(ms) { this._maxWaitDelay = ms },
+
+	show: function(string) { console.log(string) },
+
+	done: function() {
+		this._done = true;
+		if (!this._errorOccured) this.success();
+	},
+
+	isDone: function() { return this._done },
+
+	delay: function(func, ms) {
+		var sel = this.currentSelector;
+		console.log('Scheduled action for ' + sel)
+		func = func.bind(this);
+
+		(function() {
+			console.log('running delayed action for ' + sel);
+			try { func() } catch(e) { this.failure(e) }
+		}).bind(this).delay(ms / 1000)
+	},
+
+	runAll: function(statusUpdateFunc) {
+		var tests = this.createTests();
+
+		tests.forEach(function(test) {
+			test.statusUpdateFunc = statusUpdateFunc;
+			test.scheduled();
+		});
+
+		var runAllAsync = tests.reverse().inject(
+			function() { console.log('All tests of ' + this.name() + ' done'); }.bind(this),
+			function(testFunc, test) { return test.runAndDoWhenDone.bind(test).curry(testFunc) }
+		);
+
+		runAllAsync();
+
+		return tests;
+	},
+
+	runAndDoWhenDone: function(func) {
+		this.runTest();
+		var self = this;
+		var waitMs = 100;
+		(function doWhenDone(timeWaited) {
+			if (timeWaited >= self._maxWaitDelay) {
+				if (!self._errorOccured)
+					self.failure(new Error('Asynchronous test was not done after ' + timeWaited + 'ms'));
+				func();
+				return;
+			}
+			if (self.isDone()) { func(); return };
+			// console.log('Deferring test after ' + self.id());
+			doWhenDone.curry(timeWaited + waitMs).delay(waitMs / 1000);
+		})(0);
+	},
+
+	scheduled: function() { this.show('Scheduled ' + this.id()) },
+
+	success: function($super) {
+		this.isDone() ? $super() : this.running();
+	},
+
 });
 
 
@@ -307,6 +402,10 @@ Object.subclass('TestResult', {
 	            (ea.err.line ? ' ( Line '+ ea.err.line + ')' : "");
 		}, this);
 		return result
+	},
+	
+	successList: function() {
+		return this.succeeded.collect(function(ea) { return ea.classname + '.' + ea.selector });
 	}
 });
 
@@ -340,6 +439,7 @@ Widget.subclass('TestRunner', {
 		var testClassName = this.getSelectedTestClass();
 		if (!testClassName) return;
 		var testCase = new (Class.forName(testClassName))();
+
 		testCase.runAll(this);
 		this.setResultOf(testCase);
 	},
