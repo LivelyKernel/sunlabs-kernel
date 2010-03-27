@@ -56,29 +56,30 @@ BoxMorph.subclass('ButtonMorph', {
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
-    initialize: function($super, initialBounds) {
-        this.baseFill = null;
-        $super(initialBounds);
-	if (Config.selfConnect) {
-            var model = Record.newNodeInstance({Value: false, IsActive: true});
-	    // this default self connection may get overwritten by, eg, connectModel()...
-	    this.relayToModel(model, {Value: "Value", IsActive: "IsActive"});
-	}
-        // Styling
-        this.applyLinkedStyles();
-        this.changeAppearanceFor(false);
-        return this;
-    },
+	initialize: function($super, initialBounds) {
+		this.baseFill = null;
+		$super(initialBounds);
+		this.value = false; // for connect()
+		if (Config.selfConnect) {
+			var model = Record.newNodeInstance({Value: this.value, IsActive: true});
+			// this default self connection may get overwritten by, eg, connectModel()...
+			this.relayToModel(model, {Value: "Value", IsActive: "IsActive"});
+		}
+		// Styling
+		this.applyLinkedStyles();
+		this.changeAppearanceFor(this.value);
+		return this;
+	},
 
     onDeserialize: function() {
         this.baseFill = this.shape.getFill();
-        this.changeAppearanceFor(this.getValue(false));
+        this.changeAppearanceFor(this.value);
     },
 
 
-    handlesMouseDown: function(evt) {
-	return !evt.isCommandKey() && evt.isLeftMouseButtonDown();
-},
+	handlesMouseDown: function(evt) {
+		return !evt.isCommandKey() && evt.isLeftMouseButtonDown();
+	},
     
     onMouseDown: function(evt) {
 		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
@@ -89,58 +90,60 @@ BoxMorph.subclass('ButtonMorph', {
         } 
     },
     
-    onMouseMove: Functions.Empty,
+	onMouseMove: Functions.Empty,
 
-    onMouseUp: function(evt) {
+	onMouseUp: function(evt) {
 		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
-        var newValue = this.toggle ? !this.getValue() : false;
-        this.setValue(newValue); 
-	// the following should happen in response
-        this.changeAppearanceFor(newValue); 
-    },
+		var newValue = this.toggle ? !this.getValue() : false;
+		this.setValue(newValue); 
+		// the following should happen in response
+		this.changeAppearanceFor(newValue); 
+	},
     
-    changeAppearanceFor: function(value) {
-        var delta = value ? 1 : 0;
-	var gfx = lively.paint;
-        if (this.baseFill instanceof gfx.LinearGradient) {
-            var base = this.baseFill.stops[0].color().lighter(delta);
-	    var gradient = 
-		new gfx.LinearGradient([new gfx.Stop(0, base), new gfx.Stop(1, base.lighter())],
-				       gfx.LinearGradient.SouthNorth);
-	    this.setFill(gradient);
-        } else if (this.baseFill instanceof gfx.RadialGradient) {
-            var base = this.baseFill.stops[0].color().lighter(delta);
-            this.setFill(new gfx.RadialGradient([new gfx.Stop(0, base.lighter()), new gfx.Stop(1, base)]));
-        } else if (this.baseFill instanceof Color) {
-            this.setFill(this.baseFill.lighter(delta)); 
-        } else throw new Error('unsupported fill type ' + this.baseFill);
-    },
+	changeAppearanceFor: function(value) {
+		var delta = value ? 1 : 0;
+		var gfx = lively.paint;
+		if (this.baseFill instanceof gfx.LinearGradient) {
+			var base = this.baseFill.stops[0].color().lighter(delta);
+			var gradient = 
+			new gfx.LinearGradient([new gfx.Stop(0, base), new gfx.Stop(1, base.lighter())],
+			gfx.LinearGradient.SouthNorth);
+			this.setFill(gradient);
+		} else if (this.baseFill instanceof gfx.RadialGradient) {
+			var base = this.baseFill.stops[0].color().lighter(delta);
+			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, base.lighter()), new gfx.Stop(1, base)]));
+		} else if (this.baseFill instanceof Color) {
+			this.setFill(this.baseFill.lighter(delta)); 
+		} else throw new Error('unsupported fill type ' + this.baseFill);
+	},
     
-    applyStyle: function($super, spec) {
-        $super(spec);
-        this.baseFill = this.shape.getFill(); // we may change appearance depending on the value
-	if (this.getActualModel()) {
-	    // otherwise getValue() will fail. Note that this can happen in deserialization
-	    // when themes are applied before the widget is hooked up to the model
-            this.changeAppearanceFor(this.getValue());
-	}
-    },
+	applyStyle: function($super, spec) {
+		$super(spec);
+		this.baseFill = this.shape.getFill(); // we may change appearance depending on the value
+		if (this.getActualModel()) {
+			// otherwise getValue() will fail. Note that this can happen in deserialization
+			// when themes are applied before the widget is hooked up to the model
+			this.changeAppearanceFor(this.getValue());
+		}
+	},
 
-    updateView: function(aspect, controller) {
-        var p = this.modelPlug;
-	if (!p) return;
-        if (aspect == p.getValue || aspect == 'all') 
-	    this.onValueUpdate(this.getValue());
-    },
+	updateView: function(aspect, controller) {
+		var p = this.modelPlug;
+		if (!p) return;
+		if (aspect == p.getValue || aspect == 'all') 
+			this.onValueUpdate(this.getValue());
+	},
 
-    onValueUpdate: function(value) {
-	if (this.toggle) console.log("got updated with value " + value);
-	this.changeAppearanceFor(value);
-    },
-onIsActiveUpdate: function(isActive) {
-	if (!this.label) return;
-	this.label.applyStyle({ textColor: (isActive ? Color.black : Color.gray.darker()) });
-},
+	onValueUpdate: function(value) {
+		this.value = value;
+		if (this.toggle) console.log("got updated with value " + value);
+		this.changeAppearanceFor(value);
+	},
+	
+	onIsActiveUpdate: function(isActive) {
+		if (!this.label) return;
+		this.label.applyStyle({ textColor: (isActive ? Color.black : Color.gray.darker()) });
+	},
 
 
     takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus
@@ -1248,7 +1251,6 @@ TextMorph.subclass("CheapListMorph", {
 BoxMorph.subclass("TextListMorph", {
 
 	documentation: "A list that uses TextMorphs to display individual items",
-	doNotSerialize: ['itemList'],
 	style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
 	formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
 	defaultCapacity: 50,
@@ -1265,6 +1267,7 @@ BoxMorph.subclass("TextListMorph", {
 		$super(initialBounds);
 		this.itemList = itemList;
 		this.selectedLineNo = -1;
+		this.selection = null; // for connect
 		this.textStyle = optTextStyle;
 		this.generateSubmorphs(itemList);
 	
@@ -1281,14 +1284,17 @@ BoxMorph.subclass("TextListMorph", {
 	},
 	
 	onDeserialize: function() {
-		this.itemList = [];
+		if (!this.itemList) this.itemList = [];
 		for (var i = 0; i < this.submorphs.length; i++ ) {
 			var m = this.submorphs[i];
 			m.beListItem();
 			m.relayMouseEvents(this);
-			this.itemList.push(m.textString);
+			// this.itemList.push(m.textString);
 		}
-		this.setList(this.itemList);
+		// FIXME sometimes there are deserialization problems. replace completely!
+		try { this.setList(this.itemList) } catch(e) {
+			console.warn('Cannot correctly deserialize ' + this + ' because ' + e);
+		}
 		this.layoutChanged();
 	},
 
@@ -1471,10 +1477,11 @@ BoxMorph.subclass("TextListMorph", {
 	this.appendList(delta);
     },
 
-    onSelectionUpdate: function(selection) {
-        console.log("got selection " + selection);
-        this.setSelectionToMatch(selection);
-    },
+	onSelectionUpdate: function(selection) {
+		console.log("got selection " + selection);
+		this.setSelectionToMatch(selection);
+		this.selection = selection; // for connect
+	},
 
     onDeletionConfirmationUpdate: function(conf) {
         if (conf == true) {
@@ -1574,28 +1581,30 @@ TextListMorph.subclass("ListMorph", {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill();
             item.setFill(TextSelectionMorph.prototype.style.fill);
-            selectionContent = this.itemList[lineNo];
-            if (selectionContent.isListItem) {
-				selectionContent = selectionContent.value;
-			}
+            selectionContent = this.itemList[lineNo].isListItem ?
+				this.itemList[lineNo].value :
+				this.itemList[lineNo];
             this.scrollItemIntoView(item);
         }
         shouldUpdateModel && this.setSelection(selectionContent, true);
     },
     
-    onSelectionUpdate: function($super, selection) {
-        if (!selection) {
-            this.selectLineAt(-1);
-            return;
-        }
-        if (!Object.isString(selection)) {
-            var item = this.itemList.detect(function(ea) { return ea.value === selection });
-            if (item)
-                this.selectLineAt(this.itemList.indexOf(item));
-            return
-        }
-        $super(selection);
-    },
+	onSelectionUpdate: function($super, selection) {
+		if (!selection) {
+			this.selectLineAt(-1);
+			this.selection = null; // for connect
+			return;
+		}
+		if (!Object.isString(selection)) {
+			var item = this.itemList.detect(function(ea) { return ea.value === selection });
+			if (item) {
+				this.selectLineAt(this.itemList.indexOf(item));
+				this.selection = item; // for connect
+			}
+			return
+		}
+		$super(selection);
+	},
     
     setSelectionToMatch: function($super, item) {
         if (!item) return false;
@@ -1848,19 +1857,22 @@ DragnDropListMorph.subclass('FilterableListMorph', {
         }
         shouldUpdateModel && this.setSelection(selectionContent, true);
     },
-    onSelectionUpdate: function($super, selection) {
-        if (!selection) {
-            this.selectLineAt(-1);
-            return;
-        }
-        if (!Object.isString(selection)) {
-            var item = this.itemList.detect(function(ea) { return ea.value === selection });
-            if (item)
-                this.selectLineAt(/*****/this.filteredItemList()/*changed for filter*/.indexOf(item));
-            return
-        }
-        $super(selection);
-    },
+	onSelectionUpdate: function($super, selection) {
+		if (!selection) {
+			this.selectLineAt(-1);
+			this.selection = null; // for connect
+			return;
+		}
+		if (!Object.isString(selection)) {
+			var item = this.itemList.detect(function(ea) { return ea.value === selection });
+			if (item) {
+				this.selectLineAt(/*****/this.filteredItemList()/*changed for filter*/.indexOf(item));
+				this.selection = selection; // for connect
+			}
+			return
+		}
+		$super(selection);
+	},
 	
 });
 
