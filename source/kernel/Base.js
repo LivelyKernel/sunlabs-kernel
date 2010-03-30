@@ -190,7 +190,7 @@ var using = (function() {
 				// little convenience, 
 				if (args.length > 0) this.log('using().module(): ignoring args ' + args);
 				return module(this.moduleName).requires().toRun(inner);
-				} else return inner.apply(args[0], args); 
+			} else return inner.apply(args[0], args); 
 		},
 
 		model: function(model) {
@@ -264,6 +264,7 @@ function namespace(spec, context) {
 	}
 }
 
+
 function module(moduleName) {
 
 	var namespacePrefix = 'lively.';
@@ -291,8 +292,8 @@ function module(moduleName) {
 		var requiredModules = [];
 		for (var i = 0; i < preReqModuleNames.length; i++) {
 			var reqModule = createNamespaceModule(preReqModuleNames[i]);
-				module.addRequiredModule(reqModule);
-				requiredModules.push(reqModule);
+			module.addRequiredModule(reqModule);
+			requiredModules.push(reqModule);
 		}
 
 		return {
@@ -315,12 +316,10 @@ function module(moduleName) {
 };
 
 function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
-	function getUniqueName() {
-		return 'anonymous_module_' + require.counter;
-	}
+	function getUniqueName() { return 'anonymous_module_' + require.counter }
 	require.counter !== undefined ? require.counter++ : require.counter = 0;
 	var args = $A(arguments);
-	return module(getUniqueName()).requires(Object.isArray(args[0]) ? args[0] : args);
+	return module(getUniqueName()).beAnonymous().requires(Object.isArray(args[0]) ? args[0] : args);
 };
 
 
@@ -352,7 +351,7 @@ Object.extend(Function.prototype, {
 			targetScope = Class.namespaceFor(className);
 			shortName = Class.unqualifiedNameFor(className);
 		}  else {
-			shortName = "anonymous_" + (Class.anonymousCounter ++);
+			shortName = "anonymous_" + (Class.anonymousCounter++);
 			className = shortName;
 		}
 	
@@ -417,7 +416,9 @@ Object.extend(Function.prototype, {
 						return function callSuper() {
 							var method = ancestor[m];
 							if (!method)
-								throw new Error(Strings.format('Trying to call super of %s>>%s but super method non existing in %s', className, m, ancestor.constructor.type))
+								throw new Error(Strings.format('Trying to call super of' + 
+									'%s>>%s but super method non existing in %s',
+									className, m, ancestor.constructor.type));
 							return method.apply(this, arguments);
 						};
 					})(property);
@@ -425,22 +426,27 @@ Object.extend(Function.prototype, {
 					advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
 	
 					value = Object.extend(advice.wrap(method), {
-							valueOf:  function() { return method },
+						valueOf:  function() { return method },
 						toString: function() { return method.toString() },
 						originalFunction: method
 					});
 				})();
 			}
+			
 			if (Object.isFunction(value)) {
-				// remember name for profiling in WebKit
-				value.displayName = className +"$" + property;
+				
+				
 			}
+			
 			this.prototype[property] = value;
 		
-			if (property === "formals") {
+			if (property === "formals") { // rk FIXME remove this cruft
 				// special property (used to be pins, but now called formals to disambiguate old and new style
 				Class.addPins(this, value);
 			} else if (Object.isFunction(value)) {
+				// remember name for profiling in WebKit
+				value.displayName = className + "$" + property;
+				
 				for ( ; value; value = value.originalFunction) {
 					if (value.methodName) {
 						//console.log("class " + this.prototype.constructor.type 
@@ -450,7 +456,8 @@ Object.extend(Function.prototype, {
 					value.methodName = property;
 				}
 			}
-		}
+		} // end of for (var property in source)
+		
 		return this;
 	},
 
@@ -797,7 +804,7 @@ var Properties = {
 
 // bootstrap namespaces
 Object.subclass('Namespace', {
-		
+
 	initialize: function(context, nsName) {
 		this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
 		this.createTime = new Date();
@@ -810,23 +817,27 @@ Object.subclass('Namespace', {
 	},
 	
 	subNamespaces: function(recursive) {
-		return this.gather('subNamespaces',
-				function(ea) { return (ea instanceof lively.lang.Namespace || ea === Global) && ea !== this },
-				recursive);
+		return this.gather(
+			'subNamespaces',
+			function(ea) { return (ea instanceof lively.lang.Namespace || ea === Global) && ea !== this },
+			recursive);
 	},
 	
 	classes: function(recursive) {		  
-		var normalClasses = this.gather('classes',
-					function(ea) { return ea && ea !== this.constructor && Class.isClass(ea) },
-					recursive);
-	if (this === Global) return [Array, Number, String, Function].concat(normalClasses);
-	return normalClasses;
+		var normalClasses = this.gather(
+			'classes',
+			function(ea) { return ea && ea !== this.constructor && Class.isClass(ea) },
+			recursive);
+		if (this === Global)
+			return [Array, Number, String, Function].concat(normalClasses);
+		return normalClasses;
 	},
 	
 	functions: function(recursive) {
-		return this.gather('functions',
-					function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea },
-					recursive);
+		return this.gather(
+			'functions',
+			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea },
+			recursive);
 	}
 	
 });
@@ -838,13 +849,13 @@ Global.namespaceIdentifier = 'Global';
 Namespace.addMethods({ // module specific, should be a subclass?
 	
 	uri: function() { // FIXME cleanup necessary
-		var id = this.namespaceIdentifier;
+		var id = this.namespaceIdentifier; // something like lively.Core
 		var namespacePrefix;
 		if (id.startsWith('Global.')) namespacePrefix = 'Global.lively.';
 		else if (id.startsWith('lively.')) namespacePrefix = 'lively.';
 		else throw dbgOn(new Error('unknown namespaceIdentifier'));
 		var url = Config.codeBase + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./, '/');
-		if (!url.include('anonymous_module')) url += '.js';
+		if (!this.isAnonymous()) url += '.js'; // FIXME not necessary JavaScript?!
 		return url;
 	},
 	
@@ -902,7 +913,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	},
 	
 	isLoaded: function() {
-		return this.loaded;
+		return this._isLoaded;
 	},
 		
 	isLoading: function() {
@@ -918,7 +929,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
 		}
 		if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
 			this.runOnloadCallbacks();
-			this.loaded = true;
+			this._isLoaded = true;
 			// time is not only the time needed for the Netrequest and code evaluation
 			// but the complete time span from the creation of the module (when the module is first encountered)
 			// to evaluation the evaluation of its code, including load time of all requirements
@@ -932,6 +943,15 @@ Namespace.addMethods({ // module specific, should be a subclass?
 			return;
 		}
 		Loader.loadJs(this.uri());
+	},
+	
+	isAnonymous: function() {
+		return this._isAnonymous
+	},
+	
+	beAnonymous: function() {
+		this._isAnonymous = true;
+		return this;
 	}
 	
 });
@@ -957,7 +977,8 @@ lively.lang.let = function(/** **/) {
 }
 
 /*
- * Stack Viewer when Dans StackTracer is not available
+ * Stack Viewer when Dan's StackTracer is not available
+ * FIXME rk: move this to Helper.js?
  */
 function getStack() {
 	var result = [];
@@ -2292,9 +2313,8 @@ Object.extend(Color, {
 
 Global.console && Global.console.log("Loaded platform-independent graphics primitives");
 
-// the following does not really belong to Base should be somewhere else
 namespace('lively.data');
-
+// FIXME the following does not really belong to Base should be somewhere else
 Record.subclass('lively.data.DOMRecord', {
 	description: "base class for records backed by a DOM Node",
 	noShallowCopyProperties: ['id', 'rawNode'],

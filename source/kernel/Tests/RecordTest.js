@@ -1,5 +1,9 @@
 module('lively.Tests.RecordTest').requires('lively.TestFramework').toRun(function() {
 
+
+// TODO
+// In CoreTest there are already similar tests... merge them!
+
 TestCase.subclass('SharedNodeModelTest', {
     
     setUp: function() {
