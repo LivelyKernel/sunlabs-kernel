@@ -192,27 +192,27 @@ Object.subclass('URL', {
 });
 
 URL.fromLiteral = function(literal) {
-    return new URL(literal);
+	return new URL(literal);
 };
 
 URL.source = new URL(document.documentURI);
 
 URL.ensureAbsoluteURL = function(urlString) {
 	return /^http.*/.test(urlString) ?
-		new URL(urlString) :
-		URL.source.notSvnVersioned().getDirectory().withRelativePath(urlString);
+	new URL(urlString) :
+	URL.source.notSvnVersioned().getDirectory().withRelativePath(urlString);
 };
 
 URL.proxy = (function() {
-    if (!Config.proxyURL) {
-	if (URL.source.protocol.startsWith("file")) 
-	    console.log("loading from localhost, proxying won't work");
-	return URL.source.withFilename("proxy/");
-    } else {
-	var str = Config.proxyURL;
-	if (!str.endsWith('/')) str += '/';
-	return new URL(str);
-    }
+	if (!Config.proxyURL) {
+		if (URL.source.protocol.startsWith("file")) 
+			console.log("loading from localhost, proxying won't work");
+		return URL.source.withFilename("proxy/");
+	} else {
+		var str = Config.proxyURL;
+		if (!str.endsWith('/')) str += '/';
+		return new URL(str);
+	}
 })();
 
 // FIXME: better names?
@@ -225,160 +225,155 @@ URL.common = {
 
 
 URL.create = function(string) { 
-    return new URL(string);
+	return new URL(string);
 };
 
 URL.makeProxied = function makeProxied(url) {
-    url = url instanceof URL ? url : new URL(url);
-    var px = this.proxy;
-    if (!px) return url;
-    if (px.hostname != url.hostname) { // FIXME  protocol?
-	return px.withFilename(url.hostname + url.fullPath());
-	// console.log("rewrote url " + Object.inspect(url) + " proxy " + URL.proxy);
-	// return URL.proxy + url.hostname + "/" + url.fullPath();
-    } else if (px.port != url.port) {
-	return px.withFilename(url.hostname + "/" + url.port + url.fullPath());
-    }
-    else return url;
+	url = url instanceof URL ? url : new URL(url);
+	var px = this.proxy;
+	if (!px) return url;
+	if (px.hostname != url.hostname) { // FIXME  protocol?
+		return px.withFilename(url.hostname + url.fullPath());
+		// console.log("rewrote url " + Object.inspect(url) + " proxy " + URL.proxy);
+		// return URL.proxy + url.hostname + "/" + url.fullPath();
+	} else if (px.port != url.port) {
+		return px.withFilename(url.hostname + "/" + url.port + url.fullPath());
+	}
+	else return url;
 };
 
 URL.svnWorkspace = (function() {
-    // a bit of heuristics to figure the top of the local SVN repository
-    var path = URL.source.pathname;
-    var index = path.lastIndexOf('trunk');
-    if (index < 0) index = path.lastIndexOf('branches');
-    if (index < 0) index = path.lastIndexOf('tags');
-    if (index < 0) return null;
-    var ws = URL.source.withPath(path.substring(0, index));
-    return ws;
+	// a bit of heuristics to figure the top of the local SVN repository
+	var path = URL.source.pathname;
+	var index = path.lastIndexOf('trunk');
+	if (index < 0) index = path.lastIndexOf('branches');
+	if (index < 0) index = path.lastIndexOf('tags');
+	if (index < 0) return null;
+	var ws = URL.source.withPath(path.substring(0, index));
+	return ws;
 })();
 
 
-
-
-
-
 Object.subclass('NetRequestStatus', {
-    documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",
+	documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",
 
-    initialize: function(method, url, transport) {
-	this.method = method;
-	this.url = url;
-	this.transport = transport;
-	this.exception = null;
-    },
-    
-    isSuccess: function() {
-	var code = this.transport.status;
-	return code >= 200 && code < 300;
-    },
+	initialize: function(method, url, transport) {
+		this.method = method;
+		this.url = url;
+		this.transport = transport;
+		this.exception = null;
+	},
 
-    setException: function(e) {
-	this.exception = e;
-    },
+	isSuccess: function() {
+		var code = this.transport.status;
+		return code >= 200 && code < 300;
+	},
 
-    toString: function() {
-	return Strings.format("#<NetRequestStatus{%s,%s,%s}>", this.method, this.url, this.exception || this.transport.status);
-    },
-    
-    requestString: function() {
-	return this.method + " " + decodeURIComponent(this.url);
-    },
+	setException: function(e) {
+		this.exception = e;
+	},
 
-    code: function() {
-	return this.transport.status;
-    },
+	toString: function() {
+		return Strings.format("#<NetRequestStatus{%s,%s,%s}>", this.method, this.url, this.exception || this.transport.status);
+	},
 
-    getResponseHeader: function(name) {
-	return this.transport.getResponseHeader(name);
-    }
+	requestString: function() {
+		return this.method + " " + decodeURIComponent(this.url);
+	},
+
+	code: function() {
+		return this.transport.status;
+	},
+
+	getResponseHeader: function(name) {
+		return this.transport.getResponseHeader(name);
+	}
 
 });
 
 
-
 View.subclass('NetRequest', {
-    documentation: "a view that writes the contents of an http request into the model",
-    
-    // see XMLHttpRequest documentation for the following:
-    Unsent: 0,
-    Opened: 1,
-    HeadersReceived: 2,
-    Loading: 3,
-    Done: 4,
+	documentation: "a view that writes the contents of an http request into the model",
 
-    formals: ["+Status",  // Updated once, when request is {Done} with the value returned from 'getStatus'.
-	      "+ReadyState", // Updated on every state transition of the request.
-	      "+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
-	      "+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
-	     ],
-    
-    initialize: function($super, modelPlug) {
-	this.transport = new XMLHttpRequest();
-	this.requestNetworkAccess();
-	this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
-	this.isSync = false;
-	this.requestHeaders = {};
-	$super(modelPlug)
-    },
+	// see XMLHttpRequest documentation for the following:
+	Unsent: 0,
+	Opened: 1,
+	HeadersReceived: 2,
+	Loading: 3,
+	Done: 4,
 
-    requestNetworkAccess: function() {
-        if (Global.netscape && Global.location.protocol == "file:") {       
-            try {
-                netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
-                console.log("requested browser read privilege");
-                return true;
-            } catch (er) {
-                console.log("no privilege granted: " + er);
-                return false;
-            }
-        }
-    },
+	formals: ["+Status",  // Updated once, when request is {Done} with the value returned from 'getStatus'.
+		"+ReadyState", // Updated on every state transition of the request.
+		"+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
+		"+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
+	],
 
-    beSync: function() {
-	this.isSync = true;
-	return this;
-    },
+	initialize: function($super, modelPlug) {
+		this.transport = new XMLHttpRequest();
+		this.requestNetworkAccess();
+		this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
+		this.isSync = false;
+		this.requestHeaders = {};
+		$super(modelPlug)
+	},
 
-    onReadyStateChange: function() {
-	this.setReadyState(this.getReadyState());
-	if (this.getReadyState() === this.Done) {
-	    this.setStatus(this.getStatus());
-	    if (this.transport.responseText) 
-		this.setResponseText(this.getResponseText());
-	    if (this.transport.responseXML) 
-		this.setResponseXML(this.getResponseXML());
-	    this.disconnectModel(); // autodisconnect?
-	}
-    },
+	requestNetworkAccess: function() {
+		if (Global.netscape && Global.location.protocol == "file:") {       
+			try {
+				netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+				console.log("requested browser read privilege");
+				return true;
+			} catch (er) {
+				console.log("no privilege granted: " + er);
+				return false;
+			}
+		}
+	},
 
-    setRequestHeaders: function(record) {
-	Properties.forEachOwn(record, function(prop, value) {
-	    this.requestHeaders[prop] = value;
-	}, this);
-    },
-    
-    setContentType: function(string) {
-	// valid before send but after open?
-	this.requestHeaders["Content-Type"] = string;
-    },
+	beSync: function() {
+		this.isSync = true;
+		return this;
+	},
 
-    getReadyState: function() {
-	return this.transport.readyState;
-    },
+	onReadyStateChange: function() {
+		this.setReadyState(this.getReadyState());
+		if (this.getReadyState() === this.Done) {
+			this.setStatus(this.getStatus());
+			if (this.transport.responseText) 
+				this.setResponseText(this.getResponseText());
+			if (this.transport.responseXML) 
+				this.setResponseXML(this.getResponseXML());
+			this.disconnectModel(); // autodisconnect?
+		}
+	},
 
-    getResponseText: function() {
-	return this.transport.responseText || "";
-    },
-    
-    getResponseXML: function() {
-	return this.transport.responseXML || "";
-    },
+	setRequestHeaders: function(record) {
+		Properties.forEachOwn(record, function(prop, value) {
+			this.requestHeaders[prop] = value;
+		}, this);
+	},
 
-    getStatus: function() {
-	return new NetRequestStatus(this.method, this.url, this.transport);
-    },
-    
+	setContentType: function(string) {
+		// valid before send but after open?
+		this.requestHeaders["Content-Type"] = string;
+	},
+
+	getReadyState: function() {
+		return this.transport.readyState;
+	},
+
+	getResponseText: function() {
+		return this.transport.responseText || "";
+	},
+
+	getResponseXML: function() {
+		return this.transport.responseXML || "";
+	},
+
+	getStatus: function() {
+		return new NetRequestStatus(this.method, this.url, this.transport);
+	},
+
 	request: function(method, url, content) {
 		try {
 			this.url = url;
@@ -386,7 +381,7 @@ View.subclass('NetRequest', {
 			this.transport.open(this.method, url.toString(), !this.isSync);
 			Properties.forEachOwn(this.requestHeaders, function(p, value) {
 				this.transport.setRequestHeader(p, value);
-			}, this);
+				}, this);
 			this.transport.send(content || '');
 			return this;
 		} catch (er) {
@@ -396,479 +391,477 @@ View.subclass('NetRequest', {
 			throw er;
 		}
 	},
-    
-    get: function(url) {
-	return this.request("GET", URL.makeProxied(url), null);
-    },
 
-    put: function(url, content) {
-	return this.request("PUT", URL.makeProxied(url), content);
-    },
+	get: function(url) {
+		return this.request("GET", URL.makeProxied(url), null);
+	},
 
-    post: function(url, content) {
-	return this.request("POST", URL.makeProxied(url), content);
-    },
+	put: function(url, content) {
+		return this.request("PUT", URL.makeProxied(url), content);
+	},
 
-    propfind: function(url, depth, content) {
-	this.setContentType("text/xml"); // complain if it's set to something else?
-	if (depth != 0 && depth != 1)
-	    depth = "infinity";
-	this.setRequestHeaders({ "Depth" : depth });
-	return this.request("PROPFIND", URL.makeProxied(url), content);
-    },
+	post: function(url, content) {
+		return this.request("POST", URL.makeProxied(url), content);
+	},
 
-    report: function(url, content) {
-	return this.request("REPORT", URL.makeProxied(url), content);
-    },
+	propfind: function(url, depth, content) {
+		this.setContentType("text/xml"); // complain if it's set to something else?
+		if (depth != 0 && depth != 1)
+			depth = "infinity";
+		this.setRequestHeaders({ "Depth" : depth });
+		return this.request("PROPFIND", URL.makeProxied(url), content);
+	},
 
-    mkcol: function(url, content) {
-	return this.request("MKCOL", URL.makeProxied(url), content);
-    },
-    
-    del: function(url) {
-	return this.request("DELETE", URL.makeProxied(url));
-    },
-    
-    copy: function(url, destUrl, overwrite) {
-    this.setRequestHeaders({ "Destination" : destUrl.toString() });
-    if (overwrite) this.setRequestHeaders({ "Overwrite" : 'T' });
-	return this.request("COPY", URL.makeProxied(url));
-    },
+	report: function(url, content) {
+		return this.request("REPORT", URL.makeProxied(url), content);
+	},
+
+	mkcol: function(url, content) {
+		return this.request("MKCOL", URL.makeProxied(url), content);
+	},
+
+	del: function(url) {
+		return this.request("DELETE", URL.makeProxied(url));
+	},
+
+	copy: function(url, destUrl, overwrite) {
+		this.setRequestHeaders({ "Destination" : destUrl.toString() });
+		if (overwrite) this.setRequestHeaders({ "Overwrite" : 'T' });
+		return this.request("COPY", URL.makeProxied(url));
+	},
 
 	lock: function(url, owner) {
 		this.setRequestHeaders({Timeout: 'Infinite, Second-30'});
 		var content = Strings.format('<?xml version="1.0" encoding="utf-8" ?> \n\
-		  <D:lockinfo xmlns:D=\'DAV:\'> \n\
-		    <D:lockscope><D:exclusive/></D:lockscope> \n\
-		    <D:locktype><D:write/></D:locktype> \n\
-			<D:owner>%s</D:owner> \n\
-		  </D:lockinfo>', owner || 'unknown user');
+		<D:lockinfo xmlns:D=\'DAV:\'> \n\
+		<D:lockscope><D:exclusive/></D:lockscope> \n\
+		<D:locktype><D:write/></D:locktype> \n\
+		<D:owner>%s</D:owner> \n\
+		</D:lockinfo>', owner || 'unknown user');
 		return this.request("LOCK", URL.makeProxied(url), content);
 	},
-unlock: function(url, lockToken, force) {
+	
+	unlock: function(url, lockToken, force) {
 		if (force) {
 			var req = new NetRequest().beSync().propfind(url);
 			var xml = req.getResponseXML() || stringToXML(req.getResponseText());
 			var q = new Query('/descendant::*/D:lockdiscovery/descendant::*/D:locktoken/D:href');
 			var tokenElement = q.findFirst(xml);
 			if (!tokenElement) // no lock token, assume that resource isn't locked
-				return req;
+			return req;
 			lockToken = tokenElement.textContent;
 		}
 		this.setRequestHeaders({'Lock-Token': '<' + lockToken + '>'});
 		return this.request("UNLOCK", URL.makeProxied(url));
 	},
 
-    
-    toString: function() {
-	return "#<NetRequest{"+ this.method + " " + this.url + "}>";
-    }
+
+	toString: function() {
+		return "#<NetRequest{"+ this.method + " " + this.url + "}>";
+	},
 
 });
 
 
 // extend your objects with this trait if you don't want to deal with error reporting yourself.
 NetRequestReporterTrait = {
-    setRequestStatus: function(status) { 
-	var world = WorldMorph.current();
-	// some formatting for alerting. could be moved elsewhere
-	var request = status.requestString();
-	var tooLong = 80;
-	if (request.length > tooLong) {
-	    var arr = [];
-	    for (var i = 0; i < request.length; i += tooLong) {
-		arr.push(request.substring(i, i + tooLong));
-	    }
-	    request = arr.join("..\n");
+	setRequestStatus: function(status) { 
+		var world = WorldMorph.current();
+		// some formatting for alerting. could be moved elsewhere
+		var request = status.requestString();
+		var tooLong = 80;
+		if (request.length > tooLong) {
+			var arr = [];
+			for (var i = 0; i < request.length; i += tooLong) {
+				arr.push(request.substring(i, i + tooLong));
+			}
+			request = arr.join("..\n");
+		}
+		// error reporting
+		if (status.exception) {
+			world.alert("exception " + status.exception + " accessing\n" + request);
+		} else if (status.code() >= 300) {
+			if (status.code() == 301) {
+				// FIXME reissue request? need the 'Location' response header for it
+				world.alert("HTTP/301: Moved to " + status.getResponseHeader("Location") + "\non " + request);
+			} else if (status.code() == 401) {
+				world.alert("not authorized to access\n" + request); 
+				// should try to authorize
+			} else if (status.code() == 412) {
+				console.log("the resource was changed elsewhere\n" + request);
+			} else if (status.code() == 423) {
+				world.alert("the resource is locked\n" + request);
+			} else {
+				world.alert("failure to\n" + request + "\ncode " + status.code());
+			}
+		} else  console.log("status " + status.code() + " on " + status.requestString());
 	}
-	// error reporting
-	if (status.exception) {
-	    world.alert("exception " + status.exception + " accessing\n" + request);
-	} else if (status.code() >= 300) {
-	    if (status.code() == 301) {
-		// FIXME reissue request? need the 'Location' response header for it
-		world.alert("HTTP/301: Moved to " + status.getResponseHeader("Location") + "\non " + request);
-	    } else if (status.code() == 401) {
-		world.alert("not authorized to access\n" + request); 
-		// should try to authorize
-		} else if (status.code() == 412) {
-		console.log("the resource was changed elsewhere\n" + request);
-		} else if (status.code() == 423) {
-		world.alert("the resource is locked\n" + request);
-	    } else {
-		world.alert("failure to\n" + request + "\ncode " + status.code());
-	    }
-	} else 
-	    console.log("status " + status.code() + " on " + status.requestString());
-    }
 };
 
 // convenience base class with built in handling of errors
 Object.subclass('NetRequestReporter', NetRequestReporterTrait);
 
 Importer.subclass('NetImporter', NetRequestReporterTrait, {
-    onCodeLoad: function(error) {
-	if (error) WorldMorph.current().alert("eval got error " + error);
-    },
-    
-    pvtLoadCode: function(responseText) {
-	try {
-	    eval(responseText); 
-	} catch (er) {
-	    this.onCodeLoad(er);
-	    return;
-	}
-	this.onCodeLoad(null);
-    },
-    
-    loadCode: function(url, isSync) {
-	var req = new NetRequest({model: this, setResponseText: "pvtLoadCode", setStatus: "setRequestStatus"});
-	if (isSync) req.beSync();
-	req.get(url);
-    },
+	onCodeLoad: function(error) {
+		if (error) WorldMorph.current().alert("eval got error " + error);
+	},
 
-    onWorldLoad: function(world, error) {
-	if (error) WorldMorph.current().alert("doc got error " + error);
-    },
+	pvtLoadCode: function(responseText) {
+		try {
+			eval(responseText); 
+		} catch (er) {
+			this.onCodeLoad(er);
+			return;
+		}
+		this.onCodeLoad(null);
+	},
 
-    pvtLoadMarkup: function(doc) {
-	var world;
-	try {
-	    world = this.loadWorldContents(doc);
-	} catch (er) {
-	    this.onWorldLoad(null, er);
-	    return;
+	loadCode: function(url, isSync) {
+		var req = new NetRequest({model: this, setResponseText: "pvtLoadCode", setStatus: "setRequestStatus"});
+		if (isSync) req.beSync();
+		req.get(url);
+	},
+
+	onWorldLoad: function(world, error) {
+		if (error) WorldMorph.current().alert("doc got error " + error);
+	},
+
+	pvtLoadMarkup: function(doc) {
+		var world;
+		try {
+			world = this.loadWorldContents(doc);
+		} catch (er) {
+			this.onWorldLoad(null, er);
+			return;
+		}
+		this.onWorldLoad(world, null);
+	},
+
+	loadMarkup: function(url, isSync) {
+		var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "pvtLoadMarkup"});
+		if (isSync) req.beSync();
+		req.get(url);
+	},
+
+	loadElement: function(filename, id) {
+		var result;
+		this.processResult = function(doc) {
+			var elt = doc.getElementById(id);
+			if (elt) {
+				var canvas = document.getElementById("canvas"); // note, no error handling
+				var defs = canvas.getElementsByTagName("defs")[0];
+				result = defs.appendChild(document.importNode(elt, true));
+			}
+		}
+		var url = URL.source.withFilename(filename);
+		new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "processResult"}).beSync().get(url);
+		return result;
 	}
-	this.onWorldLoad(world, null);
-    },
-    
-    loadMarkup: function(url, isSync) {
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "pvtLoadMarkup"});
-	if (isSync) req.beSync();
-	req.get(url);
-    },
-    
-    loadElement: function(filename, id) {
-	var result;
-	this.processResult = function(doc) {
-	    var elt = doc.getElementById(id);
-	    if (elt) {
-		var canvas = document.getElementById("canvas"); // note, no error handling
-		var defs = canvas.getElementsByTagName("defs")[0];
-		result = defs.appendChild(document.importNode(elt, true));
-	    }
-	}
-	var url = URL.source.withFilename(filename);
-	new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "processResult"}).beSync().get(url);
-	return result;
-    }
 
 });
 
 
 View.subclass('Resource', NetRequestReporterTrait, {
-    documentation: "a remote document that can be fetched, stored and queried for metadata",
-    // FIXME: should probably encapsulate content type
+	documentation: "a remote document that can be fetched, stored and queried for metadata",
+	// FIXME: should probably encapsulate content type
 
-    formals: ["ContentDocument", //:XML
-	      "ContentText", //:String
-	      "URL" // :URL
-	     ],
-    
-    initialize: function(plug, contentType) {
-	this.contentType  = contentType;
-	this.connectModel(plug);
-    },
+	formals: ["ContentDocument", //:XML
+		"ContentText", //:String
+		"URL" // :URL
+	],
 
-    deserialize: Functions.Empty, // stateless besides the model and content type
+	initialize: function(plug, contentType) {
+		this.contentType  = contentType;
+		this.connectModel(plug);
+	},
 
-    toString: function() {
-	return "#<Resource{" + this.getURL() + "}>";
-    },
-    
-    updateView: function(aspect, source) {
-        var p = this.modelPlug;
-	if (!p) return;
-	switch (aspect) {
-	case p.getURL:
-	    this.onURLUpdate(this.getURL()); // request headers?
-	    break;
+	deserialize: Functions.Empty, // stateless besides the model and content type
+
+	toString: function() {
+		return "#<Resource{" + this.getURL() + "}>";
+	},
+
+	updateView: function(aspect, source) {
+		var p = this.modelPlug;
+		if (!p) return;
+		switch (aspect) {
+			case p.getURL:
+			this.onURLUpdate(this.getURL()); // request headers?
+			break;
+		}
+	},
+
+	onURLUpdate: function(url) {
+		return this.fetch(url);
+	},
+
+	fetch: function(sync, optRequestHeaders) {
+		// fetch the document content itself
+		var req = new NetRequest(Relay.newInstance({
+			ResponseXML: "+ContentDocument", 
+			ResponseText: "+ContentText", 
+			Status: "+RequestStatus"}, this));
+		if (sync) req.beSync();
+		if (this.contentType) req.setContentType(this.contentType);
+		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+		req.get(this.getURL());
+		return req;
+	},
+
+	fetchProperties: function(destModel, optSync, optRequestHeaders) {
+		// fetch the metadata
+		destModel = destModel || this.getModel().newRelay({Properties: "ContentDocument", PropertiesString: "ContentText", URL: "URL"});
+		var req = new NetRequest(Relay.newInstance({ ResponseXML: "Document", Status: "+RequestStatus"}, 
+			Object.extend(new NetRequestReporter(), {
+				// FIXME replace with relay
+				setDocument: function(doc) {
+					destModel.setProperties(doc);
+				}
+			})));
+		if (optSync) req.beSync();
+		if (this.contentType) req.setContentType(this.contentType);
+		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+		req.propfind(this.getURL(), 1);
+		return req;
+	},
+
+	store: function(content, optSync, optRequestHeaders) {
+		// FIXME: check document type
+		if (Global.Document && content instanceof Document) {
+			content = Exporter.stringify(content);
+		} else if (Global.Node && content instanceof Node) {
+			content = Exporter.stringify(content);
+		}
+		var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus"}, this));
+		if (optSync) req.beSync();
+		if (this.contentType) req.setContentType(this.contentType);
+		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+		req.put(this.getURL(), content);
+		return req;
+	},
+
+	findAll: function(query, defaultValue) {
+		var content = this.getContentDocument();
+		if (!content) return defaultValue;
+		return query.findAll(content.documentElement, defaultValue);
+	},
+
+
+	fetchHeadRevision: function(destModel) {
+		var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"}, 
+		Object.extend(new NetRequestReporter(), { 
+			setDocument: function(xml) {
+				if (!xml) return;
+				/* The response contains the properties of the specified file or directory,
+				e.g. the revision (= version-name) */
+				var revisionNode = xml.getElementsByTagName('version-name')[0];
+				if (!revisionNode) 
+					return;
+				var number = Number(revisionNode.textContent);
+				destModel.setHeadRevision(number);
+			}
+		})));
+
+		req.propfind(this.getURL(), 1);
+		return req;
+	},
+
+	logReportTemplate: '<S:log-report xmlns:S="svn:">' + 
+		'<S:start-revision>%s</S:start-revision>' +
+		'<S:end-revision>%s</S:end-revision>' +
+		'<S:all-revprops/>' +
+		'<S:path/>' +
+		'</S:log-report>',
+
+	fetchVersionHistory: function(mostRecentRev, leastRecentRev, destModel) {
+		var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"},
+		Object.extend(new NetRequestReporter(), {
+			setDocument: function(doc) {
+				destModel.setRevisionHistory(doc);
+			}
+		})));
+
+		req.report(this.getURL(), 
+		Strings.format(this.logReportTemplate, mostRecentRev, leastRecentRev));
+		return req;
 	}
-    },
 
-    onURLUpdate: function(url) {
-	return this.fetch(url);
-    },
-
-    fetch: function(sync, optRequestHeaders) {
-	// fetch the document content itself
-	var req = new NetRequest(Relay.newInstance({
-	    ResponseXML: "+ContentDocument", 
-	    ResponseText: "+ContentText", 
-	    Status: "+RequestStatus"}, this));
-	if (sync) req.beSync();
-	if (this.contentType) req.setContentType(this.contentType);
-	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
-	req.get(this.getURL());
-	return req;
-    },
-
-    fetchProperties: function(destModel, optSync, optRequestHeaders) {
-	// fetch the metadata
-	destModel = destModel || this.getModel().newRelay({Properties: "ContentDocument", PropertiesString: "ContentText", URL: "URL"});
-	var req = new NetRequest(Relay.newInstance({ ResponseXML: "Document", Status: "+RequestStatus"}, 
-	    Object.extend(new NetRequestReporter(), {
-		// FIXME replace with relay
-		setDocument: function(doc) {
-		    destModel.setProperties(doc);
-		}
-	    })));
-	
-	if (optSync) req.beSync();
-	if (this.contentType) req.setContentType(this.contentType);
-	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
-	req.propfind(this.getURL(), 1);
-	return req;
-    },
-
-    store: function(content, optSync, optRequestHeaders) {
-	// FIXME: check document type
-	if (Global.Document && content instanceof Document) {
-	    content = Exporter.stringify(content);
-	} else if (Global.Node && content instanceof Node) {
-	    content = Exporter.stringify(content);
-	}
-	var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus"}, this));
-	if (optSync) req.beSync();
-	if (this.contentType) req.setContentType(this.contentType);
-	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
-	req.put(this.getURL(), content);
-	return req;
-    },
-
-    findAll: function(query, defaultValue) {
-	var content = this.getContentDocument();
-	if (!content) return defaultValue;
-	return query.findAll(content.documentElement, defaultValue);
-    },
-
-    
-    fetchHeadRevision: function(destModel) {
-	var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"}, 
-	    Object.extend(new NetRequestReporter(), { 
-		setDocument: function(xml) {
-		    if (!xml) return;
-		    /* The response contains the properties of the specified file or directory,
-		       e.g. the revision (= version-name) */
-		    var revisionNode = xml.getElementsByTagName('version-name')[0];
-		    if (!revisionNode) 
-			return;
-		    var number = Number(revisionNode.textContent);
-		    destModel.setHeadRevision(number);
-		}
-	    })));
-	
-	req.propfind(this.getURL(), 1);
-	return req;
-    },
-    
-    logReportTemplate: '<S:log-report xmlns:S="svn:">' + 
-	'<S:start-revision>%s</S:start-revision>' +
-	'<S:end-revision>%s</S:end-revision>' +
-	'<S:all-revprops/>' +
-	'<S:path/>' +
-	'</S:log-report>',
-
-    fetchVersionHistory: function(mostRecentRev, leastRecentRev, destModel) {
-	var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"},
-	    Object.extend(new NetRequestReporter(), {
-		setDocument: function(doc) {
-		    destModel.setRevisionHistory(doc);
-		}
-	    })));
-	
-	req.report(this.getURL(), 
-		   Strings.format(this.logReportTemplate, mostRecentRev, leastRecentRev));
-	return req;
-    }
-    
 });
 
 Resource.subclass('SVNResource', {
 
-    formals: Resource.prototype.formals.concat(['Metadata', 'HeadRevision']),
-    
-    initialize: function($super, repoUrl, plug, contentType) {
+	formals: Resource.prototype.formals.concat(['Metadata', 'HeadRevision']),
+
+	initialize: function($super, repoUrl, plug, contentType) {
 		this.repoUrl = repoUrl.toString();
 		$super(plug, contentType);
-    },
-	
-    getLocalUrl: function() {
-	return this.getURL().slice(this.repoUrl.length + (this.repoUrl.endsWith('/') ? 0 : 1));
-    },
-	
-    fetchHeadRevision: function(optSync) {
-	this.setHeadRevision(null); // maybe there is a new one
-	var req = new NetRequest({model: this, setResponseXML: "pvtSetHeadRevFromDoc",
-				setStatus: "setRequestStatus"});
-	if (optSync) req.beSync();
-	req.propfind(this.getURL(), 1);
-	return req;
-    },
-	
-    fetch: function($super, optSync, optRequestHeaders, rev) {
-	var req;
-	if (rev) {
-	    this.withBaselineUriDo(rev, function() {
-	    	req = $super(optSync, optRequestHeaders);
-	    });
-	} else {
-	    req = $super(optSync, optRequestHeaders);
-	};
-	return req;
-    },
-store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
-	// if optHeadRev is not undefined than the store will only succeed
-	// if the head revision of the resource is really optHeadRev
-	if (optHeadRev) {
-		var headers = optRequestHeaders ? optRequestHeaders : {};
-		//determine local path of resource
-		//var local = new URL(this.getURL()).relativePathFrom(new URL(this.repoUrl));
-		var local = this.getURL().toString().substring(this.repoUrl.toString().length);
-		local = local.slice(1); // remove leading slash
-		var ifHeader = Strings.format('(["%s//%s"])', optHeadRev, local);
-		console.log('Creating if header: ' + ifHeader);
-		Object.extend(headers, {'If': ifHeader});
-	}
-	return $super(content, optSync, headers);
-},
-del: function(sync, optRequestHeaders) {
-	var req = new NetRequest(Relay.newInstance({
-	    Status: "+RequestStatus"}, this));
-	if (sync) req.beSync();
-	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
-	req.del(this.getURL());
-	return req;
-},
+	},
 
+	getLocalUrl: function() {
+		return this.getURL().slice(this.repoUrl.length + (this.repoUrl.endsWith('/') ? 0 : 1));
+	},
 
-    
-    fetchProperties: function($super, destModel, optSync, optRequestHeaders, rev) {
-        var req;
-        //Record.newPlainInstance({ Properties: null, PropertiesString: "", URL: this.getURL()});
-    	if (rev) {
-    	    this.withBaselineUriDo(rev, function() {
-    	    	req = $super(destModel, optSync, optRequestHeaders);
-    	    });
-    	} else {
-    	    req = $super(destModel, optSync, optRequestHeaders);
-    	};
-    	return req;
-    },
+	fetchHeadRevision: function(optSync) {
+		this.setHeadRevision(null); // maybe there is a new one
+		var req = new NetRequest({model: this, setResponseXML: "pvtSetHeadRevFromDoc",
+		setStatus: "setRequestStatus"});
+		if (optSync) req.beSync();
+		req.propfind(this.getURL(), 1);
+		return req;
+	},
+
+	fetch: function($super, optSync, optRequestHeaders, rev) {
+		var req;
+		if (rev) {
+			this.withBaselineUriDo(rev, function() {
+				req = $super(optSync, optRequestHeaders);
+			});
+		} else {
+			req = $super(optSync, optRequestHeaders);
+		};
+		return req;
+	},
 	
-    fetchMetadata: function(optSync, optRequestHeaders, startRev, endRev, reportDepth) {
-	// get the whole history if startRev is undefined
-	// FIXME: in this case the getHeadRevision will be called synchronous
-	if (!startRev) {
-	    this.fetchHeadRevision(true);
-	    startRev = this.getHeadRevision();
-	}
-	this.reportDepth = reportDepth; // FISXME quick hack, needed in 'pvtScanLog...'
-	var req = new NetRequest({model: this, setResponseXML: "pvtScanLogReportForVersionInfos",
-	    setStatus: "setRequestStatus"});
-	if (optSync) req.beSync();
-	if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
-	req.report(this.getURL(), this.pvtRequestMetadataXML(startRev, endRev));
-	return req;
-    },
+	store: function($super, content, optSync, optRequestHeaders, optHeadRev) {
+		// if optHeadRev is not undefined than the store will only succeed
+		// if the head revision of the resource is really optHeadRev
+		if (optHeadRev) {
+			var headers = optRequestHeaders ? optRequestHeaders : {};
+			//determine local path of resource
+			//var local = new URL(this.getURL()).relativePathFrom(new URL(this.repoUrl));
+			var local = this.getURL().toString().substring(this.repoUrl.toString().length);
+			local = local.slice(1); // remove leading slash
+			var ifHeader = Strings.format('(["%s//%s"])', optHeadRev, local);
+			console.log('Creating if header: ' + ifHeader);
+			Object.extend(headers, {'If': ifHeader});
+		}
+		return $super(content, optSync, headers);
+	},
 	
-    pvtSetHeadRevFromDoc: function(xml) {
-	if (!xml) return;
-	/* The response contains the properties of the specified file or directory,
+	del: function(sync, optRequestHeaders) {
+		var req = new NetRequest(Relay.newInstance({
+			Status: "+RequestStatus"}, this));
+		if (sync) req.beSync();
+		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+		req.del(this.getURL());
+		return req;
+	},
+
+	fetchProperties: function($super, destModel, optSync, optRequestHeaders, rev) {
+		var req;
+		//Record.newPlainInstance({ Properties: null, PropertiesString: "", URL: this.getURL()});
+		if (rev) {
+			this.withBaselineUriDo(rev, function() {
+				req = $super(destModel, optSync, optRequestHeaders);
+			});
+		} else {
+			req = $super(destModel, optSync, optRequestHeaders);
+		};
+		return req;
+	},
+
+	fetchMetadata: function(optSync, optRequestHeaders, startRev, endRev, reportDepth) {
+		// get the whole history if startRev is undefined
+		// FIXME: in this case the getHeadRevision will be called synchronous
+		if (!startRev) {
+			this.fetchHeadRevision(true);
+			startRev = this.getHeadRevision();
+		}
+		this.reportDepth = reportDepth; // FISXME quick hack, needed in 'pvtScanLog...'
+		var req = new NetRequest({model: this, setResponseXML: "pvtScanLogReportForVersionInfos",
+		setStatus: "setRequestStatus"});
+		if (optSync) req.beSync();
+		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+		req.report(this.getURL(), this.pvtRequestMetadataXML(startRev, endRev));
+		return req;
+	},
+
+	pvtSetHeadRevFromDoc: function(xml) {
+		if (!xml) return;
+		/* The response contains the properties of the specified file or directory,
 		e.g. the revision (= version-name) */
-	var revisionNode = xml.getElementsByTagName('version-name')[0];
-	if (!revisionNode) return;
-	this.setHeadRevision(Number(revisionNode.textContent));
-    },
-	
-pvtScanLogReportForVersionInfos: function(logReport) {
-	// FIXME Refactor: method object?
-	var depth = this.reportDepth;
-	var logItemQ = new Query('//S:log-item');
-	var versionInfos = [];
-	//var repoUrl = new URL(this.repoUrl);
-    var repoUrl = this.repoUrl;
-	logItemQ.findAll(logReport).forEach(function(logElement) {
-		var spec = {};
-		$A(logElement.childNodes).forEach(function(logProp) {
-			switch(logProp.tagName) {
-				case 'D:version-name':
-					spec.rev = Number(logProp.textContent); break;
-				case 'D:creator-displayname':
-					spec.author = logProp.textContent; break;
-				case 'S:date':
-					spec.date = logProp.textContent; break;
-				case 'S:added-path':
-				case 'S:modified-path':
-				case 'S:deleted-path':
-				case 'S:replaced-path':
-					var relPath = logProp.textContent;
-					if (depth && relPath.split('/').length-1 > depth)
-						return;
-					//relPath = relPath.slice(1); // remove trailing /
-                    if (repoUrl.endsWith(relPath))
-                        spec.url = repoUrl; // hmmm???
-                    else
-					    spec.url = repoUrl.toString() + relPath.slice(1); 
-					console.log('Created spec.url:' + spec.url);
-					if (spec.change != null) {// was set before... assume only one change per rev
-						//	console.warn('multiple changes for one revision of ' + spec.url);
-						spec.url = null;
-						return;
-					}
-					spec.change = logProp.tagName.split('-').first();
-					break;
-				default:
-			}
+		var revisionNode = xml.getElementsByTagName('version-name')[0];
+		if (!revisionNode) return;
+		this.setHeadRevision(Number(revisionNode.textContent));
+	},
+
+	pvtScanLogReportForVersionInfos: function(logReport) {
+		// FIXME Refactor: method object?
+		var depth = this.reportDepth;
+		var logItemQ = new Query('//S:log-item');
+		var versionInfos = [];
+		//var repoUrl = new URL(this.repoUrl);
+		var repoUrl = this.repoUrl;
+		logItemQ.findAll(logReport).forEach(function(logElement) {
+			var spec = {};
+			$A(logElement.childNodes).forEach(function(logProp) {
+				switch(logProp.tagName) {
+					case 'D:version-name':
+						spec.rev = Number(logProp.textContent); break;
+					case 'D:creator-displayname':
+						spec.author = logProp.textContent; break;
+					case 'S:date':
+						spec.date = logProp.textContent; break;
+					case 'S:added-path':
+					case 'S:modified-path':
+					case 'S:deleted-path':
+					case 'S:replaced-path':
+						var relPath = logProp.textContent;
+						if (depth && relPath.split('/').length-1 > depth)
+							return;
+						//relPath = relPath.slice(1); // remove trailing /
+						if (repoUrl.endsWith(relPath))
+							spec.url = repoUrl; // hmmm???
+						else
+						spec.url = repoUrl.toString() + relPath.slice(1); 
+						console.log('Created spec.url:' + spec.url);
+						if (spec.change != null) {// was set before... assume only one change per rev
+							//	console.warn('multiple changes for one revision of ' + spec.url);
+							spec.url = null;
+							return;
+						}
+						spec.change = logProp.tagName.split('-').first();
+						break;
+					default:
+				}
+			});
+			if (!spec.url) return;
+			spec.url = new URL(spec.url);
+			versionInfos.push(new SVNVersionInfo(spec));
 		});
-		if (!spec.url) return;
-		spec.url = new URL(spec.url);
-		versionInfos.push(new SVNVersionInfo(spec));
-	});
-	// newest version first
-	versionInfos = versionInfos.sort(function(a,b) { return b.rev - a.rev });
-	this.setMetadata(versionInfos);
-},
-pvtScanLogReportForVersionInfosTrace: function(logReport) {
-	lively.lang.Execution.trace(this.pvtScanLogReportForVersionInfos.curry(logReport).bind(this));
-},
-
-
+		// newest version first
+		versionInfos = versionInfos.sort(function(a,b) { return b.rev - a.rev });
+		this.setMetadata(versionInfos);
+	},
 	
-    pvtRequestMetadataXML: function(startRev, endRev) {
-	return Strings.format(
-		'<S:log-report xmlns:S="svn:" xmlns:D="DAV:">' + 
+	pvtScanLogReportForVersionInfosTrace: function(logReport) {
+		lively.lang.Execution.trace(this.pvtScanLogReportForVersionInfos.curry(logReport).bind(this));
+	},
+
+	pvtRequestMetadataXML: function(startRev, endRev) {
+		return Strings.format(
+			'<S:log-report xmlns:S="svn:" xmlns:D="DAV:">' + 
 			'<S:start-revision>%s</S:start-revision>' +
 			'<S:end-revision>%s</S:end-revision>' +
 			'<S:discover-changed-paths/>' +
 			'<S:path></S:path>' +
 			'<S:all-revprops/>' +
-		'</S:log-report>', startRev, endRev || 0);
-    },
-	
-    withBaselineUriDo: function(rev, doFunc) {
-	var tempUrl = this.getURL();
-	this.setURL(this.repoUrl + '/!svn/bc/' + rev + '/' + this.getLocalUrl());
-	doFunc();
-	this.setURL(tempUrl);
-    }
+			'</S:log-report>', startRev, endRev || 0);
+	},
+
+	withBaselineUriDo: function(rev, doFunc) {
+		var tempUrl = this.getURL();
+		this.setURL(this.repoUrl + '/!svn/bc/' + rev + '/' + this.getLocalUrl());
+		doFunc();
+		this.setURL(tempUrl);
+	},
 });
 
 Object.subclass('SVNVersionInfo', {
 
-	// documentation: 'This object wraps svn infos from report or propfind requests',
+	documentation: 'This object wraps svn infos from report or propfind requests',
 
-    initialize: function(spec) {
+	initialize: function(spec) {
 		// possible properties of spec:
 		// rev, date, author, url, change, content
 		for (name in spec) {
@@ -888,132 +881,135 @@ Object.subclass('SVNVersionInfo', {
 		if (!this.date)
 			this.date = new Date();
 	},
-    
-    parseUTCDateString: function(dateString) {
-        var yearElems = dateString.slice(0,10).split('-').collect(function(ea) {return Number(ea)});
-        var timeElems = dateString.slice(11,19).split(':').collect(function(ea) {return Number(ea)});
-        return new Date(yearElems[0], yearElems[1]-1, yearElems[2], timeElems[0], timeElems[1], timeElems[2])
-    },
-    
-    toString: function() {
-        // does not work when evaluate {new SVNVersionInfo() + ""} although toStrings() works fine. *grmph*
-        // string = Strings.format('%s, %s, %s, Revision %s',
-        //     this.author, this.date.toTimeString(), this.date.toDateString(), this.rev);
-        // string = new String(string);
-        // string.orig = this;
-        
-         return Strings.format('%s, %s, %s, Revision %s',
-            this.author, this.date.toTimeString(), this.date.toDateString(), this.rev);
-    },
-toExpression: function() {
-	return Strings.format('new SVNVersionInfo({rev: %s, url: %s, date: %s, author: %s, change: %s})',
+
+	parseUTCDateString: function(dateString) {
+		var yearElems = dateString.slice(0,10).split('-').collect(function(ea) {return Number(ea)});
+		var timeElems = dateString.slice(11,19).split(':').collect(function(ea) {return Number(ea)});
+		return new Date(yearElems[0], yearElems[1]-1, yearElems[2], timeElems[0], timeElems[1], timeElems[2])
+	},
+
+	toString: function() {
+		// does not work when evaluate {new SVNVersionInfo() + ""} although toStrings() works fine. *grmph*
+		// string = Strings.format('%s, %s, %s, Revision %s',
+		//     this.author, this.date.toTimeString(), this.date.toDateString(), this.rev);
+		// string = new String(string);
+		// string.orig = this;
+		return Strings.format('%s, %s, %s, Revision %s',
+			this.author, this.date.toTimeString(), this.date.toDateString(), this.rev);
+	},
+	
+	toExpression: function() {
+		return Strings.format('new SVNVersionInfo({rev: %s, url: %s, date: %s, author: %s, change: %s})',
 		this.rev, toExpression(this.url), toExpression(this.date),
 		toExpression(this.author), toExpression(this.change));
-},
+	},
+	
 });
+
+
 // TODO will be merged with Resource
 // TODO make async?
 Object.subclass('FileDirectory', {
 
-    initialize: function(url) {
-        this.url = url.isLeaf() ? url.getDirectory() : url;
-        this.writeAsync = false;
-    },
+	initialize: function(url) {
+		this.url = url.isLeaf() ? url.getDirectory() : url;
+		this.writeAsync = false;
+	},
 
-    fileContent: function(localname, revision, contentType) {
-        var url = this.url.withFilename(localname);
-        var resource = new SVNResource(this.url.toString(), Record.newPlainInstance({URL: url.toString(), ContentText: null}));
+	fileContent: function(localname, revision, contentType) {
+		var url = this.url.withFilename(localname);
+		var resource = new SVNResource(this.url.toString(), Record.newPlainInstance({URL: url.toString(), ContentText: null}));
 		resource.contentType = contentType;
-        resource.fetch(true, null, revision);
-        return resource.getContentText();
-    },
+		resource.fetch(true, null, revision);
+		return resource.getContentText();
+	},
 
-    filesAndDirs: function(revision) {
+	filesAndDirs: function(revision) {
 		var webfile = new lively.storage.WebFile(Record.newPlainInstance({DirectoryList: [], RootNode: this.url}));
 		webfile.fetchContent(this.url, true);
 		return webfile.getModel().getDirectoryList();
-    },
+	},
 
-        files: function(optRev) {
-            return this.filesAndDirs(optRev).select(function(ea) { return ea.isLeaf() });
-        },
+	files: function(optRev) {
+		return this.filesAndDirs(optRev).select(function(ea) { return ea.isLeaf() });
+	},
 
-        filenames: function(optRev) {
-            return this.files(optRev).collect(function(ea) { return ea.filename() } );
-        },
+	filenames: function(optRev) {
+		return this.files(optRev).collect(function(ea) { return ea.filename() } );
+	},
 
-        subdirectories: function(optRev) {
-            // remove the first, its the url of the current directory
-            var result = this.filesAndDirs(optRev).reject(function(ea) { return ea.isLeaf() });
-            result.shift();
-            return result;
-        },
+	subdirectories: function(optRev) {
+		// remove the first, its the url of the current directory
+		var result = this.filesAndDirs(optRev).reject(function(ea) { return ea.isLeaf() });
+		result.shift();
+		return result;
+	},
 
-        subdirectoryNames: function(optRev) {
-            return this.subdirectories(optRev).collect(function(ea) { return ea.filename() } );
-        },
+	subdirectoryNames: function(optRev) {
+		return this.subdirectories(optRev).collect(function(ea) { return ea.filename() } );
+	},
 
-        fileOrDirectoryExists: function(localname) {
-            return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
-        },
-        
-        writeFileNamed: function(localname, content, contentType) {
-            var url = this.url.withFilename(localname);
-            var resource = new Resource(Record.newPlainInstance({URL: url}));
-			resource.contentType = contentType;
-            if(this.writeAsync)
-                return resource.store(content, false);
-            else
-                return resource.store(content, true).getStatus().isSuccess();
-        },
+	fileOrDirectoryExists: function(localname) {
+		return new NetRequest().beSync().get(this.url.withFilename(localname)).transport.status != 404;
+	},
 
-        createDirectory: function(localname) {
-            return new NetRequest().beSync().mkcol(this.url.withFilename(localname)).getStatus().isSuccess();
-        },
+	writeFileNamed: function(localname, content, contentType) {
+		var url = this.url.withFilename(localname);
+		var resource = new Resource(Record.newPlainInstance({URL: url}));
+		resource.contentType = contentType;
+		if(this.writeAsync)
+			return resource.store(content, false);
+		else
+		return resource.store(content, true).getStatus().isSuccess();
+	},
 
-        deleteFileNamed: function(localname) {
-            return new NetRequest().beSync().del(this.url.withFilename(localname)).getStatus().isSuccess();       
-        },
+	createDirectory: function(localname) {
+		return new NetRequest().beSync().mkcol(this.url.withFilename(localname)).getStatus().isSuccess();
+	},
 
-        // Move to somewhere else? Not directory specific...
-        copyFile: function(srcUrl, destUrl) {
-        return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
-    },
+	deleteFileNamed: function(localname) {
+		return new NetRequest().beSync().del(this.url.withFilename(localname)).getStatus().isSuccess();       
+	},
 
-    copyFileNamed: function(srcFileName, optRev, destUrl, optNewFileName, contentType) {
-        console.log('Copy file ' + srcFileName);
-        if (!optNewFileName) optNewFileName = srcFileName;
-        var otherDir = new FileDirectory(destUrl);
-        otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName, optRev, contentType), contentType);
-    },
-    
-    copyAllFiles: function(destUrl, selectFunc, optRev) {
-        var filesToCopy = selectFunc ? this.filenames().select(selectFunc) : this.filenames();
-        filesToCopy.each(function(ea) { this.copyFileNamed(ea, optRev, destUrl) }, this);
-    },
-    
-    copySubdirectory: function(subDirName, newDirName, toUrlOrFileDir, recursively, selectFunc) {
-        if (!newDirName) newDirName = subDirName;
-        if (!this.subdirectoryNames().include(subDirName)) {
-            console.log(this.url.toString() + ' has no subdirectory ' + subDirName);
-            return;
-        }
-        
-        var foreignDir = toUrlOrFileDir.constructor === this.constructor ? toUrlOrFileDir : new this.constructor(toUrlOrFileDir);
-        var toUrl = foreignDir.url;
-        if (!foreignDir.fileOrDirectoryExists(newDirName)) foreignDir.createDirectory(newDirName);
-        var subDir = new this.constructor(this.url.withFilename(subDirName));
-        
-        subDir.copyAllFiles(toUrl.withFilename(newDirName), selectFunc);
-        subDir.copyAllSubdirectories(toUrl.withFilename(newDirName), recursively, selectFunc);
-    },
-    
-    copyAllSubdirectories: function(toUrl, recursively, selectFunc) {
-        console.log('copying subdirs to url:' + toUrl + ' recursively: ' + recursively + ' selectFunc: ' + selectFunc);
-        var dirsToCopy = selectFunc ? this.subdirectoryNames().select(selectFunc) : this.subdirectoryNames();
-        
-        dirsToCopy.each(function(ea) { this.copySubdirectory(ea, ea, toUrl, recursively, selectFunc) }, this);
-    }
+	// Move to somewhere else? Not directory specific...
+	copyFile: function(srcUrl, destUrl) {
+		return new NetRequest().beSync().copy(srcUrl, destUrl, true /*overwrite*/).getStatus().isSuccess();
+	},
+
+	copyFileNamed: function(srcFileName, optRev, destUrl, optNewFileName, contentType) {
+		console.log('Copy file ' + srcFileName);
+		if (!optNewFileName) optNewFileName = srcFileName;
+		var otherDir = new FileDirectory(destUrl);
+		otherDir.writeFileNamed(optNewFileName, this.fileContent(srcFileName, optRev, contentType), contentType);
+	},
+
+	copyAllFiles: function(destUrl, selectFunc, optRev) {
+		var filesToCopy = selectFunc ? this.filenames().select(selectFunc) : this.filenames();
+		filesToCopy.each(function(ea) { this.copyFileNamed(ea, optRev, destUrl) }, this);
+	},
+
+	copySubdirectory: function(subDirName, newDirName, toUrlOrFileDir, recursively, selectFunc) {
+		if (!newDirName) newDirName = subDirName;
+		if (!this.subdirectoryNames().include(subDirName)) {
+			console.log(this.url.toString() + ' has no subdirectory ' + subDirName);
+			return;
+		}
+
+		var foreignDir = toUrlOrFileDir.constructor === this.constructor ? toUrlOrFileDir : new this.constructor(toUrlOrFileDir);
+		var toUrl = foreignDir.url;
+		if (!foreignDir.fileOrDirectoryExists(newDirName)) foreignDir.createDirectory(newDirName);
+		var subDir = new this.constructor(this.url.withFilename(subDirName));
+
+		subDir.copyAllFiles(toUrl.withFilename(newDirName), selectFunc);
+		subDir.copyAllSubdirectories(toUrl.withFilename(newDirName), recursively, selectFunc);
+	},
+
+	copyAllSubdirectories: function(toUrl, recursively, selectFunc) {
+		console.log('copying subdirs to url:' + toUrl + ' recursively: ' + recursively + ' selectFunc: ' + selectFunc);
+		var dirsToCopy = selectFunc ? this.subdirectoryNames().select(selectFunc) : this.subdirectoryNames();
+
+		dirsToCopy.each(function(ea) { this.copySubdirectory(ea, ea, toUrl, recursively, selectFunc) }, this);
+	},
 
 });
 
