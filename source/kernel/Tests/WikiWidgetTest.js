@@ -1,6 +1,6 @@
-module('lively.Tests.WikiWidgetTest').requires('lively.TestFramework', 'lively.WikiWidget').toRun(function(thisModule) {
+module('Tests.WikiWidgetTest').requires('lively.TestFramework', 'lively.WikiWidget').toRun(function(thisModule) {
 
-TestCase.subclass('lively.Tests.WikiWidgetTest.WikiTextTranslationTest', {
+TestCase.subclass('Tests.WikiWidgetTest.WikiTextTranslationTest', {
 
 assertMatchesSpec: function(spec, realObject) {
 	for (name in spec) {

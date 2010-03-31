@@ -1,6 +1,6 @@
-module('lively.Tests.NetworkTest').requires('lively.TestFramework').toRun(function() {
+module('Tests.NetworkTest').requires('lively.TestFramework').toRun(function() {
 	
-TestCase.subclass('lively.Tests.NetworkTest.URLTest', {
+TestCase.subclass('Tests.NetworkTest.URLTest', {
 	
 	testEnsureAbsoluteURL1: function() {
 		var urlString = 'http://livelykernel.sunlabs.com/repository/lively-wiki/index.xhtml';

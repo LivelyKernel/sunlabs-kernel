@@ -1,4 +1,4 @@
-module('SmalltalkParser.js').requires('ometa/parser.js','lively.SmalltalkParserSupport').toRun(function() {
+module('lively.SmalltalkParser').requires('ometa.parser','lively.SmalltalkParserSupport').toRun(function() {
 {SmalltalkParser=Object.delegated(Parser,{
 "space":function(){var $elf=this;return this._or((function(){return Parser._superApplyWithArgs(this,"space")}),(function(){return this._applyWithArgs("fromTo","\"","\"")}))},
 "identifier":function(){var $elf=this,x,xs;return (function(){x=this._apply("letter");xs=this._many((function(){return this._apply("letterOrDigit")}));return [x].concat(xs).join("")}).call(this)},

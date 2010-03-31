@@ -1,4 +1,4 @@
-module('ometa/bs-ometa-optimizer.js').requires('ometa/ometa-base.js').toRun( function() {
+module('ometa.bs-ometa-optimizer').requires('ometa.ometa-base').toRun( function() {
 {BSNullOptimization=Object.delegated(OMeta,{
 "setHelped":function(){var $elf=this;return (this["_didSomething"]=true)},
 "helped":function(){var $elf=this;return this._pred(this["_didSomething"])},

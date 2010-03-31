@@ -4692,7 +4692,7 @@ WorldMorph.addMethods({
 				var m = world.addMorph(new ClockMorph(evt.point(), 50));
 				m.startSteppingScripts();}],
 			["FabrikClock", function(evt) {
-				require('Fabrik.js').toRun(function() {
+				require('lively.Fabrik').toRun(function() {
 					var clock = new FabrikClockWidget();
 					var morph = clock.buildView();
 					world.addMorph(morph);
@@ -4701,12 +4701,12 @@ WorldMorph.addMethods({
 			["Text Window", function(evt) { 
 				WorldMorph.current().addTextWindow("Editable text"); }],
 			["Piano Keyboard", function(evt) {
-				require('Examples.js').toRun(function() {
+				require('lively.Examples').toRun(function() {
 					var m = new PianoKeyboard(evt.point());
 					m.scaleBy(1.5);	 m.rotateBy(-Math.PI*2/12);
 					world.addMorph(m); }); }],
 			["Kaleidoscope", function(evt) {
-				require('Examples.js').toRun(function() {
+				require('lively.Examples').toRun(function() {
 					var kal = WorldMorph.current().addMorph(new SymmetryMorph(300, 7)); 
 					kal.startUp(); }) } ],
 			["Image Morph", function(evt) {
@@ -4717,9 +4717,9 @@ WorldMorph.addMethods({
 			["Video Morph", function(evt) {
 				VideoMorph.openAndInteractivelyEmbed(evt.point()) }],
 			["Layout Demo", function(evt) {
-				require('GridLayout.js').toRun(function() {
+				require('lively.GridLayout').toRun(function() {
 					GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
-			["Effects demo (FF only)", function(evt) { require('demofx.js').toRun(Functions.Empty); }],
+			["Effects demo (FF only)", function(evt) { require('lively.demofx').toRun(Functions.Empty); }],
 			["PresentationPage", function(evt) { 
 				require('lively.Presentation').toRun(function(){
 					world.addMorph(new lively.Presentation.PageMorph(new Rectangle(0,0,800,600)))
@@ -4809,7 +4809,7 @@ WorldMorph.addMethods({
 		var world = this.world();
 		return [
 			["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world, evt.point()); }) }],
-			["Fabrik Component Box", function(evt) { require('Fabrik.js').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
+			["Fabrik Component Box", function(evt) { require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
 		];
 	},
 

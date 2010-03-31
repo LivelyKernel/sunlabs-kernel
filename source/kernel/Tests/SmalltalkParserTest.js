@@ -1,6 +1,6 @@
-module('lively.Tests.SmalltalkParserTest').requires('lively.TestFramework', 'lively.Ometa', 'lively.SmalltalkParser').toRun(function() {
+module('Tests.SmalltalkParserTest').requires('lively.TestFramework', 'lively.Ometa', 'lively.SmalltalkParser').toRun(function() {
 
-TestCase.subclass('lively.Tests.SmalltalkParserTest.ASTBaseTest', {
+TestCase.subclass('Tests.SmalltalkParserTest.ASTBaseTest', {
 
 errorCb: function() {
 	var test = this;
@@ -68,7 +68,7 @@ st2js: function(src, rule) {
 
 });
 
-lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.SmalltalkTheParserTest', {
+Tests.SmalltalkParserTest.ASTBaseTest.subclass('Tests.SmalltalkParserTest.SmalltalkTheParserTest', {
 
 test01ParseUnaryMessageSend: function() {
 	var src = 'x foo';
@@ -393,7 +393,7 @@ test18aArrayLiteral: function() {
 
 });
 
-lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.StNodeToProgramStringTest', {
+Tests.SmalltalkParserTest.ASTBaseTest.subclass('Tests.SmalltalkParserTest.StNodeToProgramStringTest', {
 
 test01Expressions: function() {
 	var originals = [
@@ -454,7 +454,7 @@ test04StToStResultUnequalSource: function() {
 });
 
 
-TestCase.subclass('lively.Tests.SmalltalkParserTest.ParseExistingSourcesTest', {
+TestCase.subclass('Tests.SmalltalkParserTest.ParseExistingSourcesTest', {
 shouldRun: true,
 setUp: function() {
 	this.parser = SmalltalkParser;
@@ -493,7 +493,7 @@ testAll: function() {
 // ----------------------------------------
 // --------------------
 
-lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.JS2StConversionTest', {
+Tests.SmalltalkParserTest.ASTBaseTest.subclass('Tests.SmalltalkParserTest.JS2StConversionTest', {
 shouldRun: true,
 
 test01aConvertTempVarGet: function() {
@@ -702,7 +702,7 @@ testXYaConvertMethodWichCannotBeParsedToPrimitive: function() {
 
 });
 
-lively.Tests.SmalltalkParserTest.ASTBaseTest.subclass('lively.Tests.SmalltalkParserTest.St2JSConversionTest', {
+Tests.SmalltalkParserTest.ASTBaseTest.subclass('Tests.SmalltalkParserTest.St2JSConversionTest', {
 shouldRun: true,
 colonReplacement: '',
 

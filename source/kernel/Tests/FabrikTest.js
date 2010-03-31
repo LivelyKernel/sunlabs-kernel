@@ -1,4 +1,4 @@
-module('lively.Tests.FabrikTest').requires('lively.TestFramework', 'lively.Tests.SerializationTests', 'lively.Fabrik').toRun(function(ownModule) {
+module('Tests.FabrikTest').requires('lively.TestFramework', 'Tests.SerializationTests', 'lively.Fabrik').toRun(function(ownModule) {
 
 TestCase.subclass('FabrikTestCase', {
     
@@ -1772,7 +1772,7 @@ TestCase.subclass('FabrikConverterTest', {
     }
 });
 
-lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
+Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
 
     assertFabrikWithTwoTextComponentsAndConnector: function(fabrik) {
         this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");
@@ -2085,7 +2085,7 @@ lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSeria
 
 // logMethod(Component.prototype, "onDeserialize");
 
-lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('AClipboardCopierTest', {
+Tests.SerializationTests.SerializationBaseTestCase.subclass('AClipboardCopierTest', {
 	
 	setUp: function($super) {
 		$super();

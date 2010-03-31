@@ -1,4 +1,4 @@
-module('lively.Tests.SceneTest').requires('lively.TestFramework').toRun(function() {
+module('Tests.SceneTest').requires('lively.TestFramework').toRun(function() {
 
 
 printMatrix =  function(m) {
@@ -9,7 +9,7 @@ printMatrix =  function(m) {
 		", e:" + m.e.roundTo(p) + ", f:" + m.f.roundTo(p) + "}"
 }
 
-TestCase.subclass('lively.Tests.SceneTest.PointTest', {
+TestCase.subclass('Tests.SceneTest.PointTest', {
 
 	testTransformDirection: function() {
 		
@@ -21,7 +21,7 @@ TestCase.subclass('lively.Tests.SceneTest.PointTest', {
 	},
 })
 
-TestCase.subclass('lively.Tests.SceneTest.MatrixTest', {
+TestCase.subclass('Tests.SceneTest.MatrixTest', {
 	
 	setUp: function() {
 		this.sut = new lively.scene.Similitude().toMatrix()
@@ -78,7 +78,7 @@ TestCase.subclass('lively.Tests.SceneTest.MatrixTest', {
 
 
 
-TestCase.subclass('lively.Tests.SceneTest.RotateMorphTest', {
+TestCase.subclass('Tests.SceneTest.RotateMorphTest', {
 	
 	setUp: function() {
 		var name = 'RotateMorphTestMorph';
@@ -163,7 +163,7 @@ TestCase.subclass('lively.Tests.SceneTest.RotateMorphTest', {
 	}
 })
 
-TestCase.subclass('lively.Tests.SceneTest.PointTest', {
+TestCase.subclass('Tests.SceneTest.PointTest', {
 
 	testTransformDirection: function() {
 		var tfm = new lively.scene.Similitude()

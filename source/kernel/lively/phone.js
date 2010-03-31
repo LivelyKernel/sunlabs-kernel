@@ -27,7 +27,7 @@
  * @class PhoneMorph
  */
 
-module('phone.js').requires().toRun(function() {
+module('lively.phone').requires().toRun(function() {
 
 console.log("start phone.js");
 Morph.subclass('PhoneMorph', {

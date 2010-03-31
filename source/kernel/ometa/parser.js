@@ -23,7 +23,7 @@
   OTHER DEALINGS IN THE SOFTWARE.
 */
 
-module('ometa/parser.js').requires('ometa/ometa-base.js').toRun(function() {
+module('ometa.parser').requires('ometa.ometa-base').toRun(function() {
   
 Parser = Object.delegated(OMeta,{
   listOf: function() {

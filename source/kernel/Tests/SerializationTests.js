@@ -1,4 +1,4 @@
-module('lively.Tests.SerializationTests').requires('lively.TestFramework').toRun(function(thisModule) {
+module('Tests.SerializationTests').requires('lively.TestFramework').toRun(function(thisModule) {
 
 /* Helper Classes */
 
@@ -61,7 +61,7 @@ Widget.subclass('DummyWidget', {
 
 
 
-TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
+TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 
     /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
     setUp: function($super) {
@@ -153,7 +153,7 @@ TestCase.subclass('lively.Tests.SerializationTests.SerializationBaseTestCase', {
 
 });
 
-thisModule.SerializationBaseTestCase.subclass('lively.Tests.SerializationTests.SerializationTest', {
+thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.SerializationTest', {
    
     testWorldMorphOnCanvas: function() {
         this.assert(this.worldMorph, 'No WorldMorph');
@@ -604,7 +604,7 @@ thisModule.SerializationBaseTestCase.subclass('lively.Tests.SerializationTests.S
 
         
 });
-TestCase.subclass('lively.Tests.SerializationTests.SelectionCopyAndPasteTest', {
+TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	
 	setUp: function() {
 		this.selection = new SelectionMorph(new Rectangle(0,0,10,10));
@@ -730,7 +730,7 @@ TestCase.subclass('lively.Tests.SerializationTests.SelectionCopyAndPasteTest', {
 });
 
 
-TestCase.subclass('lively.Tests.SerializationTests.DomRecordTest', {
+TestCase.subclass('Tests.SerializationTests.DomRecordTest', {
 
     testAddField: function() {
         this.model = Record.newNodeInstance({StaticField: null});

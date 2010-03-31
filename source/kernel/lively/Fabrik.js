@@ -46,7 +46,7 @@
   * Examples for interactive testing and exploring
   */
 
-module('lively.Fabrik').requires('Helper.js').toRun(function() {
+module('lively.Fabrik').requires('lively.Helper').toRun(function() {
 
 // logMethod(Morph.prototype, 'onMouseDown');
 

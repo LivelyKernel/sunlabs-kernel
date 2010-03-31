@@ -1,6 +1,6 @@
-module('lively.Tests.FabrikExtensionsTest').requires('lively.TestFramework', 'lively.Tests.SerializationTests', 'lively.Fabrik', 'lively.FabrikExtensions').toRun(function(ownModule) {
+module('Tests.FabrikExtensionsTest').requires('lively.TestFramework', 'Tests.SerializationTests', 'lively.Fabrik', 'lively.FabrikExtensions').toRun(function(ownModule) {
 
-TestCase.subclass('Alively.Tests.FabrikExtensionTest', {
+TestCase.subclass('Tests.FabrikExtensionTest', {
 	
 	testTokyoDate: function() {
 		var time = new Date();

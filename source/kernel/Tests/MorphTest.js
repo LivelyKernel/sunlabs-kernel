@@ -1,4 +1,4 @@
-module('lively.Tests.MorphTest').requires('lively.TestFramework').toRun(function() {
+module('Tests.MorphTest').requires('lively.TestFramework').toRun(function() {
 
 TestCase.subclass('MorphTest', {
 	

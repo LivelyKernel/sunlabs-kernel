@@ -1,11 +1,11 @@
-module('lively.Tests.CoreTest').requires('lively.TestFramework').toRun(function() {
+module('Tests.CoreTest').requires('lively.TestFramework').toRun(function() {
 
 
 /**
  * @class ConnectModelTest
  * Tests for understanding Record, Relay and View Behavior
  */
-TestCase.subclass('lively.Tests.CoreTest.ConnectModelTest', {
+TestCase.subclass('Tests.CoreTest.ConnectModelTest', {
 
     testAddObserver: function() {
         var formalModel = Record.newPlainInstance({MyValue: "Hello World"});
@@ -57,7 +57,7 @@ TestCase.subclass('lively.Tests.CoreTest.ConnectModelTest', {
 	},
 
 });
-TestCase.subclass('lively.Tests.CoreTest.TestModel', {
+TestCase.subclass('Tests.CoreTest.TestModel', {
 
 	testSetterSource: function() {
 		var calls = 0; var test = this;
@@ -169,7 +169,7 @@ lively.data.Wrapper.subclass('DummyCopierObject', {
 	},
 });	
 
-TestCase.subclass('lively.Tests.CoreTest.CopierTest', {
+TestCase.subclass('Tests.CoreTest.CopierTest', {
 	
 	testSimpleCopy: function() {
 		var obj = new DummyCopierObject();
@@ -307,7 +307,7 @@ TestCase.subclass('lively.Tests.CoreTest.CopierTest', {
 });
 
 
-TestCase.subclass("lively.Tests.CoreTest.EncodeWrapperJSONTest", {
+TestCase.subclass("Tests.CoreTest.EncodeWrapperJSONTest", {
 
 	setUp: function() {
 		this.ref = WorldMorph.current();

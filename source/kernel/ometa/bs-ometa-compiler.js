@@ -1,4 +1,4 @@
-module('ometa/bs-ometa-compiler.js').requires('ometa/bs-js-compiler.js', 'ometa/parser.js').toRun(function() {
+module('ometa.bs-ometa-compiler').requires('ometa.bs-js-compiler', 'ometa.parser').toRun(function() {
 {BSOMetaParser=Object.delegated(Parser,{
 "fromTo":function(){var $elf=this,x,y;return (function(){x=this._apply("anything");y=this._apply("anything");this._applyWithArgs("seq",x);this._many((function(){return (function(){this._not((function(){return this._applyWithArgs("seq",y)}));return this._apply("char")}).call(this)}));return this._applyWithArgs("seq",y)}).call(this)},
 "space":function(){var $elf=this;return this._or((function(){return Parser._superApplyWithArgs(this,'space')}),(function(){return this._applyWithArgs("fromTo","//","\n")}),(function(){return this._applyWithArgs("fromTo","/*","*/")}))},

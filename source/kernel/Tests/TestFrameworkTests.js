@@ -1,4 +1,4 @@
-module('lively.Tests.TestFrameworkTests').requires('lively.TestFramework').toRun(function() {
+module('Tests.TestFrameworkTests').requires('lively.TestFramework').toRun(function() {
 
 /* These tests are used for testing the test framework itself 
 TestCase, TestResult, and TestSuite are tested */

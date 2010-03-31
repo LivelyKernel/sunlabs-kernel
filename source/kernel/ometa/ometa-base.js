@@ -60,7 +60,7 @@ M = Object.delegated(OMeta,{
 M.matchAll("123456789", "number")
 */
 
-module('ometa/ometa-base.js').requires('ometa/lib.js').toRun(function() {
+module('ometa.ometa-base').requires('ometa.lib').toRun(function() {
   
 // the failure exception
 

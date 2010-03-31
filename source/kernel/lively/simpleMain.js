@@ -32,7 +32,7 @@ function connectHTMLElementToLK(htmlElement, htmlAttrName, obj, propName) {
 }
 
 function connectAndShowClock(htmlElement, world) {
-	require('Examples.js').toRun(function() {
+	require('lively.Examples').toRun(function() {
         var widget = new ClockMorph(pt(100, 100), 50);
         world.addMorph(widget);
         widget.startSteppingScripts();
@@ -53,7 +53,7 @@ function connectAndShowClock(htmlElement, world) {
 }
 
 function connectAndShowEngine(htmlElement, world) {
-	require('Examples.js').toRun(function() {
+	require('lively.Examples').toRun(function() {
 		EngineMorph.makeEngine(world, pt(0, 0));
         var engine = WorldMorph.current().submorphs.last().targetMorph;
 		

@@ -1,4 +1,4 @@
-module('lively.Tests.PresentationTests').requires('lively.TestFramework', 'lively.Presentation').toRun(function(ownModule) {
+module('Tests.PresentationTests').requires('lively.TestFramework', 'lively.Presentation').toRun(function(ownModule) {
 
 TestCase.subclass('APresentationTest', {
     

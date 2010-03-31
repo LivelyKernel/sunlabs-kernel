@@ -21,7 +21,7 @@
  */
 
 
-module('SmalltalkParserSupport.js').requires('lively.ide').toRun(function() {
+module('lively.SmalltalkParserSupport').requires('lively.ide').toRun(function() {
 
 Object.subclass('StNode', {
 

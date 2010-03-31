@@ -4,7 +4,7 @@
  */
 
 
-module('TestRunnerExtensions').requires('Helper.js', 'cop.Layers', 'lively.TestFramework').toRun(function() {
+module('lively.TestRunnerExtensions').requires('lively.Helper', 'cop.Layers', 'lively.TestFramework').toRun(function() {
 	
 	
 createLayer("TimeTestRunLayer");

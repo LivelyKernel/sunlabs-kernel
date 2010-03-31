@@ -1,6 +1,6 @@
 
 
-module('lively.FabrikExtensions').requires('Helper.js', 'cop.Layers').toRun(function() {
+module('lively.FabrikExtensions').requires('lively.Helper', 'cop.Layers').toRun(function() {
 
 createLayer("WorldClockLayer");
 createLayer("TokyoTimeLayer");

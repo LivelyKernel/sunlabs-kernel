@@ -1,4 +1,4 @@
-module('lively.Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'lively.Tests.SerializationTests').toRun(function(thisModule, testModule, toolsModule, ideModule) {
+module('Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'Tests.SerializationTests').toRun(function(thisModule, testModule, toolsModule, ideModule) {
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');
@@ -18,7 +18,7 @@ thisModule.removeDummyNamespace = function() {
 };
 
 // Browser related tests
-TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
+TestCase.subclass('Tests.ToolsTests.SystemBrowserTests', {
 
 	setUp: function() {
 		var browser = new lively.ide.BasicBrowser();
@@ -26,7 +26,7 @@ TestCase.subclass('lively.Tests.ToolsTests.SystemBrowserTests', {
 		browser.rootNode = function() { return root };
 		this.browser = browser;
 	},
-mockNodeClass: lively.ide.BrowserNode.subclass('lively.Tests.ToolsTests.MockNode', {
+mockNodeClass: lively.ide.BrowserNode.subclass('Tests.ToolsTests.MockNode', {
 			initialize: function($super, target, browser, c) { $super(target, browser); this.children = c || [] },
 			childNodes: function() { return this.children; }
 		}),
@@ -55,7 +55,7 @@ testFilterChildNodes: function() {
 	var node2 = this.createMockNode(browser);
 	node1.shouldAppear = true; node2.shouldAppear = false;
 	browser.rootNode().children = [node1, node2];
-	var testFilterClass = lively.ide.NodeFilter.subclass('lively.Tests.ToolsTest.TestFilter', {
+	var testFilterClass = lively.ide.NodeFilter.subclass('Tests.ToolsTest.TestFilter', {
 		apply: function(nodes) { return nodes.select(function(ea) {return ea.shouldAppear}) }
 	});
 	var result = browser.filterChildNodesOf(browser.rootNode(), [new testFilterClass()]);
@@ -85,7 +85,7 @@ testSortFilter: function() {
 
 });
 
-TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
+TestCase.subclass('Tests.ToolsTests.FileParserTest', {
 
     setUp: function() {
         this.sut = new FileParser();
@@ -131,7 +131,7 @@ TestCase.subclass('lively.Tests.ToolsTests.FileParserTest', {
     
 });
 
-TestCase.subclass('lively.Tests.ToolsTests.JsParserTest', {
+TestCase.subclass('Tests.ToolsTests.JsParserTest', {
     
     setUp: function() {
         this.sut = new JsParser();
@@ -172,7 +172,7 @@ TestCase.subclass('lively.Tests.ToolsTests.JsParserTest', {
 	}
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest1', {
     
     testParseClass: function() {    // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
@@ -407,7 +407,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest1', {
         
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserParsesCoreTest', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserParsesCoreTest', {
             
 	shouldRun: false,
 	
@@ -423,7 +423,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserParsesCoreTest
 
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest2', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest2', {
 
    	testFindLinNo: function() {
         var str = 'abc\ndef123\n\n\nxyz\n';
@@ -599,7 +599,7 @@ main.logCompletion("main").delay(Config.mainDelay);\n\
     },
     
 testParseModuledef: function() {
-        var src = 'module(\'lively.TileScripting\').requires(\'Helper.js\').toRun(function(thisModule) {\n\nMorph.addMethods({})\n});';
+        var src = 'module(\'lively.TileScripting\').requires(\'lively.Helper\').toRun(function(thisModule) {\n\nMorph.addMethods({})\n});';
         var result = this.sut.parseSource(src);
 
         this.assertEqual(result.length, 1);
@@ -619,7 +619,7 @@ testParseModuledef: function() {
     },
 
     testParseModuleAndUsingDef: function() { // /* ... */ || // ...
-        var src = 'module(\'lively.TileScripting\').requires(\'Helper.js\').toRun(function(thisModule) {\n\
+        var src = 'module(\'lively.TileScripting\').requires(\'lively/Helper.js\').toRun(function(thisModule) {\n\
 using().run(function() {\nMorph.addMethods({})\n})\n});';
         var result = this.sut.parseSource(src);
         this.assertEqual(result.length, 1);
@@ -657,7 +657,7 @@ testFailingRegex: function() {
 
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest3', {
 
 	shouldRun: false,
 	
@@ -715,7 +715,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.JsParserTest3', {
     
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTest', {
 
 	documentation: 'For testing parsing of OMeta grammar definitions themselves',
 
@@ -792,7 +792,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTest', {
 
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTestLKFile', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTestLKFile', {
 	
 	shouldRun: false,
 	
@@ -808,7 +808,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.OMetaParserTestLKFile'
     },
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTest', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.ChunkParserTest', {
 
 	setUp: function($super) {
 		$super();
@@ -856,7 +856,7 @@ thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.ChunkParserTest', {
 
 });
 
-thisModule.JsParserTest.subclass('lively.Tests.ToolsTests.FileFragmentTest', {
+thisModule.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
    
    setUp: function() {
        /* creates:
@@ -1128,7 +1128,7 @@ testEq1: function() {
 
 });
 
-thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTests', {
+thisModule.FileFragmentTest.subclass('Tests.ToolsTests.FileFragmentNodeTests', {
 
 	setUp: function($super) {
 		$super();
@@ -1152,7 +1152,7 @@ thisModule.FileFragmentTest.subclass('lively.Tests.ToolsTests.FileFragmentNodeTe
 	}
 });
 
-TestCase.subclass('lively.Tests.ToolsTests.ChangesTests', {
+TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 
 	setUp: function() {
 		this.parser = new AnotherCodeMarkupParser();
@@ -1211,7 +1211,7 @@ testEquals: function() {
 	},
 
 	testEvaluateMethodWithClassInSystem: function() {
-		var className = 'lively.Tests.ToolsTests.DummyForChangeTests1';
+		var className = 'Tests.ToolsTests.DummyForChangeTests1';
 		this.cleanUpItems.push(className);
 		Object.subclass(className);
 		var xml = stringToXML('<class name="' + className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
@@ -1222,7 +1222,7 @@ testEquals: function() {
 	},
 
 	testEvaluateClassChange: function() {
-		var className = 'lively.Tests.ToolsTests.DummyForChangeTests2';
+		var className = 'Tests.ToolsTests.DummyForChangeTests2';
 		this.cleanUpItems.push(className);
 		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
 		var change = this.parser.createChange(xml);
@@ -1232,7 +1232,7 @@ testEquals: function() {
 	},
 
 	testEvalauteClassChnageWithStaticElem: function() {
-		var className = 'lively.Tests.ToolsTests.DummyForChangeTests3';
+		var className = 'Tests.ToolsTests.DummyForChangeTests3';
 		this.cleanUpItems.push(className);
 		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto><static name="staticM1"><![CDATA[function(xyz) { 1+1 }]]></static></class>');
 		var change = this.parser.createChange(xml);
@@ -1248,7 +1248,7 @@ testEquals: function() {
 	},
 
 	testDoit: function() {
-		var objName = 'lively.Tests.ToolsTests.DummyObj';
+		var objName = 'Tests.ToolsTests.DummyObj';
 		this.assert(!Class.forName(objName), 'TestObj already exists');
 		this.cleanUpItems.push(objName);
 		var xml = stringToXML('<doit><![CDATA[' + objName + ' = {test: 1}; 1+2;]]></doit>');
@@ -1308,7 +1308,7 @@ testChangeHasCDATASection: function() {
 	
 });
 
-lively.Tests.ToolsTests.FileFragmentTest.subclass('lively.Tests.ToolsTests.ChangesConversionTest', {
+Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.ChangesConversionTest', {
 
 	setUp: function($super) {
 		$super();
@@ -1365,7 +1365,7 @@ testClassChangeAsJs: function() {
 
 
 });
-lively.Tests.SerializationTests.SerializationBaseTestCase.subclass('lively.Tests.ToolsTests.ChangeSetTests', {
+Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.ChangeSetTests', {
 
 	setUp: function($super) {
 		$super();
@@ -1442,7 +1442,7 @@ testEquals: function() {
 	},
 
 	testEvalChangeSet: function() {
-		var className = 'lively.Tests.ToolsTests.DummyForChangeTests4';
+		var className = 'Tests.ToolsTests.DummyForChangeTests4';
 		this.cleanUpItems.push(className);
 		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
 		var change = this.parser.createChange(xml);
@@ -1485,33 +1485,33 @@ testEquals: function() {
 		this.assertEqual(cs.subElements().length, 0);
 	},
 testStartUpEvaluating: function() {
-	lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
-	lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
-	lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun = false;
-	var newChange1 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
-	var newChange2 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
+	Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
+	Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
+	Tests.ToolsTests.ChangeSetTests.initializerWasRun = false;
+	var newChange1 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
+	var newChange2 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
 	var cs = ChangeSet.fromWorld(this.worldMorph);
 	cs.addSubElements([newChange1, newChange2]);
 	var init = cs.subElementNamed(cs.initializerName);
-	init.setDefinition('lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun = true');
+	init.setDefinition('Tests.ToolsTests.ChangeSetTests.initializerWasRun = true');
 	cs.evaluateAllButInitializer();
-	this.assert(lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
-	this.assert(lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
-	this.assert(!lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 1');
+	this.assert(Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
+	this.assert(Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
+	this.assert(!Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 1');
 	cs.evaluateInitializer();
-	this.assert(lively.Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 2');
+	this.assert(Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 2');
 },
 testStartUpEvaluatingWithDisabledChanges: function() {
-	lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
-	lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
-	var newChange1 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
-	var newChange2 = DoitChange.create('lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
+	Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
+	Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
+	var newChange1 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
+	var newChange2 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
 	newChange2.disableAutomaticEval();
 	var cs = ChangeSet.fromWorld(this.worldMorph);
 	cs.addSubElements([newChange1, newChange2]);
 	cs.evaluateAllButInitializer();
-	this.assert(lively.Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
-	this.assert(!lively.Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
+	this.assert(Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
+	this.assert(!Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
 },
 
 
@@ -1530,7 +1530,7 @@ m.openInWorld();';
 	},
 });
 
-TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
+TestCase.subclass('Tests.ToolsTests.KeyboardTest', {
     
     shouldRun: false,
     
@@ -1559,7 +1559,7 @@ TestCase.subclass('lively.Tests.ToolsTests.KeyboardTest', {
     }
 })
     
-TestCase.subclass('lively.Tests.ToolsTests.MouseEventTest', {
+TestCase.subclass('Tests.ToolsTests.MouseEventTest', {
 
 	testMouseEvents: function() {
 		var mouseWatcher = Morph.makeRectangle(0,0,100,20);

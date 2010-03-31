@@ -1,6 +1,6 @@
-module('lively.Tests.ConnectorTest').requires(['lively.Connector']).toRun(function() {
+module('Tests.ConnectorTest').requires(['lively.Connector']).toRun(function() {
 
-TestCase.subclass("lively.Tests.ConnectorTest.NodeMorphLayeredMorphTest", {
+TestCase.subclass("Tests.ConnectorTest.NodeMorphLayeredMorphTest", {
 	setUp: function() {
 		this.morph = Morph.makeRectangle(new Rectangle(50,50,100,100));
 		this.morph.setWithLayers([NodeMorphLayer])
@@ -14,7 +14,7 @@ TestCase.subclass("lively.Tests.ConnectorTest.NodeMorphLayeredMorphTest", {
 
 });
 
-TestCase.subclass("lively.Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
+TestCase.subclass("Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
 	setUp: function() {
 		var pos = pt(0,0);
 		var pos2 = pt(200,0);

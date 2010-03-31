@@ -266,15 +266,13 @@ function namespace(spec, context) {
 
 
 function module(moduleName) {
-
-	var namespacePrefix = 'lively.';
 	
 	function isNamespaceAwareModule(moduleName) {
-		return moduleName.startsWith(namespacePrefix);
+		return !moduleName.endsWith('.js');
 	}
 	
 	function convertUrlToNSIdentifier(url) {
-		var result = namespacePrefix + url;
+		var result = url;
 		result = result.replace(/\//, '.');
 		// get rid of '.js'
 		if (result.endsWith('.js')) result = result.substring(0, result.lastIndexOf('.'));
@@ -851,10 +849,9 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	uri: function() { // FIXME cleanup necessary
 		var id = this.namespaceIdentifier; // something like lively.Core
 		var namespacePrefix;
-		if (id.startsWith('Global.')) namespacePrefix = 'Global.lively.';
-		else if (id.startsWith('lively.')) namespacePrefix = 'lively.';
+		if (id.startsWith('Global.')) namespacePrefix = 'Global.';
 		else throw dbgOn(new Error('unknown namespaceIdentifier'));
-		var url = Config.codeBase + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./, '/');
+		var url = Config.codeBase + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./g, '/');
 		if (!this.isAnonymous()) url += '.js'; // FIXME not necessary JavaScript?!
 		return url;
 	},

@@ -1,4 +1,4 @@
-module('lively.Tests.ModuleSystemTests').requires('lively.TestFramework').toRun(function() {
+module('Tests.ModuleSystemTests').requires('lively.TestFramework').toRun(function() {
 
     
 TestCase.subclass('LoaderTest', {

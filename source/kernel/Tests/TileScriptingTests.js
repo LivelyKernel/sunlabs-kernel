@@ -1,6 +1,6 @@
-module('lively.Tests.TileScriptingTests').requires('lively.TestFramework', 'lively.TileScripting').toRun(function(thisModule) {
+module('Tests.TileScriptingTests').requires('lively.TestFramework', 'lively.TileScripting').toRun(function(thisModule) {
 
-TestCase.subclass('lively.Tests.TileScriptingTests.TileHolderTest', {
+TestCase.subclass('Tests.TileScriptingTests.TileHolderTest', {
     
     testAddNewDropWhenExistingOneWasUsed: function() {
         var holder = new lively.TileScripting.TileHolder(pt(50,50).extentAsRectangle());
@@ -34,7 +34,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.TileHolderTest', {
     }
 });
 
-TestCase.subclass('lively.Tests.TileScriptingTests.DropAreaTest', {
+TestCase.subclass('Tests.TileScriptingTests.DropAreaTest', {
     
     testDropAcceptsTile: function() {
         var drop = new lively.TileScripting.DropArea();
@@ -73,7 +73,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.DropAreaTest', {
     }
 });
 
-TestCase.subclass('lively.Tests.TileScriptingTests.ObjectTileTest', {
+TestCase.subclass('Tests.TileScriptingTests.ObjectTileTest', {
    
         // var morph = new Morph(new Rectangle(10,10,110,210));
         // morph.closeDnD();
@@ -134,7 +134,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.ObjectTileTest', {
     }
 });
 
-TestCase.subclass('lively.Tests.TileScriptingTests.FunctionTileTest', {
+TestCase.subclass('Tests.TileScriptingTests.FunctionTileTest', {
     
     testHasTextAndDropZone: function() {
         var tile = new lively.TileScripting.FunctionTile(null, 'test');
@@ -154,7 +154,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.FunctionTileTest', {
     }
 });
 
-TestCase.subclass('lively.Tests.TileScriptingTests.IfTileTest', {
+TestCase.subclass('Tests.TileScriptingTests.IfTileTest', {
     
     testCanAddExprAndTestExpression: function() {
         var tile = new lively.TileScripting.IfTile();
@@ -180,7 +180,7 @@ TestCase.subclass('lively.Tests.TileScriptingTests.IfTileTest', {
     }
 });
 
-TestCase.subclass('lively.Tests.TileScriptingTests.NumberTileTest', {
+TestCase.subclass('Tests.TileScriptingTests.NumberTileTest', {
     
     testHasNumberTextAndTwoButtons: function() {
         var tile = new lively.TileScripting.NumberTile();

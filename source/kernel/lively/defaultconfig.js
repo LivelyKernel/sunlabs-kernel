@@ -227,6 +227,12 @@ Object.extend(Config, {
     showDeveloperWorld: true //!Config.skipMostExamples;
 });
 
+Object.extend(Config, {
+	getDocumentDirectory: function() {
+		var url = document.documentURI;
+		return url.substring(0, url.lastIndexOf('/') + 1);
+	},
+});
 
 Object.extend(Config, {
 	// Morphic
@@ -243,10 +249,10 @@ Object.extend(Config, {
 	loadTests: [], //e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 	showTesterRunner: false,
 	// Modules
-	modulesBeforeChanges: ['LKWiki.js', 'ChangeSet.js'], // evaluated first, even before ChangeSet of a world
+	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet'], // evaluated first, even before ChangeSet of a world
 	modulesBeforeWorldLoad: [], // evaluated before all changes
 	modulesOnWorldLoad: [], // evaluated before ChangeSet initializer
-	codeBase: document.documentURI.substring(0, document.documentURI.lastIndexOf('/') + 1),
+	codeBase: Config.getDocumentDirectory(),
 	disableScriptCaching: false,
 	defaultDisplayTheme: 'lively'
 });

@@ -1,4 +1,4 @@
-module('lively.Tests.RecordTest').requires('lively.TestFramework').toRun(function() {
+module('Tests.RecordTest').requires('lively.TestFramework').toRun(function() {
 
 
 // TODO

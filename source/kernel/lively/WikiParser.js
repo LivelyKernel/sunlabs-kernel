@@ -1,4 +1,4 @@
-module('WikiParser.js').requires('ometa/parser.js').toRun(function() {
+module('lively.WikiParser').requires('ometa.parser').toRun(function() {
 WikiParser=Object.delegated(Parser,{
 "nl":function(){var $elf=this;return this._applyWithArgs("exactly","\n")},
 "createTextSpec":function(){var $elf=this;return (function (){var spec=({"string": "","attributes": []});(spec["assemble"]=(function (){var morph=new TextMorph(new Rectangle((0),(0),(10),(10)));morph.applyStyle(({"fill": Color["white"],"borderWidth": (0),"opacity": (0),"fontSize": (16)}));var text=new lively.Text.Text(spec["string"]);spec["attributes"].forEach((function (ea){text.emphasize(ea,ea["start"],ea["stop"])}));morph.setRichText(text);return morph}));(spec["add"]=(function (str){(spec["string"]+=str)}));(spec["addAttribute"]=(function (attr){spec["attributes"].push(attr)}));(spec["addAttributed"]=(function (str,attribute){(attribute["start"]=spec["string"]["length"]);spec.add(str);(attribute["stop"]=spec["string"]["length"]);spec.addAttribute(attribute)}));return spec}).call(this)},

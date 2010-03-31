@@ -21,7 +21,7 @@
  */
 
 
-module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'LKFileParser.js', 'lively.Helper', 'lively.ChangeSet').toRun(function(ide, tools, omet, help) {
+module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'lively.LKFileParser', 'lively.Helper', 'lively.ChangeSet').toRun(function(ide, tools, omet, help) {
     
     // Modules: "+Modules" --> setModule in model
     // Modules: "-Modules" --> getModule in model

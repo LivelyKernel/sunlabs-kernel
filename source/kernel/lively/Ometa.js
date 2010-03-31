@@ -21,7 +21,7 @@
  */
 
 
-module('Ometa.js').requires('ometa/ometa-base.js', 'ometa/lk-parser-extensions.js').toRun(function() {
+module('lively.Ometa').requires('ometa.ometa-base', 'ometa.lk-parser-extensions').toRun(function() {
                                            
 /*
     An Ometa Workspace like http://www.cs.ucla.edu/~awarth/ometa/.
@@ -37,9 +37,10 @@ OMetaSupport = {
     },
     
     translateAndWrite: function(sourceFileName, destFileName, additionalRequirements) {
+	throw new Error('Check if URLs are correct. robert changed the module system... again ;-)');
 	var url = URL.source.getDirectory();
 	var requirementsString = additionalRequirements ? ',\'' + additionalRequirements.join('\',\'') + '\'' : '';
-	var str = Strings.format('module(\'%s\').requires(\'ometa/parser.js\'%s).toRun(function() {\n%s\n});',
+	var str = Strings.format('module(\'%s\').requires(\'ometa.parser\'%s).toRun(function() {\n%s\n});',
 		destFileName,
 		requirementsString,
 		OMetaSupport.translateToJs(OMetaSupport.fileContent(sourceFileName)));

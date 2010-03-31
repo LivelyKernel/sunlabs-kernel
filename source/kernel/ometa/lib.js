@@ -23,7 +23,7 @@
   OTHER DEALINGS IN THE SOFTWARE.
 */
 
-module('ometa/lib.js').requires().toRun(function() {
+module('ometa.lib').requires().toRun(function() {
 // try to use StringBuffer instead of string concatenation to improve performance
 
 function StringBuffer() {

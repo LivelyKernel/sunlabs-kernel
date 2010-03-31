@@ -108,21 +108,21 @@
 
 
 
-<script type="text/ecmascript" xlink:href="rhino-compat.js"/> <!-- for now included unconditionally -->
-<script type="text/ecmascript" xlink:href="JSON.js" />
-<script type="text/ecmascript" xlink:href="miniprototype.js"/>
-<script type="text/ecmascript" xlink:href="defaultconfig.js"/>
-<script type="text/ecmascript" xlink:href="localconfig.js"/>
-<script type="text/ecmascript" xlink:href="Base.js"/>
-<script type="text/ecmascript" xlink:href="Core.js"/>
-<script type="text/ecmascript" xlink:href="scene.js"/>
-<script type="text/ecmascript" xlink:href="Text.js"/>
-<script type="text/ecmascript" xlink:href="Widgets.js"/>
-<script type="text/ecmascript" xlink:href="Network.js"/>
-<script type="text/ecmascript" xlink:href="Storage.js"/>
-<script type="text/ecmascript" xlink:href="Tools.js"/>
-<script type="text/ecmascript" xlink:href="Examples.js"/>
-<script type="text/ecmascript" xlink:href="Main.js"/>
+<script type="text/ecmascript" xlink:href="lively/rhino-compat.js"/> <!-- for now included unconditionally -->
+<script type="text/ecmascript" xlink:href="lively/JSON.js" />
+<script type="text/ecmascript" xlink:href="lively/miniprototype.js"/>
+<script type="text/ecmascript" xlink:href="lively/defaultconfig.js"/>
+<script type="text/ecmascript" xlink:href="lively/localconfig.js"/>
+<script type="text/ecmascript" xlink:href="lively/Base.js"/>
+<script type="text/ecmascript" xlink:href="lively/Core.js"/>
+<script type="text/ecmascript" xlink:href="lively/scene.js"/>
+<script type="text/ecmascript" xlink:href="lively/Text.js"/>
+<script type="text/ecmascript" xlink:href="lively/Widgets.js"/>
+<script type="text/ecmascript" xlink:href="lively/Network.js"/>
+<script type="text/ecmascript" xlink:href="lively/Storage.js"/>
+<script type="text/ecmascript" xlink:href="lively/Tools.js"/>
+<script type="text/ecmascript" xlink:href="lively/Examples.js"/>
+<script type="text/ecmascript" xlink:href="lively/Main.js"/>
 </defs>
 
 </svg>

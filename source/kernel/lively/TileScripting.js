@@ -21,7 +21,7 @@
  */
 
 
-module('lively.TileScripting').requires('Helper.js').toRun(function(thisModule) {
+module('lively.TileScripting').requires('lively.Helper').toRun(function(thisModule) {
 
 Morph.addMethods({
    layout: function(notResizeSelf) {

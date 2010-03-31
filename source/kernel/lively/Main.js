@@ -154,7 +154,7 @@ function populateWorldWithExamples(world) {
     var widget;
 
     if (Config.showClock) {
-        require('Examples.js').toRun(function() {
+        require('lively.Examples').toRun(function() {
             var widget = new ClockMorph(pt(80, 100), 50);
             world.addMorph(widget);
             widget.startSteppingScripts();
@@ -162,12 +162,12 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showEngine())
-        require('Examples.js').toRun(function() {
+        require('lively.Examples').toRun(function() {
             EngineMorph.makeEngine(world, pt(230, 5))
         });
 
     if (Config.showAsteroids())
-        require('Examples.js').toRun(function(unsused, examplesModule) {
+        require('lively.Examples').toRun(function(unsused, examplesModule) {
             using(examplesModule.asteroids).run(function(app) {
                 var gameMorph = app.makeGameMorph(pt(500, 360).extent(pt(600, 300)));
                 world.addMorph(new WindowMorph(gameMorph, 'Asteroids!'));
@@ -192,7 +192,7 @@ function populateWorldWithExamples(world) {
 
     // Sample weather morph
     if (Config.showWeather() && Config.showNetworkExamples) {
-        require('Examples.js').toRun(function() {
+        require('lively.Examples').toRun(function() {
             // Maybe the icons should have rectangular images (unlike here)
             var weather = new WeatherWidget().openIn(world, pt(785, 65));
             world.topSubmorph().rotateBy(-0.2);
@@ -200,21 +200,21 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showStocks() && Config.showNetworkExamples) {
-        require('Examples.js').toRun(function() {
+        require('lively.Examples').toRun(function() {
             var stockWidget = new StockWidget();
             stockWidget.openIn(world, pt(350, 500));
         });
     }
 
     if (Config.show3DLogo())
-        require('Examples.js').toRun(function(unused, examplesModule) {
+        require('lively.Examples').toRun(function(unused, examplesModule) {
             world.addFramedMorph(new examplesModule.Sun3DMorph(pt(200, 200)),
 						            'Sun 3D Logo', pt(570, 100));
 		});
 						
     if (Config.showTesterRunnerForDevelopment) {
-        var requirements = Config.loadTests.collect(function(ea) { return 'Tests/' + ea + '.js'});
-        if (requirements.length === 0) requirements.push('TestFramework.js');
+        var requirements = Config.loadTests.collect(function(ea) { return 'Tests.' + ea});
+        if (requirements.length === 0) requirements.push('lively.TestFramework');
         require(requirements).toRun(function(currentModule) {
             TestRunner.openIn();
             console.log('Tests loaded: .............................  ' + TestCase.allSubclasses().length);
@@ -222,23 +222,23 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showFabrikComponentBox)
-        require('Fabrik.js').toRun(function() { Fabrik.openComponentBox() });
+        require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox() });
     if (Config.showFahrenheitCelsiusExample)
-        require('Fabrik.js').toRun(function() { Fabrik.openFahrenheitCelsiusExample() });
+        require('lively.Fabrik').toRun(function() { Fabrik.openFahrenheitCelsiusExample() });
     if (Config.showTextListExample)
-        require('Fabrik.js').toRun(function() { Fabrik.openFabrikTextListExample() });
+        require('lively.Fabrik').toRun(function() { Fabrik.openFabrikTextListExample() });
     if (Config.openFabrikBrowserExample)
-        require('Fabrik.js').toRun(function() { Fabrik.openFabrikBrowserExample() });
+        require('lively.Fabrik').toRun(function() { Fabrik.openFabrikBrowserExample() });
     if (Config.showFabrikWebRequestExample)
-        require('Fabrik.js').toRun(function() { Fabrik.openFabrikWebRequestExample() });
+        require('lively.Fabrik').toRun(function() { Fabrik.openFabrikWebRequestExample() });
     if (Config.showFabrikWeatherWidgetExample)
-        require('Fabrik.js').toRun(function() { Fabrik.openFabrikWeatherWidgetExample() });
+        require('lively.Fabrik').toRun(function() { Fabrik.openFabrikWeatherWidgetExample() });
 
     // Open OmetaWorkspace
     //openOmetaWorkspace();
 
     if (Config.activateTileScripting)
-        require('TileScripting.js').toRun(function(unused, tsModule) { tsModule.TileBox.open() });
+        require('lively.TileScripting').toRun(function(unused, tsModule) { tsModule.TileBox.open() });
 
     if (Config.showToolDock)
         require('lively.Helper').toRun(function(unused, helper) { new helper.ToolDock().startUp(); });
@@ -261,26 +261,26 @@ function populateWorldWithExamples(world) {
         lm1.myWorld.onEnter = function() {
 	    if (this.enterCount > 0) return;
 
-            require('WebPIM.js').toRun(function() {
+            require('lively.WebPIM').toRun(function() {
                     PIM = new WebPIM().openIn(lm1.myWorld, pt(200, 110));
             });
 	
 	
             if (Config.showRSSReader() && Config.showNetworkExamples) {
-                require('Examples.js').toRun(function() {
+                require('lively.Examples').toRun(function() {
                     console.log('initializing RSS reader');
                     new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
                 });
             }
 	
             if (Config.showCanvasScape()) {
-                require('Examples.js').toRun(function(unused, examplesModule) {
+                require('lively.Examples').toRun(function(unused, examplesModule) {
                     lm1.myWorld.addMorph(new WindowMorph(new examplesModule.canvascape.CanvasScapeMorph(new Rectangle(20,50,800,300)), 'CanvasScape')).collapse();
                 });
             }
 	
             if (Config.showMap) {
-                require('Examples.js').toRun(function(unused, exampleModule) {
+                require('lively.Examples').toRun(function(unused, exampleModule) {
                     var tile = exampleModule.maps.tileExtent;
                     var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
                     map.setScale(0.7);
@@ -338,7 +338,7 @@ function populateWorldWithExamples(world) {
             }
 	
             if (Config.showSquiggle())
-                require('Examples.js').toRun(function() {
+                require('lively.Examples').toRun(function() {
                     lm1.myWorld.addFramedMorph(new SquiggleMorph(pt(300, 300)), 'Freehand', pt(560, 380));
                 });
 
@@ -376,7 +376,7 @@ function populateWorldWithExamples(world) {
         if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
 
         if (Config.showTester)
-        require('Examples.js').toRun(function() { new TestWidget().openIn(devWorld.myWorld, pt(835, 450)) });
+        require('lively.Examples').toRun(function() { new TestWidget().openIn(devWorld.myWorld, pt(835, 450)) });
 
 
         if (!Config.skipMostExamples) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
@@ -419,13 +419,13 @@ function populateWorldWithExamples(world) {
         }
 
 		if (Config.showGridDemo)
-            require('GridLayout.js').toRun(function() {
+            require('lively.GridLayout').toRun(function() {
                 alert('demo!!');
                 GridLayoutMorph.demo(devWorld.myWorld, pt(90,450));
             });
 	
         if (Config.showTesterRunner) {
-            // require('TestFramework.js').toRun(function(currentModule) {
+            // require('lively/TestFramework.js').toRun(function(currentModule) {
             //     // Just show a few of our various tests
             //     var tests = ['Tests/FabrikTest.js', 'Tests/TestFrameworkTests.js']
             //     currentModule.requires(tests).toRun(function() {
@@ -436,7 +436,7 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showPhoneWorld)
-        require('phone.js').toRun(function() {
+        require('lively.phone').toRun(function() {
             var phoneWorld = new LinkMorph(null, pt(60, 320));
             world.addMorph(phoneWorld);
         	addLinkLabel(phoneWorld, "Telephone Demo");
@@ -449,11 +449,12 @@ function populateWorldWithExamples(world) {
     }
 
     if (Config.showFabrik) {
-        require('Fabrik.js').toRun(function() {
+        require('lively.Fabrik').toRun(function() {
             var fabrikWorld = new LinkMorph(null, pt(60, 330));
             world.addMorph(fabrikWorld);
          addLinkLabel(fabrikWorld, "Visual programming with Fabrik");
          fabrikWorld.myWorld.onEnter = function() {
+	debugger
                 if (this.enterCount > 0) return;
              Global.Fabrik.openFabrikBrowserExample(fabrikWorld.myWorld, pt(70,245));
              Global.Fabrik.openFahrenheitCelsiusExample(fabrikWorld.myWorld, pt(100,20));
@@ -511,7 +512,7 @@ function main() {
 					changes && changes.evaluateInitializer();
 
 		            if (Config.showWikiNavigator) {
-		                require('LKWiki.js').toRun(function() {
+		                require('lively.LKWiki').toRun(function() {
 		                    //just a quick hack...
 		                    console.log('starting WikiNavigator');
 		                    WikiNavigator.enableWikiNavigator();
