@@ -33,163 +33,162 @@ Object.subclass('URL', {
     splitter: new RegExp('(http:|https:|file:)' + '(//[^/:]*(:[0-9]+)?)?' + '(/.*)?'),
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
     
-    initialize: function(/*...*/) { // same field names as window.location
-	dbgOn(!arguments[0]);
-	if (Object.isString(arguments[0].valueOf())) {
-	    var urlString = arguments[0];
-	    var result = urlString.match(this.splitter);
-	    if (!result) throw new Error("malformed URL string '" + urlString + "'");
-	    this.protocol = result[1]; 
-	    if (!result[1]) 
-		throw new Error("bad url " + urlString + ", " + result);
-	    this.hostname = result[2] && result[2].substring(2).split(':')[0]; // skip the leading slashes and remove port
-	    this.port = result[3] && parseInt(result[3].substring(1)); // skip the colon
-	    
-	    var fullpath = result[4];
-	    if (fullpath) {
-		result = fullpath.match(this.pathSplitter);
-		this.pathname = result[1];
-		this.search = result[2];
-		this.hash = result[3];
-	    } else {
-		this.pathname = "/";
-		this.search = "";
-		this.hash = "";
-	    }
-	} else { // spec is either an URL or window.location
-	    var spec = arguments[0];
-	    this.protocol = spec.protocol || "http";
-	    this.port = spec.port;
-	    this.hostname = spec.hostname;
-	    this.pathname = spec.pathname || "";
-	    if (spec.search !== undefined) this.search = spec.search;
-	    if (spec.hash !== undefined) this.hash = spec.hash;
-	}
-    },
-    
-    inspect: function() {
-	return JSON.serialize(this);
-    },
-    
-    toString: function() {
-	return this.protocol + "//" + this.hostname + (this.port ? ":" + this.port : "") + this.fullPath();
-    },
+	initialize: function(/*...*/) { // same field names as window.location
+		dbgOn(!arguments[0]);
+		if (Object.isString(arguments[0].valueOf())) {
+			var urlString = arguments[0];
+			var result = urlString.match(this.splitter);
+			if (!result) throw new Error("malformed URL string '" + urlString + "'");
+			this.protocol = result[1]; 
+			if (!result[1]) 
+				throw new Error("bad url " + urlString + ", " + result);
+			this.hostname = result[2] && result[2].substring(2).split(':')[0]; // skip the leading slashes and remove port
+			this.port = result[3] && parseInt(result[3].substring(1)); // skip the colon
 
-    fullPath: function() {
-	return this.pathname + (this.search || "") + (this.hash || "");
-    },
+			var fullpath = result[4];
+			if (fullpath) {
+				result = fullpath.match(this.pathSplitter);
+				this.pathname = result[1];
+				this.search = result[2];
+				this.hash = result[3];
+			} else {
+				this.pathname = "/";
+				this.search = "";
+				this.hash = "";
+			}
+		} else { // spec is either an URL or window.location
+			var spec = arguments[0];
+			this.protocol = spec.protocol || "http";
+			this.port = spec.port;
+			this.hostname = spec.hostname;
+			this.pathname = spec.pathname || "";
+			if (spec.search !== undefined) this.search = spec.search;
+			if (spec.hash !== undefined) this.hash = spec.hash;
+		}
+	},
     
-    isLeaf: function() {
-	return !this.fullPath().endsWith('/');
-    },
+	inspect: function() {
+		return JSON.serialize(this);
+	},
     
-    // POSIX style
-    dirname: function() {
-	var p = this.pathname;
-	var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
-	return p.substring(0, slash + 1);
-    },
+	toString: function() {
+		return this.protocol + "//" + this.hostname + (this.port ? ":" + this.port : "") + this.fullPath();
+	},
 
-    filename: function() {
-	var p = this.pathname;
-	var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
-	return p.substring(slash + 1);
-    },
+	fullPath: function() {
+		return this.pathname + (this.search || "") + (this.hash || "");
+	},
+    
+	isLeaf: function() {
+		return !this.fullPath().endsWith('/');
+	},
+    
+	// POSIX style
+	dirname: function() {
+		var p = this.pathname;
+		var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
+		return p.substring(0, slash + 1);
+	},
 
-    getDirectory: function() {
-	return this.withPath(this.dirname());
-    },
+	filename: function() {
+		var p = this.pathname;
+		var slash = p.endsWith('/') ? p.lastIndexOf('/', p.length - 2) : p.lastIndexOf('/');
+		return p.substring(slash + 1);
+	},
 
-    withPath: function(path) { 
-	var result = path.match(this.pathSplitter);
-	if (!result) return null;
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: 
+	getDirectory: function() {
+		return this.withPath(this.dirname());
+	},
+
+	withPath: function(path) { 
+		var result = path.match(this.pathSplitter);
+		if (!result) return null;
+		return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: 
 			result[1], search: result[2], hash: result[3] });
-    },
+	},
 
-    withRelativePath: function(pathString) {
-	if (pathString.startsWith('/')) {
-	    if (this.pathname.endsWith('/'))
-		pathString = pathString.substring(1);
-	} else {
-	    if (!this.pathname.endsWith('/'))
-		pathString = "/" + pathString;
-	}
-	return this.withPath(this.pathname + pathString);
-    },
+	withRelativePath: function(pathString) {
+		if (pathString.startsWith('/')) {
+			if (this.pathname.endsWith('/'))
+				pathString = pathString.substring(1);
+		} else {
+			if (!this.pathname.endsWith('/'))
+				pathString = "/" + pathString;
+		}
+		return this.withPath(this.pathname + pathString);
+	},
     
-    withFilename: function(filename) {
-	if (filename == "./" || filename == ".") // a bit of normalization, not foolproof
-	    filename = "";
-	var dirPart = this.isLeaf() ? this.dirname() : this.fullPath();
-	return new URL({protocol: this.protocol, port: this.port, 
+	withFilename: function(filename) {
+		if (filename == "./" || filename == ".") // a bit of normalization, not foolproof
+		filename = "";
+		var dirPart = this.isLeaf() ? this.dirname() : this.fullPath();
+		return new URL({protocol: this.protocol, port: this.port, 
 			hostname: this.hostname, pathname: dirPart + filename});
-    },
+	},
 
-    toQueryString: function(record) {
-	var results = [];
-	Properties.forEachOwn(record, function(p, value) {
-	    results.push(encodeURIComponent(p) + "=" + encodeURIComponent(String(value)));
-	});
-	return results.join('&');
-    },
+	toQueryString: function(record) {
+		var results = [];
+		Properties.forEachOwn(record, function(p, value) {
+			results.push(encodeURIComponent(p) + "=" + encodeURIComponent(String(value)));
+		});
+		return results.join('&');
+	},
 
-    withQuery: function(record) {
-	return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname,
+	withQuery: function(record) {
+		return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname,
 			search: "?" + this.toQueryString(record), hash: this.hash});
-    },
+	},
     
-    withoutQuery: function() {
-        return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname});
-    },
+	withoutQuery: function() {
+		return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname});
+	},
 
-    eq: function(url) {
-	if (!url) return false;
-	else return url.protocol == this.protocol && url.port == this.port && url.hostname == this.hostname
-	    && url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
-    },
+	eq: function(url) {
+		if (!url) return false;
+		return url.protocol == this.protocol && url.port == this.port && url.hostname == this.hostname
+			&& url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
+	},
 
-    relativePathFrom: function(origin) {
-	if (!this.pathname.startsWith(origin.pathname) 
-	    || origin.hostname != this.hostname) throw new Error('bad origin');
-	return this.pathname.substring(origin.hostname.length - 1);
-    },
+	relativePathFrom: function(origin) {
+		if (!this.pathname.startsWith(origin.pathname) 
+			|| origin.hostname != this.hostname) throw new Error('bad origin');
+		return this.pathname.substring(origin.hostname.length - 1);
+	},
 
-    svnWorkspacePath: function() {
-	// heuristics to figure out the Subversion path
-	var path = this.pathname;
-	// note that the trunk/branches/tags convention is only a convention
-	var index = path.lastIndexOf('trunk');
-	if (index < 0) index = path.lastIndexOf('branches');
-	if (index < 0) index = path.lastIndexOf('tags');
-	if (index < 0) return null;
-	else return path.substring(index);
-    },
+	svnWorkspacePath: function() {
+		// heuristics to figure out the Subversion path
+		var path = this.pathname;
+		// note that the trunk/branches/tags convention is only a convention
+		var index = path.lastIndexOf('trunk');
+		if (index < 0) index = path.lastIndexOf('branches');
+		if (index < 0) index = path.lastIndexOf('tags');
+		if (index < 0) return null;
+		return path.substring(index);
+	},
 
-
-    svnVersioned: function(repo, revision) {
-	var relative = this.relativePathFrom(repo);
-	return repo.withPath(repo.pathname + "!svn/bc/" + revision + "/" + relative);
-    },
+	svnVersioned: function(repo, revision) {
+		var relative = this.relativePathFrom(repo);
+		return repo.withPath(repo.pathname + "!svn/bc/" + revision + "/" + relative);
+	},
     
-    notSvnVersioned: function() {
-        // concatenates the two ends of the url
-        // "http://localhost/livelyBranch/proxy/wiki/!svn/bc/187/test/index.xhtml"
-        // --> "http://localhost/livelyBranch/proxy/wiki/index.xhtml"
-        return this.withPath(this.fullPath().replace(/(.*)!svn\/bc\/[0-9]+\/(.*)/, '$1$2'));
-    },
+	notSvnVersioned: function() {
+		// concatenates the two ends of the url
+		// "http://localhost/livelyBranch/proxy/wiki/!svn/bc/187/test/index.xhtml"
+		// --> "http://localhost/livelyBranch/proxy/wiki/index.xhtml"
+		return this.withPath(this.fullPath().replace(/(.*)!svn\/bc\/[0-9]+\/(.*)/, '$1$2'));
+	},
 
-    toLiteral: function() {
-	// URLs are literal
-	return Object.clone(this);
-    },
+	toLiteral: function() {
+		// URLs are literal
+		return Object.clone(this);
+	},
     
-toExpression: function() {
-	// this does not work with the new prototype.js (rev 2808) anymore
-	// return 'new URL(JSON.unserialize(\'' + JSON.serialize(this) + '\'))';
-	return Strings.format('new URL({protocol: "%s", hostname: "%s", pathname: "%s"})',
-		this.protocol, this.hostname, this.pathname);
-},
+	toExpression: function() {
+		// this does not work with the new prototype.js (rev 2808) anymore
+		// return 'new URL(JSON.unserialize(\'' + JSON.serialize(this) + '\'))';
+		return Strings.format('new URL({protocol: "%s", hostname: "%s", pathname: "%s"})',
+			this.protocol, this.hostname, this.pathname);
+	},
 });
 
 URL.fromLiteral = function(literal) {
@@ -1092,20 +1091,29 @@ Object.subclass('WebResource', {
 		return otherResource;
 	},
 
-	subElements: function() {
-		var webfile = new lively.storage.WebFile(Record.newPlainInstance({DirectoryList: [], RootNode: this.getURL()}));
-		webfile.fetchContent(this.getURL(), true);
-		var urls = webfile.getModel().getDirectoryList();
-		urls.shift();
-		return urls.collect(function(url) { return new WebResource(url) });
+	subElements: function(depth) {
+		if (!depth) depth = 1;
+		var req = new NetRequest(Record.newPlainInstance({ResponseXML: null, Status: null}));
+		req.beSync();
+		req.propfind(this.getURL(), depth);
+		// FIXME: resolve prefix "D" to something meaningful?
+		var nodes = new Query("/D:multistatus/D:response").findAll(req.getResponseXML().documentElement)
+		nodes.shift(); // remove first since it points to this WebResource
+		var result = [];
+		for (var i = 0; i < nodes.length; i++) {
+			var url = new Query('D:href').findFirst(nodes[i]).textContent;
+			if (!/!svn/.test(url)) // ignore svn dirs
+				result.push(new WebResource(this.getURL().withPath(url)))
+		}
+		return result;
 	},
 
-	subCollections: function() {
-		return this.subElements().select(function(ea) { return ea.isCollection() });
+	subCollections: function(depth) {
+		return this.subElements(depth).select(function(ea) { return ea.isCollection() });
 	},
 
-	subDocuments: function() {
-		return this.subElements().select(function(ea) { return !ea.isCollection() });
+	subDocuments: function(depth) {
+		return this.subElements(depth).select(function(ea) { return !ea.isCollection() });
 	},
 
 	create: function() {
@@ -1117,6 +1125,8 @@ Object.subclass('WebResource', {
 		new NetRequest().beSync().del(this.getURL());
 	},
 
+	toString: function() { return 'WebResource(' + this.getURL() + ')' },
+	
 });
 
 
