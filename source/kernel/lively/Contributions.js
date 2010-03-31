@@ -26,7 +26,8 @@
  * often not strictly following Lively Kernel conventions.
  */
 
-
+module('lively.Contributions').requires().toRun(function(thisModule) {
+	
 // ===========================================================================
 // The DungBeetle Game Example
 // ===========================================================================
@@ -863,7 +864,7 @@ ClipMorph.subclass("DoodleMorph", {
 });
 
 
-thisModule.installFasteroids = function (world, rect) {
+lively.Contributions.installFasteroids = function (world, rect) {
 console.log("-------------- Loading Fasteroids ----------------");
 // Yet to do...
 // End game when asteroid or fragment hits ship
@@ -1051,3 +1052,4 @@ Fasteroids.openInWindow(world, pt(150, 100));
 console.log("-------------- End Fasteroids ----------------");
 };
 
+});

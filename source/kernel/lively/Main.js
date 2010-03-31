@@ -393,8 +393,8 @@ function populateWorldWithExamples(world) {
 		    if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 		    devWorld.myWorld.addMorph(widget);
 		    if (Config.tryFasteroids)
-		        require('lively.Examples').toRun(function() {
-		            lively.Examples.installFasteroids(world, new Rectangle(150, 100, 600, 400));
+		        require('lively.Contributions').toRun(function() {
+		            lively.Contributions.installFasteroids(world, new Rectangle(150, 100, 600, 400));
 	                });
 	        }
 	        parser.parse();
