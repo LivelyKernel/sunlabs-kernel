@@ -3571,13 +3571,6 @@ function debugFunction(func) {
     };
 };
 
-// Helper method with GUI stuff, so it can't go into Helper.js
-Global.inspect = function(inspectee) {
-	var world = WorldMorph.current();
-	new SimpleInspector(inspectee).openIn(world, world.hands.first().getPosition());
-};
-
-
 console.log('loaded Fabrik.js');
 
 }); // end of require

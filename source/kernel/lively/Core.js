@@ -5888,7 +5888,7 @@ ClipboardHack = {
 
 }
 
-basicResize = function(world, canvas, newWidth, newHeight) {
+Global.basicResize = function(world, canvas, newWidth, newHeight) {
   canvas.setAttribute("width", newWidth);
 	canvas.setAttribute("height", newHeight);
 	world.setExtent(pt(newWidth, newHeight));
@@ -5909,7 +5909,13 @@ window.onresize = function(evt) {
     var newHeight = h.clientHeight-  4;
 };
 
-$morph = function getMorphNamedShortcut(name) { return WorldMorph.current().getMorphNamed(name) };
+Global.$morph = function getMorphNamedShortcut(name) { return WorldMorph.current().getMorphNamed(name) };
+
+// Helper method with GUI stuff, so it can't go into Helper.js
+Global.inspect = function(inspectee) {
+	var world = WorldMorph.current();
+	new SimpleInspector(inspectee).openIn(world, world.hands.first().getPosition());
+};
 
 console.log('loaded Core.js');
 
