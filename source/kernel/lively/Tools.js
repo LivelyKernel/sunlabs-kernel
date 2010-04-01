@@ -1725,7 +1725,7 @@ ChangeList.subclass('SourceDatabase', {
     // want in a typical development session.  We may soon want more control
     // over this and a reasonable UI for such control.
 
-	codeBaseURL: new URL(Config.codeBase) || URL.source.getDirectory(),
+	codeBaseURL: new URL(Config.codeBase).withFilename('lively/'),
 	
     initialize: function($super) {
         this.methodDicts = {};
@@ -1926,14 +1926,15 @@ ChangeList.subclass('SourceDatabase', {
     interestingLKFileNames: function() {
 		var url = this.codeBaseURL;
         var kernelFileNames = new FileDirectory(url).filenames();
-        var testFileNames = new FileDirectory(url.withFilename('Tests/')).filenames();
-		testFileNames = testFileNames.collect(function(ea) { return 'Tests/' + ea });
+		//         var testFileNames = new FileDirectory(url.withFilename('Tests/')).filenames();
+		// testFileNames = testFileNames.collect(function(ea) { return 'Tests/' + ea });
 		/* OMeta */
 		// var ometaFileNames = new FileDirectory(URL.source.withFilename('ometa/')).filenames();
 		// ometaFileNames = ometaFileNames.collect(function(ea) { return 'ometa/' + ea });
-		var ometaFileNames = [];
+		// var ometaFileNames = [];
 		/* filter */
-        var files = kernelFileNames.concat(testFileNames).concat(ometaFileNames);
+        // var files = kernelFileNames.concat(testFileNames).concat(ometaFileNames);
+		var files = kernelFileNames
         var acceptedFileNames = /.*\.(st|js|lkml|txt|ometa|st)/
 		files = files.select(function(ea) { return acceptedFileNames.test(ea) });
         files = files.uniq();
