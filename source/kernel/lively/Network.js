@@ -150,9 +150,9 @@ Object.subclass('URL', {
 	},
 
 	relativePathFrom: function(origin) {
-		if (!this.pathname.startsWith(origin.pathname) 
-			|| origin.hostname != this.hostname) throw new Error('bad origin');
-		return this.pathname.substring(origin.hostname.length - 1);
+		if (!this.pathname.startsWith(origin.pathname)  || origin.hostname != this.hostname)
+			throw new Error('bad origin');
+		return this.pathname.substring(origin.pathname.length);
 	},
 
 	svnWorkspacePath: function() {
