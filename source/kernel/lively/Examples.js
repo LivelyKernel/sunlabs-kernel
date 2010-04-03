@@ -4477,6 +4477,11 @@ BoxMorph.subclass("EngineMorph", {
         this.startStepping(ms,'nextStep');
     },
 
+    onMouseMove: function(evt) {
+	// Hack:  trigger mouseMove check to unhighlight fixed menus
+        this.submorphs.forEach(function (each) {each.onMouseMove(evt); });
+    },
+
     startSteppingScripts: function() { this.setStepTime(this.normalSpeed); },
 
     layoutOnSubmorphLayout: Functions.False

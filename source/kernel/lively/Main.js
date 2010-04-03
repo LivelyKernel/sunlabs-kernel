@@ -163,7 +163,7 @@ function populateWorldWithExamples(world) {
 
     if (Config.showEngine())
         require('lively.Examples').toRun(function() {
-            EngineMorph.makeEngine(world, pt(230, 5))
+            EngineMorph.makeEngine(world, pt(230, 30))
         });
 
     if (Config.showAsteroids())
@@ -179,7 +179,7 @@ function populateWorldWithExamples(world) {
     );
 
     // Sample icon morph with a fisheye effect 'on'
-    if (Config.showIcon()) {
+    if (false) { // Do not shoe the Sun logo;  it's a registered trademark
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = new ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
 	new NetImporter().loadElement("Definitions.svg", "SunLogo");
@@ -194,7 +194,7 @@ function populateWorldWithExamples(world) {
     if (Config.showWeather() && Config.showNetworkExamples) {
         require('lively.Examples').toRun(function() {
             // Maybe the icons should have rectangular images (unlike here)
-            var weather = new WeatherWidget().openIn(world, pt(785, 65));
+            var weather = new WeatherWidget().openIn(world, pt(685, 165));
             world.topSubmorph().rotateBy(-0.2);
         });
     }
@@ -206,7 +206,7 @@ function populateWorldWithExamples(world) {
         });
     }
 
-    if (Config.show3DLogo())
+    if (false) // Do not shoe the Sun logo;  it's a registered trademark
         require('lively.Examples').toRun(function(unused, examplesModule) {
             world.addFramedMorph(new examplesModule.Sun3DMorph(pt(200, 200)),
 						            'Sun 3D Logo', pt(570, 100));

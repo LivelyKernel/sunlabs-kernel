@@ -2184,9 +2184,11 @@ Morph.subclass("MenuMorph", {
     },
 
     setMouseFocusOverSubmenu: function(evt) {
+		// Return true iff the mouse is in a submenu
         var submenuItem = this.submenuItems().detect(function(ea) { return ea.menu && ea.menu.handOverMenu(evt.hand) }) ;
-        if (!submenuItem) return;
+        if (!submenuItem) return false;
         submenuItem.menu.setMouseFocus(evt);
+		return true;
     },
     
     setMouseFocusOverOwnerMenu: function(evt) {
@@ -2217,10 +2219,14 @@ Morph.subclass("MenuMorph", {
     },
 
     onMouseMove: function(evt) {
-        if (!this.handOverMenu(evt.hand)) {
-            this.setMouseFocusOverOwnerMenuOrSubMenu(evt);
-            return;    
-        }
+        this.setMouseFocus(evt);
+		if (!this.handOverMenu(evt.hand)) {
+			if (this.stayUp) evt.hand.setMouseFocus(null);
+			if (this.setMouseFocusOverSubmenu(evt)) return;
+			this.listMorph.highlightItem(evt, -1, false);
+			this.setMouseFocusOverOwnerMenu(evt);
+			return;    
+			}
 
         var index = this.selectedItemIndex(evt);
         if (index === null) return;
