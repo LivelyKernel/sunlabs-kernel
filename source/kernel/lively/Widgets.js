@@ -1833,7 +1833,7 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 	},
 	morphMenu: function($super, evt) {
 		var menu = $super(evt);
-		menu.addItem(['set menu filter...', this.showFilterDialog], 0);
+		menu.addItem(['set filter...', this.showFilterDialog], 0);
 		return menu;
 	},
 	// FIXME cleanup the two methods below
