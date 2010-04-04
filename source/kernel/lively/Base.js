@@ -409,8 +409,8 @@ Object.extend(Function.prototype, {
 			if (ancestor && Object.isFunction(value) && value.argumentNames
 				&& value.argumentNames().first() == "$super") {
 				(function() { // wrapped in a method to save the value of 'method' for advice
-						var method = value;
-						var advice = (function(m) {
+					var method = value;
+					var advice = (function(m) {
 						return function callSuper() {
 							var method = ancestor[m];
 							if (!method)
@@ -422,7 +422,7 @@ Object.extend(Function.prototype, {
 					})(property);
 
 					advice.methodName = "$super:" + (this.superclass ? this.superclass.type + "." : "") + property;
-	
+
 					value = Object.extend(advice.wrap(method), {
 						valueOf:  function() { return method },
 						toString: function() { return method.toString() },
@@ -1218,6 +1218,25 @@ Object.extend(String.prototype, {
 	}
 });
 
+/**
+  * Extensions to class Array
+  */  
+Object.extend(Array.prototype, {
+	forEachShowingProgress: function(progressBar, iterator) {
+		progressBar.setValue(0);
+		var steps = this.length;
+		(this.reverse().inject(
+			function() { progressBar.setValue(1) },
+			function(nextFunc, item, idx) {
+				return function() {
+					progressBar.setValue((steps-idx) / steps)
+					iterator(item, idx)
+					nextFunc.delay(0)
+				}
+			}
+		))();
+	},
+})
 
 Object.subclass('CharSet', {
 	documentation: "limited support for charsets"
