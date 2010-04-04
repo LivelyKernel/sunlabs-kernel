@@ -289,7 +289,7 @@ selectionInPane: function(pane) {
  	inPaneSelectNodeNamed: function(paneName,  nodeName) {
 			var nodes = this['get' + paneName + 'Content']();
 			if (!nodes) return null;
-			var wanted = nodes.detect(function(ea) { return ea && ea.string.include(nodeName) });
+			var wanted = nodes.detect(function(ea) { return ea && ea.string && ea.string.include(nodeName) });
 			if (!wanted) return null;
 			var list = this.panel[paneName].innerMorph();
 			var i = list.itemList.indexOf(wanted);
@@ -974,7 +974,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 			return ide.ObjectFragmentNode;
 		}
 		return this.target.subElements(2)
-		  .select(function(ea) { return ['klassDef','klassExtensionDef','functionDef','objectDef'].include(ea.type) })
+		  .select(function(ea) { return ['klassDef','klassExtensionDef','functionDef','objectDef', 'propertyDef'].include(ea.type) })
 		  .collect(function(ea) { return new (typeToClass(ea.type))(ea, browser) })
     },
  
@@ -1295,7 +1295,7 @@ asString: function($super) {
  
 ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 
-	isFunction: true,
+	isFunctionNode: true,
 	
 	menuSpec: ide.ClassElemFragmentNode.prototype.menuSpec, // FIXME
 
