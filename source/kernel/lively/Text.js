@@ -1022,8 +1022,9 @@ BoxMorph.subclass('TextMorph', {
 	}, 
 	
 	remove: function($super) {
-		if (this.world() && this.world().firstHand().keyboardFocus === this)
-			this.relinquishKeyboardFocus(this.world().firstHand());
+		var hand = this.world() && this.world().firstHand();
+		if (hand && hand.keyboardFocus === this)
+			this.relinquishKeyboardFocus(hand);
 		return $super();
 	},
 	
