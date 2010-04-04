@@ -68,7 +68,7 @@ ometa LKFileParser <: Parser {
 	                    | remove(x) ),*/
 	somethingRelated = ~end (~'\n' ~'\r' ~';' anything)*,
 	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | spaces '+' spaces | ~',' ~';' ~'(' ~'{' ~'[' ~'\'' ~'"' ~nl anything)*,
-	defEnd = ';' '\n' | ';' spacesNoNl | "",
+	defEnd = ';' '\n' | ';' spaces | "",
 	classElemDefEnd = "," | "",
 	
 	/* basic string processing */
@@ -119,7 +119,7 @@ propertyDef = (protoDef | methodModificationDef | staticProperty): spec -> {spec
 	restKlassDef = ',' spaces classElems:descriptors										-> { {classElems: descriptors} }
 						| ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 						| ',' klassName:trait																	-> { {trait: trait, classElems: []} }
-						| spacesNoNl																			-> { {classElems: []} },
+						| spaces																						-> { {classElems: []} },
 	klass 	            = namespaceId,
 	klassName           = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
     klassDef = pos:p nsFollowedBy("subclass"):sName '(' klassName:kName restKlassDef:spec ')' defEnd

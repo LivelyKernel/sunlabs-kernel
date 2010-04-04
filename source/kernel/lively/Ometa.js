@@ -30,6 +30,8 @@ module('lively.Ometa').requires('ometa.ometa-base', 'ometa.lk-parser-extensions'
 
 OMetaSupport = {
     
+	ometaGrammarDir: new URL(Config.codeBase).withFilename('lively/'),
+
     fromFile: function(fileName) {
         var src = OMetaSupport.fileContent(fileName);
         var grammar = OMetaSupport.ometaEval(src);
@@ -37,15 +39,12 @@ OMetaSupport = {
     },
     
     translateAndWrite: function(sourceFileName, destFileName, additionalRequirements) {
-	throw new Error('Check if URLs are correct. robert changed the module system... again ;-)');
-	var url = URL.source.getDirectory();
 	var requirementsString = additionalRequirements ? ',\'' + additionalRequirements.join('\',\'') + '\'' : '';
-	var str = Strings.format('module(\'%s\').requires(\'ometa.parser\'%s).toRun(function() {\n%s\n});',
+	var str = Strings.format('module(\'lively/%s\').requires(\'ometa.parser\'%s).toRun(function() {\n%s\n});',
 		destFileName,
 		requirementsString,
 		OMetaSupport.translateToJs(OMetaSupport.fileContent(sourceFileName)));
-	var dir = new FileDirectory(url);
-	dir.writeFileNamed(destFileName, str);
+	OMetaSupport.writeGrammar(destFileName, str)
 	console.log(Strings.format('Successfully compiled OMeta grammar %s to %s',
 		sourceFileName, destFileName));
     },
@@ -98,12 +97,14 @@ OMetaSupport = {
     handleError: function(src, rule, grammarInstance, errorIndex) {},
     
     fileContent: function(fileName) {
-        var url = URL.source.withFilename(fileName);
-        var resource = new Resource(Record.newPlainInstance({URL: url, ContentText: null}));
-        resource.fetch(true);
-        return resource.getContentText();
-    }
-    
+        var url = OMetaSupport.ometaGrammarDir.withFilename(fileName);
+		return new WebResource(url).getContent();
+    },
+
+	writeGrammar: function(fileName, src) {
+        var url = OMetaSupport.ometaGrammarDir.withFilename(fileName);
+		return new WebResource(url).setContent(src);
+	},    
 };
 
 Widget.subclass('OmetaWorkspace', {
