@@ -1222,14 +1222,16 @@ Object.extend(String.prototype, {
   * Extensions to class Array
   */  
 Object.extend(Array.prototype, {
-	forEachShowingProgress: function(progressBar, iterator) {
+	forEachShowingProgress: function(progressBar, iterator, labelFunc, whenDoneFunc) {
 		progressBar.setValue(0);
 		var steps = this.length;
 		(this.reverse().inject(
-			function() { progressBar.setValue(1) },
+			function() { progressBar.setValue(1); whenDoneFunc && whenDoneFunc() },
 			function(nextFunc, item, idx) {
 				return function() {
-					progressBar.setValue((steps-idx) / steps)
+					progressBar.setValue((steps-idx) / steps);
+					if (labelFunc)
+						progressBar.setLabel(labelFunc(item, idx));
 					iterator(item, idx)
 					nextFunc.delay(0)
 				}
