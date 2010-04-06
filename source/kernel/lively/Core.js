@@ -4572,6 +4572,15 @@ PasteUpMorph.subclass("WorldMorph", {
     	world.prompt('Enter extent', cb, world.bounds().bottomRight().toString());
     },
 
+	addProgressBar: function(optPt) {
+		var center = optPt || this.windowBounds().center()
+		var progressBar = new ProgressBarMorph(new Rectangle(0,0, 450, 30))
+		this.addMorph(progressBar);
+		progressBar.align(progressBar.bounds().center(), center);
+		progressBar.ignoreEvents();
+		return progressBar
+	},
+
 });
 
 // Give Feedback on Saving
