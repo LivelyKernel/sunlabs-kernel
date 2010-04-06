@@ -4597,6 +4597,11 @@ Morph.subclass("ProgressBarMorph", {
 		this.addMorph(this.bar);
 		this.applyStyle({fill: Color.gray})
 		this.setValue(0.3);
+
+		this.label = new TextMorph(new Rectangle(0,0, 100, 20), '');
+		this.label.applyStyle({textColor: Color.white, fill: null, borderWidth: 0})
+		this.addMorph(this.label);
+		this.label.ignoreEvents()
 	},
 
 	setValue: function(number){
@@ -4607,6 +4612,14 @@ Morph.subclass("ProgressBarMorph", {
 	getValue: function(){
 		return this.value;
 	},
+setLabel: function(str) {
+	if (!this.label) return
+	this.label.setExtent(this.getExtent());
+	this.label.updateTextString(str);
+	this.label.emphasizeAll({style: 'bold', align: 'center'});
+	this.label.align(this.label.bounds().center(), this.shape.bounds().center());
+},
+
 
 	updateBar: function(number){
 		var bounds = this.shape.bounds()
