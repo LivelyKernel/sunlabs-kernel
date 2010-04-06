@@ -184,20 +184,21 @@ Widget.subclass('WikiNavigator', {
 			if (status.code() === 412) this.askToOverwrite(null, true);
     	}
 	},
-askToOverwrite: function(optUrl, gotoUrl) {
-	WorldMorph.current().confirm('A newer version of the world was created by another user. Overwrite?', function() {
-		var status = this.doSave(false, optUrl);
-		console.log(status.code());
-		if (status.isSuccess() && gotoUrl)
-			this.navigateToUrl(optUrl);
-	}.bind(this));
-},
-askToNavigateToUrl: function(url, openInNewWindow) {
-	WorldMorph.current().confirm('Navigate to ' + url.toString() + '?', function(response) {
-		if (!response) return;
-		this.navigateToUrl(url, openInNewWindow);
-	}.bind(this));
-},
+	
+	askToOverwrite: function(optUrl, gotoUrl) {
+		WorldMorph.current().confirm('A newer version of the world was created by another user. Overwrite?', function() {
+			var status = this.doSave(false, optUrl);
+			console.log(status.code());
+			if (status.isSuccess() && gotoUrl)
+				this.navigateToUrl(optUrl);
+		}.bind(this));
+	},
+	askToNavigateToUrl: function(url, openInNewWindow) {
+		WorldMorph.current().confirm('Navigate to ' + url.toString() + '?', function(response) {
+			if (!response) return;
+			this.navigateToUrl(url, openInNewWindow);
+		}.bind(this));
+	},
 
 
 	
@@ -284,42 +285,43 @@ askToNavigateToUrl: function(url, openInNewWindow) {
 	var url = new URL('http://livelykernel.sunlabs.com/index.fcgi/register');
 	var getReq = new NetRequest({
 		setStatus: "register",
-		model: {register: function() {
-			var header = getReq.transport.getResponseHeader('Set-Cookie');
-			var formToken = header.match(/.*trac_form_token=([0-9a-z]+);.*/)[1]
-			var session = header.match(/.*trac_session=([0-9a-z]+);.*/)[1];
+		model: {
+			register: function() {
+				var header = getReq.transport.getResponseHeader('Set-Cookie');
+				var formToken = header.match(/.*trac_form_token=([0-9a-z]+);.*/)[1]
+				var session = header.match(/.*trac_session=([0-9a-z]+);.*/)[1];
 
-			var postReq = new NetRequest({
-				setStatus: "result",
-				model: {result: function() {
-					postReq.getResponseText().match(/.*Another account with that name already exists.*/) ?
-						failureCb && failureCb() :
-						successCb && successCb();
-				}}
-			});
+				var postReq = new NetRequest({
+					setStatus: "result",
+					model: {
+						result: function() {
+							postReq.getResponseText().match(/.*Another account with that name already exists.*/) ?
+							failureCb && failureCb() : successCb && successCb() }
+						}
+				});
 
-			postReq.setRequestHeaders({
-				"Cookie": 'trac_form_token=' + formToken + '; trac_session=' + session,
-				'Cache-Control': 'max-age=0',
-				'Content-Type': 'application/x-www-form-urlencoded',
-				'Accept': 'text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5'
-			});		
-			
-			var postData = Strings.format('__FORM_TOKEN=%s&action=create&user=%s&password=%s&password_confirm=%s&name=%s&email=%s',
+				postReq.setRequestHeaders({
+					"Cookie": 'trac_form_token=' + formToken + '; trac_session=' + session,
+					'Cache-Control': 'max-age=0',
+					'Content-Type': 'application/x-www-form-urlencoded',
+					'Accept': 'text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5'
+				});		
+
+				var postData = Strings.format('__FORM_TOKEN=%s&action=create&user=%s&password=%s&password_confirm=%s&name=%s&email=%s',
 				formToken, username, pwd, pwdConfirm, name, email)
-			postReq.post(url, postData);
-		}}
-	});
+				postReq.post(url, postData);
+			}
+		}});
 
-	getReq.setRequestHeaders({"Cookie": '' }); // Cookie must be empty to get new session and form token from trac
-	getReq.get(url);
-},
-login: function() {
-	// Just do a write, if the server allow authenticated users write access,
-	// a browser login popup should appear
-	new NetRequest().put(this.model.getURL().withFilename('auth'));
-},
+		getReq.setRequestHeaders({"Cookie": '' }); // Cookie must be empty to get new session and form token from trac
+		getReq.get(url);
+	},
 
+	login: function() {
+		// Just do a write, if the server allow authenticated users write access,
+		// a browser login popup should appear
+		new NetRequest().put(this.model.getURL().withFilename('auth'));
+	},
 // -------------
 		
 	createWikiNavigatorButton: function() {
