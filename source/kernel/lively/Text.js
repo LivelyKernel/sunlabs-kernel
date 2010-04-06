@@ -1752,20 +1752,22 @@ BoxMorph.subclass('TextMorph', {
 		// add require to LKWiki.js here
 		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
 		var isExternalLink = url.hostname != document.location.hostname;
-		
+		var openInNewWindow = evt.isMetaDown();
+
 		var followLink = function (answer) {
 			Config.askBeforeQuit = false;
-			if (isExternalLink)
-				window.location.assign(url.toString());
+			url = isExternalLink ? url.toString() : url.toString() + '?' + new Date().getTime()
+			if (openInNewWindow)
+				Global.window.open(url);
 			else
-				window.location.assign(url.toString() + '?' + new Date().getTime());
-		}.bind(this);
+				Global.window.location.assign(url);
+		};
 		
 		if (!Config.confirmNavigation) 
 			return followLink();
 		
 		if (wikiNav && wikiNav.isActive() && !isExternalLink)
-			wikiNav.askToSaveAndNavigateToUrl(this.world());
+			wikiNav.askToSaveAndNavigateToUrl(this.world(), openInNewWindow);
 		else
 			this.world().confirm("Please confirm link to " + url.toString(), followLink);
 	},	
@@ -2453,17 +2455,17 @@ TextMorph.addMethods({
 		if (emph.style == 'italic' && currentEmphasis.style.endsWith('italic')) return this.emphasizeSelection({style: 'unitalic'});
 		this.emphasizeSelection(emph);
 	},
-emphasizeAll: function(emph) {
-	this.emphasizeFromTo(emph, 0, this.textString.length);
-},
-emphasizeFromTo: function(emph, from, to) {
-	var txt = new lively.Text.Text(this.textString, this.textStyle);
-	txt.emphasize(emph, from, to);
-	this.textStyle = txt.style;
-	this.composeAfterEdits();
-},
 
+	emphasizeAll: function(emph) {
+		this.emphasizeFromTo(emph, 0, this.textString.length);
+	},
 
+	emphasizeFromTo: function(emph, from, to) {
+		var txt = new lively.Text.Text(this.textString, this.textStyle);
+		txt.emphasize(emph, from, to);
+		this.textStyle = txt.style;
+		this.composeAfterEdits();
+	},
 
 	pvtUpdateTextString: function(replacement, replacementHints) {
 		// tag: newText

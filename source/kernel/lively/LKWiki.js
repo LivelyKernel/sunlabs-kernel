@@ -192,17 +192,17 @@ askToOverwrite: function(optUrl, gotoUrl) {
 			this.navigateToUrl(optUrl);
 	}.bind(this));
 },
-askToNavigateToUrl: function(url) {
+askToNavigateToUrl: function(url, openInNewWindow) {
 	WorldMorph.current().confirm('Navigate to ' + url.toString() + '?', function(response) {
 		if (!response) return;
-		this.navigateToUrl(url);
+		this.navigateToUrl(url, openInNewWindow);
 	}.bind(this));
 },
 
 
 	
-	askToSaveAndNavigateToUrl: function(world) {    
-	if (!Config.confirmNavigation) {this.navigateToUrl(); return; }  // No other browsers confirm clickaway
+	askToSaveAndNavigateToUrl: function(world, openInNewWindow) {    
+	if (!Config.confirmNavigation) {this.navigateToUrl(null, openInNewWindow); return; }  // No other browsers confirm clickaway
 
 	var msg = 'Go to ' + this.model.getURL() + ' ?';
 	var worldExists = this.worldExists();
@@ -216,7 +216,7 @@ askToNavigateToUrl: function(url) {
                      if (!value) return;
                      if (WikiNavigator.current && WikiNavigator.current.doSave().isSuccess()) {
                          if (!worldExists) this.doSave(); // create other world
-                         this.navigateToUrl();
+                         this.navigateToUrl(null, openInNewWindow);
                          return; // Alibi
                      }
                      world.alert('World cannot be saved. Did not follow link.');
@@ -225,7 +225,7 @@ askToNavigateToUrl: function(url) {
                      if (!value) return;
                      if (!worldExists)
                         if (!this.doSave().isSuccess()) return;
-                     this.navigateToUrl()
+                     this.navigateToUrl(null, openInNewWindow)
                  }.bind(this)});
              var dialog = new WikiLinkDialog(model.newRelay({
                  Button1: "+Button1", Button2: "+Button2", Message: "-Message",
@@ -234,10 +234,14 @@ askToNavigateToUrl: function(url) {
 			return dialog;
     },
 	    
-	navigateToUrl: function(url) {
+	navigateToUrl: function(url, openInNewWindow) {
 	    Config.askBeforeQuit = false;
 		if (!url) url = this.model.getURL();
-	    window.location.assign(url.toString() + '?' + new Date().getTime());
+		url = url.toString() + '?' + new Date().getTime();
+		if (openInNewWindow)
+			Global.window.open(url)
+		else
+			Global.window.location.assign(url);
 	},
 	
 	onVersionUpdate: function(versionString) {
@@ -615,9 +619,8 @@ Widget.subclass('LatestWikiChangesList', {
 	onFilterUpdate: Functions.Null,
 	
 	onVersionSelectionUpdate: function(listItem) {
-		world = WorldMorph.current();
 		if (WikiNavigator && WikiNavigator.current) {
-			WikiNavigator.current.askToNavigateToUrl(listItem.urlString);
+			WikiNavigator.current.askToNavigateToUrl(listItem.urlString, true);
 			return;
 		}
 		console.warn('No WikiNavigator active');
