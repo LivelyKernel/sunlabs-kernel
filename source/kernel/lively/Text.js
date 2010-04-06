@@ -2441,11 +2441,7 @@ TextMorph.addMethods({
 
 	emphasizeSelection: function(emph) {
 		if (this.hasNullSelection()) return;
-		var txt = new thisModule.Text(this.textString, this.textStyle);
-		txt.emphasize(emph, this.selectionRange[0], this.selectionRange[1]);
-		this.textStyle = txt.style;
-		// console.log("emphasizeSelection result: " + this.textStyle);
-		this.composeAfterEdits();
+		this.emphasizeFromTo(emph, this.selectionRange[0], this.selectionRange[1]);
 	},
 
 	emphasizeBoldItalic: function(emph) {
@@ -2457,6 +2453,17 @@ TextMorph.addMethods({
 		if (emph.style == 'italic' && currentEmphasis.style.endsWith('italic')) return this.emphasizeSelection({style: 'unitalic'});
 		this.emphasizeSelection(emph);
 	},
+emphasizeAll: function(emph) {
+	this.emphasizeFromTo(emph, 0, this.textString.length);
+},
+emphasizeFromTo: function(emph, from, to) {
+	var txt = new lively.Text.Text(this.textString, this.textStyle);
+	txt.emphasize(emph, from, to);
+	this.textStyle = txt.style;
+	this.composeAfterEdits();
+},
+
+
 
 	pvtUpdateTextString: function(replacement, replacementHints) {
 		// tag: newText
