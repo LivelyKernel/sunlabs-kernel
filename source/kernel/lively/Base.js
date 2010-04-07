@@ -2659,3 +2659,14 @@ Object.subclass('lively.data.Resolver', {
 		return reified;
 	}
 });
+
+Global.ModelMigration = {
+	set: function(objectWithModel, slotName, value, force) { // derived from newDelegatorSetter -> setter
+		var m = objectWithModel.formalModel;
+		if (!m) 
+			return objectWithModel.setModelValue('set' + slotName, value);
+		var method = m['set' + slotName];
+		// third arg is source, fourth arg forces relay to set value even if oldValue === value
+		return method && method.call(m, value, objectWithModel, force);
+	}
+}

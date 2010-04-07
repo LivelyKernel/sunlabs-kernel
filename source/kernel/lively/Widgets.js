@@ -60,8 +60,9 @@ BoxMorph.subclass('ButtonMorph', {
 		this.baseFill = null;
 		$super(initialBounds);
 		this.value = false; // for connect()
+		this.isActive = true;
 		if (Config.selfConnect) {
-			var model = Record.newNodeInstance({Value: this.value, IsActive: true});
+			var model = Record.newNodeInstance({Value: this.value, IsActive: this.isActive});
 			// this default self connection may get overwritten by, eg, connectModel()...
 			this.relayToModel(model, {Value: "Value", IsActive: "IsActive"});
 		}
@@ -76,7 +77,18 @@ BoxMorph.subclass('ButtonMorph', {
         this.changeAppearanceFor(this.value);
     },
 
-
+	// FIXME interference with old model on connectModel/relayToModel???
+	getIsActive: function() { return this.isActive },
+	getValue: function() { return this.value },
+	setIsActive: function(bool) {
+		ModelMigration.set(this, 'IsActive', bool);
+		this.isActive = bool;
+	},
+	setValue: function(bool) {
+		ModelMigration.set(this, 'Value', bool);
+		this.value = bool;
+	},
+	
 	handlesMouseDown: function(evt) {
 		return !evt.isCommandKey() && evt.isLeftMouseButtonDown();
 	},
@@ -135,7 +147,6 @@ BoxMorph.subclass('ButtonMorph', {
 	},
 
 	onValueUpdate: function(value) {
-		this.value = value;
 		if (this.toggle) console.log("got updated with value " + value);
 		this.changeAppearanceFor(value);
 	},
