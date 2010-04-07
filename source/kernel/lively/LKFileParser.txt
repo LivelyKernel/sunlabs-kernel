@@ -35,7 +35,8 @@ ometa LKFileParser <: Parser {
                              console.log('Stack: ' + this.stack);
                              true
 	},
-    fromTo :x :y = seq(x) (~seq(y) char)*:cs seq(y) -> cs,
+    fromTo :x :y =
+	seq(x) (~seq(y) char)*:cs seq(y) -> cs,
     stackSize -> { this.stack.length },
 	num :x -> { this.stack.select(function(ea) { return ea === x }).length },
 	getStack -> { this.stack.clone() },
@@ -43,7 +44,8 @@ ometa LKFileParser <: Parser {
 	startTime -> { /*console.log('start measuring time'); new Date().getTime()*/ },
 	stopTime :t -> { /*console.log('time: ' + (new Date().getTime()-t) + ' ms');*/ true},
 	open :x = add(x) -> { x},
-	close :x :y = add(y) remove(y) remove(x) -> { y},
+	close :x :y =
+	add(y) remove(y) remove(x) -> { y},
 	add :x = exactly(x) -> { this.stack.push(x) },
 	remove :x -> {
 	if (this.stack.length == 0) {
@@ -57,22 +59,38 @@ ometa LKFileParser <: Parser {
 	};
 	true
 },
-	everythingBut :x :y = ~exactly(x) ~exactly(y) anything:a -> a,
-	nonRecursive :x :y  = getStack:s open(x) everythingBut(x,y)*:a close(x, y) -> { x+ a.join('') + y }
-	                    			| assignStack(s) -> { this._manualFail() },
-	recursive :x :y = getStack:s open(x) (  everythingBut(x,y) | recursive(x,y) )*:a close(x, y)    -> { x+ a.join('') + y }
-	                    | assignStack(s) -> { this._manualFail() },
-	chunk :x :y = basicChunk(x,y):a /*~~exactly(x) (nonRecursive(x,y) | recursive(x,y)):a*/ -> a,
+	everythingBut :x :y =
+	~exactly(x) ~exactly(y) anything:a -> a,
+	nonRecursive :x :y =
+	getStack:s open(x) everythingBut(x,y)*:a close(x, y) -> { x+ a.join('') + y }
+	| assignStack(s) -> { this._manualFail() },
+	recursive :x :y =
+	getStack:s open(x) (  everythingBut(x,y) | recursive(x,y) )*:a close(x, y) -> { x+ a.join('') + y }
+	| assignStack(s) -> { this._manualFail() },
+	chunk :x :y =
+	basicChunk(x,y):a
+	/*~~exactly(x) (nonRecursive(x,y) | recursive(x,y)):a*/
+	-> a,
 	
 /*	chunkWith :x :y :p  = ~~exactly(x) ( open(x) num(x):n ( apply(p, 'a') )*:a close(x,y)              -> { x+ a.join('') + y }
 	                    | remove(x) ),*/
-	somethingRelated = ~end (~'\n' ~'\r' ~';' anything)*,
-	somethingBigRelated = ~end ( chunk('(', ')') |  chunk('{', '}') | chunk('[', ']') | chunk('\'', '\'') | chunk('"', '"') | spaces '+' spaces | ~',' ~';' ~'(' ~'{' ~'[' ~'\'' ~'"' ~nl anything)*,
+	somethingRelated =
+	~end (~'\n' ~'\r' ~';' anything)*,
+	somethingBigRelated =
+	~end (
+		chunk('(', ')')
+		| chunk('{', '}')
+		| chunk('[', ']')
+		| chunk('\'', '\'')
+		| chunk('"', '"')
+		| spaces '+' spaces
+		| ~',' ~';' ~'(' ~'{' ~'[' ~'\'' ~'"' ~nl anything )*,
 	defEnd = ';' '\n' | ';' spaces | "",
 	classElemDefEnd = "," | "",
 	
 	/* basic string processing */
-	space = super(#space) | fromTo('//', '\n') | fromTo('/*', '*/'),
+	space =
+	super(#space) | fromTo('//', '\n') | fromTo('/*', '*/'),
     nl = '\n' | '\r' -> '\n',
 	spacesNoNl = (~nl space)*:spcs -> spcs,
 	nameFirst = letter | '$' | '_',
@@ -83,35 +101,81 @@ ometa LKFileParser <: Parser {
   	keyword = iName:k isKeyword(k) -> k,
 	namespaceIdSplitted = name:n '.' namespaceIdSplitted:r              -> { [n].concat(r) }
 	                    | name:n                                        -> { [n] },
-	namespaceId = namespaceIdSplitted:nArr
--> nArr.join('.'),
-	nsFollowedBy :x = namespaceIdSplitted:nArr ?(nArr.last() === x)
--> nArr.slice(0,nArr.length-1).join('.'),
-	nsWith :x = namespaceIdSplitted:nArr ?nArr.include(x)
--> { var i = nArr.indexOf(x); {before: nArr.slice(0,i).join('.'), after: nArr.slice(i+1,nArr.length).join('.')} },
+	namespaceId =
+	namespaceIdSplitted:nArr
+	-> nArr.join('.'),
+	nsFollowedBy :x =
+	namespaceIdSplitted:nArr ?(nArr.last() === x)
+	-> nArr.slice(0,nArr.length-1).join('.'),
+	nsWith :x =
+	namespaceIdSplitted:nArr ?nArr.include(x)
+	-> {
+		var i = nArr.indexOf(x);
+		{
+			before: nArr.slice(0,i).join('.'),
+			after: nArr.slice(i+1,nArr.length).join('.')
+		}
+	},
     
     /* functions */
-    basicFunction = "function" spaces (name:n | empty) chunk('(', ')') spaces chunk('{', '}') -> n,
-    func = basicFunction:fn | "var" (space)+ name:fn spaces '=' spaces basicFunction -> fn,
-    functionDef = pos:p ( func:fn | '(' func:fn ')' ) somethingRelated defEnd
--> { this._fragment(fn, 'functionDef', p, this.pos()-1) },
+    basicFunction =
+	"function" spaces
+	(name:n | empty)
+	chunk('(', ')') spaces chunk('{', '}')
+	-> n,
+    func =
+	basicFunction:fn
+	| "var" (space)+ name:fn spaces '=' spaces basicFunction
+	-> fn,
+    functionDef =
+	pos:p ( func:fn | '(' func:fn ')' ) somethingRelated defEnd
+	-> { this._fragment(fn, 'functionDef', p, this.pos()-1) },
     
-    staticProperty = pos:p namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '=' somethingBigRelated defEnd
--> { this._fragment(nsArr.last(), 'staticProperty', p, this.pos()-1, null, {className: nsArr.slice(0,nsArr.length-1).join('.'), _isStatic: true}) },
+    staticProperty =
+	pos:p
+	namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '='
+	somethingBigRelated defEnd
+	-> {
+		this._fragment(
+			nsArr.last(),
+			'staticProperty',
+			p, this.pos()-1,
+			null,
+			{ className: nsArr.slice(0,nsArr.length-1).join('.'), _isStatic: true }
+		)},
     
 	/* methods */
-    methodModificationDef = pos:p nsWith('prototype'):spec spaces '=' spaces somethingBigRelated defEnd
--> { this._fragment(spec.after, 'methodModificationDef', p, this.pos()-1, null, {className: spec.before, _isStatic: false}) },
+    methodModificationDef =
+		pos:p
+		nsWith('prototype'):spec spaces '='
+		spaces somethingBigRelated defEnd
+		-> {this._fragment(
+			spec.after,
+			'methodModificationDef',
+			p,
+			this.pos()-1,
+			null,
+			{className: spec.before, _isStatic: false})},
     
-    /* properties */
-    
-    protoDef = stackSize:s pos:p name:pName ':' spaces (basicFunction (somethingBigRelated | empty ) | somethingBigRelated) classElemDefEnd
--> { if (this.stack.length !== s) {
-		throw new Error('sth wrong with the stack: ' + this.stack + ' expected length: ' + s + ' actual length: ' + this.stack.length);
-	};
-	this._fragment(pName, 'protoDef', p, this.pos()-1, null, {_isStatic: false})
-},
-propertyDef = (protoDef | methodModificationDef | staticProperty): spec -> {spec.type = 'propertyDef'; spec},
+    /* properties */    
+    protoDef =
+		stackSize:s pos:p
+		name:pName ':' spaces
+		(basicFunction (somethingBigRelated | empty )
+		| somethingBigRelated
+		) classElemDefEnd
+		-> {
+			if (this.stack.length !== s) {
+				throw new Error(Strings.format(
+					'sth wrong with the stack: %s expected length: %s actual length: %s',
+					this.stack, s, this.stack.length));
+			};
+			this._fragment(pName, 'protoDef', p, this.pos()-1, null, {_isStatic: false})
+		},
+
+	propertyDef =
+		(protoDef | methodModificationDef | staticProperty): spec
+		-> {spec.type = 'propertyDef'; spec},
 
                                     
     /* class stuff */
