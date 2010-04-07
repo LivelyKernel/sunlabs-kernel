@@ -808,7 +808,7 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTestLKFile', {
     },
 });
 
-thisModule.JsParserTest.subclass('Tests.ToolsTests.ChunkParserTest', {
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.ChunkParserTest', {
 
 	setUp: function($super) {
 		$super();
@@ -852,7 +852,18 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.ChunkParserTest', {
 		var result = p.matchAll(src, 'chunk', ['\'', '\''], this.debugFunction.curry(src));
 		this.assert(result, 'couldn\'t parse');
 		this.assertEqual(result.length, src.length);
-	}
+	},
+
+	testParseChunkWithTwoSlashes: function() {
+		// FIXME annoying bug
+		// how to decide if it is a regular expression or a / operator
+		// when we don't have a parse tree? Is it possible at all?
+		var src = "{  x / 3+ ' / ' }";
+		var p = this.ometaParser;
+		var result = p.matchAll(src, 'chunk', ['{', '}'], this.debugFunction.curry(src));
+		this.assert(result, 'couldn\'t parse');
+		this.assertEqual(result.length, src.length);
+	},
 
 });
 
