@@ -2263,6 +2263,10 @@ BoxMorph.subclass('TextMorph', {
 		if (key == 'I' && evt.isShiftDown()) {
 			this.doInspect(); return true; // Inspect
 		};
+		if (key == 'F' && evt.isShiftDown()) {
+			this.doSearch(); return true; // (search in system source code), alternative for w
+		};
+
 
 		if (key) key = key.toLowerCase();
 		switch (key) {
@@ -3004,80 +3008,81 @@ Object.extend(RunArray, {
     
 Object.subclass('lively.Text.Text', {
     // Rich text comes to the Lively Kernel
-    initialize: function(string, style) {
-	this.string = string;
-	if (style) {
-		if (style instanceof TextEmphasis) this.style = new RunArray([string.length], [style]);
-		else if (style instanceof RunArray) this.style = style;
-		else this.style = new RunArray([string.length], [new TextEmphasis(style)]);
-	} else {
-		this.style = new RunArray([string.length], [new TextEmphasis({})]);
-	}
-    },
-    emphasize: function (emph, start, stop) {
-	// Modify the style of this text according to emph
-	var myEmph = emph;
-	if (! (emph instanceof TextEmphasis)) myEmph = new TextEmphasis(emph);
-	this.style = this.style.mergeStyle(myEmph, start, stop);
-	// console.log("Text.emphasized: " + this.style);
-	return this;
-    },
-    emphasisAt: function(index) {
-	return this.style.valueAt(index);
-    },
-    asString: function () { // Return string copy
-	return this.string.substring(0);
-    },
-    size: function () {
-	return this.string.length;
-    },
-    substring: function (start, stop) {
-	// Return a substring with its emphasis as a Text
-	return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
-    },
-    subtext: function (start, stop) {
-	// Return a substring with its emphasis as a Text
-	return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
-    },
-    concat: function (other) {
-	// Modify the style of this text according to emph
-	return new thisModule.Text(this.string.concat(other.string), this.style.concat(other.style));
-    },
-    toString: function() {
-	return "Text for " + this.string + "<" + this.style + ">";
-    },
-    asMorph: function() {
-        return new TextMorph(new Rectangle(0,0,200,100), this);
-    }
+	initialize: function(string, style) {
+		this.string = string;
+		if (style) {
+			if (style instanceof TextEmphasis) this.style = new RunArray([string.length], [style]);
+			else if (style instanceof RunArray) this.style = style;
+			else this.style = new RunArray([string.length], [new TextEmphasis(style)]);
+		} else {
+			this.style = new RunArray([string.length], [new TextEmphasis({})]);
+		}
+	},
+	emphasize: function (emph, start, stop) {
+		// Modify the style of this text according to emph
+		var myEmph = emph;
+		if (! (emph instanceof TextEmphasis)) myEmph = new TextEmphasis(emph);
+		this.style = this.style.mergeStyle(myEmph, start, stop);
+		// console.log("Text.emphasized: " + this.style);
+		return this;
+	},
+	emphasisAt: function(index) {
+		return this.style.valueAt(index);
+	},
+	asString: function () { // Return string copy
+		return this.string.substring(0);
+	},
+	size: function () {
+		return this.string.length;
+	},
+	substring: function (start, stop) {
+		// Return a substring with its emphasis as a Text
+		return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
+	},
+	subtext: function (start, stop) {
+		// Return a substring with its emphasis as a Text
+		return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
+	},
+	concat: function (other) {
+		// Modify the style of this text according to emph
+		return new thisModule.Text(this.string.concat(other.string), this.style.concat(other.style));
+	},
+	toString: function() {
+		return "Text for " + this.string + "<" + this.style + ">";
+	},
+	asMorph: function() {
+		return new TextMorph(new Rectangle(0,0,200,100), this);
+	},
 });
 
 
 Object.subclass('TextEmphasis', {
-    initialize: function(obj) {
-	Properties.forEachOwn(obj, function(p, v) {this[p] = v; }, this);
-    },
-    merge: function(other) {
-	// this and other are style objs like {style: 'bold', fontSize: 14}
-	// In case of overlapping properties, this shall dominate
-	var result = new TextEmphasis(other);
-	Properties.forEachOwn(this,
-	    function(p, v) {
-		if (p != 'style') result[p] = v;
-		else { // special handling of bold, italic
-			var op = other[p];
-			if (v == 'bold') result[p] = (op == 'italic' || op == 'bold-italic') ? 'bold-italic' : 'bold';
-			if (v == 'italic') result[p] = (op == 'bold' || op == 'bold-italic') ? 'bold-italic' : 'italic';
-			if (v == 'unbold') result[p] = (op == 'italic' || op == 'bold-italic') ? 'italic' : null;
-			if (v == 'unitalic') result[p] = (op == 'bold' || op == 'bold-italic') ? 'bold' : null;
-			if (result[p] == null) delete result.style
-		}
-	    }); 
-	return result;
-    },
-    toString: function() {
-	var props = Properties.own(this).map(function(p) { return p + ": " + this[p]; }.bind(this));
-	return "{" + props.join(", ") + "}";
-    }
+	initialize: function(obj) {
+		Properties.forEachOwn(obj, function(p, v) {this[p] = v; }, this);
+	},
+	merge: function(other) {
+		// this and other are style objs like {style: 'bold', fontSize: 14}
+		// In case of overlapping properties, this shall dominate
+		var result = new TextEmphasis(other);
+		Properties.forEachOwn(this,
+			function(p, v) {
+				if (p != 'style') result[p] = v;
+				else { // special handling of bold, italic
+					var op = other[p];
+					if (v == 'bold') result[p] = (op == 'italic' || op == 'bold-italic') ? 'bold-italic' : 'bold';
+					if (v == 'italic') result[p] = (op == 'bold' || op == 'bold-italic') ? 'bold-italic' : 'italic';
+					if (v == 'unbold') result[p] = (op == 'italic' || op == 'bold-italic') ? 'italic' : null;
+					if (v == 'unitalic') result[p] = (op == 'bold' || op == 'bold-italic') ? 'bold' : null;
+					if (result[p] == null) delete result.style
+				}
+			}
+		); 
+		return result;
+	},
+	toString: function() {
+		var props = Properties.own(this).map(function(p) { return p + ": " + this[p]; }.bind(this));
+		return "{" + props.join(", ") + "}";
+	}
 });
 
 

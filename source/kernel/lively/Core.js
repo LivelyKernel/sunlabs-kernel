@@ -5229,7 +5229,7 @@ Morph.subclass("HandMorph", {
     },
 
     grabMorph: function(grabbedMorph, evt) { 
-		if (evt.isShiftDown() && evt.isAltDown()) {
+		if (evt.isShiftDown() && (evt.isAltDown() || evt.isMetaDown())) {
 			grabbedMorph.dragMe(evt);
 			return;
 		}
