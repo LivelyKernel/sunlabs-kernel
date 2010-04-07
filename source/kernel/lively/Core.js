@@ -554,7 +554,13 @@ var Event = (function() {
 
 	isCommandKey: function() {
 	    // this is LK convention, not the content of the event
-	    return Config.useMetaAsCommand ? this.isMetaDown() : this.isAltDown();
+		if (Config.useAltAsCommand)
+			return this.isAltDown();
+		if (UserAgent.isWindows) {
+			return this.isCtrlDown()
+		} else {
+			return this.isMetaDown()
+		}
 	},
 
 	isShiftDown: function() {

@@ -2034,29 +2034,25 @@ BoxMorph.subclass('TextMorph', {
 			}
 		}
 
-		// have to process commands in keydown...
-		if (evt.isCommandKey() && this.processCommandKeys(evt)) {
-			evt.stop();
+		
+		if (ClipboardHack.tryClipboardAction(evt, this)) {
 			return true;
 		}
 
-		return ClipboardHack.tryClipboardAction(evt, this);
-		
-	},
-	 
-	onKeyPress: function(evt) {
-		if (!this.acceptInput)
-			return true;
-		
-		// cleanup: separate BS logic, diddle selection range and use replaceSelectionWith()
-		if (evt.isCommandKey() && UserAgent.isWindows) { // FIXME: isCommandKey() should say no here
-			//AltGr pressed
+		if (evt.isCommandKey() ) {
 			if (this.processCommandKeys(evt)) {
 				evt.stop();
 				return true;
 			}
 		}
-		
+
+		return false		
+	},
+	 
+	onKeyPress: function(evt) {
+		if (!this.acceptInput)
+			return true;
+
 		if (!evt.isMetaDown()) {
 			this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
 			evt.stop(); // done
@@ -2313,14 +2309,6 @@ BoxMorph.subclass('TextMorph', {
 			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.fontSize*=1.2).roundTo(1)}); return true; }
 		}
 
-		//if (evt.type == "KeyPress") {
-		var bracketIndex = this.locale.charSet.leftBrackets.indexOf(key);
-
-		if (bracketIndex >= 0) {
-			this.addOrRemoveBrackets(bracketIndex); 
-			return true;
-		} 
-		//}
 		return false;
 	},
 
