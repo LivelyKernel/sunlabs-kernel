@@ -1501,11 +1501,15 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 
 	trigger: function() {
 		var srcCtrl = tools.SourceControl;
-		srcCtrl.interestingLKFileNames()
-			.concat(srcCtrl.preLoadFileNames())
-			.forEach(function(ea) { srcCtrl.addModule(ea) });
-		this.browser.allChanged();
-	}
+		var progressBar = WorldMorph.current().addProgressBar();
+		var files = srcCtrl.interestingLKFileNames();
+		var browser = this.browser;
+		files.forEachShowingProgress(
+			progressBar,
+			function(ea) { srcCtrl.addModule(ea) },
+			Functions.K, // label func
+			function() { progressBar.remove(); browser.allChanged() }); 
+	},
 
 });
 

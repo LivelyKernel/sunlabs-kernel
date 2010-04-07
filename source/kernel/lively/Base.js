@@ -1232,8 +1232,8 @@ Object.extend(Array.prototype, {
 					progressBar.setValue((steps-idx) / steps);
 					if (labelFunc)
 						progressBar.setLabel(labelFunc(item, idx));
-					iterator(item, idx)
-					nextFunc.delay(0)
+					iterator(item, idx);
+					nextFunc.delay(0);
 				}
 			}
 		))();

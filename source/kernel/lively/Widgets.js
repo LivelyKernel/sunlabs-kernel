@@ -4612,13 +4612,14 @@ Morph.subclass("ProgressBarMorph", {
 	getValue: function(){
 		return this.value;
 	},
-setLabel: function(str) {
-	if (!this.label) return
-	this.label.setExtent(this.getExtent());
-	this.label.updateTextString(str);
-	this.label.emphasizeAll({style: 'bold', align: 'center'});
-	this.label.align(this.label.bounds().center(), this.shape.bounds().center());
-},
+	
+	setLabel: function(str) {
+		if (!this.label) return
+		this.label.setExtent(this.getExtent());
+		this.label.textString = str;
+		this.label.emphasizeAll({style: 'bold', align: 'center'});
+		this.label.align(this.label.bounds().center(), this.shape.bounds().center());
+	},
 
 
 	updateBar: function(number){
