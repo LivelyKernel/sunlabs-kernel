@@ -194,6 +194,15 @@ Object.extend(Global, {
 		while (sourceObj.attributeConnections.length > 0)
 			sourceObj.attributeConnections[0].disconnect()
 	},
+	
+	updateAttributeConnection: function(sourceObj, attrName, newVal) {
+		if (!sourceObj.attributeConnections) return;
+		for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
+			var c = sourceObj.attributeConnections[i];
+			if (c.getSourceAttrName() == attrName) c.update(newVal);
+		}
+	},
+
 })
 
 }); // end of module
