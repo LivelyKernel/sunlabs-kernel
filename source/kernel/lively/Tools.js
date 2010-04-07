@@ -26,7 +26,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-module('lively.Tools').requires('lively.Text').toRun(function(module, text) {
+module('lively.Tools').requires('lively.Text', 'lively.bindings').toRun(function(module, text) {
 
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
@@ -747,122 +747,136 @@ using().run(function() { // begin scoping function
 	// in lively.lang.Execution.testTrace()).  As in normal stack tracing, the value of currentContext is
 	// the node associated with the currently running method.
 
-    var rootContext;
-    var currentContext;
+var rootContext;
+var currentContext;
 
-	Global.getCurrentContext = function() {
-		return currentContext;
-	};
+Global.getCurrentContext = function() {
+	return currentContext;
+};
 
-    Object.subclass('TracerStackNode', {
+Object.subclass('TracerStackNode', {
+	
 	initialize: function(caller, method) {
-	    this.caller = caller;
-	    this.method = method;
-	    this.itsThis = null;  // These two get nulled after return
-	    this.args = null;  //  .. only used for stack trace on error
-	    this.callee = null;
+		this.caller = caller;
+		this.method = method;
+		this.itsThis = null;  // These two get nulled after return
+		this.args = null;  //  .. only used for stack trace on error
+		this.callee = null;
 	},
+	
 	copyMe: function() {
-	    var result = new TracerStackNode(this.caller, this.method);
-	    result.itsThis = this.itsThis;
-	    result.args = this.args;
-	    result.callee = this.callee;
-	    return result;
+		var result = new TracerStackNode(this.caller, this.method);
+		result.itsThis = this.itsThis;
+		result.args = this.args;
+		result.callee = this.callee;
+		return result;
 	},
-        traceCall: function(method , itsThis, args) {
-	    // this is the currentContext (top of stack)
-	    // method has been called with itsThis as receiver, and args as arguments
-	    // --> Check here for exceptions
-	    var newNode = this.callee;  // recycle an old callee node
-	    if (!newNode) {             // ... or make a new one
-		newNode = new TracerStackNode(this, method);
-		this.callee = newNode;
-	    } else {
-		newNode.method = method;
-	    }
-	    newNode.itsThis = itsThis;		
-	    newNode.args = args;
-	    if (Function.prototype.logAllCalls) console.log(this.dashes(this.stackSize()) + this);
-	    currentContext = newNode;
+	
+	traceCall: function(method , itsThis, args) {
+		// this is the currentContext (top of stack)
+		// method has been called with itsThis as receiver, and args as arguments
+		// --> Check here for exceptions
+		var newNode = this.callee;  // recycle an old callee node
+		if (!newNode) {             // ... or make a new one
+			newNode = new TracerStackNode(this, method);
+			this.callee = newNode;
+		} else {
+			newNode.method = method;
+		}
+		newNode.itsThis = itsThis;		
+		newNode.args = args;
+		if (Function.prototype.logAllCalls) console.log(this.dashes(this.stackSize()) + this);
+		currentContext = newNode;
 	},
-        traceReturn: function(method) {
-	    // this is the currentContext (top of stack)
-	    // method is returning
-	    this.args = null;  // release storage from unused stack
-	    this.itsThis = null;  //   ..
-	    currentContext = this.caller;
+	
+	traceReturn: function(method) {
+		// this is the currentContext (top of stack)
+		// method is returning
+		this.args = null;  // release storage from unused stack
+		this.itsThis = null;  //   ..
+		currentContext = this.caller;
 	},
+	
 	each: function(funcToCall) {
-	    // Stack walk (leaf to root) applying function
-	    for (var c = this; c; c=c.caller) funcToCall(this, c);
+		// Stack walk (leaf to root) applying function
+		for (var c = this; c; c=c.caller) funcToCall(this, c);
 	},
+	
 	stackSize: function() {
-	    var size = 0;
-	    for (var c = this; c; c=c.caller) size++;
-	    return size;
+		var size = 0;
+		for (var c = this; c; c=c.caller) size++;
+		return size;
 	},
+	
 	dashes: function(n) {
-	    var lo = n% 5;
-	    return '----|'.times((n-lo)/5) + '----|'.substring(0,lo);
+		var lo = n% 5;
+		return '----|'.times((n-lo)/5) + '----|'.substring(0,lo);
 	},
+	
 	toString: function() {
-	    return "<" + this.method.qualifiedMethodName() + ">";
-	}
-    });
+		return "<" + this.method.qualifiedMethodName() + ">";
+	},
+	
+});
     
-    TracerStackNode.subclass('TracerTreeNode', {
+TracerStackNode.subclass('TracerTreeNode', {
+	
 	initialize: function($super, caller, method) {
-	    $super(caller, method);
-	    this.callees = {};
-	    this.tally = 0;
-	    this.ticks = 0;
-	    this.calltime = null;
-	    //console.log("adding node for " + method.qualifiedMethodName());
+		$super(caller, method);
+		this.callees = {};
+		this.tally = 0;
+		this.ticks = 0;
+		this.calltime = null;
+		//console.log("adding node for " + method.qualifiedMethodName());
 	},
-        traceCall: function(method , itsThis, args) {
-	    // this is the currentContext (top of stack)
-	    // method has been called with itsThis as receiver, and args as arguments
-	    // --> Check here for exceptions
-	    var newNode = this.callees[method];
-	    if (!newNode) {
-		// First hit -- need to make a new node
-		newNode = new TracerTreeNode(this, method);
-		this.callees[method] = newNode;
-	    }
-	    newNode.itsThis = itsThis;
-	    newNode.args = args;
-	    newNode.tally++;
-	    newNode.callTime = new Date().getTime();
-	    currentContext = newNode;
+	
+	traceCall: function(method , itsThis, args) {
+		// this is the currentContext (top of stack)
+		// method has been called with itsThis as receiver, and args as arguments
+		// --> Check here for exceptions
+		var newNode = this.callees[method];
+		if (!newNode) {
+			// First hit -- need to make a new node
+			newNode = new TracerTreeNode(this, method);
+			this.callees[method] = newNode;
+		}
+		newNode.itsThis = itsThis;
+		newNode.args = args;
+		newNode.tally++;
+		newNode.callTime = new Date().getTime();
+		currentContext = newNode;
 	},
-        traceReturn: function(method) {
-	    // this is the currentContext (top of stack)
-	    // method is returning
-	    //if(stackNodeCount < 20) console.log("returning from " + method.qualifiedMethodName());
-	    this.args = null;  // release storage from unused stack info
-	    this.itsThis = null;  //   ..
-	    this.ticks += (new Date().getTime() - this.callTime);
-	    currentContext = this.caller;
+	
+	traceReturn: function(method) {
+		// this is the currentContext (top of stack)
+		// method is returning
+		//if(stackNodeCount < 20) console.log("returning from " + method.qualifiedMethodName());
+		this.args = null;  // release storage from unused stack info
+		this.itsThis = null;  //   ..
+		this.ticks += (new Date().getTime() - this.callTime);
+		currentContext = this.caller;
 	},
+	
 	each: function(funcToCall, level, sortFunc) { 
-	    // Recursive tree visit with callees order parameter (eg, tallies, ticks, alpha)
-	    if (level == null) level = 0;
-	    funcToCall(this, level);
-	    var sortedCallees = [];
-	    Properties.forEachOwn(this.callees, function(meth, node) { sortedCallees.push(node); })
-	    if(sortedCallees.length == 0) return;
-	    sortedCallees.sort(sortFunc);
-	    sortedCallees.forEach(function(node) { node.each(funcToCall, level+1, sortFunc); });
+		// Recursive tree visit with callees order parameter (eg, tallies, ticks, alpha)
+		if (level == null) level = 0;
+		funcToCall(this, level);
+		var sortedCallees = [];
+		Properties.forEachOwn(this.callees, function(meth, node) { sortedCallees.push(node); })
+		if(sortedCallees.length == 0) return;
+		sortedCallees.sort(sortFunc);
+		sortedCallees.forEach(function(node) { node.each(funcToCall, level+1, sortFunc); });
 	},
+	
 	fullString: function(options) {  
-	    var totalTicks = 0;
-	    Properties.forEachOwn(this.callees, function(meth, node) { totalTicks += node.ticks; })
+		var totalTicks = 0;
+		Properties.forEachOwn(this.callees, function(meth, node) { totalTicks += node.ticks; })
 		var major = (options.sortBy == "tally") ? "tally" : "ticks";
 		var minor = (major == "tally") ? "ticks" : "tally";
 		var threshold = options.threshold;
 		if (!threshold && threshold !== 0)  threshold = major == "ticks" ? (totalTicks/100).roundTo(1) : 0;
-		
-	    var sortFunction = function(a, b) {
+
+		var sortFunction = function(a, b) {
 			if(a[major] == b[major]) return (a[minor] > b[minor]) ? -1 : (a[minor] < b[minor]) ? 1 : 0; 
 			return (a[major] > b[major]) ? -1 : 1;
 		}
@@ -873,219 +887,226 @@ using().run(function() { // begin scoping function
 		str += ", threshold: " + threshold + " }\n" ;
 		var leafCounts = {};
 
-	    // Print the call tree, and build the dictionary of leaf counts...
+		// Print the call tree, and build the dictionary of leaf counts...
 		this.each(function(node, level, sortFunc) {
 			if (node.ticks >= threshold) str += (this.dashes(level) + node.toString(major, minor) + "\n");
 			if (leafCounts[node.method] == null) leafCounts[node.method] =
-				{methodName: node.method.qualifiedMethodName(), tallies: 0, ticks: 0};
+			{methodName: node.method.qualifiedMethodName(), tallies: 0, ticks: 0};
 			var leafCount = leafCounts[node.method];
-				leafCount.tallies += node.tally;
-				leafCount.ticks += node.ticksInMethod();
-			}.bind(this), 0, sortFunction);
+			leafCount.tallies += node.tally;
+			leafCount.ticks += node.ticksInMethod();
+		}.bind(this), 0, sortFunction);
 
 		str += "\nLeaf nodes sorted by ticks within that method (ticks / tallies):\n" ;
-	    var sortedLeaves = [];
-	    Properties.forEachOwn(leafCounts, function(meth, count) { sortedLeaves.push(count); })
-	    if (sortedLeaves.length == 0) return;
-	    sortedLeaves.sort(function (a, b) { return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0 } );
+		var sortedLeaves = [];
+		Properties.forEachOwn(leafCounts, function(meth, count) { sortedLeaves.push(count); })
+		if (sortedLeaves.length == 0) return;
+		sortedLeaves.sort(function (a, b) { return (a.ticks > b.ticks) ? -1 : (a.ticks < b.ticks) ? 1 : 0 } );
 		sortedLeaves.forEach( function (count) {
-			if (count.ticks >= threshold/4)  str += "(" + count.ticks + " / " + count.tallies + ") " + count.methodName + "\n"; 
+			if (count.ticks >= threshold*0.4)  str += "(" + count.ticks + " / " + count.tallies + ") " + count.methodName + "\n"; 
 		});
-		
-	    return str;
+
+		return str;
 	},
+	
 	toString: function(major, minor) {
-	    if(!major) {major = "ticks";  minor = "tally"};
+		if(!major) {major = "ticks";  minor = "tally"};
 		return '(' + this[major].toString() + ' / ' + this[minor].toString() + ') ' + this.method.qualifiedMethodName();
 	},
-ticksInMethod: function() {
+	
+	ticksInMethod: function() {
 		var localTicks = this.ticks;
 		// subtract ticks of callees to get net ticks in this method
-	    Properties.forEachOwn(this.callees, function(meth, node) { localTicks -= node.ticks; })
+		Properties.forEachOwn(this.callees, function(meth, node) { localTicks -= node.ticks; })
 		return localTicks;
-	}
-    });
+	},
+});
     
-    Object.extend(lively.lang.Execution, {
-	
-	resetDebuggingStack: function resetDebuggingStack() {
-	    var rootMethod = arguments.callee.caller;
-	    rootContext = new TracerStackNode(null, rootMethod);
-	    currentContext = rootContext;
-	    Function.prototype.logAllCalls = false;
-	},
-	
-        showStack: function(useViewer, c) {
-	    var currentContext = c;
-            if (useViewer) { new StackViewer(this, currentContext).open(); return; }
-	    
-            if (Config.debugExtras) {
-                for (var c = currentContext, i = 0; c != null; c = c.caller, i++) {
-                    var args = c.args;
-		    if (!args) {
-			console.log("no frame at " + i);
-			continue;
-		    }
-                    var header = Object.inspect(args.callee.originalFunction);
-                    var frame = i.toString() + ": " + header + "\n";
-		    frame += "this: " + c.itsThis + "\n";
-		    var k = header.indexOf('(');
-                    header = header.substring(k + 1, 999);  // ')' or 'zort)' or 'zort,baz)', etc
-                    for (var j = 0; j <args.length; j++) {
-                        k = header.indexOf(')');
-                        var k2 = header.indexOf(',');
-                        if (k2 >= 0) k = Math.min(k,k2);
-                        var argName = header.substring(0, k);
-                        header = header.substring(k + 2);
-                        if (argName.length > 0) frame += argName + ": " + Object.inspect(args[j]) + "\n";
-		    }
-                    console.log(frame);
-		    if (i >= 500) {
-			console.log("stack overflow?");
-			break;
-		    }
-                }
-            } else {
-		var visited = [];
-                for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
-                    console.log("%s: %s", i, Object.inspect(c));
-		    if (visited.indexOf(c) >= 0) {
-			console.log("possible recursion");
-			break;
-		    } else visited.push(c);
-		    if (i > 500) {
-			console.log("stack overflow?");
-			break;
-		    }
-                }
-            }
-        },
+Object.extend(lively.lang.Execution, {
 
-        testTrace: function(options) { // lively.lang.Execution.testTrace( {repeat: 10} )  
-	    this.trace( RunArray.test.curry([3, 1, 4, 1, 5, 9]), options);
+	resetDebuggingStack: function resetDebuggingStack() {
+		var rootMethod = arguments.callee.caller;
+		rootContext = new TracerStackNode(null, rootMethod);
+		currentContext = rootContext;
+		Function.prototype.logAllCalls = false;
 	},
-	
-        trace: function(method, options) {  
+
+	showStack: function(useViewer, c) {
+		var currentContext = c;
+		if (useViewer) { new StackViewer(this, currentContext).open(); return; }
+
+		if (Config.debugExtras) {
+			for (var c = currentContext, i = 0; c != null; c = c.caller, i++) {
+				var args = c.args;
+				if (!args) {
+					console.log("no frame at " + i);
+					continue;
+				}
+				var header = Object.inspect(args.callee.originalFunction);
+				var frame = i.toString() + ": " + header + "\n";
+				frame += "this: " + c.itsThis + "\n";
+				var k = header.indexOf('(');
+				header = header.substring(k + 1, 999);  // ')' or 'zort)' or 'zort,baz)', etc
+				for (var j = 0; j <args.length; j++) {
+					k = header.indexOf(')');
+					var k2 = header.indexOf(',');
+					if (k2 >= 0) k = Math.min(k,k2);
+					var argName = header.substring(0, k);
+					header = header.substring(k + 2);
+					if (argName.length > 0) frame += argName + ": " + Object.inspect(args[j]) + "\n";
+				}
+				console.log(frame);
+				if (i >= 500) {
+					console.log("stack overflow?");
+					break;
+				}
+			}
+		} else {
+			var visited = [];
+			for (var c = arguments.callee.caller, i = 0; c != null; c = c.caller, i++) {
+				console.log("%s: %s", i, Object.inspect(c));
+				if (visited.indexOf(c) >= 0) {
+					console.log("possible recursion");
+					break;
+					} else visited.push(c);
+					if (i > 500) {
+						console.log("stack overflow?");
+						break;
+					}
+				}
+			}
+		},
+
+		testTrace: function(options) { // lively.lang.Execution.testTrace( {repeat: 10} )  
+		this.trace( RunArray.test.curry([3, 1, 4, 1, 5, 9]), options);
+	},
+
+	trace: function(method, options) {  
 		// options = { printToConsole: false, repeat: 1, threshold: 0 }
-	    if (!options) options = {};
+		if (!options) options = {};
 		var traceRoot = new TracerTreeNode(currentContext, method);
-	    currentContext = traceRoot;
+		currentContext = traceRoot;
 		for (var i=1; i <= (options.repeat || 1); i++)  result = method.call(this);
-	    currentContext = traceRoot.caller;
-	    traceRoot.caller = null;
-	    if (options.printToConsole) console.log(traceRoot.fullString(options));
-			else WorldMorph.current().addTextWindow(traceRoot.fullString(options));
-	    return result;
+		currentContext = traceRoot.caller;
+		traceRoot.caller = null;
+		if (options.printToConsole) console.log(traceRoot.fullString(options));
+		else WorldMorph.current().addTextWindow(traceRoot.fullString(options));
+		return result;
+	},
+
+	installStackTracers: function(remove) {
+		console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
+		remove = (remove == "uninstall");  // call with this string to uninstall
+		Class.withAllClassNames(Global, function(cName) { 
+			if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
+			if (cName == 'Global' || cName == 'Object') return;
+			var theClass = Class.forName(cName);
+			var methodNames = theClass.localFunctionNames();
+
+			// Replace all methods of this class with a wrapped version
+			for (var mi = 0; mi < methodNames.length; mi++) {
+				var mName = methodNames[mi];
+				var originalMethod = theClass.prototype[mName];
+				// Put names on the original methods 
+				originalMethod.declaredClass = cName;
+				originalMethod.methodName = mName;
+				// Now replace each method with a wrapper function (or remove it)
+				if (!Class.isClass(originalMethod)) {  // leave the constructor alone and other classes alone
+					if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
+					else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
+				}
+			}
+			// Do the same for class methods (need to clean this up)
+			var classFns = []; 
+			for (var p in theClass) {
+				if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
+					classFns.push(p);
+			}
+			for (var mi = 0; mi < classFns.length; mi++) {
+				var mName = classFns[mi];
+				var originalMethod = theClass[mName];
+				// Put names on the original methods 
+				originalMethod.declaredClass = cName;
+				originalMethod.methodName = mName;
+				// Now replace each method with a wrapper function (or remove it)
+				if (!Class.isClass(originalMethod)) { // leave the constructor alone and other classes alone
+					if(!remove) theClass[mName] = originalMethod.tracingWrapper();
+					else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
+				}
+			}
+		});
 	},
 	
-    installStackTracers: function(remove) {
-    console.log("Wrapping all methods with tracingWrapper... " + (remove || ""));
-        remove = (remove == "uninstall");  // call with this string to uninstall
-        Class.withAllClassNames(Global, function(cName) { 
-	if (cName.startsWith('SVG') || cName.startsWith('Tracer')) return;
-            if (cName == 'Global' || cName == 'Object') return;
-            var theClass = Class.forName(cName);
-            var methodNames = theClass.localFunctionNames();
+	tallyLOC: function() {
+		console.log("Tallying lines of code by decompilation");
+		var classNames = [];
+		Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
+		classNames.sort();
+		var tallies = "";
+		for (var ci= 0; ci < classNames.length; ci++) {
+			var cName = classNames[ci];
+			if (cName != 'Global' && cName != 'Object') {
+				var theClass = Class.forName(cName);
+				var methodNames = theClass.localFunctionNames();
+				var loc = 0;
+				for (var mi = 0; mi < methodNames.length; mi++) {
+					var mName = methodNames[mi];
+					var originalMethod = theClass.prototype[mName];
+					// decompile and count lines with more than one non-blank character
+					var lines = originalMethod.toString().split("\n");
+					lines.forEach( function(line) { if(line.replace(/\s/g, "").length>1) loc++ ; } );
+				}
+			}
+			console.log(cName + " " + loc);
+			// tallies += cName + " " + loc.toString() + "\n";
+		}
+	},
 	
-            // Replace all methods of this class with a wrapped version
-	for (var mi = 0; mi < methodNames.length; mi++) {
-                var mName = methodNames[mi];
-                var originalMethod = theClass.prototype[mName];
-	    // Put names on the original methods 
-                originalMethod.declaredClass = cName;
-                originalMethod.methodName = mName;
-                // Now replace each method with a wrapper function (or remove it)
-                if (!Class.isClass(originalMethod)) {  // leave the constructor alone and other classes alone
-		if(!remove) theClass.prototype[mName] = originalMethod.tracingWrapper();
-		else if(originalMethod.originalFunction) theClass.prototype[mName] = originalMethod.originalFunction;
-	    }
-            }
-	// Do the same for class methods (need to clean this up)
-	var classFns = []; 
-	for (var p in theClass) {
-	    if (theClass.hasOwnProperty(p) && theClass[p] instanceof Function && p != "superclass")
-		classFns.push(p);
-	}
-            for (var mi = 0; mi < classFns.length; mi++) {
-                var mName = classFns[mi];
-                var originalMethod = theClass[mName];
-	    // Put names on the original methods 
-                originalMethod.declaredClass = cName;
-                originalMethod.methodName = mName;
-                // Now replace each method with a wrapper function (or remove it)
-                if (!Class.isClass(originalMethod)) { // leave the constructor alone and other classes alone
-		if(!remove) theClass[mName] = originalMethod.tracingWrapper();
-		else if(originalMethod.originalFunction) theClass[mName] = originalMethod.originalFunction;
-	    }
-            }
-        });
-    },
-        tallyLOC: function() {
-            console.log("Tallying lines of code by decompilation");
-            var classNames = [];
-            Class.withAllClassNames(Global, function(n) { n.startsWith('SVG') || classNames.push(n)});
-            classNames.sort();
-            var tallies = "";
-            for (var ci= 0; ci < classNames.length; ci++) {
-                var cName = classNames[ci];
-                if (cName != 'Global' && cName != 'Object') {
-                    var theClass = Class.forName(cName);
-                    var methodNames = theClass.localFunctionNames();
-                    var loc = 0;
-                    for (var mi = 0; mi < methodNames.length; mi++) {
-                        var mName = methodNames[mi];
-                        var originalMethod = theClass.prototype[mName];
-                        // decompile and count lines with more than one non-blank character
-                        var lines = originalMethod.toString().split("\n");
-                        lines.forEach( function(line) { if(line.replace(/\s/g, "").length>1) loc++ ; } );
-                    }
-                }
-                console.log(cName + " " + loc);
-                // tallies += cName + " " + loc.toString() + "\n";
-            }
-        },
-    });
+});
     
 Object.subclass('InspectHelper', {
-    inspect: function(obj,selector){
-        if (!Morph.prototype.initialize.originalFunction) // poor test
-            return; // no tracers installed
-    	var openTracer = function(contextNode){
-    		var dbgObj = {classname: this.constructor.type, selector: 'inspect', err:{stack:contextNode}};
-    		new ErrorStackViewer(dbgObj).open();
-    	}.bind(this);
-    	return {inspectMe: true, message: 'opening StackInspector', openTracer: openTracer}
-    },
+	
+	inspect: function(obj,selector){
+		if (!Morph.prototype.initialize.originalFunction) // poor test
+		return; // no tracers installed
+		var openTracer = function(contextNode){
+			var dbgObj = {classname: this.constructor.type, selector: 'inspect', err:{stack:contextNode}};
+			new ErrorStackViewer(dbgObj).open();
+		}.bind(this);
+		return {inspectMe: true, message: 'opening StackInspector', openTracer: openTracer}
+	},
+	
 });
+
 Global.halt = function() {
-    new InspectHelper().inspect();
+	new InspectHelper().inspect();
 }
 
-    Object.extend(Function.prototype, {
-	
-        tracingWrapper: function () {
-	    // Make a proxy method (traceFunc) that calls the tracing routines before and after this method
-	    var traceFunc = function () {
-		var originalFunction = arguments.callee.originalFunction; 
-		if (!currentContext) return originalFunction.apply(this, arguments);  // not started yet
-		try {
-			currentContext.traceCall(originalFunction, this, arguments);
-			var result = originalFunction.apply(this, arguments); 
-            if (result && result.inspectMe === true)
-                result.openTracer(currentContext);
-			currentContext.traceReturn(originalFunction);
-			return result;
-		} catch(e) {
-		    console.log('got error:' + e.message);
-		    if (!e.stack) console.log('caller ' + currentContext.caller);
-		    if (!e.stack) e.stack = currentContext.copyMe();
-			throw e;
+Object.extend(Function.prototype, {
+
+	tracingWrapper: function () {
+		// Make a proxy method (traceFunc) that calls the tracing routines before and after this method
+		var traceFunc = function () {
+			var originalFunction = arguments.callee.originalFunction; 
+			if (!currentContext) return originalFunction.apply(this, arguments);  // not started yet
+			try {
+				currentContext.traceCall(originalFunction, this, arguments);
+				var result = originalFunction.apply(this, arguments); 
+				if (result && result.inspectMe === true)
+					result.openTracer(currentContext);
+				currentContext.traceReturn(originalFunction);
+				return result;
+			} catch(e) {
+				console.log('got error:' + e.message);
+				if (!e.stack) console.log('caller ' + currentContext.caller);
+				if (!e.stack) e.stack = currentContext.copyMe();
+				throw e;
+			};
 		};
-            };
-            traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
-            return traceFunc;
-        }
-    });
+		traceFunc.originalFunction = this;  // Attach this (the original function) to the tracing proxy
+		return traceFunc;
+	}
+});
     
 }); // end scoping function
 
@@ -1253,48 +1274,37 @@ TextMorph.subclass('FrameRateMorph', {
 // ===========================================================================
 ButtonMorph.subclass('EllipseMakerMorph', {
 
-    initialize: function($super, loc) {
-	// Under construction -- will be a button that emits bouncing ellipses
-	// to test graphical performance in conjunction with FrameRateMorph
-        $super(loc.extent(pt(200, 50)));
-	this.ellipses = [];
-        this.report();
-	this.repRate = 200; // ms
-	this.lastTick = new Date().getTime();
-    	this.connectModel({model: this, getValue: "getThisValue", setValue: "setThisValue"});
-	this.pushed = false;
-    },
-    setThisValue: function(bool) { this.pushed = bool; },
-    getThisValue: function(bool) { return this.pushed; },
-
-    makeNewEllipse: function(date) {
-        var ext = this.owner.innerBounds().extent();
-	var s = Math.min(ext.x/40, ext.y/40, 20);
-	var e = new Morph(new lively.scene.Ellipse(pt(0,0), s));
-	e.setExtent(pt(2*s, 4*s));
-	e.applyStyle({ fill: Color.random(), fillOpacity: Math.random(), borderWidth: 1, borderColor: Color.random()});
-	e.velocity = pt(s, s).random();
-	e.angularVelocity = 0.3  * Math.random();
-	this.owner.addMorph(e);
-	e.moveOriginBy(e.innerBounds().center());  // Rotate about center
-	this.ellipses.push(e);
-	this.report()
-    },
-    report: function(date) {
-        this.setLabel("Make more ellipses (" + this.ellipses.length + ")");
-    },
-    nextStep: function() {
-        this.stepEllipses();
-	if (!this.pushed) return;
-	var thisTick = new Date().getTime();
-	if (thisTick - this.lastTick < this.repRate) return;
-	this.makeNewEllipse();
-	this.lastTick = thisTick;
-    },
-    stepEllipses: function() {
-	this.ellipses.forEach( function(e) { e.stepAndBounce(); });
+	documentation: 'A button that emits bouncing ellipses to test graphical performance in conjunction with FrameRateMorph',
+	
+	initialize: function($super, loc) {
+		$super(loc.extent(pt(200, 50)));
+		this.ellipses = [];
+		this.report();
+		connect(this, 'value', this, 'makeNewEllipse');		
 	},
-    startSteppingScripts: function() { this.startStepping(30,'nextStep'); }
+
+	makeNewEllipse: function(btnVal) {
+		if (!btnVal) return; // just make one, btn click would trigger it 2x
+		var ext = this.owner.innerBounds().extent();
+		var s = Math.min(ext.x/40, ext.y/40, 20);
+		var e = new Morph(new lively.scene.Ellipse(pt(0,0), s));
+		e.ignoreEvents();
+		e.setExtent(pt(2*s, 4*s));
+		e.applyStyle({ fill: Color.random(), fillOpacity: Math.random(), borderWidth: 1, borderColor: Color.random()});
+		e.velocity = pt(s, s).random();
+		e.angularVelocity = 0.3  * Math.random();
+		this.owner.addMorph(e);
+		e.moveOriginBy(e.innerBounds().center());  // Rotate about center
+		this.ellipses.push(e);
+		this.report()
+	},
+
+    report: function() { this.setLabel("Make more ellipses (" + this.ellipses.length + ")") },
+
+	stepEllipses: function() { this.ellipses.forEach(function(e) { e.stepAndBounce() }) },
+
+    startSteppingScripts: function() { this.startStepping(30, 'stepEllipses') },
+
 });
 
 
