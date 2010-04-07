@@ -478,6 +478,7 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 
 	onDeserialize: function($super) {
 		var widget = new this.ownerWidget.constructor();
+		if (widget instanceof lively.ide.WikiCodeBrowser) return; // FIXME deserialize wiki browser
 		var selection = this.getSelectionSpec();
 		this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
 		this.owner.targetMorph.setPosition(this.getPosition());
