@@ -2192,7 +2192,7 @@ BoxMorph.subclass('TextMorph', {
 	
 	doDoit: function() {
 		var s = this.pvtStringAndOffsetToEval();
-		this.tryParseAndBoundEval(s.str, s.offset);
+		this.tryBoundEval(s.str, s.offset);
 	},
 
 	// eval selection or current line if selection is emtpy
@@ -2206,18 +2206,6 @@ BoxMorph.subclass('TextMorph', {
 	doSave: function() {
 		this.saveContents(this.textString); 
 		this.hideChangeClue();
-	},
-
-	tryParseAndBoundEval: function(str, offset, printIt) {
-		if (Config.enableJSLINT) {
-			require('lively.jslint').toRun(function(){
-				if(this.jslintContents(str, offset)) {
-					this.tryBoundEval(str, offset, printIt);
-				}
-			}.bind(this))
-		} else {
-			this.tryBoundEval(str, offset, printIt)
-		}
 	},
 
 	tryBoundEval: function (str, offset, printIt) {
@@ -2528,18 +2516,6 @@ TextMorph.addMethods({
 			statusMorph.remove() }).delay(delay || 4);
 	},
 	
-	handleFirstJSLintError: function(error, pos) {
-		console.log("handleFirstJSLintError "+ error.reason + " at " + pos)
-		this.setSelectionRange(pos, pos);
-		if (Config.showJSLintErrorsInline) {
-			var replacement = "/* " + error.reason + " */"
-			this.replaceSelectionWith(replacement);
-			this.setSelectionRange(pos, pos + replacement.length);
-		} else {
-			this.setStatusMessage(error.reason, Color.orange);
-		}
-	},
-	
 	pvtPositionInString: function(lines, line, linePos) {
 		var pos = 0;
 		for(var i=0; i < (line - 1); i++) {
@@ -2547,35 +2523,10 @@ TextMorph.addMethods({
 		}
 		return pos + linePos
 	},
-	
-	handleJSLintErrors: function(errors, lines, offset) {
-		errors.each(function(ea) {
-		    console.log("jslint error on line " + ea.line + " at position " + ea.character + ": " + ea.reason)
-			LastErrors = errors;
-			LastContentString = lines;
-		}.bind(this));
-	
-		if (errors.length > 0) {
-			// for(int i=0; i<ea.line)
-			offset = offset || 0;
-			var pos = offset + this.pvtPositionInString(lines, errors[0].line, errors[0].character)
-			this.handleFirstJSLintError(errors[0], pos)
-		}
-	},
-	
-	jslintContents: function(contentString, offset) {
-		var lines = contentString.split(/[\n\r]/)
-		JSLINT(lines);
-		var errors = JSLINT.errors.select(function(ea){
-			return ea && ea.id != "(error)" // TODO HACK customize JS Lint so that it is not opstrusive...
-		});
-		this.handleJSLintErrors(errors, lines, offset)
-		return errors.length == 0	
-	},
-	
+		
 	saveContents: function(contentString) {	   
 		if (!this.modelPlug && !this.formalModel) {
-			this.tryParseAndBoundEval(contentString);
+			this.tryBoundEval(contentString);
 			this.world().changed(); 
 			return; // Hack for browser demo
 		} else if (!this.autoAccept) {
