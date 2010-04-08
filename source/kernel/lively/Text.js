@@ -2330,6 +2330,8 @@ BoxMorph.subclass('TextMorph', {
 			// indent/outdent selection
 			case 221/*cmd+]*/: { this.indentSelection(); evt.stop(); return true }
 			case 219/*cmd+]*/: { this.outdentSelection(); evt.stop(); return true }
+			// comment/uncoment selection
+			case 191 /*cmd+/*/: { this.addOrRemoveComment(); return true }
 		}
 
 		return false;
@@ -2359,22 +2361,36 @@ BoxMorph.subclass('TextMorph', {
 		this.emphasizeSelection( {color: color} );
 		this.requestKeyboardFocus(evt.hand);
 	},
+	
 	indentSelection: function() {
 		var tab = '\t';
 		this.modifySelectedLines(function(line) { return line.length == 0 ? line : tab + line });
 	},
+	
 	outdentSelection: function() {
 		var tab = '\t', space = ' ';
 		this.modifySelectedLines(function(line) {
 			return (line.startsWith(space) || line.startsWith(tab)) ? line.substring(1,line.length) : line
 		});
 	},
+	
 	pvtCurrentLine: function() {
 		var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
 		if (lineNumber == -1) lineNumber = 0; 
 		return this.lines[lineNumber];
 	},
 
+	addOrRemoveComment: function() {
+		var commentRegex = /^(\s*)(\/\/\s*)(.*)/;
+		var spacesRegex = /^(\s*)(.*)/;
+		this.modifySelectedLines(function(line) {
+			var commented = commentRegex.test(line);
+			if (commented)
+				return line.replace(commentRegex, '$1$3')
+			return line.replace(spacesRegex, '$1// $2')
+		})
+	},
+	
 	pvtCurrentLineString: function() {
 		var line = this.pvtCurrentLine();
 		return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));		 
