@@ -1880,7 +1880,7 @@ BoxMorph.subclass('TextMorph', {
 
 		// Compute new selection, and display
 		var selectionIndex = this.selectionRange[0] + replacement.length;
-		this.setNullSelectionAt(selectionIndex); 
+		this.startSelection(selectionIndex); 
 
 		this.showChangeClue();		
 	},
