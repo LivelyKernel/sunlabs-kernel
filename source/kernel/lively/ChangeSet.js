@@ -62,7 +62,7 @@ setXMLElement: function(newElement) {
 	getAttributeNamed: function(name, optXmlElement) {
 		var element = optXmlElement || this.xmlElement;
 		var attr = element.getAttributeNS(null, name);
-		if (!attr) console.warn("no " + name + " for" + Exporter.stringify(element));
+		// if (!attr) console.warn("no " + name + " for" + Exporter.stringify(element));
 		return attr;
 	},
 
@@ -78,6 +78,7 @@ setName: function(newName) {
 		return this.xmlElement.textContent;
 	},
 setDefinition: function(src) {
+	this.xmlElement.textContent = ''; // fix for old change elements that were not using CDATA
 	var cdata = this.getOrCreateCDATANode();
 	cdata.data = src;
 },
