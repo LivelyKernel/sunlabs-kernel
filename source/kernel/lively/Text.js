@@ -2073,7 +2073,23 @@ BoxMorph.subclass('TextMorph', {
 
 		this.typingHasBegun = true;	 // For undo and select-all commands		
 	},
-	
+	modifySelectedLines: function(modifyFunc) {
+		// this function calls modifyFunc on each line that is selected
+		// modifyFunc can somehow change the line
+		// the selection grows/shrinks with the modifications
+		var lines = this.getSelectionString().split('\n')
+		// remember old sel because replace sets null selection
+		var start = this.selectionRange[0], end = this.selectionRange[1]+1, addToSel = 0;
+		for (var i = 0; i < lines.length; i++) {
+			var result = modifyFunc(lines[i], i);
+			var lengthDiff = result.length - lines[i].length;
+			addToSel += lengthDiff;
+			lines[i] = result;
+		}
+		var replacement = lines.join('\n');
+		this.replaceSelectionWith(replacement);
+		this.setSelectionRange(start, end + addToSel);
+	},
 	doCut: function() {
 		TextMorph.clipboardString = this.getSelectionString(); 
 		this.replaceSelectionWith("");
@@ -2307,10 +2323,13 @@ BoxMorph.subclass('TextMorph', {
 			case "z": { this.doUndo(); return true; }  // Undo
 		}
 
-		// Font Size
 		switch(evt.getKeyCode()) {
+			// Font Size
 			case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.fontSize*=0.8).roundTo(1)}); return true; }
 			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.fontSize*=1.2).roundTo(1)}); return true; }
+			// indent/outdent selection
+			case 221/*cmd+]*/: { this.indentSelection(); evt.stop(); return true }
+			case 219/*cmd+]*/: { this.outdentSelection(); evt.stop(); return true }
 		}
 
 		return false;
@@ -2340,7 +2359,16 @@ BoxMorph.subclass('TextMorph', {
 		this.emphasizeSelection( {color: color} );
 		this.requestKeyboardFocus(evt.hand);
 	},
-
+	indentSelection: function() {
+		var tab = '\t';
+		this.modifySelectedLines(function(line) { return line.length == 0 ? line : tab + line });
+	},
+	outdentSelection: function() {
+		var tab = '\t', space = ' ';
+		this.modifySelectedLines(function(line) {
+			return (line.startsWith(space) || line.startsWith(tab)) ? line.substring(1,line.length) : line
+		});
+	},
 	pvtCurrentLine: function() {
 		var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
 		if (lineNumber == -1) lineNumber = 0; 
