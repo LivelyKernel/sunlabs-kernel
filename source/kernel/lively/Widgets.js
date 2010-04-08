@@ -4671,5 +4671,139 @@ Widget.makeSlider = function(bounds, range) {
 	return slider
 }
 	
+/* 
+ * Replacement for PromptDialog Widget
+ *
+ */ 
+// TODO: get rid of the magic and repetitive layout numbers....
+PanelMorph.subclass("PromptDialogMorph", {
+
+	suppressHandles: true,
+
+	initialize: function($super, extent) {
+		extent = extent || pt(300,100);
+		$super(extent);
+
+		this.layoutManager = new VerticalLayout();
+
+		this.textPane = newTextPane(new Rectangle(0,0,300,100), "");
+		this.textPane.applyStyle({fill: Color.white});
+		this.textPane.innerMorph().applyStyle({fill: null});
+		this.textPane.innerMorph().owner.applyStyle({fill: null}); // clip
+
+		this.addMorph(this.textPane);
+
+		this.okButton = new ButtonMorph(new Rectangle(0,0,70,20));
+		this.okButton.setLabel("OK");
+		connect(this.okButton, "value", this, 'onAcceptButtonChanged');
+		connect(this, "onaccept", this, 'onAcceptFired');
+
+		this.cancelButton = new ButtonMorph(new Rectangle(0,0,70,20));
+		this.cancelButton.setLabel("Cancel");
+		connect(this.cancelButton, "value", this, 'onCancelButtonChanged');
+		connect(this, "oncancel", this, 'onCancelFired');
+
+		var pane = new BoxMorph();
+		pane.layoutManager = new HorizontalLayout();
+		pane.padding = new Rectangle(5,5,5,5);
+		pane.addMorph(this.cancelButton);
+		pane.addMorph(this.okButton);
+		pane.setBounds(pane.submorphBounds(true));
+		pane.setFill(null);
+
+		this.addMorph(pane);
+		this.buttonPane = pane;
+
+		this.title = "Prompt Dialog"
+
+		this.linkToStyles(["panel"]);
+
+		this.adjustForNewBounds();
+	},
+
+	setText: function(aString) {
+		this.textPane.innerMorph().setTextString(aString);
+	},
+
+	getText: function() {
+		return this.textPane.innerMorph().textString
+	},
+
+	onAcceptButtonChanged: function(value) {
+		if (!value) {
+			updateAttributeConnection(this, 'onaccept', this.getText());
+			this.removeWithWindow();
+		}
+	},
+
+	onCancelButtonChanged: function(value) {
+		if (!value) {
+			updateAttributeConnection(this, 'oncancel');
+			this.removeWithWindow();
+		}
+	},
+
+	adjustForNewBounds: function ($super) {
+		var newExtent = this.innerBounds().extent();
+
+		var offset = pt(5,this.buttonPane.getExtent().y + 15);
+
+		this.textPane.setExtent(newExtent.subPt(offset))
+		this.relayout();
+
+		// move Buttons 
+		var offset = this.shape.bounds().bottomRight().subPt(this.buttonPane.bounds().bottomRight())
+		this.buttonPane.moveBy(offset.subPt(pt(5,5)))
+	},
+	
+	openIn: function(world, loc) {
+        var win = world.addFramedMorph(this, this.title, loc);
+        this.textPane.innerMorph().requestKeyboardFocus(world.firstHand());
+        return win;
+    },
+
+	removeWithWindow: function(view) {
+		if (this.owner && (this.owner instanceof WindowMorph)) {
+			this.owner.remove()
+		} else {
+			this.remove()
+		}
+	},
+
+})
+
+// should these go to the tests?
+Morph.subclass("PromptDialogMorphExampleClientMorph", {
+
+	oncancel: function() {
+		console.log("oncancel")
+	},
+
+	onaccept: function(input ) {
+		console.log("onAcceptFired " + input);
+	}
+})
+
+Object.extend(PromptDialogMorph, {
+	openExample: function() {
+		if($morph('testPromptDialog'))
+			$morph('testPromptDialog').remove();
+		var morph = new PromptDialogMorph();
+
+		//morph.openInWorld();
+		var win = morph.openIn(WorldMorph.current(), pt(550,50));
+		win.setExtent(pt(300,300))
+		win.name = 'testPromptDialog';
+
+		// we need objects that are persistent and implement the behavior
+		var client = new PromptDialogMorphExampleClientMorph(new lively.scene.Rectangle(0,0,1,1));
+		morph.addMorph(client); // store it somewhere		
+
+		connect(morph, 'oncancel', client, 'oncancel');
+		connect(morph, 'onaccept', client, 'onaccept');
+	}
+})
+
+
 }.logCompletion('loaded Widgets.js')); // end using
 

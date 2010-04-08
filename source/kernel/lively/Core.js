@@ -1620,8 +1620,6 @@ Morph.addMethods({	// tmp copy
 	}
 });
 
-
-
 Morph.addMethods({  
 
     getOwnerWidget: function() {
@@ -1972,6 +1970,14 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 Morph.addMethods({
     
 	layoutManager: new LayoutManager(), // singleton
+
+	// Simple hack until the layout manager can relayout
+	relayout: function() {
+		var morphs = this.submorphs.clone();
+		var self  = this;
+		morphs.each(function(ea) {ea.remove()});
+		morphs.each(function(ea) {self.addMorph(ea)});
+	},
 
 	setBounds: function(newRect) {
 		//this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
@@ -4474,13 +4480,11 @@ PasteUpMorph.subclass("WorldMorph", {
 	}.logErrors('alert'),
 
     prompt: function(message, callback, defaultInput) {
-	var model = Record.newPlainInstance({Message: message, Input: defaultInput || "", Result: null});
-	model.addObserver({ 
-	    onResultUpdate: function(value) { 
-		if (value == true && callback) callback.call(Global, model.getInput());
-	    }});
-	var dialog = new PromptDialog(model.newRelay({Message: "-Message", Result: "+Result", Input: "Input"}));
-	dialog.openIn(this, this.positionForNewMorph());
+		var dialog = new PromptDialogMorph();
+		dialog.title = message;
+		dialog.setText(defaultInput);
+		dialog.onAcceptFired = callback;
+		dialog.openIn(this, this.positionForNewMorph());
     },
 
     confirm: function(message, callback) {
