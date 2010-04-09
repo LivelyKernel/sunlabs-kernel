@@ -136,6 +136,10 @@ Object.subclass('Change', {
 		return [];
 	},
 
+	subElementNamed: function(name) {
+		return this.subElements().detect(function(ea) { return ea.getName() == name });
+	},
+
 	parent: function() { return  new ClassChange(this.getXMLElement().parentNode) },
 
 	evaluate: function() {
@@ -152,12 +156,9 @@ Object.subclass('Change', {
     	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
 	},
 
-	// for world load support
-	isInitializer: Functions.False,
-	isWorldRequirementsList: Functions.False,
-
 });
 
+// Let Change act as a FileFragment for use in browser
 Change.addMethods({
 
 	flattened: function() {
@@ -190,15 +191,10 @@ Change.addMethods({
 	},
 	getFileString: function() { throw new Error('Not yet, sorry!') },
 });
-Object.extend(Change, {});
 
 Change.subclass('ChangeSet', {
 
-	initializerName: 'initializer',
-	requirementsName: 'local requirements',
-
-
-    initialize: function(optName) {
+	initialize: function(optName) {
 		// Keep track of an ordered list of Changes
 		this.xmlElement = null;
 		this.name = optName || '';
@@ -234,18 +230,18 @@ Change.subclass('ChangeSet', {
 		this.xmlElement = LivelyNS.create("code");
 		defNode.appendChild(this.xmlElement);
 	},
-findOrCreateDefNodeOfWorld: function(doc) {
-	var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').findFirst(doc);
-	if (!defNode) {
-		var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
+	
+	findOrCreateDefNodeOfWorld: function(doc) {
+		var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').findFirst(doc);
+		if (!defNode) {
+			var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
 			doc : new Query('.//*[@type="WorldMorph"]').findFirst(doc);
-		if (!worldNode) dbgOn(true);
-		defNode = NodeFactory.create('defs');
-		worldNode.appendChild(defNode); // null Namespace?
-	}
-	return defNode;
-},
-
+			if (!worldNode) dbgOn(true);
+			defNode = NodeFactory.create('defs');
+			worldNode.appendChild(defNode); // null Namespace?
+		}
+		return defNode;
+	},
 
 	addChange: function(change) {
 		this.addSubElement(change);
@@ -254,13 +250,13 @@ findOrCreateDefNodeOfWorld: function(doc) {
 	subElements: function() {
 		var parser = new AnotherCodeMarkupParser();
 		return $A(this.xmlElement.childNodes)
-			.collect(function(ea) { return parser.createChange(ea) })
-			.reject(function(ea) { return !ea });
+		.collect(function(ea) { return parser.createChange(ea) })
+		.reject(function(ea) { return !ea });
 	},
 
 	evaluate: function() {
 		this.subElements().forEach(function(item) { item.evaluate() });
-    },
+	},
 
 	removeChangeNamed: function(name) {
 		var change = this.subElementNamed(name);
@@ -281,73 +277,14 @@ findOrCreateDefNodeOfWorld: function(doc) {
 		this.subElements().invoke('remove');
 	},
 
-addOrChangeElementNamed: function(name, source) {
-	var prev = this.subElements().detect(function(ea) { ea.getName() == name});
-	if (prev) { prev.setDefinition(source); return }
-	this.addChange(DoitChange.create(source, name));
-},
-
-subElementNamed: function(name) {
-	return this.subElements().detect(function(ea) { return ea.getName() == name });
-},
-ensureHasInitializeScript: function() {
-	var initializer = this.subElementNamed(this.initializerName);
-	if (initializer) return;
-	var content = '// this script is evaluated on world load';
-	this.addOrChangeElementNamed(this.initializerName, content);
-},
-ensureHasWorldRequirements: function() {
-	var requirements = this.subElementNamed(this.requirementsName);
-	if (requirements) return;
-	var content = '[]';
-	this.addSubElement(
-		DoitChange.create(content, this.requirementsName),
-		this.subElementNamed(this.initializerName)); // insert before initializer
-},
-evaluateAllButInitializer: function() {
-	this.subElements()
-		.select(function(ea) { return ea.getName() !== this.initializerName && ea.getName() !== this.requirementsName && ea.automaticEvalEnabled() }, this)
-		.forEach(function(ea) { ea.evaluate() });
-},
-evaluateInitializer: function() {
-	this.subElementNamed(this.initializerName).evaluate();
-},
-evaluateWorldRequirements: function() {
-	var list = this.subElementNamed(this.requirementsName).evaluate();
-	Config.modulesBeforeWorldLoad = Config.modulesBeforeWorldLoad.concat(list);
-},
-ensureCompatibility: function() {
-	var ps = this.subElementNamed('postscript');
-	if (!ps) return;
-	ps.setName(this.initializerName);
-},
+	addOrChangeElementNamed: function(name, source) {
+		var prev = this.subElementNamed(name);
+		if (prev) { prev.setDefinition(source); return }
+		this.addChange(DoitChange.create(source, name));
+	},
 
 });
 
-Object.extend(ChangeSet, {
-
-	fromWorld: function(worldOrNode) {
-		var node = worldOrNode instanceof WorldMorph ?
-			worldOrNode.getDefsNode() :
-			worldOrNode;
-		var cs = new ChangeSet('Local code').initializeFromWorldNode(node);
-		cs.ensureCompatibility();
-		cs.ensureHasInitializeScript();
-		cs.ensureHasWorldRequirements();
-		return cs;
-	},
-
-	fromFile: function(fileName, fileString) {
-		return new ChangeSet(fileName).initializeFromFile(fileName, fileString);
-	},
-
-	current: function() {
-		// Return the changeSet associated with the current world
-		var worldOrNode = WorldMorph.current() || new Importer().canvasContent(Global.document)[0];
-		return ChangeSet.fromWorld(worldOrNode);
-	}
-
-});
 
 Change.subclass('ClassChange', {
 
@@ -379,20 +316,20 @@ Change.subclass('ClassChange', {
 			throw new Error('Could not find class ' + superClassName);
 		var className = this.getName();
 		if (Class.forName(className))
-			console.warn('Class' + klass + 'already defined! Evaluating class change regardless');
+			console.warn('Class ' + className + ' already defined! Evaluating class change regardless');
 		var src = Strings.format('%s.subclass(\'%s\')', superClassName, className);
 		var klass = eval(src);
 		this.getStaticChanges().concat(this.getProtoChanges()).forEach(function(ea) { ea.evaluate() });
 		return klass;
 	},
-asJs: function() {
-	var subElementString = '';
-	if (this.subElements().length > 0)
-		subElementString = this.subElements().invoke('asJs').join('\n\n');
-	return Strings.format('%s.subclass(\'%s\', {\n\n%s\n\n});',
-		this.getSuperclassName(), this.getName(), subElementString);
-},
-
+	
+	asJs: function() {
+		var subElementString = '';
+		if (this.subElements().length > 0)
+			subElementString = this.subElements().invoke('asJs').join('\n\n');
+		return Strings.format('%s.subclass(\'%s\', {\n\n%s\n\n});',
+			this.getSuperclassName(), this.getName(), subElementString);
+	},
 
 });
 
@@ -418,7 +355,7 @@ Change.subclass('ProtoChange', {
 	evaluate: function() {
 		var className = this.getClassName();
 		var klass = Class.forName(className);
-		if (!klass) new Error('Could not find class of proto change' + this.getName());
+		if (!klass) new Error('Could not find class of proto change ' + this.getName());
 		var src = Strings.format('%s.addMethods({%s: %s})', className, this.getName(), this.getDefinition());
 		eval(src);
 		return klass.prototype[this.getName()];
@@ -428,10 +365,10 @@ Change.subclass('ProtoChange', {
 		return this.getAttributeNamed('className')
 			|| this.getAttributeNamed('name', this.xmlElement.parentNode);
 	},
-asJs: function() {
-	return this.getName() + ': ' + this.getDefinition() + ',';
-},
 
+	asJs: function() {
+		return this.getName() + ': ' + this.getDefinition() + ',';
+	},
 
 });
 
@@ -553,4 +490,100 @@ Object.subclass('AnotherCodeMarkupParser', {
 
 });
 
+//
+// extensions for world load support
+//
+Change.addMethods({
+	isInitializer: Functions.False,
+	isWorldRequirementsList: Functions.False,
+})
+
+DoitChange.addMethods({
+	isInitializer: function() { return this.getName() === Change.initializerName },
+	isWorldRequirementsList: function() { return  this.getName() === Change.worldRequirementsListName },
+})
+
+Object.extend(Change, {
+	initializerName: 'initializer',
+	worldRequirementsListName: 'local requirements',
 });
+
+ChangeSet.addMethods({
+	
+	getInitializer: function() {
+		return this.subElements().detect(function(ea) { return ea.isInitializer() });
+	},
+	
+	getWorldRequirementsList: function() {
+		return this.subElements().detect(function(ea) { return ea.isWorldRequirementsList() });
+	},
+	
+	ensureHasInitializeScript: function() {
+		if (this.getInitializer()) return;
+		var content = '// this script is evaluated on world load';
+		this.addOrChangeElementNamed(Change.initializerName, content);
+	},
+	
+	ensureHasWorldRequirements: function() {
+		if (this.getWorldRequirementsList()) return;
+		var content = '// An array of module names that is loaded on world load\n[]';
+		this.addSubElement(
+			DoitChange.create(content, Change.worldRequirementsListName),
+			this.getInitializer()); // insert before initializer
+	},
+	
+	evaluateAllButInitializer: function() {
+		var changes = this.subElements();
+		for (var i = 0; i < changes.length; i++) {
+			var change = changes[i];
+			if (!change.isWorldRequirementsList() &&
+				!change.isInitializer() &&
+				change.automaticEvalEnabled())
+					change.evaluate();
+		}
+	},
+	
+	evaluateInitializer: function() {
+		this.getInitializer().evaluate();
+	},
+	
+	evaluateWorldRequirements: function() {
+		var list = this.getWorldRequirementsList().evaluate();
+		Config.modulesBeforeWorldLoad = Config.modulesBeforeWorldLoad.concat(list);
+	},
+	
+	ensureCompatibility: function() {
+		var ps = this.subElementNamed('postscript');
+		if (!ps) return;
+		ps.setName(Change.initializerName);
+	},
+	
+})
+
+Object.extend(ChangeSet, {
+
+	fromWorld: function(worldOrNode) {
+		var node = worldOrNode instanceof WorldMorph ?
+			worldOrNode.getDefsNode() :
+			worldOrNode;
+		var cs = new ChangeSet('Local code').initializeFromWorldNode(node);
+		cs.ensureCompatibility();
+		cs.ensureHasInitializeScript();
+		cs.ensureHasWorldRequirements();
+		return cs;
+	},
+
+	fromFile: function(fileName, fileString) {
+		return new ChangeSet(fileName).initializeFromFile(fileName, fileString);
+	},
+
+	current: function() {
+		// Return the changeSet associated with the current world
+		var worldOrNode = WorldMorph.current() || new Importer().canvasContent(Global.document)[0];
+		return ChangeSet.fromWorld(worldOrNode);
+	}
+
+});
+
+
+}); // end of module
