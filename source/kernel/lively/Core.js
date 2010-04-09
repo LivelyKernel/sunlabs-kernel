@@ -86,40 +86,35 @@ var Loader = {
     
     // from firebug lite
     function escapeHTML(value) {
-	return value;
+		return value;
 	
-	function replaceChars(ch) {
-	    switch (ch) {
-	    case "<":
-		return "&lt;";
-	    case ">":
-		return "&gt;";
-	    case "&":
-		return "&amp;";
-	    case "'":
-		return "&#39;";
-	    case '"':
-		return "&quot;";
-	    }
-	    return "?";
-	}
+		function replaceChars(ch) {
+			switch (ch) {
+				case "<": return "&lt;";
+				case ">": return "&gt;";
+				case "&": return "&amp;";
+				case "'": return "&#39;";
+				case '"': return "&quot;";
+			}
+			return "?";
+		}
 	
-	return String(value).replace(/[<>&"']/g, replaceChars); //KP: this comment to workaround a bug in my Emacs's javascript mode " ])
+		return String(value).replace(/[<>&"']/g, replaceChars); //KP: this comment to workaround a bug in my Emacs's javascript mode " ])
     }
     
-    function LogWindow() {
-	this.win = (function() { 
-	    var win = Global.window.open("", "log", "scrollbars,width=900,height=300"); 
-	    win.title = "Lively Kernel Log";
-	    win.document.write("<pre>"); 
-	    return win; 
-	})();
-	
-	this.log = function(msg) {
-	    if (!this.win) return;
-	    this.win.document.writeln(escapeHTML(msg));
-	}
-    };
+	function LogWindow() {
+		this.win = (function() { 
+			var win = Global.window.open("", "log", "scrollbars,width=900,height=300"); 
+			win.title = "Lively Kernel Log";
+			win.document.write("<pre>"); 
+			return win; 
+		})();
+
+		this.log = function(msg) {
+			if (!this.win) return;
+			this.win.document.writeln(escapeHTML(msg));
+		}
+	};
     
     var platformConsole = Global.window.console || ( Global.window.parent && Global.window.parent.console); 
     if (!platformConsole) {
@@ -136,46 +131,46 @@ var Loader = {
 	    
 	    consumers: [ platformConsole], // new LogWindow() ],
 	    
-	    warn: function() {
-		var args = $A(arguments);
-		this.consumers.forEach(function(c) { 
-		    if (c.warn) c.warn.apply(c, args); 
-		    else c.log("Warn: " + Strings.formatFromArray(args));
-		});
-	    },
+		warn: function() {
+			var args = $A(arguments);
+			this.consumers.forEach(function(c) { 
+				if (c.warn) c.warn.apply(c, args); 
+				else c.log("Warn: " + Strings.formatFromArray(args));
+			});
+		},
 	    
-	    info: function() {
-		var args = $A(arguments);
-		this.consumers.forEach(function(c) { 
-		    if (c.info) c.info.apply(c, args); 
-		    else c.log("Info: " + Strings.formatFromArray(args));
-		});
-	    },
+		info: function() {
+			var args = $A(arguments);
+			this.consumers.forEach(function(c) { 
+				if (c.info) c.info.apply(c, args); 
+				else c.log("Info: " + Strings.formatFromArray(args));
+			});
+		},
 	    
-	    log: function() {
-		this.consumers.invoke('log', Strings.formatFromArray($A(arguments)));
-	    },
+		log: function() {
+			this.consumers.invoke('log', Strings.formatFromArray($A(arguments)));
+		},
 	    
-	    assert: function(expr, msg) {
-		if (!expr) this.log("assert failed:" + msg);
-	    }
+		assert: function(expr, msg) {
+			if (!expr) this.log("assert failed:" + msg);
+		}
 	}
     
 })(); 
 
 Object.extend(Global.window, {
-    onerror: function(message, url, code) {
-	console.log('in %s: %s, code %s', url, message, code);
-    },
-    onbeforeunload: function(evt) { 
-	if (Config.askBeforeQuit) {
-	    var msg = "Lively Kernel data may be lost if not saved.";
-	    evt.returnValue = msg; 
-	    return msg;
-	} else return null;
-    }
-    // onblur: function(evt) { console.log('window got blur event %s', evt); },
-    // onfocus: function(evt) { console.log('window got focus event %s', evt); }
+	onerror: function(message, url, code) {
+		console.log('in %s: %s, code %s', url, message, code);
+	},
+	onbeforeunload: function(evt) { 
+		if (Config.askBeforeQuit) {
+			var msg = "Lively Kernel data may be lost if not saved.";
+			evt.returnValue = msg; 
+			return msg;
+		} else return null;
+	}
+	// onblur: function(evt) { console.log('window got blur event %s', evt); },
+	// onfocus: function(evt) { console.log('window got focus event %s', evt); }
 });
 
 
