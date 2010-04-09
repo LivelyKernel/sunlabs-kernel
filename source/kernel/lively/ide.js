@@ -1390,6 +1390,9 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetClassNode', {
 		return this.target.subElements().collect(function(ea) { return ea.asNode(this.browser)}, this);
 	}, 
 	
+	asString: function($super) {
+		return $super() + ' [class]';
+	},
 });
 
 ide.ChangeNode.subclass('lively.ide.ChangeSetClassElemNode', {
@@ -1409,7 +1412,7 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
 		return this.target.getDefinition();
 	},
 
-saveSource: function(newSource) {
+	saveSource: function(newSource) {
 		this.target.setDefinition(newSource);
 		this.savedSource = this.target.getDefinition();
         return true;
@@ -1428,6 +1431,9 @@ saveSource: function(newSource) {
 		return spec;
 	},
 
+	asString: function($super) {
+		return $super() + ' [doit]';
+	},
 });
 ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
 
@@ -1701,16 +1707,21 @@ addClass: function() {
 	var cs = this.getChangeSet();
 
 	var createChange = function(className, superClassName) {
-		var change = ClassChange.create(className, superClassName);
-		cs.addSubElement(change);
-		if (b.evaluate) change.evaluate();
-		b.allChanged();
+		try {
+			var change = ClassChange.create(className, superClassName);
+			cs.addSubElement(change);
+			if (b.evaluate) change.evaluate();
+			b.allChanged();
+		} catch(e) {
+			if (change) change.remove();
+			w.alert('Error when creating class:\n' + e);
+		}
 	}
 
 	w.prompt('Enter class name', function(n1) {
 		w.prompt('Enter super class name', function(n2) {
 			createChange(n1, n2);
-		})			
+		}, 'Object')			
 	});
 },
 addDoit: function() {
@@ -1718,10 +1729,15 @@ addDoit: function() {
 	var node = this;
 
 	var createChange = function() {
-		var change = DoitChange.create('// empty doit');
-		node.getChangeSet().addSubElement(change);
-		if (b.evaluate) change.evaluate();
-		b.allChanged();
+		try {
+			var change = DoitChange.create('// empty doit');
+			node.getChangeSet().addSubElement(change);
+			if (b.evaluate) change.evaluate();
+			b.allChanged();
+		} catch(e) {
+			if (change) change.remove();
+			w.alert('Error when creating foit:\n' + e);
+		}
 	}
 	createChange();
 },
