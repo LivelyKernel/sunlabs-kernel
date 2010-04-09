@@ -352,7 +352,7 @@ Object.extend(Function.prototype, {
 			shortName = "anonymous_" + (Class.anonymousCounter++);
 			className = shortName;
 		}
-	
+
 		if (className && targetScope[shortName] && (targetScope[shortName].superclass === this)) {
 			// preserve the class to allow using the subclass construct in interactive development
 			var klass = targetScope[shortName]; 
