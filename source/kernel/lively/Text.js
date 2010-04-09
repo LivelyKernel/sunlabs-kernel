@@ -1216,12 +1216,20 @@ BoxMorph.subclass('TextMorph', {
 		["undo (z)", this.doUndo.bind(this)],
 		["find (f)", this.doFind.bind(this)],
 		["find next (g)", this.doFindNext.bind(this)],
+		["find source (F)", this.doSearch.bind(this)],
 		["do it (d)", this.doDoit.bind(this)],
-		["printIt (p)", this.doPrintit.bind(this)],
+		["print it (p)", this.doPrintit.bind(this)],
+		["inspect it (I)", this.doInspect.bind(this)],
+		["print it (p)", this.doPrintit.bind(this)],
 		["accept changes (s)", this.doSave.bind(this)],
 		["color (o)", this.colorSelection.bind(this)],
 		["make link (u)", this.linkifySelection.bind(this)],
 		["help", this.doHelp.bind(this)],
+
+		// Typeface		
+		["make italic (i)", (function(){this.emphasizeBoldItalic({style: 'italic'})}).bind(this)],
+		["make bold (b)",  (function(){this.emphasizeBoldItalic({style: 'bold'})}).bind(this)],		
+
 		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
 		["evaluate as Lively markup", function() { 
 			var importer = new Importer();
