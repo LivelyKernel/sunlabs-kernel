@@ -32,27 +32,29 @@ Object.subclass('Change', {
 	initialize: function(xmlElement) {
 		this.xmlElement = xmlElement;
 	},
-eq: function(other) {
-	if (!other) return false;
-	if (this.constructor != other.constructor) return false;
-	if (this == other) return true;
-	return this.getXMLElement().isEqualNode(other.getXMLElement());
-},
+
+	eq: function(other) {
+		if (!other) return false;
+		if (this.constructor != other.constructor) return false;
+		if (this == other) return true;
+		return this.getXMLElement().isEqualNode(other.getXMLElement());
+	},
 
 
 	getXMLElement: function() {
 		return this.xmlElement;
 	},
-setXMLElement: function(newElement) {
-	var p = this.getXMLElement().parentNode;
-	var oldElement = this.getXMLElement()
-	if (!p) return;
-	if (p.ownerDocument)
-		newElement = p.ownerDocument.adoptNode(newElement);
-	p.insertBefore(newElement, oldElement);
-	p.removeChild(oldElement);
-	this.xmlElement = newElement;
-},
+	
+	setXMLElement: function(newElement) {
+		var p = this.getXMLElement().parentNode;
+		var oldElement = this.getXMLElement()
+		if (!p) return;
+		if (p.ownerDocument)
+			newElement = p.ownerDocument.adoptNode(newElement);
+		p.insertBefore(newElement, oldElement);
+		p.removeChild(oldElement);
+		this.xmlElement = newElement;
+	},
 
 
 	getParser: function() {
@@ -66,47 +68,52 @@ setXMLElement: function(newElement) {
 		return attr;
 	},
 
+	setAttributeNamed: function(name, value) {
+		var element = this.xmlElement;
+		var attr = element.setAttributeNS(null, name, value);
+	},
+
 	getName: function() {
 		return this.getAttributeNamed('name');
 	},
-setName: function(newName) {
-	this.getXMLElement().setAttributeNS(null, 'name', newName);
-},
+
+	setName: function(newName) {
+		this.getXMLElement().setAttributeNS(null, 'name', newName);
+	},
 
 
 	getDefinition: function() {
 		return this.xmlElement.textContent;
 	},
-setDefinition: function(src) {
-	this.xmlElement.textContent = ''; // fix for old change elements that were not using CDATA
-	var cdata = this.getOrCreateCDATANode();
-	cdata.data = src;
-},
-getOrCreateCDATANode: function() {
-	var e = this.getXMLElement();
-	var cdataType = e.CDATA_SECTION_NODE;
-	for (var i = 0; i < e.childNodes.length; i++)
-		if (e.childNodes[i].nodeType == cdataType)
-			return e.childNodes[i]
-	var cdata = NodeFactory.createCDATA();
-	this.getXMLElement().appendChild(cdata);
-	return cdata;
-},
 
-disableAutomaticEval: function() {
-	this.getXMLElement().setAttributeNS(null, 'automaticEval', 'false');
-},
-enableAutomaticEval: function() {
-	this.getXMLElement().setAttributeNS(null, 'automaticEval', 'true');
-},
-automaticEvalEnabled: function() {
-	return this.getAttributeNamed('automaticEval') != 'false';
-},
+	setDefinition: function(src) {
+		this.xmlElement.textContent = ''; // fix for old change elements that were not using CDATA
+		var cdata = this.getOrCreateCDATANode();
+		cdata.data = src;
+	},
 
+	getOrCreateCDATANode: function() {
+		var e = this.getXMLElement();
+		var cdataType = e.CDATA_SECTION_NODE;
+		for (var i = 0; i < e.childNodes.length; i++)
+			if (e.childNodes[i].nodeType == cdataType)
+				return e.childNodes[i]
+		var cdata = NodeFactory.createCDATA();
+		this.getXMLElement().appendChild(cdata);
+		return cdata;
+	},
 
+	disableAutomaticEval: function() {
+		this.getXMLElement().setAttributeNS(null, 'automaticEval', 'false');
+	},
+	enableAutomaticEval: function() {
+		this.getXMLElement().setAttributeNS(null, 'automaticEval', 'true');
+	},
+	automaticEvalEnabled: function() {
+		return this.getAttributeNamed('automaticEval') != 'false';
+	},
 
-
-addSubElement: function(change, insertBeforeChange) {
+	addSubElement: function(change, insertBeforeChange) {
 		var doc = this.xmlElement.ownerDocument;
 		var newElem = doc ? doc.importNode(change.getXMLElement(), true) : change.getXMLElement();
 		if (insertBeforeChange)
@@ -116,9 +123,8 @@ addSubElement: function(change, insertBeforeChange) {
 		change.xmlElement = newElem;
 		return change;
 	},
-addSubElements: function(elems) { elems.forEach(function(ea) { this.addSubElement(ea) }, this) },
 
-
+	addSubElements: function(elems) { elems.forEach(function(ea) { this.addSubElement(ea) }, this) },
 
 	remove: function() {
 		var elem = this.xmlElement;
@@ -129,8 +135,8 @@ addSubElements: function(elems) { elems.forEach(function(ea) { this.addSubElemen
 	subElements: function() {
 		return [];
 	},
-parent: function() { return  new ClassChange(this.getXMLElement().parentNode) },
 
+	parent: function() { return  new ClassChange(this.getXMLElement().parentNode) },
 
 	evaluate: function() {
 		throw dbgOn(new Error('Overwrite me'));
@@ -144,7 +150,12 @@ parent: function() { return  new ClassChange(this.getXMLElement().parentNode) },
 
     inspect: function() {
     	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
-	}
+	},
+
+	// for world load support
+	isInitializer: Functions.False,
+	isWorldRequirementsList: Functions.False,
+
 });
 
 Change.addMethods({
@@ -179,6 +190,7 @@ Change.addMethods({
 	},
 	getFileString: function() { throw new Error('Not yet, sorry!') },
 });
+Object.extend(Change, {});
 
 Change.subclass('ChangeSet', {
 
