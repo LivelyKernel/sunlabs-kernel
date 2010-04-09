@@ -2159,7 +2159,8 @@ BoxMorph.subclass('TextMorph', {
 		this.world() && this.world().prompt("Enter the text you wish to find...", 
 			function(response) {
 				return this.searchForFind(response, this.selectionRange[1]);
-			}.bind(this));
+			}.bind(this),
+			this.lastSearchString);
 	},
 
 	doFindNext: function() {
