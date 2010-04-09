@@ -2377,45 +2377,20 @@ BoxMorph.subclass('TextMorph', {
 	addOrRemoveComment: function() {
 		var commentRegex = /^(\s*)(\/\/\s*)(.*)/;
 		var spacesRegex = /^(\s*)(.*)/;
-		var lineReplacementFunc = function(line) {
+		var noSelection = this.hasNullSelection();
+
+		if (noSelection) { // select the current line
+			var line = this.pvtCurrentLine();
+			this.startSelection(line.startIndex);
+			this.extendSelection(line.getStopIndex());
+		}
+
+		this.modifySelectedLines(function(line) {
 			var commented = commentRegex.test(line);
 			if (commented)
 				return line.replace(commentRegex, '$1$3')
 			return line.replace(spacesRegex, '$1// $2')
-		}
-
-		if (!this.hasNullSelection()) { // add '//' to each line
-			this.modifySelectedLines(lineReplacementFunc);
-			return;
-		}
-		// get current line and add '//' in beginning
-		var line = this.pvtCurrentLineString();
-		line = line.substring(0, line.length - 1); // remove nl
-		line = lineReplacementFunc(line);
-		this.replaceCurrentLine(line);
-	},
-	
-	replaceCurrentLine: function(replacement) {
-		var nl = '\n'
-		var string = this.textString;
-		var pos = this.selectionRange[1];
-		var lineStart = pos, lineEnd = pos + 1;
-		var startFound = false, endFound = false;
-		while (!startFound && lineStart >= 0) {
-			if (string[lineStart] == nl)
-				startFound = true;
-			else
-				lineStart--
-		}
-		while (!endFound && lineEnd < string.length) {
-			if (string[lineEnd] == nl)
-				endFound = true;
-			else
-				lineEnd++
-		}
-		var before =  string.substring(0, lineStart + 1);
-		var after = string.substring(lineEnd, string.length);
-		this.updateTextString(before + replacement + after)
+		});
 	},
 	
 	pvtCurrentLine: function() {
