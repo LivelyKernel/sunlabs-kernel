@@ -4676,29 +4676,38 @@ Widget.makeSlider = function(bounds, range) {
  *
  */ 
 // TODO: get rid of the magic and repetitive layout numbers....
-PanelMorph.subclass("PromptDialogMorph", {
+BoxMorph.subclass("PromptDialogMorph", {
 
-	suppressHandles: true,
+    suppressHandles: true,
 
-	initialize: function($super, extent) {
-		extent = extent || pt(300,100);
-		$super(extent);
+	padding: new Rectangle(10,10,10,10),
+
+	initialize: function($super, bounds) {
+		bounds = bounds || new Rectangle(0,0,300,130);
+		$super(bounds);
 
 		this.layoutManager = new VerticalLayout();
 
-		this.textPane = newTextPane(new Rectangle(0,0,300,100), "");
+	
+		this.label =  new TextMorph(new Rectangle(0,0,20,10), '').beLabel();
+		connect(this, "title", this.label, 'setTextString');
+		this.label.padding = new Rectangle(0,10,0,0);
+		this.addMorph(this.label);
+		this.title = "Prompt Dialog"
+
+  		this.textPane = newTextPane(new Rectangle(0,0,300,100), "");
 		this.textPane.applyStyle({fill: Color.white});
 		this.textPane.innerMorph().applyStyle({fill: null});
 		this.textPane.innerMorph().owner.applyStyle({fill: null}); // clip
 
 		this.addMorph(this.textPane);
-
-		this.okButton = new ButtonMorph(new Rectangle(0,0,70,20));
+	
+        this.okButton = new ButtonMorph(new Rectangle(0,0,70,20));
 		this.okButton.setLabel("OK");
 		connect(this.okButton, "value", this, 'onAcceptButtonChanged');
 		connect(this, "onaccept", this, 'onAcceptFired');
 
-		this.cancelButton = new ButtonMorph(new Rectangle(0,0,70,20));
+        this.cancelButton = new ButtonMorph(new Rectangle(0,0,70,20));
 		this.cancelButton.setLabel("Cancel");
 		connect(this.cancelButton, "value", this, 'onCancelButtonChanged');
 		connect(this, "oncancel", this, 'onCancelFired');
@@ -4706,20 +4715,19 @@ PanelMorph.subclass("PromptDialogMorph", {
 		var pane = new BoxMorph();
 		pane.layoutManager = new HorizontalLayout();
 		pane.padding = new Rectangle(5,5,5,5);
-		pane.addMorph(this.cancelButton);
+  		pane.addMorph(this.cancelButton);
 		pane.addMorph(this.okButton);
 		pane.setBounds(pane.submorphBounds(true));
 		pane.setFill(null);
 
 		this.addMorph(pane);
 		this.buttonPane = pane;
-
-		this.title = "Prompt Dialog"
-
+			
 		this.linkToStyles(["panel"]);
-
+	
 		this.adjustForNewBounds();
 	},
+
 
 	setText: function(aString) {
 		this.textPane.innerMorph().setTextString(aString);
@@ -4745,8 +4753,10 @@ PanelMorph.subclass("PromptDialogMorph", {
 
 	adjustForNewBounds: function ($super) {
 		var newExtent = this.innerBounds().extent();
-
-		var offset = pt(5,this.buttonPane.getExtent().y + 15);
+	
+		var offset = pt(0,0);
+		offset = offset.addPt(pt(0, this.buttonPane.getExtent().y));		
+		offset = offset.addPt(pt(0, this.label.getExtent().y));
 
 		this.textPane.setExtent(newExtent.subPt(offset))
 		this.relayout();
@@ -4754,11 +4764,14 @@ PanelMorph.subclass("PromptDialogMorph", {
 		// move Buttons 
 		var offset = this.shape.bounds().bottomRight().subPt(this.buttonPane.bounds().bottomRight())
 		this.buttonPane.moveBy(offset.subPt(pt(5,5)))
+
 	},
 	
 	openIn: function(world, loc) {
-        var win = world.addFramedMorph(this, this.title, loc);
+		var useLightFrame = true;
+        var win = world.addFramedMorph(this, '', loc, useLightFrame);
         this.textPane.innerMorph().requestKeyboardFocus(world.firstHand());
+		win.adjustForNewBounds()
         return win;
     },
 
