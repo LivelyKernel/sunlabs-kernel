@@ -1043,6 +1043,11 @@ Object.subclass('WebResource', {
 
 	beAsync: function() { this._isSync = false; return this },
 
+	forceUncached: function() {
+		this._url = this.getURL().withQuery({time: new Date().getTime()});
+		return this;
+	},
+
 	getContent: function(rev, contentType) {
 		var resource = new SVNResource(
 			this.getURL().toString(),
