@@ -45,14 +45,14 @@ using(lively.Text).run(function(text) {
 
 BoxMorph.subclass('ButtonMorph', {
     
-    documentation: "Simple button",
+    documentation: "Simple button. Provides three connections: value, isActive, fire",
     focusHaloBorderWidth: 3, // override the default
     label: null,
     toggle: false, //if true each push toggles the model state 
     styleClass: ['button'],
     
     formals: ["Value", "IsActive"],
-
+	connections: ['value', 'isActive', 'fire'],
 
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
@@ -86,6 +86,7 @@ BoxMorph.subclass('ButtonMorph', {
 	},
 	setValue: function(bool) {
 		ModelMigration.set(this, 'Value', bool);
+		if (bool) updateAttributeConnection(this, 'fire');
 		this.value = bool;
 	},
 	
@@ -274,7 +275,8 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 		return this;
 	},
 
-	setValue: function(value) {
+	setValue: function($super, value) {
+		$super(value);
 		if (value) this.doAction();
 	},
 
@@ -306,7 +308,8 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 			function(input) { this.scriptSource = input }.bind(this),
 			this.scriptSource)
 	},
-editLabel: function() {
+	
+	editLabel: function() {
 		this.world().prompt(
 			'Edit label',
 			function(input) { this.setLabel(input) }.bind(this),
@@ -4682,35 +4685,48 @@ BoxMorph.subclass("PromptDialogMorph", {
 
 	padding: new Rectangle(10,10,10,10),
 
+	connections: ['accepted', 'canceled', 'title'],
+	
 	initialize: function($super, bounds) {
 		bounds = bounds || new Rectangle(0,0,300,130);
 		$super(bounds);
 
+		this.callback = null;
 		this.layoutManager = new VerticalLayout();
+		this.addTitle("Prompt Dialog");
+		this.addTextPane();
+		this.addButtons();
+		this.linkToStyles(["panel"]);
+		this.adjustForNewBounds();
+	},
 
-	
-		this.label =  new TextMorph(new Rectangle(0,0,20,10), '').beLabel();
+	addTitle: function(str) {
+		this.label =  new TextMorph(new Rectangle(0,0,20,10)).beLabel();
 		connect(this, "title", this.label, 'setTextString');
 		this.label.padding = new Rectangle(0,10,0,0);
 		this.addMorph(this.label);
-		this.title = "Prompt Dialog"
-
-  		this.textPane = newTextPane(new Rectangle(0,0,300,100), "");
+		this.title = str;
+		
+	},
+	
+	addTextPane: function() {
+		this.textPane = newTextPane(new Rectangle(0,0,300,100), "");
 		this.textPane.applyStyle({fill: Color.white});
 		this.textPane.innerMorph().applyStyle({fill: null});
 		this.textPane.innerMorph().owner.applyStyle({fill: null}); // clip
-
 		this.addMorph(this.textPane);
+	},
 	
-        this.okButton = new ButtonMorph(new Rectangle(0,0,70,20));
+	addButtons: function() {
+		this.okButton = new ButtonMorph(new Rectangle(0,0,70,20));
 		this.okButton.setLabel("OK");
-		connect(this.okButton, "value", this, 'onAcceptButtonChanged');
-		connect(this, "onaccept", this, 'onAcceptFired');
-
+		connect(this.okButton, "fire", this, 'removeWithWindow');
+		connect(this.okButton, "fire", this, 'onAcceptButtonFire');
+		
         this.cancelButton = new ButtonMorph(new Rectangle(0,0,70,20));
 		this.cancelButton.setLabel("Cancel");
-		connect(this.cancelButton, "value", this, 'onCancelButtonChanged');
-		connect(this, "oncancel", this, 'onCancelFired');
+		connect(this.cancelButton, "fire", this, 'removeWithWindow');
+		connect(this.cancelButton, "fire", this, 'canceled');
 
 		var pane = new BoxMorph();
 		pane.layoutManager = new HorizontalLayout();
@@ -4719,16 +4735,10 @@ BoxMorph.subclass("PromptDialogMorph", {
 		pane.addMorph(this.okButton);
 		pane.setBounds(pane.submorphBounds(true));
 		pane.setFill(null);
-
 		this.addMorph(pane);
-		this.buttonPane = pane;
-			
-		this.linkToStyles(["panel"]);
-	
-		this.adjustForNewBounds();
+		this.buttonPane = pane;    
 	},
-
-
+	
 	setText: function(aString) {
 		this.textPane.innerMorph().setTextString(aString);
 	},
@@ -4737,18 +4747,9 @@ BoxMorph.subclass("PromptDialogMorph", {
 		return this.textPane.innerMorph().textString
 	},
 
-	onAcceptButtonChanged: function(value) {
-		if (!value) {
-			updateAttributeConnection(this, 'onaccept', this.getText());
-			this.removeWithWindow();
-		}
-	},
-
-	onCancelButtonChanged: function(value) {
-		if (!value) {
-			updateAttributeConnection(this, 'oncancel');
-			this.removeWithWindow();
-		}
+	onAcceptButtonFire: function() {
+		this.callback && this.callback(this.getText());
+		updateAttributeConnection(this, 'accepted', this.getText())
 	},
 
 	adjustForNewBounds: function ($super) {
@@ -4775,7 +4776,7 @@ BoxMorph.subclass("PromptDialogMorph", {
         return win;
     },
 
-	removeWithWindow: function(view) {
+	removeWithWindow: function() {
 		if (this.owner && (this.owner instanceof WindowMorph)) {
 			this.owner.remove()
 		} else {
@@ -4793,7 +4794,7 @@ Morph.subclass("PromptDialogMorphExampleClientMorph", {
 	},
 
 	onaccept: function(input ) {
-		console.log("onAcceptFired " + input);
+		console.log("onaccept " + input);
 	}
 })
 
@@ -4812,8 +4813,8 @@ Object.extend(PromptDialogMorph, {
 		var client = new PromptDialogMorphExampleClientMorph(new lively.scene.Rectangle(0,0,1,1));
 		morph.addMorph(client); // store it somewhere		
 
-		connect(morph, 'oncancel', client, 'oncancel');
-		connect(morph, 'onaccept', client, 'onaccept');
+		connect(morph, 'canceled', client, 'oncancel');
+		connect(morph, 'accepted', client, 'onaccept');
 	}
 })
 

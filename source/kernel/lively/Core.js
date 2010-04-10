@@ -4478,7 +4478,7 @@ PasteUpMorph.subclass("WorldMorph", {
 		var dialog = new PromptDialogMorph();
 		dialog.title = message;
 		dialog.setText(defaultInput);
-		dialog.onAcceptFired = callback;
+		dialog.callback = callback;
 		dialog.openIn(this, this.positionForNewMorph());
     },
 

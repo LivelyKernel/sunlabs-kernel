@@ -146,7 +146,7 @@ toString: function() {
 AttributeConnection.addMethods({
 	toLiteral: function() {
 		if (!this.sourceObj.id || !this.targetObj.id)
-			throw new Error('Cannot serialize objects having no id');
+			throw dbgOn(new Error('Cannot serialize objects having no id'));
 
 		return {
 			sourceObj: this.sourceObj.id(),
