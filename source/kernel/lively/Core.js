@@ -2815,7 +2815,7 @@ Morph.addMethods({
 			["grab", this.pickMeUp.curry(evt)],
 			["drag", this.dragMe.curry(evt)],
 			["edit style", function() { new StylePanel(this).open()}],
-			["inspect", function(evt) { new SimpleInspector(this).openIn(this.world(), evt.point())}],
+			["inspect", function(evt) { new SimpleInspector(this).openIn(this.world())}],
 			["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
 				browser.openIn(this.world(), evt.point());
 				browser.getModel().setClassName(this.getType());}]
@@ -3403,7 +3403,7 @@ Morph.addMethods({
 		var txt = this.world().addTextWindow({
 			content: xml,
 			title: "XML dump", 
-			position: this.world().positionForNewMorph(this)
+			position: this.world().positionForNewMorph(null, this)
 		});
 		txt.innerMorph().xml = xml; // FIXME a sneaky way of passing original text.
 	},
@@ -3420,7 +3420,7 @@ Morph.addMethods({
 			this.world().addTextListWindow({
 				content: list,
 				title: "Simple Model dump",
-				position: this.world().positionForNewMorph(this)
+				position: this.world().positionForNewMorph(null, this)
 			});
 		}
 	}
@@ -4423,26 +4423,26 @@ PasteUpMorph.subclass("WorldMorph", {
         //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
     
-    openURLasText: function(url, title) {
-	// FIXME: This should be moved with other handy services like confirm, notify, etc
-	var model = Record.newPlainInstance({URL: url,  ContentText: null});
-	WorldMorph.current().addTextWindow({
-		content: "fetching ... ",
-		title: title,
-		plug: model.newRelay({Text: "-ContentText"}),
-		position: "center"
-	});
-	var res = new Resource(model);
-	res.fetch();
-    },
+	openURLasText: function(url, title) {
+		// FIXME: This should be moved with other handy services like confirm, notify, etc
+		var model = Record.newPlainInstance({URL: url,  ContentText: null});
+		WorldMorph.current().addTextWindow({
+			content: "fetching ... ",
+			title: title,
+			plug: model.newRelay({Text: "-ContentText"}),
+			position: "center"
+		});
+		var res = new Resource(model);
+		res.fetch();
+	},
 
-    viewport: function() {
-	try {
-	    return Rectangle.ensure(this.canvas().viewport);
-	} catch (er) { // FF doesn't implement viewport ?
-	    return this.shape.bounds();
-	}
-    },
+	viewport: function() {
+		try {
+			return Rectangle.ensure(this.canvas().viewport);
+			} catch (er) { // FF doesn't implement viewport ?
+			return this.shape.bounds();
+		}
+	},
 
 	alert: function(varargs) {
 		var fill = this.getFill();
@@ -4479,25 +4479,26 @@ PasteUpMorph.subclass("WorldMorph", {
 		dialog.title = message;
 		dialog.setText(defaultInput);
 		dialog.callback = callback;
-		dialog.openIn(this, this.positionForNewMorph());
+		dialog.openIn(this, this.positionForNewMorph(dialog));
     },
 
-    confirm: function(message, callback) {
-	var model = Record.newPlainInstance({Message: message, Result: null});
-	model.addObserver({ 
-	    onResultUpdate: function(value) { 
-		if (value && callback) callback.call(Global, value);
-	    }});
-	var dialog = new ConfirmDialog(model.newRelay({Message: "-Message", Result: "+Result"}));
-	dialog.openIn(this, this.positionForNewMorph());
-	return dialog;
-    },
+	confirm: function(message, callback) {
+		var model = Record.newPlainInstance({Message: message, Result: null});
+		model.addObserver({ 
+			onResultUpdate: function(value) { 
+				if (value && callback) callback.call(Global, value);
+			}});
+		var dialog = new ConfirmDialog(model.newRelay({Message: "-Message", Result: "+Result"}));
+		dialog.openIn(this, this.positionForNewMorph());
+		return dialog;
+	},
     
-    addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
-	var displ = pt(5, 5);
-	return this.addMorphAt(new WindowMorph(morph, title, optSuppressControls), 
-			       optLoc || this.positionForNewMorph().subPt(displ));
-    },
+	addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
+		var displ = pt(5, 5);
+		return this.addMorphAt(
+			new WindowMorph(morph, title, optSuppressControls), 
+			optLoc || this.positionForNewMorph(morph).subPt(displ));
+	},
 
 	addTextWindow: function(spec) {
 		// FIXME: typecheck the spec 
@@ -4511,58 +4512,63 @@ PasteUpMorph.subclass("WorldMorph", {
 		return pane;
 	},
 
-    addTextListWindow: function(spec) {
-	// FIXME: typecheck the spec 
-	if (spec instanceof Array) spec = {content: spec }; // convenience
-	var content = spec.content;
-	if (!content) content = "";
-	if (!(content instanceof Array)) content = [content];
-	var extent = spec.extent || pt(500, Math.min(300, content.length * TextMorph.prototype.fontSize * 1.5));
-	var rec = extent.extentAsRectangle();
-	var pane = this.internalAddWindow(newTextListPane(rec, content), spec.title, spec.position);
-	if (spec.plug) pane.connectModel(spec.plug, true);
-	return pane;
-    },
+	addTextListWindow: function(spec) {
+		// FIXME: typecheck the spec 
+		if (spec instanceof Array) spec = {content: spec }; // convenience
+		var content = spec.content;
+		if (!content) content = "";
+		if (!(content instanceof Array)) content = [content];
+		var extent = spec.extent || pt(500, Math.min(300, content.length * TextMorph.prototype.fontSize * 1.5));
+		var rec = extent.extentAsRectangle();
+		var pane = this.internalAddWindow(newTextListPane(rec, content), spec.title, spec.position);
+		if (spec.plug) pane.connectModel(spec.plug, true);
+		return pane;
+	},
 
-    internalAddWindow: function(pane, titleSpec, posSpec) {
-	var pos = (posSpec instanceof Point) ? posSpec : undefined;
-	pane.setBorderWidth(2);  pane.setBorderColor(Color.black);
-	var win = this.addFramedMorph(pane, String(titleSpec || ""), pos || this.firstHand().position().subPt(pt(5, 5)));
-	if (posSpec == "center") {
-	    win.align(win.bounds().center(), this.viewport().center());
-	}
-	return pane;
-    },
+	internalAddWindow: function(pane, titleSpec, posSpec) {
+		var pos = (posSpec instanceof Point) ? posSpec : undefined;
+		pane.setBorderWidth(2);  pane.setBorderColor(Color.black);
+		var win = this.addFramedMorph(pane, String(titleSpec || ""), pos || this.firstHand().position().subPt(pt(5, 5)));
+		if (posSpec == "center") {
+			win.align(win.bounds().center(), this.viewport().center());
+		}
+		return pane;
+	},
 
 
-    addMorphFrontOrBack: function($super, m, front) {
-	var oldTop = this.topWindow();
-	var result = $super(m, front);
-	if (!front || !(m instanceof WindowMorph)) return result;
-	// if adding a new window on top, then make it active
-        if (oldTop) oldTop.titleBar.highlight(false);
-	m.takeHighlight();
-  	return result;
-    },
+	addMorphFrontOrBack: function($super, m, front) {
+		var oldTop = this.topWindow();
+		var result = $super(m, front);
+		if (!front || !(m instanceof WindowMorph)) return result;
+		// if adding a new window on top, then make it active
+		if (oldTop) oldTop.titleBar.highlight(false);
+		m.takeHighlight();
+		return result;
+	},
 
-    topWindow: function() {
-	for (var i= this.submorphs.length - 1; i >= 0; i--) {
-	    var sub = this.submorphs[i];
-	    if (sub instanceof WindowMorph) return sub;
-	}
-	return null;
-    },
+	topWindow: function() {
+		for (var i= this.submorphs.length - 1; i >= 0; i--) {
+			var sub = this.submorphs[i];
+			if (sub instanceof WindowMorph) return sub;
+		}
+		return null;
+	},
 
-    positionForNewMorph: function(relatedMorph) {
-	// this should be much smarter than the following:
-	return relatedMorph ?
-	    relatedMorph.bounds().topLeft().addPt(pt(5, 0)) :
-	    this.firstHand().getPosition();
-    },
+	positionForNewMorph: function(newMorph, relatedMorph) {
+		// this should be much smarter than the following:
+		if (relatedMorph)
+			return relatedMorph.bounds().topLeft().addPt(pt(5, 0));
+		var pos = this.firstHand().getPosition();
+		if (!newMorph) return pos;
+		var viewRect = this.windowBounds();
+		var newMorphBounds = pos.extent(newMorph.getExtent());
+		if (viewRect.containsRect(newMorphBounds)) return pos;
+		return viewRect.center().subPt(newMorphBounds.extent().scaleBy(0.5));
+	},
 
-    reactiveAddMorph: function(morph, relatedMorph) { 	// add morph in response to a user action, make it prominent
-	return this.addMorphAt(morph, this.positionForNewMorph(relatedMorph));
-    },
+	reactiveAddMorph: function(morph, relatedMorph) { 	// add morph in response to a user action, make it prominent
+		return this.addMorphAt(morph, this.positionForNewMorph(morph, relatedMorph));
+	},
     
     resizeByUser: function() {
       var world = this;
@@ -4758,8 +4764,8 @@ WorldMorph.addMethods({
 		var world = this.world();
 		var toolMenuItems = [
 //			["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
-			["System code browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world, evt.point())})}],
-			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world, evt.point())})}],
+			["System code browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world)})}],
+			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world)})}],
 			["Wiki code Browser", function(evt) { require('lively.ide', 'lively.LKWiki').toRun(function(unused, ide) {
 				var cb = function(input) {
 					var repo = new URL(input);
@@ -4771,17 +4777,17 @@ WorldMorph.addMethods({
 				var cb = function(input) { ide.startSourceControl().switchCodeBase(new URL(input)) };
 				world.prompt('New code base?', cb, URL.source.getDirectory().toString());
 				})}],				
-			["File Browser", function(evt) { new FileBrowser().openIn(world, evt.point()) }],
-			["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world, evt.point()); }],	
+			["File Browser", function(evt) { new FileBrowser().openIn(world) }],
+			["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world); }],	
 			["Enable profiling", function() {
 					Config.debugExtras = true;
 					lively.lang.Execution.installStackTracers(); }],
-			["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console", evt.point()); }],
-			["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world, evt.point()) }) }],
-			["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().openIn(world, evt.point()); }) }],
+			["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
+			["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world) }) }],
+			["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().openIn(world); }) }],
 			["Call Stack Viewer", function(evt) { 
 			if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
-			else new StackViewer(this).openIn(world, evt.point()); }],	  
+			else new StackViewer(this).openIn(world); }],	  
 			["FrameRateMorph", function(evt) {
 				var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
 				m.startSteppingScripts(); }],
@@ -4790,13 +4796,13 @@ WorldMorph.addMethods({
 				m.startSteppingScripts(); }],
 			["XHTML Browser", function(evt) { 
 				var xeno = new XenoBrowserWidget('sample.xhtml');
-				xeno.openIn(world, evt.point()); }],
+				xeno.openIn(world); }],
 			["Viewer for latest file changes", function(evt) {
 			var cb = function(input) {
 				require('lively.LKWiki').toRun(function(u,m) {
 					var url = new URL(input);
 					console.log(url);
-					new LatestWikiChangesList(url).openIn(world, evt.point());
+					new LatestWikiChangesList(url).openIn(world);
 			}); }
 				world.prompt('Url to observe', cb, URL.source.getDirectory().toString()); 
 			}]
@@ -4822,8 +4828,8 @@ WorldMorph.addMethods({
 	scriptingSubMenuItems: function(evt) {
 		var world = this.world();
 		return [
-			["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world, evt.point()); }) }],
-			["Fabrik Component Box", function(evt) { require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox(world, evt.point()); }) }]
+			["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world); }) }],
+			["Fabrik Component Box", function(evt) { require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox(world); }) }]
 		];
 	},
 

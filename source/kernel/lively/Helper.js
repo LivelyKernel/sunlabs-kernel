@@ -262,7 +262,7 @@ Object.subclass('HandPositionObserver', {
     documentation: 'Observes position changes of a HandMorph and calls a function',
     
     initialize: function(func, hand) {
-        this.hand = hand || WorldMorph.current().hands.first();
+        this._hand = hand;
         this.func = func;
         return this;
     },
@@ -272,134 +272,172 @@ Object.subclass('HandPositionObserver', {
     },
 
     start: function() {
-        this.hand.formalModel.addObserver(this);
+        this.hand().formalModel.addObserver(this);
     },
 
     stop: function() {
-        this.hand.formalModel.removeObserver(this);
+        this.hand().formalModel.removeObserver(this);
     },
+	
+	hand: function() {
+		var hand = this._hand || WorldMorph.current().firstHand();
+		if (!hand) throw new Error('Cannot find hand in HandPositionObserver')
+		return hand
+	},
+
 });
 
 BoxMorph.subclass('lively.Helper.ToolDock', {
-    
-    initialize: function($super, bounds) {
-        $super(bounds || this.getWorld().bounds().withWidth(60));
-        this.handObserver = null;
-        this.applyStyle(this.style());
-    },
-    
-    style: function() {
-        return {fill: Color.blue, borderWidth: 0, fillOpacity: 0.3};
-    },
-    
-    startUp: function() {
-        this.addItems();
-        this.getWorld().addMorph(this);
-        this.showPosition = pt(this.getWorld().getExtent().x - this.getExtent().x, 0);
-        this.hidePosition = pt(this.getWorld().getExtent().x, 0);
-        this.setPosition(this.hidePosition);
-        this.triggerMoveTo(this.showPosition, this.activationArea());
-    },
-    
-    getWorld: function() {
-        return WorldMorph.current();
-    },
-    
-    activationArea: function() {
-        var relative = new Rectangle(0.95,0,0.05,1);
-        return this.getWorld().bounds().scaleByRect(relative);
-    },
-    
-    deactivationArea: function() {
-        var relative = new Rectangle(0,0,0.9,1);
-        return this.getWorld().bounds().scaleByRect(relative);
-    },
-    
-    triggerMoveTo: function(position, activeScreenArea) {
-        this.handObserver = new HandPositionObserver(function(point) {
-            if (!activeScreenArea.containsPoint(point)) return;
-            this.handObserver.stop();
-            this.moveGradually(
-                position,
-                8,
-                function() {
-                    if (position.eqPt(this.showPosition))
-                        this.triggerMoveTo(this.hidePosition, this.deactivationArea())
-                    else
-                        this.triggerMoveTo(this.showPosition, this.activationArea())
-                });
-        }.bind(this));
-        this.handObserver.start();
-    },
-        
-    moveGradually: function(targetPos, steps, actionWhenDone) {
-        var dock = this;
-        var vect = targetPos.subPt(this.getPosition());
-        var stepVect = vect.scaleBy(1/steps);
-        var stepTime = 10;
-        var makeStep = function(remainingSteps) {
-            if (remainingSteps <= 0) return actionWhenDone.apply(dock);
-            dock.moveBy(stepVect);
-            Global.setTimeout(makeStep.curry(remainingSteps-1), stepTime);
-        };
-        Global.setTimeout(makeStep.curry(steps), stepTime);
-    },
-    
-    okToBeGrabbedBy: function(evt) {
-        return null; 
-    },
-    
-    addItems: function() {
-        var dock = this;
-        this.items().each(function(ea) {
-            var button = new TextMorph(new Rectangle(0,0, dock.getExtent().x, 30), ea.label);
-            button.handlesMouseDown = function(evt) {
-                return true;
-            },
-            button.onMouseDown = function(evt) {
-                ea.action.call(dock, evt);
-                return true;
-            },
-            dock.addMorph(button);
-        });
-        new VLayout(dock, {noResize: true}).layout();
-    },
-    
-    items: function() {
-        return [
-            {label: 'SystemBrowser', action: function(evt) {
-                require('lively.ide').toRun(function(unused, ide) {
-                    var browserMorph = new ide.SystemBrowser().openIn(evt.hand.world(), evt.point());
-                    evt.hand.grabMorph(browserMorph, evt)
-                })}},
-            {label: 'TextWindow', action: function(evt) {
-				var morph = evt.hand.world().addTextWindow({title: 'doit!', position: evt.point()});
-				evt.hand.grabMorph(morph.owner, evt)
-				//evt.hand.addMorph(morph);
-			}},
-            {label: 'OMeta Workspace', action: function(evt) {
-                require('lively.Ometa').toRun(function() {
-                    var wrkspc = new OmetaWorkspace().openIn(evt.hand.world(), evt.point());
-                    evt.hand.grabMorph(wrkspc, evt);
-			})}},
-            {label: 'TestRunner', action: function(evt) {
-				var openTestRunner = function(optModule) {
-					var morph = new TestRunner(optModule).openIn(evt.hand.world(), evt.point());
-					evt.hand.addMorph(morph);
-				}
-				var cb = function(input) {
-					if (input === '') openTestRunner();
-					var m = module(input);
-					var url = new URL(m.uri());
-					if (new FileDirectory(url.getDirectory()).fileOrDirectoryExists(url.filename()))
-						require(input).toRun(function(u, m) { openTestRunner(m) });
-					else
-						evt.hand.world().prompt('Module ' + input + ' does not exist', cb, input);
-				}
-				evt.hand.world().prompt('For which module? None for all', cb);
-			}},
-        ]
-    }
+
+	style: function() {
+		return {fill: Color.blue, borderWidth: 0, fillOpacity: 0.3};
+	},
+
+	initialize: function($super, bounds) {
+		$super(bounds || this.world().bounds().withWidth(90));
+		this.handObserver = null;
+		this.applyStyle(this.style());
+	},
+	
+	onDeserialize: function() {
+		/*        this.showPosition = pt(this.world().getExtent().x - this.getExtent().x, 0);
+		this.hidePosition = pt(this.world().getExtent().x, 0);
+		this.setPosition(this.hidePosition); */
+		(function restore() {
+			try {
+				this.triggerMoveTo(this.showPosition, this.activationArea());
+			} catch (e) {
+				console.warn('cannot deserialize ToolDock. Removing it...');
+				this.remove();
+			}			
+		}).bind(this).delay(2);
+	},
+
+
+	startUp: function() {
+		this.addItems();
+		this.world().addMorph(this);
+		this.showPosition = pt(this.world().getExtent().x - this.getExtent().x, 0);
+		this.hidePosition = pt(this.world().getExtent().x, 0);
+		this.setPosition(this.hidePosition);
+		this.triggerMoveTo(this.showPosition, this.activationArea());
+	},
+
+	world: function($super) {
+		var world = $super() || WorldMorph.current();
+		if (!world) throw new Error('Cannot access world in TollDock');
+		return world;
+	},
+
+	activationArea: function() {
+		var relative = new Rectangle(0.95,0,0.05,1);
+		return this.world().bounds().scaleByRect(relative);
+	},
+
+	deactivationArea: function() {
+		var relative = new Rectangle(0,0,0.9,1);
+		return this.world().bounds().scaleByRect(relative);
+	},
+
+	triggerMoveTo: function(position, activeScreenArea) {
+		this.handObserver = new HandPositionObserver(function(point) {
+			
+			
+			if (!activeScreenArea.containsPoint(point)) return;
+			this.handObserver.stop();
+			this.moveGradually(
+				position,
+				8,
+				function() {
+					position.eqPt(this.showPosition) ?
+						this.triggerMoveTo(this.hidePosition, this.deactivationArea()) :
+						this.triggerMoveTo(this.showPosition, this.activationArea()) }
+			);
+				
+		}.bind(this));
+		this.handObserver.start();
+	},
+
+	moveGradually: function(targetPos, steps, actionWhenDone) {
+		var dock = this;
+		var vect = targetPos.subPt(this.getPosition());
+		var stepVect = vect.scaleBy(1/steps);
+		var stepTime = 10;
+		var makeStep = function(remainingSteps) {
+			if (remainingSteps <= 0) return actionWhenDone.apply(dock);
+			dock.moveBy(stepVect);
+			Global.setTimeout(makeStep.curry(remainingSteps-1), stepTime);
+		};
+		Global.setTimeout(makeStep.curry(steps), stepTime);
+	},
+
+	okToBeGrabbedBy: function(evt) {
+		return null; 
+	},
+
+	addItems: function() {
+		var dock = this;
+		require('lively.bindings').toRun(function() {
+			dock.actions().each(function(action) {
+				var button = new ButtonMorph(new Rectangle(0,0, dock.getExtent().x, 30));
+				button.setLabel(action.label);
+				connect(button, 'fire', dock, action.method);
+				dock.addMorph(button);
+			});
+			new VLayout(dock, {noResize: true}).layout();
+		})
+	},
+
+});
+
+lively.Helper.ToolDock.addMethods({
+	// define actions
+	actions: function() { return [
+		{label: 'SystemBrowser', method: 'openSystemBrowser'},
+		{label: 'TextWindow', method: 'openTextWindow'},
+		{label: 'OMeta', method: 'openOMeta'},
+		{label: 'TestRunner', method: 'openTestRunner'},
+		{label: 'TextWindow', method: 'openTextWindow'}]
+	},
+
+	openSystemBrowser: function(evt) {
+		require('lively.ide').toRun(function(unused, ide) {
+			var browserMorph = new ide.SystemBrowser().openIn(this.world());
+			browserMorph.setPosition(WorldMorph.current().firstHand().getPosition())
+			this.world().firstHand().addMorphAsGrabbed(browserMorph)
+		}.bind(this))
+	},
+
+	openTextWindow: function() {
+		var morph = this.world().addTextWindow({title: 'doit!'});
+		this.world().firstHand().addMorphAsGrabbed(morph.owner);
+	},
+
+	openOMeta: function() {
+		require('lively.Ometa').toRun(function() {
+			var wrkspc = new OmetaWorkspace().openIn(this.world());
+			this.world().firstHand().addMorphAsGrabbed(wrkspc);
+		}.bind(this))
+	},
+
+	openTestRunner: function() {
+		var openTestRunner = function(optModule) {
+			var morph = new TestRunner(optModule).openIn(this.world());
+			this.world().firstHand().addMorphAsGrabbed(morph);
+		}.bind(this)
+		var cb = function(input) {
+			if (!input) { openTestRunner(); return };
+			var m = module(input);
+			var url = new URL(m.uri());
+			if (new FileDirectory(url.getDirectory()).fileOrDirectoryExists(url.filename()))
+				require(input).toRun(function(u, m) { openTestRunner(m) });
+			else
+				this.world().prompt('Module ' + input + ' does not exist', cb, input);
+		}.bind(this)
+		this.world().prompt('For which module? None for all', cb);
+	},
+
+
 });
 Widget.subclass('DragAndDropListTester', {
 	formals: ["List1", "List2"],

@@ -73,25 +73,25 @@ BoxMorph.subclass('PackageMorph', {
         world.addMorphAt(this, loc);
     },
     
-    morphMenu: function($super, evt) { 
-        var menu = $super(evt);
-        menu.replaceItemNamed("package", ["unpackage", function(evt) { 
-	    this.unpackageAt(this.getPosition()); 
-	}]);
-	menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
-	    this.world().addTextWindow({
-		content: Exporter.stringify(this.serialized),
-		title: "XML dump",
-		position: this.world().positionForNewMorph(this)
-	    });
-	}]);
-	
-	menu.replaceItemNamed("publish packaged ...", ["save packaged morph as ... ", function() { 
-	    var node = this.serialized;
-	    this.world().prompt("save packaged morph as (.xhtml)", function(filename) { 
-		filename && Exporter.saveNodeToFile(node, filename) })}]);
-        return menu;
-    },
+	morphMenu: function($super, evt) { 
+		var menu = $super(evt);
+		menu.replaceItemNamed("package", ["unpackage", function(evt) { 
+			this.unpackageAt(this.getPosition()); 
+		}]);
+		menu.replaceItemNamed("show Lively markup", ["show packaged Lively markup", function(evt) {
+			this.world().addTextWindow({
+				content: Exporter.stringify(this.serialized),
+				title: "XML dump",
+				position: this.world().positionForNewMorph(null, this)
+			});
+		}]);
+		menu.replaceItemNamed("publish packaged ...", ["save packaged morph as ... ", function() { 
+			var node = this.serialized;
+			this.world().prompt("save packaged morph as (.xhtml)", function(filename) { 
+				filename && Exporter.saveNodeToFile(node, filename) })
+		}]);
+		return menu;
+	},
 
     unpackageAt: function(loc) {
 	if (!this.serialized) {
