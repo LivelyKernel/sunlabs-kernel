@@ -5384,6 +5384,8 @@ Morph.subclass("HandMorph", {
 	},
 	
 	forgetKeyDown: function(evt) {
+		if (!this.keysDown)
+			return;
 		this.keysDown[evt.getKeyChar()] = false;
 		// hack, around weired events when command is pressed
 		if (evt.getKeyCode() == 91) {
