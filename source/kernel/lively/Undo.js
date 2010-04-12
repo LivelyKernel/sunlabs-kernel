@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-using(lively.UndoHistory).requires(['cop.Layers']).run(function() {
+module("lively.Undo").requires(['cop.Layers']).run(function() {
 
 Object.subclass("UndoHistory", {
 	initialize: function() {
