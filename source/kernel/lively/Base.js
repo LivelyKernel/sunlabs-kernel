@@ -1106,7 +1106,8 @@ Object.extend(Function.prototype, {
 				if (prefix) console.warn("ERROR: %s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
 				else console.warn("ERROR: %s %s", er, er.stack || "");
 				logStack();
-				console.warn("details: " + printObject(er));
+				if (Global.printObject)
+					console.warn("details: " + printObject(er));
 				// lively.lang.Execution.showStack();
 				throw er;
 			}

@@ -4489,7 +4489,18 @@ PasteUpMorph.subclass("WorldMorph", {
 		menu.scaleBy(2.5);
 	}.logErrors('alert'),
 
-    prompt: function(message, callback, defaultInput) {
+	prompt: function(message, callback, defaultInput) {
+		var model = Record.newPlainInstance({Message: message, Input: defaultInput || "", Result: null});
+		model.addObserver({ 
+			onResultUpdate: function(value) { 
+				if (value == true && callback) callback.call(Global, model.getInput());
+			}
+		});
+		var dialog = new PromptDialog(model.newRelay({Message: "-Message", Result: "+Result", Input: "Input"}));
+		dialog.openIn(this, this.positionForNewMorph());
+	},
+
+    editPrompt: function(message, callback, defaultInput) {
 		var dialog = new PromptDialogMorph();
 		dialog.title = message;
 		dialog.setText(defaultInput);
@@ -4640,13 +4651,21 @@ WorldMorph.addMethods({
 		return topLeft.extent(pt(width, height))
 	},
 
-	setStatusMessage: function(msg, color, delay) {
+	setStatusMessage: function(msg, color, delay, callback) {
 		console.log("status msg: " + msg)
 		var statusMorph = this._statusMorph || new TextMorph(pt(400,30).extentAsRectangle());
 		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.5});
 		statusMorph.textString = msg;
 		statusMorph.setTextColor(color || Color.black);
-		statusMorph.ignoreEvents();
+	
+		if (callback) {
+			statusMorph.enableEvents();
+			statusMorph.handlesMouseDown = Functions.True;
+			statusMorph.onMouseDown = callback;
+			statusMorph.onMouseMove = Functions.NULL;
+		} else {
+			statusMorph.ignoreEvents();
+		}
 		this.addMorph(statusMorph);
 		statusMorph.align(statusMorph.bounds().topRight(), this.windowBounds().topRight());
 		(function removeStatusMorph() { statusMorph.remove() }).delay(delay || 4);

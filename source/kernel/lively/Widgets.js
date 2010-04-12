@@ -79,11 +79,14 @@ BoxMorph.subclass('ButtonMorph', {
 
 	// FIXME interference with old model on connectModel/relayToModel???
 	getIsActive: function() { return this.isActive },
+	
 	getValue: function() { return this.value },
+	
 	setIsActive: function(bool) {
 		ModelMigration.set(this, 'IsActive', bool);
 		this.isActive = bool;
 	},
+	
 	setValue: function(bool) {
 		ModelMigration.set(this, 'Value', bool);
 		if (bool) updateAttributeConnection(this, 'fire');
@@ -195,11 +198,12 @@ BoxMorph.subclass('ButtonMorph', {
         this.addMorph(this.label);
         return this;
     },
-getLabel: function() {
-	if (!this.label) return '';
-	return this.label.textString
-    },
 
+	getLabel: function() {
+		if (!this.label) 
+			return '';
+		return this.label.textString
+	},
 
 	buttonAction: function(funcOrSelector, target) {
 		this.connectModel({
@@ -214,22 +218,6 @@ getLabel: function() {
 	}
 });
 
-Object.extend(ButtonMorph, {
-    boundsLabelAction: function(bnds, label, downAction, upAction) {
-	var b = new ButtonMorph(bnds);
-	b.setLabel(label);
-	b.getThisValue = function() { return this.onState; };
-	b.setThisValue = function(bool) {
-		this.onState = bool;
-		if (this.onState && downAction) downAction.call(b.owner);
-		if (!this.onState && upAction) upAction.call(b.owner);
-		};
-	// button is its own model in this case
-	b.connectModel({model: b, getValue: "getThisValue", setValue: "setThisValue"});
-	return b; }
-});
-
-
 Morph.subclass('ButtonBehaviorMorph', {
     
     documentation: "***under construction***",
@@ -240,27 +228,27 @@ Morph.subclass('ButtonBehaviorMorph', {
     mouseDownAction: function (evt) {},
     mouseUpAction: function (evt) {}, 
 
-    initialize: function($super, targetMorph) {
-    // A ButtonBehaviorMorph can be put over any morph or part of a morph
-    // It can show a halo on rollover, and can act on mouseDown and mouseUp
-    // At some point we'll unify this with ButtonMorph as a simplification
-    // It should be possible to say
-    //	<anyMorph>.addButtonBehavior({onMouseDown: function...})
-    //	<anyMorph>.addButtonBehavior({onMouseUp: function...})
-    // And it should be possible to say to either the morph or its behaviorMorph
-    //	<eitherOne>.disableButtonBehavior()
-    //	<eitherOne>.ebableButtonBehavior()
+	initialize: function($super, targetMorph) {
+		// A ButtonBehaviorMorph can be put over any morph or part of a morph
+		// It can show a halo on rollover, and can act on mouseDown and mouseUp
+		// At some point we'll unify this with ButtonMorph as a simplification
+		// It should be possible to say
+		//	<anyMorph>.addButtonBehavior({onMouseDown: function...})
+		//	<anyMorph>.addButtonBehavior({onMouseUp: function...})
+		// And it should be possible to say to either the morph or its behaviorMorph
+		//	<eitherOne>.disableButtonBehavior()
+		//	<eitherOne>.ebableButtonBehavior()
 
-console.log("new ButtonBehaviorMorph 1 " + Object.inspect(this.shape));
-        $super(targetMorph.shape.copy());
-console.log("new ButtonBehaviorMorph 2 " + Object.inspect(this.shape));
+		console.log("new ButtonBehaviorMorph 1 " + Object.inspect(this.shape));
+		$super(targetMorph.shape.copy());
+		console.log("new ButtonBehaviorMorph 2 " + Object.inspect(this.shape));
 		//this.setBounds(targetMorph.innerBounds());
-console.log("new ButtonBehaviorMorph 3 " + Object.inspect(this.shape));
+		console.log("new ButtonBehaviorMorph 3 " + Object.inspect(this.shape));
 
-        // Styling
-        // this.linkToStyles(['buttonBehavior']);
+		// Styling
+		// this.linkToStyles(['buttonBehavior']);
 		return this;
-    },
+	},
 
     last: function () {}
 });
@@ -289,8 +277,18 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 			var func = eval(this.getSourceForEval());
 			func.apply(this, [] /*arg array*/);
 		} catch(e) {
-			console.log("error in script button: " + e + " script: " + this.scriptSource)
-			throw e;
+			var self = this;
+			this.world().setStatusMessage(
+				"ScriptButton: " + e + "\non line: " + e.line + "\nscript: \n" + this.scriptSource,  
+				Color.red, 4,
+				function() {
+					var prompt = self.editScript();
+					
+					
+					}
+			)
+			
+			//throw e;
 		}
 	},
 
@@ -303,7 +301,13 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 	},
 
 	editScript: function() {
-		this.world().prompt(
+		// var dialog = new PromptDialogMorph();
+		// dialog.title = 'Edit script';
+		// dialog.setText(this.scriptSource);
+		// dialog.callback = function(input) { this.scriptSource = input }.bind(this);
+		// dialog.openIn(this, WorldMorph.current().positionForNewMorph(dialog));
+		// return dialog;
+		this.world().editPrompt(
 			'Edit script',
 			function(input) { this.scriptSource = input }.bind(this),
 			this.scriptSource)
@@ -320,68 +324,69 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 
 BoxMorph.subclass("ImageMorph", {
 
-    documentation: "Image container",
-    style:{ borderWidth: 0, fill:Color.blue.lighter() },
-    formals: ["-URL"],
-    
-    initialize: function($super, viewPort, url) {
-        $super(viewPort);
-        this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
-        console.log("making an image from: " + url);
-        if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
-    },
+	documentation: "Image container",
+	style:{ borderWidth: 0, fill:Color.blue.lighter() },
+	formals: ["-URL"],
 
-    // FIXME:
-    restoreFromSubnode: function($super, importer, node) /*:Boolean*/ {
-        if ($super(importer, node)) return true;
+	initialize: function($super, viewPort, url) {
+		$super(viewPort);
+		this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
+		console.log("making an image from: " + url);
+		if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
+	},
 
-        switch (node.localName) {
-        case "image":
-        case "use":
-           this.image = new lively.scene.Image(importer, node);
-           return true;
-        default:
-            console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
-            return false;
-        }
-    },
-    
-    loadGraphics: function(localURL) {
-        this.setFill(null);
-        var node = this.image.loadUse(localURL);
-        node && this.addNonMorph(node);
-    },
+	// FIXME:
+	restoreFromSubnode: function($super, importer, node) /*:Boolean*/ {
+		if ($super(importer, node)) return true;
 
-    loadFromURL: function(url) {
-        //this.setFill(this.background);
-        var node = this.image.loadImage(url.toString());
-        node && this.addNonMorph(node);
-    },
+		switch (node.localName) {
+			case "image":
+			case "use":
+			this.image = new lively.scene.Image(importer, node);
+			return true;
+			default:
+			console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
+			return false;
+		}
+	},
 
-    reload: function() {
-        this.image.reload();
-    },
+	loadGraphics: function(localURL) {
+		this.setFill(null);
+		var node = this.image.loadUse(localURL);
+		node && this.addNonMorph(node);
+	},
 
-    onURLUpdate: function(url) {
-	this.loadFromURL(url);
-    },
-    
-    updateView: function(aspect, controller) {
-        var p = this.modelPlug;
-        if (!p) return;
-        if (aspect == p.getURL) {
-	    this.onURLUpdate(this.getURL());
-	}
-    },
+	loadFromURL: function(url) {
+		//this.setFill(this.background);
+		var node = this.image.loadImage(url.toString());
+		node && this.addNonMorph(node);
+	},
+
+	reload: function() {
+		this.image.reload();
+	},
+
+	onURLUpdate: function(url) {
+		this.loadFromURL(url);
+	},
+
+	updateView: function(aspect, controller) {
+		var p = this.modelPlug;
+		if (!p) return;
+		if (aspect == p.getURL) {
+			this.onURLUpdate(this.getURL());
+		}
+	},
 
 	moveOriginBy: function($super, delta) {
 		$super(delta);
 		if (!this.image) return;
 		this.image.setLengthTrait("x", (this.image.getLengthTrait("x") || 0) - delta.x);
 		this.image.setLengthTrait("y", (this.image.getLengthTrait("y") || 0) - delta.y);
-    },
+	},
 
 	setOpacity: function(op) { this.image.setOpacity(op); },
+
 	getOpacity: function(op) { return this.image.getOpacity(op); },
 
 });
@@ -443,31 +448,31 @@ BoxMorph.subclass("ClipMorph", {
 	    }
     },
 
-    setBounds: function($super, bnds) { // this reshapes
-	$super(bnds);
-	this.clip.setClipShape(this.shape);
-    },
+	setBounds: function($super, bnds) { // this reshapes
+		$super(bnds);
+		this.clip.setClipShape(this.shape);
+	},
 
-    bounds: function(ignoreTransients) {
-	// intersection  of its shape and its children's shapes
-	if (!this.fullBounds) {
-	    var tfm = this.getTransform();
-	    var bounds = this.shape.bounds();
-	    // ClipMorph bounds are independent of subMorphs
-	    this.fullBounds = tfm.transformRectToRect(bounds);
-	}
-	return this.fullBounds;
-    },
-    
-    innerMorph: function() {
-        this.submorphs.length != 1 && console.log("not a single inner morph");
-        return this.submorphs.first();
-    },
+	bounds: function(ignoreTransients) {
+		// intersection  of its shape and its children's shapes
+		if (!this.fullBounds) {
+			var tfm = this.getTransform();
+			var bounds = this.shape.bounds();
+			// ClipMorph bounds are independent of subMorphs
+			this.fullBounds = tfm.transformRectToRect(bounds);
+		}
+		return this.fullBounds;
+	},
 
-    layoutOnSubmorphLayout: function() {
-	return false;
-    },
-    
+	innerMorph: function() {
+		this.submorphs.length != 1 && console.log("not a single inner morph");
+		return this.submorphs.first();
+	},
+
+	layoutOnSubmorphLayout: function() {
+		return false;
+	},
+
 	copyFrom: function($super, copier, other) {
 		$super(copier, other);
 		this.setupClipNode();
@@ -495,17 +500,17 @@ Morph.subclass('HandleMorph', {
     helpCount: 0,
     isEpimorph: true,
     
-    initialize: function($super, location, shapeType, hand, targetMorph, partName) {
-        $super(new shapeType(location.asRectangle().expandBy(5)));
-	
-        this.targetMorph = targetMorph;
-        this.partName = partName; // may be a name like "topRight" or a vertex index
-        this.initialScale = null;
-        this.initialRotation = null; 
-	this.mode = null;
-	this.rollover = true;  // the default
-        return this;
-    },
+	initialize: function($super, location, shapeType, hand, targetMorph, partName) {
+		$super(new shapeType(location.asRectangle().expandBy(5)));
+
+		this.targetMorph = targetMorph;
+		this.partName = partName; // may be a name like "topRight" or a vertex index
+		this.initialScale = null;
+		this.initialRotation = null; 
+		this.mode = null;
+		this.rollover = true;  // the default
+		return this;
+	},
     
     getHelpText: function() {
         return (this.shape instanceof lively.scene.Rectangle) ? this.controlHelpText : this.circleHelpText;
@@ -522,12 +527,12 @@ Morph.subclass('HandleMorph', {
 
     okToDuplicate: Functions.False,
 
-    onMouseDown: function(evt) {
-        this.hideHelp();
-	if (!this.rollover) return;  // if not a rollover, mode is probably set
-        if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
-	else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
-    },
+	onMouseDown: function(evt) {
+		this.hideHelp();
+		if (!this.rollover) return;  // if not a rollover, mode is probably set
+		if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
+		else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
+	},
     
     onMouseMove: function(evt) {
         // When dragged, I also drag the designated control point of my target
@@ -577,14 +582,14 @@ Morph.subclass('HandleMorph', {
         }
     },
     
-    handleReshape: function(result) {
-	if (typeof result == "boolean") {
-	    this.setBorderColor(result ? Color.red : Color.blue);
-	} else {
-	    if (this.partName  < 0) this.partName = -this.partName;
-	    this.type = "rect"; // become a regular handle
-	}
-    },
+	handleReshape: function(result) {
+		if (typeof result == "boolean") {
+			this.setBorderColor(result ? Color.red : Color.blue);
+		} else {
+			if (this.partName  < 0) this.partName = -this.partName;
+			this.type = "rect"; // become a regular handle
+		}
+	},
 
     onMouseUp: function(evt) {
         if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
@@ -777,6 +782,7 @@ BoxMorph.subclass("SelectionMorph", {
 		if (!this.selectedMorphs)  $super(color);
 		else this.selectedMorphs.invoke('withAllSubmorphsDo', function() { this.setBorderColor(color)});
 	},
+
 	shapeRoundEdgesBy: function($super, r) { 
 		if (!this.selectedMorphs) $super(r);
 		else this.selectedMorphs.forEach( function(m) { if (m.shape.roundEdgesBy) m.shapeRoundEdgesBy(r); });
@@ -955,6 +961,7 @@ BoxMorph.subclass("SelectionMorph", {
 BoxMorph.subclass('PanelMorph', {
 
     documentation: "a panel",
+
     initialize: function($super, extent/*:Point*/) {
         $super(extent.extentAsRectangle());
         this.lastNavigable = null;
@@ -972,15 +979,15 @@ BoxMorph.subclass('PanelMorph', {
         return true;
     },    
     
-    onKeyPress: function(evt) {
-        switch (evt.getKeyCode()) {
-        case Event.KEY_TAB: { 
-            this.focusOnNext(evt);
-            evt.stop();
-            return true;
-        }
-        }
-    },
+	onKeyPress: function(evt) {
+		switch (evt.getKeyCode()) {
+			case Event.KEY_TAB: { 
+				this.focusOnNext(evt);
+				evt.stop();
+				return true;
+			}
+		}
+	},
     
     handlesMouseDown: Functions.False,
 
@@ -1000,30 +1007,30 @@ BoxMorph.subclass('PanelMorph', {
         return $super(m, front);
     },
 
-    adjustForNewBounds: function ($super) {
-        // Compute scales of old submorph extents in priorExtent, then scale up to new extent
-        $super();
-        var newExtent = this.innerBounds().extent();
-        var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
-	this.submorphs.forEach(function(sub) {
-	    sub.setPosition(sub.getPosition().scaleByPt(scalePt));
-            sub.setExtent(sub.getExtent().scaleByPt(scalePt));
-	});
-	this.priorExtent = newExtent;
-    },
+	adjustForNewBounds: function ($super) {
+		// Compute scales of old submorph extents in priorExtent, then scale up to new extent
+		$super();
+		var newExtent = this.innerBounds().extent();
+		var scalePt = newExtent.scaleByPt(this.priorExtent.invertedSafely());
+		this.submorphs.forEach(function(sub) {
+			sub.setPosition(sub.getPosition().scaleByPt(scalePt));
+			sub.setExtent(sub.getExtent().scaleByPt(scalePt));
+		});
+		this.priorExtent = newExtent;
+	},
     
     onVisibleUpdate: function(state) {
-	if (state == false) this.remove();
+		if (state == false) this.remove();
     },
 
-    updateView: function(aspect, controller) {
-        var plug = this.modelPlug;
-        if (!plug) return;
+	updateView: function(aspect, controller) {
+		var plug = this.modelPlug;
+		if (!plug) return;
 
-        if (aspect == plug.getVisible || aspect == 'all') {
-	    this.onVisibleUpdate(this.getModelValue('getVisible', true));
-        }
-    }
+		if (aspect == plug.getVisible || aspect == 'all') {
+			this.onVisibleUpdate(this.getModelValue('getVisible', true));
+		}
+	}
 
 });
 
@@ -1060,25 +1067,25 @@ TextMorph.subclass("CheapListMorph", {
     formals: ["List", "Selection", "-DeletionConfirmation", "+DeletionRequest"],
     padding: Rectangle.inset(0, 0),
     
-    initialize: function($super, initialBounds, itemList) {
-        // itemList is an array of strings
-        // Note:  A proper ListMorph is a list of independent submorphs
-        // CheapListMorphs simply leverage Textmorph's ability to display
-        // multiline paragraphs, though some effort is made to use a similar interface.
-        // Bug: currently selection doesn't work right if items have leading spaces
-        itemList = this.sanitizedList(itemList);
-        var listText = itemList ? itemList.join("\n") : "";
-        $super(initialBounds, listText);
-	
-	this.setWrapStyle(text.WrapStyle.None);
-        this.itemList = itemList;
-        // this default self connection may get overwritten by, eg, connectModel()...
-        var model = new SyntheticModel(this.formals);
-        this.modelPlug = new ModelPlug(model.makePlugSpec());
-        this.setModelValue('setList', itemList);
-        this.layoutChanged();
-        return this;
-    },
+	initialize: function($super, initialBounds, itemList) {
+		// itemList is an array of strings
+		// Note:  A proper ListMorph is a list of independent submorphs
+		// CheapListMorphs simply leverage Textmorph's ability to display
+		// multiline paragraphs, though some effort is made to use a similar interface.
+		// Bug: currently selection doesn't work right if items have leading spaces
+		itemList = this.sanitizedList(itemList);
+		var listText = itemList ? itemList.join("\n") : "";
+		$super(initialBounds, listText);
+
+		this.setWrapStyle(text.WrapStyle.None);
+		this.itemList = itemList;
+		// this default self connection may get overwritten by, eg, connectModel()...
+		var model = new SyntheticModel(this.formals);
+		this.modelPlug = new ModelPlug(model.makePlugSpec());
+		this.setModelValue('setList', itemList);
+		this.layoutChanged();
+		return this;
+	},
 
     sanitizedList: function(list) { // make sure entries with new lines don't confuse the list
         return list && list.invoke('replace', /\n/g, " ");
@@ -1260,7 +1267,6 @@ TextMorph.subclass("CheapListMorph", {
     }
 
 });
-
 
 BoxMorph.subclass("TextListMorph", {
 
@@ -1480,16 +1486,16 @@ BoxMorph.subclass("TextListMorph", {
         return false;
     },
 
-    onListUpdate: function(list) {
-	this.updateList(list);
-    },
+	onListUpdate: function(list) {
+		this.updateList(list);
+	},
 
     // FIXME containing ScrollPane has a Menu formal var  but update callbacks will be directed the List
     onMenuUpdate: Functions.Empty, 
 
-    onListDeltaUpdate: function(delta) {
-	this.appendList(delta);
-    },
+	onListDeltaUpdate: function(delta) {
+		this.appendList(delta);
+	},
 
 	onSelectionUpdate: function(selection) {
 		console.log("got selection " + selection);
@@ -1507,37 +1513,37 @@ BoxMorph.subclass("TextListMorph", {
         } 
     },
     
-    updateView: function(aspect, controller) {
-        var c = this.modelPlug;
-	if (!c) return;
-        switch (aspect) {
-        case this.modelPlug.getList:
-        case 'all':
-            this.onListUpdate(this.getList());
-            return this.itemList; // debugging
+	updateView: function(aspect, controller) {
+		var c = this.modelPlug;
+		if (!c) return;
+		switch (aspect) {
+			case this.modelPlug.getList:
+			case 'all':
+			this.onListUpdate(this.getList());
+			return this.itemList; // debugging
 
-        case this.modelPlug.getListDelta:
-            this.onListDeltaUpdate(this.getListDelta());
-            return this.itemList;
+			case this.modelPlug.getListDelta:
+			this.onListDeltaUpdate(this.getListDelta());
+			return this.itemList;
 
-        case this.modelPlug.getSelection:
-            var selection = this.getSelection();
-	    this.onSelectionUpdate(selection);
-            return selection; //debugging
-	    
-        case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
-	    this.onDeletionConfirmationUpdate(this.getDeletionConfirmation());
-            return null;
-        }
-    },
+			case this.modelPlug.getSelection:
+			var selection = this.getSelection();
+			this.onSelectionUpdate(selection);
+			return selection; //debugging
 
-    enclosingScrollPane: function() { 
-        // Need a cleaner way to do this
-        if (! (this.owner instanceof ClipMorph)) return null;
-        var sp = this.owner.owner;
-        if (! (sp instanceof ScrollPane)) return null;
-        return sp;
-    },
+			case this.modelPlug.getDeletionConfirmation: //someone broadcast a deletion
+			this.onDeletionConfirmationUpdate(this.getDeletionConfirmation());
+			return null;
+		}
+	},
+
+	enclosingScrollPane: function() { 
+		// Need a cleaner way to do this
+		if (! (this.owner instanceof ClipMorph)) return null;
+		var sp = this.owner.owner;
+		if (! (sp instanceof ScrollPane)) return null;
+		return sp;
+	},
     
     scrollItemIntoView: function(item) { 
         var sp = this.enclosingScrollPane();
@@ -1545,14 +1551,14 @@ BoxMorph.subclass("TextListMorph", {
         sp.scrollRectIntoView(item.bounds()); 
     },
     
-    resetScrollPane: function(toBottom) { 
-        // Need a cleaner way to do this ;-)
-        var sp = this.enclosingScrollPane();
-        if (!sp) return false;
+	resetScrollPane: function(toBottom) { 
+		// Need a cleaner way to do this ;-)
+		var sp = this.enclosingScrollPane();
+		if (!sp) return false;
 		if (toBottom) sp.scrollToBottom();
-        else sp.scrollToTop();
-        return true;
-    },
+		else sp.scrollToTop();
+		return true;
+	},
 
 });
 
@@ -1643,70 +1649,75 @@ Morph.subclass('DragWrapper', {
 		this.labelMe();
 		this.startObservingMouseMoves(evt);
 	},
-labelMe: function() {
-	var label = new TextMorph(new Rectangle(0,0,100,100));
-	if (Object.isString(this.draggedObject))
-		label.textString = this.draggedObject;
-	else if (this.draggedObject.string)
+
+	labelMe: function() {
+		var label = new TextMorph(new Rectangle(0,0,100,100));
+		if (Object.isString(this.draggedObject))
+			label.textString = this.draggedObject;
+		else if (this.draggedObject.string)
 		label.textString = this.draggedObject.string;
-	else
+		else
 		label.textString = 'unknown';
-	label.beLabel();
-	label.setFill(Color.white);
-	this.addMorph(label);
-	label.centerAt(this.getPosition());
-},
+		label.beLabel();
+		label.setFill(Color.white);
+		this.addMorph(label);
+		label.centerAt(this.getPosition());
+	},
 
-dropMeOnMorph: function(morph) {    
-	var pos = this.owner.getPosition();
-	var evt = newFakeMouseEvent(pos);
-	morph = this.lookForBestReceiver(evt) || morph;
+	dropMeOnMorph: function(morph) {    
+		var pos = this.owner.getPosition();
+		var evt = newFakeMouseEvent(pos);
+		morph = this.lookForBestReceiver(evt) || morph;
 
-	this.remove();
-	this.stopObservingMouseMoves();
-	if (this.highlighted) this.highlighted.becomeNormal();
+		this.remove();
+		this.stopObservingMouseMoves();
+		if (this.highlighted) this.highlighted.becomeNormal();
 
-	this.source.isDragging = false;
-	console.log('Asking ' + morph + ' if it wants ' + this.draggedObject + '(' + pos + ')');
-	if (morph.acceptsDropOf && morph.acceptsDropOf(this.draggedObject)) {
-		console.log('Yes :-)');
-		morph.acceptDrop(this.draggedObject, evt);
-	} else {
-		console.log('No :-(')
-		this.returnDraggedToSource();
-	}
-},
-returnDraggedToSource: function() {
-	this.source.draggedComesHome(this.draggedObject, this.index);
-},
-lookForBestReceiver: function(evt) {
-	return evt.hand.world().morphToGrabOrReceive(evt);
-},
-startObservingMouseMoves: function(evt) {
-	this.startEvent = evt;
-	var wrapper=this;
-	wrapper.highlighted = null;
-	evt.hand.handleMouseEvent = evt.hand.handleMouseEvent.wrap(function(proceed, evt) {
-		wrapper.highlighted && wrapper.highlighted.becomeNormal();
-		var m = wrapper.lookForBestReceiver(evt);
-		var oldColor = m.getBorderColor();
-		var oldWidth = m.getBorderWidth();
-		wrapper.highlighted = {becomeNormal: function() {			
-			var x=m;
-			x.setBorderColor(oldColor);
-			x.setBorderWidth(oldWidth); //wrapper.highlighted=null;
-		}}
-            m.setBorderColor(Color.red);
-            m.setBorderWidth(3);
-		return proceed(evt);
-	})
-},
+		this.source.isDragging = false;
+		console.log('Asking ' + morph + ' if it wants ' + this.draggedObject + '(' + pos + ')');
+		if (morph.acceptsDropOf && morph.acceptsDropOf(this.draggedObject)) {
+			console.log('Yes :-)');
+			morph.acceptDrop(this.draggedObject, evt);
+		} else {
+			console.log('No :-(')
+			this.returnDraggedToSource();
+		}
+	},
+	
+	returnDraggedToSource: function() {
+		this.source.draggedComesHome(this.draggedObject, this.index);
+	},
+	
+	lookForBestReceiver: function(evt) {
+		return evt.hand.world().morphToGrabOrReceive(evt);
+	},
+	
+	startObservingMouseMoves: function(evt) {
+		this.startEvent = evt;
+		var wrapper=this;
+		wrapper.highlighted = null;
+		evt.hand.handleMouseEvent = evt.hand.handleMouseEvent.wrap(function(proceed, evt) {
+			wrapper.highlighted && wrapper.highlighted.becomeNormal();
+			var m = wrapper.lookForBestReceiver(evt);
+			var oldColor = m.getBorderColor();
+			var oldWidth = m.getBorderWidth();
+			wrapper.highlighted = {
+				becomeNormal: function() {			
+					var x=m;
+					x.setBorderColor(oldColor);
+					x.setBorderWidth(oldWidth); //wrapper.highlighted=null;
+				}
+			}
+			m.setBorderColor(Color.red);
+			m.setBorderWidth(3);
+			return proceed(evt);
+		})
+	},
 
-stopObservingMouseMoves: function() {
-	if (!this.startEvent) return;
-	this.startEvent.hand.handleMouseEvent = this.startEvent.hand.constructor.prototype.handleMouseEvent;
-},
-
+	stopObservingMouseMoves: function() {
+		if (!this.startEvent) return;
+		this.startEvent.hand.handleMouseEvent = this.startEvent.hand.constructor.prototype.handleMouseEvent;
+	},
 });
 
 ListMorph.subclass('DragnDropListMorph', {
@@ -1748,30 +1759,32 @@ ListMorph.subclass('DragnDropListMorph', {
     	this.setList(newList, true); //this.updateList(newList); //?
 		if (item.onDrag) item.onDrag();
 		evt.hand.grabMorph(new DragWrapper(item, this, index, evt), evt);
-},
-draggedComesHome: function(item, index) {
-	this.setList(this.listWith(item, index), true);
-},
-listWith: function(item, index) {
-	var list = this.itemList;
-	if (index in list)
-		return list.slice(0,index).concat([item]).concat(list.slice(index, list.length));
-	return list.concat([item]);
-},
+	},
 
-acceptsDropOf: function(item) {
-	return Object.isString(item) || item.isListItem
-},
-acceptDrop: function(item, evt) {
-	var target = this.morphToReceiveEvent(evt);
-	var index = this.submorphs.indexOf(target);
-	console.log(index);
-	var otherItem = this.itemList[index];
-	this.setList(this.listWith(item, index), true);
-	if (item.onDrop) item.onDrop(otherItem);
-	console.log('Drop accepted!')
-},
-    
+	draggedComesHome: function(item, index) {
+		this.setList(this.listWith(item, index), true);
+	},
+
+	listWith: function(item, index) {
+		var list = this.itemList;
+		if (index in list)
+			return list.slice(0,index).concat([item]).concat(list.slice(index, list.length));
+		return list.concat([item]);
+	},
+
+	acceptsDropOf: function(item) {
+		return Object.isString(item) || item.isListItem
+	},
+
+	acceptDrop: function(item, evt) {
+		var target = this.morphToReceiveEvent(evt);
+		var index = this.submorphs.indexOf(target);
+		console.log(index);
+		var otherItem = this.itemList[index];
+		this.setList(this.listWith(item, index), true);
+		if (item.onDrop) item.onDrop(otherItem);
+		console.log('Drop accepted!')
+	},    
 });
 
 Morph.addMethods({
@@ -3257,47 +3270,46 @@ Widget.subclass('Dialog', {
 
 Dialog.subclass('ConfirmDialog', {
 
-    formals: ["+Result",  // yes or no, listen for updates
-	      "-Message"], // what to display
-    initialViewExtent: pt(300, 90),
+	formals: [	"+Result",  // yes or no, listen for updates
+				"-Message"], // what to display
+	initialViewExtent: pt(300, 90),
     
-    openIn: function($super, world, position) {
-	var view = $super(world, position);
-        world.firstHand().setKeyboardFocus(view.targetMorph.submorphs[1]);
-	return view;
+	openIn: function($super, world, position) {
+		var view = $super(world, position);
+		world.firstHand().setKeyboardFocus(view.targetMorph.submorphs[1]);
+		return view;
 
-    },
-    
-    cancelled: function(value, source) {
-        this.removeTopLevel();
-	if (value == false) this.setResult(false);
-    },
-    
-    confirmed: function(value, source) {
-        this.removeTopLevel();
-	if (value == true) this.setResult(true);
-    },
-    
-    buildView: function(extent, model) {
-        var panel = new PanelMorph(extent);
-        this.panel = panel;
-        panel.linkToStyles(["panel"]);
+	},
 
-        var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-        this.label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
+	cancelled: function(value, source) {
+		this.removeTopLevel();
+		if (value == false) this.setResult(false);
+	},
 
-        var indent = extent.x - 2*70 - 3*this.inset;
-        
-	r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
-        var yesButton = panel.addMorph(new ButtonMorph(r)).setLabel("Yes");
-        yesButton.connectModel({model: this, setValue: "confirmed"});
-        
-	r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
-        var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("No");
-        noButton.connectModel({model: this, setValue: "cancelled"});
-        return panel;
-    }
+	confirmed: function(value, source) {
+		this.removeTopLevel();
+		if (value == true) this.setResult(true);
+	},
 
+	buildView: function(extent, model) {
+		var panel = new PanelMorph(extent);
+		this.panel = panel;
+		panel.linkToStyles(["panel"]);
+
+		var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
+		this.label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
+
+		var indent = extent.x - 2*70 - 3*this.inset;
+
+		r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
+		var yesButton = panel.addMorph(new ButtonMorph(r)).setLabel("Yes");
+		yesButton.connectModel({model: this, setValue: "confirmed"});
+
+		r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
+		var noButton = panel.addMorph(new ButtonMorph(r)).setLabel("No");
+		noButton.connectModel({model: this, setValue: "cancelled"});
+		return panel;
+	}
 });
 
 Dialog.subclass('PromptDialog', {
@@ -3307,7 +3319,7 @@ Dialog.subclass('PromptDialog', {
 
     openIn: function($super, world, loc) {
         var view = $super(world, loc);
-        world.firstHand().setKeyboardFocus(view.targetMorph.inputLine);
+        view.targetMorph.inputLine.requestKeyboardFocus(world.firstHand());
         return view;
     },
 
@@ -3328,32 +3340,32 @@ Dialog.subclass('PromptDialog', {
     },
 
 	buildView: function(extent, model) {
-        var panel = new PanelMorph(extent);
-        this.panel = panel;
-        panel.linkToStyles(["panel"]);
+		var panel = new PanelMorph(extent);
+		this.panel = panel;
+		panel.linkToStyles(["panel"]);
 
 
-        var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
-        this.label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
+		var r = new Rectangle(this.inset, this.inset, extent.x - 2*this.inset, 30);
+		this.label = panel.addMorph(new TextMorph(r, this.getMessage()).beLabel());
 
-        r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
+		r = new Rectangle(r.x, r.maxY() + this.inset, r.width, r.height);
 
-        panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
+		panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
 
-        panel.inputLine.connectModel({model: this, getText: "getInput", setText: "setInput"});
-	// FIXME is this necessary
-	if (this.getInput()) panel.inputLine.updateTextString(this.getInput());
+		panel.inputLine.connectModel({model: this, getText: "getInput", setText: "setInput"});
+		// FIXME is this necessary
+		if (this.getInput()) panel.inputLine.updateTextString(this.getInput());
 
-        var indent = extent.x - 2*70 - 3*this.inset;
-        r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
-        var okButton = panel.addMorph(new ButtonMorph(r)).setLabel("OK");
+		var indent = extent.x - 2*70 - 3*this.inset;
+		r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
+		var okButton = panel.addMorph(new ButtonMorph(r)).setLabel("OK");
 
-        okButton.connectModel({model: this, setValue: "confirmed"});
-        r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
-        var cancelButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
-        cancelButton.connectModel({model: this, setValue: "cancelled"});
-        return panel;
-    },
+		okButton.connectModel({model: this, setValue: "confirmed"});
+		r = new Rectangle(r.maxX() + this.inset, r.y, 70, 30);
+		var cancelButton = panel.addMorph(new ButtonMorph(r)).setLabel("Cancel");
+		cancelButton.connectModel({model: this, setValue: "cancelled"});
+		return panel;
+	},
 
 });
 
@@ -4685,10 +4697,10 @@ BoxMorph.subclass("PromptDialogMorph", {
 
 	padding: new Rectangle(10,10,10,10),
 
-	connections: ['accepted', 'canceled', 'title'],
+	connections: ['accepted', 'canceled', 'title'], // for documentation only
 	
 	initialize: function($super, bounds) {
-		bounds = bounds || new Rectangle(0,0,300,130);
+		bounds = bounds || new Rectangle(0,0,500,400);
 		$super(bounds);
 
 		this.callback = null;
