@@ -771,6 +771,8 @@ Object.extend(Exporter, {
 	shrinkWrapMorph: function(morph) {
 		var importer = new Importer();
 		var newDoc = importer.getBaseDocument();
+		if (!newDoc) 
+			throw new Error('Can not continue serializing World beacause the base document is broken')
 		newDoc.getElementsByTagName("title")[0].textContent = document.title; // persist the title
 		// FIXME this should go to another place?
 		this.addSystemDictionary(newDoc);
@@ -928,6 +930,9 @@ Copier.subclass('Importer', {
 			return null;
 		} else {
 			var doc = req.getResponseXML();
+			console.log("problems to parse  " + URL.source);
+			if (!doc)
+				return null;
 			this.clearCanvas(doc);
 			return doc;
 		}
