@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-module("cop.Workspace").requires(["lively.Text", "cop.Layers"]).toRun(function() {
+module("cop.Workspace").requires(["lively.Text", "cop.Layers", "lively.Undo"]).toRun(function() {
 
 Object.extend(Morph.prototype, LayerableObjectTrait);
 Morph.prototype.lookupLayersIn = ["owner"];
@@ -67,7 +67,7 @@ layerClass(WorkspaceControlLayer, WindowMorph, {
 			this.setWithLayers([]);
 		} else {
 			console.log("enable workspace for " + this);
-			this.setWithLayers([WorkspaceLayer]);
+			this.setWithLayers([WorkspaceLayer, UndoLayer]);
 			// RESEARCH: here we need to signal the new LayerActivation for interested objects...
 		}
 	},

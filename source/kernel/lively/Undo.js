@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-module("lively.Undo").requires(['cop.Layers']).run(function() {
+module("lively.Undo").requires(['cop.Layers']).toRun(function() {
 
 Object.subclass("UndoHistory", {
 	initialize: function() {
@@ -75,7 +75,7 @@ UndoableCommand.subclass("ReplaceTextCommand", {
 	},
 
 	undo: function() {
-		console.log("undo from " + this.index + " to " + this.newText.size())
+		// console.log("undo from " + this.index + " to " + this.newText.size())
 		withoutLayers([UndoLayer], function() {
 			this.morph.setSelectionRange(this.index, this.index + this.newText.size());
 			this.morph.replaceSelectionWith(this.oldText);
