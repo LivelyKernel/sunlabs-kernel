@@ -315,6 +315,15 @@ var Converter = {
 		return type != "string" && type != "number"; 
     },
 
+	quoteCDATAEndSequence: function(string) {
+		var closeCDATASequence = "]]>";
+		if (string.include(closeCDATASequence)) {
+			console.log("Warning: quoted CDATA Sequence ] ] >")
+			string = string.replace(closeCDATASequence, "\\]\\]\\>");
+		};
+		return string
+	},
+
 	// TODO parallels to preparePropertyForSerialization in scene.js
 	// Why to we encodeProperties for Records at runtime and not at serialization time?
     encodeProperty: function(prop, propValue, isItem) {
@@ -334,7 +343,8 @@ var Converter = {
 					encoding = NodeFactory.createText(String(propValue));
 					break;
 		    	default:
-					encoding = NodeFactory.createCDATA(JSON.serialize(propValue, Converter.wrapperAndNodeEncodeFilter));
+					var jsonSource = JSON.serialize(propValue, Converter.wrapperAndNodeEncodeFilter);
+					encoding = NodeFactory.createCDATA(this.quoteCDATAEndSequence(jsonSource));
 		    }
 		    desc.appendChild(encoding);
 		    return desc;
