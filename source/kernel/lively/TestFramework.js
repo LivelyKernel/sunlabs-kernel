@@ -440,7 +440,7 @@ Widget.subclass('TestRunner', {
 		if (!testClassName) return;
 		var testCase = new (Class.forName(testClassName))();
 
-		testCase.runAll(this);
+		testCase.runAll();
 		this.setResultOf(testCase);
 	},
 	
@@ -466,7 +466,7 @@ Widget.subclass('TestRunner', {
 		    };
 		    counter += 1;
 		};
-		testSuite.runAll(this);
+		testSuite.runAll();
 		testSuite.runFinished = function() {
 	        self.setResultOf(testSuite);
 		};
