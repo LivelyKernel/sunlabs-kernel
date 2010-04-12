@@ -4695,7 +4695,11 @@ WorldMorph.addMethods({
 				})}],
 			["Rectangle", function(evt) { world.addMorph(Morph.makeRectangle(evt.point(), pt(60, 30)));}],
 			["Ellipse", function(evt) { world.addMorph(Morph.makeCircle(evt.point(), 25)); }],
-			["TextMorph", function(evt) { world.addMorph(new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph"));}],
+			["TextMorph", function(evt) { 
+				var text = new TextMorph(evt.point().extent(pt(120, 10)), "This is a TextMorph");
+				if (Global.UndoLayer)
+					text.setWithLayers([UndoLayer]);
+				world.addMorph(text);}],
 			["Star",function(evt) { world.addMorph(Morph.makeStar(evt.point()))}],
 			["Heart", function(evt) { world.addMorph(Morph.makeHeart(evt.point()))}],
 			["Marker", function(evt) {world.addMorph(new MarkerMorph(evt.point().extent(pt(100, 100))))}]
