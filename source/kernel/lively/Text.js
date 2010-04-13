@@ -2081,6 +2081,7 @@ BoxMorph.subclass('TextMorph', {
 
 		this.typingHasBegun = true;	 // For undo and select-all commands		
 	},
+	
 	modifySelectedLines: function(modifyFunc) {
 		// this function calls modifyFunc on each line that is selected
 		// modifyFunc can somehow change the line
@@ -2098,6 +2099,7 @@ BoxMorph.subclass('TextMorph', {
 		this.replaceSelectionWith(replacement);
 		this.setSelectionRange(start, end + addToSel);
 	},
+	
 	doCut: function() {
 		TextMorph.clipboardString = this.getSelectionString(); 
 		this.replaceSelectionWith("");
@@ -2511,7 +2513,8 @@ TextMorph.addMethods({
 	pvtUpdateTextString: function(replacement, replacementHints) {
 		// tag: newText
 		// Note:  -delayComposition- is now ignored everyhere
-		replacement = replacement || "";	
+		replacement = replacement || "";
+		replacement 	
 		if(!this.typingHasBegun) { 
 			// Mark for undo, but not if continuation of type-in
 			this.undoTextString = this.textString;
@@ -2646,10 +2649,22 @@ TextMorph.addMethods({
 		this.changed();
 	},
 	
+	pvtReplaceBadControlCharactersInString: function(string) {
+		var allowedControlCharacters = "\n\t\r"
+		return $A(string).collect(function(ea){
+			if (allowedControlCharacters.include(ea))
+				return ea;
+			if (ea.charCodeAt(0) < 32)	
+				return '?'
+			else		
+				return ea }).join('')
+	},
+
 	setTextString: function(replacement, replacementHints) {
+		replacement = this.pvtReplaceBadControlCharactersInString(replacement);
 		if (Object.isString(replacement)) replacement = String(replacement); 
 		if (this.autoAccept) this.setText(replacement);
-		this.pvtUpdateTextString(replacement, replacementHints); 
+		this.pvtUpdateTextString(replacement, replacementHints);
 	},
 	
 	updateTextString: function(newStr) {
