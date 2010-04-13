@@ -1223,25 +1223,33 @@ Object.extend(String.prototype, {
 /**
   * Extensions to class Array
   */  
-Object.extend(Array.prototype, {
-	forEachShowingProgress: function(progressBar, iterator, labelFunc, whenDoneFunc) {
-		progressBar.setValue(0);
-		var steps = this.length;
-		(this.reverse().inject(
-			function() { progressBar.setValue(1); whenDoneFunc && whenDoneFunc() },
-			function(nextFunc, item, idx) {
-				return function() {
-					progressBar.setValue((steps-idx) / steps);
-					if (labelFunc)
-						progressBar.setLabel(labelFunc(item, idx));
-					iterator(item, idx);
-					nextFunc.delay(0);
-				}
-			}
-		))();
+Object.extend(Array.prototype, { 
+	forEachShowingProgress: function(iteratorFunc, labelOrFunc) {
+	// iteratorFunc will be called as iteratorFunc(this[index])
+	// labelOrFunc can be a string value or a string function(index, this[index])
+	var w = WorldMorph.current();
+	var r = w.firstHand().position().extent(pt(200, 20));
+	var bar = w.addMorph(new SliderMorph(r));  // Slider works fine as a bar
+	if (labelOrFunc) { // Add a label centered above the bar
+		var labelString = (typeof labelOrFunc == "function") ? "..." : labelOrFunc;
+		var label = bar.addMorph(TextMorph.makeLabel(labelString,
+				{borderWidth: 1, fill: Color.white, fontSize: 14, padding: Rectangle.inset(1)}));
+		label.align(label.bounds().bottomLeft(), bar.innerBounds().topLeft().addXY(-3, 0) );
+	}
+	bar.stepProgress = function(array) {
+		if (this.idx >= array.length) { this.remove(); return; };
+		if (labelOrFunc && typeof labelOrFunc == "function") {
+			labelString = labelOrFunc(this.idx, array[this.idx])
+			label.setTextString(labelString);
+		}
+		this.formalModel.setSliderExtent((this.idx + 0.5) / array.length);
+		iteratorFunc(array[this.idx]);
+		this.idx ++; };
+	bar.idx = 0;  bar.setValue(0);
+	stepTime = 300/Math.max(this.length, 1);
+	bar.startStepping(stepTime, "stepProgress", this);
 	},
-})
-
+});
 Object.subclass('CharSet', {
 	documentation: "limited support for charsets"
 });
