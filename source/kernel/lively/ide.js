@@ -1506,16 +1506,17 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 
 	asString: function() { return 'Load all' },
 
-	trigger: function() {
+	trigger: function() { 
 		var srcCtrl = tools.SourceControl;
-		srcCtrl.interestingLKFileNames()
-			.concat(srcCtrl.preLoadFileNames())
-			.forEachShowingProgress(function(ea) { srcCtrl.addModule(ea); }, 
-								function(ix, ea) { return "Loading " + ea + "..."; } );
-		this.browser.allChanged();
-	}
-
-
+		var progressBar = WorldMorph.current().addProgressBar();
+		var files = srcCtrl.interestingLKFileNames();
+		var browser = this.browser;
+		files.forEachShowingProgress(
+			progressBar,
+			function(ea) { srcCtrl.addModule(ea) },
+			Functions.K, // label func
+			function() { progressBar.remove(); browser.allChanged() }); 
+	},
 });
 
 ide.BrowserCommand.subclass('lively.ide.ShowLineNumbersCommand', {
