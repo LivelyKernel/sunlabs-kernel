@@ -2170,12 +2170,7 @@ Morph.subclass("MenuMorph", {
 
         // If menu and/or caption is off screen, move it back so it is visible
         var menuRect = this.bounds();  //includes caption if any
-        // Intersect with parentMorph bounds to get visible region.  Note we need shape.bounds,
-        // since parentMorph.bounds() would include stick-outs, including this menu!
-		// TODO: hide it somewhere...
-		var offset = -20;
-		var bounds = pt(window.pageXOffset,  window.pageYOffset).extent(
-			pt(window.innerWidth + offset, window.innerHeight + offset));        
+		var bounds = this.world().visibleBounds();
 		var visibleRect = menuRect.intersection(bounds);
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight

@@ -4650,6 +4650,15 @@ WorldMorph.addMethods({
 			WorldMorph.current().getExtent().y)
 		return topLeft.extent(pt(width, height))
 	},
+	
+	visibleBounds: function() {
+		var windowBounds = this.windowBounds();
+		var worldBounds = this.shape.bounds(); // use shape so no stick-outs are included
+		var upperLeft = pt(Math.max(windowBounds.x, worldBounds.x), Math.max(windowBounds.y, worldBounds.y));
+		var lowerRight = pt(Math.min(windowBounds.width, worldBounds.width), Math.min(windowBounds.height, worldBounds.height));
+		return upperLeft.extent(lowerRight);
+		
+	},
 
 	setStatusMessage: function(msg, color, delay, callback) {
 		console.log("status msg: " + msg)
