@@ -716,7 +716,8 @@ rootNode: function() {
 commands: function() {
 		// lively.ide.BrowserCommand.allSubclasses().collect(function(ea) { return ea.type}).join(',\n')
         return [
-			lively.ide.BrowseWorldCommand,
+			// lively.ide.BrowseWorldCommand,
+			lively.ide.AddNewFileCommand,
 			lively.ide.AllModulesLoadCommand,
 			lively.ide.ShowLineNumbersCommand,
 			lively.ide.RefreshCommand,
@@ -1030,20 +1031,6 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		menu.unshift(['toggle showAll', function() {
     		node.showAll = !node.showAll;
     		node.signalTextChange() }]);
-		menu.unshift(['add new file', function() {
-			var world = WorldMorph.current();
-			var createFileIfAbsent = function(filename) {
-				var dir = new FileDirectory(tools.SourceControl.codeBaseURL);
-				if (dir.fileOrDirectoryExists(filename)) {
-					world.notify('File ' + filename + ' already exists!');
-				} else {
-					dir.writeFileNamed(filename, '');
-					browser.sourceDatabase().addFile(filename);
-					browser.allChanged();
-					browser.inPaneSelectNodeNamed('Pane1', filename);
-				}
-			};
-			world.prompt('Enter filename', createFileIfAbsent)}]);
 		menu.unshift(['remove', function() {
 			new FileDirectory(tools.SourceControl.codeBaseURL).deleteFileNamed(node.moduleName);
 			browser.sourceDatabase().removeFile(node.moduleName);
@@ -1613,6 +1600,42 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 	},
 
 });
+
+lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
+
+	isActive: Functions.True,
+
+	wantsButton: Functions.True,
+
+	asString: function() { return 'Add module' },
+
+	trigger: function() {
+		var world = WorldMorph.current();
+		var browser = this.browser;
+		var createFileIfAbsent = function(filename) {
+			var dir = new FileDirectory(tools.SourceControl.codeBaseURL);
+			if (dir.fileOrDirectoryExists(filename)) {
+				world.notify('File ' + filename + ' already exists!');
+			} else {
+				var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
+				var realCodeBase = new URL(Config.codeBase);
+				var moduleBase = tools.SourceControl.codeBaseURL.relativePathFrom(realCodeBase);
+				var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
+				dir.writeFileNamed(
+					filename,
+					Strings.format('module(\'%s\').requires().toRun(function() {\n\n// Enter your code here\n\n}) // end of module',
+						moduleName));
+				browser.sourceDatabase().addFile(filename);
+				browser.allChanged();
+				browser.inPaneSelectNodeNamed('Pane1', filename);
+			}
+		};
+		world.prompt('Enter filename (something like test.js)', createFileIfAbsent);
+	},
+
+	
+});
+
 lively.ide.BrowserCommand.subclass('lively.ide.BrowseWorldCommand', {
 
 	isActive: Functions.True,
@@ -1631,6 +1654,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.BrowseWorldCommand', {
 	},
 
 });
+
 lively.ide.BrowserCommand.subclass('lively.ide.ViewSourceCommand', {
 
 	isActive: function() { return this.browser.selectedNode() && this.browser.selectedNode().isMemberNode },

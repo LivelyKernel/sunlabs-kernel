@@ -4821,7 +4821,11 @@ WorldMorph.addMethods({
 				world.prompt('Wiki base URL?', cb, URL.source.getDirectory().toString());
 				})}],
 			["Switch code base...", function(evt) { require('lively.ide').toRun(function(unused, ide) {
-				var cb = function(input) { ide.startSourceControl().switchCodeBase(new URL(input)) };
+				var cb = function(input) {
+					if (!input.endsWith('/')) input += '/';
+					ide.startSourceControl().switchCodeBase(new URL(input));
+					
+				};
 				world.prompt('New code base?', cb, URL.source.getDirectory().toString());
 				})}],				
 			["File Browser", function(evt) { new FileBrowser().openIn(world) }],
