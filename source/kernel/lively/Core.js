@@ -1990,7 +1990,7 @@ Morph.addMethods({
 	},
 
 	setBounds: function(newRect) {
-		//this.shape.setBounds(this.relativizeRect(newRect)); // FIXME some shapes don't support setFromRect
+		if (!newRect) return;
 		this.layoutManager.setBounds(this, newRect);
 	}.wrap(Morph.onLayoutChange('shape')),
 
