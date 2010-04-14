@@ -435,6 +435,7 @@ Change.subclass('DoitChange', {
 		} catch(e) {
 			dbgOn(true);
 			console.log('Error evaluating ' + this.getName() + ': ' + e);
+			return undefined;
 		}
 		return result;
 	},
@@ -549,7 +550,9 @@ ChangeSet.addMethods({
 	
 	evaluateWorldRequirements: function() {
 		var list = this.getWorldRequirementsList().evaluate();
-		Config.modulesBeforeWorldLoad = Config.modulesBeforeWorldLoad.concat(list);
+		if (list) {
+			Config.modulesBeforeWorldLoad = Config.modulesBeforeWorldLoad.concat(list);
+		}
 	},
 	
 	ensureCompatibility: function() {
