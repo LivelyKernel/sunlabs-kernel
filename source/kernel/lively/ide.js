@@ -1004,7 +1004,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     
     asString: function() {
 		var name = this.moduleName;
-		if (!this.target) return name + ' (not loaded)';
+		if (!this.target) return name + ' (not parsed)';
 		if (!this.showLines()) return name;
 		return name + ' (' + this.target.startLine() + '-' + this.target.stopLine() + ')';
     },
