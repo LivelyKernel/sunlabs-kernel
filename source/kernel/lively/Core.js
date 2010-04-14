@@ -4820,9 +4820,9 @@ WorldMorph.addMethods({
 				};
 				world.prompt('Wiki base URL?', cb, URL.source.getDirectory().toString());
 				})}],
-			["Switch System browser directory...", function(evt) { require('lively.ide').toRun(function(unused, ide) {
+			["Switch code base...", function(evt) { require('lively.ide').toRun(function(unused, ide) {
 				var cb = function(input) { ide.startSourceControl().switchCodeBase(new URL(input)) };
-				world.prompt('Enter System browser directory (URL)', cb, URL.source.getDirectory().toString());
+				world.prompt('New code base?', cb, URL.source.getDirectory().toString());
 				})}],				
 			["File Browser", function(evt) { new FileBrowser().openIn(world) }],
 			["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world); }],	
