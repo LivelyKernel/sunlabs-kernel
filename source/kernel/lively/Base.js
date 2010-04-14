@@ -268,7 +268,7 @@ function namespace(spec, context) {
 function module(moduleName) {
 	
 	function isNamespaceAwareModule(moduleName) {
-		return !moduleName.endsWith('.js');
+		return moduleName && !moduleName.endsWith('.js');
 	}
 	
 	function convertUrlToNSIdentifier(url) {
