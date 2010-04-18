@@ -384,7 +384,7 @@ function populateWorldWithExamples(world) {
         // Sample executable script pane
         if (Config.showPenScript) {
             require('lively.Tools').toRun(function() {
-                var parser = new CodeMarkupParser(URL.source.withFilename('Pen.lkml'));
+                var parser = new CodeMarkupParser(new URL(Config.codeBase).withFilename('Pen.lkml'));
 	        parser.onComplete = function() {
 		    var widget;
 		    if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
