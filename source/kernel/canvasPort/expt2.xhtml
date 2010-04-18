@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head> <title>Sun Labs Lively Kernel</title> </head>
+
+<!-- Canvas element -->
+<!-- * NOTE: as of 3/09 Lively Kernel will only run on Canvas -->
+<!-- * in Webkit(Safari nightly) and MineField(Firefox nightly) -->
+<!-- * Note also that Minefield requires your localconfig.js to specify... -->
+<!--     Config.useTransformAPI = false; // -->
+<!--     Config.useGetTransformToElement = false; // -->
+
+<body style="margin:0px"> 
+ <canvas id="lively.canvas" width="1000" height="1000">
+ </canvas>
+
+<!-- <link rel="stylesheet" type="text/css" href="style.css"/> -->
+
+<svg id="canvas" width="100%" height="100%"
+    xmlns="http://www.w3.org/2000/svg"
+    xmlns:lively="http://www.experimentalstuff.com/Lively"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:xhtml="http://www.w3.org/1999/xhtml"
+    xml:space="preserve"
+    zoomAndPan="disable">
+<title>Lively Kernel canvas</title>
+<defs>
+<script type="text/ecmascript" xlink:href="../lively/JSON.js" />
+<script type="text/ecmascript" xlink:href="../lively/miniprototype.js" />
+<script type="text/ecmascript" xlink:href="../lively/defaultconfig.js"/>
+<script name="codeBase"><![CDATA[Config.codeBase=Config.getDocumentDirectory()+'../']]></script>
+<!-- localconfig.js is ignored if file not there... -->
+<script type="text/ecmascript" xlink:href="../lively/localconfig.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Base.js"/>
+<script type="text/ecmascript" xlink:href="../lively/EmuDom.js"/>
+<script type="text/ecmascript" xlink:href="../lively/scene.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Core.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Text.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Widgets.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Network.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Data.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Storage.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Tools.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Examples.js"/>
+<script type="text/ecmascript" xlink:href="../lively/CanvasExpt.js"/>
+<script type="text/ecmascript" xlink:href="../lively/noDOM.js"/>
+<!-- Scratch.js is ignored if file not there... -->
+<script type="text/ecmascript" xlink:href="../lively/Scratch.js"/>
+<script type="text/ecmascript" xlink:href="../lively/Main.js"/>
+
+</defs>
+</svg>
+</body>
+</html>
+
