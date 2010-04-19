@@ -333,6 +333,7 @@ BoxMorph.subclass("ImageMorph", {
 		this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
 		console.log("making an image from: " + url);
 		if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
+		this.setURL(url) 
 	},
 
 	// FIXME:
@@ -389,6 +390,49 @@ BoxMorph.subclass("ImageMorph", {
 
 	getOpacity: function(op) { return this.image.getOpacity(op); },
 
+	originalImageSize: function(imgSrc) {
+		var newImg = new Image();
+		newImg.src = imgSrc;
+		return pt(newImg.width, newImg.height)
+	},
+
+	reshape: function($super, partName, newPoint, lastCall){
+		$super(partName, newPoint, lastCall);
+		var extent = this.getExtent();
+		if (this.originalExtent) {
+			var ratio = this.originalExtent.y / this.originalExtent.x
+			extent.y = extent.x * ratio
+		};
+
+		this.image.setWidth(extent.x)
+		this.image.setHeight(extent.y)
+		this.setExtent(extent)
+	},
+
+	morphMenu: function($super, evt) {
+		var menu = $super(evt);
+		menu.addLine();
+		menu.addItem(["Edit image src", this.editImageSrc]);
+		return menu;  
+	},
+
+	getURL: function() {
+		return this.image.getURL()
+	},
+
+	setURL: function(url) {
+		var extent = this.originalImageSize(url);
+		this.originalExtent = extent;
+		this.image.loadImage(url);
+		this.setExtent(extent)
+	},
+	
+	editImageSrc: function() {
+		this.world().prompt(
+			'Edit Image SRC',
+			function(input) { this.setURL(input) }.bind(this),
+			this.getURL());
+	},
 });
 
 ButtonMorph.subclass("ImageButtonMorph", {
