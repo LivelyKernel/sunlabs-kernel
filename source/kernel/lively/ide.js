@@ -119,6 +119,7 @@ panelSpec: [
         this.allPaneNames.each(function(ea) { setupListPanes(ea) });
  
         panel.sourcePane.innerMorph().maxSafeSize = 2e6;
+		panel.sourcePane.innerMorph().styleClass = ['codePane'];
         panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
  
 		//panel.statusPane.connectModel(model.newRelay({Text: "-StatusMessage"}));

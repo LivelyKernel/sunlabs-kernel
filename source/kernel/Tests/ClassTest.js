@@ -1,6 +1,6 @@
 module('Tests.ClassTest').requires('lively.TestFramework').toRun(function() {
 
-TestCase.subclass('ClassTest', {
+TestCase.subclass('Tests.ClassTest.ClassTest', {
 	
 	testIsSuperclass: function() {
 		TestCase.subclass('Dummy1', {});
@@ -75,9 +75,16 @@ TestCase.subclass('ClassTest', {
 		}
 	},
 	
+	testNewClassDefinitionOfExistingClass: function() {
+		TestCase.subclass('Dummy23', { m: function() { return 1 }});
+		var instance = new Dummy23();
+		TestCase.subclass('Dummy23', { m: function() { return 2 }});
+		this.assertEqual(instance.m(), 2);
+	},
+	
 });
 
-TestCase.subclass('NamespaceTest', {
+TestCase.subclass('Tests.ClassTest.NamespaceTest', {
     
     setUp: function() {
         // create namespaces
