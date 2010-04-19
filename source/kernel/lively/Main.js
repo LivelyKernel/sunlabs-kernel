@@ -279,7 +279,7 @@ function populateWorldWithExamples(world) {
                 });
             }
 	
-            if (Config.showMap) {
+            if (!Config.skipMostExamples && Config.showMap) {
                 require('lively.Examples').toRun(function(unused, exampleModule) {
                     var tile = exampleModule.maps.tileExtent;
                     var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
@@ -543,7 +543,6 @@ function main() {
 		});
 	}
     if(Config.testTracing) lively.lang.Execution.testTrace();
-    if(Config.testPlotDemo) new PlotDemo().open();
 
 }
 
