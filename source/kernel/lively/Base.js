@@ -353,23 +353,20 @@ Object.extend(Function.prototype, {
 			className = shortName;
 		}
 	
+		var klass;
 		if (className && targetScope[shortName] && (targetScope[shortName].superclass === this)) {
 			// preserve the class to allow using the subclass construct in interactive development
-			var klass = targetScope[shortName]; 
+			klass = targetScope[shortName]; 
 		} else {
-			var klass = Class.newInitializer(shortName);
+			klass = Class.newInitializer(shortName);
+			klass.superclass = this;
+			var protoclass = function() { }; // that's the constructor of the new prototype object
+			protoclass.prototype = this.prototype;
+			klass.prototype = new protoclass();
+			klass.prototype.constructor = klass;
+			klass.prototype.constructor.type = className; // KP: .name would be better but js ignores .name on anonymous functions
+			if (className) targetScope[shortName] = klass; // otherwise it's anonymous
 		};
-	
-		klass.superclass = this;
-
-		var protoclass = function() { }; // that's the constructor of the new prototype object
-		protoclass.prototype = this.prototype;
-
-		klass.prototype = new protoclass();
-	
-		klass.prototype.constructor = klass;
-		// KP: .name would be better but js ignores .name on anonymous functions
-		klass.prototype.constructor.type = className;
 
 		for (var i = 1; i < args.length; i++) {
 			klass.addMethods(args[i] instanceof Function ? (args[i])() : args[i]);
@@ -378,7 +375,6 @@ Object.extend(Function.prototype, {
 			klass.prototype.initialize = Functions.Empty;
 		}
 
-		if (className) targetScope[shortName] = klass; // otherwise it's anonymous
 		return klass;
 	},
 
