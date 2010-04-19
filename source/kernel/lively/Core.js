@@ -2806,9 +2806,14 @@ Morph.addMethods({
 
     copySubmorphsOnGrab: false, // acts as a palette if true.
     
+
+	suppressGrabbing: false,
+
     // May be overridden to preempt (by returning null) the default action of grabbing me
     // or to otherwise prepare for being grabbed or find a parent to grab instead
     okToBeGrabbedBy: function(evt) {
+		if (this.suppressGrabbing)
+			return null;
 		return this; 
     },
 
@@ -2852,6 +2857,8 @@ Morph.addMethods({
 			["edit name...", function() { this.world().prompt('edit name', function(input) { this.setName(input) }.bind(this), this.getName()) }],
 			["reset rotation", this.setRotation.curry(0)],
 			["reset scaling", this.setScale.curry(1)],
+			[((this.suppressGrabbing) ? "[] grabbing" : "[X] grabbing"), function(){this.suppressGrabbing = !this.suppressGrabbing}.bind(this)],
+			[((this.suppressHandles) ? "[] handles" : "[X] handles"), function(){this.suppressHandles = !this.suppressHandles}.bind(this)],
 			[((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
 			[(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 			["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
