@@ -24,6 +24,13 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		var result = URL.ensureAbsoluteURL(urlString);
 		var expected = URL.source.getDirectory().toString() + urlString;
 		this.assertEqual(expected, result.toString());
+	},
+
+	testRemoveRelativeParts: function() {
+		var urlString = 'http://foo.com/bar/../baz/';
+		var result = new URL(urlString).withRelativePartsResolved();
+		var expected = 'http://foo.com/baz/';
+		this.assertEqual(expected, result.toString());
 	}
 	
 });

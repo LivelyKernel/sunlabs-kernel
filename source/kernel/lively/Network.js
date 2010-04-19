@@ -189,6 +189,16 @@ Object.subclass('URL', {
 		return Strings.format('new URL({protocol: "%s", hostname: "%s", pathname: "%s"})',
 			this.protocol, this.hostname, this.pathname);
 	},
+withRelativePartsResolved: function() {
+	var urlString = this.toString();
+	var result = urlString;
+	do {
+		urlString = result;
+		result = urlString.replace(/\/[a-zA-Z0-9\.]+\/\.\./g, '')
+	} while(result != urlString)
+	return new URL(result)
+},
+
 });
 
 URL.fromLiteral = function(literal) {
