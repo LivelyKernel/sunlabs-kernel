@@ -31,7 +31,7 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		var result = new URL(urlString).withRelativePartsResolved();
 		var expected = 'http://foo.com/baz/';
 		this.assertEqual(expected, result.toString());
-	}
+	},
 	
 });
 	

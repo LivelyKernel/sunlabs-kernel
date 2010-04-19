@@ -195,7 +195,7 @@ Object.subclass('URL', {
 		var result = urlString;
 		do {
 			urlString = result;
-			result = urlString.replace(/\/[a-zA-Z0-9\.]+\/\.\./g, '')
+			result = urlString.replace(/\/[^\/]+\/\.\./g, '')
 		} while(result != urlString)
 		return new URL(result)
 	},
