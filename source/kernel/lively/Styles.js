@@ -227,7 +227,7 @@ WorldMorph.prototype.displayThemes['hpi'] = using(lively.paint).link({
 	},
 	codePane: {
 		//fontFamily: 'Courier'
-		fontColor: Color.red
+		fontColor: Color.red,
 	}
 })
 
