@@ -1614,6 +1614,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 		var world = WorldMorph.current();
 		var browser = this.browser;
 		var createFileIfAbsent = function(filename) {
+			if (!filename.endsWith('.js')) filename += '.js';
 			var dir = new FileDirectory(tools.SourceControl.codeBaseURL);
 			if (dir.fileOrDirectoryExists(filename)) {
 				world.notify('File ' + filename + ' already exists!');
