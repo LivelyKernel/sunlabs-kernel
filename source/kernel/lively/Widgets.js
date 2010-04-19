@@ -395,6 +395,14 @@ BoxMorph.subclass("ImageMorph", {
 		newImg.src = imgSrc;
 		return pt(newImg.width, newImg.height)
 	},
+	
+	setExtent: function($super, extent) {
+		if (this.image) {
+			this.image.setWidth(extent.x)
+			this.image.setHeight(extent.y)
+		}
+		$super(extent)
+	},
 
 	reshape: function($super, partName, newPoint, lastCall){
 		$super(partName, newPoint, lastCall);
@@ -403,9 +411,6 @@ BoxMorph.subclass("ImageMorph", {
 			var ratio = this.originalExtent.y / this.originalExtent.x
 			extent.y = extent.x * ratio
 		};
-
-		this.image.setWidth(extent.x)
-		this.image.setHeight(extent.y)
 		this.setExtent(extent)
 	},
 
@@ -424,7 +429,8 @@ BoxMorph.subclass("ImageMorph", {
 		var extent = this.originalImageSize(url);
 		this.originalExtent = extent;
 		this.image.loadImage(url);
-		this.setExtent(extent)
+		this.setExtent(extent);
+		this.reshape()
 	},
 	
 	editImageSrc: function() {
