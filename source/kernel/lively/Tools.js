@@ -1773,7 +1773,7 @@ ChangeList.subclass('SourceDatabase', {
     // want in a typical development session.  We may soon want more control
     // over this and a reasonable UI for such control.
 
-	codeBaseURL: new URL(Config.codeBase).withFilename('lively/'),
+	codeBaseURL: new URL(Config.codeBase).withRelativePartsResolved().withFilename('lively/'),
 	
     initialize: function($super) {
         this.methodDicts = {};

@@ -1618,7 +1618,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 				world.notify('File ' + filename + ' already exists!');
 			} else {
 				var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
-				var realCodeBase = new URL(Config.codeBase);
+				var realCodeBase = new URL(Config.codeBase).withRelativePartsResolved();
 				var moduleBase = tools.SourceControl.codeBaseURL.relativePathFrom(realCodeBase);
 				var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
 				dir.writeFileNamed(
