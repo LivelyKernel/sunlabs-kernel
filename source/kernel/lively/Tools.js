@@ -1270,6 +1270,44 @@ TextMorph.subclass('FrameRateMorph', {
 
 
 // ===========================================================================
+// ClickTimeMorph
+// ===========================================================================
+TextMorph.subclass('ClickTimeMorph', {
+	// Displays a list of the number of milliseconds that the mouse was recently down or up
+
+    initialize: function($super, zort) {
+        $super(new Rectangle(100, 100, 120, 100), "---");
+        var ms = new Date().getTime();
+        this.nEvents = 4;
+	this.ts = [];
+	for (var i=0; i<this.nEvents; i++) this.ts.push(ms);
+    },
+
+    handlesMouseDown: function() { return true; },
+
+    onMouseDown: function() {
+	this.ts.unshift(new Date().getTime());
+    },
+
+    onMouseUp: function() {
+	this.ts.unshift(new Date().getTime());
+	if (this.ts.length > this.nEvents+2) { this.ts.pop(); this.ts.pop(); };
+	this.showStats(this.ts);
+    },
+
+    showStats: function(ts) {
+	var str = "";
+	for (var i=0; i<this.nEvents; i++)  {
+		str += (i>0 ? "\n" : "");
+		str += ((i%2 == 0) ? "down for " : "up for ") + (ts[i] - ts[i+1]);
+	}
+        this.setTextString(str);
+    }
+
+});
+
+
+// ===========================================================================
 // EllipseMaker
 // ===========================================================================
 ButtonMorph.subclass('EllipseMakerMorph', {

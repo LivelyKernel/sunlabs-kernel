@@ -2170,7 +2170,7 @@ Morph.subclass("MenuMorph", {
 
         // If menu and/or caption is off screen, move it back so it is visible
         var menuRect = this.bounds();  //includes caption if any
-		var bounds = this.world().visibleBounds();
+		var bounds = (this.world() || WorldMorph.current()).visibleBounds();
 		var visibleRect = menuRect.intersection(bounds);
         var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
         delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
