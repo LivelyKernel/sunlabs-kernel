@@ -2303,20 +2303,21 @@ putSourceCodeForFile: function(filename, content) {
 		});
 		console.log('updated ' + this.registeredBrowsers.length + ' browsers in ' + (new Date().getTime()-msStart)/1000 + 's')
 	},
-update: function() {
-	this._allFiles = null;
-},
-addFile: function(filename) {
-	this._allFiles.push(filename);
-},
-removeFile: function(filename) {
-	this._allFiles = this._allFiles.without(filename);
-},
+	
+	update: function() {
+		this._allFiles = null;
+	},
+	addFile: function(filename) {
+		this._allFiles.push(filename);
+	},
+	removeFile: function(filename) {
+		this._allFiles = this._allFiles.without(filename);
+	},
 
-switchCodeBase: function(newCodeBaseURL) {
-	this.codeBaseURL = newCodeBaseURL;
-	this._allFiles = new WebResource(newCodeBaseURL).subDocuments().collect(function(ea) { return ea.getName() });
-},
+	switchCodeBase: function(newCodeBaseURL) {
+		this.codeBaseURL = new URL(newCodeBaseURL);
+		this._allFiles = new WebResource(newCodeBaseURL).subDocuments().collect(function(ea) { return ea.getName() });
+	},
 	
 });
  
