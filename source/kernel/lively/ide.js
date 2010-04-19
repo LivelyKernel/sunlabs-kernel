@@ -1620,7 +1620,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 			} else {
 				var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
 				var realCodeBase = new URL(Config.codeBase).withRelativePartsResolved();
-				var moduleBase = tools.SourceControl.codeBaseURL.relativePathFrom(realCodeBase);
+				var moduleBase = tools.SourceControl.codeBaseURL.withRelativePartsResolved().relativePathFrom(realCodeBase);
 				var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
 				dir.writeFileNamed(
 					filename,
