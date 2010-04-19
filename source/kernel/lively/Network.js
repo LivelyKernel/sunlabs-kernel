@@ -196,6 +196,7 @@ Object.subclass('URL', {
 		do {
 			urlString = result;
 			result = urlString.replace(/\/[^\/]+\/\.\./g, '')
+			result = result.replace(/([^:])[\/]+/g, '$1/')
 		} while(result != urlString)
 		return new URL(result)
 	},
