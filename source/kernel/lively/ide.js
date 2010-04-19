@@ -2249,11 +2249,17 @@ putSourceCodeForFile: function(filename, content) {
 
     
 	searchFor: function(str) {
-		var allFragments = Object.values(tools.SourceControl.modules)
-			.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
-		return allFragments.select(function(ea) {
-			return ea.getSourceCodeWithoutSubElements().include(str)
-		});
+	// search modules
+	var allFragments = Object.values(lively.Tools.SourceControl.modules)
+		.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
+
+	// search local code	
+	allFragments = allFragments.concat(ChangeSet.current().flattened());
+
+	return allFragments.select(function(ea) {
+		return ea.getSourceCodeWithoutSubElements().include(str)
+	});
+
 },
 
     scanLKFiles: function($super, beSync) {
