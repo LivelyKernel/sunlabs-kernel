@@ -1631,7 +1631,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 				browser.inPaneSelectNodeNamed('Pane1', filename);
 			}
 		};
-		world.prompt('Enter filename (something like test.js)', createFileIfAbsent);
+		world.prompt('Enter filename (something like foo or foo.js)', createFileIfAbsent);
 	},
 
 	
