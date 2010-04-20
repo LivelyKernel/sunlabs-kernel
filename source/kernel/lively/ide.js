@@ -1434,12 +1434,16 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetClassNode', {
 
 ide.ChangeNode.subclass('lively.ide.ChangeSetClassElemNode', {
 
-handleDrop: function(nodeDroppedOntoMe) {
-	if (!(nodeDroppedOntoMe instanceof lively.ide.ChangeSetClassElemNode))
-		return false;
-	this.target.parent().addSubElement(nodeDroppedOntoMe.target, this.target);
-	return true;
-},
+	handleDrop: function(nodeDroppedOntoMe) {
+		if (!(nodeDroppedOntoMe instanceof lively.ide.ChangeSetClassElemNode))
+			return false;
+		this.target.parent().addSubElement(nodeDroppedOntoMe.target, this.target);
+		return true;
+	},
+
+	asString: function() {
+		return this.target.getName() + (this.target.isStaticChange ? ' [static]' : ' [proto]');
+	},
 
 });
 

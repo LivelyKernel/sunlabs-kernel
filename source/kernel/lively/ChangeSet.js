@@ -155,6 +155,10 @@ Object.subclass('Change', {
     inspect: function() {
     	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
 	},
+	
+	asJs: function() {
+		throw new Error('Subclass resbonsibility -- not implemented in ' + this.constructor.type);
+	}
 
 });
 
@@ -366,8 +370,10 @@ Change.subclass('ProtoChange', {
 			|| this.getAttributeNamed('name', this.xmlElement.parentNode);
 	},
 
-	asJs: function() {
-		return this.getName() + ': ' + this.getDefinition() + ',';
+	asJs: function() { // FIXME duplication with StaticChange
+		var body = this.getDefinition();
+		body = body.replace(/\s+(.*)/, '$1');
+		return this.getName() + ': ' + body + ',';
 	},
 
 });
@@ -404,6 +410,12 @@ Change.subclass('StaticChange', {
 		var src = Strings.format('Object.extend(%s, {%s: %s})', className, this.getName(), this.getDefinition());
 		eval(src);
 		return klass[this.getName()];
+	},
+	
+	asJs: function() { // FIXME duplication with ProtoChange
+		var body = this.getDefinition();
+		body = body.replace(/\s+(.*)/, '$1');
+		return this.getName() + ': ' + body + ',';
 	},
 
 });
