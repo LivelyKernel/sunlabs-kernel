@@ -129,9 +129,50 @@ var Loader = {
  	// rebind to something that has all the calls, and forwards ti consumers...
 	Global.console = {
 	    
+		platformConsole: platformConsole,
+		
+		// forwarding Fierbug functions...
+		// from: http://getfirebug.com/logging
+		// http://michaelsync.net/2007/09/09/firebug-tutorial-logging-profiling-and-commandline-part-i
+		profile:  function profile() {
+			platformConsole.profile.apply(platformConsole, arguments)
+		},
+
+		profileEnd: function profileEnd() {
+			platformConsole.profileEnd.apply(platformConsole, arguments)
+		},
+
+		time: function time() {
+			platformConsole.time.apply(platformConsole, arguments)
+		},
+
+		timeEnd: function timeEnd() {
+			platformConsole.timeEnd.apply(platformConsole, arguments)
+		},
+		
+		trace: function trace() {
+			platformConsole.trace.apply(platformConsole, arguments)
+		},
+		
+		
+		// Nested grouping
+		group: function group() {
+			platformConsole.group.apply(platformConsole, arguments)
+		},
+
+		groupEnd: function groupEnd() {
+			platformConsole.groupEnd.apply(platformConsole, arguments)
+		},
+		
+		// Object inspection
+		dir: function dir() {
+			platformConsole.dir.apply(platformConsole, arguments)
+		},
+		// end forwarding Fierbug functions
+		
 	    consumers: [ platformConsole], // new LogWindow() ],
 	    
-		warn: function() {
+		warn: function warn() {
 			var args = $A(arguments);
 			this.consumers.forEach(function(c) { 
 				if (c.warn) c.warn.apply(c, args); 
@@ -139,7 +180,7 @@ var Loader = {
 			});
 		},
 	    
-		info: function() {
+		info: function info() {
 			var args = $A(arguments);
 			this.consumers.forEach(function(c) { 
 				if (c.info) c.info.apply(c, args); 
@@ -147,11 +188,11 @@ var Loader = {
 			});
 		},
 	    
-		log: function() {
+		log: function log() {
 			this.consumers.invoke('log', Strings.formatFromArray($A(arguments)));
 		},
 	    
-		assert: function(expr, msg) {
+		assert: function assert(expr, msg) {
 			if (!expr) this.log("assert failed:" + msg);
 		}
 	}
