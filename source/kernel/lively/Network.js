@@ -1112,6 +1112,8 @@ Object.subclass('WebResource', {
 		req.beSync();
 		req.propfind(this.getURL(), depth);
 		// FIXME: resolve prefix "D" to something meaningful?
+		if (!req.getStatus().isSuccess())
+			throw new Error('Cannot access subElements of ' + this.getURL());
 		var nodes = new Query("/D:multistatus/D:response").findAll(req.getResponseXML().documentElement)
 		nodes.shift(); // remove first since it points to this WebResource
 		var result = [];
