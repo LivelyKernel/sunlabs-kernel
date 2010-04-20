@@ -135,38 +135,46 @@ var Loader = {
 		// from: http://getfirebug.com/logging
 		// http://michaelsync.net/2007/09/09/firebug-tutorial-logging-profiling-and-commandline-part-i
 		profile:  function profile() {
-			platformConsole.profile.apply(platformConsole, arguments)
+			if (platformConsole.profile)
+				platformConsole.profile.apply(platformConsole, arguments)
 		},
 
 		profileEnd: function profileEnd() {
-			platformConsole.profileEnd.apply(platformConsole, arguments)
+			if (platformConsole.profileEnd)
+				platformConsole.profileEnd.apply(platformConsole, arguments)
 		},
 
 		time: function time() {
-			platformConsole.time.apply(platformConsole, arguments)
+			if (platformConsole.time)
+				platformConsole.time.apply(platformConsole, arguments)
 		},
 
 		timeEnd: function timeEnd() {
-			platformConsole.timeEnd.apply(platformConsole, arguments)
+			if (platformConsole.timeEnd)
+				platformConsole.timeEnd.apply(platformConsole, arguments)
 		},
 		
 		trace: function trace() {
-			platformConsole.trace.apply(platformConsole, arguments)
+			if (platformConsole.trace)
+				platformConsole.trace.apply(platformConsole, arguments)
 		},
 		
 		
 		// Nested grouping
 		group: function group() {
-			platformConsole.group.apply(platformConsole, arguments)
+			if (platformConsole.group)
+				platformConsole.group.apply(platformConsole, arguments)
 		},
 
 		groupEnd: function groupEnd() {
-			platformConsole.groupEnd.apply(platformConsole, arguments)
+			if (platformConsole.groupEnd)
+				platformConsole.groupEnd.apply(platformConsole, arguments)
 		},
 		
 		// Object inspection
 		dir: function dir() {
-			platformConsole.dir.apply(platformConsole, arguments)
+			if (platformConsole.dir)
+				platformConsole.dir.apply(platformConsole, arguments)
 		},
 		// end forwarding Fierbug functions
 		
