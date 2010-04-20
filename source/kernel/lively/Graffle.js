@@ -143,6 +143,9 @@ Morph.subclass('MorphDuplicatorMorph', {
 });
 
 createLayer("MorphPrototypeLayer");
+
+// Disabled for performance issues
+/*
 layerClassAndSubclasses(MorphPrototypeLayer, Morph, {
 	get openForDragAndDrop() {
 		return false;
@@ -160,7 +163,7 @@ layerClassAndSubclasses(MorphPrototypeLayer, Morph, {
 
 	}
 });
-
+*/
 
 Morph.makeDefaultDuplicatorPanel = function(point) {
 	var pane = new MorphDuplicatorPanel(point, 10);
