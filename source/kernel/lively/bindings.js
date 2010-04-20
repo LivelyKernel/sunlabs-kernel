@@ -109,7 +109,7 @@ Object.subclass('AttributeConnection', {
 			else
 			this.targetObj[this.targetMethodName] = newValue;
 		} catch(e) {
-			console.error('Error when trying to update ' + this + ' with value ' + newValue);
+			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
 		} finally {
 			this.deactivate();
 		}
