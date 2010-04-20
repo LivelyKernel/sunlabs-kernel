@@ -2598,8 +2598,9 @@ TextMorph.addMethods({
 		return pos + linePos
 	},
 		
-	saveContents: function(contentString) {	   
-		if (!this.modelPlug && !this.formalModel) {
+	saveContents: function(contentString) {
+		this.savedTextString = contentString;
+		if (!this.modelPlug && !this.formalModel && !this.noEval) {
 			this.tryBoundEval(contentString);
 			this.world().changed(); 
 			return; // Hack for browser demo
