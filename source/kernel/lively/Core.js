@@ -4667,17 +4667,24 @@ WorldMorph.addMethods({
 		
 	},
 
-	setStatusMessage: function(msg, color, delay, callback) {
+	setStatusMessage: function(msg, color, delay, callback, optStyle) {
 		console.log("status msg: " + msg)
 		var statusMorph = this._statusMorph || new TextMorph(pt(400,30).extentAsRectangle());
 		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.5});
+		if (optStyle)
+			statusMorph.applyStyle(optStyle);
 		statusMorph.textString = msg;
 		statusMorph.setTextColor(color || Color.black);
-	
+
 		if (callback) {
 			statusMorph.enableEvents();
 			statusMorph.handlesMouseDown = Functions.True;
-			statusMorph.onMouseDown = callback;
+			var pressed = false;
+			statusMorph.onMouseDown = function() {
+				if (!pressed)
+					callback();
+				pressed = true;
+			 	return true};
 			statusMorph.onMouseMove = Functions.NULL;
 		} else {
 			statusMorph.ignoreEvents();

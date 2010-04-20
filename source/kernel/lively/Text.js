@@ -2247,7 +2247,11 @@ BoxMorph.subclass('TextMorph', {
 			var msg = "" + e + "\n" + 
 				"Line: " + e.line + "\n" +
 				(e.sourceURL ? ("URL: " + (new URL(e.sourceURL).filename()) + "\n") : "");
-			
+			if (e.stack) {
+				// make the stack fit into status window
+				var prefix = (new URL(Config.codeBase)).withRelativePartsResolved().toString()
+				msg += e.stack.replace(new RegExp(prefix, "g"),"");
+			}
 			this.world().setStatusMessage(
 				msg,  
 				Color.red, 5,
@@ -2255,9 +2259,9 @@ BoxMorph.subclass('TextMorph', {
 					require('lively.Helper').toRun(function() { 
 						alert('Ther was an errror\n' + printObject(e))
 					})
-				}
+				},
+				{fontSize: 12, fillOpacity: 1}
 			)
-			// How do we know that the error occured here?
 			if (e.expressionEndOffset) {
 				// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
 				this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
@@ -2271,7 +2275,7 @@ BoxMorph.subclass('TextMorph', {
 				}
 			}
 			this.setStatusMessage("" + e, Color.red); 
-		}
+		}	
 		return result;
 	},
 
