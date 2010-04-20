@@ -29,7 +29,17 @@ It is suggested to use in together with a localconfig.js that contains only…
 <script type="text/ecmascript" xlink:href="lively/JSON.js" />
 <script type="text/ecmascript" xlink:href="lively/miniprototype.js" />
 <script type="text/ecmascript" xlink:href="lively/defaultconfig.js"/>
-<script type="text/ecmascript" xlink:href="lively/localconfig.js"/> <!-- ignored if not there -->
+<script type="text/ecmascript">
+<!-- an in-line version of localconfig... -->
+    Config.showInnerWorld = false;
+    Config.showDeveloperWorld = false;
+    Config.showSlideWorld = false;
+    Config.showOnlySimpleMorphs = true;
+    Config.showStar = true;  // true to show star
+    Config.spinningStar = true;  // true to enable spinning
+</script>
+ <!-- add more localconfig if you like… (ignored if not found) -->
+<script type="text/ecmascript" xlink:href="lively/localconfig.js"/>
 <script type="text/ecmascript" xlink:href="lively/Base.js"/>
 <script type="text/ecmascript" xlink:href="lively/scene.js"/>
 <script type="text/ecmascript" xlink:href="lively/Core.js"/>
@@ -42,7 +52,8 @@ It is suggested to use in together with a localconfig.js that contains only…
 <!-- <script type="text/ecmascript" xlink:href="lively/Tools.js"/> -->
 <!-- <script type="text/ecmascript" xlink:href="lively/Examples.js"/> -->
 <script type="text/ecmascript" xlink:href="lively/Main.js"/>
-<script type="text/ecmascript" xlink:href="lively/Scratch.js"/> <!-- ignored if not there -->
+<!-- Scratch.js is for experiments;  ignored if not found -->
+<script type="text/ecmascript" xlink:href="lively/Scratch.js"/> 
 
 </defs>
 </svg>
