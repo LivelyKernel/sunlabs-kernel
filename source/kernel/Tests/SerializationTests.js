@@ -1,4 +1,4 @@
-module('Tests.SerializationTests').requires('lively.TestFramework').toRun(function(thisModule) {
+module('Tests.SerializationTests').requires('lively.TestFramework', 'lively.Fabrik').toRun(function(thisModule) {
 
 /* Helper Classes */
 

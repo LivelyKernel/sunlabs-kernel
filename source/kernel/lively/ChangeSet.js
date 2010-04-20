@@ -326,8 +326,8 @@ Change.subclass('ClassChange', {
 	asJs: function() {
 		var subElementString = '';
 		if (this.subElements().length > 0)
-			subElementString = this.subElements().invoke('asJs').join('\n\n');
-		return Strings.format('%s.subclass(\'%s\', {\n\n%s\n\n});',
+			subElementString = '\n\n' + this.subElements().invoke('asJs').join('\n\n') + '\n\n';
+		return Strings.format('%s.subclass(\'%s\', {%s});',
 			this.getSuperclassName(), this.getName(), subElementString);
 	},
 
