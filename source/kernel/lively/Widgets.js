@@ -332,8 +332,11 @@ BoxMorph.subclass("ImageMorph", {
 		$super(viewPort);
 		this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
 		console.log("making an image from: " + url);
-		if (url) this.addWrapper(this.image); // otherwise we didn't make a rawNode
-		this.setURL(url) 
+		if (url) {
+			this.addWrapper(this.image); // otherwise we didn't make a rawNode
+			this.setURL(url) 
+		}
+		
 	},
 
 	// FIXME:
@@ -405,7 +408,8 @@ BoxMorph.subclass("ImageMorph", {
 	},
 
 	reshape: function($super, partName, newPoint, lastCall){
-		$super(partName, newPoint, lastCall);
+		if (partName)
+			$super(partName, newPoint, lastCall);
 		var extent = this.getExtent();
 		if (this.originalExtent) {
 			var ratio = this.originalExtent.y / this.originalExtent.x
