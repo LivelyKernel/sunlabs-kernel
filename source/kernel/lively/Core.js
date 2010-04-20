@@ -5089,8 +5089,8 @@ Morph.subclass("HandMorph", {
 		this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
 		this.mouseFocusChanges_ ++;
 	if (UserAgent.isiPhone) { // Allow iPhone pan when focus is null or on the world
-		if (this.mouseFocus && this.mouseFocus===this.mouseFocus.world()) iPhonePanMode();
-			else iPhoneDragMode();
+		if (!this.mouseFocus || this.mouseFocus===this.mouseFocus.world()) UserAgent.iPhonePanMode();
+			else UserAgent.iPhoneDragMode();
 	}
     },
     

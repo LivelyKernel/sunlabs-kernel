@@ -82,8 +82,7 @@ var UserAgent = (function() {
 // Following iPhone code borrowed from…
 //	http://rossboucher.com/2008/08/19/iphone-touch-events-in-javascript/
 //--------------------------
-function touchHandler(event)
-{
+UserAgent.touchHandler = function(event) {
     var touches = event.changedTouches,
         first = touches[0],
         type = "";
@@ -103,20 +102,26 @@ function touchHandler(event)
                               false, false, false, 0/*left*/, null);
     first.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
-}
+};
 // These two funcs should probably be methods of UserAgent
-function iPhoneDragMode() 
-{   document.addEventListener("touchstart", touchHandler, true);
-    document.addEventListener("touchmove", touchHandler, true);
-    document.addEventListener("touchend", touchHandler, true);
-    document.addEventListener("touchcancel", touchHandler, true); 
-}
-function iPhonePanMode() 
-{   document.removeEventListener("touchstart", touchHandler, true);
-    document.removeEventListener("touchmove", touchHandler, true);
-    document.removeEventListener("touchend", touchHandler, true);
-    document.removeEventListener("touchcancel", touchHandler, true); 
-}
+UserAgent.iPhoneDragMode = function () {
+    if (this.iPhoneDrag) return;
+	else this.iPhoneDrag = true;
+    //WorldMorph.current().setFill(Color.blue.lighter());  //so we can tell what's going on
+    document.addEventListener("touchstart", this.touchHandler, true);
+    document.addEventListener("touchmove", this.touchHandler, true);
+    document.addEventListener("touchend", this.touchHandler, true);
+    document.addEventListener("touchcancel", this.touchHandler, true); 
+};
+UserAgent.iPhonePanMode = function () {
+    if (!this.iPhoneDrag) return;
+	else this.iPhoneDrag = false;
+    //WorldMorph.current().setFill(Color.red.lighter());  //so we can tell what's going on
+    document.removeEventListener("touchstart", this.touchHandler, true);
+    document.removeEventListener("touchmove", this.touchHandler, true);
+    document.removeEventListener("touchend", this.touchHandler, true);
+    document.removeEventListener("touchcancel", this.touchHandler, true); 
+};
 
 //--------------------------
 // Determine runtime behavior based on UA capabilities and user choices (override in localconfig.js)
