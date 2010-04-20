@@ -895,7 +895,7 @@ testXXbJsParserCanConsumeComplexExample: function() {
 
 });
 
-TestCase.subclass('lively.Test.SmalltalkParserTest.SmalltalkBrowserTest', {
+TestCase.subclass('Tests.SmalltalkParserTest.SmalltalkBrowserTest', {
 /*
 StFileNode(foo.st, 2 classes):0-302
 Class(Literal(Object)):0-115
@@ -928,30 +928,30 @@ Method(printSomething(none)):253-302
 - printSomething\n\
     console log: self helloWorld.',
     
-  setUp: function($super) {
-    $super();
-	var src = this.dummySource;
-    var db = new AnotherSourceDatabase();
-    db.cachedFullText['foo.st'] = this.dummySource;
-    db.putSourceCodeFor = function(fileFragment, newFileString) { db.cachedFullText['foo.st'] = newFileString };
-    this.root = db.addModule('foo.st', src);
-    this.db = db;
-		// we don't want to see alert
-    // this.oldAlert = WorldMorph.prototype.alert;
-    // WorldMorph.prototype.alert = Functions.Null;    
-  },
-  tearDown: function($super) {
+	setUp: function($super) {
 		$super();
-    // WorldMorph.prototype.alert = this.oldAlert;
+		var src = this.dummySource;
+		this.db = new AnotherSourceDatabase();
+		this.root = this.db.prepareForMockModule('foo.st', src);
+		// we don't want to see alert
+		// this.oldAlert = WorldMorph.prototype.alert;
+		// WorldMorph.prototype.alert = Functions.Null;    
 	},
-  fragmentDetect: function(block) {
+
+	tearDown: function($super) {
+		$super();
+		// WorldMorph.prototype.alert = this.oldAlert;
+	},
+
+	fragmentDetect: function(block) {
 		return this.root.flattened().detect(function(ea) { return block(ea) });
 	},
-printAllIndexes: function() {
-	this.root.flattened().forEach(function(ea) {
-		console.log(ea.toString() + ':' + ea.startIndex + '-' + ea.stopIndex);
-	})
-},
+	
+	printAllIndexes: function() {
+		this.root.flattened().forEach(function(ea) {
+			console.log(ea.toString() + ':' + ea.startIndex + '-' + ea.stopIndex);
+		})
+	},
 
   test01ChangeMethod: function() {
     var node = this.fragmentDetect(function(ea) { return ea.methodName == 'toString'});

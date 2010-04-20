@@ -209,6 +209,8 @@ URL.fromLiteral = function(literal) {
 
 URL.source = new URL(document.documentURI);
 
+URL.codeBase = new URL(Config.codeBase).withRelativePartsResolved()
+
 URL.ensureAbsoluteURL = function(urlString) {
 	return /^http.*/.test(urlString) ?
 	new URL(urlString) :

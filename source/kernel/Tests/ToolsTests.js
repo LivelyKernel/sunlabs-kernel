@@ -26,20 +26,21 @@ TestCase.subclass('Tests.ToolsTests.SystemBrowserTests', {
 		browser.rootNode = function() { return root };
 		this.browser = browser;
 	},
-mockNodeClass: lively.ide.BrowserNode.subclass('Tests.ToolsTests.MockNode', {
+
+	mockNodeClass: lively.ide.BrowserNode.subclass('Tests.ToolsTests.MockNode', {
 			initialize: function($super, target, browser, c) { $super(target, browser); this.children = c || [] },
 			childNodes: function() { return this.children; }
 		}),
-createMockNode: function(browser, children, target, name) {
-	var node = new this.mockNodeClass(target, browser, children);
-	if (name)
-		node.asString = function() { return name}
-	return node;
-},
-
-
+		
+	createMockNode: function(browser, children, target, name) {
+		var node = new this.mockNodeClass(target, browser, children);
+		if (name)
+			node.asString = function() { return name}
+		return node;
+	},
 
 	testSelectNodeInFirstPane: function() {
+		lively.ide.startSourceControl();
 		var browser = this.browser;
 		var node1 = this.createMockNode(browser);
 		var node2 = this.createMockNode(browser);
@@ -49,39 +50,40 @@ createMockNode: function(browser, children, target, name) {
 		browser.selectNode(node1);
 		this.assertIdentity(node1, browser.selectedNode());
 	},
-testFilterChildNodes: function() {
-	var browser = this.browser;
-	var node1 = this.createMockNode(browser);
-	var node2 = this.createMockNode(browser);
-	node1.shouldAppear = true; node2.shouldAppear = false;
-	browser.rootNode().children = [node1, node2];
-	var testFilterClass = lively.ide.NodeFilter.subclass('Tests.ToolsTest.TestFilter', {
-		apply: function(nodes) { return nodes.select(function(ea) {return ea.shouldAppear}) }
-	});
-	var result = browser.filterChildNodesOf(browser.rootNode(), [new testFilterClass()]);
-	this.assertEqual(result.length, 1);
-	this.assertIdentity(result[0], node1);
-},
-testUninstallFilter: function() {
-	var browser = this.browser;
-	browser.installFilter(new lively.ide.NodeFilter(), 'Pane1');
-	this.assert(browser.getPane1Filters().length > 0);
-	browser.uninstallFilters(function(filter) { return filter instanceof lively.ide.NodeFilter }, 'Pane1')
-	this.assertEqual(browser.getPane1Filters().length, 0);
-},
-testSortFilter: function() {
-	var filter = new lively.ide.SortFilter();
-	var n1 = this.createMockNode(null, null, null, 'c');
-	var n2 = this.createMockNode(null, null, null, 'a');
-	var n3 = this.createMockNode(null, null, null, 'b');
-	var result = filter.apply([n1, n2, n3]);
-	this.assertEqual(result.length, 3);
-	this.assertIdentity(result[0], n2);
-	this.assertIdentity(result[1], n3);
-	this.assertIdentity(result[2], n1);
-},
 
+	testFilterChildNodes: function() {
+		var browser = this.browser;
+		var node1 = this.createMockNode(browser);
+		var node2 = this.createMockNode(browser);
+		node1.shouldAppear = true; node2.shouldAppear = false;
+		browser.rootNode().children = [node1, node2];
+		var testFilterClass = lively.ide.NodeFilter.subclass('Tests.ToolsTest.TestFilter', {
+			apply: function(nodes) { return nodes.select(function(ea) {return ea.shouldAppear}) }
+		});
+		var result = browser.filterChildNodesOf(browser.rootNode(), [new testFilterClass()]);
+		this.assertEqual(result.length, 1);
+		this.assertIdentity(result[0], node1);
+	},
 
+	testUninstallFilter: function() {
+		var browser = this.browser;
+		browser.installFilter(new lively.ide.NodeFilter(), 'Pane1');
+		this.assert(browser.getPane1Filters().length > 0);
+		browser.uninstallFilters(function(filter) { return filter instanceof lively.ide.NodeFilter }, 'Pane1')
+		this.assertEqual(browser.getPane1Filters().length, 0);
+	},
+
+	testSortFilter: function() {
+		var filter = new lively.ide.SortFilter();
+		var n1 = this.createMockNode(null, null, null, 'c');
+		var n2 = this.createMockNode(null, null, null, 'a');
+		var n3 = this.createMockNode(null, null, null, 'b');
+		var result = filter.apply([n1, n2, n3]);
+		this.assertEqual(result.length, 3);
+		this.assertIdentity(result[0], n2);
+		this.assertIdentity(result[1], n3);
+		this.assertIdentity(result[2], n1);
+	},
 
 });
 
@@ -349,6 +351,14 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest1', {
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
         this.assertDescriptorsAreValid([descriptor]);
     },
+
+	testExtensionSubElementsAreStaticProperties: function() {
+		var src = 'Object.extend(Bla, {\nm1: function() {\n 1+2\n },\n x: 1\n});';
+		this.sut.src = src;
+        var descriptor = this.sut.callOMeta('klassExtensionDef');
+		this.assertEquals(descriptor.subElements()[0].name, 'm1');
+		this.assert(descriptor.subElements()[0].isStatic, 'not static!');
+	},
     
     testParseMethodModification: function() {   // Klass.protoype.method = function() {...};
         var src = 'Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt) {  });';
@@ -868,44 +878,41 @@ Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.ChunkParserTest', {
 });
 
 thisModule.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
-   
-   setUp: function() {
-       /* creates:
-           moduleDef: foo.js (0-277 in foo.js, starting at line 1, 4 subElements)
-			klassDef: ClassA (55-123 in foo.js, starting at line 2, 1 subElements)
-			propertyDef (proto): m1 (84-119 in foo.js, starting at line 3, 0 subElements)
-			propertyDef (static): m3 (124-155 in foo.js, starting at line 8, 0 subElements)
-			functionDef: abc (156-179 in foo.js, starting at line 9, 0 subElements)
-			klassDef: ClassB (180-257 in foo.js, starting at line 10, 2 subElements)
-			propertyDef (proto): m2 (209-230 in foo.js, starting at line 11, 0 subElements)
-			propertyDef (proto): m3 (232-253 in foo.js, starting at line 12, 0 subElements)
-        */
-        var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
-               'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n' +
-               'ClassA.m3 = function() { 123 };\n' +
-               'function abc() { 1+2 };\n' +
-               'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
-               '}); // end of module';
-        var db = new AnotherSourceDatabase();
-        db.cachedFullText['foo.js'] = src;
-        db.putSourceCodeFor = function(fileFragment, newFileString) { db.cachedFullText['foo.js'] = newFileString };
-        this.root = db.addModule('foo.js', src);
+
+	setUp: function() {
+		/* creates:
+		moduleDef: foo.js (0-277 in foo.js, starting at line 1, 4 subElements)
+		klassDef: ClassA (55-123 in foo.js, starting at line 2, 1 subElements)
+		propertyDef (proto): m1 (84-119 in foo.js, starting at line 3, 0 subElements)
+		propertyDef (static): m3 (124-155 in foo.js, starting at line 8, 0 subElements)
+		functionDef: abc (156-179 in foo.js, starting at line 9, 0 subElements)
+		klassDef: ClassB (180-257 in foo.js, starting at line 10, 2 subElements)
+		propertyDef (proto): m2 (209-230 in foo.js, starting at line 11, 0 subElements)
+		propertyDef (proto): m3 (232-253 in foo.js, starting at line 12, 0 subElements)
+		*/
+		var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
+		'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n' +
+		'ClassA.m3 = function() { 123 };\n' +
+		'function abc() { 1+2 };\n' +
+		'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
+		'}); // end of module';
+		var db = new AnotherSourceDatabase();
+		this.root = db.prepareForMockModule('foo.js', src);
 		this.db = db;
 		this.src = src;
 		this.jsParser = new JsParser();
 		// we don't want to see alert
 		this.oldAlert = WorldMorph.prototype.alert;
 		WorldMorph.prototype.alert = Functions.Null;
-   },
-setUpAlternateSource: function() {
-    var src = 'Object.subclass("Dummy1", {});\n'+
-        'Object.subclass("Dummy", {\ntest1: 1,\ntest2: 2,\n\ntest2: 2,\n});';
-    var db = this.db;
-    db.cachedFullText['foo2.js'] = src;
-    db.putSourceCodeFor = function(fileFragment, newFileString) { db.cachedFullText['foo2.js'] = newFileString };
-    this.root = db.addModule('foo2.js', src);
-	this.src = src;
-},
+	},
+
+	setUpAlternateSource: function() {
+	    var src = 'Object.subclass("Dummy1", {});\n'+
+	        'Object.subclass("Dummy", {\ntest1: 1,\ntest2: 2,\n\ntest2: 2,\n});';
+	    var db = this.db;
+		this.root = db.prepareForMockModule('foo2.js', src);
+		this.src = src;
+	},
 
    
 	tearDown: function($super) {
@@ -922,55 +929,55 @@ setUpAlternateSource: function() {
 		});
 	},
 
-       testCorrectNumberOfFragments: function() {
-           this.assertEqual(this.root.type, 'moduleDef');
-           this.assertEqual(this.root.flattened().length, 8);
-       },
-       
-       testFragmentsOfOwnFile: function() {
-     var classFragment = this.fragmentNamed('ClassA');
-     this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
-       },
-       
-       testPutNewSource: function() {
-           var classFragment = this.fragmentNamed('ClassA');
-           classFragment.putSourceCode('Object.subclass(\'ClassA\', { //thisHas17Chars\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
-           this.assertEqual(classFragment.startIndex, 55, 'classFrag1 start');
-           this.assertEqual(classFragment.stopIndex, 123+17, 'classFrag1 stop');
-           this.assertEqual(classFragment.subElements().length, 1);
-           this.assertEqual(classFragment.subElements()[0].startIndex, 84+17, 'method1 start');
-           this.assertEqual(classFragment.subElements()[0].stopIndex, 119+17, 'method1 stop');
-           var otherClassFragment = this.fragmentNamed('ClassB');
-           this.assertEqual(otherClassFragment.startIndex, 180+17, 'classFrag2 start');
-           this.assertEqual(otherClassFragment.stopIndex, 257+17, 'classFrag2 stop');
-           this.assertEqual(this.root.stopIndex, 277+17, 'root stop');
-           // this.assertEqual(this.root.subElements()[0].stopIndex, 277+17);
-       },
-    
-    testGetSourceCodeWithoutSubElements: function() {
-     var fragment = this.fragmentNamed('ClassB');
-     this.assert(fragment, 'no fragment found');
-     var expected =  'ClassA.subclass(\'ClassB\', {\n\t\n});\n';
-     this.assertEqual(fragment.getSourceCodeWithoutSubElements(), expected);
-    },
-    
-    testRenameClass: function() {
-     var fragment = this.fragmentNamed('ClassA');
-     var newName = 'ClassARenamed';
-     fragment.putSourceCode('Object.subclass(\'' + newName + '\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
-     this.assertEqual(fragment.name, newName);
-     var foundAgain = this.fragmentNamed(newName);
-     this.assertIdentity(foundAgain, fragment);
-     var old = this.fragmentNamed('ClassA');
-     this.assert(!old, 'old fragment still exisiting!');
-    },
-    
-    testSourceWithErrorsWillNotBeSaved: function() {
+	testCorrectNumberOfFragments: function() {
+		this.assertEqual(this.root.type, 'moduleDef');
+		this.assertEqual(this.root.flattened().length, 8);
+	},
+
+	testFragmentsOfOwnFile: function() {
+		var classFragment = this.fragmentNamed('ClassA');
+		this.assertEqual(classFragment.fragmentsOfOwnFile().length, 8-1);
+	},
+
+	testPutNewSource: function() {
+		var classFragment = this.fragmentNamed('ClassA');
+		classFragment.putSourceCode('Object.subclass(\'ClassA\', { //thisHas17Chars\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
+		this.assertEqual(classFragment.startIndex, 55, 'classFrag1 start');
+		this.assertEqual(classFragment.stopIndex, 123+17, 'classFrag1 stop');
+		this.assertEqual(classFragment.subElements().length, 1);
+		this.assertEqual(classFragment.subElements()[0].startIndex, 84+17, 'method1 start');
+		this.assertEqual(classFragment.subElements()[0].stopIndex, 119+17, 'method1 stop');
+		var otherClassFragment = this.fragmentNamed('ClassB');
+		this.assertEqual(otherClassFragment.startIndex, 180+17, 'classFrag2 start');
+		this.assertEqual(otherClassFragment.stopIndex, 257+17, 'classFrag2 stop');
+		this.assertEqual(this.root.stopIndex, 277+17, 'root stop');
+		// this.assertEqual(this.root.subElements()[0].stopIndex, 277+17);
+	},
+
+	testGetSourceCodeWithoutSubElements: function() {
+		var fragment = this.fragmentNamed('ClassB');
+		this.assert(fragment, 'no fragment found');
+		var expected =  'ClassA.subclass(\'ClassB\', {\n\t\n});\n';
+		this.assertEqual(fragment.getSourceCodeWithoutSubElements(), expected);
+	},
+
+	testRenameClass: function() {
+		var fragment = this.fragmentNamed('ClassA');
+		var newName = 'ClassARenamed';
+		fragment.putSourceCode('Object.subclass(\'' + newName + '\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}\n});\n');
+		this.assertEqual(fragment.name, newName);
+		var foundAgain = this.fragmentNamed(newName);
+		this.assertIdentity(foundAgain, fragment);
+		var old = this.fragmentNamed('ClassA');
+		this.assert(!old, 'old fragment still exisiting!');
+	},
+
+	testSourceWithErrorsWillNotBeSaved: function() {
 		var fragment = this.fragmentNamed('ClassA');
 		var newName = 'ClassAEdited';
 		fragment.putSourceCode('Object.subclass(\'' + newName + '\', \{\n');
-    
-		this.assert(!this.db.cachedFullText['foo.js'].include('ClassAEdited'))
+
+		this.assert(!this.db.getCachedText('foo.js').include('ClassAEdited'))
 	},
 
 	testReparse: function() {
@@ -987,6 +994,7 @@ setUpAlternateSource: function() {
 		var src = '\nfunction abc() { 1+2 }\n\n';
 		var fileName = 'bar.js';
 		var frag = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, src.length-1, fileName, [], this.db);
+		this.db.modules[fileName] = lively.ide.ModuleWrapper.forFile(fileName);
 		var result = frag.reparse(src);
 		this.assertEqual(frag.type, result.type);
 		this.assert(result.subElements().length > 0);
@@ -996,7 +1004,7 @@ setUpAlternateSource: function() {
 	testPutNewSourceWithChangingCompleteFileFrag: function() {
 		var oldSrc = '\nfunction abc() { 1+2 }\n\n';
 		var fileName = 'bar.js';		
-		var frag = this.db.addModule(fileName, oldSrc);
+		var frag = this.db.addModule(fileName, oldSrc).ast();
 		var newSrc = 'module(\'bar.js\').requires().toRun({function() {' + oldSrc + '});';
 		frag.putSourceCode(newSrc);
 		this.assertEqual(frag.type, 'moduleDef');
@@ -1008,7 +1016,7 @@ setUpAlternateSource: function() {
 		var fragment = this.fragmentNamed('ClassA');
 		var newSrc = 'Object.subclass(\'ClassAEdited\', \{\n';
 		var result = fragment.reparse(newSrc);
-dbgOn(true)
+		dbgOn(true)
 		this.assert(result.isError, 'no errorFileFrag');
 		*/
 	},
@@ -1018,11 +1026,11 @@ dbgOn(true)
 		var newString = 'Object.subclass(\'ClassXYZ\', {});\n';
 		var result = fragment.buildNewFileString(newString);
 		var expected = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
-               'Object.subclass(\'ClassXYZ\', {});\n' +
-               'ClassA.m3 = function() { 123 };\n' +
-               'function abc() { 1+2 };\n' +
-               'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
-               '}); // end of module';
+		'Object.subclass(\'ClassXYZ\', {});\n' +
+		'ClassA.m3 = function() { 123 };\n' +
+		'function abc() { 1+2 };\n' +
+		'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
+		'}); // end of module';
 		this.assertEqual(expected, result);
 	},
 
@@ -1040,102 +1048,93 @@ dbgOn(true)
 		var expectedLength = fragment.getFileString().length - fragment.getSourceCode().length;
 		fragment.remove();
 		this.assert(!this.root.flattened().include(fragment), 'root still includes fragment');
-		var fileString = this.db.cachedFullText['foo.js'];
+		var fileString = this.db.getCachedText('foo.js');
 		this.assert(!fileString.include(src), 'filestring includes fragments sourceCode');
 		this.assertEqual(expectedLength, fileString.length, 'strange length');
 	},
 
 	testAddSibling: function() {
-			var classFragment = this.fragmentNamed('ClassA');
-			var oldNoOfSubelements = classFragment.findOwnerFragment().subElements().length;
-			var src = 'Object.subclass(\'ClassC\', {});\n'
-			var newClassFragment = classFragment.addSibling(src);
-			this.assertEqual(newClassFragment.getSourceCode(), src);
-			this.assertEqual(newClassFragment.startIndex, classFragment.stopIndex+1, 'newcCassFrag1 start');
-			var newNoOfSubelements = newClassFragment.findOwnerFragment().subElements().length;
-			this.assertEqual(oldNoOfSubelements, newNoOfSubelements-1, 'no of subelems');
+		var classFragment = this.fragmentNamed('ClassA');
+		var oldNoOfSubelements = classFragment.findOwnerFragment().subElements().length;
+		var src = 'Object.subclass(\'ClassC\', {});\n'
+		var newClassFragment = classFragment.addSibling(src);
+		this.assertEqual(newClassFragment.getSourceCode(), src);
+		this.assertEqual(newClassFragment.startIndex, classFragment.stopIndex+1, 'newcCassFrag1 start');
+		var newNoOfSubelements = newClassFragment.findOwnerFragment().subElements().length;
+		this.assertEqual(oldNoOfSubelements, newNoOfSubelements-1, 'no of subelems');
 	},
-testExtensionSubElementsAreStaticProperties: function() {
-	var src = 'Object.extend(Bla, {\nm1: function() {\n 1+2\n },\n x: 1\n});';
-	var root = this.db.parseJs('dummy', src);
-	y=root;
-	console.log('hey:-)')
-},
-testAddSibling2: function() {
-	var fragment = this.fragmentNamed('m2');
-	var next = this.fragmentNamed('m1');
-	var owner = this.fragmentNamed('ClassA');
-	var expectedLength = owner.getFileString().length + fragment.getSourceCode().length;
-	next.addSibling(fragment.getSourceCode());
-	var string = owner.getFileString();
-	this.assertEqual(expectedLength+2, string.length, 'strange length');
-	this.assertEqual(owner.subElements().length, 2);
-	this.assertEqual(owner.subElements()[1].getSourceCode(), fragment.getSourceCode());
-},
-testFindOwnerWhenSubelementsChange: function() {
-	var fragment = this.fragmentNamed('m1');
-	var owner = this.fragmentNamed('ClassA');
-	this.assertEqual(fragment.findOwnerFragment(), owner, 1);
-	owner.reparse(owner.getSourceCode());
-	this.assertEqual(fragment.findOwnerFragment(), owner, 2);
-},
+	testAddSibling2: function() {
+		var fragment = this.fragmentNamed('m2');
+		var next = this.fragmentNamed('m1');
+		var owner = this.fragmentNamed('ClassA');
+		var expectedLength = owner.getFileString().length + fragment.getSourceCode().length;
+		next.addSibling(fragment.getSourceCode());
+		var string = owner.getFileString();
+		this.assertEqual(expectedLength+2, string.length, 'strange length');
+		this.assertEqual(owner.subElements().length, 2);
+		this.assertEqual(owner.subElements()[1].getSourceCode(), fragment.getSourceCode());
+	},
+	testFindOwnerWhenSubelementsChange: function() {
+		var fragment = this.fragmentNamed('m1');
+		var owner = this.fragmentNamed('ClassA');
+		this.assertEqual(fragment.findOwnerFragment(), owner, 1);
+		owner.reparse(owner.getSourceCode());
+		this.assertEqual(fragment.findOwnerFragment(), owner, 2);
+	},
 
-testFindOwnerWithSimilarFragment: function() {
-	this.setUpAlternateSource();
-    var fragment = this.fragmentNamed('Dummy');
-    this.assertEqual(fragment.subElements().length, 3);
-    var f1 = fragment.subElements()[1];
-    var f2 = fragment.subElements()[2];
-    this.assertEqual(f1.getSourceCode(), f2.getSourceCode());
-    this.assertEqual(f1.startIndex, 68, 1); this.assertEqual(f1.stopIndex, 76, 2);
-    this.assertEqual(f2.startIndex, 79, 3); this.assertEqual(f2.stopIndex, 87, 4);
-    
-    this.assertEqual(fragment.sourceCodeWithout(f2), 'Object.subclass("Dummy", {\ntest1: 1,\ntest2: 2,\n\n\n});');
-    this.assertEqual(fragment.sourceCodeWithout(f1), 'Object.subclass("Dummy", {\ntest1: 1,\n\n\ntest2: 2,\n});');
-},
-testMoveFragment: function() {
-	this.setUpAlternateSource();
-    o = this.fragmentNamed('Dummy');
-    var f = o.subElements()[2];
-	f.moveTo(o.subElements()[0].startIndex);
-newO = this.fragmentNamed('Dummy');
-	this.assertEqual(f.getSourceCode(), newO.subElements()[0].getSourceCode(), 1);
-	this.assertEqual(f.getSourceCode(), 'test2: 2,', 2);
-	//this.assert(newO.eq(o), 6);
-	this.assert(f.findOwnerFragment().eq(newO), 3);
-	this.assert(f.eq(newO.subElements()[0]), 4);
-	this.assertEqual(newO.getSourceCode(), 'Object.subclass("Dummy", {\ntest2: 2,test1: 1,\ntest2: 2,\n\n\n});', 5);
-},
-testMoveFragment2: function() {
-	this.setUpAlternateSource();
-	var targetIndex = this.src.indexOf('}'); // Dummy1
-	var f = this.fragmentNamed('test2'); // first one
-	f.moveTo(targetIndex);
-	this.assertEqual(f.getSourceCode(), 'test2: 2,', 1);
-	this.assertEqual(f.getFileString(), 'Object.subclass("Dummy1", {test2: 2,});\n'+
-        'Object.subclass("Dummy", {\ntest1: 1,\n\n\ntest2: 2,\n});');
-},
+	testFindOwnerWithSimilarFragment: function() {
+		this.setUpAlternateSource();
+		var fragment = this.fragmentNamed('Dummy');
+		this.assertEqual(fragment.subElements().length, 3);
+		var f1 = fragment.subElements()[1];
+		var f2 = fragment.subElements()[2];
+		this.assertEqual(f1.getSourceCode(), f2.getSourceCode());
+		this.assertEqual(f1.startIndex, 68, 1); this.assertEqual(f1.stopIndex, 76, 2);
+		this.assertEqual(f2.startIndex, 79, 3); this.assertEqual(f2.stopIndex, 87, 4);
 
+		this.assertEqual(fragment.sourceCodeWithout(f2), 'Object.subclass("Dummy", {\ntest1: 1,\ntest2: 2,\n\n\n});');
+		this.assertEqual(fragment.sourceCodeWithout(f1), 'Object.subclass("Dummy", {\ntest1: 1,\n\n\ntest2: 2,\n});');
+	},
 
+	testMoveFragment: function() {
+		this.setUpAlternateSource();
+		var o = this.fragmentNamed('Dummy');
+		var f = o.subElements()[2];
+		f.moveTo(o.subElements()[0].startIndex);
+		var newO = this.fragmentNamed('Dummy');
+		this.assertEqual(f.getSourceCode(), newO.subElements()[0].getSourceCode(), 1);
+		this.assertEqual(f.getSourceCode(), 'test2: 2,', 2);
+		//this.assert(newO.eq(o), 6);
+		this.assert(f.findOwnerFragment().eq(newO), 3);
+		this.assert(f.eq(newO.subElements()[0]), 4);
+		this.assertEqual(newO.getSourceCode(), 'Object.subclass("Dummy", {\ntest2: 2,test1: 1,\ntest2: 2,\n\n\n});', 5);
+	},
 
-testEq1: function() {
-	var f = this.fragmentNamed('m2');
-	this.assert(f.eq(f), 1);
-	var f1 = this.jsParser.parseNonFile('m2: function() { bla bla }');
-	var f2 = this.jsParser.parseNonFile('m2: function() { bla bla }');
-	this.assert(f1.eq(f2), 2);
-	f1.type = 'unknown';
-	this.assert(!f1.eq(f2), 3);
-	f1.type = f2.type;
-	f1._fallbackSrc = 'x' + f1._fallbackSrc;
-	this.assert(!f1.eq(f2), 4);
-	f1._fallbackSrc = f2._fallbackSrc;
-	f1.startIndex++;
-	this.assert(!f1.eq(f2), 5);
-},
+	testMoveFragment2: function() {
+		this.setUpAlternateSource();
+		var targetIndex = this.src.indexOf('}'); // Dummy1
+		var f = this.fragmentNamed('test2'); // first one
+		f.moveTo(targetIndex);
+		this.assertEqual(f.getSourceCode(), 'test2: 2,', 1);
+		this.assertEqual(f.getFileString(), 'Object.subclass("Dummy1", {test2: 2,});\n'+
+		'Object.subclass("Dummy", {\ntest1: 1,\n\n\ntest2: 2,\n});');
+	},
 
-
-
+	testEq1: function() {
+		var f = this.fragmentNamed('m2');
+		this.assert(f.eq(f), 1);
+		var f1 = this.jsParser.parseNonFile('m2: function() { bla bla }');
+		var f2 = this.jsParser.parseNonFile('m2: function() { bla bla }');
+		this.assert(f1.eq(f2), 2);
+		f1.type = 'unknown';
+		this.assert(!f1.eq(f2), 3);
+		f1.type = f2.type;
+		f1._fallbackSrc = 'x' + f1._fallbackSrc;
+		this.assert(!f1.eq(f2), 4);
+		f1._fallbackSrc = f2._fallbackSrc;
+		f1.startIndex++;
+		this.assert(!f1.eq(f2), 5);
+	},
 
 });
 
@@ -1173,11 +1172,11 @@ TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 	tearDown: function() {
 		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
 	},
-testEquals: function() {
-	var c1 = DoitChange.create('1+2');
-	var c2 = DoitChange.create('1+2');
-	this.assert(c1.eq(c2), 'changes not equal');
-},
+	testEquals: function() {
+		var c1 = DoitChange.create('1+2');
+		var c2 = DoitChange.create('1+2');
+		this.assert(c1.eq(c2), 'changes not equal');
+	},
 
 
 	testCreateProtoMethodChange: function() {
@@ -1287,36 +1286,33 @@ testEquals: function() {
 		change.setDefinition(newSrc);
 		this.assertEqual(change.getDefinition(), newSrc);
 	},
-testSetXMLElement: function() {
-	// ensure that ne is placed at the same pos as old
-	var classChange = ClassChange.create('TestClass', 'Object');
-	var proto1 = new ProtoChange.create('test1', '123');
-	var proto2 = new ProtoChange.create('test2', '456');
-	classChange.addSubElements([proto1, proto2]);
-	var proto3 = new ProtoChange.create('test3', '789');
-	proto1.setXMLElement(proto3.getXMLElement());
-	this.assertEqual(proto1.getDefinition(), '789', 'def is wrong');
-	this.assertIdentity(classChange.subElements()[0].getName(), 'test3', 'proto1 not at old pos');
-},
-testSetNewName: function() {
+	testSetXMLElement: function() {
+		// ensure that ne is placed at the same pos as old
+		var classChange = ClassChange.create('TestClass', 'Object');
+		var proto1 = new ProtoChange.create('test1', '123');
+		var proto2 = new ProtoChange.create('test2', '456');
+		classChange.addSubElements([proto1, proto2]);
+		var proto3 = new ProtoChange.create('test3', '789');
+		proto1.setXMLElement(proto3.getXMLElement());
+		this.assertEqual(proto1.getDefinition(), '789', 'def is wrong');
+		this.assertIdentity(classChange.subElements()[0].getName(), 'test3', 'proto1 not at old pos');
+	},
+	testSetNewName: function() {
 		var change = DoitChange.create('123');
 		this.assertEqual(change.getName(), 'aDoit');
 		change.setName('myDoit');
 		this.assertEqual(change.getName(), 'myDoit');
-},
-testChangeHasCDATASection: function() {
-	var name = 'testChangeHasCDATASection_doit';
-	var source = '4+1';
-	var doit = DoitChange.create(source, name);
-	var element = doit.getXMLElement();
-	this.assertEqual(source, element.textContent);
-	this.assertEqual(1, element.childNodes.length);
-	this.assertEqual(element.CDATA_SECTION_NODE, element.childNodes[0].nodeType, 'node type');
-},
+	},
+	testChangeHasCDATASection: function() {
+		var name = 'testChangeHasCDATASection_doit';
+		var source = '4+1';
+		var doit = DoitChange.create(source, name);
+		var element = doit.getXMLElement();
+		this.assertEqual(source, element.textContent);
+		this.assertEqual(1, element.childNodes.length);
+		this.assertEqual(element.CDATA_SECTION_NODE, element.childNodes[0].nodeType, 'node type');
+	},
 
-
-
-	
 });
 
 Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.ChangesConversionTest', {
@@ -1335,47 +1331,59 @@ Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.ChangesConversionTe
 		this.assert(change.subElements()[0].isProtoChange, 'subelements[0]?');
 		this.assertEqual(change.subElements()[0].getName(), 'm1', 'subelements[0] name?');
 	},
-testConvertMethodFFToProtoChange: function() {
-	var f = this.fragmentNamed('m1');
-	this.assertEqual(f.type, 'propertyDef');
-	var result = f.asChange();
-	this.assert(result.isProtoChange, 'no protoChange');
-	this.assertEqual(result.getDefinition(), 'function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}');
-},
-testPropertyFFToChange: function() {
-	var s = 'initialStyle: {borderWidth: 0, fillOpacity: .5, fill: Color.veryLightGray},';
-	var f = this.jsParser.parseNonFile(s);
-	var c = f.asChange();
-	this.assertEqual(c.asJs(), s);
-},
+	testConvertMethodFFToProtoChange: function() {
+		var f = this.fragmentNamed('m1');
+		this.assertEqual(f.type, 'propertyDef');
+		var result = f.asChange();
+		this.assert(result.isProtoChange, 'no protoChange');
+		this.assertEqual(result.getDefinition(), 'function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}');
+	},
+	testPropertyFFToChange: function() {
+		var s = 'initialStyle: {borderWidth: 0, fillOpacity: .5, fill: Color.veryLightGray},';
+		var f = this.jsParser.parseNonFile(s);
+		var c = f.asChange();
+		this.assertEqual(c.asJs(), s);
+	},
 
-testProtoChangeAsJs: function() {
-	var protoC = ProtoChange.create('test', 'function(a,b) {\n 1+2}', 'Dummy');
-	var result = protoC.asJs();
-	this.assertEqual(result, 'test: function(a,b) {\n 1+2},');
-	var convertedBack = this.jsParser.parseNonFile(result);
+	testProtoChangeAsJs: function() {
+		var protoC = ProtoChange.create('test', 'function(a,b) {\n 1+2}', 'Dummy');
+		var result = protoC.asJs();
+		this.assertEqual(result, 'test: function(a,b) {\n 1+2},');
+		var convertedBack = this.jsParser.parseNonFile(result);
 
-	convertedBack.asChange();
-},
-testClassChangeAsJs: function() {
-	var classC = ClassChange.create('TestClass', 'SuperTestClass');
-	var result = classC.asJs();
-	this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {});');
-	var protoC1 = ProtoChange.create('test1', 'function() {1}', 'TestClass');
-	var protoC2 = ProtoChange.create('test2', 'function() {2}', 'TestClass');
-	classC.addSubElements([protoC1, protoC2]);
-	result = classC.asJs();
-	this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {\n\n' +
+		convertedBack.asChange();
+	},
+	testClassChangeAsJs: function() {
+		var classC = ClassChange.create('TestClass', 'SuperTestClass');
+		var result = classC.asJs();
+		this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {});');
+		var protoC1 = ProtoChange.create('test1', 'function() {1}', 'TestClass');
+		var protoC2 = ProtoChange.create('test2', 'function() {2}', 'TestClass');
+		classC.addSubElements([protoC1, protoC2]);
+		result = classC.asJs();
+		this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {\n\n' +
 		'test1: function() {1},\n\ntest2: function() {2},\n\n});');
-	var convertedBack = this.jsParser.parseNonFile(result);
-	var newChange = convertedBack.asChange();
-	this.assertEqual(newChange.subElements().length, 2);
-},
-
-
-
+		var convertedBack = this.jsParser.parseNonFile(result);
+		var newChange = convertedBack.asChange();
+		this.assertEqual(newChange.subElements().length, 2);
+	},
 
 });
+
+TestCase.subclass('ATests.ToolsTests.ModuleWrapperTest', {
+	
+	testCreateWrapper: function() {
+		var sut = lively.ide.ModuleWrapper.forFile('foobar.js');
+		this.assertEquals(sut.moduleName(), 'foobar');
+		this.assertEquals(sut.type(), 'js');
+		var sut = lively.ide.ModuleWrapper.forFile('lively/parser.ometa');
+		this.assertEquals(sut.moduleName(), 'lively.parser');
+		this.assertEquals(sut.fileName(), 'lively/parser.ometa');
+		this.assertEquals(sut.type(), 'ometa');
+	},
+	
+});
+
 Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.ChangeSetTests', {
 
 	setUp: function($super) {
@@ -1388,13 +1396,13 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.Ch
 		$super();
 		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
 	},
-testEquals: function() {
-	var cs1 = ChangeSet.fromWorld(this.worldMorph);
-	cs1.addChange(DoitChange.create('1+2'));
-	var cs2 = ChangeSet.fromWorld(this.worldMorph);
-	this.assert(cs1.eq(cs2), 'changes not equal');
-},
 
+	testEquals: function() {
+		var cs1 = ChangeSet.fromWorld(this.worldMorph);
+		cs1.addChange(DoitChange.create('1+2'));
+		var cs2 = ChangeSet.fromWorld(this.worldMorph);
+		this.assert(cs1.eq(cs2), 'changes not equal');
+	},
 
 	testAddChangeSetToWorldPlusReconstruct: function() {
 		var world = this.worldMorph;
@@ -1495,37 +1503,36 @@ testEquals: function() {
 		cs.remove();
 		this.assertEqual(cs.subElements().length, 0);
 	},
-testStartUpEvaluating: function() {
-	Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
-	Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
-	Tests.ToolsTests.ChangeSetTests.initializerWasRun = false;
-	var newChange1 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
-	var newChange2 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
-	var cs = ChangeSet.fromWorld(this.worldMorph);
-	cs.addSubElements([newChange1, newChange2]);
-	var init = cs.getInitializer();
-	init.setDefinition('Tests.ToolsTests.ChangeSetTests.initializerWasRun = true');
-	cs.evaluateAllButInitializer();
-	this.assert(Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
-	this.assert(Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
-	this.assert(!Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 1');
-	cs.evaluateInitializer();
-	this.assert(Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 2');
-},
-testStartUpEvaluatingWithDisabledChanges: function() {
-	Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
-	Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
-	var newChange1 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
-	var newChange2 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
-	newChange2.disableAutomaticEval();
-	var cs = ChangeSet.fromWorld(this.worldMorph);
-	cs.addSubElements([newChange1, newChange2]);
-	cs.evaluateAllButInitializer();
-	this.assert(Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
-	this.assert(!Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
-},
 
-
+	testStartUpEvaluating: function() {
+		Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
+		Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
+		Tests.ToolsTests.ChangeSetTests.initializerWasRun = false;
+		var newChange1 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
+		var newChange2 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
+		var cs = ChangeSet.fromWorld(this.worldMorph);
+		cs.addSubElements([newChange1, newChange2]);
+		var init = cs.getInitializer();
+		init.setDefinition('Tests.ToolsTests.ChangeSetTests.initializerWasRun = true');
+		cs.evaluateAllButInitializer();
+		this.assert(Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
+		this.assert(Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
+		this.assert(!Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 1');
+		cs.evaluateInitializer();
+		this.assert(Tests.ToolsTests.ChangeSetTests.initializerWasRun, 'init 2');
+	},
+	testStartUpEvaluatingWithDisabledChanges: function() {
+		Tests.ToolsTests.ChangeSetTests.doit1WasRun = false;
+		Tests.ToolsTests.ChangeSetTests.doit2WasRun = false;
+		var newChange1 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit1WasRun = true');
+		var newChange2 = DoitChange.create('Tests.ToolsTests.ChangeSetTests.doit2WasRun = true');
+		newChange2.disableAutomaticEval();
+		var cs = ChangeSet.fromWorld(this.worldMorph);
+		cs.addSubElements([newChange1, newChange2]);
+		cs.evaluateAllButInitializer();
+		this.assert(Tests.ToolsTests.ChangeSetTests.doit1WasRun, 'doit1');
+		this.assert(!Tests.ToolsTests.ChangeSetTests.doit2WasRun, 'doit2');
+	},
 
 	xtestReal: function() {
 		var src1 = 'var extent = pt(200,200);\n\
@@ -1590,4 +1597,5 @@ TestCase.subclass('Tests.ToolsTests.MouseEventTest', {
 		WorldMorph.current().hands.first().setKeyboardFocus(mouseWatcher);
     }
 });
-})
+
+}) // end of module

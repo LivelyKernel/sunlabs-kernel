@@ -875,43 +875,50 @@ StPropertyNode.addMethods({
 
 
 lively.ide.CompleteFileFragmentNode.subclass('StBrowserFileNode', {
-  childNodes: function() {
-    if (!this.target) return [];
-    var browser = this.browser;
-    return this.target.directSubElements().collect(function(ea) {
-      return new StBrowserClassNode(ea, browser);
-    });
-  },
-  buttonSpecs: function() {
-    return [];
-  },
+	
+	childNodes: function() {
+		if (!this.target) return [];
+		var browser = this.browser;
+		return this.target.directSubElements().collect(function(ea) {
+			return new StBrowserClassNode(ea, browser);
+		});
+	},
+	
+	buttonSpecs: function() {
+		return [];
+	},
+	
 	loadModule: function($super) {
-	  require('lively.SmalltalkParser').toRun(function() { $super() });
+		require('lively.SmalltalkParser').toRun(function() { $super() });
 	},
-  // saveSource: function($super, newSource, sourceControl) {
-  saveSource: function(/*$super,*/newSource, sourceControl) {
-	  // FIXME ugly hack. Somehow when using super two bound functions are passed in...
-    // $super(newSource, sourceControl);
-	  this.target.putSourceCode(newSource);
-    this.savedSource = this.target.getSourceCode();
-    
-	  var stFilename = this.target.fileName;
-	  var stFileNode = sourceControl.modules[stFilename];
-	  if (!stFileNode)
-	    throw new Error('Couldn\’t find file node for ' + this.asString());
-	  var jsFilename = stFilename.slice(0, stFilename.lastIndexOf('.'));
-	  jsFilename += '.js';
-	  var jsSource = stFileNode.toJavaScript();
-	  sourceControl.putSourceCodeForFile(jsFilename, jsSource);
-	  return true;
+
+	saveSource: function(/*$super,*/newSource, sourceControl) {
+		// FIXME ugly hack. Somehow when using super two bound functions are passed in...
+		// $super(newSource, sourceControl);
+		this.target.putSourceCode(newSource);
+		this.savedSource = this.target.getSourceCode();
+
+		var stFilename = this.target.fileName;
+
+		throw dbgOn(new Error('ourceControl.modules changes!!!'));
+
+		var stFileNode = sourceControl.rootFragmentForModule(stFilename);
+		if (!stFileNode)
+			throw new Error('Couldn\’t find file node for ' + this.asString());
+		var jsFilename = stFilename.slice(0, stFilename.lastIndexOf('.'));
+		jsFilename += '.js';
+		var jsSource = stFileNode.toJavaScript();
+		sourceControl.putSourceCodeForFile(jsFilename, jsSource);
+		return true;
 	},
+	
 	evalSource: function(newSource) {
-    var code = this.target.toJavaScript();
-    console.log('Evaluating:');
-    console.log(code);
-    eval(code);
-    return true;
-  },
+		var code = this.target.toJavaScript();
+		console.log('Evaluating:');
+		console.log(code);
+		eval(code);
+		return true;
+	},
 })
 
 lively.ide.ClassFragmentNode.subclass('StBrowserClassNode', {

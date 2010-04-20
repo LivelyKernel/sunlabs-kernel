@@ -1773,7 +1773,7 @@ ChangeList.subclass('SourceDatabase', {
     // want in a typical development session.  We may soon want more control
     // over this and a reasonable UI for such control.
 
-	codeBaseURL: new URL(Config.codeBase).withRelativePartsResolved().withFilename('lively/'),
+	codeBaseURL: URL.codeBase,
 	
     initialize: function($super) {
         this.methodDicts = {};
@@ -1963,7 +1963,7 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     scanLKFiles: function(beSync) {
-        this.interestingLKFileNames().each(function(fileName) {
+        this.interestingLKFileNames(URL.codeBase.withFilename('lively/')).each(function(fileName) {
             var action = function(fileString) {
                 new FileParser().parseFile(fileName, this.currentVersion(fileName), fileString, this, "import");
             }.bind(this);
@@ -1971,24 +1971,15 @@ ChangeList.subclass('SourceDatabase', {
         }, this);
     },
     
-    interestingLKFileNames: function() {
-		var url = this.codeBaseURL;
-        var kernelFileNames = new FileDirectory(url).filenames();
-		//         var testFileNames = new FileDirectory(url.withFilename('Tests/')).filenames();
-		// testFileNames = testFileNames.collect(function(ea) { return 'Tests/' + ea });
-		/* OMeta */
-		// var ometaFileNames = new FileDirectory(URL.source.withFilename('ometa/')).filenames();
-		// ometaFileNames = ometaFileNames.collect(function(ea) { return 'ometa/' + ea });
-		// var ometaFileNames = [];
-		/* filter */
-        // var files = kernelFileNames.concat(testFileNames).concat(ometaFileNames);
-		var files = kernelFileNames
+    interestingLKFileNames: function(url) {
+		var fileURLs = new WebResource(url).subDocuments().collect(function(ea) { return ea.getURL() })
+		var fileNames = fileURLs.collect(function(ea) { return ea.relativePathFrom(URL.codeBase) })
         var acceptedFileNames = /.*\.(st|js|lkml|txt|ometa|st)/
-		files = files.select(function(ea) { return acceptedFileNames.test(ea) });
-        files = files.uniq();
-        var rejects = ["test.js", "test1.js", "test2.js", "test3.js", "test4.js", "testaudio.js", 'JSON.js'];
-		files = files.reject(function(ea) { return rejects.include(ea) });
-		return files;
+		fileNames = fileNames.select(function(ea) { return acceptedFileNames.test(ea) });
+        fileNames = fileNames.uniq();
+        var rejects = ['JSON.js'];
+		fileNames = fileNames.reject(function(ea) { return rejects.include(ea) });
+		return fileNames;
     },
 
 });

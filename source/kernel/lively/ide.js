@@ -37,57 +37,56 @@ module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'lively.LKFilePars
 // Browser Framework
 // ===========================================================================
 Widget.subclass('lively.ide.BasicBrowser', {
- 
-    documentation: 'Abstract widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
-    initialViewExtent: pt(620, 450),
-    emptyText: '-----',
-panelSpec: [
-['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.40)],
-['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)],
-//['Pane2', newRealListPane, new Rectangle(0.35, 0, 0.3, 0.4)],
-['Pane3', newDragnDropListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
-//['statusPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
-],
 
-    allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
-    filterPlaces: ['Root', 'Pane1', 'Pane2', 'Pane3'],
-    formals: ["Pane1Content", "Pane1Selection", "Pane1Menu", "Pane1Filters",
-              "Pane2Content", "Pane2Selection", "Pane2Menu", "Pane2Filters",
-              "Pane3Content", "Pane3Selection", "Pane3Menu", "Pane3Filters",
-              "SourceString", "StatusMessage", "RootFilters"],
-    commands: function() {
-        return [];
-    },
-    
-    initialize: function($super) { 
-        $super();
-        var panes = this.allPaneNames;
-        // create empty onUpdate functions
-        panes.forEach(function(ea) {
-            this['on' + ea + 'MenuUpdate'] = Functions.Null;
+	documentation: 'Abstract widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
+	initialViewExtent: pt(620, 550),
+	emptyText: '-----',
+
+	panelSpec: [
+		['locationPane', newTextPane, new Rectangle(0, 0, 1, 0.05)],
+		['Pane1', newDragnDropListPane, new Rectangle(0, 0.05, 0.3, 0.35)],
+		['Pane2', newDragnDropListPane, new Rectangle(0.3, 0.05, 0.35, 0.4)],
+		['Pane3', newDragnDropListPane, new Rectangle(0.65, 0.05, 0.35, 0.4)],
+		['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+	],
+
+	allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
+	filterPlaces: ['Root', 'Pane1', 'Pane2', 'Pane3'],
+	formals: ["Pane1Content", "Pane1Selection", "Pane1Menu", "Pane1Filters",
+			"Pane2Content", "Pane2Selection", "Pane2Menu", "Pane2Filters",
+			"Pane3Content", "Pane3Selection", "Pane3Menu", "Pane3Filters",
+			"SourceString", "StatusMessage", "RootFilters"],
+
+	commands: function() { return [] },
+
+	initialize: function($super) {
+		$super();
+		var panes = this.allPaneNames;
+		// create empty onUpdate functions
+		panes.forEach(function(ea) {
+			this['on' + ea + 'MenuUpdate'] = Functions.Null;
 			this['on' + ea + 'FiltersUpdate'] = Functions.Null;
-        }, this);
-        this.onStatusMessageUpdate = Functions.Null;
+		}, this);
+		this.onStatusMessageUpdate = Functions.Null;
 		this.onRootFiltersUpdate = Functions.Null;
-        
-        //create a model and relay for connecting the additional components later on
-        var model = Record.newPlainInstance((function(){
-				return this.formals.inject({}, function(spec, ea){spec[ea]=null; return spec})}.bind(this))());
-        var spec = {SourceString: "SourceString", StatusMessage: "StatusMessage", RootFilters: "RootFilters"};
-        panes.forEach(function(ea) {
-            spec[ea + 'Content'] = ea + 'Content';
-            spec[ea + 'Selection'] = ea + 'Selection';
-            spec[ea + 'Menu'] = ea + 'Menu';
+
+		//create a model and relay for connecting the additional components later on
+		var model = Record.newPlainInstance((function(){
+			return this.formals.inject({}, function(spec, ea){spec[ea]=null; return spec})}.bind(this))());
+		var spec = {SourceString: "SourceString", StatusMessage: "StatusMessage", RootFilters: "RootFilters"};
+		panes.forEach(function(ea) {
+			spec[ea + 'Content'] = ea + 'Content';
+			spec[ea + 'Selection'] = ea + 'Selection';
+			spec[ea + 'Menu'] = ea + 'Menu';
 			spec[ea + 'Filters'] = ea + 'Filters';
-        });
-        this.relayToModel(model, spec);
+		});
+		this.relayToModel(model, spec);
 		this.filterPlaces.forEach(function(ea) {  /*identity filter*/	
 			this['set' + ea + 'Filters']([new lively.ide.NodeFilter()]);
 		}, this);
 
 		this.buttonCommands = [];
-    },
+	},
  
     buildView: function (extent) {
  
@@ -121,6 +120,8 @@ panelSpec: [
         panel.sourcePane.innerMorph().maxSafeSize = 2e6;
 		panel.sourcePane.innerMorph().styleClass = ['codePane'];
         panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
+
+		panel.locationPane.innerMorph().beInputLine();
  
 		//panel.statusPane.connectModel(model.newRelay({Text: "-StatusMessage"}));
 		this.buildCommandButtons(panel);
@@ -516,73 +517,96 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 });
  
 Object.subclass('lively.ide.BrowserNode', {
- 
-    documentation: 'Abstract node, defining the node interface',
- 
-    initialize: function(target, browser, parent) {
-        this.target = target;
-        this.browser = browser;
+
+	documentation: 'Abstract node, defining the node interface',
+
+	initialize: function(target, browser, parent) {
+		this.target = target;
+		this.browser = browser;
 		this.parent = parent;
-    },
- 
-    siblingNodes: function() {
-        if (!(this.browser instanceof ide.SystemBrowser)) throw dbgOn(new Error('No browser when tried siblingNodes'));
-        return this.browser.siblingsFor(this);
-    },
+	},
+
+	siblingNodes: function() {
+		if (!(this.browser instanceof ide.SystemBrowser)) throw dbgOn(new Error('No browser when tried siblingNodes'));
+		return this.browser.siblingsFor(this);
+	},
 
 	parent: function() {
 		return this.parent;
 	},
-	
-    childNodes: function() {
-        return []
-    },
- 
-    asString: function() {
-        return 'no name for node of type ' + this.constructor.type;
-    },
-asListItem: function() {
-	//FIXME make class listitem
-	var node = this;
-	return {
-		isListItem: true,
-		string: this.asString(),
-		value: this,
-		onDrop: function(item) { node.onDrop( item && item.value) },	//convert to node
-		onDrag: function() { node.onDrag() },
-	};
-},
 
- 
-    sourceString: function() {
-        return this.browser.emptyText
-    },
- 
+	childNodes: function() {
+		return []
+	},
+
+	asString: function() {
+		return 'no name for node of type ' + this.constructor.type;
+	},
+
+	asListItem: function() {
+		//FIXME make class listitem
+		var node = this;
+		return {
+			isListItem: true,
+			string: this.asString(),
+			value: this,
+			onDrop: function(item) { node.onDrop( item && item.value) },	//convert to node
+			onDrag: function() { node.onDrag() },
+		};
+	},
+
+	sourceString: function() {
+		return this.browser.emptyText
+	},
+
 	hasSimilarTarget: function(other) {
 		if (!other)
 			return false;
 		var myString = this.asString();
 		var otherString = other.asString();
 		return myString.length >= otherString.length ?
-			myString.include(otherString) :
-			otherString.include(myString);
+		myString.include(otherString) :
+		otherString.include(myString);
 	},
 
-    newSource: function(newSource) {
-        if (!this.saveSource(newSource, tools.SourceControl))
-            console.log('couldn\'t save');
-	var msgSpec;
-	try {
-		var success = this.evalSource(newSource);
-		msgSpec = success ?
-			{msg: 'Successfully evaluated ' + this.target.getName(), color: Color.green} :
-			{msg: 'Eval disabled for ' + this.target.getName(), color: Color.black}
-	} catch(e) {
-		msgSpec = {msg: 'Error evaluating ' + this.target.getName() + ': ' + e, color: Color.red, delay: 5}
-	}
-	this.statusMessage(msgSpec.msg, msgSpec.color, msgSpec.delay); 
-	this.browser.signalNewSource(this);
-},
+	newSource: function(newSource) {
+		var errorOccurred = false;
+		var failureOccurred = false;
+		var msg = 'Saving ' + this.target.getName() + '...\n';
+
+		// save source
+		try {
+			if (this.saveSource(newSource, tools.SourceControl)) {
+				msg += 'Successfully saved';
+			} else {
+				msg += 'Couldn\'t save';
+				failureOccurred = true;
+			} 
+		} catch(e) {
+			dbgOn(true)
+			msg += 'Error while saving: ' + e;
+			errorOccurred = true;
+		}
+
+		msg += '\n';
+		
+		// eval source
+		try {
+			if (this.evalSource(newSource)) {
+				msg += 'Successfully evaluated ' + this.target.getName();
+			} else {
+				msg += 'Eval disabled for ' + this.target.getName();
+				failureOccurred = true;
+			}
+		} catch(e) {
+			msg += 'Error evaluating ' + e;
+			errorOccurred = true;
+		}
+		var color = errorOccurred ? Color.red : (failureOccurred ? Color.black : Color.green);
+		var delay = errorOccurred ? 5 : null;
+		this.statusMessage(msg, color, delay);
+		this.browser.signalNewSource(this);
+	},
  
     evalSource: function(newSource) {
         return false;
@@ -636,14 +660,14 @@ Object.subclass('lively.ide.BrowserCommand', {
 	wantsButton: function() {
 		return false;
 	},
-wantsMenu: function() {
-		return false;
-	},
-isActive: function() {
+
+	wantsMenu: function() {
 		return false;
 	},
 
-
+	isActive: function() {
+		return false;
+	},
 
 	asString: function() {
 		return 'unnamed command'
@@ -652,30 +676,32 @@ isActive: function() {
 	trigger: function() {}
 
 });
+
 Object.subclass('lively.ide.NodeFilter', {
 	apply: function(nodes) { return nodes }
 });
+
 lively.ide.NodeFilter.subclass('lively.ide.SortFilter', {
 	apply: function(nodes) {
-	return nodes.sort(function(a,b) {
-		if (a.asString().toLowerCase() < b.asString().toLowerCase()) return -1;
-		if (a.asString().toLowerCase() > b.asString().toLowerCase()) return 1;
-		return 0;
-	});
-}
+		return nodes.sort(function(a,b) {
+			if (a.asString().toLowerCase() < b.asString().toLowerCase()) return -1;
+			if (a.asString().toLowerCase() > b.asString().toLowerCase()) return 1;
+			return 0;
+		});
+	}
 });
+
 lively.ide.NodeFilter.subclass('lively.ide.NodeTypeFilter', {
 
 	documentation: 'allows only nodes of the specified class',
-isNodeTypeFilter: true,
-
+	isNodeTypeFilter: true,
 
 	initialize: function(attrsThatShouldBeTrue) {
 		this.attributes = attrsThatShouldBeTrue;
 	},	
 
 	apply: function(nodes) {
-	    var attrs = this.attributes;
+		var attrs = this.attributes;
 		if (!attrs) {
 			console.log('nodeTypeFilter has no attributes!!!');
 			return nodes;
@@ -698,40 +724,47 @@ defaultInstance: function() {
 // ===========================================================================
 ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 
-documentation: 'Browser for source code parsed from js files',
-viewTitle: "SystemBrowser",
-isSystemBrowser: true,
+	documentation: 'Browser for source code parsed from js files',
+	viewTitle: "SystemBrowser",
+	isSystemBrowser: true,
 
-initialize: function($super) {
-	$super();
-	this.installFilter(lively.ide.NodeTypeFilter.defaultInstance(), 'Pane1');
-	this.evaluate = true;
-},
+	initialize: function($super) {
+		$super();
+		this.installFilter(lively.ide.NodeTypeFilter.defaultInstance(), 'Pane1');
+		this.evaluate = true;
+	},
 
-rootNode: function() {
-	ide.startSourceControl();
-	if (!this._rootNode)
-	this._rootNode = new ide.SourceControlNode(tools.SourceControl, this, null);
-	return this._rootNode;
-},
-commands: function() {
+	getTargetURL: function() {
+		if (!this.targetURL)
+			this.targetURL = this.sourceDatabase().codeBaseURL;
+		return this.targetURL;
+	},
+	
+	rootNode: function() {
+		ide.startSourceControl();
+		if (!this._rootNode)
+			this._rootNode = new ide.SourceControlNode(tools.SourceControl, this, null);
+		return this._rootNode;
+	},
+
+	commands: function() {
 		// lively.ide.BrowserCommand.allSubclasses().collect(function(ea) { return ea.type}).join(',\n')
-        return [
-			// lively.ide.BrowseWorldCommand,
-			lively.ide.AddNewFileCommand,
-			lively.ide.AllModulesLoadCommand,
-			lively.ide.ShowLineNumbersCommand,
-			lively.ide.RefreshCommand,
-			lively.ide.EvaluateCommand,
-			lively.ide.SortCommand,
-			lively.ide.ViewSourceCommand]
-    },
-sourceDatabase: function() {
-	return this.rootNode().target;
-},
+		return [
+		// lively.ide.BrowseWorldCommand,
+		lively.ide.AddNewFileCommand,
+		lively.ide.AllModulesLoadCommand,
+		lively.ide.ShowLineNumbersCommand,
+		lively.ide.RefreshCommand,
+		lively.ide.EvaluateCommand,
+		lively.ide.SortCommand,
+		lively.ide.ViewSourceCommand]
+	},
 
 
- 
+	sourceDatabase: function() {
+		return this.rootNode().target;
+	},
+
 });
  
 Object.extend(lively.ide.SystemBrowser, {
@@ -753,107 +786,120 @@ Object.extend(lively.ide.SystemBrowser, {
 	}
 	
 });
+
 ide.BasicBrowser.subclass('lively.ide.LocalCodeBrowser', {
 
-documentation: 'Browser for the local ChangeSet',
-panelSpec: [
-['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.5, 0.45)],
-['Pane2', newDragnDropListPane, new Rectangle(0.5, 0, 0.5, 0.45)],
-['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
-],
-allPaneNames: ['Pane1', 'Pane2'],
-viewTitle: "LocalCodeBrowser",
+	documentation: 'Browser for the local ChangeSet',
+	viewTitle: "LocalCodeBrowser",
+	allPaneNames: ['Pane1', 'Pane2'],
 
-initialize: function($super, optWorldProxy) {
-	$super();
-	this.worldProxy = optWorldProxy;
-	this.changeSet = (optWorldProxy && optWorldProxy.getChangeSet()) ||
+	panelSpec: [
+		['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.5, 0.45)],
+		['Pane2', newDragnDropListPane, new Rectangle(0.5, 0, 0.5, 0.45)],
+		['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+	],
+
+	initialize: function($super, optWorldProxy) {
+		$super();
+		this.worldProxy = optWorldProxy;
+		this.changeSet = (optWorldProxy && optWorldProxy.getChangeSet()) ||
 		ChangeSet.current();
-	this.evaluate = true;
-},
+		this.evaluate = true;
+	},
 
-rootNode: function() {
-	ide.startSourceControl();
-	if (!this._rootNode)
-		this._rootNode = this.changeSet.asNode(this);
-	return this._rootNode;
-},
-commands: function() {
-        return [lively.ide.BrowseWorldCommand,
-				lively.ide.SaveChangesCommand,
-				lively.ide.RefreshCommand,
-				lively.ide.EvaluateCommand,
-				lively.ide.SortCommand,
-				lively.ide.ChangeSetMenuCommand,
-				lively.ide.ClassChangeMenuCommand]
-    },
+	rootNode: function() {
+		ide.startSourceControl();
+		if (!this._rootNode)
+			this._rootNode = this.changeSet.asNode(this);
+		return this._rootNode;
+	},
 
- 
+	commands: function() {
+		return [lively.ide.BrowseWorldCommand,
+		lively.ide.SaveChangesCommand,
+		lively.ide.RefreshCommand,
+		lively.ide.EvaluateCommand,
+		lively.ide.SortCommand,
+		lively.ide.ChangeSetMenuCommand,
+		lively.ide.ClassChangeMenuCommand]
+	},
+
 });
+
 ide.BasicBrowser.subclass('lively.ide.WikiCodeBrowser', {
 
-documentation: 'Browser for the local ChangeSet',
-panelSpec: [
-['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.45)],
-['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)],
-['Pane3', newDragnDropListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
-['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
-],
-viewTitle: "WikiCodeBrowser",
+	documentation: 'Browser for the local ChangeSet',
+	viewTitle: "WikiCodeBrowser",
 
-initialize: function($super, wikiUrl) {
-	$super();
-	this.wikiUrl = wikiUrl;
-	this.evaluate = true;
-},
+	panelSpec: [
+		['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.3, 0.45)],
+		['Pane2', newDragnDropListPane, new Rectangle(0.3, 0, 0.35, 0.45)],
+		['Pane3', newDragnDropListPane, new Rectangle(0.65, 0, 0.35, 0.45)],
+		['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+	],
 
-rootNode: function() {
-	ide.startSourceControl();
-	if (!this._rootNode)
-		this._rootNode = new lively.ide.WikiCodeNode(WikiNetworkAnalyzer.forRepo(this.wikiUrl), this, null);
-	return this._rootNode;
-},
-commands: function() {
-        return [lively.ide.BrowseWorldCommand,
-				lively.ide.RefreshCommand,
-				lively.ide.EvaluateCommand,
-				lively.ide.SortCommand,
-				lively.ide.ChangeSetMenuCommand,
-				lively.ide.ClassChangeMenuCommand]
-},
+	initialize: function($super, wikiUrl) {
+		$super();
+		this.wikiUrl = wikiUrl;
+		this.evaluate = true;
+	},
 
- 
+	rootNode: function() {
+		ide.startSourceControl();
+		if (!this._rootNode)
+			this._rootNode = new lively.ide.WikiCodeNode(WikiNetworkAnalyzer.forRepo(this.wikiUrl), this, null);
+		return this._rootNode;
+	},
+
+	commands: function() {
+		return [lively.ide.BrowseWorldCommand,
+		lively.ide.RefreshCommand,
+		lively.ide.EvaluateCommand,
+		lively.ide.SortCommand,
+		lively.ide.ChangeSetMenuCommand,
+		lively.ide.ClassChangeMenuCommand]
+	},
+
 });
  
 ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
-    
-	documentation: 'The rootNode of the SystemBrowser',
 
-    childNodes: function() {
+	documentation: 'The root node of the SystemBrowser. Represents a URL',
+
+	initialize: function($super, target, browser, parent) {
+		$super(target, browser, parent);
+		this.allFiles = [];
+	},
+	
+	addFile: function(file) { this.allFiles.push(file) },
+	
+	childNodes: function() {
 		// js files + OMeta files (.txt) + lkml files + ChangeSet current
 		//if (this._childNodes) return this._childNodes; // optimization
 		var nodes = [];
 		var srcDb = this.target;
-		var allFiles = srcDb.allFiles();
-		for (var i = 0; i < allFiles.length; i++) {
-			var fn = allFiles[i];
+		var b = this.browser;
+		if (this.allFiles.length == 0) this.allFiles = srcDb.interestingLKFileNames(b.getTargetURL());
+		for (var i = 0; i < this.allFiles.length; i++) {
+			var fn = this.allFiles[i];
 			if (fn.endsWith('.js')) {
-				nodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
-			} else if (fn.endsWith('.txt') || fn.endsWith('.ometa')) {
-				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
+				nodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), b, this, fn));
+			} else if (fn.endsWith('.ometa')) {
+				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), b, this, fn));
 			} else if (fn.endsWith('.lkml')) {
-				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), this.browser, this));
+				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), b, this));
 			} else if (fn.endsWith('.st')) {
-			  require('lively.SmalltalkParserSupport').toRun(function() {
-			    nodes.push(new StBrowserFileNode(srcDb.rootFragmentForModule(fn), this.browser, this, fn));
-			  }.bind(this))
+				require('lively.SmalltalkParserSupport').toRun(function() {
+					nodes.push(new StBrowserFileNode(srcDb.rootFragmentForModule(fn), b, this, fn));
+				}.bind(this))
 			}
 		};
-		nodes.push(ChangeSet.current().asNode(this.browser));
+		nodes.push(ChangeSet.current().asNode(b)); // add local changes
 		this._childNodes = nodes;
 		return nodes;
 	},
 });
+
 ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
     
 	documentation: 'The rootNode which gets the code from worlds of a wiki',
@@ -893,33 +939,33 @@ ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
 });
  
 ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
-    
-    sourceString: function() {
-      if (!this.target)
-        return 'entity not loaded';
-        this.savedSource = this.target.getSourceCode();
+
+	sourceString: function() {
+		if (!this.target)
+			return 'entity not loaded';
+		this.savedSource = this.target.getSourceCode();
 		return this.savedSource;
-    },
-    
-    asString: function() {
-        var name = this.target.name || this.sourceString().truncate(22).replace('\n', '') + '(' + this.type + ')';
+	},
+
+	asString: function() {
+		var name = this.target.name || this.sourceString().truncate(22).replace('\n', '') + '(' + this.type + ')';
 		if (this.showLines()) name += ' (' + this.target.startLine() + '-' + this.target.stopLine() + ')';
 		return name;
-    },
-    
+	},
+
 	showLines: function() {
 		return this.browser.showLines;
 	},
 
-  saveSource: function($super, newSource, sourceControl) {
-    this.target.putSourceCode(newSource);
-    this.savedSource = this.target.getSourceCode(); // assume that users sees newSource after that
-    return true;
-  },
+	saveSource: function($super, newSource, sourceControl) {
+		this.target.putSourceCode(newSource);
+		this.savedSource = this.target.getSourceCode(); // assume that users sees newSource after that
+		return true;
+	},
 
 	menuSpec: function($super) {
-	var spec = $super();
-	var node = this;
+		var spec = $super();
+		var node = this;
 		spec.push(['add sibling below', function() {
 			var world = WorldMorph.current();
 			world.prompt('Enter source code', function(input) {
@@ -937,21 +983,21 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 		if (this.target.getSourceControl)
 			return this.target.getSourceControl();
 		return tools.SourceControl;
-},
-onDrop: function(other) {
-	if (!other) return;
-	console.log(' Moving ' + this.target + ' to ' + other.target);
-	if (other.handleDrop(this))
-		this.target.remove();
-	else
+	},
+
+	onDrop: function(other) {
+		if (!other) return;
+		console.log(' Moving ' + this.target + ' to ' + other.target);
+		if (other.handleDrop(this))
+			this.target.remove();
+		else
 		this.target.moveTo(other.target.stopIndex+1);
-	this.signalChange();
-},
-onDrag: function() {
-    // onDrop does all the work
-},
+		this.signalChange();
+	},
 
-
+	onDrag: function() {
+		// onDrop does all the work
+	},
 
 });
 
@@ -1013,7 +1059,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 
 	loadModule: function() {
 		if (this.target) return;
-		this.target = tools.SourceControl.addModule(this.moduleName);
+		this.target = tools.SourceControl.addModule(this.moduleName).ast();
 		this.signalChange();
 	},
     
@@ -1033,7 +1079,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     		node.showAll = !node.showAll;
     		node.signalTextChange() }]);
 		menu.unshift(['remove', function() {
-			new FileDirectory(tools.SourceControl.codeBaseURL).deleteFileNamed(node.moduleName);
+			new WebResource(browser.getTargetURL().withFilename(node.moduleName)).del();
 			browser.sourceDatabase().removeFile(node.moduleName);
 			browser.allChanged()}]);
 	return menu;
@@ -1289,15 +1335,16 @@ ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 	menuSpec: ide.ClassElemFragmentNode.prototype.menuSpec, // FIXME
 
 });
+
 ide.BrowserNode.subclass('lively.ide.ChangeNode', {
 
-  isChangeNode: true,
-  
 	documentation: 'Abstract node for Changes/ChangeSet nodes',
-asString: function() {
+
+	isChangeNode: true,
+
+	asString: function() {
 		return this.target.getName() + (this.target.automaticEvalEnabled() ? '' : ' (disabled)');
 	},
-
 
 	menuSpec: function() {
 		var spec = [];
@@ -1314,40 +1361,42 @@ asString: function() {
 				t.enableAutomaticEval(); n.signalChange(); }]);
 		return spec;
 	},
-sourceString: function() {
+	sourceString: function() {
 		return this.target.asJs();
 	},
 
-saveSource: function(newSource) {
+	saveSource: function(newSource) {
 		var fragment = new JsParser().parseNonFile(newSource);
 		var change = fragment.asChange();
 		this.target.setXMLElement(change.getXMLElement());
 		this.savedSource = this.target.asJs();
-        return true;
-    },
-evalSource: function(newSource) {
+		return true;
+	},
+	
+	evalSource: function(newSource) {
 		if (!this.browser.evaluate) return false;
 		/*if (this.target.getDefinition() !== newSource)
-			throw dbgOn(new Error('Inconsistency while evaluating and saving?'));*/
+		throw dbgOn(new Error('Inconsistency while evaluating and saving?'));*/
 		this.target.evaluate();
 		return true
-    },
-onDrop: function(other) {
-	if (!other) return;
-	console.log(' Moving ' + this.target + ' to ' + other.target);
-	this.target.remove();
-	other.handleDrop(this);
-	this.signalChange();
-},
-onDrag: function() {
-    // onDrop does all the work
-},
-handleDrop: function(nodeDroppedOntoMe) {
-	if (!(nodeDroppedOntoMe instanceof lively.ide.ChangeNode))
-		return false;
-	this.target.addSubElement(nodeDroppedOntoMe.target);
-	return true;
-},
+	},
+	
+	onDrop: function(other) {
+		if (!other) return;
+		console.log(' Moving ' + this.target + ' to ' + other.target);
+		this.target.remove();
+		other.handleDrop(this);
+		this.signalChange();
+	},
+	onDrag: function() {
+		// onDrop does all the work
+	},
+	handleDrop: function(nodeDroppedOntoMe) {
+		if (!(nodeDroppedOntoMe instanceof lively.ide.ChangeNode))
+			return false;
+		this.target.addSubElement(nodeDroppedOntoMe.target);
+		return true;
+	},
 
 });
 
@@ -1496,9 +1545,9 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 
 	trigger: function() { 
 		var srcCtrl = tools.SourceControl;
-		var progressBar = WorldMorph.current().addProgressBar();
-		var files = srcCtrl.interestingLKFileNames();
 		var browser = this.browser;
+		var progressBar = WorldMorph.current().addProgressBar();
+		var files = srcCtrl.interestingLKFileNames(browser.getTargetURL());
 		files.forEachShowingProgress(
 			progressBar,
 			function(ea) { srcCtrl.addModule(ea) },
@@ -1615,19 +1664,19 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 		var browser = this.browser;
 		var createFileIfAbsent = function(filename) {
 			if (!filename.endsWith('.js')) filename += '.js';
-			var dir = new FileDirectory(tools.SourceControl.codeBaseURL);
+			var dir = new FileDirectory(browser.getTargetURL());
 			if (dir.fileOrDirectoryExists(filename)) {
 				world.notify('File ' + filename + ' already exists!');
 			} else {
 				var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
-				var realCodeBase = new URL(Config.codeBase).withRelativePartsResolved();
-				var moduleBase = tools.SourceControl.codeBaseURL.withRelativePartsResolved().relativePathFrom(realCodeBase);
+				var realCodeBase = URL.codeBase;
+				var moduleBase = browser.getTargetURL().withRelativePartsResolved().relativePathFrom(realCodeBase);
 				var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
 				dir.writeFileNamed(
 					filename,
 					Strings.format('module(\'%s\').requires().toRun(function() {\n\n// Enter your code here\n\n}) // end of module',
 						moduleName));
-				browser.sourceDatabase().addFile(filename);
+				browser.rootNode().addFile(filename);
 				browser.allChanged();
 				browser.inPaneSelectNodeNamed('Pane1', filename);
 			}
@@ -2132,8 +2181,8 @@ CodeParser.subclass('JsParser', {
  
 Object.extend(JsParser, {
 
-    parseAndShowFileNamed: function(fileName) {
-        var chgList = new JsParser().parseFileFromUrl(tools.SourceControl.codeBaseURL.withFilename(fileName));
+    parseAndShowFileFromURL: function(url) {
+        var chgList = new JsParser().parseFileFromUrl(new URL(url));
         new ChangeList(fileName, null, chgList).openIn(WorldMorph.current()); 
     }
     
@@ -2154,142 +2203,234 @@ CodeParser.subclass('OMetaParser', {
 	
 	
 });
- 
-// ===========================================================================
-// Keeps track of parsed sources
-// ===========================================================================
-SourceDatabase.subclass('AnotherSourceDatabase', {
-    
-    initialize: function($super) {
-        this.cachedFullText = {};
-        this.editHistory = {};
-        this.modules = {};
-		this.registeredBrowsers = [];
-    },
-    
-    rootFragmentForModule: function(moduleName) {
-        if (!Object.isString(moduleName))
-            throw dbgOn(new Error('Don\'t know what to do with ' + moduleName));
-		    return this.modules[moduleName];
-    },
-    
-    addModule: function(fileName, fileString) {
-		if (this.modules[fileName]) return this.modules[fileName];
-        fileString = fileString || this.getCachedText(fileName);
-		return this.modules[fileName] = this.parseCompleteFile(fileName, fileString);
-    },
 
-	reparseModule: function(moduleName, readAgain) {
-		this.modules[moduleName] = null;
-		if (readAgain)
-			this.cachedFullText[moduleName] = null;
-		return this.addModule(moduleName);
+Object.subclass('lively.ide.ModuleWrapper', {
+
+	documentation: 'Compatibility layer around normal modules for SourceCodeDatabase and other tools. Will probably merged with normal modules in the future.',
+	
+	initialize: function(moduleName, type) {
+		if (!moduleName || !type)
+			throw new Error('Cannot create ModuleWrapper without moduleName or type!');
+		if (!['js', 'ometa', 'lkml', 'st'].include(type))
+			throw new Error('Unknown type ' + type + ' for ModuleWrapper ' + moduleName);
+		this._moduleName = moduleName;
+		this._type = type; // can be js, ometa, lkml, st
+		this._ast = null;
+		this._cachedSource = null;
 	},
-
-	parseCompleteFile: function(fileName, fileString) {
+	
+	type: function() { return this._type },
+	
+	ast: function() { return this._ast },
+	
+	moduleName: function() { return this._moduleName },
+	
+	fileURL: function() {
+		return URL.codeBase.withFilename(this.fileName());
+	},
+	
+	fileName: function() {
+		return this.moduleName().replace('.', '/') + '.' + this.type();
+	},
+	
+	getSourceUncached: function() {
+		this._cachedSource = new WebResource(this.fileURL()).getContent() || '';
+		return this._cachedSource;
+	},
+	
+	setCachedSource: function(source) { this._cachedSource = source },
+	
+	getSource: function() {
+		return this._cachedSource ? this._cachedSource : this.getSourceUncached();
+	},
+	
+	setSource: function(source, beSync) {
+		this.setCachedSource(source);
+		new WebResource(this.fileURL()).setContent(source);
+	},
+	
+	retrieveSourceAndParse: function(optSourceDB) {
+		return this._ast = this.parse(this.getSource(), optSourceDB);
+	},
+	
+	parse: function(source, optSourceDB) {
+		if (source === undefined)
+			throw dbgOn(new Error('ModuleWrapper ' + this.moduleName() + ' needs source to parse!'));
 		var root;
-		if (fileName.endsWith('.js')) {
-			root = this.parseJs(fileName, fileString);
-		} else if (fileName.endsWith('.txt') || fileName.endsWith('.ometa')) {
-			root = this.parseOmeta(fileName, fileString);
-		} else if (fileName.endsWith('.lkml')) {
-			root = this.parseLkml(fileName, fileString);
-		} else if (fileName.endsWith('.st')) {
-			root = this.parseSt(fileName, fileString);
+		if (this.type() == 'js') {
+			root = this.parseJs(source);
+		} else if (this.type() == 'ometa') {
+			root = this.parseOmeta(source);
+		} else if (this.type() == 'lkml') {
+			root = this.parseLkml(source);
+		} else if (this.type() == 'st') {
+			root = this.parseSt(source);
 		} else { 
-			throw dbgOn(new Error('Don\'t know how to parse ' + fileName))
+			throw dbgOn(new Error('Don\'t know how to parse ' + this.type + ' of ' + this.moduleName()))
 		}
-		root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
+		root.flattened().forEach(function(ea) { ea.sourceControl = optSourceDB })
 		return root;
 	},
 
-	parseJs: function(fileName, fileString) {
-		var fileFragments = new JsParser().parseSource(fileString, {fileName: fileName});
+	parseJs: function(source) {
+		var fileFragments = new JsParser().parseSource(source, {fileName: this.fileName()});
         var root;
         var firstRealFragment = fileFragments.detect(function(ea) { return ea.type !== 'comment' });
         if (firstRealFragment && firstRealFragment.type === 'moduleDef')
             root = firstRealFragment;
         else
-            root = new lively.ide.FileFragment(fileName, 'completeFileDef', 0, fileString ? fileString.length-1 : 0, fileName, fileFragments, this);
+            root = new lively.ide.FileFragment(
+				this.fileName(), 'completeFileDef', 0, source ? source.length-1 : 0,
+				this.fileName(), fileFragments, this);
         return root;
 	},
 
-	parseOmeta: function(fileName, fileString) {
-		var fileFragments = new OMetaParser().parseSource(fileString, {fileName: fileName});
-        var root = new lively.ide.FileFragment(fileName, 'ometaGrammar', 0, fileString.length-1, fileName, fileFragments, this);
-        return root;
+	parseOmeta: function(source) {
+		var fileFragments = new OMetaParser().parseSource(source, {fileName: this.fileName()});
+		var root = new lively.ide.FileFragment(
+			this.fileName(), 'ometaGrammar', 0, source.length-1, this.fileName(), fileFragments, this);
+		return root;
 	},
 
-	parseLkml: function(fileName, fileString) {
-		return ChangeSet.fromFile(fileName, fileString);
+	parseLkml: function(source) {
+		return ChangeSet.fromFile(this.fileName(), source);
 	},
-parseSt: function(fileName, fileString) {
-	if (!Global['SmalltalkParser']) return null;
-	var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, "smalltalkClasses", fileString, true);
-	if (!ast) {
-	  console.warn('Couldn\'t parse ' + fileName);
-	  return null;
-	}
-	ast.setFileName(fileName);
-	return ast;
-},
+	
+	parseSt: function(source) {
+		if (!Global['SmalltalkParser']) return null;
+		var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, "smalltalkClasses", source, true);
+		if (!ast) {
+		  console.warn('Couldn\'t parse ' + this.fileName());
+		  return null;
+		}
+		ast.setFileName(this.fileName());
+		return ast;
+	},
+	
+});
 
-
-    putSourceCodeFor: function(fileFragment, newFileString) {
-	this.putSourceCodeForFile(fileFragment.fileName, newFileString);
-},
-putSourceCodeForFile: function(filename, content) {
-	content = content.replace(/\r/gi, '\n');  // change all CRs to LFs
-	console.log("Saving " + filename + "...");
-	new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"})
-		.put(this.codeBaseURL.withFilename(filename), content);
-	this.cachedFullText[filename] = content;
-	console.log("... " + content.length + " bytes saved.");
-},
-
+Object.extend(lively.ide.ModuleWrapper, {
+	
+	forFile: function(fn) {
+		var type = fn.substring(fn.lastIndexOf('.') + 1, fn.length);
+		var moduleName = fn;
+		moduleName = moduleName.substring(0, moduleName.lastIndexOf('.'));
+		moduleName = moduleName.replace(/\//g, '.');
+		return new lively.ide.ModuleWrapper(moduleName, type);
+	},
+	
+});
+// ===========================================================================
+// Keeps track of parsed sources
+// ===========================================================================
+SourceDatabase.subclass('AnotherSourceDatabase', {
     
+	initialize: function($super) {
+		this.editHistory = {};
+		this.modules = {};
+		this.registeredBrowsers = [];
+	},
+
+	ensureRealModuleName: function(moduleName) { // for migration to new module names
+		if (moduleName.endsWith('.js'))
+			throw dbgOn(new Error('Old module name usage: ' + moduleName));
+	},
+
+	rootFragmentForModule: function(fileName) {
+		if (!Object.isString(fileName))
+			throw dbgOn(new Error('Don\'t know what to do with ' + fileName));
+		var moduleWrapper = this.findModuleWrapperForFileName(fileName);
+		var root = moduleWrapper && moduleWrapper.ast();
+		// if (!root)
+		// 	throw dbgOn(new Error('Cannot find parsed source for ' + fileName));
+		return root;
+	},
+
+	allModules: function() { return Object.values(this.modules) },
+	
+	findModuleWrapperForFileName: function(fileName) {
+		return this.allModules().detect(function(ea) { return ea.fileName() == fileName })
+	},
+	
+	createModuleWrapperForFileName: function(fileName) {
+		return lively.ide.ModuleWrapper.forFile(fileName);
+	},
+	
+	addModule: function(fileName, source) {
+		var moduleWrapper = this.findModuleWrapperForFileName(fileName);
+		if (moduleWrapper) return moduleWrapper;
+		var moduleWrapper = this.createModuleWrapperForFileName(fileName);
+		if (source) moduleWrapper.setCachedSource(source);
+		moduleWrapper.retrieveSourceAndParse(this);
+		return this.modules[fileName] = moduleWrapper;
+	},
+
+	reparseModule: function(fileName, readAgain) {
+		if (readAgain)
+			delete this.modules[fileName];
+		var moduleWrapper = this.findModuleWrapperForFileName(fileName)
+		if (moduleWrapper) {
+			moduleWrapper.retrieveSourceAndParse(this);
+			return moduleWrapper;
+		}
+		return this.addModule(fileName);
+	},
+
+	parseCompleteFile: function(fileName, newFileString) {
+		var moduleWrapper = this.findModuleWrapperForFileName(fileName)
+		if (!moduleWrapper)
+			throw dbgOn(new Error('Cannot parse for ' + fileName + ' because module is not in SourceControl'));
+		var root = newFileString ? moduleWrapper.parse(newFileString, this) : moduleWrapper.retrieveSourceAndParse(this);
+		return root;
+	},
+	
+	putSourceCodeFor: function(fileFragment, newFileString) {
+		this.putSourceCodeForFile(fileFragment.fileName, newFileString);
+	},
+
+	putSourceCodeForFile: function(fileName, content) {
+		if (!fileName)
+			throw dbgOn(new Error('No filename when tryinh to put source'));
+		var moduleWrapper = this.findModuleWrapperForFileName(fileName) || this.createModuleWrapperForFileName(fileName);
+		content = content.replace(/\r/gi, '\n');  // change all CRs to LFs
+		console.log("Saving " + fileName + "...");
+		moduleWrapper.setSource(content);
+		console.log("... " + content.length + " bytes saved.");
+	},
+    
+    getCachedText: function(fileName) { // Return full text of the named file
+		var moduleWrapper = this.findModuleWrapperForFileName(fileName);
+		if (!moduleWrapper)
+			// throw dbgOn(new Error('Cannot retrieve source code for ' + fileName + ' because module is not in SourceControl'));
+			return '';
+		return moduleWrapper.getSource();
+    },
+
 	searchFor: function(str) {
-	// search modules
-	var allFragments = Object.values(lively.Tools.SourceControl.modules)
-		.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
+		// search modules
+		var roots = Object.values(lively.Tools.SourceControl.modules.collect(function(ea) { return ea.ast() }));
+		var allFragments = roots.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
 
-	// search local code	
-	allFragments = allFragments.concat(ChangeSet.current().flattened());
+		// search local code	
+		allFragments = allFragments.concat(ChangeSet.current().flattened());
 
-	return allFragments.select(function(ea) {
-		return ea.getSourceCodeWithoutSubElements().include(str)
-	});
+		return allFragments.select(function(ea) {
+			return ea.getSourceCodeWithoutSubElements().include(str)
+		});
 
-},
+	},
 
-    scanLKFiles: function($super, beSync) {
-        // new AnotherSourceDatabase()
-        var ms = new Date().getTime();
-        this.interestingLKFileNames().each(function(fileName) {
-            var action = function(fileString) { this.addModule(fileName, fileString) };
-            this.getCachedTextAsync(fileName, action, beSync);
-        }, this);
-        console.log('Altogether: ' + (new Date().getTime()-ms)/1000 + ' s');
-    },
+	scanLKFiles: function($super, beSync) {
+		var ms = new Date().getTime();
+		this.interestingLKFileNames(URL.codeBase.withFilename('lively/')).each(function(fileName) {
+			this.addModule(fileName, fileString);
+		}, this);
+		console.log('Altogether: ' + (new Date().getTime()-ms)/1000 + ' s');
+	},
     
-    preLoad: function() {
-        this.preLoadFileNames().each(function(fileName) {
-            var action = function(fileString) { this.addModule(fileName, fileString) };
-            this.getCachedTextAsync(fileName, action, true);
-        }, this);
-    },
-    
-    preLoadFileNames: function($super) {
-		//return ['test.js', 'ide.js', 'Tests/ToolsTests.js', 'TileScripting.js', 'Tests/TileScriptingTests.js']
-    // return [ 'Tests/ToolsTests.js', 'test.js', 'Tests/MorphTest.js']
-		return [];
-    },
-
 	allFiles: function() {
 		if (!this._allFiles)
-			this._allFiles = this.interestingLKFileNames()
-				.concat(this.preLoadFileNames())
-				.uniq();
+			this._allFiles = this.interestingLKFileNames(this.codeBaseURL).uniq();
 		return this._allFiles;
 	},
 
@@ -2305,18 +2446,18 @@ putSourceCodeForFile: function(filename, content) {
 	
 	updateBrowsers: function(changedBrowser, changedNode) {
 		var msStart = new Date().getTime();
-		this.registeredBrowsers.without(changedBrowser).forEach(function(ea) {
-			ea.allChanged(true, changedNode);
-		});
+		this.registeredBrowsers.without(changedBrowser).forEach(function(ea) { ea.allChanged(true, changedNode) });
 		console.log('updated ' + this.registeredBrowsers.length + ' browsers in ' + (new Date().getTime()-msStart)/1000 + 's')
 	},
 	
 	update: function() {
 		this._allFiles = null;
 	},
+	
 	addFile: function(filename) {
 		this._allFiles.push(filename);
 	},
+	
 	removeFile: function(filename) {
 		this._allFiles = this._allFiles.without(filename);
 	},
@@ -2326,6 +2467,16 @@ putSourceCodeForFile: function(filename, content) {
 		this._allFiles = new WebResource(newCodeBaseURL).subDocuments().collect(function(ea) { return ea.getName() });
 	},
 	
+	prepareForMockModule: function(fileName, src) { // This is just used for testing!!!
+		this.modules[fileName] = lively.ide.ModuleWrapper.forFile(fileName);
+		this.modules[fileName].setCachedSource(src);
+		this.putSourceCodeFor = function(fileFragment, newFileString) {
+			this.modules[fileName].setCachedSource(newFileString)
+		}.bind(this);
+		var root = this.reparseModule(fileName).ast();
+		root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
+		return root
+	}
 });
  
 // see also lively.Tools.startSourceControl
@@ -2333,7 +2484,6 @@ ide.startSourceControl = function() {
     if (tools.SourceControl instanceof AnotherSourceDatabase)
 		return tools.SourceControl;
     tools.SourceControl = new AnotherSourceDatabase();
-    tools.SourceControl.preLoad();
 	return tools.SourceControl;
 };
 
@@ -2341,64 +2491,69 @@ ide.startSourceControl = function() {
 // FileFragments, another SourceCodeDescriptor
 // ===========================================================================
 Object.subclass('lively.ide.FileFragment', {
- 
-    initialize: function(name, type, startIndex, stopIndex, fileName, subElems, srcCtrl) {
-        this.name = name;
-        this.type = type;
-        this.startIndex = startIndex;
-        this.stopIndex = stopIndex;
-        this.fileName = fileName;
-        this._subElements = subElems || [];
-        this.sourceControl = srcCtrl;
-    },
-eq: function(other) {
-	if (this == other) return true;
-	if (this.constructor != other.constructor) return false;
-	return this.name == other.name &&
+
+	initialize: function(name, type, startIndex, stopIndex, fileName, subElems, srcCtrl) {
+		this.name = name;
+		this.type = type;
+		this.startIndex = startIndex;
+		this.stopIndex = stopIndex;
+		this.fileName = fileName;
+		this._subElements = subElems || [];
+		this.sourceControl = srcCtrl;
+	},
+	eq: function(other) {
+		if (this == other) return true;
+		if (this.constructor != other.constructor) return false;
+		return this.name == other.name &&
 		this.startIndex == other.startIndex &&
 		this.stopIndex == other.stopIndex &&
 		this.type == other.type &&
 		this.fileName == other.fileName &&
 		this.getSourceCode() == other.getSourceCode();
-},
+	},
 
-    
-    subElements: function(depth) {
-    	if (!depth || depth === 1)
-    		return this._subElements; 
-    	return this._subElements.inject(this._subElements, function(all, ea) { return all.concat(ea.subElements(depth-1)) });
-    },
-    fragmentsOfOwnFile: function() {
-        return this.getSourceControl().rootFragmentForModule(this.fileName)
+	subElements: function(depth) {
+		if (!depth || depth === 1)
+			return this._subElements; 
+		return this._subElements.inject(this._subElements, function(all, ea) { return all.concat(ea.subElements(depth-1)) });
+	},
+
+	fragmentsOfOwnFile: function() {
+		return this.getSourceControl().rootFragmentForModule(this.fileName)
 			.flattened()
 			.reject(function(ea) { return ea.eq(this) }, this);
-    },
-    
+	},
+
 	findOwnerFragment: function() {
 		if (!this.fileName) throw dbgOn(new Error('no fileName for fragment ' + this));
 		var self = this;
-		return this.getSourceControl().modules[this.fileName].flattened().detect(function(ea) {
+
+		var moduleWrapper = this.getSourceControl().findModuleWrapperForFileName(this.fileName)
+		if (!moduleWrapper)
+			throw new Error('SourceControl doesn\'t have my module: ' + this.fileName)
+			
+		return moduleWrapper.ast().flattened().detect(function(ea) {
 			return ea.subElements().any(function(subElem) { return self.eq(subElem) });
 		});
 	},
 
-    flattened: function() {
-        return this.subElements().inject([this], function(all, ea) { return all.concat(ea.flattened()) });
-    },
- 
-    checkConsistency: function() {
-        this.fragmentsOfOwnFile().forEach(function(ea) { // Just a quick check if fragments are ok...
-            if (this.flattened().any(function(ea) {return ea.eq(this)}, this)) return;
-            if ((this.startIndex < ea.startIndex && ea.startIndex < this.stopIndex)
-                    || (this.startIndex < ea.stopIndex && ea.stopIndex < this.stopIndex))
-                throw new Error('Malformed fragment: ' + ea.name + ' ' + ea.type);
-        }, this);
-    },
-    
-    getSourceCode: function() {
-        return this.getFileString().substring(this.startIndex, this.stopIndex+1);
-    },
- 
+	flattened: function() {
+		return this.subElements().inject([this], function(all, ea) { return all.concat(ea.flattened()) });
+	},
+
+	checkConsistency: function() {
+		this.fragmentsOfOwnFile().forEach(function(ea) { // Just a quick check if fragments are ok...
+			if (this.flattened().any(function(ea) {return ea.eq(this)}, this)) return;
+			if ((this.startIndex < ea.startIndex && ea.startIndex < this.stopIndex)
+				|| (this.startIndex < ea.stopIndex && ea.stopIndex < this.stopIndex))
+			throw new Error('Malformed fragment: ' + ea.name + ' ' + ea.type);
+		}, this);
+	},
+
+	getSourceCode: function() {
+		return this.getFileString().substring(this.startIndex, this.stopIndex+1);
+	},
+
 	getSourceCodeWithoutSubElements: function() {
 		var completeSrc = this.getSourceCode();
 		return this.subElements().inject(completeSrc, function(src, ea) {
@@ -2407,26 +2562,26 @@ eq: function(other) {
 			var end = elemSrc.length-1 + start;
 			return src.substring(0,start) + src.substring(end+1);
 		});
-    },
+	},
 
-    putSourceCode: function(newString) {
-        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
+	putSourceCode: function(newString) {
+		if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
 
 		var newMe = this.reparseAndCheck(newString);
 		if (!newMe) return null;
 
 		var newFileString = this.buildNewFileString(newString);
-        this.getSourceControl().putSourceCodeFor(this, newFileString);
-        
-        this.updateIndices(newString, newMe);
+		this.getSourceControl().putSourceCodeFor(this, newFileString);
+
+		this.updateIndices(newString, newMe);
 		return newMe;
-    },
+	},
 
 	buildNewFileString: function(newString) {
-        var fileString = this.getFileString();
-        var beforeString = fileString.substring(0, this.startIndex);
-        var afterString = fileString.substring(this.stopIndex+1);
-        var newFileString = beforeString.concat(newString, afterString);
+		var fileString = this.getFileString();
+		var beforeString = fileString.substring(0, this.startIndex);
+		var afterString = fileString.substring(this.stopIndex+1);
+		var newFileString = beforeString.concat(newString, afterString);
 		return newFileString;
 	},
 
@@ -2435,39 +2590,39 @@ eq: function(other) {
 		newFileString = newFileString.slice(0,this.startIndex + newSource.length)
 
 		if (this.type === 'moduleDef' || this.type === 'completeFileDef' || this.type === 'ometaGrammar')
-            return this.sourceControl.parseCompleteFile(this.fileName, newFileString);
+			return this.sourceControl.parseCompleteFile(this.fileName, newFileString);
 
 		// FIXME time to cleanup!!!
 		var parser = (this.type === 'ometaDef' || this.type === 'ometaRuleDef') ?
-			new OMetaParser() :
-			new JsParser();
+		new OMetaParser() :
+		new JsParser();
 
-        parser.ptr = this.startIndex;
-        parser.src = newFileString;
-        parser.lines = newFileString.split(/[\n\r]/);
-        parser.fileName = this.fileName;
-		
+		parser.ptr = this.startIndex;
+		parser.src = newFileString;
+		parser.lines = newFileString.split(/[\n\r]/);
+		parser.fileName = this.fileName;
+
 		var newFragment = parser.parseWithOMeta(this.type);
-		newFragment && newFragment.flattened().forEach(function(ea) {
-			ea.sourceControl = this.sourceControl;
-		}, this);
+		if (newFragment)
+			newFragment.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
 		return newFragment;
-    },
-reparseAndCheck: function(newString) {
+	},
+
+	reparseAndCheck: function(newString) {
 		var newMe = this.reparse(newString);
-		
+
 		if (!newMe) dbgOn(true);
 
 		if (newMe && this.startIndex !== newMe.startIndex)
-            throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
+			throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
 		if (newMe && (this.type == 'completeFileDef' || this.type == 'moduleDef')
-			 && (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
+		&& (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
 			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
 		}
 		if (!newMe || newMe.type !== this.type) {
 			newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
 			var msg = Strings.format('Error occured during parsing.\n%s (%s) was parsed as %s. End line: %s.\nChanges are NOT saved.\nRemove the error and try again.',
-				this.name, this.type, newMe.type, newMe.stopLine());
+			this.name, this.type, newMe.type, newMe.stopLine());
 			console.warn(msg);
 			WorldMorph.current().alert(msg);
 			return null;
@@ -2477,33 +2632,33 @@ reparseAndCheck: function(newString) {
 	},
 
 
-    updateIndices: function(newSource, newMe) {
-        this.checkConsistency();
+	updateIndices: function(newSource, newMe) {
+		this.checkConsistency();
 
-        var prevStop = this.stopIndex;
-        var newStop = newMe.stopIndex;
-        var delta = newStop - prevStop;
-        
-        this.stopIndex = newStop;    // self
-        
-        // update fragments which follow after this or where this is a part of
-        this.fragmentsOfOwnFile().each(function(ea) {
-            if (ea.stopIndex < prevStop) return;
-            ea.stopIndex += delta;
-            if (ea.startIndex <= prevStop) return;
-            ea.startIndex += delta;
-        });
- 
+		var prevStop = this.stopIndex;
+		var newStop = newMe.stopIndex;
+		var delta = newStop - prevStop;
+
+		this.stopIndex = newStop;    // self
+
+		// update fragments which follow after this or where this is a part of
+		this.fragmentsOfOwnFile().each(function(ea) {
+			if (ea.stopIndex < prevStop) return;
+			ea.stopIndex += delta;
+			if (ea.startIndex <= prevStop) return;
+			ea.startIndex += delta;
+		});
+
 		this.name = newMe.name; // for renaming
-        this._subElements = newMe.subElements();
-    },
-    
-    getSourceControl: function() {
-        var ctrl = this.sourceControl || tools.SourceControl;
-        if (!ctrl) throw dbgOn(new Error('No sourcecontrol !! '));
-        if (!(ctrl instanceof AnotherSourceDatabase)) throw dbgOn(new Error('Using old source control, could lead to errors...'));
-        return ctrl;
-    },
+		this._subElements = newMe.subElements();
+	},
+
+	getSourceControl: function() {
+		var ctrl = this.sourceControl || tools.SourceControl;
+		if (!ctrl) throw dbgOn(new Error('No sourcecontrol !! '));
+		if (!(ctrl instanceof AnotherSourceDatabase)) throw dbgOn(new Error('Using old source control, could lead to errors...'));
+		return ctrl;
+	},
 
 	sourceCodeWithout: function(childFrag) {
 		if (!this.flattened().any(function(ea) {return ea.eq(childFrag)}))
@@ -2516,7 +2671,7 @@ reparseAndCheck: function(newString) {
 		var newSource = mySource.slice(0, start) + mySource.slice(end);
 		return newSource;
 	},
-    
+
 	remove: function() {
 		var owner = this.findOwnerFragment();
 		if (!owner) throw dbgOn(new Error('Cannot find owner of fragment ' + this));
@@ -2524,37 +2679,37 @@ reparseAndCheck: function(newString) {
 		owner._subElements = owner.subElements().reject(function(ea) {return ea.eq(this)}, this)
 		owner.putSourceCode(newSource);
 	},
-moveTo: function(index) {
-	console.log('Moving from ' + this.startIndex + ' to ' + index)
-	var mySrc = this.getSourceCode();
-	var myOwner = this.findOwnerFragment();
-	step1 = myOwner.sourceCodeWithout(this);
-	myOwner = myOwner.putSourceCode(step1);
-//-------
-	if (index > this.startIndex)
-		index -= mySrc.length;
-	this.startIndex = index; this.stopIndex = index + mySrc.length - 1;
-//-------
-	var target = myOwner.fragmentsOfOwnFile().detect(function(ea) {
-		return ea.startIndex <= index && ea.stopIndex >= index});
-	var targetSrc = target.getSourceCode();
-	var local = index - target.startIndex;
-	step2 = targetSrc.slice(0,local) + mySrc + targetSrc.slice(local, targetSrc.length);
-	target.putSourceCode(step2);
-	return this;
-},
+	
+	moveTo: function(index) {
+		console.log('Moving from ' + this.startIndex + ' to ' + index)
+		var mySrc = this.getSourceCode();
+		var myOwner = this.findOwnerFragment();
+		step1 = myOwner.sourceCodeWithout(this);
+		myOwner = myOwner.putSourceCode(step1);
+		//-------
+		if (index > this.startIndex)
+			index -= mySrc.length;
+		this.startIndex = index; this.stopIndex = index + mySrc.length - 1;
+		//-------
+		var target = myOwner.fragmentsOfOwnFile().detect(function(ea) {
+			return ea.startIndex <= index && ea.stopIndex >= index });
+		var targetSrc = target.getSourceCode();
+		var local = index - target.startIndex;
+		step2 = targetSrc.slice(0,local) + mySrc + targetSrc.slice(local, targetSrc.length);
+		target.putSourceCode(step2);
+		return this;
+	},
 
-
-    getFileString: function() {
+	getFileString: function() {
 		if (!this.fileName && this._fallbackSrc)
 			return this._fallbackSrc;
-        if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
+		if (!this.fileName) throw dbgOn(new Error('No filename for descriptor ' + this.name));
 		return  this.getSourceControl().getCachedText(this.fileName);
-    },
-    
-    newChangeList: function() {
-        throw dbgOn(new Error('Not yet!'));
-    },
+	},
+
+	newChangeList: function() {
+		throw dbgOn(new Error('Not yet!'));
+	},
 
 	startLine: function() {
 		// FIXME!!!
@@ -2565,20 +2720,20 @@ moveTo: function(index) {
 		// FIXME!!!
 		return JsParser.prototype.findLineNo(this.getFileString().split(/[\n\r]/), this.stopIndex);
 	},
-isStatic: function() { // makes only sense for propertyDefs
-	return this._isStatic; // FIXME
-},
-
-    
-    toString: function() {
-        return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
-            this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.startLine(), this.subElements().length);
-    },
- 
-    inspect: function() {
-    	try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
+	
+	isStatic: function() { // makes only sense for propertyDefs
+		return this._isStatic; // FIXME
 	},
-    
+
+	toString: function() {
+		return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
+		this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.startLine(), this.subElements().length);
+	},
+
+	inspect: function() {
+		try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
+	},
+
 });
 
 ide.FileFragment.addMethods({
