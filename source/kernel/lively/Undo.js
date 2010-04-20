@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-module("lively.Undo").requires(['cop.Layers']).toRun(function() {
+module("lively.Undo").requires('cop.Layers','lively.Text').toRun(function() {
 
 Object.subclass("UndoHistory", {
 	initialize: function() {
@@ -174,5 +174,5 @@ layerClass(UndoLayer, TextMorph, {
 		})
  	},
 });
-
+enableLayer(UndoLayer);
 })
