@@ -2244,6 +2244,20 @@ BoxMorph.subclass('TextMorph', {
 			}
 		} catch (e) {
 			offset = offset || 0;
+			var msg = "" + e + "\n" + 
+				"Line: " + e.line + "\n" +
+				(e.sourceURL ? ("URL: " + (new URL(e.sourceURL).filename()) + "\n") : "");
+			
+			this.world().setStatusMessage(
+				msg,  
+				Color.red, 5,
+				function() {
+					require('lively.Helper').toRun(function() { 
+						alert('Ther was an errror\n' + printObject(e))
+					})
+				}
+			)
+			// How do we know that the error occured here?
 			if (e.expressionEndOffset) {
 				// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
 				this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
