@@ -127,15 +127,22 @@ Morph.subclass('PhoneMorph', {
 		dial.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
 		shim.relayMouseEvents(this, {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
 
-		dial.setShape(new lively.scene.Path(p, Color.red, 0, Color.black));
+
+		function fixPath(points) {
+			return points.collect(function(point, i) { // fix: path no longer created with points!
+				var klass = i === 0 ? lively.scene.MoveTo : lively.scene.CurveTo;
+				return new klass(point.x, point.y);
+			});
+		}
+		
+		dial.setShape(new lively.scene.Path(fixPath(p), Color.red, 0, Color.black));
 		dial.setFillOpacity(.7);
 
 		// finger hook
-
-                var hook = Morph.makeRectangle(0, 0, 0, 0);
+		var hook = Morph.makeRectangle(0, 0, 0, 0);
 		var hp = [pt(0,0).addXY(big,0), pt(0,0).addXY(big-(2*small),0)];
 		hp[1].type="arc"; hp[1].radius=2*small; hp[1].mode="0,1";
-		hook.setShape(new lively.scene.Path(hp, null, 4, Color.black));
+		hook.setShape(new lively.scene.Path(fixPath(hp), null, 4, Color.black));
 		hook.scaleBy(.95);
 		hook.rotateBy(hookAngle);
 
@@ -304,12 +311,17 @@ Global.phoneDemo = function(world, origin, size) {
 	sl.url=new URL(Global.location.toString()).withFilename("background_" + this.file);
 	var model = new Model();
 	model.setLabel = function(text) {
+		// mabe we didn't found file then stop requesting
+		if (text.match(/404 Not Found/)) {
+			console.warn('some errror in phone.js')
+			return
+		}
 		// remove html comments (this gets most of them)
 		text = text.replace(/ *<!--([^-]*-[^-]+)*[^-]*-->[ \n]*/g,"");
 		// console.log("Got: " + text);
 	    var p; 
 	    try { p = eval("(" + text + ")"); } catch (e) { console.log("error " + e); }
-		if (p["line"]) {
+		if (p && p["line"]) {
 			sl.updateTextString(p["line"]);
 		} else {
 			sl.updateTextString(text);
