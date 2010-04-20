@@ -215,7 +215,7 @@ Object.extend(String.prototype, {
 var $break = { };
 
 var Enumerable = {
-  each: function(iterator, context) {
+  each: function each(iterator, context) {
     var index = 0;
     iterator = iterator.bind(context);
     try {
@@ -228,7 +228,7 @@ var Enumerable = {
     return this;
   },
 
-  all: function(iterator, context) {
+  all: function all(iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var result = true;
     this.each(function(value, index) {
@@ -238,7 +238,7 @@ var Enumerable = {
     return result;
   },
 
-  any: function(iterator, context) {
+  any: function any(iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var result = false;
     this.each(function(value, index) {
@@ -248,7 +248,7 @@ var Enumerable = {
     return result;
   },
 
-  collect: function(iterator, context) {
+  collect: function collect(iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var results = [];
     this.each(function(value, index) {
@@ -257,7 +257,7 @@ var Enumerable = {
     return results;
   },
 
-  detect: function(iterator, context) {
+  detect: function detect(iterator, context) {
     iterator = iterator.bind(context);
     var result;
     this.each(function(value, index) {
@@ -269,7 +269,7 @@ var Enumerable = {
     return result;
   },
 
-  findAll: function(iterator, context) {
+  findAll: function findAll(iterator, context) {
     iterator = iterator.bind(context);
     var results = [];
     this.each(function(value, index) {
@@ -279,7 +279,7 @@ var Enumerable = {
     return results;
   },
 
-  grep: function(filter, iterator, context) {
+  grep: function grep(filter, iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var results = [];
 
@@ -293,7 +293,7 @@ var Enumerable = {
     return results;
   },
 
-  include: function(object) {
+  include: function include(object) {
     if (Object.isFunction(this.indexOf))
       if (this.indexOf(object) != -1) return true;
 
@@ -308,7 +308,7 @@ var Enumerable = {
   },
 
 
-  inject: function(memo, iterator, context) {
+  inject: function inject(memo, iterator, context) {
       iterator = iterator.bind(context);
     this.each(function(value, index) {
       memo = iterator(memo, value, index);
@@ -316,14 +316,14 @@ var Enumerable = {
     return memo;
   },
 
-  invoke: function(method) {
+  invoke: function invoke(method) {
     var args = $A(arguments).slice(1);
-    return this.map(function(value) {
+    return this.map(function inner_invoke(value) {
       return value[method].apply(value, args);
     });
   },
 
-  max: function(iterator, context) {
+  max: function max(iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var result;
     this.each(function(value, index) {
@@ -334,7 +334,7 @@ var Enumerable = {
     return result;
   },
 
-  min: function(iterator, context) {
+  min: function min(iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var result;
     this.each(function(value, index) {
@@ -345,7 +345,7 @@ var Enumerable = {
     return result;
   },
 
-  partition: function(iterator, context) {
+  partition: function partition(iterator, context) {
     iterator = iterator ? iterator.bind(context) : Prototype.K;
     var trues = [], falses = [];
     this.each(function(value, index) {
@@ -355,7 +355,7 @@ var Enumerable = {
     return [trues, falses];
   },
 
-  pluck: function(property) {
+  pluck: function pluck(property) {
     var results = [];
     this.each(function(value) {
       results.push(value[property]);
@@ -363,7 +363,7 @@ var Enumerable = {
     return results;
   },
 
-  reject: function(iterator, context) {
+  reject: function reject(iterator, context) {
     iterator = iterator.bind(context);
     var results = [];
     this.each(function(value, index) {
@@ -373,7 +373,7 @@ var Enumerable = {
     return results;
   },
 
-  sortBy: function(iterator, context) {
+  sortBy: function sortBy(iterator, context) {
     iterator = iterator.bind(context);
     return this.map(function(value, index) {
       return {value: value, criteria: iterator(value, index)};
@@ -383,11 +383,11 @@ var Enumerable = {
     }).pluck('value');
   },
 
-  toArray: function() {
+  toArray: function toArray() {
     return this.map();
   },
 
-  zip: function() {
+  zip: function zip() {
     var iterator = Prototype.K, args = $A(arguments);
     if (Object.isFunction(args.last()))
       iterator = args.pop();
@@ -398,11 +398,11 @@ var Enumerable = {
     });
   },
 
-  size: function() {
+  size: function size() {
     return this.toArray().length;
   },
 
-  inspect: function() {
+  inspect: function inspect() {
     return '#<Enumerable:' + this.toArray().inspect() + '>';
   }
 };
