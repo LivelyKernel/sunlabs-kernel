@@ -21,7 +21,7 @@
  */
 
 
-module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'lively.LKFileParser', 'lively.Helper', 'lively.ChangeSet').toRun(function(ide, tools, omet, help) {
+module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'lively.LKFileParser', 'lively.Helper', 'lively.ChangeSet', 'lively.bindings').toRun(function(ide, tools, omet, help) {
     
     // Modules: "+Modules" --> setModule in model
     // Modules: "-Modules" --> getModule in model
@@ -88,6 +88,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		this.buttonCommands = [];
 	},
  
+	locationInput: function() { return this.panel.locationPane && this.panel.locationPane.innerMorph() },
+	
+	sourceInput: function() { return this.panel.sourcePane.innerMorph() },
+	
     buildView: function (extent) {
  
 		extent = extent || this.initialViewExtent;
@@ -96,7 +100,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
 		var panel = new lively.ide.BrowserPanel(extent);
         PanelMorph.makePanedPanel(extent, this.panelSpec, panel);
- 
+
+		this.panel = panel;
         var model = this.getModel();
         var browser = this;
  
@@ -117,19 +122,27 @@ Widget.subclass('lively.ide.BasicBrowser', {
  
         this.allPaneNames.each(function(ea) { setupListPanes(ea) });
  
-        panel.sourcePane.innerMorph().maxSafeSize = 2e6;
-		panel.sourcePane.innerMorph().styleClass = ['codePane'];
-        panel.sourcePane.connectModel(model.newRelay({Text: "SourceString"}));
-
-		panel.locationPane.innerMorph().beInputLine();
+		this.setupSourceInput();
+		this.setupLocationInput();
  
 		//panel.statusPane.connectModel(model.newRelay({Text: "-StatusMessage"}));
 		this.buildCommandButtons(panel);
  
 		panel.ownerWidget = this;
-	    this.panel = panel;
         return panel;
     },
+
+	setupSourceInput: function() {
+		this.sourceInput().maxSafeSize = 2e6;
+		this.sourceInput().styleClass = ['codePane'];
+	    this.panel.sourcePane.connectModel(this.getModel().newRelay({Text: "SourceString"}));
+	},
+	
+	setupLocationInput: function() {
+		if (!this.locationInput()) return;
+		this.locationInput().beInputLine();
+		this.locationInput().noEval = true;
+	},
 
 	buildCommandButtons: function(morph) {
 		var cmds = this.commands()
@@ -482,6 +495,7 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 		var widget = new this.ownerWidget.constructor();
 		if (widget instanceof lively.ide.WikiCodeBrowser) return; // FIXME deserialize wiki browser
 		var selection = this.getSelectionSpec();
+		if (this.targetURL) widget.targetURL = this.targetURL;
 		this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
 		this.owner.targetMorph.setPosition(this.getPosition());
 		this.remove();
@@ -732,12 +746,33 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 		$super();
 		this.installFilter(lively.ide.NodeTypeFilter.defaultInstance(), 'Pane1');
 		this.evaluate = true;
+		this.targetURL = null;
 	},
 
+	setupLocationInput: function($super) {
+		$super();
+		connect(this, 'targetURL', this.locationInput(), 'setTextString', function(value) { return value.toString() })
+		connect(this.locationInput(), 'savedTextString', this, 'setTargetURL', function(value) { return new URL(value) })
+		this.targetURL = this.targetURL // hrmpf
+	},
+	
 	getTargetURL: function() {
-		if (!this.targetURL)
-			this.targetURL = this.sourceDatabase().codeBaseURL;
+		if (!this.targetURL) this.targetURL = this.sourceDatabase().codeBaseURL.withFilename('lively/');
 		return this.targetURL;
+	},
+	
+	setTargetURL: function(url) {
+		try {
+			this.targetURL = url;
+			this.panel.targetURL = url; // FIXME for persistence
+			this.rootNode().locationChanged();
+			this.allChanged();
+		} catch(e) {
+			console.log('couldn\'t set new URL ' + url + ' because ' + e);
+			this.locationInput().setTextString(this.targetURL.toString());
+			return
+		}
+		console.log('new url: ' + url);
 	},
 	
 	rootNode: function() {
@@ -873,13 +908,17 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 	
 	addFile: function(file) { this.allFiles.push(file) },
 	
+	removeFile: function(file) { this.allFiles = this.allFiles.without(file) },
+	
+	locationChanged: function() { this.allFiles = this.target.interestingLKFileNames(this.browser.getTargetURL()) },
+	
 	childNodes: function() {
 		// js files + OMeta files (.txt) + lkml files + ChangeSet current
 		//if (this._childNodes) return this._childNodes; // optimization
 		var nodes = [];
 		var srcDb = this.target;
 		var b = this.browser;
-		if (this.allFiles.length == 0) this.allFiles = srcDb.interestingLKFileNames(b.getTargetURL());
+		if (this.allFiles.length == 0) this.locationChanged();
 		for (var i = 0; i < this.allFiles.length; i++) {
 			var fn = this.allFiles[i];
 			if (fn.endsWith('.js')) {
@@ -1052,6 +1091,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     
     asString: function() {
 		var name = this.moduleName;
+		name = name.substring(name.lastIndexOf('/') + 1, name.length);
 		if (!this.target) return name + ' (not parsed)';
 		if (!this.showLines()) return name;
 		return name + ' (' + this.target.startLine() + '-' + this.target.stopLine() + ')';
@@ -1079,8 +1119,8 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
     		node.showAll = !node.showAll;
     		node.signalTextChange() }]);
 		menu.unshift(['remove', function() {
-			new WebResource(browser.getTargetURL().withFilename(node.moduleName)).del();
 			browser.sourceDatabase().removeFile(node.moduleName);
+			browser.rootNode().removeFile(node.moduleName);
 			browser.allChanged()}]);
 	return menu;
 },
@@ -1673,14 +1713,13 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 				world.notify('File ' + filename + ' already exists!');
 			} else {
 				var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
-				var realCodeBase = URL.codeBase;
-				var moduleBase = browser.getTargetURL().withRelativePartsResolved().relativePathFrom(realCodeBase);
+				var moduleBase = browser.getTargetURL().withRelativePartsResolved().relativePathFrom(URL.codeBase);
 				var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
 				dir.writeFileNamed(
 					filename,
 					Strings.format('module(\'%s\').requires().toRun(function() {\n\n// Enter your code here\n\n}) // end of module',
 						moduleName));
-				browser.rootNode().addFile(filename);
+				browser.rootNode().locationChanged();
 				browser.allChanged();
 				browser.inPaneSelectNodeNamed('Pane1', filename);
 			}
@@ -2311,6 +2350,10 @@ Object.subclass('lively.ide.ModuleWrapper', {
 		return ast;
 	},
 	
+	remove: function() {
+		new WebResource(this.fileURL()).del();
+	},
+	
 });
 
 Object.extend(lively.ide.ModuleWrapper, {
@@ -2462,8 +2505,13 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		this._allFiles.push(filename);
 	},
 	
-	removeFile: function(filename) {
-		this._allFiles = this._allFiles.without(filename);
+	removeFile: function(fileName) {
+		var moduleWrapper = this.findModuleWrapperForFileName(fileName);
+		if (!moduleWrapper) {
+			console.log('Trying to remove ' + fileName + ' bot no module found?');
+			return;
+		}
+		moduleWrapper.remove();
 	},
 
 	switchCodeBase: function(newCodeBaseURL) {
