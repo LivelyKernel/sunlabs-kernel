@@ -164,11 +164,12 @@ Global.makeFunctionLayerAware = function Layers$makeFunctionLayerAware(base_obj,
 		return;
 	};
 	// log("makeFunctionLayerAware: " + base_obj );
-	var wrapped_function = function Layers$makeFunctionLayerAwareWrapperFunction() {
+	var wrapped_function = function() {
 		var args = $A(arguments);
 		args.unshift(null); // empty proceed argument (performance optimisation uglyness)
 		return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
 	};
+	wrapped_function.displayName = base_obj.toString() + "$" + function_name + "_wrapper"
 	wrapped_function.isLayerAware = true;
 	
 	base_obj[function_name] = wrapped_function;
@@ -259,7 +260,7 @@ Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 
 Global.layerMethod = function(layer, object,  property, func) {
 	ensurePartialLayer(layer, object)[property] = func;
-	func.displayName = property;
+	func.displayName = object.toString() + "$" + property;
 	makeFunctionLayerAware(object, property);
 };
 
