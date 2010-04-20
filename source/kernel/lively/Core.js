@@ -4799,11 +4799,11 @@ WorldMorph.addMethods({
 					world.addMorph(new lively.Presentation.PageMorph(new Rectangle(0,0,800,600)))
 				}); 
 			}],
-			["Duplicator Panel", function(evt) { 
-				require('lively.Graffle').toRun(function(){
-					world.addMorph(Morph.makeDefaultDuplicatorPanel(evt.point()))
-				}); 
-			}],
+			// ["Duplicator Panel", function(evt) { 
+			// 	require('lively.Graffle').toRun(function(){
+			// 		world.addMorph(Morph.makeDefaultDuplicatorPanel(evt.point()))
+			// 	}); 
+			// }], 
 			["FileUpload Morph", function(evt) { 
 				require('lively.FileUploadWidget').toRun(function(){
 					var morph = new FileUploadMorph();
