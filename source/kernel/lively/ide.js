@@ -762,16 +762,18 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	},
 	
 	setTargetURL: function(url) {
+		var prevURL = this.targetURL;
 		try {
 			this.targetURL = url;
-			this.panel.targetURL = url; // FIXME for persistence
 			this.rootNode().locationChanged();
 			this.allChanged();
 		} catch(e) {
 			console.log('couldn\'t set new URL ' + url + ' because ' + e);
-			this.locationInput().setTextString(this.targetURL.toString());
+			this.targetURL = prevURL;
+			this.locationInput().setTextString(prevURL.toString());
 			return
 		}
+		this.panel.targetURL = url; // FIXME for persistence
 		console.log('new url: ' + url);
 	},
 	
