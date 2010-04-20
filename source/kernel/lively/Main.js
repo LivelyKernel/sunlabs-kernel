@@ -489,6 +489,7 @@ function browserSpecificFixes() {
 };
 
 function main() {
+	console.group("World loading");
     var world = null;
     var canvas = Global.document.getElementById("canvas");
 
@@ -518,6 +519,7 @@ function main() {
 		                    WikiNavigator.enableWikiNavigator();
 		                });
 		            }
+					console.groupEnd("World loading");
 				})
 			})
         })
@@ -528,6 +530,7 @@ function main() {
        		// Create an empty world
        		world.displayOnCanvas(canvas);
        		console.log("created empty world");
+			console.groupEnd("World loading");
 		})
     }
 

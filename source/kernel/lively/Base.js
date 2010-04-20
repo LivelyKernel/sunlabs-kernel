@@ -21,7 +21,6 @@
  * THE SOFTWARE.
  */
 
-
  (function() {
 // ES 3.1 proposed static functions
 // according to rationale_for_es3_1_static_object_methodsaug26.pdf on wiki.ecmascript.org

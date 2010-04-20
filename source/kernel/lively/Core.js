@@ -842,6 +842,8 @@ Object.extend(Exporter, {
 	},
 
 	saveDocumentToFile: function(doc, filename) {
+		console.group("save document")
+		console.time("save document2")
 		if (!filename) return null;
 		if (!filename.endsWith('.xhtml')) {
 			filename += ".xhtml";
@@ -854,10 +856,14 @@ Object.extend(Exporter, {
 
 		if (status.isSuccess()) {
 			console.log("success publishing world at " + url + ", status " + status.code());
+			console.timeEnd("save document")
+			console.groupEnd("save document")
 			return url;
 		} else {
 			WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code());
 		}
+		console.timeEnd("save document")
+		console.groupEnd("save document")
 		return null;
 	},
 
