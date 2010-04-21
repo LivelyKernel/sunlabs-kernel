@@ -372,7 +372,7 @@ Change.subclass('ProtoChange', {
 
 	asJs: function() { // FIXME duplication with StaticChange
 		var body = this.getDefinition();
-		body = body.replace(/\s+(.*)/, '$1');
+		// body = body.replace(/\s+(.*)/, '$1');
 		return this.getName() + ': ' + body + ',';
 	},
 
@@ -414,7 +414,7 @@ Change.subclass('StaticChange', {
 	
 	asJs: function() { // FIXME duplication with ProtoChange
 		var body = this.getDefinition();
-		body = body.replace(/\s+(.*)/, '$1');
+		// body = body.replace(/\s+(.*)/, '$1');
 		return this.getName() + ': ' + body + ',';
 	},
 
