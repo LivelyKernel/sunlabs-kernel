@@ -2462,7 +2462,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 
 	searchFor: function(str) {
 		// search modules
-		var roots = Object.values(lively.Tools.SourceControl.modules.collect(function(ea) { return ea.ast() }));
+		var roots = Object.values(lively.Tools.SourceControl.modules).collect(function(ea) { return ea.ast() });
 		var allFragments = roots.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
 
 		// search local code	
