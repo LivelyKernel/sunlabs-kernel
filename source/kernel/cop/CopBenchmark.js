@@ -24,9 +24,12 @@ module('cop.CopBenchmark').requires('cop.Layers', 'lively.TestFramework').toRun(
 
 CopBenchmark = {};
 
+CopBenchmark.MAXSIZE = 1000000000
+CopBenchmark.TARGETTIME = 100
+
 benchmakeBlock = function(name, unrolledOps, func) {
-	var MAXSIZE = 100000000;
-	var TARGETTIME = 100; // 1000
+	var MAXSIZE = CopBenchmark.MAXSIZE || 100000000;
+	var TARGETTIME = CopBenchmark.TARGETTIME || 1000; // 1000
 	unrolledOps = unrolledOps || 1;
 	
 	var time = 0.0;
@@ -43,11 +46,10 @@ benchmakeBlock = function(name, unrolledOps, func) {
 		ops = (unrolledOps * size);
 		size *= 2;
 	};
-	var result = name +"	" + ops + "	" + time + "	" + ops / time + "\n"
+	var result = name +"	" + ops + "	" + time + "	" + Math.round(ops / time) + "\n"
 	CopBenchmark.result = CopBenchmark.result.concat(result);
 	CopBenchmark.printEachResult(result);
 }
-
 
 createLayer("L1");
 createLayer("L2");
