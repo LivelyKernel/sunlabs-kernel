@@ -5049,6 +5049,7 @@ Morph.subclass("HandMorph", {
         this.mouseOverMorph = null;
         this.lastMouseEvent = null;
         this.lastMouseDownPoint = pt(0,0);
+        this.lastMouseDownEvent = null;
         this.hasMovedSignificantly = false;
         this.grabInfo = null;
         
@@ -5176,83 +5177,91 @@ Morph.subclass("HandMorph", {
 		return result;
 	},
 
-    reallyHandleMouseEvent: function HandMorph$reallyHandleMouseEvent(evt) { 
+	reallyHandleMouseEvent: function HandMorph$reallyHandleMouseEvent(evt) { 
 		// console.log("reallyHandleMouseEvent " + evt + " focus " +  this.mouseFocus);
-        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
+		evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
 					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 		var world = this.owner;
-        //-------------
-        // mouse move
-        //-------------
-        if (evt.type == "MouseMove" || evt.type == "MouseWheel") { // it is just a move
-            this.setPosition(evt.mousePoint);
-            
-            if(evt.isShiftDown())
-                this.alignToGrid();
-            
-	    	this.updateGrabHalo();
-            
-            if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
-                this.hasMovedSignificantly = true;
-            }
-            
-            if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
-                this.mouseFocus.captureMouseEvent(evt, true);
-            } else if (world) {
-                var receiver = world.morphToReceiveEvent(evt);
+		//-------------
+		// mouse move
+		//-------------
+		if (evt.type == "MouseMove" || evt.type == "MouseWheel") { // it is just a move
+			this.setPosition(evt.mousePoint);
+			
+			if(evt.isShiftDown())
+				this.alignToGrid();
+			
+			this.updateGrabHalo();
+			
+			if (evt.mousePoint.dist(this.lastMouseDownPoint) > 10) { 
+				this.hasMovedSignificantly = true;
+			}
+			
+			if (this.mouseFocus) { // if mouseFocus is set, events go to that morph
+				this.mouseFocus.captureMouseEvent(evt, true);
+			} else if (world) {
+				var receiver = world.morphToReceiveEvent(evt);
 				// console.log("found receiver: " + receiver)
-                if (this.checkMouseOverAndOut(receiver, evt)) {  // mouseOverMorph has changed...
-                    if (!receiver || !receiver.canvas()) return false;  // prevent errors after world-switch
-                    // Note if onMouseOver sets focus, it will get onMouseMove
-                    if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
-                    else if (!evt.hand.hasSubmorphs()) world.captureMouseEvent(evt, false); 
-                } else if (receiver) receiver.captureMouseEvent(evt, false);
-            }
-            this.lastMouseEvent = evt;
-            return true;
-        } 
+				if (this.checkMouseOverAndOut(receiver, evt)) {	 // mouseOverMorph has changed...
+					if (!receiver || !receiver.canvas()) return false;	// prevent errors after world-switch
+					// Note if onMouseOver sets focus, it will get onMouseMove
+					if (this.mouseFocus) this.mouseFocus.captureMouseEvent(evt, true);
+					else if (!evt.hand.hasSubmorphs()) world.captureMouseEvent(evt, false); 
+				} else if (receiver) receiver.captureMouseEvent(evt, false);
+			}
+			this.lastMouseEvent = evt;
+			return true;
+		} 
 
 	
-        //-------------------
-        // mouse up or down
-        //-------------------
-        if (!evt.mousePoint.eqPt(this.position())) { // Only happens in some OSes
-            // and when window wake-up click hits a morph
-            this.moveBy(evt.mousePoint.subPt(this.position())); 
-        }
+		//-------------------
+		// mouse up or down
+		//-------------------
+		if (!evt.mousePoint.eqPt(this.position())) { // Only happens in some OSes
+			// and when window wake-up click hits a morph
+			this.moveBy(evt.mousePoint.subPt(this.position())); 
+		}
 
-        this.mouseButtonPressed = (evt.type == "MouseDown"); 
-        this.setBorderWidth(this.mouseButtonPressed ? 2 : 1);
-        evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
+		this.mouseButtonPressed = (evt.type == "MouseDown"); 
+		this.setBorderWidth(this.mouseButtonPressed ? 2 : 1);
+		evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
 	
-        if (this.mouseFocus != null) {
-            if (this.mouseButtonPressed) {
-                this.mouseFocus.captureMouseEvent(evt, true);
-                this.lastMouseDownPoint = evt.mousePoint; 
-            } else 
-		this.mouseFocus.captureMouseEvent(evt, true); 
-        } else {
-	    if (this.hasSubmorphs() && (evt.type == "MouseDown" || this.hasMovedSignificantly)) {
-                // If laden, then drop on mouse up or down
-                var m = this.topSubmorph();
-                var receiver = world.morphToGrabOrReceiveDroppingMorph(evt, m);
-                // For now, failed drops go to world; later maybe put them back?
-                this.dropMorphsOn(receiver || world);
-            } else {
-                // console.log("hand dispatching event %s to owner %s", evt, this.owner);
-                // This will tell the world to send the event to the right morph
-                // We do not dispatch mouseup the same way -- only if focus gets set on mousedown
-                if (evt.type == "MouseDown") world.captureMouseEvent(evt, false);
-            }
-            if (evt.type == "MouseDown") {
-                this.lastMouseDownPoint = evt.mousePoint;
-                this.hasMovedSignificantly = false; 
-            }
-        }
-        this.lastMouseEvent = evt; 
+		if (this.mouseFocus != null) {
+			if (this.mouseButtonPressed) {
+				this.mouseFocus.captureMouseEvent(evt, true);
+				this.lastMouseDownPoint = evt.mousePoint; 
+			} else {
+				this.mouseFocus.captureMouseEvent(evt, true);
+			}
+		} else {
+			if (this.hasSubmorphs() && (evt.type == "MouseDown" || this.hasMovedSignificantly)) {
+				// If laden, then drop on mouse up or down
+				var m = this.topSubmorph();
+				var receiver = world.morphToGrabOrReceiveDroppingMorph(evt, m);
+				// For now, failed drops go to world; later maybe put them back?
+				this.dropMorphsOn(receiver || world);
+			} else {
+				// console.log("hand dispatching event %s to owner %s", evt, this.owner);
+				// This will tell the world to send the event to the right morph
+				// We do not dispatch mouseup the same way -- only if focus gets set on mousedown
+				if (evt.type == "MouseDown") world.captureMouseEvent(evt, false);
+			}
+			if (evt.type == "MouseDown") {
+				this.lastMouseDownPoint = evt.mousePoint;
+				this.lastMouseDownEvent = evt;
+				this.hasMovedSignificantly = false; 
+			}
+		}
+		this.lastMouseEvent = evt; 
 		return true;
-    },
-    
+	},
+	
+    checkMouseUpIsInClickTimeSpan: function(mouseUpEvent) {
+		if (!this.lastMouseDownEvent || !mouseUpEvent)
+			return undefined;
+		return (mouseUpEvent.rawEvent.timeStamp - this.lastMouseDownEvent.rawEvent.timeStamp) < (400)
+	},
+
     checkMouseOverAndOut: function(newMouseOverMorph, evt) {
 		if (newMouseOverMorph === this.mouseOverMorph) return false;
 
