@@ -4848,7 +4848,13 @@ WorldMorph.addMethods({
 			["Image Morph", function(evt) {
 				world.prompt('Enter image URL', function(urlString) {
 					var img = new ImageMorph(evt.point().extent(pt(100,100)), urlString);
-					img.setFill(null);
+					var extent = img.getExtent();
+					if ((extent.x) == 0 || extent.y == 0) {
+						img.setExtent(pt(50,50));
+						img.setFill(Color.gray);
+					} else {
+						img.setFill(null);
+					}
 					img.openInWorld() }) }],
 			["Video Morph", function(evt) {
 				VideoMorph.openAndInteractivelyEmbed(evt.point()) }],

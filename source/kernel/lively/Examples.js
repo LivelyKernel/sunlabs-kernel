@@ -2388,23 +2388,23 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 		var height = 25;
 		var subWidgetBounds = function(i) { return r.withY(startOffsetY + i * height) };
 
-
-		panel.addMorph(m = new ImageMorph(r, this.imagepath + "city.png"));
+		var disableScaling = true;
+		panel.addMorph(m = new ImageMorph(r, this.imagepath + "city.png", disableScaling));
 		m.setFill(null);
-		panel.addMorph(m = new ImageMorph(subWidgetBounds(0), this.imagepath + "weather.png"));
+		panel.addMorph(m = new ImageMorph(subWidgetBounds(0), this.imagepath + "weather.png", disableScaling));
 		m.setFill(null);
 		r = r.withWidth(20);
-		panel.addMorph(m = new ImageMorph(subWidgetBounds(1), this.imagepath + "temperature.png"));
+		panel.addMorph(m = new ImageMorph(subWidgetBounds(1), this.imagepath + "temperature.png", disableScaling));
 		m.setFill(null);
-		panel.addMorph(m = new ImageMorph(subWidgetBounds(2), this.imagepath + "wind.png"));
+		panel.addMorph(m = new ImageMorph(subWidgetBounds(2), this.imagepath + "wind.png", disableScaling));
 		m.setFill(null);
-		panel.addMorph(m = new ImageMorph(subWidgetBounds(3), this.imagepath + "wind_dir.png"));
+		panel.addMorph(m = new ImageMorph(subWidgetBounds(3), this.imagepath + "wind_dir.png", disableScaling));
 		m.setFill(null);
-		panel.addMorph(m = new ImageMorph(subWidgetBounds(4), this.imagepath + "barometer.png"));
+		panel.addMorph(m = new ImageMorph(subWidgetBounds(4), this.imagepath + "barometer.png", disableScaling));
 		m.setFill(null);
-		panel.addMorph(m = new ImageMorph(subWidgetBounds(5), this.imagepath + "humidity.png"));
+		panel.addMorph(m = new ImageMorph(subWidgetBounds(5), this.imagepath + "humidity.png", disableScaling));
 		m.setFill(null);
-		panel.addMorph(m = new ImageMorph(subWidgetBounds(6), this.imagepath + "visibility.png"));
+		panel.addMorph(m = new ImageMorph(subWidgetBounds(6), this.imagepath + "visibility.png", disableScaling));
 		m.setFill(null);
 
 		r = new Rectangle(40, 3, 200, 20);
@@ -2443,7 +2443,7 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 
 		m.takesKeyboardFocus = Functions.True;
 
-		var image = panel.addMorph(new ImageMorph(subWidgetBounds(7)));
+		var image = panel.addMorph(new ImageMorph(subWidgetBounds(7),undefined,true));
 		image.connectModel(model.newRelay({URL: "-ImageURL"}));
 
 		image.setFill(null);
@@ -2547,7 +2547,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	
         // Marketwatch/Bigcharts logo
         var m = panel.addMorph(new ImageMorph(new Rectangle(20, 10, 135, 68), 
-	    "http://b.mktw.net/images/logo/frontpage.gif" ));
+	    "http://b.mktw.net/images/logo/frontpage.gif"));
         
         // Dow Jones chart
         var image = new ImageMorph(new Rectangle(160, 10, 175, 160), 
@@ -2558,7 +2558,7 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 
         // NASDAQ chart
         image = new ImageMorph(new Rectangle(360, 10, 175, 160), 
-			       "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
+			       "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167", true);
         panel.rightChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
@@ -3711,7 +3711,7 @@ ClipMorph.subclass("lively.Examples.canvascape.CanvasScapeMorph", {
         if (!this.difficulty) this.difficulty = "medium";
       
         this.gameon = false;
-        this.sky = new ImageMorph(new Rectangle(0,20,4800,150), "Resources/canvasscape/sky2.jpg");
+        this.sky = new ImageMorph(new Rectangle(0,20,4800,150), "Resources/canvasscape/sky2.jpg", true);
         this.sky.setHasKeyboardFocus = function(newSetting) { return newSetting;
         this.owner.setHasKeyboardFocus( true); };
         this.sky.takesKeyboardFocus = function() { this.owner.setHasKeyboardFocus( true);};

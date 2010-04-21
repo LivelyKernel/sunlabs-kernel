@@ -328,15 +328,16 @@ BoxMorph.subclass("ImageMorph", {
 	style:{ borderWidth: 0, fill:Color.blue.lighter() },
 	formals: ["-URL"],
 
-	initialize: function($super, viewPort, url) {
+	initialize: function($super, viewPort, url, disableScaling) {
 		$super(viewPort);
+		this.disableScaling = disableScaling
 		this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
 		console.log("making an image from: " + url);
 		if (url) {
 			this.addWrapper(this.image); // otherwise we didn't make a rawNode
 			this.setURL(url) 
 		}
-		
+		//this.setExtent(this.getExtent())
 	},
 
 	// FIXME:
@@ -399,10 +400,11 @@ BoxMorph.subclass("ImageMorph", {
 		return pt(newImg.width, newImg.height)
 	},
 	
+	
 	setExtent: function($super, extent) {
-		if (this.image) {
-			// this.image.setWidth(extent.x)
-			// this.image.setHeight(extent.y)
+		if (this.image && !this.disableScaling) {
+			this.image.setWidth(extent.x)
+			this.image.setHeight(extent.y)
 		}
 		$super(extent)
 	},
@@ -410,12 +412,14 @@ BoxMorph.subclass("ImageMorph", {
 	reshape: function($super, partName, newPoint, lastCall){
 		if (partName)
 			$super(partName, newPoint, lastCall);
-		var extent = this.getExtent();
-		if (this.originalExtent) {
-			var ratio = this.originalExtent.y / this.originalExtent.x
-			extent.y = extent.x * ratio
-		};
-		// this.setExtent(extent)
+		if (!this.disableScaling) {
+			var extent = this.getExtent();
+			if (this.originalExtent) {
+				var ratio = this.originalExtent.y / this.originalExtent.x
+				extent.y = extent.x * ratio
+			};
+			this.setExtent(extent)
+		}
 	},
 
 	morphMenu: function($super, evt) {
@@ -431,6 +435,9 @@ BoxMorph.subclass("ImageMorph", {
 
 	setURL: function(url) {
 		var extent = this.originalImageSize(url);
+		if (extent.eqPt(pt(0,0))) {
+			extent = pt(50,50); // fall back
+		};
 		this.originalExtent = extent;
 		this.image.loadImage(url);
 		this.setExtent(extent);
@@ -451,7 +458,7 @@ ButtonMorph.subclass("ImageButtonMorph", {
     focusHaloBorderWidth: 0,
 
     initialize: function($super, initialBounds, normalImageHref, activatedImageHref) {
-        this.image = new ImageMorph(new Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref);
+        this.image = new ImageMorph(new Rectangle(0, 0, initialBounds.width, initialBounds.height), normalImageHref, true);
         this.normalImageHref = normalImageHref;
         this.activatedImageHref = activatedImageHref;
         $super(initialBounds);

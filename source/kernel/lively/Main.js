@@ -183,7 +183,7 @@ function populateWorldWithExamples(world) {
         // maybe the icons should have a rectangle shaped images (unlike here)
         // var icon = new ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
 	new NetImporter().loadElement("Definitions.svg", "SunLogo");
-        var icon = new ImageMorph(new Rectangle(60, 580, 100, 45), "#SunLogo");
+        var icon = new ImageMorph(new Rectangle(60, 580, 100, 45), "#SunLogo", true);
         icon.image.scaleBy(0.15);
         icon.setFill(null); // no background
         icon.toggleFisheye();
@@ -334,7 +334,7 @@ function populateWorldWithExamples(world) {
 		    "Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
 		    "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
 		    width + "&h=" + height + "&cc=US&min_priority=2";
-		this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
+		this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url, true), 'Tampere'));
             }
 	
             if (Config.showSquiggle())

@@ -438,7 +438,7 @@ using().module('lively.demofx').run(function() {
 
 
     var targetImage = new ImageMorph(new Rectangle(0, 0, 500, 333), 
-	URL.source.withFilename('Resources/demofx/flower.jpg').toString());
+	URL.source.withFilename('Resources/demofx/flower.jpg').toString(), true);
 
     var canvasModel = Record.newPlainInstance({Image: targetImage, 
 	ImageRotation: 0, _CanvasX: 0, _CanvasY: 0, _KnobValue: 0, KnobWidth: 25, 
@@ -532,7 +532,7 @@ using().module('lively.demofx').run(function() {
 	onMouseDown: function(evt) {
 	    //console.log('selected ' + this.getThumbImage() + ": " + this.getThumbImage().image.getURL());
 	    var url = this.getThumbImage().image.getURL();
-	    var image = new ImageMorph(new Rectangle(0, 0, 500, 333), url);
+	    var image = new ImageMorph(new Rectangle(0, 0, 500, 333), url, true);
 	    image.setFillOpacity(0);
 	    this.set_Selected(true);
 	    // FIXME FIXME FIXME: breach of encapsulattion
@@ -657,7 +657,7 @@ using().module('lively.demofx').run(function() {
     function makePreview(effect, name, shortName) {
 	var factor = 0.17;
 	var thumbImage = new ImageMorph(new Rectangle(0, 0, 500*factor, 333*factor),
-	    URL.source.withFilename('Resources/demofx/' + shortName).toString());
+	    URL.source.withFilename('Resources/demofx/' + shortName).toString(), true);
 	thumbImage.setFillOpacity(0);
 	var previewModel = Record.newPlainInstance({_Selected: false, 
 	    ThumbImage: thumbImage, _BorderColor: topColor});
