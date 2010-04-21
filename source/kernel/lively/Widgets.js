@@ -130,7 +130,11 @@ BoxMorph.subclass('ButtonMorph', {
 			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, base.lighter()), new gfx.Stop(1, base)]));
 		} else if (this.baseFill instanceof Color) {
 			this.setFill(this.baseFill.lighter(delta)); 
-		} else throw new Error('unsupported fill type ' + this.baseFill);
+		} else if (this.baseFill == null) {
+			this.setFill(null);
+		} else {
+			throw new Error('unsupported fill type ' + this.baseFill) 
+		};
 	},
     
 	applyStyle: function($super, spec) {
@@ -4891,6 +4895,8 @@ Object.extend(PromptDialogMorph, {
 		connect(morph, 'accepted', client, 'onaccept');
 	}
 })
+
+
 
 
 }.logCompletion('loaded Widgets.js')); // end using

@@ -2643,52 +2643,7 @@ Component.subclass('FabrikComponent', {
 
 // special copier for components...
 
-Object.subclass('ClipboardCopier', {
-
-	
-	copyAsXMLString: function(component) {
-		var componentCopy = component.copy(new Copier());
-		var copy = componentCopy.panel;		
-		var doc = this.createBaseDocument();
-		var worldNode = doc.childNodes[0].childNodes[0];
-		worldNode.appendChild(copy.rawNode);
-		var exporter = new Exporter(copy);
-		// todo: what about the SystemDictionary
-		var helpers = exporter.extendForSerialization();
-		var result = Exporter.stringify(copy.rawNode);
-		exporter.removeHelperNodes(helpers);
-		return result
-	},
-	
-	createBaseDocument: function(source) {
-		return new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?>' +
-			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
-                '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
-                    '<rect x="0" y="0" width="800" height="600"/>' +          
-                    source  +
-                '</g>'+ 
-            '</svg>', /* "text/xml" */ "application/xml");
-	},
-
-	loadMorphsWithWorldTrunkFromSource: function(source) {
-    	var xml = this.createBaseDocument(source);
-		var systemDictionary = xml.getElementById("SystemDictionary");
-		var world = new Importer().loadWorldContents(xml);
-		// inspect(world)
-		var globalSystemDictionary = lively.data.Wrapper.prototype.dictionary();
-		
-		if(systemDictionary) {
-			$A(systemDictionary.childNodes).each(function(ea) {
-				var result = lively.data.FragmentURI.getElement(ea.id);
-				
-				// TODO: give the element a new id and map it, is there an implemnentation laying around somewhere here?
-				if(!result) 
-					globalSystemDictionary.appendChild(ea.cloneNode(true))
-			})
-		}
-		return world.submorphs
-    },
-	
+ClipboardCopier.addMethods({
 	pasteComponentFromXMLStringIntoFabrik: function(componentMorphsAsXmlString, fabrik) {
 		// console.log("pasteComponentFromXMLStringIntoFabrik")
 		
@@ -2722,7 +2677,6 @@ Object.subclass('ClipboardCopier', {
 		})
 		return components
 	}
-	
 });
 
 ComponentMorph.subclass('PluggableComponentMorph', {
