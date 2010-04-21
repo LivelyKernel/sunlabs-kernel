@@ -2353,6 +2353,7 @@ BoxMorph.subclass("SliderMorph", {
 	style: {borderWidth: 1, borderColor: Color.black},
 	selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
 	
+	connections: ['value'],
 
 	initialize: function($super, initialBounds, scaleIfAny) {
 		$super(initialBounds);
@@ -2513,6 +2514,7 @@ BoxMorph.subclass("SliderMorph", {
 
 	onValueUpdate: function(value) {
 		this.adjustForNewBounds();
+		this.value = value // for connect
 	},
 
 	getScaledValue: function() {

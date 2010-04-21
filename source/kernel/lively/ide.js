@@ -745,6 +745,7 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	initialize: function($super) {
 		$super();
 		this.installFilter(lively.ide.NodeTypeFilter.defaultInstance(), 'Pane1');
+		this.installFilter(new lively.ide.SortFilter(), 'Root');
 		this.evaluate = true;
 		this.targetURL = null;
 	},
