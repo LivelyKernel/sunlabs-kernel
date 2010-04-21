@@ -401,8 +401,8 @@ BoxMorph.subclass("ImageMorph", {
 	
 	setExtent: function($super, extent) {
 		if (this.image) {
-			this.image.setWidth(extent.x)
-			this.image.setHeight(extent.y)
+			// this.image.setWidth(extent.x)
+			// this.image.setHeight(extent.y)
 		}
 		$super(extent)
 	},
@@ -415,7 +415,7 @@ BoxMorph.subclass("ImageMorph", {
 			var ratio = this.originalExtent.y / this.originalExtent.x
 			extent.y = extent.x * ratio
 		};
-		this.setExtent(extent)
+		// this.setExtent(extent)
 	},
 
 	morphMenu: function($super, evt) {
