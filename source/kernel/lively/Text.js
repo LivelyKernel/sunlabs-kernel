@@ -1695,7 +1695,7 @@ BoxMorph.subclass('TextMorph', {
 			this.startSelection(charIx);
 		}
 		this.requestKeyboardFocus(evt.hand);
-		ClipboardHack.selectPasteBuffer();
+		// ClipboardHack.selectPasteBuffer();
 		return true; 
 	},
 	
@@ -1788,7 +1788,7 @@ BoxMorph.subclass('TextMorph', {
 		(this.priorSelection[1] != this.priorSelection[0] - 1) ||
 		(this.selectionRange[0] != this.priorSelection[0]) ) {
 			this.previousSelection = this.priorSelection;
-			ClipboardHack.selectPasteBuffer();
+			// ClipboardHack.selectPasteBuffer();
 			return;
 		}
 
@@ -1801,7 +1801,7 @@ BoxMorph.subclass('TextMorph', {
 
 		this.setSelection(this.getSelectionString());
 		this.drawSelection(); 
-		ClipboardHack.selectPasteBuffer();
+		// ClipboardHack.selectPasteBuffer();
 	},
 	
 	// TextMorph text selection functions
@@ -1933,7 +1933,7 @@ BoxMorph.subclass('TextMorph', {
 		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
 		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
 		// FIXME, other place Widgets, SelectionMorph>>reshape
-		ClipboardHack.selectPasteBuffer();
+		// ClipboardHack.selectPasteBuffer();
 		
 		var selecting = evt.isShiftDown();
 		var selectionStopped = !this.hasNullSelection() && !selecting;

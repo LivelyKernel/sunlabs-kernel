@@ -4750,8 +4750,6 @@ WorldMorph.addMethods({
 	},	
 });
 
-
-
 /**
  *	WorldMorph Menu 
  *
@@ -5527,6 +5525,9 @@ Morph.subclass("HandMorph", {
 	},
 
 	rememberKeyDown: function(evt) {
+		if (!this.keysDown) {
+			this.keysDown = {};
+		};
  		//console.log("remember KeyDown " + evt.getKeyChar())
 		this.keysDown[evt.getKeyChar()] = true;
 	},
@@ -5540,22 +5541,29 @@ Morph.subclass("HandMorph", {
             if (evt.type == "KeyDown" && this.moveSubmorphs(evt)) return;
             else if (evt.type == "KeyPress" && this.transformSubmorphs(evt)) return;
         }
-        // manual bubbling up b/c the event won't bubble by itself    
-        for (var responder = this.keyboardFocus; responder != null; responder = responder.owner) {
-            if (responder.takesKeyboardFocus()) {
+		var consumed = false;
+        // manual bubbling up b/c the event won't bubble by itself
+        for (var responder = this.keyboardFocus || this.world(); responder != null; responder = responder.owner) {
+			if (responder.takesKeyboardFocus()) {
                 var handler = responder[evt.handlerName()];
                 if (handler) {
-                    if (handler.call(responder, evt))
-                        break; // event consumed?
+                    if (handler.call(responder, evt)) {
+						consumed = true;
+                        break; // event consumed?		
+					}
                 }
             }
         }
-		// remember key down for mouse events
-		if (!this.keysDown) {
-			this.keysDown = {};
-		};
-		if(evt.type == "KeyDown") {
-			this.rememberKeyDown(evt);
+		if (!consumed) {
+			// console.log("not consumed " + evt)
+			// the single command key evt 
+			if (evt.isCommandKey())
+				ClipboardHack.selectPasteBuffer();			
+				
+			// remember key down for mouse events
+			if(evt.type == "KeyPress") {
+				this.rememberKeyDown(evt);
+			};
 		};
 		this.blockBrowserKeyBindings(evt);
     },
@@ -5650,6 +5658,125 @@ Morph.subclass("HandMorph", {
 	},
 });
 
+WorldMorph.addMethods({
+
+	takesKeyboardFocus: Functions.True,
+	
+	onKeyDown: function(evt) {
+		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt )		
+		return ClipboardHack.tryClipboardAction(evt, this);
+	},
+	
+	/* Actions */
+	
+	copyAsXMLString: function() {
+		if (!this.currentSelection) {
+			console.log("WorldMorph: don't know what to copy")
+			return
+		}
+		var selectedMorphs = this.currentSelection.selectedMorphs
+		if (selectedMorphs.length == 0) {
+			console.log("WorldMorph: selection is empty")
+			return 
+		};
+		
+		var copier = new Copier();
+		var doc = new ClipboardCopier().createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		
+		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
+		container.isSelectionContainer = true;
+				
+		selectedMorphs.each(function(ea) {
+			container.addMorph(ea.copy(copier));
+		})
+		
+		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
+		systemDictionary.setAttribute("id", "SystemDictionary");
+		
+		worldNode.appendChild(container.rawNode);
+		var exporter = new Exporter(container);
+		var helpers = exporter.extendForSerialization(systemDictionary);
+		var result = Exporter.stringify(container.rawNode);
+		exporter.removeHelperNodes(helpers);
+	
+		return result
+	},
+
+	pasteDestinationMorph: function() {
+		return this;
+	},
+
+	doCopy: function() {
+		var source = this.copyAsXMLString();
+		TextMorph.clipboardString = source;
+	},
+	
+	doPaste: function() {
+		if (TextMorph.clipboardString) {
+			// console.log("paste morphs...")
+			this.pasteFromSource(TextMorph.clipboardString);
+		}
+	},
+	
+	calcTopLeftOfPoints: function(points) {
+		var min_x;
+		var min_y;
+		points.each(function(ea) {
+			if (!min_x || ea.x < min_x)
+				min_x = ea.x;
+			if (!min_y || ea.y < min_y)
+				min_y = ea.y;
+		});
+		return pt(min_x, min_y)
+	},
+	
+	pastePosition: function() {
+		var pos = this.hands.first().lastMouseDownPoint;
+		if (!pos || pos.eqPt(pt(0,0)))
+			pos = this.hands.first().getPosition();
+		return pos
+	},
+	
+	calcPasteOffsetFrom: function(morphs) {
+		if(morphs.length == 0)
+			return;
+		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
+		return this.pastePosition().subPt(topLeft);
+	},
+	
+	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
+	// TODO refactor
+	pasteFromSource: function(source){
+		var copier = new ClipboardCopier();
+		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);
+		if (morphs.length == 0) {
+			var pos = this.pastePosition();
+			var textMorph = new TextMorph(new Rectangle(pos.x,pos.y,200,100), source);
+			this.addMorph(textMorph);
+			return;
+		}
+		// unpack potential selection morph
+		if(morphs[0] && morphs[0].isSelectionContainer) {
+			morphs = morphs[0].submorphs
+		};
+		var copier = new Copier();
+		var offset = this.calcPasteOffsetFrom(morphs);
+		morphs.each(function(ea) {
+			var copy = ea.copy(copier);
+			this.pasteDestinationMorph().addMorph(copy)
+			if (offset) {
+				copy.moveBy(offset)
+			}	
+		}, this)
+	},
+
+	doCut: function() {
+		console.log("cut selection")
+		this.doCopy();
+		this.remove();
+	},
+})
 
 Morph.subclass('LinkMorph', {
 
@@ -6011,9 +6138,10 @@ ClipboardHack = {
 	tryClipboardAction: function(evt, target) {
         // Copy and Paste Hack that works in Webkit/Safari
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
+		ClipboardHack.selectPasteBuffer();
         var buffer = ClipboardHack.ensurePasteBuffer();
         if(!buffer) return false;
-        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {
+        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {		
             buffer.onpaste = function() {
 				TextMorph.clipboardString = event.clipboardData.getData("text/plain");
                 if(target.doPaste) target.doPaste();
@@ -6099,10 +6227,7 @@ Object.subclass('ClipboardCopier', {
 	loadMorphsWithWorldTrunkFromSource: function(source) {
     	var xml = this.createBaseDocument(source);
 		var systemDictionary = xml.getElementById("SystemDictionary");
-		var world = new Importer().loadWorldContents(xml);
-		// inspect(world)
 		var globalSystemDictionary = lively.data.Wrapper.prototype.dictionary();
-		
 		if(systemDictionary) {
 			$A(systemDictionary.childNodes).each(function(ea) {
 				var result = lively.data.FragmentURI.getElement(ea.id);
@@ -6112,6 +6237,7 @@ Object.subclass('ClipboardCopier', {
 					globalSystemDictionary.appendChild(ea.cloneNode(true))
 			})
 		}
+		var world = new Importer().loadWorldContents(xml);
 		return world.submorphs
     },	
 });

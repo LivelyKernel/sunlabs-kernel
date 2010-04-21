@@ -711,7 +711,7 @@ BoxMorph.subclass("SelectionMorph", {
 		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
 		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
 		// FIXME, other place Text, TextMorph>>onKeyDown
-		ClipboardHack.selectPasteBuffer();
+		// ClipboardHack.selectPasteBuffer();
 		
 		// Initial selection might actually move in another direction than toward bottomRight
 		// This code watches that and changes the control point if so
@@ -916,109 +916,7 @@ BoxMorph.subclass("SelectionMorph", {
 	okToBeGrabbedBy: function(evt) {
 		this.selectedMorphs.forEach( function(m) { evt.hand.addMorphAsGrabbed(m); });
 		return this;
-	},
-
-	onKeyDown: function(evt) {
-		// console.log("SelectionMorph onKeyDown " + this + " ---  " + evt )		
-		return ClipboardHack.tryClipboardAction(evt, this);
-	},
-	
-	/* Actions */
-	
-	copyAsXMLString: function() {
-		if (this.selectedMorphs.length == 0) {
-			return 
-		};
-		
-		var copier = new Copier();
-		var doc = new ClipboardCopier().createBaseDocument();
-		var worldNode = doc.childNodes[0].childNodes[0];
-		
-		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
-		container.isSelectionContainer = true;
-				
-		this.selectedMorphs.each(function(ea) {
-			container.addMorph(ea.copy(copier));
-		})
-		
-		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
-		systemDictionary.setAttribute("id", "SystemDictionary");
-		
-		worldNode.appendChild(container.rawNode);
-		var exporter = new Exporter(container);
-		var helpers = exporter.extendForSerialization(systemDictionary);
-		var result = Exporter.stringify(container.rawNode);
-		exporter.removeHelperNodes(helpers);
-	
-		return result
-	},
-
-	pasteDestinationMorph: function() {
-		return WorldMorph.current();
-	},
-
-	doCopy: function() {
-		var source = this.copyAsXMLString();
-		TextMorph.clipboardString = source;
-	},
-	
-	doPaste: function() {
-		if (TextMorph.clipboardString) {
-			// console.log("paste morphs...")
-			this.pasteFromSource(TextMorph.clipboardString);
-		}
-	},
-	
-	calcTopLeftOfPoints: function(points) {
-		var min_x;
-		var min_y;
-		points.each(function(ea) {
-			if (!min_x || ea.x < min_x)
-				min_x = ea.x;
-			if (!min_y || ea.y < min_y)
-				min_y = ea.y;
-		});
-		return pt(min_x, min_y)
-	},
-	
-	calcPasteOffsetFrom: function(morphs) {
-		if(morphs.length == 0)
-			return;
-		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
-		var lastMousePoint = WorldMorph.current().hands[0].lastMouseDownPoint 
-
-		if (lastMousePoint) {
-			return lastMousePoint.subPt(topLeft);
-		};
-	},
-	
-	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
-	// TODO refactor
-	pasteFromSource: function(source){
-		var copier = new ClipboardCopier();
-		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);		
-		// unpack potential selection morph
-		if(morphs[0] && morphs[0].isSelectionContainer) {
-			morphs = morphs[0].submorphs
-		};
-		
-		var copier = new Copier();
-		var offset = this.calcPasteOffsetFrom(morphs);
-		morphs.each(function(ea) {
-			var copy = ea.copy(copier);
-			this.pasteDestinationMorph().addMorph(copy)
-			if (offset) {
-				copy.moveBy(offset)
-			}	
-		}, this)
-	},
-
-	doCut: function() {
-		console.log("cut selection")
-		this.doCopy();
-		this.remove();
-	},
-	
+	},	
 });
 
 // ===========================================================================
