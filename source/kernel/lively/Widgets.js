@@ -330,7 +330,7 @@ BoxMorph.subclass("ImageMorph", {
 
 	initialize: function($super, viewPort, url, disableScaling) {
 		$super(viewPort);
-		this.disableScaling = disableScaling
+		this.disableScaling = disableScaling; // for compatiblity with depricated usages of image morph
 		this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
 		console.log("making an image from: " + url);
 		if (url) {
@@ -418,9 +418,11 @@ BoxMorph.subclass("ImageMorph", {
 				var ratio = this.originalExtent.y / this.originalExtent.x
 				extent.y = extent.x * ratio
 			};
-			this.setExtent(extent)
+			oldPosition = this.getPosition();
+			this.setExtent(extent);
+			this.setPosition(oldPosition)
 		}
-	},
+ 	},
 
 	morphMenu: function($super, evt) {
 		var menu = $super(evt);
