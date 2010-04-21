@@ -1781,21 +1781,25 @@ lively.ide.BrowserCommand.subclass('lively.ide.SaveChangesCommand', {
 
 	wantsButton: Functions.True,
 
+	isActive: Functions.True,
+
 	asString: function() {
 		return 'Push changes back';
 	},
 
 	trigger: function() {
-	var b = this.browser;
-	if (!(b instanceof lively.ide.LocalCodeBrowser)) {
-		console.log('Save changes not yet implemented for ' + b);
-		return;
-	}	
-	if (!b.worldProxy) {
-		console.log('Browser has no WorldProxy -- cannot save!');
-		return;
-	}
-	b.worldProxy.writeChangeSet(b.changeSet);
+		var b = this.browser;
+		var w = WorldMorph.current()
+		if (!(b instanceof lively.ide.LocalCodeBrowser)) {
+			console.log('Save changes not yet implemented for ' + b);
+			return;
+		}	
+		if (!b.worldProxy) {
+			w.setStatusMessage('Browser has no WorldProxy -- cannot save!', Color.red, 5);
+			return;
+		}
+		b.worldProxy.writeChangeSet(b.changeSet);
+		w.setStatusMessage('Successfully stored world', Color.green);
 	},
 
 });
