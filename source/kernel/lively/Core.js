@@ -5544,7 +5544,7 @@ Morph.subclass("HandMorph", {
 		var consumed = false;
         // manual bubbling up b/c the event won't bubble by itself
 		var world = this.world();
-        for (var responder = this.keyboardFocus || world; responder != null; responder = responder.owner) {
+        for (var responder = this.keyboardFocus || world; responder != null; responder = responder.owner || world) {
 			if (responder.takesKeyboardFocus()) {
                 var handler = responder[evt.handlerName()];
                 if (handler) {
