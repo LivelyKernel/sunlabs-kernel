@@ -2110,9 +2110,12 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	doPaste: function() {
-		if (TextMorph.clipboardString) this.replaceSelectionfromKeyboard(TextMorph.clipboardString); 
+		if (TextMorph.clipboardString) {
+			var cleanString = TextMorph.clipboardString.replace(/\r\n/g, "\n");
+			this.replaceSelectionfromKeyboard(cleanString);
+		}
 	},
-
+	
 	doSelectAll: function(fromKeyboard) {
 		if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
 			this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
