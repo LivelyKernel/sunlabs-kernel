@@ -913,6 +913,22 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 		this.root = db.prepareForMockModule('foo2.js', src);
 		this.src = src;
 	},
+setUpAlternateSource2: function() {
+		var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
+		'/*\n' +
+		' * my comment\n' +
+		' */\n'+
+		'\n' +
+		'// ClassA is so important\n' +
+		'// foo bar\n' +
+		'Object.subclass(\'ClassA\', {\n\n' +
+		'\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n\n' +
+		'}); // end of module';
+		this.db = new AnotherSourceDatabase();
+		this.root = this.db.prepareForMockModule('foo.js', src);
+		this.src = src;
+},
+
 
    
 	tearDown: function($super) {
@@ -1135,6 +1151,20 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 		f1.startIndex++;
 		this.assert(!f1.eq(f2), 5);
 	},
+testFindPrevFragment: function() {
+	this.setUpAlternateSource2();
+	var def = this.fragmentNamed('ClassA');
+	var prev = def.prevElement();
+	this.assertEquals('comment', prev.type);
+},
+testGetComment: function() {
+	this.setUpAlternateSource2();
+	var def = this.fragmentNamed('ClassA');
+	var comment = def.getComment();
+	this.assertEquals('// ClassA is so important\n// foo bar\n', comment);
+},
+
+
 
 });
 

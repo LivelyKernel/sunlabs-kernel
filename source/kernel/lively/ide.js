@@ -2792,6 +2792,28 @@ Object.subclass('lively.ide.FileFragment', {
 	inspect: function() {
 		try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
 	},
+prevElement: function() {
+	var siblingsAndMe = this.withSiblings();
+	if (!siblingsAndMe) return null;
+	var idx = siblingsAndMe.indexOf(this);
+	return siblingsAndMe[idx - 1];
+},
+withSiblings: function() {
+	var owner = this.findOwnerFragment();
+	if (!owner) return null;
+	return owner.subElements();
+},
+getComment: function() {
+	var prev = this.prevElement();
+	if (!prev || prev.type != 'comment') return null;
+	var src = prev.getSourceCode();
+	// if there multiple comments take the last one
+	src = src.split(/\n[\n]+/).last();
+	return src;
+},
+
+
+
 
 });
 
