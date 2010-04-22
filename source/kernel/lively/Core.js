@@ -5543,7 +5543,8 @@ Morph.subclass("HandMorph", {
         }
 		var consumed = false;
         // manual bubbling up b/c the event won't bubble by itself
-        for (var responder = this.keyboardFocus || this.world(); responder != null; responder = responder.owner) {
+		var world = this.world();
+        for (var responder = this.keyboardFocus || world; responder != null; responder = responder.owner) {
 			if (responder.takesKeyboardFocus()) {
                 var handler = responder[evt.handlerName()];
                 if (handler) {
@@ -5553,7 +5554,9 @@ Morph.subclass("HandMorph", {
 					}
                 }
             }
+			if (responder == world) break;
         }
+
 		if (!consumed) {
 			// console.log("not consumed " + evt)
 			// the single command key evt 
