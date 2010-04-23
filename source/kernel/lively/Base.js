@@ -497,7 +497,7 @@ var Class = {
 		}
 	},
 
-	def: function(constr, superConstr, optProtos, optStatics) {
+	def: function Class$def(constr, superConstr, optProtos, optStatics) {
 		// currently not used
 		// Main method of the LK class system.
 
@@ -535,7 +535,7 @@ var Class = {
 		return (/^(?:[a-zA-Z_][\w\-]*[.])*[a-zA-Z_][\w\-]*$/).test(str);
 	},
 	
-	isClass: function(object) {
+	isClass: function Class$isClass(object) {
 		if(object === Object
 			|| object === Array
 			|| object === Function
@@ -546,7 +546,7 @@ var Class = {
 		return (object instanceof Function) && (object.superclass);
 	},
 
-	className: function(cl) {
+	className: function Class$className(cl) {
 		if(cl === Object) return "Object"
 		if(cl === Array) return "Array"
 		if(cl === Function) return "Function"
@@ -555,7 +555,7 @@ var Class = {
 		return cl.type;
 	},
 
-	forName: function(name) {
+	forName: function forName(name) {
 		// lookup the class object given the qualified name
 		var lastDot = name.lastIndexOf('.'); // lastDot may be -1
 		var ns = Class.namespaceFor(name);
@@ -563,7 +563,7 @@ var Class = {
 		return ns[shortName];
 	},
 
-	deleteObjectNamed: function(name) {
+	deleteObjectNamed: function Class$delteObjectNamed(name) {
 		var lastDot = name.lastIndexOf('.'); // lastDot may be -1
 		var ns = Class.namespaceFor(name);
 		var shortName = Class.unqualifiedNameFor(name);
@@ -571,21 +571,21 @@ var Class = {
 		delete ns[shortName];
 	},
 
-	unqualifiedNameFor: function(name) {
+	unqualifiedNameFor: function Class$unqualifiedNameFor(name) {
 		var lastDot = name.lastIndexOf('.'); // lastDot may be -1
 		var unqualifiedName = name.substring(lastDot + 1);
 		if (!Class.isValidIdentifier(unqualifiedName)) throw new Error('not a name ' + unqualifiedName);
 		return unqualifiedName;
 	},
 
-	namespaceFor: function(className) {
+	namespaceFor: function Class$namespaceFor(className) {
 		// get the namespace object given the qualified name
 		var lastDot = className.lastIndexOf('.');
 		if (lastDot < 0) return Global;
 		else return namespace(className.substring(0, lastDot));
 	},
 
-	withAllClassNames: function(scope, callback) {
+	withAllClassNames: function Class$withAllClassNames(scope, callback) {
 		for (var name in scope) {
 			try {
 				if (Class.isClass(scope[name]))
@@ -597,7 +597,7 @@ var Class = {
 		callback("Global");
 	},
 
-	makeEnum: function(strings) {
+	makeEnum: function Class$makeEnum(strings) {
 		// simple mechanism for making objecs with property values set to
 		// property names, to be used as enums.
 
@@ -608,34 +608,34 @@ var Class = {
 		return e;
 	},
 
-	getConstructor: function(object) {
+	getConstructor: function Class$getConstructor(object) {
 		return object.constructor.getOriginal();
 	},
 
-	getPrototype: function(object) {
+	getPrototype: function Class$getPrototype(object) {
 		return object.constructor.getOriginal().prototype;
 	},
 
-	applyPrototypeMethod: function(methodName, target, args) {
+	applyPrototypeMethod: function Class$applyPrototypeMethod(methodName, target, args) {
 		var method = this.getPrototype(target);
 		if (!method) throw new Error("method " + methodName + " not found");
 		return method.apply(this, args);
 	},
 
-	getSuperConstructor: function(object) {
+	getSuperConstructor: function Class$getSuperConstructor(object) {
 		return object.constructor.getOriginal().superclass;
 	},
 
-	getSuperPrototype: function(object) {
+	getSuperPrototype: function Class$getSuperPrototype(object) {
 		var sup = this.getSuperConstructor(object);
 		return sup && sup.prototype;
 	},
 
-	addPins: function(cls, spec) {
+	addPins: function Class$addPins(cls, spec) {
 		Class.addMixin(cls, Relay.newDelegationMixin(spec).prototype);
 	},
 	
-	addMixin: function(cls, source) {
+	addMixin: function Class$addMixin(cls, source) {
 		var spec = {};
 		for (var prop in source) {
 			var value = source[prop];
@@ -720,7 +720,7 @@ var Strings = {
 		return str;
 	},
 
-	withDecimalPrecision: function(str, precision) {
+	withDecimalPrecision: function Strings$withDecimalPrecision(str, precision) {
 		var floatValue = parseFloat(str);
 		return isNaN(floatValue) ? str : floatValue.toFixed(precision);
 	}
