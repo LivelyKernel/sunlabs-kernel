@@ -5065,6 +5065,13 @@ Morph.subclass("HandMorph", {
         return this;
     },
 
+	id: function() {
+		if (!this.rawNode) {
+			return undefined
+		}
+		return this.rawNode.getAttribute("id");
+	},
+
     lookNormal: function(morph) {
         this.shape.setVertices([pt(0,0), pt(9,5), pt(5,9), pt(0,0)]);
     },
