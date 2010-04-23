@@ -272,11 +272,11 @@ Object.subclass('HandPositionObserver', {
     },
 
     start: function() {
-        this.hand().formalModel.addObserver(this);
+		connect(this.hand(), 'globalPosition', this, 'onGlobalPositionUpdate')
     },
 
     stop: function() {
-        this.hand().formalModel.removeObserver(this);
+		disconnect(this.hand(), 'globalPosition', this, 'onGlobalPositionUpdate')
     },
 	
 	hand: function() {

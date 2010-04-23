@@ -1932,6 +1932,8 @@ Object.subclass('LayoutManager', {
 	},
 
 	setPosition: function(target, newPosition) {
+		if (!newPosition)
+			return;
 		var delta = newPosition.subPt(target.getPosition());
 		target.translateBy(delta);
 		return delta;
@@ -3381,8 +3383,8 @@ Morph.addMethods({
 	localize: function(pt) {
 		if (pt == null) console.log('null pt');   
 		if (this.world() == null) {
-			console.log('ERROR in '+  this.id() +' localize: '+ pt + ' this.world() is null');   
-			printStack();
+			// console.log('ERROR in '+  this.id() +' localize: '+ pt + ' this.world() is null');   
+			// printStack();
 			return pt;
 		}
 		return pt.matrixTransform(this.world().transformToMorph(this));
@@ -5059,9 +5061,6 @@ Morph.subclass("HandMorph", {
         this.owner = null;
 		this.boundMorph = null; // surrounds bounds
 		this.layoutChangedCount = 0; // to prevent recursion on layoutChanged
-	
-		this.formalModel =  Record.newPlainInstance({GlobalPosition: null});
-	
         return this;
     },
 
@@ -6049,8 +6048,7 @@ Morph.addMethods({
 HandMorph.addMethods({
     changed: function($super, morph) {
         $super();
-        if (this.formalModel)
-            this.formalModel.setGlobalPosition(this.getPosition());
+        this.globalPosition = this.getPosition();
         this.submorphs.forEach(function(ea){
             // console.log("changed "+ ea);
             ea.changed("globalPosition", this.getPosition());
