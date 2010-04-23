@@ -194,9 +194,10 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 		base_obj.__defineGetter__(property, getter);
 	}; 
 	if (!getter.isLayerAware) {
-		var wrapped_getter =  function Layers$makeFunctionLayerAwareWrappedGetter() {
+		var wrapped_getter =  function() {
 			return executeWithLayers(getter, this, computerLayersFor(this), 0, base_obj, property, [null], 'getter');
 		};
+		wrapped_getter.displayName = base_obj.toString() + "$layered_get$" +property
 		wrapped_getter.isLayerAware = true;
 		base_obj.__defineGetter__(property, wrapped_getter);
 	} 
@@ -215,6 +216,7 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 			args.unshift(null);
 			return executeWithLayers(setter, this, computerLayersFor(this), 0, base_obj, property, args, 'setter');
 		};
+		wrapped_setter.displayName = base_obj.toString() + "$layered_set$" +property	
 		wrapped_setter.isLayerAware = true;
 		base_obj.__defineSetter__(property, wrapped_setter);
 	}
