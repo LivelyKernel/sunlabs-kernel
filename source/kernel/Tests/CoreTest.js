@@ -88,14 +88,13 @@ TestCase.subclass('Tests.CoreTest.TestModel', {
 		this.assert(rec.getFoo().bar, "no foo bar")
 	},
 	
-	// fails
-	// testStoreReferenceInNodeRecord: function() {
-	// 	var rec = Record.newNodeInstance({Foo: null});
-	// 	var widget = new Widget();
-	// 	rec.setFoo(widget);
-	// 	this.assertIdentity(rec.getFoo(), widget);
-	// },
-
+	testStoreReferenceInNodeRecord: function() {
+			var rec = Record.newNodeInstance({Foo: null});
+			var widget = new Widget();
+			rec.setFoo(widget);
+			this.assertIdentity(rec.getFoo(), widget);
+	},
+	
 
 	testSetRecordFieldWithWrapper: function() {
 		var rec = Record.newNodeInstance();
