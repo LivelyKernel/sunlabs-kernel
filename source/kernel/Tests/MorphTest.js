@@ -290,8 +290,9 @@ TestCase.subclass('ImageMorphTest', {
 
 	testSetExtent: function() {
 		
-		this.assertEqual(this.m.image.getWidth(), 100, "initial extent is false");
+		// this.assertEqual(this.m.image.getWidth(), 100, "initial extent is false");
 		this.m.setExtent(pt(200,200));
+		this.assertEqual(this.m.image.getWidth(), 200, "extent is false");
 		// should this work?
 		// this.assertEqual(this.m.image.getWidth(), 200, "extent did not get updated false");
     },

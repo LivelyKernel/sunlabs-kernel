@@ -1468,30 +1468,31 @@ TestCase.subclass('WebRequestComponentTest', {
 TestCase.subclass('HandPositionObserverTest', {
    
     setUp: function() {
-        this.posOb = new HandPositionObserver()
-        this.posOb.hand = new HandMorph();
+        this.posOb = new HandPositionObserver();
+        this.posOb.hand = function(){ return new HandMorph() };
+		this.posOb.hand().setPosition(pt(50,50))
     },
-   
+
     testStart: function() {
         this.posOb.start();
-        this.assert(this.posOb.hand.formalModel.GlobalPosition$observers, "observer is not there")
+        this.assert(this.posOb.hand().formalModel.GlobalPosition$observers, "observer is not there")
     },
 
     testStop: function() {
         this.posOb.stop();
-        this.assert(!this.posOb.hand.formalModel.GlobalPosition$observers, "observer is still there")
+        this.assert(!this.posOb.hand().formalModel.GlobalPosition$observers, "observer is still there")
     },
     
     testFunc: function() {
         var counter = 0;
         this.posOb.func = function() {counter++};
         this.posOb.start();
-        this.posOb.hand.formalModel.setGlobalPosition(pt(100,100));
+        this.posOb.hand().formalModel.setGlobalPosition(pt(100,100));
         this.assertEqual(counter, 1);
-        this.posOb.hand.formalModel.setGlobalPosition(pt(100,200));
+        this.posOb.hand().formalModel.setGlobalPosition(pt(100,200));
         this.assertEqual(counter, 2);
         this.posOb.stop();
-        this.posOb.hand.formalModel.setGlobalPosition(pt(100,200));
+        this.posOb.hand().formalModel.setGlobalPosition(pt(100,200));
         this.assertEqual(counter, 2);
     }
     
