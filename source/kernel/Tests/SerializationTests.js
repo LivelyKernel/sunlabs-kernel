@@ -607,14 +607,16 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	
 	setUp: function() {
-		this.selection = new SelectionMorph(new Rectangle(0,0,10,10));
+		this.world = new WorldMorph(WorldMorph.current().canvas());
+		this.world.hands = [new HandMorph()]
+		this.world.currentSelection = new SelectionMorph(new Rectangle(0,0,200,200))
 		this.morph = new Morph.makeRectangle(new Rectangle(0,0,100,100));
 		var morph = this.morph;
-		this.selection.pasteDestinationMorph = function() {return morph};
+		this.world.pasteDestinationMorph = function() {return morph};
 	},
 	
 	tearDown: function() {
-		delete this.selection;
+		delete this.world;
 		delete this.morph;
 	},
 
@@ -626,7 +628,7 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 				<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
 			</g>';
 		var oldNum = this.morph.submorphs.length;
-		this.selection.pasteFromSource(source);		
+		this.world.pasteFromSource(source);		
 		this.assertEqual(oldNum + 1, this.morph.submorphs.length);	
 	},
 	
@@ -648,7 +650,7 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 				<field name="isSelectionContainer">true</field>\
 			</g>'
 		var oldNum = this.morph.submorphs.length;
-		this.selection.pasteFromSource(source);		
+		this.world.pasteFromSource(source);		
 		this.assertEqual(this.morph.submorphs.length, oldNum + 2, "wrong number of morphs pasted");
 	},
 	
@@ -666,10 +668,10 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 				<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
 			</g>';
 
-		// delete this.selection.pasteDestinationMorph;		
-		var oldMorphs = this.selection.pasteDestinationMorph().submorphs.clone();
-		this.selection.pasteFromSource(source);
-		var newMorphs = this.selection.pasteDestinationMorph().submorphs;
+		// delete this.world.pasteDestinationMorph;		
+		var oldMorphs = this.world.pasteDestinationMorph().submorphs.clone();
+		this.world.pasteFromSource(source);
+		var newMorphs = this.world.pasteDestinationMorph().submorphs;
 		var copy = newMorphs.detect(function(ea){return !oldMorphs.include(ea)});
 		var fillUrl = copy.shape.rawNode.getAttribute('fill');
 		var rawFill = lively.data.FragmentURI.getElement(fillUrl);
@@ -680,7 +682,7 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	},
 	
 	testCalcTopLeftOfPoints: function() {
-		this.assertEqualState(pt(6,5), this.selection.calcTopLeftOfPoints([pt(10,30), pt(20,5), pt(6,17)]))
+		this.assertEqualState(pt(6,5), this.world.calcTopLeftOfPoints([pt(10,30), pt(20,5), pt(6,17)]))
 	},
 
 	stringToXml: function(xmlString) {
@@ -690,8 +692,8 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	testCopySelection: function() {
 		var m1 = Morph.makeRectangle(new Rectangle(10,10,20,20));
 		var m2 = Morph.makeRectangle(new Rectangle(30,30,50,50));
-		this.selection.selectedMorphs = [m1, m2];
-		var string = this.selection.copyAsXMLString();	
+		this.world.selectedMorphs = [m1, m2];
+		var string = this.world.copySelectionAsXMLString();	
 		var xml = this.stringToXml(string);		
 		var selectionNode = xml.childNodes[0];
 	},
@@ -709,16 +711,19 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 		this.assert(m1.shape.rawNode.getAttribute("fill"), "shape has no fill url")
 		this.assert(fill, "fill intialization failed")
 		
-		this.selection.selectedMorphs = [m1];
 		
-		var string = this.selection.copyAsXMLString();
+		this.world.currentSelection.selectedMorphs = [m1]
+
+		
+		var string = this.world.copySelectionAsXMLString();
 		
 		var xml = this.stringToXml(string);		
 		var selectionNode = xml.childNodes[0];
 		var systemDictionary = xml.getElementById("SystemDictionary");
 		
-		// console.log(string);
-				
+		if (!systemDictionary)
+			console.log("CopyAndPaste Test Source: \n" + string);
+
 		this.assert(systemDictionary, "no system dictionary found");
 		var rawFill = xml.getElementById(fill.id());
 		this.assert(rawFill, "no raw fill found");

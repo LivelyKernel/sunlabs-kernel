@@ -1893,7 +1893,7 @@ BoxMorph.subclass('ComponentMorph', {
 	/* Actions */
 
 	doCopy: function() {
-		TextMorph.clipboardString = this.component.copyAsXMLString(); 
+		TextMorph.clipboardString = this.component.copySelectionAsXMLString(); 
 	},
 	
 	doPaste: function() {
@@ -1964,8 +1964,8 @@ Widget.subclass('Component', {
 		this.createFieldAccessors();
 	},
 	
-	copyAsXMLString: function() {
-		return new ClipboardCopier().copyAsXMLString(this)
+	copySelectionAsXMLString: function() {
+		return new ClipboardCopier().copySelectionAsXMLString(this)
 	},
 	
 	

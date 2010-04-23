@@ -5672,7 +5672,7 @@ WorldMorph.addMethods({
 	
 	/* Actions */
 	
-	copyAsXMLString: function() {
+	copySelectionAsXMLString: function() {
 		if (!this.currentSelection) {
 			console.log("WorldMorph: don't know what to copy")
 			return
@@ -5711,7 +5711,7 @@ WorldMorph.addMethods({
 	},
 
 	doCopy: function() {
-		var source = this.copyAsXMLString();
+		var source = this.copySelectionAsXMLString();
 		TextMorph.clipboardString = source;
 	},
 	
@@ -6203,7 +6203,7 @@ Global.inspect = function(inspectee) {
 
 Object.subclass('ClipboardCopier', {
 	
-	copyAsXMLString: function(component) {
+	copySelectionAsXMLString: function(component) {
 		var componentCopy = component.copy(new Copier());
 		var copy = componentCopy.panel;		
 		var doc = this.createBaseDocument();

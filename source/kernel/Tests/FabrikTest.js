@@ -2322,16 +2322,16 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('AClipboardCopierTes
 		this.assertIdentity(morphCopy, morphCopy.pinHandle.morph, "morph reference got wrong")
     },
 
-	testCopyAsXMLString: function() {
+	testcopySelectionAsXMLString: function() {
         var text1 = this.createTextWidgetExample();
-		var text1String = text1.copyAsXMLString();
+		var text1String = text1.copySelectionAsXMLString();
 		// console.log(text1String);
     },
 	
 	testLoadMorphsWithWorldTrunkFromSource: function() {
 		var text1 = this.createTextWidgetExample();
 		this.assert(text1.panel.component instanceof TextComponent, "panel has no text component");
-		var text1String = text1.copyAsXMLString();
+		var text1String = text1.copySelectionAsXMLString();
 		// console.log(text1String);
 		var morphs = this.copier.loadMorphsWithWorldTrunkFromSource(text1String);
 		this.assertEqual(morphs.size(), 1, "wrong number of morphs")
@@ -2352,7 +2352,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('AClipboardCopierTes
         fabrik.panel.automaticLayout();
         this.worldMorph.addMorphFrontOrBack(fabrik.panel, true, true);
 		
-		var text1String = text1.copyAsXMLString();
+		var text1String = text1.copySelectionAsXMLString();
 		
 		var components = fabrik.pasteComponentFromXMLString(text1String);
 		this.assertEqual(components.size(), 1,  "wrong number of components extracted");
