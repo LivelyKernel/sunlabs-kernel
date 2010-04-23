@@ -219,7 +219,7 @@ Global.printOn = function ometaPrintOn(objOrArray, ws) {
          }
          ws.nextPutAll("]")
     } else {
-        ws.nextPutAll(objOrArray.toString())
+        ws.nextPutAll(objOrArray ? objOrArray.toString() : "undefined")
     }
 }
 Array.prototype.toString = function() { var ws = "".writeStream(); Global.printOn(this,ws); return ws.contents() }
