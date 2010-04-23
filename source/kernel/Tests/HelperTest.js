@@ -1,4 +1,4 @@
-module('Test.HelperTest').requires('lively.Helper').toRun(function() {
+module('Tests.HelperTest').requires('lively.TestFramework', 'lively.Helper').toRun(function() {
 
 TestCase.subclass('Tests.HelperTest.XMLConverterTest', {
 
