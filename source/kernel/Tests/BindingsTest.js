@@ -96,11 +96,49 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 	test10ErrorWhenConverterReferencesEnvironment: function() {
 		var obj1 = {};
 		var obj2 = {};
-		var x = 42;
-		connect(obj1, 'value', obj2, 'value', function(val) { return val + x});
-		try { obj1.value = 2 } catch(e) { return }
-		this.assert(false, 'no error when using closue covnerter')
+		var externalVal = 42;
+		connect(obj1, 'value', obj2, 'value', function(val) { return val + externalVal });
+		obj1.value = 2
+		this.assertEqual(2, obj1.value);
+		this.assertEqual(undefined, obj2.value);
+//		try { obj1.value = 2 } catch(e) { return }
+//		this.assert(false, 'no error when using closue covnerter')
 	},
+
+	test11NewConnectionReplacesOld: function() {
+		var obj1 = {};
+		var obj2 = {};
+		connect(obj1, 'value', obj2, 'value', function(val) { return val + 1});
+		connect(obj1, 'value', obj2, 'value', function(val) { return val + 2});
+		obj1.value = 2
+		this.assertEqual(4, obj2.value);
+		this.assertEqual(1, obj1.attributeConnections.length);
+	},
+
+	test12DisconnectDoesNotRemoveAttribute: function () {
+		var obj1 = {};
+		var obj2 = {};
+		var c = connect(obj1, 'value', obj2, 'value');
+		obj1.value = 2;
+		c.disconnect();
+		this.assertEqual(2, obj1.value);
+		this.assertEqual(2, obj2.value);
+	},
+test13IsSimilarConnection: function () {
+		var c1, c2, obj1 = {}, obj2 = {}, obj3 = {};
+		c1 = connect(obj1, 'value', obj2, 'value'); c2 = connect(obj1, 'value', obj2, 'value');
+		this.assert(c1.isSimilarConnection(c2), '1');
+		c1 = connect(obj1, 'value', obj2, 'value', function(v) { return v + 1} );
+		c2 = connect(obj1, 'value', obj2, 'value', function(v) { return v + 2});
+		this.assert(c1.isSimilarConnection(c2), '2');
+		// ----------------------
+		c1 = connect(obj1, 'value1', obj2, 'value'); c2 = connect(obj1, 'value', obj2, 'value');
+		this.assert(!c1.isSimilarConnection(c2), '3');
+		c1 = connect(obj1, 'value', obj2, 'value'); c2 = connect(obj1, 'value', obj3, 'value');
+		this.assert(!c1.isSimilarConnection(c2), '4');
+	},
+
+
 });
 
 Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.ConnectionSerializationTest', {
@@ -117,6 +155,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.
 		var newWorld = new Importer().loadWorldContents(doc.ownerDocument);
 		var newTextMorph1 = newWorld.submorphs[0];
 		var newTextMorph2 = newWorld.submorphs[1];
+
 		this.assertEqual(newTextMorph1.textString, 'foo', 'morph serialization problem');
 		newTextMorph1.updateTextString('bar');
 		this.assertEqual(newTextMorph1.textString, newTextMorph2.textString, 'connect not working after deserialization');

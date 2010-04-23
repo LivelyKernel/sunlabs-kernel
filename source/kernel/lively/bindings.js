@@ -24,18 +24,26 @@ Object.subclass('AttributeConnection', {
 	privateAttrName: function(attrName) { return '$$' + attrName },
 
 	connect: function() {
+		var existing = this.getExistingConnection()
+		if (existing !== this) {
+			// when existing == null just add new connection
+			// when existing === this then connect was called twice or we are
+			//    in deserialization. Just do nothing then.
+			existing && existing.disconnect();
+			this.addAttributeConnection();
+		}
 		var setter = this.sourceObj.__lookupSetter__(this.sourceAttrName);
 		if (!setter)
 			this.addSourceObjGetterAndSetter()
-		if (!this.sourceObjectHasConnection())
-			this.addAttributeConnection();
 		return this;
 	},
 
 	disconnect: function() {
 		var obj = this.sourceObj;
 		if (!obj.attributeConnections) return;
-		obj.attributeConnections = obj.attributeConnections.reject(function(con) { return this.eq(con) }, this);
+		obj.attributeConnections = obj.attributeConnections.reject(function(con) {
+			return this.isSimilarConnection(con);
+		}, this);
 		var connectionsWithSameSourceAttr = obj.attributeConnections.select(function(con) {
 			return this.getSourceAttrName() == con.getSourceAttrName();
 		}, this);
@@ -45,9 +53,9 @@ Object.subclass('AttributeConnection', {
 
 	addSourceObjGetterAndSetter: function() {
 		var
-		sourceObj = this.sourceObj,
-		sourceAttrName = this.sourceAttrName,
-		newAttrName = this.privateAttrName(sourceAttrName);
+			sourceObj = this.sourceObj,
+			sourceAttrName = this.sourceAttrName,
+			newAttrName = this.privateAttrName(sourceAttrName);
 
 		if (sourceObj[newAttrName])
 			throw new Error('newAttrName ' + newAttrName + ' already exists. Are there already other connections?');
@@ -90,12 +98,11 @@ Object.subclass('AttributeConnection', {
 		this.sourceObj.attributeConnections.push(this);
 	},
 
-	sourceObjectHasConnection: function() {
-		if (!this.sourceObj.attributeConnections) return false;
-		var existing = this.sourceObj.attributeConnections.detect(function(con) {
-			return this.eq(con);
+	getExistingConnection: function() {
+		if (!this.sourceObj.attributeConnections) return null;
+		return this.sourceObj.attributeConnections.detect(function(con) {
+			return this.isSimilarConnection(con);
 		}, this);
-		return existing != null;
 	},
 
 	update: function(newValue) {
@@ -123,12 +130,13 @@ Object.subclass('AttributeConnection', {
 
 	deactivate: function() { this.isActive = false },
 
-	eq: function(other) {
+	isSimilarConnection: function(other) {
+		if (!other) return;
 		if (other.constructor != this.constructor) return false;
 		return this.sourceObj == other.sourceObj &&
 			this.sourceAttrName == other.sourceAttrName &&
 			this.targetObj == other.targetObj &&
-			this.targetMethodName == other.targetMethodName;
+			this.targetMethodName == other.targetMethodName
 	},
 
 	onSourceAndTargetRestored: function() {
@@ -168,10 +176,8 @@ Object.extend(AttributeConnection, {
 		if (!importer)
 			throw new Error('AttributeConnection needs importer for resolving uris!!!');
 
-		var converter = literal.converter ? eval('(' + literal.converter + ')') : null;
-		
 		// just create the connection, connection not yet installed!!!
-		var con = new AttributeConnection(null, literal.sourceAttrName,	null, literal.targetMethodName, converter);
+		var con = new AttributeConnection(null, literal.sourceAttrName,	null, literal.targetMethodName, literal.converter);
 
 		importer.addPatchSite(con, 'sourceObj', literal.sourceObj);
 		importer.addPatchSite(con, 'targetObj', literal.targetObj);
