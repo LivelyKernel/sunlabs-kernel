@@ -4434,11 +4434,14 @@ PasteUpMorph.subclass("WorldMorph", {
             if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
             timeStarted = timeNow;
         }
-	//  Need to generate a mouseMove if any ticking scripts have run
-	//  Allows simulations to respond where, eg, a morph moves under the mouse
-	var myHand = this.firstHand();
-	if (myHand) myHand.makeAMove();
-
+	//  Generate a mouseMove if any ticking scripts have run so that
+	//  simulations can respond where, eg, a morph moves under the mouse
+	//  DI:  This is *only* needed for the slide-keyboard-under-mouse demo (very cool)
+	//	Uses extra cycles, though, and currently fails in Opera
+	if(Config.nullMoveAfterTicks) { // set this true in localConfig for the demo
+		var myHand = this.firstHand();
+		if (myHand) myHand.makeANullMove();
+	}
         if (list.length > 0) timeOfNextStep = Math.min(list[list.length-1][0], timeOfNextStep);
 
         // Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
@@ -5113,10 +5116,6 @@ Morph.subclass("HandMorph", {
     	this.mouseFocus = morphOrNull;
 		this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
 		this.mouseFocusChanges_ ++;
-		if (UserAgent.isiPhone) { // Allow iPhone pan when focus is null or on the world
-			if (!this.mouseFocus || this.mouseFocus===this.mouseFocus.world()) UserAgent.iPhonePanMode();
-				else UserAgent.iPhoneDragMode();
-		}
     },
     
     setKeyboardFocus: function(morphOrNull) {
@@ -5167,7 +5166,7 @@ Morph.subclass("HandMorph", {
 		this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
     },
 
-	makeAMove: function() {
+	makeANullMove: function() {
 		// Process a null mouseMove event -- no change in x, y
 		// Allows simulations to respond where, eg, a morph moves under the mouse
 		// Note: Fabrik generates also Mouse events with newFakeMouseEvent; to be merged

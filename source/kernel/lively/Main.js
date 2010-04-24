@@ -494,7 +494,7 @@ function main() {
     var canvas = Global.document.getElementById("canvas");
 
 
-    if (canvas.height && canvas.height.baseVal && canvas.height.baseVal.value < 100) {
+    if (canvas.height && canvas.height.baseVal && canvas.height.baseVal.value < 200) {
         // a forced value, some browsers have problems with height=100%
         canvas.setAttribute("height", "800");
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006-2009 Sun Microsystems, Inc.
+ * Copyright (c) 2006-2009 Sun Microsystems, Inc. 
  *
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -38,9 +38,9 @@ var UserAgent = (function() {
     })();
 
     var isRhino = !window.navigator || window.navigator.userAgent.indexOf("Rhino") > -1;
-
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
     var isChrome = window.navigator && window.navigator.userAgent.indexOf("Chrome") > -1;
+    var isOpera = window.navigator && window.navigator.userAgent.indexOf("Opera") > -1;
     var fireFoxVersion = window.navigator && window.navigator.userAgent.split("Firefox/")[1]; // may be undefined
     if (fireFoxVersion == null)
 	fireFoxVersion = window.navigator && window.navigator.userAgent.split("Minefield/")[1];
@@ -69,18 +69,33 @@ var UserAgent = (function() {
 
         isChrome: isChrome,
 
+        isOpera: isOpera,
+
 	fireFoxVersion: fireFoxVersion ? fireFoxVersion.split('.') : null, 
 	
         isWindows: (window.navigator && window.navigator.platform == "Win32"),
 
-        isiPhone: (window.navigator && window.navigator.platform == "iPhone")
+        isiPad: (window.navigator && window.navigator.platform == "iPhone"),
+		iPadIsMouse: false
     };
 
 })();
 
 //--------------------------
-// Following iPhone code borrowed fromÉ
+// Following iPhone/iPad code borrowed fromï¿½
 //	http://rossboucher.com/2008/08/19/iphone-touch-events-in-javascript/
+//
+// Here's my first cut at iPad touch/mouse compatibility
+// By default we start in touch mode (iPadIsMouse = false)
+// In touch mode [assume will get mouseDown and mouseUp events]
+//		if down/up with little movement, then set drag mode (iPadIsMouse = true)
+//			detect this in handMorph knowing we are in touch mode
+//			need to read amount moved from the event
+//	In drag mode
+//		if down up with little movement, then set touch mode
+//			detect this in SelectionMorph reshape
+//	Indicate touch mode by circular blue cursor
+//	Indicate drag mode by regular arrow, but bigger for iPad
 //--------------------------
 UserAgent.touchHandler = function(event) {
     var touches = event.changedTouches,
@@ -103,20 +118,19 @@ UserAgent.touchHandler = function(event) {
     first.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
 };
-// These two funcs should probably be methods of UserAgent
-UserAgent.iPhoneDragMode = function () {
-    if (this.iPhoneDrag) return;
-	else this.iPhoneDrag = true;
-    //WorldMorph.current().setFill(Color.blue.lighter());  //so we can tell what's going on
+UserAgent.iPadBeMouse = function () {
+    if (this.iPadIsMouse) return;
+	else this.iPadIsMouse = true;
+    WorldMorph.current().setFill(Color.blue.lighter());  //so we can tell what's going on
     document.addEventListener("touchstart", this.touchHandler, true);
     document.addEventListener("touchmove", this.touchHandler, true);
     document.addEventListener("touchend", this.touchHandler, true);
     document.addEventListener("touchcancel", this.touchHandler, true); 
 };
-UserAgent.iPhonePanMode = function () {
-    if (!this.iPhoneDrag) return;
-	else this.iPhoneDrag = false;
-    //WorldMorph.current().setFill(Color.red.lighter());  //so we can tell what's going on
+UserAgent.iPadBeTouch = function () {
+    if (!this.iPadIsMouse) return;
+	else this.iPadIsMouse = false;
+    WorldMorph.current().setFill(Color.red.lighter());  //so we can tell what's going on
     document.removeEventListener("touchstart", this.touchHandler, true);
     document.removeEventListener("touchmove", this.touchHandler, true);
     document.removeEventListener("touchend", this.touchHandler, true);
@@ -165,11 +179,11 @@ var Config = {
     fakeFontMetrics: !UserAgent.usableHTMLEnvironment,
 
     // Use the browser's affine transforms
-    useTransformAPI: UserAgent.usableTransformAPI, 
+    useTransformAPI: (!UserAgent.isOpera) && UserAgent.usableTransformAPI, 
 
     // Firefox 2 has known problems with getTransformToElement, detect it
-    useGetTransformToElement: !(UserAgent.fireFoxVersion &&
-	(UserAgent.fireFoxVersion[0] == '2' || UserAgent.fireFoxVersion[0] == '3')),
+    useGetTransformToElement: !(UserAgent.isOpera ||
+	UserAgent.fireFoxVersion && (UserAgent.fireFoxVersion[0] == '2' || UserAgent.fireFoxVersion[0] == '3')),
 
     // Enable drop shadows for objects (does not work well in most browsers)
     useDropShadow: UserAgent.usableDropShadow,
@@ -179,6 +193,11 @@ var Config = {
     // the user moves to another world.  This should really be a
     // world-specific option.
     suspendScriptsOnWorldExit: true,
+
+    // For the engine/piano demo (and any other simulation interacting with unmoving mouse)
+    // it is necessary to generate a mouseMove event after each tick
+    // set this true in localconfig if you need this behavior 
+    nullMoveAfterTicks: false,
 
     // Open up our console
     showLivelyConsole: false,
