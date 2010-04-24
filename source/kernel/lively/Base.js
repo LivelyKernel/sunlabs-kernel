@@ -543,7 +543,7 @@ var Class = {
 			|| object === Number) {
 				return true;
 		} 
-		return (object instanceof Function) && (object.superclass);
+		return (object instanceof Function) && (object.superclass !== undefined);
 	},
 
 	className: function Class$className(cl) {

@@ -37,24 +37,12 @@ Object.extend(Object, {
       keys.push(property);
     return keys;
   },
-  // 
-  // values: function(object) {
-  //   var values = [];
-  //   for (var property in object)
-  //     values.push(object[property]);
-  //   return values;
-  // },
-
+  
   values: function(object) {
-	var values = [];
-	for(var property in object) {
-		// fixing the bug:	"var property is not a function" bug of firefox
-		// it breaks for example in allClasses
-		if(object.hasOwnProperty(property)) {
-			values.push(object[property]);
-		};
-	};
-	return values;
+    var values = [];
+    for (var property in object)
+      values.push(object[property]);
+    return values;
   },
 
   clone: function(object) {
@@ -85,6 +73,20 @@ Object.extend(Object, {
     return typeof object == "undefined";
   }
 });
+
+
+if (window.navigator && window.navigator.userAgent.match(/Firefox|Minefield/)) {
+// fixing the bug:	"var property is not a function" bug in Firefox
+Object.extend(Object, {
+	values: function(object) {
+	var values = [];
+	for (var property in object)
+		if (object.hasOwnProperty(property))
+			values.push(object[property]);
+	return values;
+  },
+})
+};
 
 Object.extend(Function.prototype, {
   argumentNames: function() {

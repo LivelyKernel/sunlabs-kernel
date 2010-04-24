@@ -1481,6 +1481,7 @@ lively.data.Wrapper.subclass('Morph', {
 	deserialize: function($super, importer, rawNode) {
 		// FIXME what if id is not unique?
 		$super(importer, rawNode);
+	
 		this.internalInitialize(rawNode, false);
 		this.pvtSetTransform(this.getTransform());
 

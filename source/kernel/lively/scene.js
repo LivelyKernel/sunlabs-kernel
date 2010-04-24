@@ -325,58 +325,61 @@ Object.subclass('lively.data.Wrapper', {
 	
 	deserializeWidgetFromNode: function(importer, node) {
 		var type = lively.data.Wrapper.getEncodedType(node);
-		if (type) {
-			var klass = Class.forName(type);
-			if (klass) {
-				var widget = new klass(importer, node);
-				widget.restoreFromSubnodes(importer, node);
-				return widget
-			} else {
-				throw new Error("Error in deserializing Widget:" + type + ", no class");
-			};
-		};
-		throw new Error("Error in deserializing Widget: no getEncodedType for " + node);	 
+		if (!type)
+			throw new Error("Error in deserializing Widget: no getEncodedType for " + node);
+		var klass = Class.forName(type);
+		if (!klass)
+			throw new Error("Error in deserializing Widget:" + type + ", no class");
+
+		var widget = new klass(importer, node);
+		widget.restoreFromSubnodes(importer, node);
+		return widget
 	},
 	
 	deserializeValueFromNode: function(importer, node) {
 		var value = node.textContent;
-		if (value) {
-			var family = LivelyNS.getAttribute(node, "family");
-			if (family) {
-				var cls = Class.forName(family);
-				if (!cls) throw new Error('uknown type ' + family);
-				return cls.fromLiteral(JSON.unserialize(value), importer);
-			} else if (value === 'NaN') {
-				return	NaN; // JSON doesn't unserializes NaN
-			} else {
-				try {
-					return JSON.unserialize(value);
-				} catch (e) {
-					console.log('Error in lively.data.Wrapper.deserializeValueFromNode:');
-					console.log(e + ' was thrown when deserializing: ' + value);
-				}
-			}
+		if (!value) return null
+		
+		if (value === 'NaN')
+			return	NaN; // JSON doesn't unserializes NaN
+
+		var family = LivelyNS.getAttribute(node, "family");
+		if (family) {
+			var cls = Class.forName(family);
+			if (!cls) throw new Error('unknown type ' + family);
+			return cls.fromLiteral(JSON.unserialize(value), importer);
+		}
+			
+		try {
+			return JSON.unserialize(value);
+		} catch (e) {
+			console.log('Error in lively.data.Wrapper.deserializeValueFromNode:');
+			console.log(e + ' was thrown when deserializing: ' + value);
 		}
 	},
 		
 	deserializeFieldFromNode: function(importer, node) {
 		var name = LivelyNS.getAttribute(node, "name");
-		if (name) {
-			var ref = LivelyNS.getAttribute(node, "ref");
-			if (ref) {
-				importer.addPatchSite(this, name, ref);
-			} else if (node.getAttributeNS(null, 'isNode') !== '') {
-				// we have a normal node, nothing to deserialize but reassign
-				var realNode = node.firstChild;
-				node.removeChild(realNode);
-				this[name] = realNode;
-				this.addNonMorph(realNode);
-			} else {
-				this[name] = this.deserializeValueFromNode(importer, node);
-			}
-		} else {
+		if (!name)
 			throw new Error("could not deserialize field without name");
-		}		
+		
+		var ref = LivelyNS.getAttribute(node, "ref");
+		if (ref) {
+			importer.addPatchSite(this, name, ref);
+			return
+		}
+		
+		var isNode = node.getAttributeNS(null, 'isNode');
+		if (isNode !== '' && isNode != null) {
+			// we have a normal node, nothing to deserialize but reassign
+			var realNode = node.firstChild;
+			node.removeChild(realNode);
+			this[name] = realNode;
+			this.addNonMorph(realNode);
+			return
+		}
+		
+		this[name] = this.deserializeValueFromNode(importer, node);
 	},
 
 	deserializeRelayFromNode: function(importer, node) {
