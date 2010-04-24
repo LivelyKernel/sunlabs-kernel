@@ -151,6 +151,9 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	setupResizers: function() {
 		var panel = this.panel;
 		
+		// for compatibility to old pages -- FIXME remove
+		if (!panel.bottomResizer || !panel.midResizer) return 
+		
 		// resizer in the middle resiszes top panes, buttons and source pane
 		this.allPaneNames.collect(function(name) {
 			panel.midResizer.addScalingAbove(panel[name]);
@@ -859,10 +862,14 @@ ide.BasicBrowser.subclass('lively.ide.LocalCodeBrowser', {
 	allPaneNames: ['Pane1', 'Pane2'],
 
 	panelSpec: [
-		['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.5, 0.45)],
-		['Pane2', newDragnDropListPane, new Rectangle(0.5, 0, 0.5, 0.45)],
-		['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
-	],
+	//['locationPane', newTextPane, new Rectangle(0, 0, 1, 0.05)],
+	['Pane1', newDragnDropListPane, new Rectangle(0, 0, 0.5, 0.4)],
+	['Pane2', newDragnDropListPane, new Rectangle(0.5, 0, 0.5, 0.4)],
+	['midResizer', function(b) { return new HorizontalDivider(b) }, new Rectangle(0, 0.44, 1, 0.01)],
+	['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.49)],
+	['bottomResizer', function(b) { return new HorizontalDivider(b) }, new Rectangle(0, 0.94, 1, 0.01)],
+	['commentPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
+],
 
 	initialize: function($super, optWorldProxy) {
 		$super();
