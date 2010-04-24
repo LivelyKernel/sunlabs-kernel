@@ -4829,6 +4829,7 @@ BoxMorph.subclass('HorizontalDivider', {
 	onMouseUp: function(evt) {
 		evt.hand.lookNormal() // needed when hand is not over morph anymore
 		this.pointerConnection.disconnect();
+		this.pointerConnection = null;
 	},
 
 	movedVerticallyBy: function(deltaY) {
