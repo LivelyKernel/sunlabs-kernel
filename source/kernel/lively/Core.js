@@ -5078,7 +5078,20 @@ Morph.subclass("HandMorph", {
     lookLinky: function(morph) {
         this.shape.setVertices([pt(0,0), pt(18,10), pt(10,18), pt(0,0)]);
     },
-    
+
+	lookLikeAnUpDownArrow: function() {
+		//       /\
+		//     /_ _\
+		//     _||_
+		//    \   /
+		//     \/
+		var verts = [
+			pt(8.0,0.0), pt(16.0,8.0), pt(12.0,8.0), pt(12.0,16.0), pt(16.0,16.0),
+			pt(8.0,24.0), pt(0.0,16.0), pt(4.0,16.0), pt(4.0,8.0), pt(0.0,8.0)
+		];
+		this.shape.setVertices(verts);
+	},
+
     registerForEvents: function(morph) {
         Event.basicInputEvents.forEach(function(name) { 
             morph.rawNode.addEventListener(name, this, this.handleOnCapture);}, this);

@@ -4795,6 +4795,81 @@ Object.extend(PromptDialogMorph, {
 })
 
 
+BoxMorph.subclass('HorizontalDivider', {
+
+	suppressGrabbing: true,
+
+	suppressHandles: true,
+
+	style: {fill: Color.gray},
+
+	handlesMouseDown: function(evt) { return true },
+
+	initialize: function($super, bounds) {
+		$super(bounds);
+		this.fixed = [];
+		this.scalingBelow = [];
+		this.scalingAbove = [];
+		this.minHeight = 20;
+		this.pointerConnection = null;
+	},
+
+	onMouseDown: function(evt) {
+		this.oldPoint = evt.point();
+		this.pointerConnection = connect(evt.hand, 'origin', this, 'movedVerticallyBy', function(pos) {
+			var resizer = this.getTargetObj();
+			var p1 = resizer.oldPoint;
+			var p2 = pos;
+			var deltaY = p2.y - p1.y;
+			resizer.oldPoint = pos;
+			return deltaY
+		});
+	},
+
+	onMouseUp: function(evt) {
+		evt.hand.lookNormal() // needed when hand is not over morph anymore
+		this.pointerConnection.disconnect();
+	},
+
+	movedVerticallyBy: function(deltaY) {
+		if (!this.resizeIsSave(deltaY)) return;
+
+		var morphsForPosChange = this.fixed.concat(this.scalingBelow);
+		morphsForPosChange.forEach(function(m) {
+			var pos = m.getPosition();
+			m.setPosition(pt(pos.x, pos.y + deltaY));
+		})
+		this.scalingAbove.forEach(function(m) {
+			var ext = m.getExtent();
+			m.setExtent(pt(ext.x, ext.y + deltaY));
+		})
+		this.scalingBelow.forEach(function(m) {
+			var ext = m.getExtent();
+			m.setExtent(pt(ext.x, ext.y - deltaY));
+		})
+		this.setPosition(this.getPosition().addPt(pt(0, deltaY)));
+	},
+
+	resizeIsSave: function(deltaY) {
+		return this.scalingAbove.all(function(m) { return (m.getExtent().y + deltaY) > this.minHeight }, this) &&
+			this.scalingBelow.all(function(m) { return (m.getExtent().y - deltaY) > this.minHeight}, this)
+	},
+
+	onMouseMove: function(evt) {
+		evt.hand.lookLikeAnUpDownArrow()
+		// also overwritten to prevent super behavior
+	},
+
+	onMouseOut: function(evt) {	evt.hand.lookNormal() },
+
+	addFixed: function(m) { if (!this.fixed.include(m)) this.fixed.push(m) },
+
+	addScalingAbove: function(m) { this.scalingAbove.push(m) },
+
+	addScalingBelow: function(m) {  this.scalingBelow.push(m) },
+
+});
+
 
 
 }.logCompletion('loaded Widgets.js')); // end using

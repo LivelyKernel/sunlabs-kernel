@@ -528,7 +528,6 @@ TestCase.subclass('NodeMorphTest', {
 		this.node1.setPosition(pt(100,100));
 		this.node2.setPosition(pt(150,100)); // = minDist, no attraction
 		this.node1.connectTo(this.node2);
-dbgOn(true);
 		var result = this.node1.forceOfMorphs([this.node2]);
 		this.assertEqualPt(result, pt(0, 0));
 	},
@@ -598,6 +597,53 @@ TestCase.subclass("ProgressBarMorphTest", {
 		this.assertEqual(this.progress.bar.bounds().width, 75, "bar has wrong width")
 	}
 })
+
+
+TestCase.subclass('Tests.MorphTest.HorizontalDividerTest', {
+
+	setUp: function($super) {
+		$super();
+		this.morphs = [];
+	},
+
+	tearDown: function($super) {
+		$super()
+		this.morphs.invoke('remove');
+	},
+
+	addMorphs: function(morphs) {
+		this.morphs = morphs
+		morphs.invoke('openInWorld');
+	},
+
+	test01ResizeMorphsAboveAndBelow: function() {
+		var sut = new HorizontalDivider(new Rectangle(100,100, 100,15));
+		var above = new BoxMorph(new Rectangle(100, 0, 10, 60));
+		var below = new BoxMorph(new Rectangle(100, 110, 10, 50));
+		sut.addScalingAbove(above);
+		sut.addScalingBelow(below);
+		this.addMorphs([sut, above, below]);
+		sut.movedVerticallyBy(-10);
+		this.assertEqual(50, above.getExtent().y)
+		this.assertEqual(60, below.getExtent().y)
+		this.assertEqual(100, below.getPosition().y)
+	},
+
+	test02MoveFixedMorphsAboveAndBelow: function() {
+		var sut = new HorizontalDivider(new Rectangle(100,100, 100,15));
+		var above = new BoxMorph(new Rectangle(100, 0, 10, 60));
+		var below = new BoxMorph(new Rectangle(100, 110, 10, 50));
+		sut.addFixed(above);
+		sut.addFixed(below);
+		this.addMorphs([sut, above, below]);
+		sut.movedVerticallyBy(20);
+		this.assertEqual(60, above.getExtent().y)
+		this.assertEqual(50, below.getExtent().y)
+		this.assertEqual(20, above.getPosition().y)
+		this.assertEqual(130, below.getPosition().y)
+	},
+
+});
 
 
 
