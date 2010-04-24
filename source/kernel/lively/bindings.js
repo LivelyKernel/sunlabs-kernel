@@ -110,11 +110,11 @@ Object.subclass('AttributeConnection', {
 		try {
 			this.activate();
 			if (this.converter)
-				newValue = this.converter(newValue);
+				newValue = this.converter.call(this, newValue);
 			if (Object.isFunction(this.targetObj[this.targetMethodName]))
 				this.targetObj[this.targetMethodName](newValue);
 			else
-			this.targetObj[this.targetMethodName] = newValue;
+				this.targetObj[this.targetMethodName] = newValue;
 		} catch(e) {
 			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
 		} finally {
