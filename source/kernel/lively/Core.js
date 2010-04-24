@@ -544,70 +544,72 @@ console.log("Loaded basic DOM manipulation code");
 var Event = (function() {
     var tmp = Event; // note we're rebinding the name Event to point to a different class 
 
-    var capitalizer = { mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
-	mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
-	keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' };
+    var capitalizer = {
+		mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
+		mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
+		keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp'
+	};
 
 
     var Event = Object.subclass('Event', {
 
 	initialize: function(rawEvent) {
-	    this.rawEvent = rawEvent;
-	    this.type = capitalizer[rawEvent.type] || rawEvent.type;
-	    //this.charCode = rawEvent.charCode;
+		this.rawEvent = rawEvent;
+		this.type = capitalizer[rawEvent.type] || rawEvent.type;
+		//this.charCode = rawEvent.charCode;
 
-	    if (isMouse(rawEvent)) {
-		var x = rawEvent.pageX || rawEvent.clientX;
-		var y = rawEvent.pageY || rawEvent.clientY;
-		var topElement = this.canvas().parentNode; // ***DI: doesn't work if we are not top element;
+		if (isMouse(rawEvent)) {
+			var x = rawEvent.pageX || rawEvent.clientX;
+			var y = rawEvent.pageY || rawEvent.clientY;
+			var topElement = this.canvas().parentNode; // ***DI: doesn't work if we are not top element;
 
-		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-		// assume the parent node of Canvas has the same bounds as Canvas
-		this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
-				     y - (topElement.offsetTop  || 0) - 3);
-		// console.log("mouse point " + this.mousePoint);
-		//event.mousePoint = pt(event.clientX, event.clientY  - 3);
-		this.priorPoint = this.mousePoint; 
-	    } 
-	    this.hand = null;
+			// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
+			// assume the parent node of Canvas has the same bounds as Canvas
+			this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
+			y - (topElement.offsetTop  || 0) - 3);
+			// console.log("mouse point " + this.mousePoint);
+			//event.mousePoint = pt(event.clientX, event.clientY  - 3);
+			this.priorPoint = this.mousePoint; 
+		} 
+		this.hand = null;
 
-	    // use event.timeStamp
-	    // event.msTime = (new Date()).getTime();
-	    this.mouseButtonPressed = false;
+		// use event.timeStamp
+		// event.msTime = (new Date()).getTime();
+		this.mouseButtonPressed = false;
 	},
 
 	simpleCopy: function() {
-	    return new Event(this.rawEvent);
+		return new Event(this.rawEvent);
 	},
 
 	canvas: function() {
-	    if (!UserAgent.usableOwnerSVGElement) {
-		// so much for multiple worlds on one page
-		return Global.document.getElementById("canvas");
-	    } else {
-		return this.rawEvent.currentTarget.ownerSVGElement;
-	    }
+		if (!UserAgent.usableOwnerSVGElement) {
+			// so much for multiple worlds on one page
+			return Global.document.getElementById("canvas");
+		} else {
+			return this.rawEvent.currentTarget.ownerSVGElement;
+		}
 	},
 
 	stopPropagation: function() {
-	    this.rawEvent.stopPropagation();
+		this.rawEvent.stopPropagation();
 	},
 
 	preventDefault: function() {
-	    this.rawEvent.preventDefault();
+		this.rawEvent.preventDefault();
 	},
 
 	stop: function() {
-	    this.preventDefault();
-	    this.stopPropagation();
+		this.preventDefault();
+		this.stopPropagation();
 	},
 
 	isAltDown: function() {
-	    return this.rawEvent.altKey;
+		return this.rawEvent.altKey;
 	},
 
 	isCommandKey: function() {
-	    // this is LK convention, not the content of the event
+		// this is LK convention, not the content of the event
 		if (Config.useAltAsCommand)
 			return this.isAltDown();
 		if (UserAgent.isWindows) {
@@ -618,45 +620,47 @@ var Event = (function() {
 	},
 
 	isShiftDown: function() {
-	    return this.rawEvent.shiftKey;
+		return this.rawEvent.shiftKey;
 	},
 
 	isMetaDown: function() {
-	    return this.rawEvent.metaKey;
+		return this.rawEvent.metaKey;
 	},
 
 	isCtrlDown: function() {
-	    return this.rawEvent.ctrlKey;
+		return this.rawEvent.ctrlKey;
 	},
 
 	toString: function() {
-	    return Strings.format("#<Event:%s%s%s>", this.type, this.mousePoint ?  "@" + this.mousePoint : "",
-				  this.getKeyCode() || "");
+		return Strings.format("#<Event:%s%s%s>",
+			this.type,
+			this.mousePoint ?  "@" + this.mousePoint : "",
+			this.getKeyCode() || "");
 	},
 
 	setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
-	    this.mouseButtonPressed = buttonPressed;
-	    // if moving or releasing, priorPoint will get found by prior morph
-	    this.priorPoint = priorPoint; 
+		this.mouseButtonPressed = buttonPressed;
+		// if moving or releasing, priorPoint will get found by prior morph
+		this.priorPoint = priorPoint; 
 	},
 
 	handlerName: function() {
-	    return "on" + this.type;
+		return "on" + this.type;
 	},
 
 	getKeyCode: function() {
-	    return this.rawEvent.keyCode;
+		return this.rawEvent.keyCode;
 	},
 
 	getKeyChar: function() {
-	    if (this.type == "KeyPress") {
-		var id = this.rawEvent.charCode;
-		if (id > 63000) return ""; // Old Safari sends weird key char codes
-		return id ? String.fromCharCode(id) : "";
-	    } else  {
-		var code = this.rawEvent.which;
-		return code && String.fromCharCode(code);
-	    }
+		if (this.type == "KeyPress") {
+			var id = this.rawEvent.charCode;
+			if (id > 63000) return ""; // Old Safari sends weird key char codes
+			return id ? String.fromCharCode(id) : "";
+		} else  {
+			var code = this.rawEvent.which;
+			return code && String.fromCharCode(code);
+		}
 	},
 
 	wheelDelta: function() {
@@ -673,11 +677,11 @@ var Event = (function() {
 	isLeftMouseButtonDown: function() {
 		return this.rawEvent.button === 0;
 	},
-	
+
 	isMiddleMouseButtonDown: function() {
 		return this.rawEvent.button === 1;
 	},
-	
+
 	isRightMouseButtonDown: function() {
 		return this.rawEvent.button === 2;
 	}
@@ -687,24 +691,24 @@ var Event = (function() {
     Event.rawEvent = tmp;
 
     Object.extend(Event, {
-	// copied from prototype.js:
-	KEY_BACKSPACE: 8,
-	KEY_TAB:       9,
-	KEY_RETURN:   13,
-	KEY_ESC:      27,
-	KEY_LEFT:     37,
-	KEY_UP:       38,
-	KEY_RIGHT:    39,
-	KEY_DOWN:     40,
-	KEY_DELETE:   46,
-	KEY_HOME:     36,
-	KEY_END:      35,
-	KEY_PAGEUP:   33,
-	KEY_PAGEDOWN: 34,
-	KEY_INSERT:   45,
+		// copied from prototype.js:
+		KEY_BACKSPACE: 8,
+		KEY_TAB:       9,
+		KEY_RETURN:   13,
+		KEY_ESC:      27,
+		KEY_LEFT:     37,
+		KEY_UP:       38,
+		KEY_RIGHT:    39,
+		KEY_DOWN:     40,
+		KEY_DELETE:   46,
+		KEY_HOME:     36,
+		KEY_END:      35,
+		KEY_PAGEUP:   33,
+		KEY_PAGEDOWN: 34,
+		KEY_INSERT:   45,
 
-	// not in prototype.js:
-	KEY_SPACEBAR: 32
+		// not in prototype.js:
+		KEY_SPACEBAR: 32
 
     });
 
@@ -716,7 +720,7 @@ var Event = (function() {
     Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents);
 
     function isMouse(rawEvent) {
-	return mouseEvents.include(rawEvent.type);
+		return mouseEvents.include(rawEvent.type);
     };
 
     return Event;
