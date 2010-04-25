@@ -495,30 +495,31 @@ XLinkNS = {
 };
 
 LivelyNS = {
-    
-    create: function(name, attributes) {
-	return NodeFactory.createNS(Namespace.LIVELY, name, attributes);
-    },
-    
-    getAttribute: function(node, name) {
-	return node.getAttributeNS(Namespace.LIVELY, name);
-    },
 
-    removeAttribute: function(node, name) {
-	return node.removeAttributeNS(Namespace.LIVELY, name);
-    },
+	create: function(name, attributes) {
+		return NodeFactory.createNS(Namespace.LIVELY, name, attributes);
+	},
 
-    setAttribute: function(node, name, value) {
-	node.setAttributeNS(Namespace.LIVELY, name, value);
-    },
+	getAttribute: function(node, name) {
+		if (UserAgent.isOpera) return node.getAttribute(name); // Fix for Opera 10.10
+		return node.getAttributeNS(Namespace.LIVELY, name);
+	},
 
-    getType: function(node) {
-	return node.getAttributeNS(Namespace.LIVELY, "type");
-    },
-    
-    setType: function(node, string) {
-	node.setAttributeNS(Namespace.LIVELY, "type", string);
-    }
+	removeAttribute: function(node, name) {
+		return node.removeAttributeNS(Namespace.LIVELY, name);
+	},
+
+	setAttribute: function(node, name, value) {
+		node.setAttributeNS(Namespace.LIVELY, name, value);
+	},
+
+	getType: function(node) {
+		return node.getAttributeNS(Namespace.LIVELY, "type");
+	},
+
+	setType: function(node, string) {
+		node.setAttributeNS(Namespace.LIVELY, "type", string);
+	}
 };
 
     
