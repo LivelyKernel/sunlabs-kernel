@@ -2018,16 +2018,19 @@ BoxMorph.subclass('TextMorph', {
 			}
 			case Event.KEY_BACKSPACE: {
 				// Backspace deletes current selection or prev character
-					if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
-					this.replaceSelectionfromKeyboard("");
-				if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
-					evt.stop(); // do not use for browser navigation
-					return true;
+				if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
+				this.replaceSelectionfromKeyboard("");
+				if (this.charsTyped.length > 0)
+					this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
+				evt.stop(); // do not use for browser navigation
+				return true;
 			}
 			case Event.KEY_DELETE: {	// Delete deletes current selection or current character
-				if (this.hasNullSelection()) this.selectionRange[1] = Math.min(this.textString.length, this.selectionRange[1]+1);
-					this.replaceSelectionfromKeyboard("");
-				if (this.charsTyped.length > 0) this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
+				if (this.hasNullSelection())
+					this.selectionRange[1] = Math.min(this.textString.length, this.selectionRange[1]+1);
+				this.replaceSelectionfromKeyboard("");
+				if (this.charsTyped.length > 0)
+					this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
 				evt.stop(); // do not use for browser navigation
 				return true;
 			}			
@@ -2061,6 +2064,14 @@ BoxMorph.subclass('TextMorph', {
 		if (!this.acceptInput)
 			return true;
 
+		// Opera fix: evt.stop in onKeyPress does not seem to work
+		var c = evt.getKeyCode()
+		if (c === Event.KEY_BACKSPACE || c === Event.KEY_RETURN || c === Event.KEY_TAB) {
+			evt.stop();
+			return true;
+		}
+			
+		
 		if (!evt.isMetaDown()) {
 			this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
 			evt.stop(); // done
