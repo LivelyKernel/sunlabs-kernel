@@ -39,8 +39,7 @@
 // ===========================================================================
 
 
-
-using(lively.Text).run(function(text) {
+module('lively.Widgets').requires('lively.Text').toRun(function(thisModule, text) {
 
 
 BoxMorph.subclass('ButtonMorph', {
@@ -4869,7 +4868,7 @@ BoxMorph.subclass('HorizontalDivider', {
 
 });
 
+console.log('loaded Widgets.js');
 
 
-}.logCompletion('loaded Widgets.js')); // end using
-
+}); // end of module

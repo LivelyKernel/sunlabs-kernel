@@ -574,7 +574,7 @@ Widget.subclass('LatestWikiChangesList', {
 		// extract
 		var rawNodes = new Query("/D:multistatus/D:response").findAll(propfindXML.documentElement);
 		var baseUrl = this.getURL();
-		var colItems = rawNodes.map(function(rawNode) { return new lively.storage.CollectionItem(rawNode, baseUrl) });
+		var colItems = rawNodes.map(function(rawNode) { return new lively.Storage.CollectionItem(rawNode, baseUrl) });
 
 		// filter and sort
 		colItems = colItems.select(function(ea) { return ea.shortName().match(this.getFilter()) }, this);
@@ -825,7 +825,7 @@ fetchFileList: function(callback) {
 			callback && callback(urls, proxies);
 			}},
 		{DirectoryList: '!DirectoryList'});
-	var fetcher = new lively.storage.WebFile(model);
+	var fetcher = new lively.Storage.WebFile(model);
 	fetcher.fetchContent(url);
 },
 

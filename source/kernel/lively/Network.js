@@ -29,6 +29,8 @@
  * inherited from the browser.  
  */
 
+module('lively.Network').requires().toRun(function(thisModule) {
+	
 Object.subclass('URL', {
     splitter: new RegExp('(http:|https:|file:)' + '(//[^/:]*(:[0-9]+)?)?' + '(/.*)?'),
     pathSplitter: new RegExp("([^\\?#]*)(\\?[^#]*)?(#.*)?"),
@@ -939,7 +941,7 @@ Object.subclass('FileDirectory', {
 	},
 
 	filesAndDirs: function(revision) {
-		var webfile = new lively.storage.WebFile(Record.newPlainInstance({DirectoryList: [], RootNode: this.url}));
+		var webfile = new lively.Storage.WebFile(Record.newPlainInstance({DirectoryList: [], RootNode: this.url}));
 		webfile.fetchContent(this.url, true);
 		return webfile.getModel().getDirectoryList();
 	},
@@ -1148,3 +1150,6 @@ Object.subclass('WebResource', {
 
 
 console.log('loaded Network.js');
+
+
+}); // end of module

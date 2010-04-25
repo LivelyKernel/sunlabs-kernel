@@ -26,9 +26,8 @@
  * Storage.js.  Storage system implementation.
  */
 
-namespace('lively.storage');
- 
-using(lively.storage).run(function(module) {
+module('lively.Storage').requires().toRun(function(module) {
+
 
 BoxMorph.subclass('PackageMorph', {
     documentation: "Visual representation for a serialized morph",
@@ -130,7 +129,7 @@ BoxMorph.subclass('PackageMorph', {
 });
 
 
-lively.data.Wrapper.subclass('lively.storage.CollectionItem', {
+lively.data.Wrapper.subclass('lively.Storage.CollectionItem', {
     documentation: "Wrapper around information returned from WebDAV's PROPFIND",
 
     nameQ: new Query("D:href"),
@@ -194,7 +193,7 @@ lively.data.Wrapper.subclass('lively.storage.CollectionItem', {
 });
 
 
-View.subclass('lively.storage.WebFile', NetRequestReporterTrait, { 
+View.subclass('lively.Storage.WebFile', NetRequestReporterTrait, { 
     documentation: "Read/Write file",     // merge with Resource?
     formals: ["-File", "Content", "+CollectionItems", "+DirectoryList", "-RootNode"],
 
@@ -797,7 +796,7 @@ TwoPaneBrowser.subclass('FileBrowser', {
 });
 
 
-View.subclass('lively.storage.DOMFetcher', {
+View.subclass('lively.Storage.DOMFetcher', {
 
     initialize: function($super, plug) {
 	$super(plug);
@@ -1006,6 +1005,8 @@ View.subclass('Subversion',  NetRequestReporterTrait, {
 
 });
 
+console.log('Storage.js');
 
-}.logCompletion('Storage.js'));
+
+}); // end of module
 
