@@ -612,11 +612,11 @@ var Event = (function() {
 		// this is LK convention, not the content of the event
 		if (Config.useAltAsCommand)
 			return this.isAltDown();
-		if (UserAgent.isWindows) {
+		if (UserAgent.isWindows)
 			return this.isCtrlDown()
-		} else {
-			return this.isMetaDown()
-		}
+		if (UserAgent.isOpera) // Opera recognizes cmd as ctrl!!?
+			return this.isCtrlDown()
+		return this.isMetaDown()
 	},
 
 	isShiftDown: function() {
@@ -653,8 +653,8 @@ var Event = (function() {
 	},
 
 	getKeyChar: function() {
-		if (this.type == "KeyPress") {
-			var id = this.rawEvent.charCode;
+		if (this.type == "KeyPress") { // rk what's the reason for this test?
+			var id = this.rawEvent.charCode || this.rawEvent.which;
 			if (id > 63000) return ""; // Old Safari sends weird key char codes
 			return id ? String.fromCharCode(id) : "";
 		} else  {
