@@ -2315,7 +2315,7 @@ Object.subclass('lively.ide.ModuleWrapper', {
 	},
 	
 	fileName: function() {
-		return this.moduleName().replace('.', '/') + '.' + this.type();
+		return this.moduleName().replace(/./g, '/') + '.' + this.type();
 	},
 	
 	getSourceUncached: function() {
