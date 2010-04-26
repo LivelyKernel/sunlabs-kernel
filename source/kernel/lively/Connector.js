@@ -1,5 +1,5 @@
 
-module('lively.Connector').requires('cop.Layers').toRun(function() {
+module('lively.Connector').requires('cop.Layers', 'lively.Helper').toRun(function() {
 
 // make morphs instance-specifically and structurally layerable
 Object.extend(Morph.prototype, LayerableObjectTrait);

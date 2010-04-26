@@ -5553,7 +5553,7 @@ Morph.subclass("HandMorph", {
 			this.keysDown = {};
 		};
  		//console.log("remember KeyDown " + evt.getKeyChar())
-		this.keysDown[evt.getKeyChar()] = true;
+		this.keysDown[evt.getKeyChar().toUpperCase()] = true;
 	},
 
     handleKeyboardEvent: function(evt) { 
@@ -5690,10 +5690,22 @@ WorldMorph.addMethods({
 	takesKeyboardFocus: Functions.True,
 	
 	onKeyDown: function(evt) {
-		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt )		
+		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )		
 		return ClipboardHack.tryClipboardAction(evt, this);
 	},
 	
+	onKeyPress: function(evt) {
+		// do nothing
+		// console.log("World onKeyPress " + evt + " char: " + evt.getKeyChar())
+		return false;
+	},
+
+	onKeyUp: function(evt) {
+		// do nothing
+		// console.log("World onKeyUp " + evt + " char: " + evt.getKeyChar())
+		return false
+	},
+
 	/* Actions */
 	
 	copySelectionAsXMLString: function() {
