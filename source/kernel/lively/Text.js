@@ -2380,13 +2380,24 @@ BoxMorph.subclass('TextMorph', {
 		return false;
 	},
 
-	linkifySelection: function(emph) {
-		this.world().prompt("Enter the link you wish to find...",
+	detectTextStyleInRange: function(range, styleName) {
+		return this.textStyle.slice(range[0], range[1]).values.detect(function(ea){return ea[styleName]});
+	},
+
+	linkifySelection: function(evt) {
+		var oldLink = ""
+		if (this.textStyle) {
+			var linkStyle = this.detectTextStyleInRange(this.selectionRange, 'link');
+			if (linkStyle) {
+				oldLink = linkStyle.link;
+			}
+		};
+		this.world().prompt("Enter the link...",
 				function(response) {
 					/*if (!response.startsWith('http://'))
 						response = URL.source.notSvnVersioned().withFilename(response).toString();*/
 					this.emphasizeSelection( {color: "blue", link: response} );
-				}.bind(this));
+				}.bind(this),oldLink);
 	},
 
 	colorSelection: function(evt) {
