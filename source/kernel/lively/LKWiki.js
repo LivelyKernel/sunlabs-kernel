@@ -370,7 +370,8 @@ Object.extend(WikiNavigator, {
     enableWikiNavigator: function(force, optUrl) {
 		var old = WikiNavigator.current;
         if (!force && old) return;
-		if (old && old.btn) old.btn.remove();
+		// if (old && old.btn) old.btn.remove();
+		WorldMorph.current().submorphs.select(function(ea) { return ea.textString == 'Wiki control' }).invoke('remove') // FIXME
 		var url = optUrl || URL.source;
 		var nav = old ?
 			new WikiNavigator(url, old.world, old.model.getOriginalRevision()) :
