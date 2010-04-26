@@ -48,6 +48,13 @@ Object.subclass("PageNavigation", {
 	},
 });
 
+// PageNavigation.current()
+Object.extend(PageNavigation, {
+	current: function() {
+		return Config.pageNavigations[Config.pageNavigationName]
+	}
+})
+
 BoxMorph.subclass("PageNavigationMorph", {
 
 	styleClass: ['PageNavigator'],
