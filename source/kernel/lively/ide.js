@@ -788,7 +788,7 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	},
 	
 	getTargetURL: function() {
-		if (!this.targetURL) this.targetURL = this.sourceDatabase().codeBaseURL.withFilename('lively/');
+		if (!this.targetURL) this.targetURL = this.sourceDatabase().codeBaseURL;
 		return this.targetURL;
 	},
 	
