@@ -5801,7 +5801,8 @@ WorldMorph.addMethods({
 	doCut: function() {
 		console.log("cut selection")
 		this.doCopy();
-		this.remove();
+ 		if (this.currentSelection) 
+			this.currentSelection.remove();
 	},
 })
 
