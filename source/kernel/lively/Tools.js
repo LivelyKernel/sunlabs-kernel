@@ -409,212 +409,215 @@ Object.extend(SimpleInspector, {
 // ===========================================================================
 Widget.subclass('StylePanel', {
 
-    documentation: "Interactive style editor for morphs",
-    initialViewExtent: pt(340,100),
-    viewTitle: "Style Panel",
+	documentation: "Interactive style editor for morphs",
+	initialViewExtent: pt(340,100),
+	viewTitle: "Style Panel",
 
-    initialize: function($super, targetMorph) {
-        $super();
-        this.targetMorph = targetMorph;
-		this.sendLayoutChanged = true;  // force propagation of changes
-        var spec = targetMorph.makeStyleSpec();
-	this.actualModel = Record.newPlainInstance({
-	    BorderWidth: spec.borderWidth,
-	    BorderColor: spec.textColor,
-	    BorderRadius: spec.borderRadius,
-	    FillOpacity: spec.fillOpacity,
-	    StrokeOpacity: spec.strokeOpacity,
-	    FontSize: String(spec.fontSize || TextMorph.prototype.fontSize),
-	    FontFamily: spec.fontFamily || TextMorph.prototype.fontFamily, 
-	    FillType: "simple", 
-	    FillDir: null, 
-	    Color1: null, 
-	    Color2: null,
-	    TextColor: null
-	}); 
-	this.actualModel.addObserver(this);
-	this.color1 = null;
-	this.color2 = null;
-	this.fillDir = null;
-	this.fillType = this.actualModel.getFillType();
-	var base = targetMorph.getFill();
-	this.baseColor = (base instanceof lively.paint.Gradient) ? base.stops[0].color() : base;
-    },
-
-    onBorderWidthUpdate: function(w) {
-        this.targetMorph.setBorderWidth(w.roundTo(0.1));
-    	if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
-
-
-
-    onBorderColorUpdate: function(c) { // Maybe add a little color swatch in the view
-        this.targetMorph.setBorderColor(c);
-	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
-    
-    onBorderRadiusUpdate: function(r) {
-        this.targetMorph.shapeRoundEdgesBy(r.roundTo(1));
-	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
-
-    onFillTypeUpdate: function(type) { this.fillType = type; this.setFill(); },
-    onFillDirUpdate: function(dir) { this.fillDir = dir;  this.setFill(); },
-
-    onColor1Update: function(color) { this.color1 = color; this.setFill(); },
-    onColor2Update: function(color) { this.color2 = color; this.setFill(); },
-    
-    setFill: function() {
-        if (this.fillType == null) this.fillType = 'simple';
-        if (this.color1 == null) this.color1 = this.baseColor;
-        if (this.color2 == null) this.color2 = this.baseColor;
-	
-        if (this.fillType == 'simple')  this.targetMorph.setFill(this.color1);
-    
-	var gfx = lively.paint;
-        if (this.fillType == 'linear gradient') {
-            if (this.fillDir == null) this.fillDir = 'NorthSouth';
-            this.targetMorph.setFill(new gfx.LinearGradient([new gfx.Stop(0, this.color1), new gfx.Stop(1, this.color2)], 
-							    gfx.LinearGradient[this.fillDir]));
-        }
-	
-        if (this.fillType == 'radial gradient')
-            this.targetMorph.setFill(new gfx.RadialGradient([new gfx.Stop(0, this.color1), new gfx.Stop(1, this.color2)]));
-    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	initialize: function($super, targetMorph) {
+		$super();
+		this.targetMorph = targetMorph;
+		this.sendLayoutChanged = true;	// force propagation of changes
+		var spec = targetMorph.makeStyleSpec();
+		this.actualModel = Record.newPlainInstance({
+			BorderWidth: spec.borderWidth,
+			BorderColor: spec.textColor,
+			BorderRadius: spec.borderRadius,
+			FillOpacity: spec.fillOpacity,
+			StrokeOpacity: spec.strokeOpacity,
+			FontSize: String(spec.fontSize || TextMorph.prototype.fontSize),
+			FontFamily: spec.fontFamily || TextMorph.prototype.fontFamily, 
+			FillType: "simple", 
+			FillDir: null, 
+			Color1: null, 
+			Color2: null,
+			TextColor: null
+		}); 
+		this.actualModel.addObserver(this);
+		this.color1 = null;
+		this.color2 = null;
+		this.fillDir = null;
+		this.fillType = this.actualModel.getFillType();
+		var base = targetMorph.getFill();
+		this.baseColor = (base instanceof lively.paint.Gradient) ? base.stops[0].color() : base;
 	},
-    
-    
-    onFillOpacityUpdate: function(op) {
-	var value = op.roundTo(0.01);
-        this.targetMorph.setFillOpacity(value);
-        this.actualModel.setStrokeOpacity(value); // Stroke opacity is linked to fill
-    	if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
 
-    onStrokeOpacityUpdate: function(op) {
-        var value = op.roundTo(0.01);
-        this.targetMorph.setStrokeOpacity(value);
-	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
+	onBorderWidthUpdate: function(w) {
+		this.targetMorph.setBorderWidth(w.roundTo(0.1));
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
 
-    onTextColorUpdate: function(c) { // Maybe add a little color swatch in the view
-        this.targetMorph.setTextColor(c);
-	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
+	onBorderColorUpdate: function(c) { // Maybe add a little color swatch in the view
+		this.targetMorph.setBorderColor(c);
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
+	
+	onBorderRadiusUpdate: function(r) {
+		this.targetMorph.shapeRoundEdgesBy(r.roundTo(1));
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
 
-    onFontFamilyUpdate: function(familyName) {
-        this.targetMorph.setFontFamily(familyName);
-	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
-    
-    onFontSizeUpdate: function(fontSize) {
-        this.targetMorph.setFontSize(Number(fontSize));
-	    if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
-    },
+	onFillTypeUpdate: function(type) { this.fillType = type; this.setFill(); },
+	onFillDirUpdate: function(dir) { this.fillDir = dir;  this.setFill(); },
 
-    needsControlFor: function(methodName) {
-        if (this.targetMorph.canRespondTo) return this.targetMorph.canRespondTo(methodName);
+	onColor1Update: function(color) { this.color1 = color; this.setFill(); },
+	onColor2Update: function(color) { this.color2 = color; this.setFill(); },
+	
+	setFill: function() {
+		if (this.fillType == null) this.fillType = 'simple';
+		if (this.color1 == null) this.color1 = this.baseColor;
+		if (this.color2 == null) this.color2 = this.baseColor;
+
+		if (this.fillType == 'simple')	this.targetMorph.setFill(this.color1);
+
+		var gfx = lively.paint;
+		if (this.fillType == 'linear gradient') {
+			if (this.fillDir == null) this.fillDir = 'NorthSouth';
+			this.targetMorph.setFill(new gfx.LinearGradient([new gfx.Stop(0, this.color1), new gfx.Stop(1, this.color2)], 
+			gfx.LinearGradient[this.fillDir]));
+		}
+
+		if (this.fillType == 'radial gradient')
+			this.targetMorph.setFill(new gfx.RadialGradient([new gfx.Stop(0, this.color1), new gfx.Stop(1, this.color2)]));
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
+	
+	
+	onFillOpacityUpdate: function(op) {
+		var value = op.roundTo(0.01);
+		this.targetMorph.setFillOpacity(value);
+		this.actualModel.setStrokeOpacity(value); // Stroke opacity is linked to fill
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
+
+	onStrokeOpacityUpdate: function(op) {
+		var value = op.roundTo(0.01);
+		this.targetMorph.setStrokeOpacity(value);
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
+
+	onTextColorUpdate: function(c) { // Maybe add a little color swatch in the view
+		this.targetMorph.setTextColor(c);
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
+
+	onFontFamilyUpdate: function(familyName) {
+		this.targetMorph.setFontFamily(familyName);
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
+	
+	onFontSizeUpdate: function(fontSize) {
+		this.targetMorph.setFontSize(Number(fontSize));
+		if (this.sendLayoutChanged) this.targetMorph.layoutChanged();
+	},
+
+	needsControlFor: function(methodName) {
+		if (this.targetMorph.canRespondTo) return this.targetMorph.canRespondTo(methodName);
 		if (methodName == 'shapeRoundEdgesBy') return this.targetMorph.shape.roundEdgesBy instanceof Function;
 		return this.targetMorph[methodName] instanceof Function;
-    },
+	},
 
-    buildView: function(extent) {
-        var panel = new PanelMorph(extent);
-        panel.linkToStyles(["panel"]);
-        var m;
+	buildView: function(extent) {
+		var panel = new PanelMorph(extent);
+		panel.linkToStyles(["panel"]);
+		var m;
 
-        var y = 10;
-	var model = this.actualModel;
+		var y = 10;
+		var model = this.actualModel;
 
-        panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), "Border Width").beLabel());
-	
-	m = panel.addMorph(new PrintMorph(new Rectangle(150, y, 40, 20)));
-        m.connectModel(model.newRelay({Value: "BorderWidth"}), true);
-	
-        m = panel.addMorph(new SliderMorph(new Rectangle(200, y, 100, 20), 10.0));
-        m.connectModel(model.newRelay({Value: "BorderWidth"}), true);
+		panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), "Border Width").beLabel());
 
-        y += 30;
+		m = panel.addMorph(new PrintMorph(new Rectangle(150, y, 40, 20)));
+		m.connectModel(model.newRelay({Value: "BorderWidth"}), true);
 
-	
-        panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Border Color').beLabel());
-        m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
-        m.connectModel(model.newRelay({Color: "+BorderColor"}), true);
-	
-        y += 40;
-	
-        if (this.needsControlFor('shapeRoundEdgesBy')) {
-            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
-            m = panel.addMorph(new PrintMorph(new Rectangle(150, y, 40, 20)));
-	    m.precision = 1;
-            m.connectModel(model.newRelay({Value: "BorderRadius"}), true);
-	    m = panel.addMorph(new SliderMorph(new Rectangle(200, y, 100, 20), 50.0));
-            m.connectModel(model.newRelay({Value: "BorderRadius"}), true);
-	    
-	    y += 30;
-        }
-	
-        m = panel.addMorph(new TextListMorph(new Rectangle(50, y, 100, 50), 
-					     ["simple", "linear gradient", "radial gradient", "stipple"]));
-        m.connectModel(model.newRelay({Selection: "FillType"}), true);
-        m = panel.addMorph(new TextListMorph(new Rectangle(160, y, 75, 60),
-					     ["NorthSouth", "SouthNorth", "EastWest", "WestEast"]));
-        m.connectModel(model.newRelay({Selection: "FillDir"}));
-	m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
-        m.connectModel(model.newRelay({Color: "+Color1"}));
-        m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y + 40, 50, 30)));
-        m.connectModel(model.newRelay({Color: "+Color2"}));
-        y += 80;
-	
-        panel.addMorph(new TextMorph(new Rectangle(50, y, 90, 20), "Fill Opacity").beLabel());
-        panel.addMorph(m = new PrintMorph(new Rectangle(150, y, 40, 20)));
-        m.connectModel(model.newRelay({Value: "FillOpacity"}), true);
-        m = panel.addMorph(new SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
-	m.connectModel(model.newRelay({Value: "FillOpacity"}), true);
+		m = panel.addMorph(new SliderMorph(new Rectangle(200, y, 100, 20), 10.0));
+		m.connectModel(model.newRelay({Value: "BorderWidth"}), true);
 
-        y += 30;
-	
-        panel.addMorph(new TextMorph(new Rectangle(50, y, 90, 20), "Stroke Opacity").beLabel());
-        m = panel.addMorph(new PrintMorph(new Rectangle(150, y, 40, 20)));
-        m.connectModel(model.newRelay({Value: "StrokeOpacity"}), true);
-	
-        panel.addMorph(m = new SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
-        m.connectModel(model.newRelay({Value: "StrokeOpacity"}), true);
-	
-        y += 30;
-	
-	
-        if (this.needsControlFor('setTextColor')) {
-            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), "Text Color").beLabel());
-            m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
-            m.connectModel(model.newRelay({Color: "+TextColor"}));
-            y += 40;
+		y += 30;
 
-            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Family').beLabel());
-            m = panel.addMorph(new TextMorph(new Rectangle(150, y, 150, 20)));
-            m.connectModel(model.newRelay({Text: "FontFamily"}), true);
-            y += 30;
+		panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Border Color').beLabel());
+		m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
+		m.connectModel(model.newRelay({Color: "+BorderColor"}), true);
 
-            panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
-            m = panel.addMorph(new TextMorph(new Rectangle(150, y, 50, 20)));
-            m.connectModel(model.newRelay({Text: "FontSize"}), true);
-            y += 30;
-        }
+		y += 40;
 
+		if (this.needsControlFor('shapeRoundEdgesBy')) {
+			panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Round Corners').beLabel());
+			m = panel.addMorph(new PrintMorph(new Rectangle(150, y, 40, 20)));
+			m.precision = 1;
+			m.connectModel(model.newRelay({Value: "BorderRadius"}), true);
+			m = panel.addMorph(new SliderMorph(new Rectangle(200, y, 100, 20), 50.0));
+			m.connectModel(model.newRelay({Value: "BorderRadius"}), true);
+
+			y += 30;
+		}
+
+		m = panel.addMorph(new TextListMorph(new Rectangle(50, y, 100, 50), 
+		["simple", "linear gradient", "radial gradient", "stipple"]));
+		m.connectModel(model.newRelay({Selection: "FillType"}), true);
+		m = panel.addMorph(new TextListMorph(new Rectangle(160, y, 75, 60),
+		["NorthSouth", "SouthNorth", "EastWest", "WestEast"]));
+		m.connectModel(model.newRelay({Selection: "FillDir"}));
+		m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
+		m.connectModel(model.newRelay({Color: "+Color1"}));
+		m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y + 40, 50, 30)));
+		m.connectModel(model.newRelay({Color: "+Color2"}));
+		y += 80;
+
+		panel.addMorph(new TextMorph(new Rectangle(50, y, 90, 20), "Fill Opacity").beLabel());
+		panel.addMorph(m = new PrintMorph(new Rectangle(150, y, 40, 20)));
+		m.connectModel(model.newRelay({Value: "FillOpacity"}), true);
+		m = panel.addMorph(new SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
+		m.connectModel(model.newRelay({Value: "FillOpacity"}), true);
+
+		y += 30;
+
+		panel.addMorph(new TextMorph(new Rectangle(50, y, 90, 20), "Stroke Opacity").beLabel());
+		m = panel.addMorph(new PrintMorph(new Rectangle(150, y, 40, 20)));
+		m.connectModel(model.newRelay({Value: "StrokeOpacity"}), true);
+
+		panel.addMorph(m = new SliderMorph(new Rectangle(200, y, 100, 20), 1.0));
+		m.connectModel(model.newRelay({Value: "StrokeOpacity"}), true);
+
+		y += 30;
+
+
+		if (this.needsControlFor('setTextColor')) {
+			panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), "Text Color").beLabel());
+			m = panel.addMorph(new ColorPickerMorph(new Rectangle(250, y, 50, 30)));
+			m.connectModel(model.newRelay({Color: "+TextColor"}));
+			y += 40;
+
+			panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Family').beLabel());
+			m = panel.addMorph(new TextMorph(new Rectangle(150, y, 150, 20)));
+			m.connectModel(model.newRelay({Text: "FontFamily"}), true);
+			y += 30;
+
+			panel.addMorph(new TextMorph(new Rectangle(50, y, 100, 20), 'Font Size').beLabel());
+			m = panel.addMorph(new TextMorph(new Rectangle(150, y, 50, 20)));
+			m.connectModel(model.newRelay({Text: "FontSize"}), true);
+			y += 30;
+		}
+
+
+		var oldBounds = panel.shape.bounds();
+		panel.shape.setBounds(oldBounds.withHeight(y + 5 - oldBounds.y));
+
+		panel.morphMenu = function(evt) { 
+			var menu = Class.getPrototype(this).morphMenu.call(this, evt);
+			menu.addLine();
+			menu.addItem(['inspect model', new SimpleInspector(panel.getModel()), "openIn", this.world()]);
+			return menu;
+		}
+		panel.priorExtent = panel.innerBounds().extent();
+
+
+		panel.submorphs.each(function(ea){
+				ea.suppressHandles = true;
+		})
+
+		return panel;
+	}
 	
-        var oldBounds = panel.shape.bounds();
-        panel.shape.setBounds(oldBounds.withHeight(y + 5 - oldBounds.y));
-	
-        panel.morphMenu = function(evt) { 
-            var menu = Class.getPrototype(this).morphMenu.call(this, evt);
-            menu.addLine();
-            menu.addItem(['inspect model', new SimpleInspector(panel.getModel()), "openIn", this.world()]);
-            return menu;
-        }
-
-        return panel;
-    }
-    
 });
 
 
