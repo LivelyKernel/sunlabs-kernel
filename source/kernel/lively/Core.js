@@ -4834,8 +4834,11 @@ WorldMorph.addMethods({
 			["ButtonMorph", function(evt) { world.addMorph(new ScriptableButtonMorph(evt.point().extent(pt(70, 30))))}],
 			["ProgressBarMorph", function(evt) { world.addMorph(new ProgressBarMorph(evt.point().extent(pt(70, 30))))}],
 			["Clock", function(evt) {
-				var m = world.addMorph(new ClockMorph(evt.point(), 50));
-				m.startSteppingScripts();}],
+				require('lively.Examples').toRun(function() {
+					var m = world.addMorph(new ClockMorph(evt.point(), 50));
+					m.startSteppingScripts();
+					ChangeSet.current().addWorldRequirement('lively.Examples')
+				})}],
 			["FabrikClock", function(evt) {
 				require('lively.Fabrik').toRun(function() {
 					var clock = new FabrikClockWidget();

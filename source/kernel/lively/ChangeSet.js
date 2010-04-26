@@ -573,6 +573,13 @@ ChangeSet.addMethods({
 		ps.setName(Change.initializerName);
 	},
 	
+	addWorldRequirement: function(moduleName) {
+		var list = this.getWorldRequirementsList().evaluate();
+		if (!list.include(moduleName))
+			list.push(moduleName);
+		this.getWorldRequirementsList().setDefinition(JSON.serialize(list))
+	},
+	
 })
 
 Object.extend(ChangeSet, {
