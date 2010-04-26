@@ -1403,29 +1403,49 @@ lively.data.Wrapper.subclass('Morph', {
 	
 	copyAttributesFrom: function(copier, other) {
 		for (var p in other) {
-			if (!(other[p] instanceof Function) 
-				&& other.hasOwnProperty(p) 
-				&& !this.noShallowCopyProperties.include(p)) {
-				if (other[p] instanceof Morph) {
-					var replacement = (p === "owner") ? null : copier.lookup(other[p].id());
-					if (replacement !== this[p] && this.submorphs.include(this[p])) {
-						// when the morph is replaced from the attribute it probably should also removed from the submorphs
-						// this should fix the problem with node creation in initializePersistentState
-						this.removeMorph(this[p]);					
-					}
-					this[p] = replacement || other[p];
-					// if(replacement)
-					//	console.log("found no replacement for: " + other[p].id());
-					// console.log("replace '"+ p +"' with morph: " + this[p].id())
-					// an instance field points to a submorph, so copy
-					// should point to a copy of the submorph
-				} else if (other[p] instanceof lively.scene.Image) {
-					this[p] = other[p].copy(copier);
-					this.addWrapper(this[p]);
-				} else if (!(other[p] instanceof lively.paint.Gradient)) {					
-					this[p] = other[p];
-				} 
+			if (other[p] instanceof Function || !other.hasOwnProperty(p) || this.noShallowCopyProperties.include(p))
+				continue;
+
+			if (other[p] instanceof Morph) {
+				var replacement = (p === "owner") ? null : copier.lookup(other[p].id());
+				if (replacement !== this[p] && this.submorphs.include(this[p])) {
+					// when the morph is replaced from the attribute it probably should also removed from the submorphs
+					// this should fix the problem with node creation in initializePersistentState
+					this.removeMorph(this[p]);					
+				}
+				this[p] = replacement || other[p];
+				// if(replacement)
+				//	console.log("found no replacement for: " + other[p].id());
+				// console.log("replace '"+ p +"' with morph: " + this[p].id())
+				// an instance field points to a submorph, so copy
+				// should point to a copy of the submorph
+				continue;
 			}
+
+			if (other[p] instanceof lively.scene.Image) {
+				this[p] = other[p].copy(copier);
+				this.addWrapper(this[p]);
+				continue
+			}
+
+			if (p == 'attributeConnections') {
+				other[p].forEach(function(con) {
+					if (!con.getTargetObj().id)
+						throw new Error('tried to copy binding and target obj has no id!');
+					connect(
+						this,
+						con.getSourceAttrName(),
+						copier.lookup(con.getTargetObj().id()) || con.getTargetObj(),
+						con.getTargetMethodName(),
+						con.converter.toString())
+				}, this)
+				continue;
+			}
+
+			if (!(other[p] instanceof lively.paint.Gradient)) {
+				this[p] = other[p];
+			}
+
 		} // shallow copy by default, note that arrays of Morphs are not handled
 	},
 
