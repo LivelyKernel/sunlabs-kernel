@@ -346,3 +346,5 @@ if (false) {
 
 Config.confirmNavigation = false; // don't show confirmation dialog when navigating a link
 Config.useAltAsCommand = false; // User Platform Keys (Ctrl und Windows and Meta under Mac as command key)
+
+Config.pageNavigationName = "nothing"
