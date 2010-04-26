@@ -1182,7 +1182,7 @@ BoxMorph.subclass('TextMorph', {
 					return Class.getPrototype(this).onKeyDown.call(this, evt);
 			}
 		};
-		this.okToBeGrabbedBy = Functions.Null;
+		this.suppressGrabbing = true;
 		this.onTextUpdate = function(newValue) {
 			TextMorph.prototype.onTextUpdate.call(this, newValue);
 			this.setSelectionRange(0, this.textString.length); 
