@@ -153,7 +153,7 @@ Object.subclass('URL', {
 
 	relativePathFrom: function(origin) {
 		if (!this.pathname.startsWith(origin.pathname)  || origin.hostname != this.hostname)
-			throw new Error('bad origin');
+			throw new Error('bad origin ' + origin + ' vs ' + this);
 		return this.pathname.substring(origin.pathname.length);
 	},
 
