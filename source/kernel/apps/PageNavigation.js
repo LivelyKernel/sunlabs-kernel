@@ -17,14 +17,20 @@ Object.subclass("PageNavigation", {
 	nextPageURL: function () {
 			var name = this.nextPageName();
 			if (name)
-				return this.base.withFilename(name).withQuery({pageNavigationName: Config.pageNavigationName})
+				return this.base.withFilename(name).withQuery({
+					pageNavigationName: Config.pageNavigationName,
+					pageNavigationWithKeys: Config.pageNavigationWithKeys
+				})
 	},
 
 
 	prevPageURL: function () {
 			var name = this.prevPageName();
 			if (name)
-				return this.base.withFilename(name).withQuery({pageNavigationName: Config.pageNavigationName});
+				return this.base.withFilename(name).withQuery({
+					pageNavigationName: Config.pageNavigationName,
+					pageNavigationWithKeys: Config.pageNavigationWithKeys
+				});
 	},
 
 	pageIndex: function() {
@@ -135,7 +141,24 @@ layerClass(PageNavigationLayer, WorldMorph, {
 			morph.openInWorld()
 		}])
 		return menu
-	}
+	},
+
+	onKeyDown: function(proceed, evt) {
+		if (proceed(evt)) return true;
+		if (Config.pageNavigationWithKeys) {
+			var c = evt.getKeyCode();
+			if (c == Event.KEY_LEFT) {
+				PageNavigation.current().visitPrevPage();
+				return true;
+			}
+			if (c == Event.KEY_RIGHT) {
+				PageNavigation.current().visitNextPage();
+				return  true;
+			}
+		}
+		return false;
+	},
+
 });
 enableLayer(PageNavigationLayer)
 
