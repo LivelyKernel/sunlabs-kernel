@@ -613,7 +613,7 @@ var Event = (function() {
 		// this is LK convention, not the content of the event
 		if (Config.useAltAsCommand)
 			return this.isAltDown();
-		if (UserAgent.isWindows)
+		if (UserAgent.isWindows || UserAgent.isLinux )
 			return this.isCtrlDown()
 		if (UserAgent.isOpera) // Opera recognizes cmd as ctrl!!?
 			return this.isCtrlDown()

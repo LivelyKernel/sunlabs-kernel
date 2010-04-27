@@ -75,6 +75,8 @@ var UserAgent = (function() {
 	
         isWindows: (window.navigator && window.navigator.platform == "Win32"),
 
+        isLinux: (window.navigator && window.navigator.platform.startsWith("Linux")),
+
         isiPad: (window.navigator && window.navigator.platform == "iPhone"),
 		iPadIsMouse: false
     };
