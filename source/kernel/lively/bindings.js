@@ -158,9 +158,16 @@ Object.subclass('AttributeConnection', {
 
 AttributeConnection.addMethods({
 	toLiteral: function() {
-		if (!this.sourceObj.id || !this.targetObj.id)
-			throw dbgOn(new Error('Cannot serialize objects having no id'));
-
+		if (!this.sourceObj.id || !this.targetObj.id) {
+			console.warn('Cannot serialize objects having no id');
+			return {
+				sourceObj: null,
+				sourceAttrName: this.sourceAttrName,
+				targetObj: null,
+				targetMethodName: this.targetMethodName,
+				converter: null
+			}; 
+		};
 		return {
 			sourceObj: this.sourceObj.id(),
 			sourceAttrName: this.sourceAttrName,

@@ -4874,11 +4874,16 @@ BoxMorph.subclass("StatusMessageContainer", {
 
 	suppressGrabbing: true,
 	suppressHandles: true,
+	
+	layoutManager: new VerticalLayout(),
 
 	initialize: function($super) {
 		$super(this.defaultExtent.extentAsRectangle());
 		this.setFill(null);
-		this.layoutManager = new VerticalLayout();
+		this.setupDismissAllButton();
+	},
+
+	setupDismissAllButton: function(){
 		this.dismissAllButton = new ButtonMorph(new Rectangle(0,0,400,15)).setLabel("dismiss all");
 		this.dismissAllButton.applyStyle({fill: Color.lightGray, borderWidth: 0})
 		connect(this.dismissAllButton, "fire", this, "onDismissAll");
@@ -4895,6 +4900,9 @@ BoxMorph.subclass("StatusMessageContainer", {
 	},
 
 	showDismissAllButton: function() {
+		if (!this.dismissAllButton) {
+			this.setupDismissAllButton();
+		}
 		if (!this.dismissAllButton.owner) {
 			this.addMorphBack(this.dismissAllButton);
 			this.relayout()
