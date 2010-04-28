@@ -4868,6 +4868,98 @@ BoxMorph.subclass('HorizontalDivider', {
 
 });
 
+
+BoxMorph.subclass("StatusMessageContainer", {
+ 	defaultExtent: pt(400,30),
+
+	suppressGrabbing: true,
+	suppressHandles: true,
+
+	initialize: function($super) {
+		$super(this.defaultExtent.extentAsRectangle());
+		this.setFill(null);
+		this.layoutManager = new VerticalLayout();
+		this.dismissAllButton = new ButtonMorph(new Rectangle(0,0,400,15)).setLabel("dismiss all");
+		this.dismissAllButton.applyStyle({fill: Color.lightGray, borderWidth: 0})
+		connect(this.dismissAllButton, "fire", this, "onDismissAll");
+	},
+
+	onDismissAll: function() {
+		this.visibleSubmorphs().each(function(ea) {
+			ea.remove()
+		})
+	},
+
+	startUpdate: function() {
+		this.startStepping(1000, "updateMessages"); // once per second
+	},
+
+	showDismissAllButton: function() {
+		if (!this.dismissAllButton.owner) {
+			this.addMorphBack(this.dismissAllButton);
+			this.relayout()
+		}
+	},
+
+	onDeserialize: function() {
+		this.submorphs.clone().each(function(ea) {ea.remove()})
+	},
+
+	updateMessages: function() {
+		var time = new Date().getTime();
+		var messagesToBeDeleted = this.submorphs.select( function(ea) {return ea.removeAtTime && ea.removeAtTime < time})
+		
+		if (messagesToBeDeleted.length > 0) {
+			messagesToBeDeleted.each(function(ea) {ea.remove()});
+			this.relayout();
+		}
+		// get rid of the dismiss button
+		var visibleMorphs = this.visibleSubmorphs();
+		if (visibleMorphs.length == 1) {
+			visibleMorphs[0].remove();
+		}
+	},
+
+	addStatusMessage: function(msg, color, delay, callback, optStyle, kind) {	
+		console.log((kind ? kind : "status msg: ") + msg)
+		this.showDismissAllButton();
+
+		var statusMorph = new TextMorph(pt(400,30).extentAsRectangle())
+	
+		var closeButton = new ButtonMorph(pt(20,20).extentAsRectangle())
+		closeButton.setLabel("X");
+		closeButton.applyStyle({fill: Color.white})
+		closeButton.align(closeButton.bounds().topRight(), statusMorph.shape.bounds().topRight());
+		connect(closeButton, "fire", statusMorph, "remove")
+		statusMorph.addMorph(closeButton);
+
+
+		if (callback) {
+			var moreButton = new ButtonMorph(pt(40,20).extentAsRectangle())
+			moreButton.setLabel("more");
+			moreButton.applyStyle({fill: Color.white})
+			moreButton.align(moreButton.bounds().topRight(), closeButton.bounds().topLeft());
+			var callbackObject = {callback: callback}
+			connect(moreButton, "fire", callbackObject, "callback")
+			statusMorph.addMorph(moreButton);
+		}
+
+		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.1, borderRadius: 10});
+		if (optStyle)
+			statusMorph.applyStyle(optStyle);
+		statusMorph.textString = msg;
+		statusMorph.setTextColor(color || Color.black);
+
+		statusMorph.ignoreEvents();
+		
+		this.addMorph(statusMorph);
+		if (delay) {
+			statusMorph.removeAtTime = new Date().getTime() + (delay * 1000);
+		}
+	}
+})
+
+
 console.log('loaded Widgets.js');
 
 

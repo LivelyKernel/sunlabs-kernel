@@ -646,6 +646,121 @@ TestCase.subclass('Tests.MorphTest.HorizontalDividerTest', {
 });
 
 
+TestCase.subclass("HorizontalLayoutTest", {
+
+	setUp: function() {
+
+	},
+
+	createTestMorph: function(name) {
+		if($morph(name))
+			$morph(name).remove();
+ 		this.morph = new BoxMorph(new Rectangle(0,0,300,100));
+		this.morph.layoutManager = new HorizontalLayout();
+		this.morph.name = name;
+		this.morph.setFill(Color.gray);
+		this.morph.openInWorld();
+		return this.morph;		
+	},
+
+	testLayoutBeforeAddMorph: function() {
+		var m = this.createTestMorph("HorizontalLayoutTest_M1");
+		var s1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s2 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s3 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+
+		m.addMorph(s1);
+		m.addMorph(s2);
+		m.addMorph(s3);
+	
+		this.assertEqualState(s1.getPosition(), pt(0.5,0.5), "s1 bad");
+		this.assertEqualState(s2.getPosition(), pt(51.5,0.5), "s2 bad");
+		this.assertEqualState(s3.getPosition(), pt(102.5,0.5), "s3 bad");
+	},
+
+	testLayout: function() {
+		var m = this.createTestMorph("HorizontalLayoutTest_M2");
+		var s1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s2 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s3 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+
+		m.addMorph(s1);
+		m.addMorph(s2);
+		m.addMorph(s3);
+
+		s2.remove();
+		m.layoutManager.layout(m);	
+
+		this.assertEqualState(s1.getPosition(), pt(0.5,0.5), "s1 bad");
+		this.assertEqualState(s3.getPosition(), pt(51.5,0.5), "s3 bad");
+	},
+
+	tearDown: function() {
+		if (this._errorOccured) {
+			// let it stay open
+		} else {
+			this.morph.remove()
+		}		
+	},
+})
+
+TestCase.subclass("VerticalLayoutTest", {
+
+	setUp: function() {
+	},
+
+	createTestMorph: function(name) {
+		if($morph(name))
+			$morph(name).remove();
+  		this.morph = new BoxMorph(new Rectangle(0,0,300,100));
+		this.morph.layoutManager = new VerticalLayout();
+		this.morph.name = name;
+		this.morph.setFill(Color.gray);
+		this.morph.openInWorld();
+		return this.morph;		
+	},
+
+	testLayoutBeforeAddMorph: function() {
+		var m = this.createTestMorph("VerticalLayoutTest_M1");
+		var s1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s2 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s3 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+
+		m.addMorph(s1);
+		m.addMorph(s2);
+		m.addMorph(s3);
+	
+		this.assertEqualState(s1.getPosition(), pt(0.5,0.5), "s1 bad");
+		this.assertEqualState(s2.getPosition(), pt(0.5,51.5), "s2 bad");
+		this.assertEqualState(s3.getPosition(), pt(0.5,102.5), "s3 bad");
+	},
+
+	testLayout: function() {
+		var m = this.createTestMorph("VerticalLayoutTest_M2");
+		var s1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s2 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var s3 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+
+		m.addMorph(s1);
+		m.addMorph(s2);
+		m.addMorph(s3);
+
+		s2.remove();
+		m.layoutManager.layout(m);	
+
+		this.assertEqualState(s1.getPosition(), pt(0.5,0.5), "s1 bad");
+		this.assertEqualState(s3.getPosition(), pt(0.5,51.5), "s3 bad");
+	},
+
+	tearDown: function() {
+		if (this._errorOccured) {
+			// let it stay open
+		} else {
+			this.morph.remove()
+		}		
+	},
+})
+
 
 // logMethod(Morph.prototype, "morphToGrabOrReceive");
 // logMethod(Morph.prototype, "onMouseOut");

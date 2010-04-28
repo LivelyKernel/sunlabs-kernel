@@ -1977,6 +1977,10 @@ Object.subclass('LayoutManager', {
 		supermorph.layoutChanged();
     },
 
+	layout: function(supermorph) {
+		// subclass responsibility
+	},
+
 	leftMarginOf: function(morph) {
 		return morph.margin ? morph.margin.left() : 0;
 	},
@@ -2031,8 +2035,20 @@ LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 			submorph.align(submorph.bounds().topLeft(), last.bounds().topRight());
 			submorph.translateBy(pt(dx, dy));
 		}
-	}
-
+	},
+	
+	layout: function(supermorph) {
+		var x = this.leftPaddingOf(supermorph);
+		var y =  this.topPaddingOf(supermorph);
+		var submorphs = supermorph.visibleSubmorphs();
+		for(var i=0; i < submorphs.length; i++) {
+			var submorph = submorphs[i];
+			x += this.leftMarginOf(submorph)
+			submorph.align(submorph.bounds().topLeft(), pt(x, y));
+			x += submorph.bounds().width;
+			x += this.rightMarginOf(submorph);
+		}
+	},
 });
 
 
@@ -2057,8 +2073,20 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 		}
 	},
 
-});
+	layout: function(supermorph) {
+		var x = this.leftPaddingOf(supermorph);
+		var y =  this.topPaddingOf(supermorph);
+		var submorphs = supermorph.visibleSubmorphs();
+		for(var i=0; i < submorphs.length; i++) {
+			var submorph = submorphs[i];
+			y += this.topMarginOf(submorph)
+			submorph.align(submorph.bounds().topLeft(), pt(x, y));
+			y += submorph.bounds().width;
+			y += this.bottomMarginOf(submorph);
+		}
+	},
 
+});
 
 Morph.addMethods({
     
@@ -2066,10 +2094,9 @@ Morph.addMethods({
 
 	// Simple hack until the layout manager can relayout
 	relayout: function() {
-		var morphs = this.submorphs.clone();
-		var self  = this;
-		morphs.each(function(ea) {ea.remove()});
-		morphs.each(function(ea) {self.addMorph(ea)});
+		if (this.layoutManager) {
+			this.layoutManager.layout(this)
+		}	
 	},
 
 	setBounds: function(newRect) {
@@ -2263,7 +2290,11 @@ Morph.addMethods({
 
 	topSubmorph: function() {
 		// the morph on top is the last one in the list
-		return this.submorphs.last();
+		return this.visibleSubmorphs().last();
+	},
+
+	visibleSubmorphs: function() {
+		return this.submorphs.reject(function(ea) {return ea instanceof SchedulableAction})
 	},
 
 	getMorphNamed: function (name) {
@@ -4552,33 +4583,11 @@ PasteUpMorph.subclass("WorldMorph", {
 	},
 
 	alert: function(varargs) {
-		var fill = this.getFill();
-		// poor man's modal dialog made a little more modal
-		var modalDialog = Morph.makeRectangle(this.bounds());
-		modalDialog.setFill(Color.black);
-		modalDialog.setFillOpacity(0.5);
-		modalDialog.okToBeGrabbedBy =  Functions.Null;
-		this.addMorph(modalDialog);
-
-		var menu = new MenuMorph([["OK", function() { this.world().setFill(fill); this.remove() }]]);
-		menu.onMouseUp = function(/*...*/) { 
-			if (!this.stayUp) this.world().setFill(fill); // cleanup
-			Class.getPrototype(this).onMouseUp.apply(this, arguments);
-			modalDialog.remove();
+		var message = Strings.formatFromArray($A(arguments));
+		var openDialog = function() {
+			alert(message)
 		};
-
-		var caption = Strings.formatFromArray($A(arguments));
-		menu.openIn(modalDialog, this.viewport().center(), true, caption); 
-		
-		menu.label.wrapStyle = lively.Text.WrapStyle.Normal;
-		if (false) {
-			// FIXME: how to center?
-			var txt = new Text(menu.label.textString, menu.label.textStyle);
-			txt.emphasize({align: 'center'}, 0, menu.label.textString.length);
-			menu.label.textStyle = txt.style;
-		}
-		menu.label.fitText();
-		menu.scaleBy(2.5);
+		this.setStatusMessage(message, Color.red, undefined, openDialog, undefined, "alert: ")
 	}.logErrors('alert'),
 
 	prompt: function(message, callback, defaultInput) {
@@ -4589,7 +4598,7 @@ PasteUpMorph.subclass("WorldMorph", {
 			}
 		});
 		var dialog = new PromptDialog(model.newRelay({Message: "-Message", Result: "+Result", Input: "Input"}));
-		dialog.openIn(this, this.positionForNewMorph());
+		dialog.openIn(this, this.positionForNewMorph(dialog));
 	},
 
     editPrompt: function(message, callback, defaultInput) {
@@ -4607,7 +4616,8 @@ PasteUpMorph.subclass("WorldMorph", {
 				if (value && callback) callback.call(Global, value);
 			}});
 		var dialog = new ConfirmDialog(model.newRelay({Message: "-Message", Result: "+Result"}));
-		dialog.openIn(this, this.positionForNewMorph());
+		var window = dialog.openIn(this, pt(0,0));
+		window.setPosition(this.positionForNewMorph(window))
 		return dialog;
 	},
     
@@ -4749,34 +4759,18 @@ WorldMorph.addMethods({
 		var upperLeft = pt(Math.max(windowBounds.x, worldBounds.x), Math.max(windowBounds.y, worldBounds.y));
 		var lowerRight = pt(Math.min(windowBounds.width, worldBounds.width), Math.min(windowBounds.height, worldBounds.height));
 		return upperLeft.extent(lowerRight);
-		
 	},
 
-	setStatusMessage: function(msg, color, delay, callback, optStyle) {
-		console.log("status msg: " + msg)
-		var statusMorph = this._statusMorph || new TextMorph(pt(400,30).extentAsRectangle());
-		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.5});
-		if (optStyle)
-			statusMorph.applyStyle(optStyle);
-		statusMorph.textString = msg;
-		statusMorph.setTextColor(color || Color.black);
-
-		if (callback) {
-			statusMorph.enableEvents();
-			statusMorph.handlesMouseDown = Functions.True;
-			var pressed = false;
-			statusMorph.onMouseDown = function() {
-				if (!pressed)
-					callback();
-				pressed = true;
-			 	return true};
-			statusMorph.onMouseMove = Functions.NULL;
-		} else {
-			statusMorph.ignoreEvents();
-		}
-		this.addMorph(statusMorph);
-		statusMorph.align(statusMorph.bounds().topRight(), this.windowBounds().topRight());
-		(function removeStatusMorph() { statusMorph.remove() }).delay(delay || 4);
+	setStatusMessage: function(msg, color, delay, callback, optStyle, messageKind) {
+		if (!this._statusMorphContainer) {
+			this._statusMorphContainer = new StatusMessageContainer();
+			this.addMorph(this._statusMorphContainer);
+			this._statusMorphContainer.startUpdate();		
+		};
+		var container = this._statusMorphContainer;
+		container.align(container.bounds().topRight(), this.windowBounds().topRight());
+		container.name = "statusMorphContainer";
+		container.addStatusMessage(msg, color, delay, callback, optStyle, messageKind);
 	},	
 });
 
