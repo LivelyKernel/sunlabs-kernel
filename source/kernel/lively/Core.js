@@ -4598,7 +4598,8 @@ PasteUpMorph.subclass("WorldMorph", {
 			}
 		});
 		var dialog = new PromptDialog(model.newRelay({Message: "-Message", Result: "+Result", Input: "Input"}));
-		dialog.openIn(this, this.positionForNewMorph(dialog));
+		var window = dialog.openIn(this, pt(0,0));
+		window.setPosition(this.positionForNewMorph(window));
 	},
 
     editPrompt: function(message, callback, defaultInput) {
@@ -4617,7 +4618,7 @@ PasteUpMorph.subclass("WorldMorph", {
 			}});
 		var dialog = new ConfirmDialog(model.newRelay({Message: "-Message", Result: "+Result"}));
 		var window = dialog.openIn(this, pt(0,0));
-		window.setPosition(this.positionForNewMorph(window))
+		window.setPosition(this.positionForNewMorph(window));
 		return dialog;
 	},
     
