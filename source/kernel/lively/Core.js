@@ -4534,11 +4534,10 @@ PasteUpMorph.subclass("WorldMorph", {
 	openURLasText: function(url, title) {
 		// FIXME: This should be moved with other handy services like confirm, notify, etc
 		var model = Record.newPlainInstance({URL: url,  ContentText: null});
-		WorldMorph.current().addTextWindow({
+		this.addTextWindow({
 			content: "fetching ... ",
 			title: title,
 			plug: model.newRelay({Text: "-ContentText"}),
-			position: "center"
 		});
 		var res = new Resource(model);
 		res.fetch();
@@ -5003,8 +5002,11 @@ WorldMorph.addMethods({
 	helpSubMenuItems: function(evt) {
 		var world = this.world();
 		return	[
-			["Model documentation", function(evt) {
-				this.openURLasText(new URL("http://lively-kernel.org/trac/wiki/NewModelProposal?format=txt"), "Model documentation"); }],
+			["Connect documentation", function(evt) {
+				require('lively.bindings').toRun(function() {
+					world.openURLasText(new URL("http://lively-kernel.org/trac/wiki/ConnectHelp?format=txt"), "Connect documentation");
+				})
+			}],
 			["Command key help", function(evt) {
 				this.openURLasText(new URL("http://lively-kernel.org/trac/wiki/CommandKeyHelp?format=txt"), "Command key help"); }]
 		];
