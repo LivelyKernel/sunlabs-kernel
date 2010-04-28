@@ -350,4 +350,5 @@ Config.confirmNavigation = false; // don't show confirmation dialog when navigat
 Config.useAltAsCommand = false; // User Platform Keys (Ctrl und Windows and Meta under Mac as command key)
 
 Config.pageNavigationName = "nothing"
-Config.pageNavigationWithKeys = false // boy, that's ugly!!!
+Config.pageNavigationWithKeys = true // boy, that's ugly!!!
+Config.showPageNumber = true;

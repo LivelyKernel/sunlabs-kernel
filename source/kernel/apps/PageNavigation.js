@@ -17,26 +17,22 @@ Object.subclass("PageNavigation", {
 	nextPageURL: function () {
 			var name = this.nextPageName();
 			if (name)
-				return this.base.withFilename(name).withQuery({
-					pageNavigationName: Config.pageNavigationName,
-					pageNavigationWithKeys: Config.pageNavigationWithKeys
-				})
+				return this.base.withFilename(name).withQuery(URL.source.getQuery());
 	},
 
 
 	prevPageURL: function () {
 			var name = this.prevPageName();
 			if (name)
-				return this.base.withFilename(name).withQuery({
-					pageNavigationName: Config.pageNavigationName,
-					pageNavigationWithKeys: Config.pageNavigationWithKeys
-				});
+				return this.base.withFilename(name).withQuery(URL.source.getQuery());
 	},
 
 	pageIndex: function() {
 		return this.list.indexOf(this.pageName())
 	},	
-
+	
+	pageNumber: function() { return this.pageIndex() + 1 },
+	
 	pageName: function () {
 			return new URL(document.location).relativePathFrom(new URL(this.base));
 	},
@@ -52,6 +48,7 @@ Object.subclass("PageNavigation", {
 		if (url)
 			Global.window.location.assign(url);
 	},
+		
 });
 
 // PageNavigation.current()
@@ -108,7 +105,6 @@ BoxMorph.subclass("PageNavigationMorph", {
 		PageNavigation.current().visitPrevPage()
 	},
 
-
 });
 
 TestCase.subclass("PageNavigationTest", {
@@ -145,20 +141,47 @@ layerClass(PageNavigationLayer, WorldMorph, {
 
 	onKeyDown: function(proceed, evt) {
 		if (proceed(evt)) return true;
-		if (Config.pageNavigationWithKeys) {
-			var c = evt.getKeyCode();
-			if (c == Event.KEY_LEFT) {
-				PageNavigation.current().visitPrevPage();
-				return true;
-			}
-			if (c == Event.KEY_RIGHT) {
-				PageNavigation.current().visitNextPage();
-				return  true;
-			}
+		if (!Config.pageNavigationWithKeys) return false;
+		var c = evt.getKeyCode();
+		if (c == Event.KEY_LEFT) {
+			PageNavigation.current().visitPrevPage();
+			return true;
+		}
+		if (c == Event.KEY_RIGHT) {
+			PageNavigation.current().visitNextPage();
+			return  true;
 		}
 		return false;
 	},
 
+	displayOnCanvas: function(proceed, canvas) {
+		proceed(canvas);
+		if (Config.showPageNumber && PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
+			this.ensurePageNumberMorph();
+		else
+			this.removePageNumberMorph();
+	},
+	
+	pageNumberMorphName: function() {
+		// FIXME! ContextJS does wrap attributes
+		return 'pageNumber';
+	},
+	
+	ensurePageNumberMorph: function() {
+		if ($morph(this.pageNumberMorphName())) return;
+		var no = PageNavigation.current().pageNumber().toString();
+		var pos = this.bounds().bottomLeft().addPt(pt(20, -60))
+		var morph = new TextMorph(pos.extent(pt(40,100)), no);
+		morph.name = this.pageNumberMorphName();
+		morph.applyStyle({fill: null, fontSize: 18, borderWidth: 0});
+		morph.ignoreEvents();
+		morph.openInWorld();
+	},
+	
+	removePageNumberMorph: function() {
+		if (!$morph(this.pageNumberMorphName())) return;
+		$morph(this.pageNumberMorphName()).remove();
+	},
 });
 enableLayer(PageNavigationLayer)
 

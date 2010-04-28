@@ -1764,11 +1764,14 @@ BoxMorph.subclass('TextMorph', {
 
 		var followLink = function (answer) {
 			Config.askBeforeQuit = false;
-			url = isExternalLink ? url.toString() : url.toString() + '?' + new Date().getTime()
+			if (!isExternalLink) {
+				var queries = Object.extend(url.getQuery(), {date: new Date().getTime()});
+				url = url.withQuery(queries);
+			}
 			if (openInNewWindow)
-				Global.window.open(url);
+				Global.window.open(url.toString());
 			else
-				Global.window.location.assign(url);
+				Global.window.location.assign(url.toString());
 		};
 		
 		if (!Config.confirmNavigation) 

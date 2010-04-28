@@ -145,6 +145,10 @@ Object.subclass('URL', {
 		return new URL({protocol: this.protocol, port: this.port, hostname: this.hostname, pathname: this.pathname});
 	},
 
+	getQuery: function() {
+		return this.toString().toQueryParams();
+	},
+	
 	eq: function(url) {
 		if (!url) return false;
 		return url.protocol == this.protocol && url.port == this.port && url.hostname == this.hostname
