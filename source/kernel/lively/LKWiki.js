@@ -349,20 +349,17 @@ Widget.subclass('WikiNavigator', {
 		var url = optURL || this.model.getURL();
         return new NetRequest().beSync().get(url).getStatus().isSuccess();
     },
-askToDeleteCurrentWorld: function() {
-	WorldMorph.current().confirm('Delete ' + this.model.getURL().toString() + '?', function(response) {
-		if (!response) return;
-		this.deleteCurrentWorld();
-	}.bind(this));
-},
 
+	askToDeleteCurrentWorld: function() {
+		WorldMorph.current().confirm('Delete ' + this.model.getURL().toString() + '?', function(response) {
+			if (!response) return;
+			this.deleteCurrentWorld();
+		}.bind(this));
+	},
 	
-	deleteCurrentWorld: function() {
-	return this.deleteWorld(this.model.getURL());
-},
-deleteWorld: function(url) {
-	return this.svnResource.del().getStatus();
-},
+	deleteCurrentWorld: function() { return this.deleteWorld(this.model.getURL()) },
+	
+	deleteWorld: function(url) { return this.svnResource.del().getStatus() },
 
 });
 

@@ -261,7 +261,7 @@ Object.extend(URL, {
 		var px = this.proxy;
 		if (!px) return url;
 		if (px.normalizedHostname() != url.normalizedHostname()) // FIXME  protocol?
-			return px.withFilename(url.hostname + url.fullPath());
+			return px.withFilename(px.hostname + url.fullPath());
 		if (px.port != url.port)
 			return px.withFilename(url.hostname + "/" + url.port + url.fullPath());
 		return url;
