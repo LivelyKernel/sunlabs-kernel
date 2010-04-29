@@ -171,7 +171,7 @@ layerClass(PageNavigationLayer, WorldMorph, {
 		if ($morph(this.pageNumberMorphName())) return;
 		var no = PageNavigation.current().pageNumber().toString();
 		var pos = this.bounds().bottomLeft().addPt(pt(20, -60))
-		var morph = new TextMorph(pos.extent(pt(40,100)), no);
+		var morph = new TextMorph(pos.extent(pt(100,100)), no);
 		morph.name = this.pageNumberMorphName();
 		morph.applyStyle({fill: null, fontSize: 18, borderWidth: 0});
 		morph.ignoreEvents();
