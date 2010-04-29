@@ -2181,6 +2181,16 @@ Morph.addMethods({
 		this.layoutChanged();
 		return m;
 	},
+	
+	bringToFront: function() {
+		if (!this.owner)
+			return;
+		if (this.owner.topSubmorph() === this)
+			return;
+		var owner = this.owner;
+		this.remove();
+		owner.addMorphFront(this)
+	},
 
 	setSubmorphs: function(morphs) {
 		console.assert(morphs instanceof Array, "not an array");
@@ -4769,6 +4779,7 @@ WorldMorph.addMethods({
 		var container = this._statusMorphContainer;
 		container.align(container.bounds().topRight(), this.windowBounds().topRight());
 		container.name = "statusMorphContainer";
+		container.bringToFront();
 		container.addStatusMessage(msg, color, delay, callback, optStyle, messageKind);
 	},	
 });
