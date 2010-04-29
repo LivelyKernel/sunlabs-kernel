@@ -4939,7 +4939,7 @@ BoxMorph.subclass("StatusMessageContainer", {
 		var closeButton = new ButtonMorph(pt(20,20).extentAsRectangle())
 		closeButton.setLabel("X");
 		closeButton.applyStyle({fill: Color.white})
-		closeButton.align(closeButton.bounds().topRight(), statusMorph.shape.bounds().topRight());
+		closeButton.align(closeButton.bounds().rightCenter(), statusMorph.shape.bounds().rightCenter().subPt(pt(5,0)));
 		connect(closeButton, "fire", statusMorph, "remove")
 		statusMorph.addMorph(closeButton);
 
@@ -4948,13 +4948,21 @@ BoxMorph.subclass("StatusMessageContainer", {
 			var moreButton = new ButtonMorph(pt(40,20).extentAsRectangle())
 			moreButton.setLabel("more");
 			moreButton.applyStyle({fill: Color.white})
-			moreButton.align(moreButton.bounds().topRight(), closeButton.bounds().topLeft());
-			var callbackObject = {callback: callback}
+			moreButton.align(moreButton.bounds().topRight(), closeButton.bounds().topLeft().subPt(pt(5,0)));
+			var pressed = false;
+			var callbackObject = {callback: function() {
+				// hack prevent weird chrome behavior...
+				if (!pressed) {
+					pressed = true;
+					callback();
+				}
+			}};
+			connect(moreButton, "fire", this, "relinquishKeyboardFocus", function(){ return WorldMorph.current().firstHand()})
 			connect(moreButton, "fire", callbackObject, "callback")
 			statusMorph.addMorph(moreButton);
 		}
 
-		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.1, borderRadius: 10});
+		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.7, borderRadius: 10});
 		if (optStyle)
 			statusMorph.applyStyle(optStyle);
 		statusMorph.textString = msg;
