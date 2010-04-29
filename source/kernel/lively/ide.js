@@ -794,6 +794,8 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	
 	setTargetURL: function(url) {
 		var prevURL = this.targetURL;
+		if (!url.toString().endsWith('/'))
+			url = new URL(url.toString() + '/');
 		try {
 			this.targetURL = url;
 			this.rootNode().locationChanged();
