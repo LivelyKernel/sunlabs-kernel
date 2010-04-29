@@ -137,7 +137,9 @@ Object.subclass('Change', {
 	},
 
 	subElementNamed: function(name) {
-		return this.subElements().detect(function(ea) { return ea.getName() == name });
+		var elems = this.subElements();
+		for (var i = 0; i < elems.length; i++)
+			if (elems[i].getName() == name) return elems[i];
 	},
 
 	parent: function() { return  new ClassChange(this.getXMLElement().parentNode) },
@@ -526,11 +528,15 @@ Object.extend(Change, {
 ChangeSet.addMethods({
 	
 	getInitializer: function() {
-		return this.subElements().detect(function(ea) { return ea.isInitializer() });
+		var elems = this.subElements();
+		for (var i = 0; i < elems.length; i++)
+			if (elems[i].isInitializer()) return elems[i];
 	},
 	
 	getWorldRequirementsList: function() {
-		return this.subElements().detect(function(ea) { return ea.isWorldRequirementsList() });
+		var elems = this.subElements();
+		for (var i = 0; i < elems.length; i++)
+			if (elems[i].isWorldRequirementsList()) return elems[i];
 	},
 	
 	ensureHasInitializeScript: function() {
