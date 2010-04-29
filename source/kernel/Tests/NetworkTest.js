@@ -33,6 +33,48 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		this.assertEqual(expected, result.toString());
 	},
 	
+	testRelativePartsFrom: function() {
+		var expected = 'test/bar/baz';
+		
+		var url1 = new URL('http://www.foo.org/test/bar/baz');
+		var url2 = new URL('http://www.foo.org/');
+		var result = url1.relativePathFrom(url2);
+		this.assertEqual(expected, result.toString());
+		
+		url2 = new URL('http://foo.org/');
+		result = url1.relativePathFrom(url2);
+		this.assertEqual(expected, result.toString());
+		
+		try {
+			url2 = new URL('http://foo.com/');
+			result = url1.relativePathFrom(url2);
+		} catch (e) { return }
+		this.assert(false, 'error expected')
+	},
+	
+	testMakeProxy: function() {
+		var originalProxy = URL.proxy;
+		URL.proxy = new URL('http://foo.com/proxy/');
+		
+		try { // FIXME			
+			// normal behavior
+			var result = URL.makeProxied('http://bar.com/');
+			var expected = 'http://foo.com/proxy/bar.com/'
+			this.assertEqual(expected, result.toString());
+		
+			// don't proxy yourself
+			var result = URL.makeProxied(URL.proxy);
+			this.assertEqual(URL.proxy.toString(), result.toString());
+		
+			// don't proxy yourself 2
+			var result = URL.makeProxied('http://www.foo.com/proxy/');
+			var expected = 'http://www.foo.com/proxy/'
+			this.assertEqual(expected, result.toString());
+		} finally {
+			URL.proxy = originalProxy;
+		}
+	},
+	
 });
 
 // deprecated

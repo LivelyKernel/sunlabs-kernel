@@ -98,6 +98,10 @@ Object.subclass('URL', {
 		return p.substring(slash + 1);
 	},
 
+	normalizedHostname: function() {
+		return this.hostname.replace(/^www\.(.*)/, '$1');
+	},
+	
 	getDirectory: function() {
 		return this.withPath(this.dirname());
 	},
@@ -151,12 +155,12 @@ Object.subclass('URL', {
 	
 	eq: function(url) {
 		if (!url) return false;
-		return url.protocol == this.protocol && url.port == this.port && url.hostname == this.hostname
+		return url.protocol == this.protocol && url.port == this.port && url.normalizedHostname() == this.url.normalizedHostname()
 			&& url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
 	},
 
 	relativePathFrom: function(origin) {
-		if (!this.pathname.startsWith(origin.pathname)  || origin.hostname != this.hostname)
+		if (!this.pathname.startsWith(origin.pathname)  || origin.normalizedHostname() != this.normalizedHostname())
 			throw new Error('bad origin ' + origin + ' vs ' + this);
 		return this.pathname.substring(origin.pathname.length);
 	},
@@ -209,69 +213,61 @@ Object.subclass('URL', {
 
 });
 
-URL.fromLiteral = function(literal) {
-	return new URL(literal);
-};
+// create URLs often needed
+Object.extend(URL, {
 
-URL.source = new URL(document.documentURI);
+	source: new URL(document.documentURI),
 
-URL.codeBase = new URL(Config.codeBase).withRelativePartsResolved()
+	codeBase: new URL(Config.codeBase).withRelativePartsResolved(),
 
-URL.ensureAbsoluteURL = function(urlString) {
-	return /^http.*/.test(urlString) ?
-	new URL(urlString) :
-	URL.source.notSvnVersioned().getDirectory().withRelativePath(urlString);
-};
+	proxy: (function() {
+		if (!Config.proxyURL) {
+			if (URL.source.protocol.startsWith("file")) 
+				console.log("loading from localhost, proxying won't work");
+			return URL.source.withFilename("proxy/");
+		} else {
+			var str = Config.proxyURL;
+			if (!str.endsWith('/')) str += '/';
+			return new URL(str);
+		}
+	})(),
+	
+});
 
-URL.proxy = (function() {
-	if (!Config.proxyURL) {
-		if (URL.source.protocol.startsWith("file")) 
-			console.log("loading from localhost, proxying won't work");
-		return URL.source.withFilename("proxy/");
-	} else {
-		var str = Config.proxyURL;
-		if (!str.endsWith('/')) str += '/';
-		return new URL(str);
-	}
-})();
+Object.extend(URL, {
+	// FIXME: better names?
+	common: {
+		wiki:   URL.proxy.withFilename('lively-wiki/'),
+		repository: URL.proxy.withFilename('lively-kernel/'),
+		project: URL.proxy.withFilename('lively-project/'),  // currently lively-kernel.org
+		domain: new URL(Global.document.location.protocol + '//' + Global.document.location.host)
+	},
+});
 
-// FIXME: better names?
-URL.common = {
-	wiki:   URL.proxy.withFilename('lively-wiki/'),
-	repository: URL.proxy.withFilename('lively-kernel/'),
-	project: URL.proxy.withFilename('lively-project/'),  // currently lively-kernel.org
-	domain: new URL(Global.document.location.protocol + '//' + Global.document.location.host)
-};
+Object.extend(URL, {
+	
+	create: function(string) { return new URL(string) },
 
+	ensureAbsoluteURL: function(urlString) {
+		return /^http.*/.test(urlString) ?
+		new URL(urlString) :
+		URL.source.notSvnVersioned().getDirectory().withRelativePath(urlString);
+	},
 
-URL.create = function(string) { 
-	return new URL(string);
-};
+	fromLiteral: function(literal) { return new URL(literal) },
 
-URL.makeProxied = function makeProxied(url) {
-	url = url instanceof URL ? url : new URL(url);
-	var px = this.proxy;
-	if (!px) return url;
-	if (px.hostname != url.hostname) { // FIXME  protocol?
-		return px.withFilename(url.hostname + url.fullPath());
-		// console.log("rewrote url " + Object.inspect(url) + " proxy " + URL.proxy);
-		// return URL.proxy + url.hostname + "/" + url.fullPath();
-	} else if (px.port != url.port) {
-		return px.withFilename(url.hostname + "/" + url.port + url.fullPath());
-	}
-	else return url;
-};
+	makeProxied: function makeProxied(url) {
+		url = url instanceof URL ? url : new URL(url);
+		var px = this.proxy;
+		if (!px) return url;
+		if (px.normalizedHostname() != url.normalizedHostname()) // FIXME  protocol?
+			return px.withFilename(url.hostname + url.fullPath());
+		if (px.port != url.port)
+			return px.withFilename(url.hostname + "/" + url.port + url.fullPath());
+		return url;
+	},
 
-URL.svnWorkspace = (function() {
-	// a bit of heuristics to figure the top of the local SVN repository
-	var path = URL.source.pathname;
-	var index = path.lastIndexOf('trunk');
-	if (index < 0) index = path.lastIndexOf('branches');
-	if (index < 0) index = path.lastIndexOf('tags');
-	if (index < 0) return null;
-	var ws = URL.source.withPath(path.substring(0, index));
-	return ws;
-})();
+});
 
 
 Object.subclass('NetRequestStatus', {
