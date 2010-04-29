@@ -4911,6 +4911,8 @@ BoxMorph.subclass("StatusMessageContainer", {
 
 	onDeserialize: function() {
 		this.dismissAll();
+		this.stopStepping(); // ensure that  it works even for old potentially broken pages...
+		this.startUpdate();
 	},
 
 	updateMessages: function() {
