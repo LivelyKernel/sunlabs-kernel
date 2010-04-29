@@ -68,8 +68,7 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		
 			// don't proxy yourself 2
 			var result = URL.makeProxied('http://www.foo.com/proxy/');
-			var expected = 'http://www.foo.com/proxy/'
-			this.assertEqual(expected, result.toString());
+			this.assertEqual(URL.proxy.toString(), result.toString());
 		} finally {
 			URL.proxy = originalProxy;
 		}
