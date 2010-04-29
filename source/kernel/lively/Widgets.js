@@ -4886,10 +4886,10 @@ BoxMorph.subclass("StatusMessageContainer", {
 	setupDismissAllButton: function(){
 		this.dismissAllButton = new ButtonMorph(new Rectangle(0,0,400,15)).setLabel("dismiss all");
 		this.dismissAllButton.applyStyle({fill: Color.lightGray, borderWidth: 0})
-		connect(this.dismissAllButton, "fire", this, "onDismissAll");
+		connect(this.dismissAllButton, "fire", this, "dismissAll");
 	},
 
-	onDismissAll: function() {
+	dismissAll: function() {
 		this.visibleSubmorphs().each(function(ea) {
 			ea.remove()
 		})
@@ -4910,7 +4910,7 @@ BoxMorph.subclass("StatusMessageContainer", {
 	},
 
 	onDeserialize: function() {
-		this.submorphs.clone().each(function(ea) {ea.remove()})
+		this.dismissAll();
 	},
 
 	updateMessages: function() {

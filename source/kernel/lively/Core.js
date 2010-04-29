@@ -2081,7 +2081,7 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 			var submorph = submorphs[i];
 			y += this.topMarginOf(submorph)
 			submorph.align(submorph.bounds().topLeft(), pt(x, y));
-			y += submorph.bounds().width;
+			y += submorph.bounds().height;
 			y += this.bottomMarginOf(submorph);
 		}
 	},
