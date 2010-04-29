@@ -99,10 +99,11 @@ Object.subclass('AttributeConnection', {
 	},
 
 	getExistingConnection: function() {
-		if (!this.sourceObj.attributeConnections) return null;
-		return this.sourceObj.attributeConnections.detect(function(con) {
-			return this.isSimilarConnection(con);
-		}, this);
+		var conns = this.sourceObj.attributeConnections;
+		if (!conns) return null;
+		for (var i = 0; i < conns.length; i++)
+			if (this.isSimilarConnection(conns[i]))
+				return conns[i];
 	},
 
 	update: function(newValue) {
