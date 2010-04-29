@@ -860,7 +860,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
 		if (!this.dependendModules) return;
 		var deps = this.dependendModules.uniq();
 		this.dependendModules = [];
-		deps.each(function(ea) { ea.removeRequiredModule(this) }, this);
+		deps.forEach(function(ea) { ea.removeRequiredModule(this) }, this);
 	},
 	
 	addRequiredModule: function(requiredModule) {

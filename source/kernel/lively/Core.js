@@ -856,7 +856,6 @@ Object.extend(Exporter, {
 
 	saveDocumentToFile: function(doc, filename) {
 		console.group("save document")
-		console.time("save document2")
 		if (!filename) return null;
 		if (!filename.endsWith('.xhtml')) {
 			filename += ".xhtml";
@@ -875,7 +874,6 @@ Object.extend(Exporter, {
 		} else {
 			WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code());
 		}
-		console.timeEnd("save document")
 		console.groupEnd("save document")
 		return null;
 	},
@@ -5404,38 +5402,38 @@ Morph.subclass("HandMorph", {
 		}.bind(this));
     },
 
-    grabMorph: function(grabbedMorph, evt) { 
+	grabMorph: function(grabbedMorph, evt) { 
 		if (evt.isShiftDown() && (evt.isAltDown() || evt.isMetaDown())) {
 			grabbedMorph.dragMe(evt);
 			return;
 		}
-        if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.copySubmorphsOnGrab == true)) {
-            if (!grabbedMorph.okToDuplicate()) return;
-            grabbedMorph.copyToHand(this);
-            return;
-        }
-        if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) {
-            grabbedMorph.showMorphMenu(evt);
-            return;
-        }
-        // Give grabbed morph a chance to, eg, spawn a copy or other referent
-        grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
-        if (!grabbedMorph) return;
+		if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.copySubmorphsOnGrab == true)) {
+			if (!grabbedMorph.okToDuplicate()) return;
+			grabbedMorph.copyToHand(this);
+			return;
+		}
+		if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) {
+			grabbedMorph.showMorphMenu(evt);
+			return;
+		}
+		// Give grabbed morph a chance to, eg, spawn a copy or other referent
+		grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
+		if (!grabbedMorph) return;
 
-        if (grabbedMorph.owner && !grabbedMorph.owner.openForDragAndDrop) return;
+		if (grabbedMorph.owner && !grabbedMorph.owner.openForDragAndDrop) return;
 
-        if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
-            this.keyboardFocus.relinquishKeyboardFocus(this);
-        }
-        // console.log('grabbing %s', grabbedMorph);
-        // Save info for cancelling grab or drop [also need indexInOwner?]
-        // But for now we simply drop on world, so this isn't needed
-        this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
-        if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
-        this.addMorphAsGrabbed(grabbedMorph);
-        // grabbedMorph.updateOwner(); 
-        this.changed(); //for drop shadow
-    },
+		if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
+			this.keyboardFocus.relinquishKeyboardFocus(this);
+		}
+		// console.log('grabbing %s', grabbedMorph);
+		// Save info for cancelling grab or drop [also need indexInOwner?]
+		// But for now we simply drop on world, so this isn't needed
+		this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
+		if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
+		this.addMorphAsGrabbed(grabbedMorph);
+		// grabbedMorph.updateOwner(); 
+		this.changed(); //for drop shadow
+	},
     
     addMorphAsGrabbed: function(grabbedMorph) { 
         this.addMorph(grabbedMorph);

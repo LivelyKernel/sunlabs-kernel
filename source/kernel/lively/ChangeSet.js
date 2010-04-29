@@ -480,8 +480,10 @@ Object.subclass('AnotherCodeMarkupParser', {
 	createChange: function(xmlElement) {
 		if (xmlElement.nodeType == NodeFactory.TextType() || xmlElement.nodeType == NodeFactory.CDATAType())
 			return null;
-		var klass = this.changeClasses.detect(function(ea) { return ea.isResponsibleFor(xmlElement) });
-		//if (!klass) throw dbgOn(new Error('Found no Change class for ' + Exporter.stringify(xmlElement)));
+		var klass;
+		for (var i = 0; i < this.changeClasses.length; i++)
+			if (this.changeClasses[i].isResponsibleFor(xmlElement))
+				klass = this.changeClasses[i];
 		if (!klass) { debugger; console.warn(
 				'Found no Change class for ' + Exporter.stringify(xmlElement).replace(/\n|\r/, ' ') +
 				'tag name: ' + xmlElement.tagName);
