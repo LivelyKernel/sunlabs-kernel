@@ -24,24 +24,22 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
 		this.line.setPosition(pt(100,100));
 		this.line.setWithLayers([ConnectorMorphLayer]);
 
-		// fake world
 		var world = Morph.makeRectangle(rect(pt(0,0),pt(500,500)));
 		world.world = function(){return this};
 		world.addMorph(this.line);
-
+		
 		this.endPoint = pt(250, 50)
 		this.newMorph = Morph.makeRectangle(rect(
 			pt(this.endPoint.x - 25, this.endPoint.y - 25),
 			pt(this.endPoint.x + 25, this.endPoint.y + 25)));
 		world.addMorph(this.newMorph);
 			
-		// WorldMorph.current().addMorph(this.newMorph)
-		// WorldMorph.current().addMorph(this.line)
+		WorldMorph.current().addMorph(this.newMorph)
+		WorldMorph.current().addMorph(this.line)
+
+		this.morphs = [this.newMorph, this.line]
 	},
 	
-	tearDown: function() {
-	},
-
 	testHandle: function() {
 		this.assert(this.sut instanceof HandleMorph, "handle is no handle morph")
 	},
@@ -75,8 +73,15 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
 			"line not in connector morphs");
 
 		// this.assertEqualState(this.line.getGlobalEndPos(), this.endPoint, "wrong end point ");
-	}
-
+	},
+	
+	tearDown: function() {
+		if (this._errorOccured) {
+			// let it stay open
+		} else {
+			this.morphs.each(function(ea){ea.remove()})
+		}		
+	},
 });
 
 
