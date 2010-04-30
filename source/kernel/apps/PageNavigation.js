@@ -181,8 +181,25 @@ layerClass(PageNavigationLayer, WorldMorph, {
 	removePageNumberMorph: function() {
 		if (!$morph(this.pageNumberMorphName())) return;
 		$morph(this.pageNumberMorphName()).remove();
-	},
+	},	
 });
+
+
+// Propagate the current Presentation Name to pages when following links
+// an alternative way to get that context information is the possibility
+// of the destination website to ask: document.referrer
+// to get the URL of the refering website
+layerClass(PageNavigationLayer, TextMorph, {
+	doLinkThing: function(proceed, evt, link) {
+		var url = new URL.ensureAbsoluteURL(link);
+		if (Config.pageNavigationName != 'nothing') {
+			var queries = Object.extend(url.getQuery(), {pageNavigationName: Config.pageNavigationName});
+			url = url.withQuery(queries);
+		}
+		proceed(evt, url.toString())
+	}
+})
+
 enableLayer(PageNavigationLayer)
 
 
