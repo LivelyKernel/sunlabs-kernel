@@ -364,6 +364,7 @@ Object.extend(Function.prototype, {
 			klass.prototype = new protoclass();
 			klass.prototype.constructor = klass;
 			klass.prototype.constructor.type = className; // KP: .name would be better but js ignores .name on anonymous functions
+			klass.prototype.constructor.displayName = className; // for debugging, because name can not be assigned
 			if (className) targetScope[shortName] = klass; // otherwise it's anonymous
 		};
 
