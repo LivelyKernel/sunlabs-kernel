@@ -150,7 +150,10 @@ Object.subclass('URL', {
 	},
 
 	getQuery: function() {
-		return this.toString().toQueryParams();
+		var s = this.toString();
+		if (!s.include("?"))
+			return {};
+		return s.toQueryParams();
 	},
 	
 	eq: function(url) {
