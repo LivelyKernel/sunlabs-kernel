@@ -39,11 +39,14 @@ TimeTestRunLayer.getSortedTimeOfTestRuns = function() {
 }
 
 layerClass(TimeTestRunLayer, TestCase, {
-	runTest: function(proceed, selector) {
+	runTest: function(proceed) {
+		var profileName = "runTest " + this.currentSelector 
+		console.profile(profileName);
 		var start = (new Date()).getTime();	
-		proceed(selector);
+		proceed();
 		var time = (new Date()).getTime() - start;
-		TimeTestRunLayer.setTimeOfTestRun(this.constructor.name, selector, time)
+		console.profileEnd(profileName);
+		TimeTestRunLayer.setTimeOfTestRun(this.constructor.name, this.currentSelector, time)
 	}
 })
 
@@ -69,6 +72,9 @@ layerClass(DeployTimeTestRunLayer, TestRunner, {
 		})
 	}
 })
+
+
+
 
 
 

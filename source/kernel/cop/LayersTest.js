@@ -361,7 +361,7 @@ TestCase.subclass('cop.tests.LayerTest', {
   		this.makeObject1();
   		this.makeLayer1();
 		this.assertEqual(this.object1.f(2,3), 0, "default result of f() failed");
-		makeFunctionLayerAware(this.object1,"f");
+		ContextJS.makeFunctionLayerAware(this.object1,"f");
 		this.assertEqual(this.object1.f(2,3), 0, "default result of f() with layer aware failed");
 		withLayers([this.layer1], function() {
 			var r = this.object1.f(2,3);
@@ -386,7 +386,7 @@ TestCase.subclass('cop.tests.LayerTest', {
   		this.makeLayer1();
   		this.makeLayer2();
 		withLayers([this.layer2, this.layer1], function() {
-			makeFunctionLayerAware(this.object1,"f");
+			ContextJS.makeFunctionLayerAware(this.object1,"f");
 			this.object1.f();
 			this.assertEqual(currentTest.execution.toString(), ["l1.f", "l2.f", "d.f"]);
 		}.bind(this));
@@ -398,8 +398,8 @@ TestCase.subclass('cop.tests.LayerTest', {
   		this.makeLayer2();
   		this.makeLayer3();
 		withLayers([this.layer1, this.layer2, this.layer3], function() {
-			makeFunctionLayerAware(this.object1,"f");
-			makeFunctionLayerAware(this.object1,"g");
+			ContextJS.makeFunctionLayerAware(this.object1,"f");
+			ContextJS.makeFunctionLayerAware(this.object1,"g");
 			this.object1.f();
 			var r = this.object1.g();
 			this.assertEqual(r, "Hello World", "result of g() is wrong");
@@ -422,7 +422,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 	testHTMLLayerExample: function() {
   		this.makeObject1();
   		this.makeHtmlLayer();
-		makeFunctionLayerAware(this.object1,"print");		
+		ContextJS.makeFunctionLayerAware(this.object1,"print");		
 		withLayers([this.htmlLayer], function() {
 			this.assertEqual(this.object1.print(), "<b>"+this.object1.myString + "</b>", "html print does not work")		
 		}.bind(this));
@@ -438,7 +438,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 			},
 		});
 		var object1 = new cop.example.DummyClass();
-		makeFunctionLayerAware(cop.example.DummyClass.prototype,"f");
+		ContextJS.makeFunctionLayerAware(cop.example.DummyClass.prototype,"f");
 		
 		this.assertEqual(object1.f(2,3), 0, "default result of f() with layer aware failed");
 		withLayers([layer1], function() {

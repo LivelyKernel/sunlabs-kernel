@@ -32,7 +32,7 @@ var log = function(string) { if(log_layer_code) console.log(string); };
 
 Global.ContextJS = {}
 
-Global.withLogLayerCode = function(func) {
+ContextJS.withLogLayerCode = function(func) {
 	try {
 		var old  = log_layer_code; 
 		log_layer_code = true
@@ -123,14 +123,14 @@ var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObj
 	};
 }
 
-var executeWithLayers = function Layers$executeWithLayers(base_function, self, layers, index, obj, function_name, args, methodType) {
+var executeWithLayers = function ContextJS$executeWithLayers(base_function, self, layers, index, obj, function_name, args, methodType) {
 	log("executeWithLayers(" + layers + ", " + obj + ", " + function_name+")");
 	if (index < layers.length) {
 		var layer = layers[layers.length - index - 1];
 		var layered_function = lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType)
 		if (layered_function) {
 			log("  found layered function: " + layered_function);
-			var new_proceed = function() {
+			var new_proceed = function executeWithLayers_new_proceed() {
 				var new_arguments = $A(arguments);
 				new_arguments.unshift(null);
 				// log("new_proceed " + new_arguments)
@@ -148,30 +148,33 @@ var executeWithLayers = function Layers$executeWithLayers(base_function, self, l
 	return base_function.apply(self, args);
 };
 
-Global.makeFunctionLayerAware = function Layers$makeFunctionLayerAware(base_obj, function_name) {
-	if (!base_obj) throw new Error("can't layer an non existent object");
+Object.extend(ContextJS, {
 
-	var base_function = base_obj[function_name];
-	if (!base_function) {
-		// console.log("WARNING can't layer an non existent function" + function_name +" , so do nothing")
-		// return;
-		base_function = Functions.Null
-	};
-	if (base_function.isLayerAware) {
-		// nothing to do
-		return;
-	};
-	// log("makeFunctionLayerAware: " + base_obj );
-	var wrapped_function = function() {
-		var args = $A(arguments);
-		args.unshift(null); // empty proceed argument (performance optimisation uglyness)
-		return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
-	};
-	wrapped_function.displayName = base_obj.toString() + "$" + function_name + "_wrapper"
-	wrapped_function.isLayerAware = true;
+	makeFunctionLayerAware: function(base_obj, function_name) {
+		if (!base_obj) throw new Error("can't layer an non existent object");
+
+		var base_function = base_obj[function_name];
+		if (!base_function) {
+			// console.log("WARNING can't layer an non existent function" + function_name +" , so do nothing")
+			// return;
+			base_function = Functions.Null
+		};
+		if (base_function.isLayerAware) {
+			// nothing to do
+			return;
+		};
+		// log("ContextJS.makeFunctionLayerAware: " + base_obj );
+		var wrapped_function = function() {
+			var args = $A(arguments);
+			args.unshift(null); // empty proceed argument (performance optimisation uglyness)
+			return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
+		};
+		wrapped_function.displayName = base_obj.toString() + "$" + function_name + "_wrapper"
+		wrapped_function.isLayerAware = true;
 	
-	base_obj[function_name] = wrapped_function;
-};
+		base_obj[function_name] = wrapped_function;
+	}
+})
 
 /* because getters, setters and normal methods are differently read and written, there
    are three paths, that are principally the same but differ in some methodnames... */
@@ -209,7 +212,7 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 		base_obj.__defineSetter__(property, setter);
 	};
 	if (!setter.isLayerAware) {
-		var wrapped_setter = function Layers$makeFunctionLayerAwareWrappedSetter() {
+		var wrapped_setter = function ContextJS$makeFunctionLayerAwareWrappedSetter() {
 			var args = $A(arguments);
 			args.unshift(null);
 			return executeWithLayers(setter, this, computerLayersFor(this), 0, base_obj, property, args, 'setter');
@@ -255,7 +258,7 @@ Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 Global.layerMethod = function(layer, object,  property, func) {
 	ensurePartialLayer(layer, object)[property] = func;
 	func.displayName = object.toString() + "$" + property;
-	makeFunctionLayerAware(object, property);
+	ContextJS.makeFunctionLayerAware(object, property);
 };
 
 Global.layerGetterMethod = function(layer, object, property, getter) {
@@ -422,7 +425,7 @@ Global.layerClassAndSubclasses = function(layer, classObject, defs) {
 		Object.keys(defs).each(function(eaFunctionName) {
 			if (obj.hasOwnProperty(eaFunctionName)) {
 				if (obj[eaFunctionName] instanceof Function) {
-					makeFunctionLayerAware(obj, eaFunctionName)
+					ContextJS.makeFunctionLayerAware(obj, eaFunctionName)
 				} else {
 					// to be tested...
 					// makePropertyLayerAware(eaClass.prototype, m1)
