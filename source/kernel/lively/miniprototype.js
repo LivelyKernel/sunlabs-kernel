@@ -8,14 +8,22 @@
 // Note this version is heavily trimmed from its original form.
 
 var Prototype = {
-  Version: '1.6.0_rc1',
+  Version: '1.6.0_rc1_LK_Mini',
   K: function(x) { return x }
 };
 
-
+// JL: patch add displayName to functions
+// possible problems with Traits / Mixin Usage
 Object.extend = function(destination, source) {
-  for (var property in source)
-    destination[property] = source[property];
+  for (var property in source) {
+	var sourceObj = source[property];
+	if (sourceObj instanceof Function) {
+		if ((sourceObj.name.length == 0) && (!sourceObj.displayName)) {
+			sourceObj.displayName = property;
+		}
+	};
+    destination[property] = sourceObj;
+  }
   return destination;
 };
 
