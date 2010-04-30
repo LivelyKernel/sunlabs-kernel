@@ -163,8 +163,11 @@ Object.subclass('cop.example.DummyClass', {
 	
 	DummyLayer$newFoo: function(proceed) {
 		return "newFoo";
-	}
+	},
 	
+	say: function(a) {
+		return "Say: " + a
+	},
 });
 
 
@@ -299,7 +302,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 			f: function(proceed, a, b) {
 				currentTest.execution.push("l1.f");
 				console.log("execute layer1 function for f");
-				return proceed() + a;
+				return proceed(a, b) + a;
 			}
 		});
 		this.layer1.toString = function() {return "Layer L1";};
@@ -311,7 +314,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 			f: function(proceed, a, b) {
 				currentTest.execution.push("l2.f");
 				// console.log("execute layer2 function for f");
-				return proceed() + b; 
+				return proceed(a, b) + b; 
 			},
 			g: function(proceed) {
 				currentTest.execution.push("l2.g");
@@ -775,8 +778,22 @@ TestCase.subclass('cop.tests.LayerTest', {
   			this.assertEqual(s.m2(), "S$m2", "not installing wrappers on subclassing broken`");		
   		}.bind(this));
   	},
-
 });
+
+TestCase.subclass('cop.tests.AdaptArgumentsInLayer', {
+	testAdaptArgumentsInLayer: function() {
+		var o = {say: function(a) {return "Say: " +a}};
+		var l = {toString: function() {return "L"}};
+		layerObject(l,o, { say: function(proceed, a) {return proceed(a + " World") + "!"}})
+		this.assertEqual(o.say("Hello"), "Say: Hello", "test is broken");	
+		withLayers([l], function() {
+			console.group("SayHello");
+			var result = o.say("Hello")
+			console.groupEnd("SayHello");
+			this.assertEqual(result, "Say: Hello World!", "adapting arguments is broken");		
+		}.bind(this));
+	},
+})
 
 TestCase.subclass('cop.tests.LayerTestCase', {
 	setUp: function() {
@@ -1233,7 +1250,7 @@ LayerableObject.subclass("DummyLayerableObject", {
 	f: function() {
 		return 3
 	},
-	
+		
 	DummyLayer$f: function(proceed) {
 		return 4
 	},

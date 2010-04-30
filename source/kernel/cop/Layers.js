@@ -130,24 +130,33 @@ var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObj
 }
 
 var executeWithLayers = function Layers$executeWithLayers(base_function, self, layers, index, obj, function_name, args, methodType) {
-	log("executeWithLayers(" + layers + ", " + obj + ", " + function_name+")");
+	// console.group("executeWithLayers(" + layers + ", " + obj + ", " + function_name+"("+ args +")" +" )")
 	if (index < layers.length) {
 		var layer = layers[layers.length - index - 1];
 		var layered_function = lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType)
 		if (layered_function) {
 			log("  found layered function: " + layered_function);
-			var new_proceed = function() {
-				return executeWithLayers(base_function, self, layers, index + 1, obj, function_name, args, methodType);
+			var new_proceed = function(a,b,c,d) {
+				var new_arguments = $A(arguments);
+				new_arguments.unshift(null);
+				log("new_proceed " + new_arguments)
+				// var new_arguments = args; // arguments can not be overridden....
+				var result = executeWithLayers(base_function, self, layers, index + 1, obj, function_name, new_arguments, methodType);
+				// console.groupEnd()
+				return result;
 			};
 			args[0] = new_proceed;
+			// console.groupEnd()
 			return layered_function.apply(self, args);	
 		}
-		
+		// console.groupEnd()		
 		return executeWithLayers(base_function, self, layers, index + 1, obj, function_name, args, methodType);
 	};
-	log("execute base method");
+	log("execute base method: " + function_name +  "(" + JSON.serialize(args) +")=" + base_function);
 	args.shift(); // remove proceed argument
-	return base_function.apply(self, args);
+	var result = base_function.apply(self, args);
+	// console.groupEnd()
+	return result
 };
 
 Global.makeFunctionLayerAware = function Layers$makeFunctionLayerAware(base_obj, function_name) {
@@ -165,9 +174,12 @@ Global.makeFunctionLayerAware = function Layers$makeFunctionLayerAware(base_obj,
 	};
 	// log("makeFunctionLayerAware: " + base_obj );
 	var wrapped_function = function() {
+		//console.group("execute wrapped function: " + function_name)
 		var args = $A(arguments);
 		args.unshift(null); // empty proceed argument (performance optimisation uglyness)
-		return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
+		var result = executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
+		// console.groupEnd();
+		return result
 	};
 	wrapped_function.displayName = base_obj.toString() + "$" + function_name + "_wrapper"
 	wrapped_function.isLayerAware = true;
@@ -479,25 +491,38 @@ var stringsToLayer = function Layers$stringsToLayer(strings) {
 
 
 LayerableObjectTrait = {
+
+//	activeLayers: function() {
+//		return Global.currentLayers(this)
+//	},
+	
 	setWithLayers: function(layers) {
-		this._withLayers = layerToStrings(layers);
+		this.withLayers = layers
+		//this._withLayers = layerToStrings(layers);
 	},
 
 	setWithoutLayers: function(layers) {
-		this._withoutLayers = layerToStrings(layers);;
+		this.withoutLayers = layers
+		//this._withoutLayers = layerToStrings(layers);;
 	},
 	
 	getWithLayers: function(layers) {
-		if (this._withLayers) {
-			return stringsToLayer(this._withLayers)
+		if (this.withLayers) {
+			return this.withLayers
 		};
+		// if (this._withLayers) {
+		//	return stringsToLayer(this._withLayers)
+		//};
 		return [];
 	},
 
 	getWithoutLayers: function(layers) {
-		if (this._withoutLayers) {
-			return stringsToLayer(this._withoutLayers)
+		if (this.withoutLayers) {
+			return this.withoutLayers
 		};
+		//if (this._withoutLayers) {
+		//	return stringsToLayer(this._withoutLayers)
+		//};
 		return [];
 	},
 
