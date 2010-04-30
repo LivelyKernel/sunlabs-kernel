@@ -26,8 +26,8 @@
 
 module('cop.Layers').requires().toRun(function(thisModule) {
 
-	var log_layer_code = false;	
-	var log = function(string) { if(log_layer_code) console.log(string); }; 
+var log_layer_code = false;	
+var log = function(string) { if(log_layer_code) console.log(string); }; 
 
 Global.withLogLayerCode = function(func) {
 	try {
@@ -38,7 +38,10 @@ Global.withLogLayerCode = function(func) {
 		log_layer_code = old;
 	}	
 };
-	
+
+/*
+ * creates a named global layer
+ */	
 Global.createLayer = function(name) {
 	if (Global[name]) {
 		console.log("Layer "+ name + " is already there");
@@ -54,6 +57,10 @@ Global.createLayer = function(name) {
 	Global[name] = layer;
 };
 
+
+/*
+ * extend the subclassing behavior of Lively Kernel to allow fo Layer-In-Class constructs  
+ */	
 Object.extend(Function.prototype, { 
 	subclass: Object.subclass.wrap(function(proceed) {
 		var args = $A(arguments);
@@ -95,6 +102,9 @@ Object.extend(Function.prototype, {
 	})
 });
 
+/*
+ * Private Helper Methods
+ */
 var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType, n) {
 	if (layer) {
 		// we have to look for layers defintions for self, self.prototype, ... there may be layered methods 
@@ -240,6 +250,8 @@ Global.getLayerDefinitionForObject = function Layers$getLayerDefinitionForObject
 
 
 var object_id_counter = 0; // hack, to work around absence of identity dictionaries in JavaScript 
+// we could perhaps limit ourselfs to layer only those objects that respond to object.id()
+
 // because working with objects is a serialization problem in itself, perhaps we should restrict ourself in working with classes
 // So classes have names and names can be used as keys in dictionaries :-)
 
@@ -255,14 +267,6 @@ Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 	};	
 	return layer[object._layer_object_id];
 };
-
-// Global.ensurePartialLayer = function(layer, object) {
-// 	if (!layer[object]) {
-// 		layer[object] = {};
-// 	};	
-// 	return layer[object];
-// };
-
 
 Global.layerMethod = function(layer, object,  property, func) {
 	ensurePartialLayer(layer, object)[property] = func;
@@ -314,42 +318,6 @@ layerPropertyWithShadow = function(layer, object, property) {
 	layerProperty(layer, object, property, defs);
 };
 
-// Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
-Global.layerObject = function(layer, object, defs) {
-	log("layerObject");
-	Object.keys(defs).each(function(function_name) {
-		log(" layer property: " + function_name);
-		layerProperty(layer, object, function_name, defs);
-	});
-};
-
-// layer around only the class methods
-Global.layerClass = function(layer, classObject, defs) {
-	layerObject(layer, classObject.prototype, defs);
-};
-
-// layer around class methods and all subclass methods
-// (might be related to Aspect oriented programming)
-Global.layerClassAndSubclasses = function(layer, classObject, defs) {
-	log("layerClassAndSubclasses");
-	layerClass(layer, classObject, defs);
-	
-	// and now wrap all overriden methods...
-	classObject.allSubclasses().each(function(eaClass) {
-		log("make m1 layer aware in " + eaClass)
-		var obj = eaClass.prototype;
-		Object.keys(defs).each(function(eaFunctionName) {
-			if (obj.hasOwnProperty(eaFunctionName)) {
-				if (obj[eaFunctionName] instanceof Function) {
-					makeFunctionLayerAware(obj, eaFunctionName)
-				} else {
-					// to be tested...
-					// makePropertyLayerAware(eaClass.prototype, m1)
-				}
-			};
-		});
-	})
-};
 
 computerLayersFor = function Layers$computerLayersFor(obj) { 
 	if (obj && obj.activeLayers) {
@@ -410,6 +378,63 @@ Global.currentLayers= function Layers$currentLayers(obj) {
 	})	
 };
 
+
+// clear cached layer compositions
+var invalidateLayerComposition = function Layers$invalidateLayerComposition() {
+	Global.LayerStack.each(function(ea) {
+		ea.composition = null;
+	});
+};
+
+Global.resetLayerStack = function() {
+	Global.LayerStack = [{isStatic: true, toString: function() {return "BaseLayer"}, composition: null}];
+	invalidateLayerComposition();
+};
+
+
+/** ContextJS API **/
+
+/* Layer Definition */
+
+// Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
+Global.layerObject = function(layer, object, defs) {
+	log("layerObject");
+	Object.keys(defs).each(function(function_name) {
+		log(" layer property: " + function_name);
+		layerProperty(layer, object, function_name, defs);
+	});
+};
+
+// layer around only the class methods
+Global.layerClass = function(layer, classObject, defs) {
+	layerObject(layer, classObject.prototype, defs);
+};
+
+// layer around class methods and all subclass methods
+// (might be related to Aspect oriented programming)
+Global.layerClassAndSubclasses = function(layer, classObject, defs) {
+	log("layerClassAndSubclasses");
+	layerClass(layer, classObject, defs);
+	
+	// and now wrap all overriden methods...
+	classObject.allSubclasses().each(function(eaClass) {
+		log("make m1 layer aware in " + eaClass)
+		var obj = eaClass.prototype;
+		Object.keys(defs).each(function(eaFunctionName) {
+			if (obj.hasOwnProperty(eaFunctionName)) {
+				if (obj[eaFunctionName] instanceof Function) {
+					makeFunctionLayerAware(obj, eaFunctionName)
+				} else {
+					// to be tested...
+					// makePropertyLayerAware(eaClass.prototype, m1)
+				}
+			};
+		});
+	})
+};
+
+/* Layer Activation */
+
 Global.withLayers = function withLayers(layers, func) {
 	LayerStack.push({withLayers: layers});
 	// console.log("callee: " + withLayers.caller)
@@ -429,24 +454,8 @@ Global.withoutLayers = function withoutLayers(layers, func) {
 	}
 };
 
-// clear cached layer compositions
-var invalidateLayerComposition = function Layers$invalidateLayerComposition() {
-	Global.LayerStack.each(function(ea) {
-		ea.composition = null;
-	});
-};
-
-Global.resetLayerStack = function() {
-	Global.LayerStack = [{isStatic: true, toString: function() {return "BaseLayer"}, composition: null}];
-	invalidateLayerComposition();
-};
-
-resetLayerStack();
-
-
 /* Global Layer Activation */
 
-GlobalLayers = [];
 
 Global.enableLayer = function(layer) {
 	if (GlobalLayers.include(layer))
@@ -581,6 +590,10 @@ LayerableObjectTrait = {
 
 Object.subclass("LayerableObject");
 Object.extend(LayerableObject.prototype, LayerableObjectTrait) // I don't know why .prototype is neccessary here
+
+// Static Initialize
+GlobalLayers = [];
+resetLayerStack();
 
 });
 console.log("loaded Layers.js");
