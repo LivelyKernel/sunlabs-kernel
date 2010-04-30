@@ -192,13 +192,15 @@ layerClass(ConnectorMorphLayer, Morph, {
 
 	updateConnection: function () {
 		// console.log("updateConnection");
-		if(this.startMorph) {
+		if (!this.wolrd) return; // because of localize...
+		
+		if (this.startMorph) {
 			var obj1 = this.startMorph;
 			var bb1 = obj1.getGlobalTransform().transformRectToRect(obj1.shape.bounds());
 		} else {
 			var bb1 = rect(this.getGlobalStartPos(),this.getGlobalStartPos());
 		}
-		if(this.endMorph) {
+		if (this.endMorph) {
 			var obj2 = this.endMorph;
 			var bb2 = obj2.getGlobalTransform().transformRectToRect(obj2.shape.bounds());
 		} else {
