@@ -27,7 +27,7 @@
 module('cop.Layers').requires().toRun(function(thisModule) {
 
 var log_layer_code = false;	
-var log = function(string) { if(log_layer_code) console.log(string); }; 
+var log = function log(string) { if(log_layer_code) console.log(string); }; 
 
 
 Global.ContextJS = {}
@@ -66,7 +66,7 @@ Object.extend(Function.prototype, {
 		};
 		var klass =  proceed.apply(this, args);
 		layeredMethods.each(function(ea){
-			log("layer property " + ea.methodName + " in " + ea.layerName);
+			// log("layer property " + ea.methodName + " in " + ea.layerName);
 			var layer = Global[ea.layerName];
 			if (!layer) throw new Error("could not find layer: " + ea.layerName);
 			if (ea.getterMethod || ea.setterMethod) {
@@ -78,7 +78,7 @@ Object.extend(Function.prototype, {
 				};
 				makePropertyLayerAware(klass.prototype, ea.methodName);
 			} else {
-				log("layer method " + ea.methodName + " in " + ea.layerName);
+				// log("layer method " + ea.methodName + " in " + ea.layerName);
 				layerMethod(layer, klass.prototype, ea.methodName, ea.methodBody);
 			}
 		});
@@ -95,7 +95,7 @@ var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObj
 		// in a subclass of "obj"			
 		var layer_defition_for_object = getLayerDefinitionForObject(layer, self);
 		if(layer_defition_for_object) {
-			log("  found layer definitions for object");
+			// log("  found layer definitions for object");
 			var layered_function;
 			// TODO: optional proceed goes here....
 			if (methodType == 'getter') {
@@ -108,14 +108,14 @@ var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObj
 		}
 		if(!layered_function)  {
 			// try the superclass hierachy
-			log("look for superclass of: " + self.constructor)
+			// log("look for superclass of: " + self.constructor)
 			var superclass = self.constructor.superclass
 			if (superclass) {
 				foundClass = superclass;
-				log("layered function is not found in this partial method, lookup for my prototype?")
+				// log("layered function is not found in this partial method, lookup for my prototype?")
 				return lookupLayeredFunctionForObject(superclass.prototype, layer, obj, function_name, methodType)
 			} else {
-				log("obj has not prototype")
+				// log("obj has not prototype")
 			}
 		};
 		return layered_function
@@ -124,12 +124,12 @@ var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObj
 }
 
 var executeWithLayers = function ContextJS$executeWithLayers(base_function, self, layers, index, obj, function_name, args, methodType) {
-	log("executeWithLayers(" + layers + ", " + obj + ", " + function_name+")");
+	// log("executeWithLayers(" + layers + ", " + obj + ", " + function_name+")");
 	if (index < layers.length) {
 		var layer = layers[layers.length - index - 1];
 		var layered_function = lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType)
 		if (layered_function) {
-			log("  found layered function: " + layered_function);
+			// log("  found layered function: " + layered_function);
 			var new_proceed = function executeWithLayers_new_proceed() {
 				var new_arguments = $A(arguments);
 				new_arguments.unshift(null);
@@ -143,7 +143,7 @@ var executeWithLayers = function ContextJS$executeWithLayers(base_function, self
 		
 		return executeWithLayers(base_function, self, layers, index + 1, obj, function_name, args, methodType);
 	};
-	log("execute base method");
+	// log("execute base method");
 	args.shift(); // remove proceed argument
 	return base_function.apply(self, args);
 };
@@ -169,7 +169,10 @@ Object.extend(ContextJS, {
 			args.unshift(null); // empty proceed argument (performance optimisation uglyness)
 			return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
 		};
-		wrapped_function.displayName = base_obj.toString() + "$" + function_name + "_wrapper"
+		
+		if (base_obj.constructor) {
+			wrapped_function.displayName = 'wrapped ' + base_obj.constructor.name + "$" + function_name
+		};
 		wrapped_function.isLayerAware = true;
 	
 		base_obj[function_name] = wrapped_function;
@@ -198,14 +201,15 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 		var wrapped_getter =  function() {
 			return executeWithLayers(getter, this, computerLayersFor(this), 0, base_obj, property, [null], 'getter');
 		};
-		wrapped_getter.displayName = base_obj.toString() + "$layered_get$" +property
+		
+		wrapped_getter.displayName = "layered get " + (base_obj.constructor ? (base_obj.constructor.type + "$"): "") +  +property
 		wrapped_getter.isLayerAware = true;
 		base_obj.__defineGetter__(property, wrapped_getter);
 	} 
 	var setter = base_obj.__lookupSetter__(property);
 	if (!setter) {
 		var setter = function(value, value2) {
-			log(this.toString() + " set " + property +" to " +value );
+			// log(this.toString() + " set " + property +" to " +value );
 			//base_obj[layered_property] = value
 			this[layered_property] = value;
 		};
@@ -217,14 +221,14 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 			args.unshift(null);
 			return executeWithLayers(setter, this, computerLayersFor(this), 0, base_obj, property, args, 'setter');
 		};
-		wrapped_setter.displayName = base_obj.toString() + "$layered_set$" +property	
+		wrapped_setter.displayName = "layered set " + (base_obj.constructor ? (base_obj.constructor.type + "$"): "") +  +property	
 		wrapped_setter.isLayerAware = true;
 		base_obj.__defineSetter__(property, wrapped_setter);
 	}
 };
 
 Global.getLayerDefinitionForObject = function Layers$getLayerDefinitionForObject(layer, object) {
-	log("getLayerDefinitionForObject(" + layer + "," + object +")")
+	// log("getLayerDefinitionForObject(" + layer + "," + object +")")
 	if (!layer || !object)
 		return;
 	var result = layer[object._layer_object_id];
@@ -243,7 +247,7 @@ var object_id_counter = 0; // hack, to work around absence of identity dictionar
 // So classes have names and names can be used as keys in dictionaries :-)
 
 Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
-	log("ensurePartialLayer(" + layer + ", " +object+ ")")
+	// log("ensurePartialLayer(" + layer + ", " +object+ ")")
 	if (!layer)
 		throw new Error("in ensurePartialLayer: layer is nil")
 	if(!object.hasOwnProperty("_layer_object_id")) {
@@ -257,17 +261,17 @@ Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 
 Global.layerMethod = function(layer, object,  property, func) {
 	ensurePartialLayer(layer, object)[property] = func;
-	func.displayName = object.toString() + "$" + property;
+	func.displayName = "layered " + layer.name + " " + (object.constructor ? (object.constructor.type + "$"): "") + property
 	ContextJS.makeFunctionLayerAware(object, property);
 };
 
 Global.layerGetterMethod = function(layer, object, property, getter) {
-	log("layerGetterMethod "+ layer + ", " + object +", " + property);
+	// log("layerGetterMethod "+ layer + ", " + object +", " + property);
 	ensurePartialLayer(layer, object).__defineGetter__(property, getter);
 };
 
 Global.layerSetterMethod = function(layer, object, property, setter) {
-	log("layerSetterMethod "+ layer + ", " + object +", " + property);
+	// log("layerSetterMethod "+ layer + ", " + object +", " + property);
 	ensurePartialLayer(layer, object).__defineSetter__(property, setter);
 };
 
@@ -427,9 +431,9 @@ Global.createLayer = function(name, silent) {
 
 // Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
 Global.layerObject = function(layer, object, defs) {
-	log("layerObject");
+	// log("layerObject");
 	Object.keys(defs).each(function(function_name) {
-		log(" layer property: " + function_name);
+		// log(" layer property: " + function_name);
 		layerProperty(layer, object, function_name, defs);
 	});
 };
@@ -442,12 +446,12 @@ Global.layerClass = function(layer, classObject, defs) {
 // layer around class methods and all subclass methods
 // (might be related to Aspect oriented programming)
 Global.layerClassAndSubclasses = function(layer, classObject, defs) {
-	log("layerClassAndSubclasses");
+	// log("layerClassAndSubclasses");
 	layerClass(layer, classObject, defs);
 	
 	// and now wrap all overriden methods...
 	classObject.allSubclasses().each(function(eaClass) {
-		log("make m1 layer aware in " + eaClass)
+		// log("make m1 layer aware in " + eaClass)
 		var obj = eaClass.prototype;
 		Object.keys(defs).each(function(eaFunctionName) {
 			if (obj.hasOwnProperty(eaFunctionName)) {
@@ -553,6 +557,7 @@ LayerableObjectTrait = {
 	},
 
 
+	// FLAG: REWRITE for performance...
 	getActivatedLayers: function LayerableObjectTrait$getActivatedLayers(optCallerList) {
 		var layers = this.getWithLayers();
 		var withoutLayers  = this.getWithoutLayers();		
@@ -571,10 +576,22 @@ LayerableObjectTrait = {
 				layers = layers.reject(function(ea){return withoutLayers.include(ea)}); 
 			};
 		});
-		
-		
 		return layers;
 	},
+
+	// less generic, support only "owner" relationship
+	// getActivatedLayers: function LayerableObjectTrait$getActivatedLayers() {
+	// 	var layers = this.getWithLayers();
+	// 	var withoutLayers  = this.getWithoutLayers();		
+	// 	var self= this;
+	// 	if (this.owner) {
+	// 		var parentLayers = self.owner.getActivatedLayers().reject(function(ea){return layers.include(ea)});
+	// 		layers = layers.concat(parentLayers);
+	// 		layers = layers.reject(function(ea){return withoutLayers.include(ea)})
+	// 	};
+	// 	return layers;
+	// },
+
 	
 	// Experiment with both directions to find a good solution
 	// activateLayersOn: [],   // forward  // DEPRICATED, but may be usable for generating events
