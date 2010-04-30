@@ -1,4 +1,4 @@
-module('Tests.ConnectorTest').requires(['lively.Connector']).toRun(function() {
+module('Tests.ConnectorTest').requires(['lively.Connector', 'lively.TestFramework']).toRun(function() {
 
 TestCase.subclass("Tests.ConnectorTest.NodeMorphLayeredMorphTest", {
 	setUp: function() {
