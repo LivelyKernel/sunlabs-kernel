@@ -378,23 +378,50 @@ Global.resetLayerStack = function() {
 };
 
 
+// can be replaced with basic objects
+Object.subclass("Layer", {
+	
+	initialize: function(name) {
+		this.name = name;
+	},
+	
+	getName: function() {
+		return this.name;
+	},
+	
+	toString: function() {
+		return this.name;
+	},	
+	
+	toLiteral: function() {
+		if (!this.name)
+			console.warn("Layer: Can not serialize without a name!")
+		return {
+			name: this.name,
+		};
+	},
+});
+
+
+Object.extend(Layer, {
+	fromLiteral: function(literal) {
+		return createLayer(literal.name, true)
+	}
+});
+
+
 /** ContextJS API **/
 
 /* Layer Definition */
 
 // creates a named global layer
-Global.createLayer = function(name) {
+Global.createLayer = function(name, silent) {
 	if (Global[name]) {
-		console.log("Layer "+ name + " is already there");
+		if (!silent)
+			console.log("Layer "+ name + " is already there");
 		return Global[name];
 	};
-	var layer = {};
-	layer.getName = function() {
-		return name;
-	},
-	layer.toString = function() {
-		return name;
-	};
+	var layer = new Layer(name);
 	Global[name] = layer;
 };
 
