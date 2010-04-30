@@ -29,6 +29,9 @@ module('cop.Layers').requires().toRun(function(thisModule) {
 var log_layer_code = false;	
 var log = function(string) { if(log_layer_code) console.log(string); }; 
 
+
+Global.ContextJS = {}
+
 Global.withLogLayerCode = function(func) {
 	try {
 		var old  = log_layer_code; 
@@ -38,25 +41,6 @@ Global.withLogLayerCode = function(func) {
 		log_layer_code = old;
 	}	
 };
-
-/*
- * creates a named global layer
- */	
-Global.createLayer = function(name) {
-	if (Global[name]) {
-		console.log("Layer "+ name + " is already there");
-		return Global[name];
-	};
-	var layer = {};
-	layer.getName = function() {
-		return name;
-	},
-	layer.toString = function() {
-		return name;
-	};
-	Global[name] = layer;
-};
-
 
 /*
  * extend the subclassing behavior of Lively Kernel to allow fo Layer-In-Class constructs  
@@ -318,7 +302,6 @@ layerPropertyWithShadow = function(layer, object, property) {
 	layerProperty(layer, object, property, defs);
 };
 
-
 computerLayersFor = function Layers$computerLayersFor(obj) { 
 	if (obj && obj.activeLayers) {
 		// the object is now fully responsible for the layer composition
@@ -395,6 +378,22 @@ Global.resetLayerStack = function() {
 /** ContextJS API **/
 
 /* Layer Definition */
+
+// creates a named global layer
+Global.createLayer = function(name) {
+	if (Global[name]) {
+		console.log("Layer "+ name + " is already there");
+		return Global[name];
+	};
+	var layer = {};
+	layer.getName = function() {
+		return name;
+	},
+	layer.toString = function() {
+		return name;
+	};
+	Global[name] = layer;
+};
 
 // Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
 Global.layerObject = function(layer, object, defs) {
