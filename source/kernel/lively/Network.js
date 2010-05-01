@@ -222,7 +222,9 @@ Object.extend(URL, {
 	source: new URL(document.documentURI),
 
 	codeBase: new URL(Config.codeBase).withRelativePartsResolved(),
+})
 
+Object.extend(URL, {
 	proxy: (function() {
 		if (!Config.proxyURL) {
 			if (URL.source.protocol.startsWith("file")) 
@@ -233,8 +235,7 @@ Object.extend(URL, {
 			if (!str.endsWith('/')) str += '/';
 			return new URL(str);
 		}
-	})(),
-	
+	})(),	
 });
 
 Object.extend(URL, {
