@@ -2260,6 +2260,7 @@ BoxMorph.subclass('TextMorph', {
 				this.setSelectionRange(prevSelection, prevSelection + replacement.length);
 			}
 		} catch (e) {
+
 			offset = offset || 0;
 			var msg = "" + e + "\n" + 
 				"Line: " + e.line + "\n" +
@@ -2269,7 +2270,14 @@ BoxMorph.subclass('TextMorph', {
 				var prefix = (new URL(Config.codeBase)).withRelativePartsResolved().toString()
 				msg += e.stack.replace(new RegExp(prefix, "g"),"");
 			}
-			this.world().setStatusMessage(
+
+			var world = WorldMorph.current();
+			if (!world) {
+				console.log("Error in " +this.id() + " bound eval: \n" + msg)
+				return
+			};
+
+			world.setStatusMessage(
 				msg,  
 				Color.red, 5,
 				function() {
