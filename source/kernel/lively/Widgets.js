@@ -2772,7 +2772,7 @@ BoxMorph.subclass("ColorPickerMorph", {
     },
 
     colorMap: function(x,y,rh2,wheel) {
-        var columnHue = wheel[x];
+        var columnHue = wheel[Math.round(x)];
         if (y <= rh2) return columnHue.mixedWith(Color.white, y/rh2); // lightest down to neutral
         else return Color.black.mixedWith(columnHue, (y - rh2)/rh2);  // neutral down to darkest
     },
