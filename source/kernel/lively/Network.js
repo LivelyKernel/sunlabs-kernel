@@ -596,7 +596,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 
 	formals: ["ContentDocument", //:XML
 		"ContentText", //:String
-		"URL" // :URL
+		"URL", // :URL
+		"RequestStatus" // :NetRequestStatus
 	],
 
 	initialize: function(plug, contentType) {

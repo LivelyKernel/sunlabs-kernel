@@ -17,12 +17,11 @@ var Prototype = {
 Object.extend = function(destination, source) {
   for (var property in source) {
 	var sourceObj = source[property];
-	if (sourceObj instanceof Function) {
-		if ((sourceObj.name.length == 0) && (!sourceObj.displayName)) {
+	destination[property] = sourceObj;
+	if (sourceObj instanceof Function &&
+		sourceObj.name && sourceObj.name.length == 0 &&
+		!sourceObj.displayName)
 			sourceObj.displayName = property;
-		}
-	};
-    destination[property] = sourceObj;
   }
   return destination;
 };
