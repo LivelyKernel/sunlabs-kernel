@@ -409,7 +409,8 @@ Object.subclass("Layer", {
 
 Object.extend(Layer, {
 	fromLiteral: function(literal) {
-		return createLayer(literal.name, true)
+		// console.log("Deserializing Layer Activation from: " + literal.name)
+		return createLayer(literal.name, false)
 	}
 });
 
@@ -427,6 +428,7 @@ Global.createLayer = function(name, silent) {
 	};
 	var layer = new Layer(name);
 	Global[name] = layer;
+	return layer
 };
 
 // Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
