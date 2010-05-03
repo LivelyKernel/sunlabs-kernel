@@ -664,6 +664,7 @@ DocumentType = function() {}
 
 Object.subclass('Event', {
     get type() { return this._type; },
+	set type(t) { this._type = t; },
     get currentTarget() { return this._currentTarget; },
     //...
     stopPropagation: function() { this._propagationStopped = true; },
