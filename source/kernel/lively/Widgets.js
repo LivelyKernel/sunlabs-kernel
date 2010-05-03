@@ -2195,6 +2195,9 @@ Morph.subclass("MenuMorph", {
     },
 
     onMouseUp: function(evt) {
+		if (evt.hand.checkMouseUpIsInClickTimeSpan(evt))
+			return true; // do nothing on a click...
+	
 		if (!this.invokeItemAtIndex(evt, this.selectedItemIndex(evt)) && !this.stayUp)
 	    	this.setMouseFocus(evt); // moved away, don't lose the focus
     },

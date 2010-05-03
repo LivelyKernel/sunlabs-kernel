@@ -559,6 +559,9 @@ var Event = (function() {
 		this.type = capitalizer[rawEvent.type] || rawEvent.type;
 		//this.charCode = rawEvent.charCode;
 
+		// fix timeStamp, e.g in Opera
+		this.timeStamp = this.rawEvent.timeStamp || new Date().getTime();
+
 		if (isMouse(rawEvent)) {
 			var x = rawEvent.pageX || rawEvent.clientX;
 			var y = rawEvent.pageY || rawEvent.clientY;
@@ -2944,10 +2947,14 @@ Morph.addMethods({
 	},
 
 	showMorphMenu: function(evt) {
+		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner) {
+			evt.hand.lastMorphMenu.remove(); // cleanup old open menus
+		};
 		var menu = this.morphMenu(evt);
 		var menuCaption = this.getName() ? this.getName() + ' - ' : '';
 		menuCaption += Object.inspect(this).truncate();
 		menu.openIn(this.world(), evt.point(), false, menuCaption); 
+		evt.hand.lastMorphMenu = menu;
 	},
 
 	morphMenu: function(evt) {
@@ -5311,9 +5318,10 @@ Morph.subclass("HandMorph", {
 	},
 	
     checkMouseUpIsInClickTimeSpan: function(mouseUpEvent) {
+		// console.log("checkMouseUpIsInClickTimeSpan " + this.lastMouseDownEvent.timeStamp )
 		if (!this.lastMouseDownEvent || !mouseUpEvent)
-			return undefined;
-		return (mouseUpEvent.rawEvent.timeStamp - this.lastMouseDownEvent.rawEvent.timeStamp) < (400)
+			return false;
+		return (mouseUpEvent.timeStamp - this.lastMouseDownEvent.timeStamp) < (400)
 	},
 
     checkMouseOverAndOut: function(newMouseOverMorph, evt) {
