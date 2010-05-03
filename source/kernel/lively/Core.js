@@ -2969,7 +2969,12 @@ Morph.addMethods({
 			items.push( ["show Model dump", this.addModelInspector.curry(this)]);
 
 		var menu = new MenuMorph(items, this);
+
 		menu.addLine();
+		menu.addItem( ["world...", function() {this.world().showMorphMenu(evt)}.bind(this)]);
+
+		menu.addLine();
+
 		menu.addItems(this.subMenuItems(evt));
 		return menu;
 	},
