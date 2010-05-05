@@ -1,6 +1,6 @@
 module('Tests.PresentationTests').requires('lively.TestFramework', 'lively.Presentation').toRun(function(ownModule) {
 
-TestCase.subclass('APresentationTest', {
+TestCase.subclass('Tests.PresentationTests.PresentationTest', {
     
 	setUp: function() {
 		this.page = new lively.Presentation.PageMorph(new Rectangle(0,0,800,600));

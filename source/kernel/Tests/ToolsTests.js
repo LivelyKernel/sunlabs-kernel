@@ -1400,7 +1400,7 @@ Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.ChangesConversionTe
 
 });
 
-TestCase.subclass('ATests.ToolsTests.ModuleWrapperTest', {
+TestCase.subclass('Tests.ToolsTests.ModuleWrapperTest', {
 	
 	testCreateWrapper: function() {
 		var sut = lively.ide.ModuleWrapper.forFile('foobar.js');

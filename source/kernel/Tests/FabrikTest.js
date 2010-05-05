@@ -691,7 +691,7 @@ TestCase.subclass('ComponentTest', {
     
 });
 
-TestCase.subclass('AFunctionComponentTest', {
+TestCase.subclass('FunctionComponentTest', {
     
     setUp: function() {
         this.fabrikComponent = new FabrikComponent();
@@ -921,7 +921,7 @@ TestCase.subclass('TextComponentTest', {
     }
 });
 
-TestCase.subclass('AConnectorMorphTest', {
+TestCase.subclass('ConnectorMorphTest', {
     
 	setUp: function() {
         this.componentConnector = new lively.Fabrik.ConnectorMorph();
@@ -1640,7 +1640,7 @@ TestCase.subclass('NodeRecordSerializationTest', {
 });
 
 
-TestCase.subclass('AFabrikUITest', {
+TestCase.subclass('FabrikUITest', {
     documentation: 'Tests if some UI building and rebuilding behavior of components.',
     
     testDeleteView: function() {
@@ -1764,7 +1764,7 @@ TestCase.subclass('FabrikConverterTest', {
     }
 });
 
-Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSerializationTest', {
+Tests.SerializationTests.SerializationBaseTestCase.subclass('FabrikSerializationTest', {
 
     assertFabrikWithTwoTextComponentsAndConnector: function(fabrik) {
         this.assert(fabrik instanceof FabrikComponent, "fabrik is no FabrikComponent");
@@ -2077,7 +2077,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('AFabrikSerializatio
 
 // logMethod(Component.prototype, "onDeserialize");
 
-Tests.SerializationTests.SerializationBaseTestCase.subclass('AClipboardCopierTest', {
+Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.SerializationTests.ClipboardCopierTest', {
 	
 	setUp: function($super) {
 		$super();
