@@ -1,36 +1,7 @@
-
 module('lively.Connector').requires('cop.Layers', 'lively.Helper').toRun(function() {
-
-// make morphs instance-specifically and structurally layerable
-Object.extend(Morph.prototype, LayerableObjectTrait);
-Morph.prototype.lookupLayersIn = ["owner"];
-
 
 createLayer("ConnectorMorphLayer");
 createLayer("NodeMorphLayer");
-createLayer("FindMorphLayer");
-
-/**
- *  Little Helper Layer to allow TextMorphs to be used as valid connector points
- *  even if they don't want to be dragged or dropped
- *  TODO: seperated the find Morph from event and drag and drop behavior
- */
-layerClass(FindMorphLayer, TextMorph, {
-	acceptsDropping: function(){
-		return true
-	}
-})
-
-Morph.makeConnector = function(startPoint, endPoint) {
-	endPoint = endPoint || startPoint;
-	var m = Morph.makeLine([pt(-1,-1), pt(0,0)], 1, Color.black);
-	m.setWithLayers([ConnectorMorphLayer]);
-	m.setupConnector();
-	m.setGlobalStartPos(startPoint);
-	m.setGlobalEndPos(endPoint);
-	m.updateArrow()
-	return m
-}
 
 layerClass(NodeMorphLayer, Morph, {
 	
@@ -312,5 +283,34 @@ layerClass(ConnectorMorphLayer, Morph, {
 		return this.worldPoint(this.getEndPos());
 	}
 });
+
+createLayer("FindMorphLayer");
+
+/**
+ *  Little Helper Layer to allow TextMorphs to be used as valid connector points
+ *  even if they don't want to be dragged or dropped
+ *  TODO: seperated the find Morph from event and drag and drop behavior
+ */
+layerClass(FindMorphLayer, TextMorph, {
+	acceptsDropping: function(){
+		return true
+	}
+})
+
+
+// make morphs instance-specifically and structurally layerable
+Object.extend(Morph.prototype, LayerableObjectTrait);
+Morph.prototype.lookupLayersIn = ["owner"];
+
+Morph.makeConnector = function(startPoint, endPoint) {
+	endPoint = endPoint || startPoint;
+	var m = Morph.makeLine([pt(-1,-1), pt(0,0)], 1, Color.black);
+	m.setWithLayers([ConnectorMorphLayer]);
+	m.setupConnector();
+	m.setGlobalStartPos(startPoint);
+	m.setGlobalEndPos(endPoint);
+	m.updateArrow()
+	return m
+}
 
 }); // module Connector
