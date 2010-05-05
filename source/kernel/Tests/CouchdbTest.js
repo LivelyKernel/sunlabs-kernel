@@ -1,6 +1,6 @@
 module('Tests.CouchdbTest').requires('lively.TestFramework', 'apps.Webcards').toRun(function(ownModule) {
 
-TestCase.subclass('CouchdbTest', {
+TestCase.subclass('Tests.CouchdbTest.CouchdbTest', {
 	
 	setUp: function() {
 		this.dbName = "test_couch_for_livelykernel";
@@ -51,22 +51,60 @@ TestCase.subclass('CouchdbTest', {
 
 }); //end of pure Couchdb test
 
-TestCase.subclass("JsonRestorer",{
+
+
+TestCase.subclass('MorphTestCase', {
 	
+
 	setUp: function() {
+		this.morphs = [];
+		this.world = WorldMorph.current();
+	},
+	
+	tearDown: function() {
+		if (this._errorOccured) {
+			// let the morphs stay open
+		} else {
+			this.morphs.each(function(ea) { ea.remove()})
+		}				
+	},
+	
+	openMorph: function(m) {
+		this.morphs.push(m);
+		this.world.addMorph(m)
+	},
+
+	openMorphAt: function(m, loc) {
+		this.morphs.push(m);
+		this.world.addMorphAt(m, loc)
+	},
+});
+
+
+MorphTestCase.subclass("Tests.CouchdbTest.JsonRestorer",{
+	
+	setUp: function($super) {
+		$super();
 		this.dbName = "test_couch_for_livelykernel";
 		this.cdb = new CouchDB(this.dbName);
 		var allDbs = this.cdb.allDbs();
 		if(!allDbs.include(this.dbName)){
 			this.cdb.createDb();
 		}
-		
 		this.morph = new ContentTextMorph();
 		this.nameString = "Hihi";
 		this.morph.webCardModel.setName(this.nameString);
 		this.morph.updateLabel();
-		
-		
+
+	},
+
+	tearDown: function($super) {
+		$super();
+		if(this.saved){
+			this.cdb.deleteDoc(this.restoredMorph);
+			this.cdb.deleteDoc(this.restoredMorphFromSubmorph);
+			this.saved = false;
+		}
 	},
 	
 	saveAndLoad: function() {
@@ -85,16 +123,9 @@ TestCase.subclass("JsonRestorer",{
 		
 		this.restorer.patchRefs();	
 		this.restorer.runDeserializationHooks();
+
 	},
-	
-	tearDown: function() {
-		if(this.saved){
-			this.cdb.deleteDoc(this.restoredMorph);
-			this.cdb.deleteDoc(this.restoredMorphFromSubmorph);
-			this.saved = false;
-		}
-	},
-	
+
 	testSetUp: function() {
 		this.assertEqual(this.morph.label.textString, this.nameString);
 	},
@@ -203,10 +234,12 @@ TestCase.subclass("JsonRestorer",{
 		this.saveAndLoad();
 		this.saved = false;//for testing
 		x = this.restoredMorph;
-		WorldMorph.current().addMorphAt(this.morph,pt(10,10));
+		this.openMorphAt(this.morph,pt(10,10));
+		this.morphs.push(this.morph);
 		this.restoredMorph.setId(this.restoredMorph.newId()); // For adding both to the world
 		this.restoredMorphFromSubmorph.setId(this.restoredMorphFromSubmorph.newId());
-		WorldMorph.current().addMorphAt(this.restoredMorph,pt(100,10));
+		this.openMorphAt(this.restoredMorph,pt(100,10));
+		this.morphs.push(this.restoredMorph);	
 		this.assertSameColor(this.restoredMorph.getTextColor(),red);
 		this.assertSameColor(this.restoredMorph.getFill(),color2);
 		this.assertEqual(this.restoredMorph.getBorderWidth(),bowi);
@@ -259,12 +292,11 @@ TestCase.subclass("JsonRestorer",{
 		this.assert(jso.shape, "no shape object");
 		this.assert(jso.shape.$shapeSpec, "no shape");
 		this.assert(jso.shape.$shapeSpec.x !== undefined, "no shape.x");
-	}
-	
+	},
 	
 }); // End of TestCase JsonRestorer
 
-TestCase.subclass('ReferenceSerializationTest', {
+TestCase.subclass('Tests.CouchdbTest.ReferenceSerializationTest', {
 	
 	setUp: function() {
 		this.relaxer = new Relaxer();
@@ -346,16 +378,18 @@ TestCase.subclass('ReferenceSerializationTest', {
 	
 });
 
-
-TestCase.subclass('ShapeJson', {
+MorphTestCase.subclass('Tests.CouchdbTest.ShapeJson', {
 	
 	testSelfSpace: function() {
 		var shp = new lively.scene.Rectangle(new Rectangle(1,2,23,24));
 		var shp2 = new lively.scene.Rectangle(new Rectangle(1,2,23,24));
 		var m = new Morph(shp);
 		var m2= new Morph(shp2);
-		WorldMorph.current().addMorph(m);
-		WorldMorph.current().addMorph(m2);
+		this.openMorph(m);
+		this.morphs.push(m);
+		this.openMorph(m2);
+		this.morphs.push(m2);
+		
 		var spec = shp.makeSpec();
 		shp.applySpec(spec);
 		m.setPosition(pt(33,33));
@@ -400,13 +434,13 @@ TestCase.subclass('ShapeJson', {
         var starSpec = star.shape.makeSpec();
         this.assert(starSpec);
         star.shape.applySpec(starSpec);
-        WorldMorph.current().addMorph(star);
+        this.openMorph(star);
 	},
 	
 	testCard: function() {
 		var sds = new SimpleDataStore(pt(600, 300));
 		sds.animate = false;
-		WorldMorph.current().addMorphAt(sds,pt(22,22));
+		this.openMorphAt(sds,pt(22,22));
 		sds.newCard();
 		var card = sds.stack.cards[0];
 		
@@ -417,13 +451,12 @@ TestCase.subclass('ShapeJson', {
 		morph.updateLabel();
 				
 		var spec = card.makeStyleSpec();
-		WorldMorph.current().removeMorph(sds);
-		WorldMorph.current().addMorphAt(sds.stack.cards[0],pt(22,22));
+		this.openMorphAt(sds.stack.cards[0],pt(22,22));
 	}
 	
 });
 
-TestCase.subclass('EqualTest', {
+TestCase.subclass('Tests.CouchdbTest.EqualTest', {
 	
 	testColorEqaul: function() {
 		var c1 = new Color(1,2,3);
@@ -443,7 +476,7 @@ TestCase.subclass('EqualTest', {
 	
 });
 
-TestCase.subclass('OtherTest', {
+TestCase.subclass('Tests.CouchdbTest.OtherTest', {
 	testKlassGeneration: function() {
 		var type = "ContentTextMorph";
 		var klass = Class.forName(type);
