@@ -204,6 +204,25 @@ var Loader = {
 			if (!expr) this.log("assert failed:" + msg);
 		}
 	}
+	
+	// WebCards
+	// if(UserAgent.isChrome){//Google Chrome dose not support multiple Params for logging
+	// 	var orignalWarn = platformConsole.warn;
+	// 	platformConsole.warn = function(){
+	// 		orignalWarn.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
+	// 	};
+	// 	
+	// 	var orignalInfo = platformConsole.info;
+	// 	platformConsole.info = function(){
+	// 		orignalInfo.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
+	// 	};
+	// 	
+	// 	var orignalLog = platformConsole.log;
+	// 	platformConsole.log = function(){
+	// 		orignalLog.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
+	// 	};
+	// }
+	
     
 })(); 
 
@@ -1580,6 +1599,10 @@ lively.data.Wrapper.subclass('Morph', {
             }
             var type = lively.data.Wrapper.getEncodedType(desc);
             // depth first traversal
+
+			// WebCards...
+		 	// if (type && !type.startsWith("anonymous_")) { //I have no idea what that mean
+
             if (type) {
                 var wrapper = importer.importWrapperFromNode(desc);
                 if (wrapper instanceof Morph) {
@@ -1808,18 +1831,34 @@ Morph.addMethods({
 		return this.shape.getStrokeWidth() || 0; // FIXME: fix defaults logic
 	},
 
-	shapeRoundEdgesBy: function(r) {
-		this.shape.roundEdgesBy(r);
+ 	setBorderRadius: function(r) {//jd
+    	this.shape.roundEdgesBy(r);
 		this.changed();
+    },
+
+ 	getBorderRadius: function() {
+		return this.shape.getBorderRadius(); 
 	},
+
+	shapeRoundEdgesBy: function(r) {
+		this.setBorderRadius(r);
+	},
+
+	getFillOpacity: function() { this.shape.getFillOpacity(); },
 
     setFillOpacity: function(op) { this.shape.setFillOpacity(op); },
 
     setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },
 
+	getStrokeOpacity: function() { this.shape.getStrokeOpacity(); },
+
     setLineJoin: function(joinType) { this.shape.setLineJoin(joinType); },
 
+	getLineJoin: function() { this.shape.getLineJoin(); }, 
+
     setLineCap: function(capType) { this.shape.setLineCap(capType); },
+
+ 	getLineCap: function() { this.shape.getLineCap(); },
 
 	applyStyle: function(specs) { // note: use reflection instead?
 		for (var i = 0; i < arguments.length; i++) {
@@ -1849,8 +1888,8 @@ Morph.addMethods({
 		spec.borderColor = this.getBorderColor();
 		spec.fill = this.getFill();
 		if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
-		spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
-		spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
+		spec.fillOpacity = typeof this.shape.getFillOpacity() !== undefined ? this.shape.getFillOpacity() : 1.0;
+		spec.strokeOpacity = typeof this.shape.getStrokeOpacity() !== undefined ?  this.shape.getStrokeOpacity() : 1.0;		
 		return spec;
 	},
 
@@ -2555,25 +2594,31 @@ Morph.addMethods({
 	},
 
 	// Animated moves for, eg, window collapse/expand
-	animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn) {
+	animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn, finalScale) {
 		if (nSteps <= 0) return;
 		var loc = this.position();
-		var delta = destination.subPt(loc).scaleBy(1/nSteps);
+		var delta = destination.subPt(loc).scaleBy(1 / nSteps);
+		var scaleDelta = finalScale ? (this.getScale() - finalScale) / nSteps : 0;
+		// console.log("scaleDelta = " + scaleDelta);
 		var path = [];
 		for (var i = 1; i<=nSteps; i++) { loc = loc.addPt(delta); path.unshift(loc); }
-		this.animatedFollowPath(path, msPer, callBackFn);
-	},
+		this.animatedFollowPath(path, msPer, callBackFn, scaleDelta);
+    },
 
-	animatedFollowPath: function(path, msPer, callBackFn) {
-		var spec = {path: path.clone(), callBack: callBackFn};
-		spec.action = this.startStepping(msPer, 'animatedPathStep', spec);
+    animatedFollowPath: function(path, msPer, callBackFn, scaleDelta) {
+		var spec = {path: path.clone(), callBack: callBackFn, scaleDelta: scaleDelta};
+		spec.action = this.startStepping(msPer, 'animatedPathStep', spec);	
+    },
 
-	},
 
-	animatedPathStep: function(spec) {
-		if (spec.path.length >= 1) this.setPosition(spec.path.pop());
-		if (spec.path.length >= 1) return;
-		spec.action.stop(this.world());
+	animatedPathStep: function(spec, scaleDelta) {
+		if (spec.path.length >= 1){
+			this.setScale(this.getScale()-spec.scaleDelta);
+			this.setPosition(spec.path.pop());
+		}
+		if (spec.path.length >= 1) return
+		//spec.action.stop(this.world()); //JD: out
+		this.stopSteppingScriptNamedAndRemoveFromSubmorphs('animatedPathStep');//JD: delte script out of activeScripts, neede for deserialization
 		spec.callBack.call(this);
 	},
 
@@ -3162,6 +3207,7 @@ Morph.addMethods({
 		hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
 		hand.showAsGrabbed(copy);
 		// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
+		return copy
 	},
 
 	shadowCopy: function(hand) {
@@ -4446,6 +4492,15 @@ PasteUpMorph.subclass("WorldMorph", {
 	    lively.lang.Execution.showStack();
 	}
     },
+
+ 	stopSteppingScriptNamedAndRemoveFromSubmorphs: function(sName) {
+		if (!this.activeScripts) return;
+		var all =this.activeScripts.select(function (ea) { return ea.scriptName == sName });
+		all.invoke('stop', this.world());
+		all.each(function(ea) {this.removeMorph(ea);}.bind(this));//remove
+		this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
+		if (this.activeScripts.length == 0) this.activeScripts = null;
+    },
     
     validateScheduler: function() {
         // inspect an array of all the actions in the scheduler.  Note this
@@ -4992,7 +5047,14 @@ WorldMorph.addMethods({
 		var world = this.world();
 		return [
 			["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world); }) }],
-			["Fabrik Component Box", function(evt) { require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox(world); }) }]
+			["Fabrik Component Box", function(evt) { require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox(world); }) }],
+			["Webcards with name", function(evt) { require('apps.Webcards').toRun(function(){
+					var sds = new SimpleDataStore(pt(600, 300));
+					world.prompt("Name of stack:", sds.openStackWithName.bind(sds));
+					world.addFramedMorph(sds, 'WebCards', pt(333, 222));
+				}); 
+			}],
+         
 		];
 	},
 

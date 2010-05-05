@@ -116,26 +116,38 @@ BoxMorph.subclass('ButtonMorph', {
 	},
     
 	changeAppearanceFor: function(value) {
-		var delta = value ? 1 : 0;
-		var gfx = lively.paint;
-		if (this.baseFill instanceof gfx.LinearGradient) {
-			var base = this.baseFill.stops[0].color().lighter(delta);
-			var gradient = 
-			new gfx.LinearGradient([new gfx.Stop(0, base), new gfx.Stop(1, base.lighter())],
-			gfx.LinearGradient.SouthNorth);
-			this.setFill(gradient);
-		} else if (this.baseFill instanceof gfx.RadialGradient) {
-			var base = this.baseFill.stops[0].color().lighter(delta);
-			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, base.lighter()), new gfx.Stop(1, base)]));
-		} else if (this.baseFill instanceof Color) {
-			this.setFill(this.baseFill.lighter(delta)); 
-		} else if (this.baseFill == null) {
-			this.setFill(null);
-		} else {
-			throw new Error('unsupported fill type ' + this.baseFill) 
-		};
+		if(!this.lighterFill || !this.normalFill){
+			this.initColor();
+		}
+		var fill = value ?  this.lighterFill : this.normalFill;
+		this.setFill(fill);
 	},
     
+  	initColor: function() {
+    	var gfx = lively.paint;
+        if (this.baseFill instanceof gfx.LinearGradient) {
+            var base = this.baseFill.stops[0].color().lighter(0);
+	    	this.normalFill =
+				new gfx.LinearGradient([new gfx.Stop(0, base), new gfx.Stop(1, base.lighter())],
+				gfx.LinearGradient.SouthNorth);       
+
+            var base = this.baseFill.stops[0].color().lighter(1);
+	    	this.lighterFill = 
+				new gfx.LinearGradient([new gfx.Stop(0, base), new gfx.Stop(1, base.lighter())],
+				gfx.LinearGradient.SouthNorth);
+
+        } else if (this.baseFill instanceof gfx.RadialGradient) {
+            var base = this.baseFill.stops[0].color().lighter(0);
+            this.normalFill= new gfx.RadialGradient([new gfx.Stop(0, base.lighter()), new gfx.Stop(1, base)]);
+
+             var base = this.baseFill.stops[0].color().lighter(1);
+             this.lighterFill= new gfx.RadialGradient([new gfx.Stop(0, base.lighter()), new gfx.Stop(1, base)]);
+        } else if (this.baseFill instanceof Color) {
+        	this.normalFill = this.baseFill.lighter(0);
+            this.lighterFill = this.baseFill.lighter(1);
+        } else throw new Error('unsupported fill type ' + this.baseFill);
+    },
+
 	applyStyle: function($super, spec) {
 		$super(spec);
 		this.baseFill = this.shape.getFill(); // we may change appearance depending on the value
@@ -659,8 +671,9 @@ Morph.subclass('HandleMorph', {
 
     onMouseUp: function(evt) {
         if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
-	    // last call for, eg, vertex deletion
-	    if (this.partName) this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), true); 
+	    	// last call for, eg, vertex deletion
+			if ('partName' in this && this.partName !== undefined && this.partName !== null)
+				this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), true); 
         }
         this.remove(); 
     },
@@ -1428,6 +1441,36 @@ BoxMorph.subclass("TextListMorph", {
         }
         this.resetScrollPane(true);
     },
+
+  	prependItem: function(item) {
+    	if(!item){
+			console.log("no item to prepend");
+    		return;
+    	}
+    	var priorItem = this.getSelection();
+    	this.itemList.unshift(item);
+    	this.generateSubmorphs([item]);
+
+    	//no the last submorph has to become the first one:
+    	var oldPosition = this.submorphs[0].getPosition();
+    	var p2 = this.submorphs[1].getPosition();
+    	var delta = pt(0, p2.y-oldPosition.y);
+		for (var i = 0; i < this.submorphs.length-1; i++) {
+            this.submorphs[i].moveBy(delta);
+        }
+    	var last = this.submorphs.last();
+    	last.remove();
+    	this.insertMorph(last,false);
+    	/*this.rawNode.insertBefore(last.rawNode, this.submorphs.last().rawNode.nextSibling);
+
+    	this.submorphs.unshift(last);*/
+    	last.setPosition(oldPosition);
+
+    	this.setSelectionToMatch(priorItem);
+    	this.resetScrollPane();
+    	//this.enclosingScrollPane();
+    },
+
     
     updateList: function(newList) {
 	if(!newList || newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
@@ -2366,7 +2409,7 @@ BoxMorph.subclass("SliderMorph", {
 		if (!evt.mouseButtonPressed) return;
 
 		// Compute the value from a new mouse point, and emit it
-		var p = this.localize(evt.mousePoint).subPt(this.hitPoint);
+		var p = this.localize(evt.mousePoint).subPt(this.hitPoint || evt.mousePoint);//Sometimes this.hitPoint is undefined
 		var bnds = this.shape.bounds();
 		var ext = this.getSliderExtent(); 
 	
@@ -2680,7 +2723,11 @@ BoxMorph.subclass("ScrollPane", {
 			clipR = this.calcClipR();
 		};
         this.clipMorph.setExtent(clipR.extent());
-        this.innerMorph().setExtent(clipR.extent());
+        
+		this.innerMorph().setExtent(clipR.extent());
+		// WebCards commented this out: //this destroyes the content. i don't like that (Julius)
+		//this.innerMorph().setExtent(clipR.extent()); 
+		
         var barBnds = bnds.withTopLeft(clipR.topRight());
         if (this.menuButton) {
             var w = this.scrollBarWidth;

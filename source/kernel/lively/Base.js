@@ -492,6 +492,10 @@ var Class = {
 			this.deserialize.apply(this, arguments);
 		} else if (Global.Copier && (arguments[0] instanceof Copier)) {
 			this.copyFrom.apply(this, arguments);
+	
+		// } if (Global.Restorer && (arguments[0] instanceof Restorer)) {
+			// for WebCards)
+			//Do nothing
 		} else {
 			// if this.initialize is undefined then prolly the constructor was called without 'new'
 			this.initialize.apply(this, arguments); 

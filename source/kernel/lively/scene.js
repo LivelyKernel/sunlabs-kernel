@@ -555,7 +555,9 @@ this.Node.addMethods({
 	rawNode: null, // set by subclasses
 
 	setBounds: function(bounds) { 
-		throw new Error('setBounds unsupported on type ' + this.getType());
+		//copy uses this, so throwing is not nice
+    	console.warn('Node: setBounds unsupported on type ' + this.getType());
+		// throw new Error('setBounds unsupported on type ' + this.getType());
 	},
 
 	copyFrom: function($super, copier, other) {
@@ -1425,8 +1427,14 @@ this.Shape.subclass('lively.scene.Path', {
 	},
 	
 	copyFrom: function($super, copier, other) {
-		$super(copier, other);
+		$super(copier, other);		
 		this.setElements(other.elements);
+
+		// WebCards Changes:
+		// var res = $super(copier, other);
+		// 		this.setVertices(other.vertices());
+		// 		this.cachedVertices = other.cachedVertices;
+		// 		return res;		
 	},
 
 	setElements: function(elts) {

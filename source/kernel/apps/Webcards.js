@@ -2,7 +2,7 @@
 // ===========================================================================
 // WebCards 
 // ===========================================================================
-module('lively.Webcards').requires('Helper.js','JComponents.js','lib.CouchDB','cop/Layers.js').toRun(function() {
+module('apps.Webcards').requires('lively.Helper','apps.JComponents','apps.CouchDB','cop.Layers').toRun(function() {
 
 createLayer("WebcardsLayer");
 createLayer("FrontMorphLayer");
