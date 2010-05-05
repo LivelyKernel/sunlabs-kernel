@@ -436,16 +436,24 @@ Widget.subclass('TestRunner', {
 	
 	runTests: function(buttonDown) {
 		if (buttonDown) return;
+		this.runSelectedTestCase();
+	},
+
+	runAllTests: function(buttonDown) {
+		if (buttonDown) return;
+		this.runAllTestCases();
+	},
+
+	runSelectedTestCase: function() {
 		var testClassName = this.getSelectedTestClass();
 		if (!testClassName) return;
 		var testCase = new (Class.forName(testClassName))();
 
 		testCase.runAll();
-		this.setResultOf(testCase);
+		this.setResultOf(testCase);		
 	},
 	
-	runAllTests: function(buttonDown) {
-		if (buttonDown) return;
+	runAllTestCases: function() {
 		var testSuite = new TestSuite();
 		var counter = 0;
 		//all classes from the list
@@ -469,8 +477,8 @@ Widget.subclass('TestRunner', {
 		testSuite.runAll();
 		testSuite.runFinished = function() {
 	        self.setResultOf(testSuite);
-		};
-			
+		};		
+		
 	},
 		
 	setResultOf: function(testObject) {

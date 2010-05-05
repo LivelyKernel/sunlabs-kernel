@@ -35,9 +35,9 @@ enableLayer(DeployTimeTestRunLayer);
 // DeployTimeTestRunLayer is used to separate the concern, but not to specify additional dynamic behavior
 
 layerClass(DeployTimeTestRunLayer, TestRunner, {
-	runTests: function(proceed, buttonDown) {
+	runSelectedTestCase: function(proceed) {
 		withLayers([TimeTestRunLayer], function() {
-			proceed(buttonDown)
+			proceed()
 		})
 	}
 })
