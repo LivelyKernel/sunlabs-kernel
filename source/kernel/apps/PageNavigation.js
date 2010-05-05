@@ -163,7 +163,7 @@ layerClass(PageNavigationLayer, WorldMorph, {
 
 	displayOnCanvas: function(proceed, canvas) {
 		proceed(canvas);
-		if (Config.showPageNumber && PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
+		if (Config.showPageNumber && PageNavigation.current() && PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
 			this.ensurePageNumberMorph();
 		else
 			this.removePageNumberMorph();
