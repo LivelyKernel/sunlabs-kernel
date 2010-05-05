@@ -492,8 +492,7 @@ var Class = {
 			this.deserialize.apply(this, arguments);
 		} else if (Global.Copier && (arguments[0] instanceof Copier)) {
 			this.copyFrom.apply(this, arguments);
-	
-		// } if (Global.Restorer && (arguments[0] instanceof Restorer)) {
+		} else if (Global.Restorer && (arguments[0] instanceof Restorer)) {
 			// for WebCards)
 			//Do nothing
 		} else {
