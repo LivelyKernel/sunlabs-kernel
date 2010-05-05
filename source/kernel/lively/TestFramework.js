@@ -529,11 +529,11 @@ Widget.subclass('TestRunner', {
 		testClassList.innerMorph().focusHaloBorderWidth = 0;
 	
 		var runButton = panel.runButton;
-		runButton.setLabel("Run Tests");
+		runButton.setLabel("Run TestCase");
 		runButton.connectModel({model: self, setValue: "runTests"});
 		
 		var runAllButton = panel.runAllButton;
-		runAllButton.setLabel("Run All Tests");
+		runAllButton.setLabel("Run All TestCases");
 		runAllButton.connectModel({model: self, setValue: "runAllTests"});
 		
 		// directly using the morph for setting the color -- 
