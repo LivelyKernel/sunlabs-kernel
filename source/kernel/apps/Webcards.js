@@ -91,6 +91,9 @@ BoxMorph.subclass("SimpleDataStore", {//PanelMorph makes problems because of foc
 		if(!this.stack){
 			console.log("create new Stack");
 			this.makeStackWithoutGivenName();
+			if(!this.stack) {
+				throw new Error('WebCards: Stack creation failed in newCard')
+			}
 		}
 		var freshCard = this.stack.newCard();
 		this.showCard(freshCard);		
@@ -295,7 +298,7 @@ BoxMorph.subclass("SimpleDataStore", {//PanelMorph makes problems because of foc
 	    	}
 		}
 		if(!name){
-			console.error("No Name found");
+			console.warn("Error: No Name found");
 			this.world().alert("Please try again. No random name could be found");
 		}else{
 			this.relaxedMgmt.initNewStack(name);
@@ -1834,7 +1837,7 @@ Object.subclass("RelaxedMgmt",{
 						var json = this.objCdb.open(current.$ref);
 						var resto = restorer.restore(json);
 					}else{
-						console.error("Allready tried to retrieve: %s",current.$ref);
+						console.warn("ERROR: Allready tried to retrieve: %s",current.$ref);
 						var resto = null;
 						break outer;
 						
@@ -1851,7 +1854,7 @@ Object.subclass("RelaxedMgmt",{
 					if(json.rows[0] && json.rows[0].value.$id === current.$id){
 						var resto =restorer.restore(json.rows[0].value);
 					}else{
-						console.error("Bad result. Too much rows or no rows. And first $id is wrong");
+						console.warn("ERROR: Bad result. Too much rows or no rows. And first $id is wrong");
 						var resto = null;
 						break outer;
 					}
@@ -3488,7 +3491,7 @@ layerClassAndSubclasses(FrontMorphLayer, Morph, {
 		try{
 			this.ownerProg.showPrefs(this);
 		}catch(e){
-			console.error(e);
+			console.error("ERROR " + e);
 		}
 	},
 	
