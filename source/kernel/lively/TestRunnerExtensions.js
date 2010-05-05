@@ -6,9 +6,43 @@
 
 module('lively.TestRunnerExtensions').requires('lively.Helper', 'cop.Layers', 'lively.TestFramework').toRun(function() {
 	
-	
 createLayer("TimeTestRunLayer");
 
+layerClass(TimeTestRunLayer, TestCase, {
+	runTest: function(proceed) {
+		var profileName = "runTest " + this.currentSelector 
+		console.profile(profileName);
+		var start = (new Date()).getTime();	
+		proceed();
+		var time = (new Date()).getTime() - start;
+		console.profileEnd(profileName);
+		TimeTestRunLayer.setTimeOfTestRun(this.constructor.name, this.currentSelector, time)
+	}
+})
+
+layerClass(TimeTestRunLayer, TestRunner, {
+	setResultOf: function(proceed, testObject) {
+		proceed(testObject);
+		console.log( "\nTime TestRuns:\n" + TimeTestRunLayer.getSortedTimeOfTestRuns());
+		TimeTestRunLayer.timeOfTestRuns = {} // clear the run...
+	}
+})
+
+createLayer("DeployTimeTestRunLayer");
+enableLayer(DeployTimeTestRunLayer);
+
+// TimeTestRunLayer should only be active, when the controll flow goes throuh runTests...
+// DeployTimeTestRunLayer is used to separate the concern, but not to specify additional dynamic behavior
+
+layerClass(DeployTimeTestRunLayer, TestRunner, {
+	runTests: function(proceed, buttonDown) {
+		withLayers([TimeTestRunLayer], function() {
+			proceed(buttonDown)
+		})
+	}
+})
+
+// Private Helper Functions
 TimeTestRunLayer.setTimeOfTestRun = function(className, selector, time) {
 	if (!this.timeOfTestRuns)
 		this.timeOfTestRuns = {};
@@ -37,42 +71,6 @@ TimeTestRunLayer.getSortedTimeOfTestRuns = function() {
 	})
 	return string 
 }
-
-layerClass(TimeTestRunLayer, TestCase, {
-	runTest: function(proceed) {
-		var profileName = "runTest " + this.currentSelector 
-		console.profile(profileName);
-		var start = (new Date()).getTime();	
-		proceed();
-		var time = (new Date()).getTime() - start;
-		console.profileEnd(profileName);
-		TimeTestRunLayer.setTimeOfTestRun(this.constructor.name, this.currentSelector, time)
-	}
-})
-
-layerClass(TimeTestRunLayer, TestRunner, {
-	setResultOf: function(proceed, testObject) {
-		proceed(testObject);
-		console.log( "\nTime TestRuns:\n" + TimeTestRunLayer.getSortedTimeOfTestRuns());
-		TimeTestRunLayer.timeOfTestRuns = {} // clear the run...
-	}
-})
-
-
-createLayer("DeployTimeTestRunLayer");
-enableLayer(DeployTimeTestRunLayer);
-
-// TimeTestRunLayer should only be active, when the controll flow goes throuh runTests...
-// DeployTimeTestRunLayer is used to separate the concern, but not to specify additional dynamic behavior
-
-layerClass(DeployTimeTestRunLayer, TestRunner, {
-	runTests: function(proceed, buttonDown) {
-		withLayers([TimeTestRunLayer], function() {
-			proceed(buttonDown)
-		})
-	}
-})
-
 
 
 
