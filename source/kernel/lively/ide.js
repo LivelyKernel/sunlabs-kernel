@@ -2559,7 +2559,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 	},
 
 	switchCodeBase: function(newCodeBaseURL) {
-		this.codeBaseURL = new URL(newCodeBaseURL);
+		this.codeBaseURL = new URL(newCodeBaseURL.withRelativePartsResolved());
 		this._allFiles = new WebResource(newCodeBaseURL).subDocuments().collect(function(ea) { return ea.getName() });
 	},
 	
