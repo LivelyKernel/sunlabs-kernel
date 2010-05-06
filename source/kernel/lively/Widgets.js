@@ -122,7 +122,7 @@ BoxMorph.subclass('ButtonMorph', {
 		var fill = value ?  this.lighterFill : this.normalFill;
 		this.setFill(fill);
 	},
-    
+
   	initColor: function() {
     	var gfx = lively.paint;
         if (this.baseFill instanceof gfx.LinearGradient) {
@@ -145,7 +145,11 @@ BoxMorph.subclass('ButtonMorph', {
         } else if (this.baseFill instanceof Color) {
         	this.normalFill = this.baseFill.lighter(0);
             this.lighterFill = this.baseFill.lighter(1);
-        } else throw new Error('unsupported fill type ' + this.baseFill);
+        } else if (this.baseFill == null || this.baseFill == undefined) {
+			this.setFill(null);
+		} else {
+			throw new Error('unsupported fill type ' + this.baseFill);
+		}
     },
 
 	applyStyle: function($super, spec) {
