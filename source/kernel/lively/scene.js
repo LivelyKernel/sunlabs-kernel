@@ -473,11 +473,49 @@ lively.data.Wrapper.addMethods({
 
 Object.extend(lively.data.Wrapper, {
 
+	collectAllFillsInObjects: function(objects, result) {
+		result = result || [];
+		var self = this;
+		objects.each(function(ea) {
+			self.collectAllFillsInObject(ea, result);
+		})
+		return result		
+	},
+
+	collectAllFillsInObject: function(object, result) {
+		result = result || [];
+		if (!object)
+			return result;
+		Properties.forEachOwn(object, function(key, value) { 
+			// console.log("key " + key + " value" + value)
+			if (value && value instanceof lively.paint.Gradient) {
+				result.push(value)
+			}
+		});
+
+		// we could walkup all properties in all objects recursivly...
+		// but that may take some time (measure it?)
+		// lookup static fills in classes
+		if (object.prototype) {
+			this.collectAllFillsInObject(object.prototype, result)
+		};
+
+		// look into the style object
+		if (object.style) {
+			this.collectAllFillsInObject(object.style, result)
+		};
+
+		return result
+	},
+
 	collectSystemDictionaryGarbage: function(rootMorph) {
 		"lively.data.Wrapper.collectSystemDictionaryGarbage()"
 		if (!rootMorph)
 			rootMorph = WorldMorph.current();
-		var usedFillIds = rootMorph.collectAllUsedFills([]).collect(function(ea){return ea.id()});
+		var fills = [];
+		rootMorph.collectAllUsedFills(fills)
+		this.collectAllFillsInObjects(Object.values(Global), fills);
+		var usedFillIds = fills.collect(function(ea){return ea.id()});
 		$A(new lively.data.Wrapper().dictionary().childNodes).each(function(ea) {
 			// console.log("GC considering " + ea)
 			if(['linearGradient', 'radialGradient'].include(ea.tagName) && !usedFillIds.include(ea.id)) {
@@ -487,8 +525,6 @@ Object.extend(lively.data.Wrapper, {
 		});
 	},
 });
-
-
 
 Object.extend(Object.subclass('lively.data.FragmentURI'), {
 	parse: function(string) {

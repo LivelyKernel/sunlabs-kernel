@@ -173,6 +173,43 @@ TestCase.subclass('Tests.SceneTest.PointTest', {
 	}
 })
 
+TestCase.subclass('Tests.SceneTest.FillGarbageCollectionTest', {
+
+	testCollectAllFillsInObject: function() {
+		var gfx = lively.paint;
+		var fill = new gfx.LinearGradient([new gfx.Stop(0, Color.white), new gfx.Stop(1, Color.lightGray)]);
+		var obj = {a: 1, b: fill};
+		var result = lively.data.Wrapper.collectAllFillsInObject(obj)
+		this.assertIdentity(result[0], fill, "fill got not collected")
+	},
+
+	testCollectAllFillsInObjects: function() {
+		var gfx = lively.paint;
+		var fill = new gfx.LinearGradient([new gfx.Stop(0, Color.white), new gfx.Stop(1, Color.lightGray)]);
+		var obj = {a: 1, b: fill};
+		var result = lively.data.Wrapper.collectAllFillsInObjects([obj, 3, "Hello", Morph])
+		this.assertIdentity(result[0], fill, "fill got not collected")
+	},
+
+	testCollectAllFillsInLinkMorph: function() {
+		var fill = LinkMorph.prototype.style.fill;
+		var result = lively.data.Wrapper.collectAllFillsInObject(LinkMorph)
+		this.assert(result.include(fill), "fill got not collected")
+	},
+	
+})
+
+Object.subclass("FillCollectingBenchmark", {
+
+	bechmarkCollectFillsStartingFromGlobal: function() {
+		var start = new Date().getTime();	
+		var result = lively.data.Wrapper.collectAllFillsInObjects(Object.values(Global))
+		var time = new Date().getTime() - start;
+		console.log("Collected all Fills in Global in " + time + "ms")
+		return time
+	}
+});
+
 });
 
 
