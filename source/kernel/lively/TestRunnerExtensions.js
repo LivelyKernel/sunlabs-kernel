@@ -7,9 +7,9 @@ module('lively.TestRunnerExtensions').requires('lively.Helper', 'cop.Layers', 'l
 createLayer("TimeEachTestLayer");
 
 layerClass(TimeEachTestLayer, TestCase, {
-	runTest: function(proceed) {
+	runTest: function(proceed, selector) {
 		var start = (new Date()).getTime();	
-		proceed();
+		proceed(selector);
 		var time = (new Date()).getTime() - start;
 		this.result.setTimeOfTestRun(this.currentSelector, time)
 	},
@@ -64,10 +64,10 @@ layerClass(TimeTestLayer, TestRunner, {
 
 createLayer("ProfileEachTestLayer");
 layerClass(ProfileEachTestLayer, TestCase, {
-	runTest: function(proceed) {
+	runTest: function(proceed, selector) {
 		var profileName = "profile "  + this.currentSelector 
 		console.profile(profileName);
-		proceed();
+		proceed(selector);
 		console.profileEnd(profileName);
 	},
 });
