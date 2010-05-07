@@ -513,8 +513,8 @@ Object.extend(lively.data.Wrapper, {
 		if (!rootMorph)
 			rootMorph = WorldMorph.current();
 		var fills = [];
-		rootMorph.collectAllUsedFills(fills)
 		this.collectAllFillsInObjects(Object.values(Global), fills);
+		rootMorph.collectAllUsedFills(fills)
 		var usedFillIds = fills.collect(function(ea){return ea.id()});
 		$A(new lively.data.Wrapper().dictionary().childNodes).each(function(ea) {
 			// console.log("GC considering " + ea)

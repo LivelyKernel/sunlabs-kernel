@@ -3326,30 +3326,37 @@ PseudoMorph.subclass('Invocation', {
 
 Invocation.subclass('SchedulableAction', {
 
-    documentation: "Description of a periodic action",
-    beVerbose: false,
+	documentation: "Description of a periodic action",
+	beVerbose: false,
 
-    initialize: function($super, actor, scriptName, argIfAny, stepTime) {
-	$super(actor, scriptName, argIfAny);
-	this.stepTime = stepTime;
-	this.ticks = 0;
-    },
+	initialize: function($super, actor, scriptName, argIfAny, stepTime) {
+		$super(actor, scriptName, argIfAny);
+		this.stepTime = stepTime;
+		this.ticks = 0;
+	},
 
-    toString: function() {
-	return Strings.format("#<SchedulableAction[actor=%s,script=%s,arg=%s,stepTime=%s]>", 
-			      this.actor, this.scriptName, this.argIfAny, this.stepTime);
-    },
+	toString: function() {
+		return Strings.format("#<SchedulableAction[actor=%s,script=%s,arg=%s,stepTime=%s]>", 
+		this.actor, this.scriptName, this.argIfAny, this.stepTime);
+	},
 
-    stop: function(world) {
-	if (this.beVerbose) console.log("stopped stepping task %s", this);
-	world.stopSteppingFor(this);
-    },
+	stop: function(world) {
+		if (this.beVerbose) console.log("stopped stepping task %s", this);
+		world.stopSteppingFor(this);
+	},
 
-    start: function(world) {
-	if (this.beVerbose) console.log("started stepping task %s", this);
-	world.startSteppingFor(this);
-    }
+	start: function(world) {
+		if (this.beVerbose) console.log("started stepping task %s", this);
+		world.startSteppingFor(this);
+	},
 
+	equalActorAndName: function(other) {
+		if (!other) 
+			return false;
+		if (this === other) 
+			return true;
+		return (this.actor === other.actor) && (this.scriptName == other.scriptName)
+	}
 });
 
 // Morph stepping/timer functions
@@ -4470,27 +4477,18 @@ PasteUpMorph.subclass("WorldMorph", {
     
     stopSteppingFor: function(action, fromStart) { // should be renamed to unschedule()
         // fromStart means it is just getting rid of a previous one if there,
-        // so not an error if not found
-	// DI FIXME: This only removes the first one found (alarms may be multiply scheduled)
+	    // so not an error if not found
 
         if (this.currentScript === action) {
-	    // Not in queue; just prevent it from being rescheduled
-	    this.currentScript = null;
-	    return;
-	}
-	var list = this.scheduledActions;  // shorthand
-        for (var i = 0; i < list.length; i++) {
-            var actn = list[i][1];
-            if (actn === action) { list.splice(i, 1); return;  }
-        }
-        // Never found that action to remove.  Note this is not an error if called
-        // from startStepping just to get rid of previous version
-        if (!fromStart) {
-	    console.log('failed to stopStepping ' + action);
-	    console.log('world = ' + Object.inspect(this));
-	    console.log('actors world = ' + Object.inspect(action.actor.world()));
-	    lively.lang.Execution.showStack();
-	}
+		    // Not in queue; just prevent it from being rescheduled
+		    this.currentScript = null;
+		    return;
+		};
+
+		this.scheduledActions = this.scheduledActions.reject(function(ea) {
+			var eaAction = ea[1]
+			return action.equalActorAndName(eaAction)
+		})
     },
 
  	stopSteppingScriptNamedAndRemoveFromSubmorphs: function(sName) {

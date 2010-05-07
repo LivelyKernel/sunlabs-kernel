@@ -4944,13 +4944,14 @@ BoxMorph.subclass("StatusMessageContainer", {
 	},
 
 	dismissAll: function() {
-		this.visibleSubmorphs().each(function(ea) {
+		this.submorphs.clone().each(function(ea) {
 			ea.remove()
 		})
 	},
 
 	startUpdate: function() {
-		this.startStepping(1000, "updateMessages"); // once per second
+		// don't use the script morphs
+		this.world().startSteppingFor(new SchedulableAction(this, 'updateMessages', undefined, 1000))
 	},
 
 	showDismissAllButton: function() {
@@ -4965,7 +4966,7 @@ BoxMorph.subclass("StatusMessageContainer", {
 
 	onDeserialize: function() {
 		this.dismissAll();
-		this.stopStepping(); // ensure that  it works even for old potentially broken pages...
+		this.stopStepping(); // ensure that  it works even for old potentially broken pages...		
 		this.startUpdate();
 	},
 
@@ -5027,7 +5028,10 @@ BoxMorph.subclass("StatusMessageContainer", {
 		this.addMorph(statusMorph);
 		if (delay) {
 			statusMorph.removeAtTime = new Date().getTime() + (delay * 1000);
-		}
+		};
+		
+		this.startUpdate() // actually not needed but to be sure....
+		
 	}
 })
 
