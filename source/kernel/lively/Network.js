@@ -615,6 +615,14 @@ View.subclass('Resource', NetRequestReporterTrait, {
 		return "#<Resource{" + this.getURL() + "}>";
 	},
 
+	removeNetRequestReporterTrait: function() {
+		delete this.setRequestStatus;
+		this.setRequestStatus = function(status) {
+			if (this.getModel && this.getModel() && this.getModel().setRequestStatus)
+				this.getModel().setRequestStatus(status);
+		}.bind(this);
+	},
+	
 	updateView: function(aspect, source) {
 		var p = this.modelPlug;
 		if (!p) return;
@@ -943,6 +951,7 @@ Object.subclass('SVNVersionInfo', {
 
 // TODO will be merged with Resource
 // TODO make async?
+// deprecated
 Object.subclass('FileDirectory', {
 
 	initialize: function(url) {
@@ -1082,6 +1091,7 @@ Object.subclass('WebResource', {
 		return this;
 	},
 
+	// deprecated
 	getContent: function(rev, contentType) {
 		var resource = new SVNResource(
 			this.getURL().toString(),
@@ -1092,6 +1102,7 @@ Object.subclass('WebResource', {
 		return resource.getContentText();
 	},
 
+	// deprecated
 	getDocument: function(rev, contentType) {
 		var resource = new SVNResource(
 			this.getURL().toString(),
@@ -1102,12 +1113,14 @@ Object.subclass('WebResource', {
 		return resource.getContentDocument();
 	},
 
+	// deprecated
 	setContent: function(content, contentType) {
 		var resource = new Resource(Record.newPlainInstance({URL: this.getURL().toString()}));
 		if (contentType) resource.contentType = contentType;
 		resource.store(content, this.isSync());
 	},
 
+	// deprecated
 	exists: function(optCb) {
 		if (this.isSync())
 			return new NetRequest().beSync().get(this.getURL()).transport.status < 400;
