@@ -736,6 +736,7 @@ var Event = (function() {
 	}
     };
     var canvas = Global.document.getElementById("canvas");
+	if (!canvas) return
     canvas.addEventListener("dragstart", disabler, true);
     canvas.addEventListener("selectstart", disabler, true);
 	if (Config.suppressDefaultMouseBehavior)
