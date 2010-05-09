@@ -1559,7 +1559,6 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
 	evalSource: function($super, source) {
 		var result = $super(source);
 		// FIXME move elsewhere....!!!! own subclass?
-		debugger
 		if (result && this.target.isWorldRequirementsList) {
 			var list = this.target.evaluate();
 			if (!Object.isArray(list)) return result;
