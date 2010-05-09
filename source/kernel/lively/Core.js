@@ -204,25 +204,6 @@ var Loader = {
 			if (!expr) this.log("assert failed:" + msg);
 		}
 	}
-	
-	// WebCards
-	// if(UserAgent.isChrome){//Google Chrome dose not support multiple Params for logging
-	// 	var orignalWarn = platformConsole.warn;
-	// 	platformConsole.warn = function(){
-	// 		orignalWarn.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
-	// 	};
-	// 	
-	// 	var orignalInfo = platformConsole.info;
-	// 	platformConsole.info = function(){
-	// 		orignalInfo.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
-	// 	};
-	// 	
-	// 	var orignalLog = platformConsole.log;
-	// 	platformConsole.log = function(){
-	// 		orignalLog.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
-	// 	};
-	// }
-	
     
 })(); 
 
@@ -577,9 +558,6 @@ var Event = (function() {
 		this.rawEvent = rawEvent;
 		this.type = capitalizer[rawEvent.type] || rawEvent.type;
 		//this.charCode = rawEvent.charCode;
-
-		// fix timeStamp, e.g in Opera
-		this.timeStamp = this.rawEvent.timeStamp || new Date().getTime();
 
 		if (isMouse(rawEvent)) {
 			var x = rawEvent.pageX || rawEvent.clientX;
@@ -1599,10 +1577,6 @@ lively.data.Wrapper.subclass('Morph', {
             }
             var type = lively.data.Wrapper.getEncodedType(desc);
             // depth first traversal
-
-			// WebCards...
-		 	// if (type && !type.startsWith("anonymous_")) { //I have no idea what that mean
-
             if (type) {
                 var wrapper = importer.importWrapperFromNode(desc);
                 if (wrapper instanceof Morph) {
@@ -1831,34 +1805,18 @@ Morph.addMethods({
 		return this.shape.getStrokeWidth() || 0; // FIXME: fix defaults logic
 	},
 
- 	setBorderRadius: function(r) {//jd
-    	this.shape.roundEdgesBy(r);
-		this.changed();
-    },
-
- 	getBorderRadius: function() {
-		return this.shape.getBorderRadius(); 
-	},
-
 	shapeRoundEdgesBy: function(r) {
-		this.setBorderRadius(r);
+		this.shape.roundEdgesBy(r);
+		this.changed();
 	},
-
-	getFillOpacity: function() { this.shape.getFillOpacity(); },
 
     setFillOpacity: function(op) { this.shape.setFillOpacity(op); },
 
     setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },
 
-	getStrokeOpacity: function() { this.shape.getStrokeOpacity(); },
-
     setLineJoin: function(joinType) { this.shape.setLineJoin(joinType); },
 
-	getLineJoin: function() { this.shape.getLineJoin(); }, 
-
     setLineCap: function(capType) { this.shape.setLineCap(capType); },
-
- 	getLineCap: function() { this.shape.getLineCap(); },
 
 	applyStyle: function(specs) { // note: use reflection instead?
 		for (var i = 0; i < arguments.length; i++) {
@@ -1888,8 +1846,8 @@ Morph.addMethods({
 		spec.borderColor = this.getBorderColor();
 		spec.fill = this.getFill();
 		if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
-		spec.fillOpacity = typeof this.shape.getFillOpacity() !== undefined ? this.shape.getFillOpacity() : 1.0;
-		spec.strokeOpacity = typeof this.shape.getStrokeOpacity() !== undefined ?  this.shape.getStrokeOpacity() : 1.0;		
+		spec.fillOpacity = this.shape.getFillOpacity() || 1.0;
+		spec.strokeOpacity = this.shape.getStrokeOpacity() || 1.0;
 		return spec;
 	},
 
@@ -2594,31 +2552,25 @@ Morph.addMethods({
 	},
 
 	// Animated moves for, eg, window collapse/expand
-	animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn, finalScale) {
+	animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn) {
 		if (nSteps <= 0) return;
 		var loc = this.position();
-		var delta = destination.subPt(loc).scaleBy(1 / nSteps);
-		var scaleDelta = finalScale ? (this.getScale() - finalScale) / nSteps : 0;
-		// console.log("scaleDelta = " + scaleDelta);
+		var delta = destination.subPt(loc).scaleBy(1/nSteps);
 		var path = [];
 		for (var i = 1; i<=nSteps; i++) { loc = loc.addPt(delta); path.unshift(loc); }
-		this.animatedFollowPath(path, msPer, callBackFn, scaleDelta);
-    },
+		this.animatedFollowPath(path, msPer, callBackFn);
+	},
 
-    animatedFollowPath: function(path, msPer, callBackFn, scaleDelta) {
-		var spec = {path: path.clone(), callBack: callBackFn, scaleDelta: scaleDelta};
-		spec.action = this.startStepping(msPer, 'animatedPathStep', spec);	
-    },
+	animatedFollowPath: function(path, msPer, callBackFn) {
+		var spec = {path: path.clone(), callBack: callBackFn};
+		spec.action = this.startStepping(msPer, 'animatedPathStep', spec);
 
+	},
 
-	animatedPathStep: function(spec, scaleDelta) {
-		if (spec.path.length >= 1){
-			this.setScale(this.getScale()-spec.scaleDelta);
-			this.setPosition(spec.path.pop());
-		}
-		if (spec.path.length >= 1) return
-		//spec.action.stop(this.world()); //JD: out
-		this.stopSteppingScriptNamedAndRemoveFromSubmorphs('animatedPathStep');//JD: delte script out of activeScripts, neede for deserialization
+	animatedPathStep: function(spec) {
+		if (spec.path.length >= 1) this.setPosition(spec.path.pop());
+		if (spec.path.length >= 1) return;
+		spec.action.stop(this.world());
 		spec.callBack.call(this);
 	},
 
@@ -3016,14 +2968,10 @@ removeAllHandlesExcept: function(h) {
 	},
 
 	showMorphMenu: function(evt) {
-		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner) {
-			evt.hand.lastMorphMenu.remove(); // cleanup old open menus
-		};
 		var menu = this.morphMenu(evt);
 		var menuCaption = this.getName() ? this.getName() + ' - ' : '';
 		menuCaption += Object.inspect(this).truncate();
 		menu.openIn(this.world(), evt.point(), false, menuCaption); 
-		evt.hand.lastMorphMenu = menu;
 	},
 
 	morphMenu: function(evt) {
@@ -3045,12 +2993,7 @@ removeAllHandlesExcept: function(h) {
 			items.push( ["show Model dump", this.addModelInspector.curry(this)]);
 
 		var menu = new MenuMorph(items, this);
-
 		menu.addLine();
-		menu.addItem( ["world...", function() {this.world().showMorphMenu(evt)}.bind(this)]);
-
-		menu.addLine();
-
 		menu.addItems(this.subMenuItems(evt));
 		return menu;
 	},
@@ -3233,7 +3176,6 @@ removeAllHandlesExcept: function(h) {
 		hand.addMorph(copy);  // ... it will be properly transformed by this addMorph()
 		hand.showAsGrabbed(copy);
 		// copy.withAllSubmorphsDo(function() { this.startStepping(null); }, null);
-		return copy
 	},
 
 	shadowCopy: function(hand) {
@@ -3352,37 +3294,30 @@ PseudoMorph.subclass('Invocation', {
 
 Invocation.subclass('SchedulableAction', {
 
-	documentation: "Description of a periodic action",
-	beVerbose: false,
+    documentation: "Description of a periodic action",
+    beVerbose: false,
 
-	initialize: function($super, actor, scriptName, argIfAny, stepTime) {
-		$super(actor, scriptName, argIfAny);
-		this.stepTime = stepTime;
-		this.ticks = 0;
-	},
+    initialize: function($super, actor, scriptName, argIfAny, stepTime) {
+	$super(actor, scriptName, argIfAny);
+	this.stepTime = stepTime;
+	this.ticks = 0;
+    },
 
-	toString: function() {
-		return Strings.format("#<SchedulableAction[actor=%s,script=%s,arg=%s,stepTime=%s]>", 
-		this.actor, this.scriptName, this.argIfAny, this.stepTime);
-	},
+    toString: function() {
+	return Strings.format("#<SchedulableAction[actor=%s,script=%s,arg=%s,stepTime=%s]>", 
+			      this.actor, this.scriptName, this.argIfAny, this.stepTime);
+    },
 
-	stop: function(world) {
-		if (this.beVerbose) console.log("stopped stepping task %s", this);
-		world.stopSteppingFor(this);
-	},
+    stop: function(world) {
+	if (this.beVerbose) console.log("stopped stepping task %s", this);
+	world.stopSteppingFor(this);
+    },
 
-	start: function(world) {
-		if (this.beVerbose) console.log("started stepping task %s", this);
-		world.startSteppingFor(this);
-	},
+    start: function(world) {
+	if (this.beVerbose) console.log("started stepping task %s", this);
+	world.startSteppingFor(this);
+    }
 
-	equalActorAndName: function(other) {
-		if (!other) 
-			return false;
-		if (this === other) 
-			return true;
-		return (this.actor === other.actor) && (this.scriptName == other.scriptName)
-	}
 });
 
 // Morph stepping/timer functions
@@ -4507,27 +4442,27 @@ PasteUpMorph.subclass("WorldMorph", {
     
     stopSteppingFor: function(action, fromStart) { // should be renamed to unschedule()
         // fromStart means it is just getting rid of a previous one if there,
-	    // so not an error if not found
+        // so not an error if not found
+	// DI FIXME: This only removes the first one found (alarms may be multiply scheduled)
 
         if (this.currentScript === action) {
-		    // Not in queue; just prevent it from being rescheduled
-		    this.currentScript = null;
-		    return;
-		};
-
-		this.scheduledActions = this.scheduledActions.reject(function(ea) {
-			var eaAction = ea[1]
-			return action.equalActorAndName(eaAction)
-		})
-    },
-
- 	stopSteppingScriptNamedAndRemoveFromSubmorphs: function(sName) {
-		if (!this.activeScripts) return;
-		var all =this.activeScripts.select(function (ea) { return ea.scriptName == sName });
-		all.invoke('stop', this.world());
-		all.each(function(ea) {this.removeMorph(ea);}.bind(this));//remove
-		this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
-		if (this.activeScripts.length == 0) this.activeScripts = null;
+	    // Not in queue; just prevent it from being rescheduled
+	    this.currentScript = null;
+	    return;
+	}
+	var list = this.scheduledActions;  // shorthand
+        for (var i = 0; i < list.length; i++) {
+            var actn = list[i][1];
+            if (actn === action) { list.splice(i, 1); return;  }
+        }
+        // Never found that action to remove.  Note this is not an error if called
+        // from startStepping just to get rid of previous version
+        if (!fromStart) {
+	    console.log('failed to stopStepping ' + action);
+	    console.log('world = ' + Object.inspect(this));
+	    console.log('actors world = ' + Object.inspect(action.actor.world()));
+	    lively.lang.Execution.showStack();
+	}
     },
     
     validateScheduler: function() {
@@ -5075,14 +5010,7 @@ WorldMorph.addMethods({
 		var world = this.world();
 		return [
 			["TileScriptingBox", function(evt) { require('lively.TileScripting').toRun(function() {new lively.TileScripting.TileBox().openIn(world); }) }],
-			["Fabrik Component Box", function(evt) { require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox(world); }) }],
-			["Webcards with name", function(evt) { require('apps.Webcards').toRun(function(){
-					var sds = new SimpleDataStore(pt(600, 300));
-					world.prompt("Name of stack:", sds.openStackWithName.bind(sds));
-					world.addFramedMorph(sds, 'WebCards', pt(333, 222));
-				}); 
-			}],
-         
+			["Fabrik Component Box", function(evt) { require('lively.Fabrik').toRun(function() { Fabrik.openComponentBox(world); }) }]
 		];
 	},
 
@@ -5267,10 +5195,6 @@ lookTouchy: function(morph) {
 
     setMouseFocus: function(morphOrNull) {
         //console.log('setMouseFocus: ' + morphOrNull);
-    	if (morphOrNull !== null && this.mouseFocus instanceof HandleMorph) {
-			var h = this.mouseFocus.targetMorph;
-			if (h) h.removeAllHandlesExcept(null);
-		}
 		this.mouseFocus = morphOrNull;
 		// this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
 		this.mouseFocusChanges_ ++;
@@ -5432,10 +5356,9 @@ lookTouchy: function(morph) {
 	},
 	
     checkMouseUpIsInClickTimeSpan: function(mouseUpEvent) {
-		// console.log("checkMouseUpIsInClickTimeSpan " + this.lastMouseDownEvent.timeStamp )
 		if (!this.lastMouseDownEvent || !mouseUpEvent)
-			return false;
-		return (mouseUpEvent.timeStamp - this.lastMouseDownEvent.timeStamp) < (400)
+			return undefined;
+		return (mouseUpEvent.rawEvent.timeStamp - this.lastMouseDownEvent.rawEvent.timeStamp) < (400)
 	},
 
     checkMouseOverAndOut: function(newMouseOverMorph, evt) {

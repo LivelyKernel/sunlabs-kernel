@@ -610,16 +610,16 @@ Morph.subclass('HandleMorph', {
 
     okToDuplicate: Functions.False,
 
-    handlesMouseDown: function(evt) { return true; },
+    
 
     onMouseDown: function(evt) {
 	//console.log("handle down");
 	evt.hand.setMouseFocus(this);
 	this.hideHelp();
 	if (!this.rollover) {  // if not a rollover, mode should be set
-		if (!this.showingAllHandles) return;
-		this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
-		}
+		if (this.showingAllHandles)  this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
+		return;
+	}
 	if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
 		else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
 	},
@@ -633,9 +633,10 @@ Morph.subclass('HandleMorph', {
                 	evt.hand.setMouseFocus(null);
                 	this.hideHelp();
                 	this.remove(); }
-            return; }
-	if (!this.owner) { console.warn("Handle " + this + " has no owner in onMouseMove!" ); return; }
+            return;
+		}
 	}
+	if (!this.owner) { console.warn("Handle " + this + " has no owner in onMouseMove!" ); return; }
 	//console.log("handle move");
 	// When dragged, I drag the designated control point of my target
 	this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
