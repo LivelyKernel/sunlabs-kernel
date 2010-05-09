@@ -1555,6 +1555,22 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
 	asString: function($super) {
 		return $super() + ' [doit]';
 	},
+	
+	evalSource: function($super, source) {
+		var result = $super(source);
+		// FIXME move elsewhere....!!!! own subclass?
+		debugger
+		if (result && this.target.isWorldRequirementsList) {
+			var list = this.target.evaluate();
+			if (!Object.isArray(list)) return result;
+			list.forEach(function(moduleName) {
+				module(moduleName).load();
+				console.log('loading ' + moduleName);
+			})
+		}
+		return result;
+	},
+	
 });
 ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
 
@@ -1781,9 +1797,11 @@ lively.ide.BrowserCommand.subclass('lively.ide.BrowseWorldCommand', {
 	trigger: function() {
 		var w = WorldMorph.current();
 		w.prompt('Enter URL for World', function(url) {
-			url = new URL(url);
-			var proxy = new WikiWorldProxy(url, url.getDirectory());
-			new lively.ide.LocalCodeBrowser(proxy).open();
+			require('lively.LKWiki').toRun(function() {
+				url = new URL(url);
+				var proxy = new WikiWorldProxy(url, url.getDirectory());
+				new lively.ide.LocalCodeBrowser(proxy).open();				
+			})
 		});
 	},
 
