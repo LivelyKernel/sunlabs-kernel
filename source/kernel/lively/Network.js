@@ -494,7 +494,11 @@ View.subclass('NetRequest', {
 
 // extend your objects with this trait if you don't want to deal with error reporting yourself.
 NetRequestReporterTrait = {
-	setRequestStatus: function(status) { 
+	setRequestStatus: function(status) {
+		// update the model if there is one
+		if (this.getModel && this.getModel() && this.getModel().setRequestStatus)
+			this.getModel().setRequestStatus(status);
+		
 		var world = WorldMorph.current();
 		// some formatting for alerting. could be moved elsewhere
 		var request = status.requestString();
