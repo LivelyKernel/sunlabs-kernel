@@ -124,7 +124,8 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		this.assertEqual(2, obj1.value);
 		this.assertEqual(2, obj2.value);
 	},
-test13IsSimilarConnection: function () {
+	
+	test13IsSimilarConnection: function () {
 		var c1, c2, obj1 = {}, obj2 = {}, obj3 = {};
 		c1 = connect(obj1, 'value', obj2, 'value'); c2 = connect(obj1, 'value', obj2, 'value');
 		this.assert(c1.isSimilarConnection(c2), '1');
@@ -138,6 +139,15 @@ test13IsSimilarConnection: function () {
 		this.assert(!c1.isSimilarConnection(c2), '4');
 	},
 
+	test14EinwegConnection: function () {
+		var obj1 = {};
+		var obj2 = {};
+		connect(obj1, 'value', obj2, 'value', {converter: function(val) { return val + 1 }, removeAfterUpdate: true})
+		obj1.value = 2
+		this.assertEqual(3, obj2.value);
+		this.assert(!obj1.attributeConnections || obj1.attributeConnections.length == 0, 'connection not removed!');
+
+	},
 
 });
 

@@ -2,15 +2,18 @@ module('lively.bindings').requires().toRun(function() {
 
 Object.subclass('AttributeConnection', {
 
-	initialize: function(sourceObj, attrName, targetObj, targetMethodName, converter) {
-		this.sourceObj = sourceObj;
-		this.sourceAttrName = attrName;
-		this.targetObj = targetObj;
-		this.targetMethodName = targetMethodName;
-		// when converter function references objects from its environment we can't
-		// serialize it. To fail as early as possible we will serialize the converter
-		// already here
-		this.converter = converter ? eval('(' + converter.toString() + ')') : null
+	initialize: function(source, sourceProp, target, targetProp, spec) {
+		this.sourceObj = source;
+		this.sourceAttrName = sourceProp;
+		this.targetObj = target;
+		this.targetMethodName = targetProp;
+		if (spec) {
+			this.removeAfterUpdate = spec.removeAfterUpdate;
+			// when converter function references objects from its environment we can't
+			// serialize it. To fail as early as possible we will serialize the converter
+			// already here
+			this.converter = spec.converter ? eval('(' + spec.converter.toString() + ')') : null
+		}
 	},
 
 	getTargetObj: function() { return this.targetObj },
@@ -120,6 +123,7 @@ Object.subclass('AttributeConnection', {
 			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
 		} finally {
 			this.deactivate();
+			if (this.removeAfterUpdate) this.disconnect();
 		}
 	},
 	isRecursivelyActivated: function() {
@@ -141,10 +145,7 @@ Object.subclass('AttributeConnection', {
 	},
 
 	onSourceAndTargetRestored: function() {
-		if (!this.sourceObj || !this.targetObj) return;
-		this.connect();
-		// now cleanup and remove the meta AttributeConnections
-		this.attributeConnections.forEach(function(ea) { ea.disconnect() });
+		if (this.sourceObj && this.targetObj) this.connect();
 	},
 
 	toString: function() {
@@ -166,7 +167,8 @@ AttributeConnection.addMethods({
 				sourceAttrName: this.sourceAttrName,
 				targetObj: null,
 				targetMethodName: this.targetMethodName,
-				converter: null
+				converter: null,
+				removeAfterUpdate: this.removeAfterUpdate,
 			}; 
 		};
 		return {
@@ -174,7 +176,8 @@ AttributeConnection.addMethods({
 			sourceAttrName: this.sourceAttrName,
 			targetObj: this.targetObj.id(),
 			targetMethodName: this.targetMethodName,
-			converter: this.converter ? this.converter.toString() : null
+			converter: this.converter ? this.converter.toString() : null,
+			removeAfterUpdate: this.removeAfterUpdate,
 		};
 	}
 })
@@ -185,13 +188,15 @@ Object.extend(AttributeConnection, {
 			throw new Error('AttributeConnection needs importer for resolving uris!!!');
 
 		// just create the connection, connection not yet installed!!!
-		var con = new AttributeConnection(null, literal.sourceAttrName,	null, literal.targetMethodName, literal.converter);
+		var con = new AttributeConnection(
+			null, literal.sourceAttrName, null, literal.targetMethodName,
+			{converter: literal.converter, removeAfterUpdate: literal.removeAfterUpdate});
 
 		importer.addPatchSite(con, 'sourceObj', literal.sourceObj);
 		importer.addPatchSite(con, 'targetObj', literal.targetObj);
 
-		new AttributeConnection(con, 'sourceObj', con, 'onSourceAndTargetRestored').connect();
-		new AttributeConnection(con, 'targetObj', con, 'onSourceAndTargetRestored').connect();
+		new AttributeConnection(con, 'sourceObj', con, 'onSourceAndTargetRestored', {removeAfterUpdate: true}).connect();
+		new AttributeConnection(con, 'targetObj', con, 'onSourceAndTargetRestored', {removeAfterUpdate: true}).connect();
 
 		return con;
 	}
@@ -199,8 +204,14 @@ Object.extend(AttributeConnection, {
 
 Object.extend(Global, {
 	
-	connect: function connect(sourceObj, attrName, targetObj, targetMethodName, converter) {
-		return new AttributeConnection(sourceObj, attrName, targetObj, targetMethodName, converter).connect();
+	connect: function connect(sourceObj, attrName, targetObj, targetMethodName, specOrConverter) {
+		if (Object.isFunction(specOrConverter)) {
+			console.warn('Directly passing a converter function to connect() is deprecated! Use spec object instead!');
+			spec = {converter: specOrConverter};
+		} else {
+			spec = specOrConverter;
+		}
+		return new AttributeConnection(sourceObj, attrName, targetObj, targetMethodName, spec).connect();
 	},
 	
 	disconnect: function(sourceObj, attrName, targetObj, targetMethodName) {
