@@ -48,7 +48,7 @@ var UserAgent = (function() {
     // Determines User Agent capabilities
     return {
         // Newer versions of WebKit implement proper SVGTransform API,
-        // with potentially better performance. Scratch that, let's make it more predictable:
+        // with potentially better performance. Scratch that, lets make it more predictable:
         usableTransformAPI: (webKitVersion < 0), //webKitVersion >= 525,
         usableDropShadow: webKitVersion >= 525,
         canExtendBrowserObjects: !isRhino, // Error, document
@@ -73,32 +73,31 @@ var UserAgent = (function() {
 
 	fireFoxVersion: fireFoxVersion ? fireFoxVersion.split('.') : null, 
 	
-        isWindows: (window.navigator && window.navigator.platform == "Win32"),
+        isWindows: window.navigator && window.navigator.platform == "Win32",
 
-        isLinux: (window.navigator && window.navigator.platform.startsWith("Linux")),
+        isLinux: window.navigator && window.navigator.platform.startsWith("Linux"),
 
-        isiPad: (window.navigator && window.navigator.platform == "iPhone"),
-		iPadIsMouse: false
+        isTouch: window.navigator && (window.navigator.platform == "iPhone" || window.navigator.platform == "iPad"),
+		touchIsMouse: false
+
     };
 
 })();
 
 //--------------------------
-// Following iPhone/iPad code borrowed from�
-//	http://rossboucher.com/2008/08/19/iphone-touch-events-in-javascript/
-//
-// Here's my first cut at iPad touch/mouse compatibility
-// By default we start in touch mode (iPadIsMouse = false)
-// In touch mode [assume will get mouseDown and mouseUp events]
-//		if down/up with little movement, then set drag mode (iPadIsMouse = true)
-//			detect this in handMorph knowing we are in touch mode
-//			need to read amount moved from the event
+//  iPhone/iPad support...
+// Here is a first cut at iPad touch/mouse compatibility
+//  set usePieMenus = true since we can't use modifier keys on clicks
+// In touch mode [only get mouseDown events]
+//		if down/up with little movement, then set drag mode (touchIsMouse = true)
 //	In drag mode
-//		if down up with little movement, then set touch mode
-//			detect this in SelectionMorph reshape
-//	Indicate touch mode by circular blue cursor
+//		if down/up with little movement, then set touch mode
+//	detect both of these in WoldMorph showPieMenu
+//	Indicate touch mode by pentagonal blue cursor
 //	Indicate drag mode by regular arrow, but bigger for iPad
 //--------------------------
+// Following iPhone/iPad code borrowed from...
+//	http://rossboucher.com/2008/08/19/iphone-touch-events-in-javascript/
 UserAgent.touchHandler = function(event) {
     var touches = event.changedTouches,
         first = touches[0],
@@ -120,25 +119,25 @@ UserAgent.touchHandler = function(event) {
     first.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
 };
-UserAgent.iPadBeMouse = function () {
-    if (this.iPadIsMouse) return;
-	else this.iPadIsMouse = true;
-    WorldMorph.current().setFill(Color.blue.lighter());  //so we can tell what's going on
+UserAgent.touchBeMouse = function (evt) {
+    if (this.touchIsMouse) return;
+	this.touchIsMouse = true;
+	if (evt) evt.hand.lookNormal();  // indicate mouse mode
     document.addEventListener("touchstart", this.touchHandler, true);
     document.addEventListener("touchmove", this.touchHandler, true);
     document.addEventListener("touchend", this.touchHandler, true);
     document.addEventListener("touchcancel", this.touchHandler, true); 
 };
-UserAgent.iPadBeTouch = function () {
-    if (!this.iPadIsMouse) return;
-	else this.iPadIsMouse = false;
-    WorldMorph.current().setFill(Color.red.lighter());  //so we can tell what's going on
+UserAgent.touchBeTouch = function (evt) {
+    if (!this.touchIsMouse) return;
+	this.touchIsMouse = false;
+    if (evt) evt.hand.lookTouchy();  // Indicate touch mode (pan / zoom)
     document.removeEventListener("touchstart", this.touchHandler, true);
     document.removeEventListener("touchmove", this.touchHandler, true);
     document.removeEventListener("touchend", this.touchHandler, true);
     document.removeEventListener("touchcancel", this.touchHandler, true); 
 };
-
+if(UserAgent.isTouch) UserAgent.touchBeMouse();
 //--------------------------
 // Determine runtime behavior based on UA capabilities and user choices (override in localconfig.js)
 //--------------------------
@@ -162,7 +161,7 @@ var Config = {
     // Additional demo configuration options 
     showThumbnail: false,
     suppressBalloonHelp: false,
-    usePieMenus: false,
+    usePieMenus: UserAgent.isTouch,
     
     // Enables/disables network-dependent demos
     showNetworkExamples: UserAgent.usableXmlHttpRequest,
@@ -271,7 +270,7 @@ Config.showHilbertFun = true;
 Config.showPenScript = true;
 Config.showTester = true;
 Config.showBitmap = false;
-Config.showMap = !Config.skipMostExamples;
+Config.showMap = !Config.skipMostExamples && !UserAgent.isTouch;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
 // Config.random is used as the ID for the messenger morph for each user
@@ -281,16 +280,16 @@ Config.random = Math.round(Math.random()*2147483647);
 Object.extend(Config, {
     showClipMorph: function() { return !Config.skipMostExamples},
     show3DLogo: function() { return !Config.skipMostExamples},
-    showAsteroids: function() { return !Config.skipMostExamples},
+    showAsteroids: function() { return !Config.skipMostExamples && !UserAgent.isTouch},
     showEngine: function() { return !Config.skipMostExamples},
     showIcon: function() { return !Config.skipMostExamples},
     showWeather: function() { return !Config.skipMostExamples},
     showStocks: function() { return !Config.skipMostExamples},
-    showCanvasScape: function() { return !Config.skipMostExamples},
+    showCanvasScape: function() { return !Config.skipMostExamples && !UserAgent.isTouch},
     showRSSReader: function() { return !Config.skipMostExamples},
     showSquiggle: function() { return !Config.skipMostExamples},
     showWebStore: function() { return !Config.skipMostExamples || Config.browserAnyway},
-    showVideo: function() { return !Config.skipMostExamples},
+    showVideo: function() { return !Config.skipMostExamples && !UserAgent.isTouch},
     // Worlds
     showInnerWorld: true, //!Config.skipMostExamples;
     showSlideWorld: true, //!Config.skipMostExamples;

@@ -934,6 +934,8 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	partNameNear: function(p) {
 		return this.bounds().partNameNear(Rectangle.corners, p, this.controlPointProximity);
 	},
+allPartNames: function() {return Rectangle.corners; },
+
 
 	partPosition: function(partName) {
 		return this.bounds().partNamed(partName);
@@ -1047,6 +1049,8 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	partNameNear: function(p) {
 		return this.bounds().partNameNear(Rectangle.sides, p, this.controlPointProximity);
 	},
+allPartNames: function() {return Rectangle.sides; },
+
 
 	reshape: this.Rectangle.prototype.reshape,
 	partPosition: this.Rectangle.prototype.partPosition
@@ -1184,6 +1188,14 @@ this.Shape.subclass('lively.scene.Polygon', {
 		}
 		return null; 
 	},
+allPartNames: function() {  // Returns an array of integers, being vertex # or -ve for a midpoint
+		var verts = this.vertices();
+		var locs = [];
+		for (var i = 0; i < verts.length; i++) { locs.push(i); };  // vertices
+		for (var i = 0; i < verts.length-1; i++) { locs.push(-(i + 1)); };  // midpoints
+		return locs; 
+	},
+
 
 	// borrowed from http://local.wasp.uwa.edu.au/~pbourke/geometry/insidepoly/
 	containsPoint: function(p) {
@@ -1289,6 +1301,8 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 	setVertices: this.Polygon.prototype.setVertices,
 	reshape: this.Polygon.prototype.reshape,
 	partNameNear: this.Polygon.prototype.partNameNear,
+allPartNames: this.Polygon.prototype.allPartNames,
+
 	partPosition: this.Polygon.prototype.partPosition,
 	translateBy: this.Polygon.prototype.translateBy
 });
@@ -1544,6 +1558,8 @@ this.Shape.subclass('lively.scene.Path', {
 
 	// poorman's traits :)
 	partNameNear: this.Polygon.prototype.partNameNear,
+allPartNames: this.Polygon.prototype.allPartNames,
+
 	partPosition: this.Polygon.prototype.partPosition,
 	reshape: this.Polygon.prototype.reshape,
 
@@ -1653,6 +1669,8 @@ this.translateBy(tx);
 	reshape: Functions.Empty,
 
 	partNameNear: this.Rectangle.prototype.partNameNear,
+allPartNames: this.Rectangle.prototype.allPartNames,
+
 	partPosition: this.Rectangle.prototype.partPosition,
 	vertices: this.Rectangle.prototype.vertices
 });

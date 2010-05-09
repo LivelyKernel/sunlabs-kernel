@@ -2857,7 +2857,7 @@ Morph.addMethods({
 		if (evt.mouseButtonPressed && this==evt.hand.mouseFocus && this.owner && this.owner.openForDragAndDrop) { 
 			this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
 		} // else this.checkForControlPointNear(evt);
-		if (!evt.mouseButtonPressed) this.checkForControlPointNear(evt);
+		if (!evt.mouseButtonPressed && !Config.usePieMenus) this.checkForControlPointNear(evt);
 	},
 
 	onMouseUp: function(evt) { }, //default behavior
@@ -2954,12 +2954,12 @@ Morph.addMethods({
 
 	checkForControlPointNear: function(evt) {
 		if (this.suppressHandles) return false; // disabled
-		if (this.owner == null) return false; // can't reshape the world
+		if (this.owner == null) return false; // cant reshape the world
 		var partName = this.shape.partNameNear(this.localize(evt.point()));
 		if (partName == null) return false;
 
 		var loc = this.shape.partPosition(partName);
-		var handle = this.makeHandle(loc, partName, evt.hand);
+		var handle = this.makeHandle(loc, partName, evt);
 		if (!handle) return false;  // makeHandle variants may return null
 
 		this.addMorph(handle);  
@@ -2968,6 +2968,30 @@ Morph.addMethods({
 		evt.hand.setMouseFocus(handle);
 		return true; 
 	},
+addAllHandles: function(evt) {
+		if (this.suppressHandles) return false; // disabled
+		if (this.owner == null) return false; // can't reshape the world
+		var partNames = this.shape.allPartNames();  // Array of name
+		for (var i=0; i<partNames.length; i++) {
+			var loc = this.shape.partPosition(partNames[i]);
+			var handle = this.makeHandle(loc, partNames[i], evt);
+			handle.mode = 'reshape';
+			handle.showingAllHandles = true;
+			handle.rollover = false; 
+			handle.isEpimorph = false;  // make bounds grow so feels click outside target
+			this.addMorph(handle);  
+		}
+		if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
+	},
+hasHandles: function(h) { return this.submorphs.any(function (m) { return m instanceof HandleMorph }); },
+removeAllHandlesExcept: function(h) {
+		var removals = [];
+		this.submorphs.forEach(function (m) { if (m !== h && m instanceof HandleMorph) removals.push(m); });
+		removals.forEach(function (m) { m.remove(); });
+	},
+
+
+
 
 	makeHandle: function(position, partName, evt) { // can be overriden
 		var handleShape = Object.isString(partName) || partName >= 0 ? lively.scene.Rectangle : lively.scene.Ellipse;
@@ -3061,7 +3085,7 @@ Morph.addMethods({
     showPieMenu: function(evt) {
     	var menu, targetMorph = this;
 		var items = [
-			['make tile ([])', function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)],
+			['undo (~)', function(evt) { PieMenuMorph.doUndo(); }],
 			['duplicate (o-->o)', function(evt) {
 				evt.hand.setPosition(menu.mouseDownPoint);
 				menu.targetMorph.copyToHand(evt.hand);
@@ -3081,18 +3105,20 @@ Morph.addMethods({
 				PieMenuMorph.setUndo(function() { targetMorph.setScale(oldScale); });
 				menu.addHandleTo(targetMorph, evt, 'scale');
 				}],
-			['rotate (G)', function(evt) {
-				var oldRotation = targetMorph.getRotation();
-				PieMenuMorph.setUndo(function() { targetMorph.setRotation(oldRotation); });
-				menu.addHandleTo(targetMorph, evt, 'rotate');
-				}],
+			['show handles ([])', function(evt) {
+				if (targetMorph.hasHandles()) targetMorph.removeAllHandlesExcept(null);
+					else targetMorph.addAllHandles(evt) }],
 			['delete (X)', function(evt) {
 				var oldOwner = targetMorph.owner;
 				PieMenuMorph.setUndo(function() { oldOwner.addMorph(targetMorph); });
 				targetMorph.remove();
 				}],
-			['undo (~)', function(evt) { PieMenuMorph.doUndo(); }],
-			['edit style (<>)', function() { new StylePanel(this).open()}]
+			['edit style (<>)', function() { new StylePanel(this).open()}],
+			['rotate (G)', function(evt) {
+				var oldRotation = targetMorph.getRotation();
+				PieMenuMorph.setUndo(function() { targetMorph.setRotation(oldRotation); });
+				menu.addHandleTo(targetMorph, evt, 'rotate');
+				}]
 		];
 		menu = new PieMenuMorph(items, this, 0.5);
 		menu.open(evt);
@@ -4138,6 +4164,10 @@ Morph.subclass("PasteUpMorph", {
 		$super(evt);
 		var m = this.morphToReceiveEvent(evt);
 		if (Config.usePieMenus) {
+			if (m instanceof HandleMorph) {
+				m.onMouseDown(evt);  // fixme
+				return true;
+			}
 			if (m.handlesMouseDown(evt)) return false;
 			m.showPieMenu(evt, m);
 			return true;
@@ -4872,7 +4902,7 @@ WorldMorph.addMethods({
 				if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
 			["publish world as ... ", function() { this.promptAndSaveWorld()}]
 		]);
-		if (URL.source.filename() != "index.xhtml") { 
+		if (Global.URL && (URL.source.filename() != "index.xhtml") ) { // Global. avoids an error if Network.js not loaded
 			// save but only if it's not the startup world
 			menu.addItem(["save current world to current URL", function() { 
 				menu.remove(); 
@@ -5100,16 +5130,28 @@ WorldMorph.addMethods({
 	},
 	
 	showPieMenu: function(evt) {
+		var beTouchFn;
+		if (UserAgent.isTouch) {
+			if (UserAgent.touchIsMouse) {
+				// If we were in mouse mode; switch back to touch
+				beTouchFn = function(e) { UserAgent.touchBeTouch(e); };
+			} else {
+				// Otherwise, switch to mouse mode now (we just clicked in world)
+				UserAgent.touchBeMouse(evt);
+				return;
+			}
+		}
 		var menu, targetMorph = this;
 		var items = [
 			['make selection ([NE])', function(evt) { targetMorph.makeSelection(evt); }],
 			['make selection ([SE])', function(evt) { targetMorph.makeSelection(evt); }],
 			['make selection ([SW])', function(evt) { targetMorph.makeSelection(evt); }],
-			['make selection ([NW])', function(evt) { targetMorph.makeSelection(evt); }],
+			((UserAgent.isTouch) ? ['use touch ((O))', beTouchFn]
+				: ['make selection ([NW])', function(evt) { targetMorph.makeSelection(evt); }])
 			];
-		menu = new PieMenuMorph(items, this, 0);
+		menu = new PieMenuMorph(items, this, 0, beTouchFn);
 		menu.open(evt);
-	},
+	}
  
 })
 
@@ -5180,8 +5222,15 @@ Morph.subclass("HandMorph", {
 	},
 
     lookNormal: function(morph) {
-        this.shape.setVertices([pt(0,0), pt(9,5), pt(5,9), pt(0,0)]);
+        this.shape.setVertices([pt(0,0), pt(10, 8), pt(4,9), pt(8,16), pt(4,9), pt(0, 12), pt(0,0)]);
     },
+lookTouchy: function(morph) {
+	// Make the cursor look polygonal to indicate touch events go to pan/zoom
+	var n = 5, r = 10, theta = 2*Math.PI/n;
+	var verts = [0, 1, 2, 3, 4, 0].map(function(i) { return Point.polar(r, i*theta).addXY(20,0) });
+	this.shape.setVertices(verts);
+    },
+
 
     lookLinky: function(morph) {
         this.shape.setVertices([pt(0,0), pt(18,10), pt(10,18), pt(0,0)]);
@@ -5218,8 +5267,12 @@ Morph.subclass("HandMorph", {
 
     setMouseFocus: function(morphOrNull) {
         //console.log('setMouseFocus: ' + morphOrNull);
-    	this.mouseFocus = morphOrNull;
-		this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
+    	if (morphOrNull !== null && this.mouseFocus instanceof HandleMorph) {
+			var h = this.mouseFocus.targetMorph;
+			if (h) h.removeAllHandlesExcept(null);
+		}
+		this.mouseFocus = morphOrNull;
+		// this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
 		this.mouseFocusChanges_ ++;
     },
     
@@ -5247,6 +5300,7 @@ Morph.subclass("HandMorph", {
     handleEvent: function HandMorph$handleEvent(rawEvt) {
         var evt = new Event(rawEvt);
         evt.hand = this;
+		//if(Config.showLivelyConsole) console.log("event type = " + rawEvt.type + ", platform = " +  window.navigator.platform);
 
         lively.lang.Execution.resetDebuggingStack();
         switch (evt.type) {

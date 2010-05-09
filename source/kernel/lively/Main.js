@@ -206,7 +206,7 @@ function populateWorldWithExamples(world) {
         });
     }
 
-    if (false) // Do not shoe the Sun logo;  it's a registered trademark
+    if (false) // Do not show the Sun logo;  it's a registered trademark
         require('lively.Examples').toRun(function(unused, examplesModule) {
             world.addFramedMorph(new examplesModule.Sun3DMorph(pt(200, 200)),
 						            'Sun 3D Logo', pt(570, 100));
@@ -379,7 +379,7 @@ function populateWorldWithExamples(world) {
         require('lively.Examples').toRun(function() { new TestWidget().openIn(devWorld.myWorld, pt(835, 450)) });
 
 
-        if (!Config.skipMostExamples) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
+        if (!Config.skipMostExamples && !UserAgent.isTouch) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
 
         // Sample executable script pane
         if (Config.showPenScript) {
@@ -442,11 +442,6 @@ function populateWorldWithExamples(world) {
         	addLinkLabel(phoneWorld, "Telephone Demo");
             Global.phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
         })
-
-    if (Config.showLivelyConsole && window.console.consumers) {
-        var consoleWidget = new ConsoleWidget(50).openIn(world, pt(0,0));
-		consoleWidget.setPosition(pt(0, world.viewport().height - consoleWidget.bounds().height + 20 /*magic number*/));
-    }
 
     if (Config.showFabrik) {
         require('lively.Fabrik').toRun(function() {
@@ -545,11 +540,14 @@ function main() {
 			populateWorldWithExamples(world);
 		});
 	}
+
+    if (Config.showLivelyConsole && window.console.consumers) {
+        var consoleWidget = new ConsoleWidget(50).openIn(world, pt(0,0));
+		consoleWidget.setPosition(pt(0, world.viewport().height - consoleWidget.bounds().height + 20 /*magic number*/));
+    }
+
     if(Config.testTracing) lively.lang.Execution.testTrace();
-
 }
-
-
 
 // the delay here is a workaround to give FF 2.0 the time to update
 // the DOM to reflect the geometry of objects on the screen, which is
@@ -557,6 +555,7 @@ function main() {
 // after control returns to the caller of JS
 main.logCompletion("main").delay(Config.mainDelay);
 }.logCompletion("Main.js"));
+
 };
 
 // window.addEventListener("DOMContentLoaded", main, false);

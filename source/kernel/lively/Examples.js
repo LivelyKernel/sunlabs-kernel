@@ -2580,9 +2580,9 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	m.connectModel({model: model, getText: "getQuote"});
 	
         // Company selector for stock quotes
-        m = panel.addMorph(new TextListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
+        m = panel.addMorph(new TextListMorph(new Rectangle(20, 340, 120, 40), ["AAPL", "NOK", "GOOG", "SAP"]));
         m.connectModel({model: model, getSelection: "getCompany", setSelection: "setCompany"});
-	m.setModelValue("setSelection", "JAVA");
+	m.setModelValue("setSelection", "AAPL");
 
 	
 	// FIXME: problematic for serialization

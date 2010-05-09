@@ -590,7 +590,8 @@ Morph.subclass('HandleMorph', {
 		this.initialScale = null;
 		this.initialRotation = null; 
 		this.mode = null;
-		this.rollover = true;  // the default
+		this.rollover = true;  // pops up near hangle locs, goes away if mouse rolls out
+		this.showingAllHandles = false;  // all handles are shown, eg, on touch screens
 		return this;
 	},
     
@@ -609,34 +610,35 @@ Morph.subclass('HandleMorph', {
 
     okToDuplicate: Functions.False,
 
-	onMouseDown: function(evt) {
-		this.hideHelp();
-		if (!this.rollover) return;  // if not a rollover, mode is probably set
-		if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
+    handlesMouseDown: function(evt) { return true; },
+
+    onMouseDown: function(evt) {
+	//console.log("handle down");
+	evt.hand.setMouseFocus(this);
+	this.hideHelp();
+	if (!this.rollover) {  // if not a rollover, mode should be set
+		if (!this.showingAllHandles) return;
+		this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
+		}
+	if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
 		else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
 	},
+
     
     onMouseMove: function(evt) {
-        // When dragged, I also drag the designated control point of my target
-        if (this.rollover && !evt.mouseButtonPressed) { 
-
-            // Mouse up: Remove handle if mouse drifts away
-            if (this.owner && !this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
-                evt.hand.setMouseFocus(null);
-                this.hideHelp();
-                this.remove(); 
-            }
-            return; 
-        };
-    
-		if (!this.owner) {
-			console.warn("Handle " + this + " has no owner in onMouseMove!" )
-			return;
-		}
-
-        // Mouse down: edit targetMorph
-        this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
-
+	if (!evt.mouseButtonPressed) {
+		if (this.showingAllHandles) return;  // Showing all handles; just let mouse roll over
+        	if (this.rollover) {  // Mouse up: Remove handle if mouse drifts away
+		if (this.owner && !this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
+                	evt.hand.setMouseFocus(null);
+                	this.hideHelp();
+                	this.remove(); }
+            return; }
+	if (!this.owner) { console.warn("Handle " + this + " has no owner in onMouseMove!" ); return; }
+	}
+	//console.log("handle move");
+	// When dragged, I drag the designated control point of my target
+	this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
 	var p0 = evt.hand.lastMouseDownPoint; // in world coords
 	var p1 = evt.mousePoint;
 	if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
@@ -655,7 +657,7 @@ Morph.subclass('HandleMorph', {
 	case 'rotate' :
 	    this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta());
 	    break; 
-	    case 'borderWidth' :
+	case 'borderWidth' :
 	    this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
 	    break;
 	case 'reshape' :
@@ -664,24 +666,25 @@ Morph.subclass('HandleMorph', {
         }
     },
     
-	handleReshape: function(result) {
+    onMouseUp: function(evt) {
+	//console.log("handle up");
+        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
+	    // last call for, eg, vertex deletion
+	    if (this.partName) this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), true); 
+        }
+        this.remove();
+		if (this.showingAllHandles) this.targetMorph.addAllHandles(evt);
+    },
+    
+    handleReshape: function(result) {
 		if (typeof result == "boolean") {
 			this.setBorderColor(result ? Color.red : Color.blue);
 		} else {
 			if (this.partName  < 0) this.partName = -this.partName;
 			this.type = "rect"; // become a regular handle
 		}
-	},
-
-    onMouseUp: function(evt) {
-        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
-	    	// last call for, eg, vertex deletion
-			if ('partName' in this && this.partName !== undefined && this.partName !== null)
-				this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), true); 
-        }
-        this.remove(); 
     },
-    
+
     inspect: function($super) {
         return $super() + " on " + Object.inspect(this.targetMorph);
     },
@@ -4075,17 +4078,20 @@ Morph.subclass("PieMenuMorph", {
 
     documentation: "Fabrik-style gesture menus for fast one-button UI",
 
-    initialize: function($super, items, targetMorph, offset) {
+    initialize: function($super, items, targetMorph, offset, clickFn) {
         // items is an array of menuItems, each of which is an array of the form
         // [itemName, closure], and
 	// itemName has the form 'menu text (pie text)'
 	// If offset is zero, the first item extends CW from 12 o'clock
 	// If offset is, eg, 0.5, then the first item begins 1/2 a slice-size CCW from there.
         this.items = items;
+	// clickFn, if supplied, will be called instead of bringing up a textMenu in the case
+	//	of a quick click -- less than 300ms; ie before the help disk has been drawn
 	this.targetMorph = targetMorph;
 	this.r1 = 15;  // inner radius
 	this.r2 = 50;  // outer radius
 	this.offset = offset;
+	this.clickFn = clickFn;
         $super(new lively.scene.Ellipse(pt(100 + this.r2, 100 + this.r2), this.r2));
 	this.hasCommitted = false;  // Gesture not yet outside commitment radius
 	return this;
@@ -4127,10 +4133,14 @@ Morph.subclass("PieMenuMorph", {
     },
     onMouseUp: function(evt) {
         // This should only happen inside the commitment radius.
-	// Display the default (normal) menu with a help item at the top.
 	if (this.hasCommitted) return;  // shouldn't happen
 	var world = this.world();
 	this.remove();
+
+	// if this was a quick click, call clickFn if supplied and return
+	if (!this.hasSubmorphs() && this.clickFn) return this.clickFn(evt);
+
+	// Display a normal menu with this.items and a help item at the top.
 	var normalMenu = new MenuMorph([
 		["pie menu help", function(helpEvt) {
 			var helpMenu = new MenuMorph(this.items, this.targetMorph);
