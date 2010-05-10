@@ -334,13 +334,16 @@ View.subclass('NetRequest', {
 	formals: ["+Status",  // Updated once, when request is {Done} with the value returned from 'getStatus'.
 		"+ReadyState", // Updated on every state transition of the request.
 		"+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
-		"+ResponseText" // Updated at most once, when request state is {Done}, with the text content retrieved.
+		"+ResponseText", // Updated at most once, when request state is {Done}, with the text content retrieved.
+		"Progress"
 	],
 
 	initialize: function($super, modelPlug) {
 		this.transport = new XMLHttpRequest();
 		this.requestNetworkAccess();
 		this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
+		this.transport.onprogress = this.onProgress.bind(this);
+		this.transport.upload.onprogress = this.onProgress.bind(this);
 		this.isSync = false;
 		this.requestHeaders = {};
 		$super(modelPlug)
@@ -376,6 +379,8 @@ View.subclass('NetRequest', {
 		}
 	},
 
+	onProgress: function(progress) { this.setProgress(progress) },
+	
 	setRequestHeaders: function(record) {
 		Properties.forEachOwn(record, function(prop, value) {
 			this.requestHeaders[prop] = value;
@@ -601,7 +606,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 	formals: ["ContentDocument", //:XML
 		"ContentText", //:String
 		"URL", // :URL
-		"RequestStatus" // :NetRequestStatus
+		"RequestStatus", // :NetRequestStatus
+		"Progress",
 	],
 
 	initialize: function(plug, contentType) {
@@ -642,7 +648,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 		var req = new NetRequest(Relay.newInstance({
 			ResponseXML: "+ContentDocument", 
 			ResponseText: "+ContentText", 
-			Status: "+RequestStatus"}, this));
+			Status: "+RequestStatus",
+			Progress: "+Progress"}, this));
 		if (sync) req.beSync();
 		if (this.contentType) req.setContentType(this.contentType);
 		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
@@ -652,8 +659,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 
 	fetchProperties: function(destModel, optSync, optRequestHeaders) {
 		// fetch the metadata
-		destModel = destModel || this.getModel().newRelay({Properties: "ContentDocument", PropertiesString: "ContentText", URL: "URL"});
-		var req = new NetRequest(Relay.newInstance({ ResponseXML: "Document", Status: "+RequestStatus"}, 
+		destModel = destModel || this.getModel().newRelay({Properties: "ContentDocument", PropertiesString: "ContentText", URL: "URL", Progress: 'Progress'});
+		var req = new NetRequest(Relay.newInstance({ ResponseXML: "Document", Status: "+RequestStatus", Progress: '+Progress'}, 
 			Object.extend(new NetRequestReporter(), {
 				// FIXME replace with relay
 				setDocument: function(doc) {
@@ -674,7 +681,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 		} else if (Global.Node && content instanceof Node) {
 			content = Exporter.stringify(content);
 		}
-		var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus"}, this));
+		var req = new NetRequest(Relay.newInstance({Status: "+RequestStatus", Progress: '+Progress'}, this));
 		if (optSync) req.beSync();
 		if (this.contentType) req.setContentType(this.contentType);
 		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
@@ -690,7 +697,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 
 
 	fetchHeadRevision: function(destModel) {
-		var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"}, 
+		var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus", Progress: '+Progress'}, 
 		Object.extend(new NetRequestReporter(), { 
 			setDocument: function(xml) {
 				if (!xml) return;
@@ -716,7 +723,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 		'</S:log-report>',
 
 	fetchVersionHistory: function(mostRecentRev, leastRecentRev, destModel) {
-		var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus"},
+		var req = new NetRequest(Relay.newInstance({ResponseXML: "+Document", Status: "+RequestStatus", Progress: '+Progress'},
 		Object.extend(new NetRequestReporter(), {
 			setDocument: function(doc) {
 				destModel.setRevisionHistory(doc);
@@ -745,8 +752,12 @@ Resource.subclass('SVNResource', {
 
 	fetchHeadRevision: function(optSync) {
 		this.setHeadRevision(null); // maybe there is a new one
-		var req = new NetRequest({model: this, setResponseXML: "pvtSetHeadRevFromDoc",
-		setStatus: "setRequestStatus"});
+		var req = new NetRequest({
+			model: this,
+			setResponseXML: "pvtSetHeadRevFromDoc",
+			setStatus: "setRequestStatus",
+			setProgress: 'setProgress'
+		});
 		if (optSync) req.beSync();
 		req.propfind(this.getURL(), 1);
 		return req;
@@ -782,7 +793,9 @@ Resource.subclass('SVNResource', {
 	
 	del: function(sync, optRequestHeaders) {
 		var req = new NetRequest(Relay.newInstance({
-			Status: "+RequestStatus"}, this));
+			Status: "+RequestStatus",
+			Progress: '+Progress'
+		}, this));
 		if (sync) req.beSync();
 		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
 		req.del(this.getURL());
@@ -810,8 +823,12 @@ Resource.subclass('SVNResource', {
 			startRev = this.getHeadRevision();
 		}
 		this.reportDepth = reportDepth; // FISXME quick hack, needed in 'pvtScanLog...'
-		var req = new NetRequest({model: this, setResponseXML: "pvtScanLogReportForVersionInfos",
-		setStatus: "setRequestStatus"});
+		var req = new NetRequest({
+			model: this,
+			setResponseXML: "pvtScanLogReportForVersionInfos",
+			setStatus: "setRequestStatus",
+			setProgress: 'setProgress'
+		});
 		if (optSync) req.beSync();
 		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
 		req.report(this.getURL(), this.pvtRequestMetadataXML(startRev, endRev));
@@ -1183,7 +1200,7 @@ Object.subclass('WebResource', {
 // make WebResource async
 WebResource.addMethods({
 
-	connections: ['status', 'content', 'contentDocument', 'isExisting', 'subCollections', 'subDocuments'],
+	connections: ['status', 'content', 'contentDocument', 'isExisting', 'subCollections', 'subDocuments', 'progress'],
 
 	reset: function() {
 		this.status = null;
@@ -1203,11 +1220,13 @@ WebResource.addMethods({
 					setRequestStatus: function(reqStatus) { self.status = reqStatus; self.isExisting = reqStatus.isSuccess() },
 					setContentText: function(string) { self.content = string },
 					setContentDocument: function(doc) { self.contentDocument = doc },
+					setProgress: function(progress) { self.progress = progress },
 				},
 				getURL: 'getURL',
 				setRequestStatus: 'setRequestStatus',
 				setContentText: 'setContentText',
 				setContentDocument: 'setContentDocument',
+				setProgress: 'setProgress',
 			});
 		resource.removeNetRequestReporterTrait();
 		return resource
@@ -1221,11 +1240,13 @@ WebResource.addMethods({
 					setResponseText: function(string) { self.content = string },
 					setResponseXML: function(doc) { self.contentDocument = doc },
 					setReadyState: function(readyState) { self.readyState = readyState },
+					setProgress: function(progress) { self.progress = progress },
 				},
 				setStatus: 'setStatus',
 				setResponseText: 'setResponseText',
 				setResponseXML: 'setResponseXML',
-				setReadyState: 'setReadyState'
+				setReadyState: 'setReadyState',
+				setProgress: 'setProgress',
 		});
 		if (this.isSync())
 			request.beSync();
@@ -1241,6 +1262,9 @@ WebResource.addMethods({
 	},
 
 	put: function(content, contentType) {
+		if ((Global.Document && content instanceof Document) || (Global.Node && content instanceof Node)) {
+			content = Exporter.stringify(content);
+		}
 		this.content = content;
 		var resource = this.createResource();
 		if (contentType)
