@@ -5282,10 +5282,6 @@ lookTouchy: function(morph) {
 
     setMouseFocus: function(morphOrNull) {
         //console.log('setMouseFocus: ' + morphOrNull);
-    	if (morphOrNull !== null && this.mouseFocus instanceof HandleMorph) {
-			var h = this.mouseFocus.targetMorph;
-			if (h) h.removeAllHandlesExcept(null);
-		}
 		this.mouseFocus = morphOrNull;
 		// this.setFill(this.mouseFocus ? Color.primary.blue.lighter(2) : Color.primary.blue);
 		this.mouseFocusChanges_ ++;
