@@ -882,21 +882,29 @@ Object.extend(Exporter, {
 		}
 
 		var url = URL.source.withFilename(filename);
-
-		var status = new Resource(Record.newPlainInstance({URL: url})).store(doc, true).getStatus();
-
-		if (status.isSuccess()) {
-			console.log("success publishing world at " + url + ", status " + status.code());
-			console.timeEnd("save document")
-			console.groupEnd("save document")
-			return url;
-		} else {
-			WorldMorph.current().alert("failure publishing world at " + url + ", status " + status.code());
-		}
-		console.groupEnd("save document")
-		return null;
+		
+		var r = new WebResource(url);
+		connect(r, 'status', this, 'showSaveStatus');
+		
+		// TODO add progress bar
+		// connect(r, 'progress', WorldMorph.current(), 'alert', {converter: function(rpe) { return rpe.loaded }});
+		
+		r.beAsync().put(doc)
+		
+		return url;
 	},
 
+	showSaveStatus: function(status) {
+		if (status.isSuccess()) {
+			console.log("success publishing world at " + status.url + ", status " + status.code());
+			console.timeEnd("save document")
+			console.groupEnd("save document")
+		} else {
+			WorldMorph.current().alert("failure publishing world at " + status.url + ", status " + status.code());
+		}
+		console.groupEnd("save document")
+	},
+	
 	saveNodeToFile: function(node, filename) {
 		return this.saveDocumentToFile(this.shrinkWrapNode(node), filename);
 	}
@@ -1009,14 +1017,13 @@ Copier.subclass('Importer', {
 
 	getBaseDocument: function() {
 		// FIXME memoize
-		var rec = Record.newPlainInstance({URL: URL.source});
-		var req = new Resource(rec).fetch(true);
-		var status = req.getStatus();
+		var webRes = new WebResource(URL.source).get()
+		var status = webRes.status;
 		if (!status.isSuccess()) {
 			console.log("failure retrieving  " + URL.source + ", status " + status);
 			return null;
 		} else {
-			var doc = req.getResponseXML();
+			var doc = webRes.contentDocument;
 			console.log("problems to parse  " + URL.source);
 			if (!doc)
 				return null;
@@ -4673,15 +4680,12 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
 	openURLasText: function(url, title) {
-		// FIXME: This should be moved with other handy services like confirm, notify, etc
-		var model = Record.newPlainInstance({URL: url,  ContentText: null});
-		this.addTextWindow({
-			content: "fetching ... ",
-			title: title,
-			plug: model.newRelay({Text: "-ContentText"}),
-		});
-		var res = new Resource(model);
-		res.fetch();
+		// FIXME: This should be moved with other handy services like confirm, notify, etc		
+		var pane = this.addTextWindow({content: "fetching ... ", title: title});
+		var r = new WebResource(url);
+		lively.bindings.connect(r, 'content', pane.innerMorph(), 'setTextString');
+		r.beAsync().get();
+		
 	},
 
 	viewport: function() {
@@ -6332,7 +6336,7 @@ ClipboardHack = {
 		buffer.setAttribute("rows","1");
 		buffer.setAttribute("id","copypastebuffer");
 		// buffer.setAttribute("style","position:absolute;z-index: -400;left:0px; top:1px; width:1px; height:1px;");
-		if (UserAgent.isTouch) { // hack to test text input on iPad
+		if (true || UserAgent.isTouch) { // hack to test text input on iPad
 			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:100px; height:30px;");
 		} else {
 			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:1px; height:1px;");
@@ -6343,19 +6347,17 @@ ClipboardHack = {
 		return buffer;
 	},
 	
-	
-selectPasteBuffer: function() {
+	selectPasteBuffer: function() {
 		var buffer = this.ensurePasteBuffer();
 		if (buffer) buffer.select();
 	},
-invokeKeyboard: function() {
-		if (!UserAgent.isTouch) return;
-		var buffer = this.ensurePasteBuffer();
-		if (buffer) buffer.focus();
+	
+	invokeKeyboard: function() {
+	 		if (!UserAgent.isTouch) return;
+			var buffer = this.ensurePasteBuffer();
+			if (buffer) buffer.focus();
 	},
-
-
-
+	
 	tryClipboardAction: function(evt, target) {
         // Copy and Paste Hack that works in Webkit/Safari
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
