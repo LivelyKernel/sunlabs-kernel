@@ -76,6 +76,102 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 	
 });
 
+TestCase.subclass('Tests.NetworkTest.WebResourceTest', {
+
+	plainTextString: 'this is a test\nfoo\nbar',
+
+	xmlString: '<foo xmlns="http:\/\/www.lively-kernel.org\/fooNS" xmlns:bazNS="http\:\/\/www.lively-kernel.org\/fooNS">\n\
+		<bar name="test1"/>\n\
+		<bar name="test2">\n\
+			<bazNS:baz name="test3"/>\n\
+		</bar>\n\
+	</foo>',
+
+	writeFile: function(url, content) {
+		new WebResource(url).setContent(content);
+	},
+
+	removeFile: function(url) {
+		new WebResource(url).del();
+	},
+
+	setUp: function($super) {
+		$super();
+		var url = URL.source.getDirectory().withFilename('WebResourceTestDir/');
+		this.dir = new WebResource(url);
+		if (!this.dir.exists()) this.dir.create();
+
+		this.plainTextFileURL = url.withFilename('TextFileForWebResourceTest.txt');
+		this.xmlFileURL = url.withFilename('XMLFileForWebResourceTest.xml');
+
+		this.writeFile(this.plainTextFileURL, this.plainTextString);
+		this.writeFile(this.xmlFileURL, this.xmlString);
+	},
+
+	tearDown: function($super) {
+		$super();
+		this.dir.del();
+	},
+
+	testGet: function() {
+		var sut = new WebResource(this.plainTextFileURL);
+		this.assertEqual(this.plainTextString, sut.get().content)
+		this.assert(sut.status.isSuccess())
+
+		var resultXML = new WebResource(this.xmlFileURL).get().contentDocument;
+		this.assertEqual(this.xmlString, Exporter.stringify(resultXML))
+	},
+
+	testPut: function() {
+		var sut = new WebResource(this.plainTextFileURL);
+		sut.put('test');
+		this.assert(sut.status.isSuccess());
+		this.assertEqual('test', sut.content);
+		this.assertEqual('test', sut.get().content);
+	},
+
+	testDel: function() {
+		var sut = new WebResource(this.plainTextFileURL);
+		sut.del();
+		this.assert(sut.status.isSuccess());
+		this.assert(!sut.get().isExisting);
+	},
+
+	testSubElements: function() {
+		var subDir = new WebResource(this.dir.getURL().withFilename('foo/'));
+		subDir.create();
+		this.dir.getSubElements();
+		this.assertEquals(1, this.dir.subCollections.length);
+		this.assertEquals(2, this.dir.subDocuments.length);
+	},
+
+	testExists: function() {
+		var sut = new WebResource(this.plainTextFileURL);
+		sut.get();
+		this.assert(sut.status.isSuccess());
+		this.assert(sut.isExisting);
+		this.assert(sut.exists());
+
+		sut = new WebResource(this.plainTextFileURL + 'abc');
+		this.assert(!sut.exists());
+	},
+
+	testCopy: function() {
+		var url2 = this.plainTextFileURL.withFilename('copiedFile.txt');
+		var sut = new WebResource(this.plainTextFileURL);
+		var other = sut.copyTo(url2);
+		this.assert(sut.status.isSuccess());
+		this.assert(other.status.isSuccess());
+		this.assert(other.exists());
+		this.assertEquals(sut.get().content, other.get().content);
+	},
+
+	testGetVersions: function() {
+		this.assert(false, 'not yet implemented!')
+	},
+
+});
+
 // deprecated
 TestCase.subclass('Tests.LKWikiTest.FileDirectoryTest', {
     
