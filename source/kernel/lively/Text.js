@@ -1207,6 +1207,7 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	editMenuItems: function(evt) {
+	// Add a first item for type-in if it's an iPad or similar device...
 	return [
 		["cut (x)", this.doCut.bind(this)],
 		["copy (c)", this.doCopy.bind(this)],
@@ -1230,8 +1231,8 @@ BoxMorph.subclass('TextMorph', {
 		["make italic (i)", (function(){this.emphasizeBoldItalic({style: 'italic'})}).bind(this)],
 		["make bold (b)",  (function(){this.emphasizeBoldItalic({style: 'bold'})}).bind(this)],		
 
-		["evaluate as JavaScript code", function() { this.boundEval(this.textString); }],
-		["evaluate as Lively markup", function() { 
+		["eval as JavaScript code", function() { this.boundEval(this.textString); }],
+		["eval as Lively markup", function() { 
 			var importer = new Importer();
 			var txt = this.xml || this.textString;
 			// console.log('evaluating markup ' + txt);
@@ -1791,7 +1792,7 @@ BoxMorph.subclass('TextMorph', {
 		(this.priorSelection[1] != this.priorSelection[0] - 1) ||
 		(this.selectionRange[0] != this.priorSelection[0]) ) {
 			this.previousSelection = this.priorSelection;
-			// ClipboardHack.selectPasteBuffer();
+			ClipboardHack.invokeKeyboard();
 			return;
 		}
 
@@ -1804,7 +1805,7 @@ BoxMorph.subclass('TextMorph', {
 
 		this.setSelection(this.getSelectionString());
 		this.drawSelection(); 
-		// ClipboardHack.selectPasteBuffer();
+			ClipboardHack.invokeKeyboard();
 	},
 	
 	// TextMorph text selection functions

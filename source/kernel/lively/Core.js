@@ -5063,9 +5063,13 @@ WorldMorph.addMethods({
 		if (UserAgent.isTouch) {
 			if (UserAgent.touchIsMouse) {
 				// If we were in mouse mode; switch back to touch
-				beTouchFn = function(e) { UserAgent.touchBeTouch(e); };
+				beTouchFn = function(e) {
+					//ClipboardHack.ensurePasteBuffer().blur();
+					UserAgent.touchBeTouch(e); 
+				};
 			} else {
 				// Otherwise, switch to mouse mode now (we just clicked in world)
+				ClipboardHack.ensurePasteBuffer().focus();
 				UserAgent.touchBeMouse(evt);
 				return;
 			}
@@ -6230,9 +6234,13 @@ BoxMorph.subclass('ContainerMorph', {
 
 ClipboardHack = {
 	ensurePasteBuffer: function() {
+		// Return a reference to a text element to serve as our proxy for communication
+		//   with the OS about text such as cut/paste, or iPad keyboard input
 		if (UserAgent.isMozilla && UserAgent.fireFoxVersion) return;
 		var buffer = document.getElementById("copypastebuffer");
 		if (buffer) return buffer;
+
+		// Not there yet -- create a new one
 		buffer = document.createElement("textarea");
 		buffer.setAttribute("cols","1");
 		buffer.setAttribute("rows","1");
@@ -6249,18 +6257,24 @@ ClipboardHack = {
 		return buffer;
 	},
 	
-	selectPasteBuffer: function() {
-		var buffer = ClipboardHack.ensurePasteBuffer();
-		if (buffer) {
-			buffer.select();
-		}
+	
+selectPasteBuffer: function() {
+		var buffer = this.ensurePasteBuffer();
+		if (buffer) buffer.select();
 	},
+invokeKeyboard: function() {
+		if (!UserAgent.isTouch) return;
+		var buffer = this.ensurePasteBuffer();
+		if (buffer) buffer.focus();
+	},
+
+
 
 	tryClipboardAction: function(evt, target) {
         // Copy and Paste Hack that works in Webkit/Safari
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
-		ClipboardHack.selectPasteBuffer();
-        var buffer = ClipboardHack.ensurePasteBuffer();
+		this.selectPasteBuffer();
+        var buffer = this.ensurePasteBuffer();
         if(!buffer) return false;
         if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {		
             buffer.onpaste = function() {
