@@ -1860,8 +1860,9 @@ Morph.addMethods({
 		// Look the name up in the Morph tree, else in current world
 		if (this.displayTheme) return this.displayTheme[name];
 		if (this.owner) return this.owner.styleNamed(name);
-		if (WorldMorph.current()) return WorldMorph.current().styleNamed(name);
-		return WorldMorph.prototype.displayThemes.lively[name]; // FIXME for onDeserialize, when no world exists yet
+		var world = WorldMorph.current();
+		if (world && (this !== world)) return world.styleNamed(name);
+		return DisplayThemes.lively[name]; // FIXME for onDeserialize, when no world exists yet
 	},
 
 	linkToStyles: function(styleClassList, optSupressApplication) {
