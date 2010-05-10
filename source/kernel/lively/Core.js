@@ -1849,7 +1849,11 @@ Morph.addMethods({
 	},
 
 	applyStyleNamed: function(name) {
-		this.applyStyle(this.styleNamed(name));
+		var style = this.styleNamed(name);
+		if (style)
+			this.applyStyle(style);
+		else
+			console.warn("applyStyleNamed: no style named " + name)
 	},
 
 	styleNamed: function(name) {
@@ -4145,6 +4149,92 @@ Morph.subclass("PasteUpMorph", {
 
 namespace('lively.Text');
 
+if (!Global.DisplayThemes)
+	Global.DisplayThemes = {};
+	
+DisplayThemes['lively'] = using(lively.paint).link({
+	styleName: 'lively',
+	raisedBorder: { // conenience grouping
+		//borderWidth: 2,
+		borderColor: {$:"LinearGradient", 
+			stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
+					{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
+			vector: lively.paint.LinearGradient.SouthEast
+		}
+	},
+	titleBar: { 
+		borderRadius: 8, 
+		borderWidth: 2, 
+		bordercolor: Color.black,
+		fill: {$:"LinearGradient", 
+			stops: [{$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
+					{$:"Stop", offset: 0.5, color: Color.primary.blue},
+					{$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
+			vector: lively.paint.LinearGradient.SouthNorth 
+		}
+	},
+	slider: { 
+		borderColor: Color.black, 
+		borderWidth: 1, 
+		fill: {$: "LinearGradient", 
+			stops: [{$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
+					{$:"Stop", offset: 1, color: Color.primary.blue}]
+		}
+	},
+	button: { 
+		borderColor: Color.neutral.gray, 
+		borderWidth: 0.3, borderRadius: 4,
+		fill: {$:"LinearGradient", 
+			stops: [{$:"Stop", offset:0, color:Color.darkGray}, 
+					{$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
+			vector: lively.paint.LinearGradient.SouthNorth }
+	},
+	widgetPanel: { 
+		borderColor: Color.blue, 
+		borderWidth: 4, 
+		borderRadius: 16,
+		fill: Color.blue.lighter(), opacity: 0.4
+	},
+	clock: { 
+		borderColor: Color.black, borderWidth: 4,
+		fill: {$:"RadialGradient", 
+			stops: [{$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
+					{$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
+	},
+	panel: {
+		fill: Color.primary.blue.lighter(2), 
+		borderWidth: 2, 
+		borderColor: Color.black
+	},
+	link: {
+		borderColor: Color.green, 
+		borderWidth: 1, 
+		fill: Color.blue
+	},
+	helpText: { 
+		borderRadius: 15, 
+		fill: Color.primary.yellow.lighter(3), 
+		fillOpacity: .8
+	},
+	fabrik: {
+		borderColor: Color.gray.darker(), 
+		borderWidth: 1.0 , 
+		borderRadius: 2,
+		fill: Color.gray, 
+		opacity: 1
+	},
+	world: {
+		fill: {	$:"LinearGradient", 
+			stops: [{$:"Stop", offset: 0.00, color: Color.primary.blue.lighter()},
+					{$:"Stop", offset: 0.25, color: Color.primary.blue},
+					{$:"Stop", offset: 0.50, color: Color.primary.blue.lighter()},
+					{$:"Stop", offset: 0.75, color: Color.primary.blue},
+					{$:"Stop", offset: 1.00, color: Color.primary.blue} ]}
+		
+	}
+}),
+
+
 PasteUpMorph.subclass("WorldMorph", {
     
     documentation: "A Morphic world (a visual container of other morphs)",
@@ -4153,92 +4243,7 @@ PasteUpMorph.subclass("WorldMorph", {
 	styleClass: ['world'],
 	
     // Default theme for the theme manager    
-	displayThemes: using(lively.paint).link({
-		lively: { // This is to be the style we like to show for our personality
-			styleName: 'lively',
-			raisedBorder: { // conenience grouping
-				//borderWidth: 2,
-				borderColor: {$:"LinearGradient", 
-					stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
-							{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
-					vector: lively.paint.LinearGradient.SouthEast
-				}
-			},
-			titleBar: { 
-				borderRadius: 8, 
-				borderWidth: 2, 
-				bordercolor: Color.black,
-				fill: {$:"LinearGradient", 
-					stops: [{$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
-							{$:"Stop", offset: 0.5, color: Color.primary.blue},
-							{$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
-					vector: lively.paint.LinearGradient.SouthNorth 
-				}
-			},
-			slider: { 
-				borderColor: Color.black, 
-				borderWidth: 1, 
-				fill: {$: "LinearGradient", 
-					stops: [{$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
-							{$:"Stop", offset: 1, color: Color.primary.blue}]
-				}
-			},
-			button: { 
-				borderColor: Color.neutral.gray, 
-				borderWidth: 0.3, borderRadius: 4,
-				fill: {$:"LinearGradient", 
-					stops: [{$:"Stop", offset:0, color:Color.darkGray}, 
-							{$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
-					vector: lively.paint.LinearGradient.SouthNorth }
-			},
-			widgetPanel: { 
-				borderColor: Color.blue, 
-				borderWidth: 4, 
-				borderRadius: 16,
-				fill: Color.blue.lighter(), opacity: 0.4
-			},
-			clock: { 
-				borderColor: Color.black, borderWidth: 4,
-				fill: {$:"RadialGradient", 
-					stops: [{$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
-							{$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
-			},
-			panel: {
-				fill: Color.primary.blue.lighter(2), 
-				borderWidth: 2, 
-				borderColor: Color.black
-			},
-			link: {
-				borderColor: Color.green, 
-				borderWidth: 1, 
-				fill: Color.blue
-			},
-			helpText: { 
-				borderRadius: 15, 
-				fill: Color.primary.yellow.lighter(3), 
-				fillOpacity: .8
-			},
-			fabrik: {
-				borderColor: Color.gray.darker(), 
-				borderWidth: 1.0 , 
-				borderRadius: 2,
-				fill: Color.gray, 
-				opacity: 1
-			},
-			world: {
-				fill: {	$:"LinearGradient", 
-					stops: [{$:"Stop", offset: 0.00, color: Color.primary.blue.lighter()},
-							{$:"Stop", offset: 0.25, color: Color.primary.blue},
-							{$:"Stop", offset: 0.50, color: Color.primary.blue.lighter()},
-							{$:"Stop", offset: 0.75, color: Color.primary.blue},
-							{$:"Stop", offset: 1.00, color: Color.primary.blue} ]}
-				
-			}
-		},
-	
-		
-	}),
-	
+
 	initialize: function($super, canvas, backgroundImageId) {
 		var bounds = Rectangle.fromElement(canvas);
 		// sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
@@ -4269,7 +4274,11 @@ PasteUpMorph.subclass("WorldMorph", {
     initializeTransientState: function($super) {
         $super();
         this.hands = [];
-		this.displayTheme = this.displayThemes[Config.defaultDisplayTheme]; // set display them without applying it
+		
+		var theme = DisplayThemes[Config.defaultDisplayTheme];
+		if (!theme)
+			console.log('ERROR: could not find Theme ' + Config.defaultDisplayTheme)
+		this.displayTheme = theme; // set display them without applying it
 		
 		this.withAllSubmorphsDo( function() { this.layoutChanged(); });  // Force installation of transforms
 
@@ -4358,7 +4367,7 @@ PasteUpMorph.subclass("WorldMorph", {
     },
 
     chooseDisplayTheme: function(evt) { 
-        var themes = this.displayThemes;
+        var themes = DisplayThemes;
         var target = this; // trouble with function scope
         var themeNames = Properties.own(themes);
         var items = themeNames.map(
@@ -6184,6 +6193,9 @@ Morph.subclass('BoxMorph', {
 
 	applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
 		$super(spec);
+		if (!spec) {
+			throw new TypeError('spec is undefined in applyStyle');		
+		}
 		if (spec.padding !== undefined) {
 			if (!(spec.padding instanceof Rectangle)) 
 				throw new TypeError(spec.padding + ' not a Rectangle');

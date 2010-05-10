@@ -318,7 +318,7 @@ Object.extend(Config, {
 	loadTests: [], //e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 	showTesterRunner: false,
 	// Modules
-	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet'], // evaluated first, even before ChangeSet of a world
+	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet', 'lively.Styles'], // evaluated first, even before ChangeSet of a world
 	modulesBeforeWorldLoad: [], // evaluated before all changes
 	modulesOnWorldLoad: [], // evaluated before ChangeSet initializer
 	codeBase: Config.getDocumentDirectory(),

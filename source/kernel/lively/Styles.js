@@ -20,9 +20,12 @@
  * THE SOFTWARE.
  */
 
-module('lively.Styles').requires().toRun(function() {
+module('lively.Styles').requires('lively.Widgets').toRun(function() {
 
-WorldMorph.prototype.displayThemes['primitive'] = using(lively.paint).link({ 
+if (!Global.DisplayThemes)
+	Global.DisplayThemes = {};
+	
+DisplayThemes['primitive'] = using(lively.paint).link({ 
  	// Primitive look and feel -- flat fills and no rounding or translucency
 	styleName: 'primitive',
 	titleBar: {
@@ -82,7 +85,7 @@ WorldMorph.prototype.displayThemes['primitive'] = using(lively.paint).link({
 	}
 });
 
-WorldMorph.prototype.displayThemes['turquoise'] = using(lively.paint).link({ 
+DisplayThemes['turquoise'] = using(lively.paint).link({ 
 	// Like turquoise, black and silver jewelry, [or other artistic style]
 	styleName: 'turquoise',
 	titleBar: { 
@@ -147,7 +150,7 @@ WorldMorph.prototype.displayThemes['turquoise'] = using(lively.paint).link({
 	}
 })
 
-WorldMorph.prototype.displayThemes['hpi'] = using(lively.paint).link({
+DisplayThemes['hpi'] = using(lively.paint).link({
 	styleName: 'hpi',
 	raisedBorder: { // conenience grouping
 		//borderWidth: 2,
@@ -219,9 +222,7 @@ WorldMorph.prototype.displayThemes['hpi'] = using(lively.paint).link({
 		fill: Color.gray, 
 		opacity: 1
 	},
-	menu: {
-		fill: Color.gray,
-	},
+
 	world: {
 		fill: Color.white, 
 	},
@@ -230,6 +231,7 @@ WorldMorph.prototype.displayThemes['hpi'] = using(lively.paint).link({
 		fontColor: Color.red,
 	}
 })
+
 
 
 });

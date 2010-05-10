@@ -138,7 +138,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 
 	setupSourceInput: function() {
 		this.sourceInput().maxSafeSize = 2e6;
-		this.sourceInput().styleClass = ['codePane'];
+		// this.sourceInput().styleClass = ['codePane'];
 	    this.panel.sourcePane.connectModel(this.getModel().newRelay({Text: "SourceString"}));
 	},
 	
