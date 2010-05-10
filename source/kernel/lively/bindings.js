@@ -202,7 +202,7 @@ Object.extend(AttributeConnection, {
 	}
 });
 
-Object.extend(Global, {
+Object.extend(lively.bindings, {
 	
 	connect: function connect(sourceObj, attrName, targetObj, targetMethodName, specOrConverter) {
 		if (Object.isFunction(specOrConverter)) {
@@ -229,7 +229,7 @@ Object.extend(Global, {
 			sourceObj.attributeConnections[0].disconnect()
 	},
 	
-	updateAttributeConnection: function(sourceObj, attrName, newVal) {
+	signal: function(sourceObj, attrName, newVal) {
 		if (!sourceObj.attributeConnections) return;
 		for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 			var c = sourceObj.attributeConnections[i];
@@ -239,4 +239,12 @@ Object.extend(Global, {
 
 })
 
+Object.extend(Global, {
+	connect: lively.bindings.connect,
+	disconnect: lively.bindings.disconnect,
+	disconnectAll: lively.bindings.disconnectAll,
+	signal: lively.bindings.signal,
+	updateAttributeConnection: lively.bindings.signal,
+});
+	
 }); // end of module
