@@ -507,9 +507,8 @@ function main() {
 		            console.log("world is " + world);
 					changes && changes.evaluateInitializer();
 
-		            if (Config.showWikiNavigator) {
+		            if (Config.showWikiNavigator) { // FIXME at least put it somewhere...
 		                require('lively.LKWiki').toRun(function() {
-		                    //just a quick hack...
 		                    console.log('starting WikiNavigator');
 		                    WikiNavigator.enableWikiNavigator();
 		                });
