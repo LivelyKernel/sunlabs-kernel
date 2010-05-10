@@ -88,7 +88,7 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 	test09Converter: function() {
 		var obj1 = {};
 		var obj2 = {};
-		connect(obj1, 'value', obj2, 'value', function(val) { return val + 1});
+		connect(obj1, 'value', obj2, 'value', {converter: function(val) { return val + 1 }});
 		obj1.value = 2;
 		this.assertEqual(3, obj2.value);
 	},
@@ -97,7 +97,7 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		var obj1 = {};
 		var obj2 = {};
 		var externalVal = 42;
-		connect(obj1, 'value', obj2, 'value', function(val) { return val + externalVal });
+		connect(obj1, 'value', obj2, 'value', {converter: function(val) { return val + externalVal }});
 		obj1.value = 2
 		this.assertEqual(2, obj1.value);
 		this.assertEqual(undefined, obj2.value);
@@ -108,8 +108,8 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 	test11NewConnectionReplacesOld: function() {
 		var obj1 = {};
 		var obj2 = {};
-		connect(obj1, 'value', obj2, 'value', function(val) { return val + 1});
-		connect(obj1, 'value', obj2, 'value', function(val) { return val + 2});
+		connect(obj1, 'value', obj2, 'value', {converter: function(val) { return val + 1}});
+		connect(obj1, 'value', obj2, 'value', {converter: function(val) { return val + 2}});
 		obj1.value = 2
 		this.assertEqual(4, obj2.value);
 		this.assertEqual(1, obj1.attributeConnections.length);
@@ -129,8 +129,8 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		var c1, c2, obj1 = {}, obj2 = {}, obj3 = {};
 		c1 = connect(obj1, 'value', obj2, 'value'); c2 = connect(obj1, 'value', obj2, 'value');
 		this.assert(c1.isSimilarConnection(c2), '1');
-		c1 = connect(obj1, 'value', obj2, 'value', function(v) { return v + 1} );
-		c2 = connect(obj1, 'value', obj2, 'value', function(v) { return v + 2});
+		c1 = connect(obj1, 'value', obj2, 'value', {converter: function(v) { return v + 1 }});
+		c2 = connect(obj1, 'value', obj2, 'value', {converter: function(v) { return v + 2 }});
 		this.assert(c1.isSimilarConnection(c2), '2');
 		// ----------------------
 		c1 = connect(obj1, 'value1', obj2, 'value'); c2 = connect(obj1, 'value', obj2, 'value');
@@ -182,7 +182,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.
 		var textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
 		this.worldMorph.addMorph(textMorph1);
 		this.worldMorph.addMorph(textMorph2);
-		connect(textMorph1, 'textString', textMorph2, 'updateTextString', function(v) { return v + 'foo'});
+		connect(textMorph1, 'textString', textMorph2, 'updateTextString', {converter: function(v) { return v + 'foo' }});
 		textMorph1.updateTextString('foo');
 		this.assertEqual('foofoo', textMorph2.textString, 'connect not working');
 		var doc = this.exportMorph(this.worldMorph) // WorldMorph is test specific
