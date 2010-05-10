@@ -1975,7 +1975,7 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     interestingLKFileNames: function(url) {
-		var fileURLs = new WebResource(url).subDocuments().collect(function(ea) { return ea.getURL() })
+		var fileURLs = new WebResource(url).getSubElements().subDocuments.collect(function(ea) { return ea.getURL() })
 		var fileNames = fileURLs.collect(function(ea) { return ea.relativePathFrom(URL.codeBase) })
         var acceptedFileNames = /.*\.(st|js|lkml|txt|ometa|st)/
 		fileNames = fileNames.select(function(ea) { return acceptedFileNames.test(ea) });

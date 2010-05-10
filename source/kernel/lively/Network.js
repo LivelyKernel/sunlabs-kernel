@@ -1158,13 +1158,13 @@ Object.subclass('WebResource', {
 		return result;
 	},
 
-	subCollections: function(depth) {
-		return this.subElements(depth).select(function(ea) { return ea.isCollection() });
-	},
-
-	subDocuments: function(depth) {
-		return this.subElements(depth).select(function(ea) { return !ea.isCollection() });
-	},
+	// subCollections: function(depth) {
+	// 	return this.subElements(depth).select(function(ea) { return ea.isCollection() });
+	// },
+	// 
+	// subDocuments: function(depth) {
+	// 	return this.subElements(depth).select(function(ea) { return !ea.isCollection() });
+	// },
 
 	create: function() {
 		if (!this.isCollection()) { this.setContent(''); return }
@@ -1177,6 +1177,121 @@ Object.subclass('WebResource', {
 
 	toString: function() { return 'WebResource(' + this.getURL() + ')' },
 	
+});
+
+
+// make WebResource async
+WebResource.addMethods({
+
+	connections: ['status', 'content', 'contentDocument', 'isExisting', 'subCollections', 'subDocuments'],
+
+	reset: function() {
+		this.status = null;
+		this.content = null;
+		this.contentDocument = null;
+		this.isExisting = null;
+		this.subResources = null;
+	},
+
+	createResource: function() {
+		var self = this;
+		var resource = new SVNResource(
+			this.getURL().toString(),
+			{
+				model: {
+					getURL: function() { return self.getURL().toString() },
+					setRequestStatus: function(reqStatus) { self.status = reqStatus; self.isExisting = reqStatus.isSuccess() },
+					setContentText: function(string) { self.content = string },
+					setContentDocument: function(doc) { self.contentDocument = doc },
+				},
+				getURL: 'getURL',
+				setRequestStatus: 'setRequestStatus',
+				setContentText: 'setContentText',
+				setContentDocument: 'setContentDocument',
+			});
+		resource.removeNetRequestReporterTrait();
+		return resource
+	},
+
+	createNetRequest: function() {
+		var self = this;
+		var request = new NetRequest({
+				model: {
+					setStatus: function(reqStatus) { self.status = reqStatus; self.isExisting = reqStatus.isSuccess() },
+					setResponseText: function(string) { self.content = string },
+					setResponseXML: function(doc) { self.contentDocument = doc },
+					setReadyState: function(readyState) { self.readyState = readyState },
+				},
+				setStatus: 'setStatus',
+				setResponseText: 'setResponseText',
+				setResponseXML: 'setResponseXML',
+				setReadyState: 'setReadyState'
+		});
+		if (this.isSync())
+			request.beSync();
+		return request;
+	},
+
+	get: function(rev, contentType) {
+		var resource = this.createResource();
+		if (contentType)
+			resource.contentType = contentType;
+		resource.fetch(this.isSync(), null, rev);
+		return this
+	},
+
+	put: function(content, contentType) {
+		this.content = content;
+		var resource = this.createResource();
+		if (contentType)
+			resource.contentType = contentType;
+		resource.store(content, this.isSync());
+		return this;
+	},
+
+	del: function() {
+		var request = this.createNetRequest();
+		request.del(this.getURL());
+		return this;
+	},
+
+	exists: function() {
+		// for async use this.get().isExisting directly
+		return this.beSync().get().isExisting
+	},
+
+	copyTo: function(url) {
+		var otherResource = new WebResource(url);
+		this.isSync() ? otherResource.beSync() : otherResource.beAsync();
+		connect(this, 'content', otherResource, 'put', {removeAfterUpdate: true});
+		this.get();
+		return otherResource; // better return this for consistency?
+	},
+
+	getSubElements: function(depth) {
+		if (!depth) depth = 1;
+		var req = this.createNetRequest();
+		connect(this, 'contentDocument', this, 'pvtProcessPropfind', {removeAfterUpdate: true});
+		req.propfind(this.getURL(), depth);
+		return this;
+	},
+	
+	pvtProcessPropfind: function(doc) {
+		if (!this.status.isSuccess())
+			throw new Error('Cannot access subElements of ' + this.getURL());
+		// FIXME: resolve prefix "D" to something meaningful?
+		var nodes = new Query("/D:multistatus/D:response").findAll(doc.documentElement)
+		nodes.shift(); // remove first since it points to this WebResource
+		var result = [];
+		for (var i = 0; i < nodes.length; i++) {
+			var url = new Query('D:href').findFirst(nodes[i]).textContent;
+			if (!/!svn/.test(url)) // ignore svn dirs
+				result.push(new WebResource(this.getURL().withPath(url)))
+		}
+		this.subCollections = result.select(function(ea) { return ea.isCollection() });
+		this.subDocuments = result.select(function(ea) { return !ea.isCollection() });
+	},
+
 });
 
 

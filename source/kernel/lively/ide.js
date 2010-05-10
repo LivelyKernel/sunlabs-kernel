@@ -2577,7 +2577,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 
 	switchCodeBase: function(newCodeBaseURL) {
 		this.codeBaseURL = new URL(newCodeBaseURL.withRelativePartsResolved());
-		this._allFiles = new WebResource(newCodeBaseURL).subDocuments().collect(function(ea) { return ea.getName() });
+		this._allFiles = new WebResource(newCodeBaseURL).getSubElements().subDocuments.collect(function(ea) { return ea.getName() });
 	},
 	
 	prepareForMockModule: function(fileName, src) { // This is just used for testing!!!
