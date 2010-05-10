@@ -782,16 +782,12 @@ Object.subclass('Exporter', {
 		var helperNodes = [];
 
 		var exporter = this;
-	
+
+		lively.data.Wrapper.collectSystemDictionaryGarbage(this.rootMorph);	
+
 		this.rootMorph.withAllSubmorphsDo(function() { 
 			exporter.verbose && console.log("serializing " + this);
-
-			// TODO: merge this into the "prepareForSerialization"
-			// why ist this in the loop, and why does it break, when moving outside?
-			lively.data.Wrapper.collectSystemDictionaryGarbage(this.rootMorph);
-			this.prepareForSerialization(helperNodes, optSystemDictionary);
-			
-			// some formatting
+			this.prepareForSerialization(helperNodes, optSystemDictionary);			
 			var nl = NodeFactory.createNL();
 			this.rawNode.parentNode.insertBefore(nl, this.rawNode);
 			helperNodes.push(nl);

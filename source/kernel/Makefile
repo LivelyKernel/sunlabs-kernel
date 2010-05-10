@@ -1,8 +1,7 @@
 
 all:
 	
-	
-	
-up:
+up: 
 	svn up
 	svn log --limit 30 | less
+	svn info . > lastinfo
