@@ -6336,7 +6336,7 @@ ClipboardHack = {
 		buffer.setAttribute("rows","1");
 		buffer.setAttribute("id","copypastebuffer");
 		// buffer.setAttribute("style","position:absolute;z-index: -400;left:0px; top:1px; width:1px; height:1px;");
-		if (true || UserAgent.isTouch) { // hack to test text input on iPad
+		if (UserAgent.isTouch) { // hack to test text input on iPad
 			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:100px; height:30px;");
 		} else {
 			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:1px; height:1px;");
