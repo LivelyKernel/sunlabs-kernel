@@ -335,7 +335,8 @@ View.subclass('NetRequest', {
 		"+ReadyState", // Updated on every state transition of the request.
 		"+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
 		"+ResponseText", // Updated at most once, when request state is {Done}, with the text content retrieved.
-		"Progress"
+		"StreamContent",
+		"Progress",
 	],
 
 	initialize: function($super, modelPlug) {
@@ -369,6 +370,18 @@ View.subclass('NetRequest', {
 
 	onReadyStateChange: function() {
 		this.setReadyState(this.getReadyState());
+		if (this.getReadyState() === this.Loading) { // For comet networking
+			this.setStatus(this.getStatus());
+			if (this.transport.responseText) {
+				var allContent = this.getResponseText();
+				var newStart = this._streamContentLength ? this._streamContentLength : 0;
+				var newContent = allContent.substring(newStart);
+				newContent = /^([^\n\r]*)/.exec(newContent)[1]; // remove line breaks
+				this.setStreamContent(newContent);
+				this._streamContentLength = allContent.length;
+			}
+				
+		}
 		if (this.getReadyState() === this.Done) {
 			this.setStatus(this.getStatus());
 			if (this.transport.responseText) 
@@ -1200,7 +1213,7 @@ Object.subclass('WebResource', {
 // make WebResource async
 WebResource.addMethods({
 
-	connections: ['status', 'content', 'contentDocument', 'isExisting', 'subCollections', 'subDocuments', 'progress'],
+	connections: ['status', 'content', 'contentDocument', 'isExisting', 'subCollections', 'subDocuments', 'progress', 'readystate'],
 
 	reset: function() {
 		this.status = null;
@@ -1239,14 +1252,16 @@ WebResource.addMethods({
 					setStatus: function(reqStatus) { self.status = reqStatus; self.isExisting = reqStatus.isSuccess() },
 					setResponseText: function(string) { self.content = string },
 					setResponseXML: function(doc) { self.contentDocument = doc },
-					setReadyState: function(readyState) { self.readyState = readyState },
+					setReadyState: function(readyState) { self.readystate = readyState },
 					setProgress: function(progress) { self.progress = progress },
+					setStreamContent: function(content) { self.content = content },
 				},
 				setStatus: 'setStatus',
 				setResponseText: 'setResponseText',
 				setResponseXML: 'setResponseXML',
 				setReadyState: 'setReadyState',
 				setProgress: 'setProgress',
+				setStreamContent: 'setStreamContent',
 		});
 		if (this.isSync())
 			request.beSync();
@@ -1279,6 +1294,15 @@ WebResource.addMethods({
 		return this;
 	},
 
+	post: function(content, contentType) {
+		this.content = content;
+		var request = this.createNetRequest();
+		if (contentType)
+			request.setContentType(contentType);
+		request.post(this.getURL(), content);
+		return this;
+	},
+	
 	exists: function() {
 		// for async use this.get().isExisting directly
 		return this.beSync().get().isExisting
