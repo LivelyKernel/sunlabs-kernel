@@ -6335,7 +6335,8 @@ ClipboardHack = {
 		if (UserAgent.isTouch) { // hack to test text input on iPad
 			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:100px; height:30px;");
 		} else {
-			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:1px; height:1px;");
+			// the Clipboard buffer needs a minimum width, otherwise it will scroll the page on the first paste
+			buffer.setAttribute("style","position:fixed;z-index: -5;left:0px; top:0px; width:50px; height:1px;");
 		}
 		buffer.textContent = "NoText";
 		var outerBody = Global.document.body || Global.parent.document.body;
