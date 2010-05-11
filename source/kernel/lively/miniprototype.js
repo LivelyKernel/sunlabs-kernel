@@ -82,7 +82,7 @@ Object.extend(Object, {
 });
 
 
-if (window.navigator && window.navigator.userAgent.match(/Firefox|Minefield/)) {
+if (this.window && window.navigator && window.navigator.userAgent.match(/Firefox|Minefield/)) {
 // fixing the bug:	"var property is not a function" bug in Firefox
 Object.extend(Object, {
 	values: function(object) {
