@@ -1452,16 +1452,21 @@ lively.data.Wrapper.subclass('Morph', {
 				continue
 			}
 
+			// TODO: move logic to bindings.js
 			if (p == 'attributeConnections') {
 				other[p].forEach(function(con) {
 					if (!con.getTargetObj().id)
 						throw new Error('tried to copy binding and target obj has no id!');
+					var spec = {};
+					if (con.converter) spec.converter = con.converter.toString();
+					if (con.removeAfterUpdate) spec.removeAfterUpdate = con.removeAfterUpdate;
+							
 					connect(
 						this,
 						con.getSourceAttrName(),
 						copier.lookup(con.getTargetObj().id()) || con.getTargetObj(),
 						con.getTargetMethodName(),
-						con.converter.toString())
+						spec)
 				}, this)
 				continue;
 			}
