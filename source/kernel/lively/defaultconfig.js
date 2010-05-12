@@ -98,46 +98,48 @@ var UserAgent = (function() {
 //--------------------------
 // Following iPhone/iPad code borrowed from...
 //	http://rossboucher.com/2008/08/19/iphone-touch-events-in-javascript/
-UserAgent.touchHandler = function(event) {
-    var first = event.changedTouches[0],
-        type = "";
-    switch(event.type) {  
-		case "touchstart": type = "mousedown"; break;
-        case "touchmove":  type = "mousemove"; break;        
-        case "touchend":   type = "mouseup"; break;
-        default: return;
-    }
+// UserAgent.touchHandler = function(event) {
+//     var first = event.changedTouches[0],
+//         type = "";
+//     switch(event.type) {  
+// 		case "touchstart": type = "mousedown"; break;
+//         case "touchmove":  type = "mousemove"; break;        
+//         case "touchend":   type = "mouseup"; break;
+//         default: return;
+//     }
+// 
+//     //initMouseEvent(type, canBubble, cancelable, view, clickCount, 
+//     //           screenX, screenY, clientX, clientY, ctrlKey, 
+//     //           altKey, shiftKey, metaKey, button, relatedTarget);
+//     var simulatedEvent = document.createEvent("MouseEvent");
+//     simulatedEvent.initMouseEvent(type, true, true, window, 1, 
+//                               first.screenX, first.screenY, 
+//                               first.clientX, first.clientY, false, 
+//                               false, false, false, 0/*left*/, null);
+//     first.target.dispatchEvent(simulatedEvent);
+//     event.preventDefault();
+// };
+// UserAgent.touchBeMouse = function (evt) {
+//     if (this.touchIsMouse) return;
+// 	this.touchIsMouse = true;
+// 	if (evt) evt.hand.lookNormal();  // indicate mouse mode
+//     document.addEventListener("touchstart", this.touchHandler, true);
+//     document.addEventListener("touchmove", this.touchHandler, true);
+//     document.addEventListener("touchend", this.touchHandler, true);
+//     document.addEventListener("touchcancel", this.touchHandler, true); 
+// };
+// UserAgent.touchBeTouch = function (evt) {
+//     if (!this.touchIsMouse) return;
+// 	this.touchIsMouse = false;
+//     if (evt) evt.hand.lookTouchy();  // Indicate touch mode (pan / zoom)
+//     document.removeEventListener("touchstart", this.touchHandler, true);
+//     document.removeEventListener("touchmove", this.touchHandler, true);
+//     document.removeEventListener("touchend", this.touchHandler, true);
+//     document.removeEventListener("touchcancel", this.touchHandler, true); 
+// };
+// if (UserAgent.isTouch) UserAgent.touchBeMouse();
 
-    //initMouseEvent(type, canBubble, cancelable, view, clickCount, 
-    //           screenX, screenY, clientX, clientY, ctrlKey, 
-    //           altKey, shiftKey, metaKey, button, relatedTarget);
-    var simulatedEvent = document.createEvent("MouseEvent");
-    simulatedEvent.initMouseEvent(type, true, true, window, 1, 
-                              first.screenX, first.screenY, 
-                              first.clientX, first.clientY, false, 
-                              false, false, false, 0/*left*/, null);
-    first.target.dispatchEvent(simulatedEvent);
-    event.preventDefault();
-};
-UserAgent.touchBeMouse = function (evt) {
-    if (this.touchIsMouse) return;
-	this.touchIsMouse = true;
-	if (evt) evt.hand.lookNormal();  // indicate mouse mode
-    document.addEventListener("touchstart", this.touchHandler, true);
-    document.addEventListener("touchmove", this.touchHandler, true);
-    document.addEventListener("touchend", this.touchHandler, true);
-    document.addEventListener("touchcancel", this.touchHandler, true); 
-};
-UserAgent.touchBeTouch = function (evt) {
-    if (!this.touchIsMouse) return;
-	this.touchIsMouse = false;
-    if (evt) evt.hand.lookTouchy();  // Indicate touch mode (pan / zoom)
-    document.removeEventListener("touchstart", this.touchHandler, true);
-    document.removeEventListener("touchmove", this.touchHandler, true);
-    document.removeEventListener("touchend", this.touchHandler, true);
-    document.removeEventListener("touchcancel", this.touchHandler, true); 
-};
-if(UserAgent.isTouch) UserAgent.touchBeMouse();
+
 //--------------------------
 // Determine runtime behavior based on UA capabilities and user choices (override in localconfig.js)
 //--------------------------
@@ -318,7 +320,7 @@ Object.extend(Config, {
 	loadTests: [], //e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 	showTesterRunner: false,
 	// Modules
-	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet', 'lively.Styles'], // evaluated first, even before ChangeSet of a world
+	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet', 'lively.Styles', 'lively.TouchSupport'], // evaluated first, even before ChangeSet of a world
 	modulesBeforeWorldLoad: [], // evaluated before all changes
 	modulesOnWorldLoad: [], // evaluated before ChangeSet initializer
 	codeBase: Config.getDocumentDirectory(),
@@ -351,3 +353,5 @@ Config.useAltAsCommand = false; // User Platform Keys (Ctrl und Windows and Meta
 Config.pageNavigationName = "nothing"
 Config.pageNavigationWithKeys = true // boy, that's ugly!!!
 Config.showPageNumber = true;
+
+Config.touchBeMouse = UserAgent.isTouch

@@ -5155,16 +5155,18 @@ WorldMorph.addMethods({
 	showPieMenu: function(evt) {
 		var beTouchFn;
 		if (UserAgent.isTouch) {
-			if (UserAgent.touchIsMouse) {
+			if (Config.touchBeMouse) {
 				// If we were in mouse mode; switch back to touch
 				beTouchFn = function(e) {
 					//ClipboardHack.ensurePasteBuffer().blur();
-					UserAgent.touchBeTouch(e); 
+					Config.touchBeMouse = false; // currently not used
+					// evt.hand.lookTouchy()
 				};
 			} else {
 				// Otherwise, switch to mouse mode now (we just clicked in world)
-				ClipboardHack.ensurePasteBuffer().focus();
-				UserAgent.touchBeMouse(evt);
+				// ClipboardHack.ensurePasteBuffer().focus();
+				Config.touchBeMouse = true; // currently not used
+				// evt.hand.lookNormal()
 				return;
 			}
 		}
@@ -5342,6 +5344,7 @@ lookTouchy: function(morph) {
 				console.log("unknown event type " + evt.type);
 		}
 		evt.stopPropagation();
+		return evt; // for touch development FIXME remove
 	}.logErrors('Event Handler'),
 
     armProfileFor: function(evtType) { 
