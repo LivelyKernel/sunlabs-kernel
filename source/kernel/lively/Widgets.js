@@ -4077,111 +4077,111 @@ WindowMorph.subclass("TabbedPanelMorph", {
 
 Morph.subclass("PieMenuMorph", {
 
-    documentation: "Fabrik-style gesture menus for fast one-button UI",
+	documentation: "Fabrik-style gesture menus for fast one-button UI",
 
-    initialize: function($super, items, targetMorph, offset, clickFn) {
-        // items is an array of menuItems, each of which is an array of the form
-        // [itemName, closure], and
-	// itemName has the form 'menu text (pie text)'
-	// If offset is zero, the first item extends CW from 12 o'clock
-	// If offset is, eg, 0.5, then the first item begins 1/2 a slice-size CCW from there.
-        this.items = items;
-	// clickFn, if supplied, will be called instead of bringing up a textMenu in the case
-	//	of a quick click -- less than 300ms; ie before the help disk has been drawn
-	this.targetMorph = targetMorph;
-	this.r1 = 15;  // inner radius
-	this.r2 = 50;  // outer radius
-	this.offset = offset;
-	this.clickFn = clickFn;
-        $super(new lively.scene.Ellipse(pt(100 + this.r2, 100 + this.r2), this.r2));
-	this.hasCommitted = false;  // Gesture not yet outside commitment radius
-	return this;
-    },
-    helpString: function() {
-	var help = "Pie menus let you choose mouse-down actions";
-	help += "\nbased on the direction of your stroke.";
-	help += "\nIf you hold the button down without moving,";
-	help += "\nyou will see a map of the directions and actions.";
-	help += "\nThis menu has the same items with words to";
-	help += "\nexplain the abbreviated captions in the map.";
-	help += "\nYou can disable pie menus in world-menu/preferences.";
-	return help;
-    },
-    open: function(evt) {
-        // Note current mouse position and start a timer
-	this.mouseDownPoint = evt.mousePoint;
-	this.originalEvent = evt;
-	this.setPosition(this.mouseDownPoint.subPt(this.bounds().extent().scaleBy(0.5)));
-	var opacity = 0.1;  this.setFillOpacity(opacity);  this.setStrokeOpacity(opacity);
-	WorldMorph.current().addMorph(this);
-	evt.hand.setMouseFocus(this);
-        this.world().scheduleForLater(new SchedulableAction(this, "makeVisible", evt, 0), 300, false);
-    },
-    onMouseMove: function(evt) {
-        // Test for whether we have reached the commitment radius.
-	var delta = evt.mousePoint.subPt(this.mouseDownPoint)
-	if (delta.dist(pt(0, 0)) < this.r1) return
-	// If so dispatch to appropriate action
-	this.hasCommitted = true;
-	this.remove();
-	evt.hand.setMouseFocus(null);
-	var n = this.items.length;
-	var index = (delta.theta()/(Math.PI*2) + (this.offset/2)) * n;
-	index = (index+n).toFixed(0)%n;  // 0..n-1
-	var item = this.items[index];
-	if (item[1] instanceof Function) item[1](this.originalEvent)
-	//	else what?
-    },
-    onMouseUp: function(evt) {
-        // This should only happen inside the commitment radius.
-	if (this.hasCommitted) return;  // shouldn't happen
-	var world = this.world();
-	this.remove();
+	initialize: function($super, items, targetMorph, offset, clickFn) {
+		// items is an array of menuItems, each of which is an array of the form
+		// [itemName, closure], and
+		// itemName has the form 'menu text (pie text)'
+		// If offset is zero, the first item extends CW from 12 o'clock
+		// If offset is, eg, 0.5, then the first item begins 1/2 a slice-size CCW from there.
+		this.items = items;
+		// clickFn, if supplied, will be called instead of bringing up a textMenu in the case
+		//	of a quick click -- less than 300ms; ie before the help disk has been drawn
+		this.targetMorph = targetMorph;
+		this.r1 = 15;  // inner radius
+		this.r2 = 50;  // outer radius
+		this.offset = offset;
+		this.clickFn = clickFn;
+		$super(new lively.scene.Ellipse(pt(100 + this.r2, 100 + this.r2), this.r2));
+		this.hasCommitted = false;  // Gesture not yet outside commitment radius
+		return this;
+	},
+	helpString: function() {
+		var help = "Pie menus let you choose mouse-down actions";
+		help += "\nbased on the direction of your stroke.";
+		help += "\nIf you hold the button down without moving,";
+		help += "\nyou will see a map of the directions and actions.";
+		help += "\nThis menu has the same items with words to";
+		help += "\nexplain the abbreviated captions in the map.";
+		help += "\nYou can disable pie menus in world-menu/preferences.";
+		return help;
+	},
+	open: function(evt) {
+		// Note current mouse position and start a timer
+		this.mouseDownPoint = evt.mousePoint;
+		this.originalEvent = evt;
+		this.setPosition(this.mouseDownPoint.subPt(this.bounds().extent().scaleBy(0.5)));
+		var opacity = 0.1;  this.setFillOpacity(opacity);  this.setStrokeOpacity(opacity);
+		WorldMorph.current().addMorph(this);
+		evt.hand.setMouseFocus(this);
+		this.world().scheduleForLater(new SchedulableAction(this, "makeVisible", evt, 0), 300, false);
+	},
+	onMouseMove: function(evt) {
+		// Test for whether we have reached the commitment radius.
+		var delta = evt.mousePoint.subPt(this.mouseDownPoint)
+		if (delta.dist(pt(0, 0)) < this.r1) return
+		// If so dispatch to appropriate action
+		this.hasCommitted = true;
+		this.remove();
+		evt.hand.setMouseFocus(null);
+		var n = this.items.length;
+		var index = (delta.theta()/(Math.PI*2) + (this.offset/2)) * n;
+		index = (index+n).toFixed(0)%n;  // 0..n-1
+		var item = this.items[index];
+		if (item[1] instanceof Function) item[1](this.originalEvent)
+			//	else what?
+	},
+	onMouseUp: function(evt) {
+		// This should only happen inside the commitment radius.
+		if (this.hasCommitted) return;  // shouldn't happen
+		var world = this.world();
+		this.remove();
 
-	// if this was a quick click, call clickFn if supplied and return
-	if (!this.hasSubmorphs() && this.clickFn) return this.clickFn(evt);
+		// if this was a quick click, call clickFn if supplied and return
+		if (!this.hasSubmorphs() && this.clickFn) return this.clickFn(evt);
 
-	// Display a normal menu with this.items and a help item at the top.
-	var normalMenu = new MenuMorph([
-		["pie menu help", function(helpEvt) {
-			var helpMenu = new MenuMorph(this.items, this.targetMorph);
-			helpMenu.openIn(world, evt.mousePoint, false, this.helpString());
+		// Display a normal menu with this.items and a help item at the top.
+		var normalMenu = new MenuMorph([
+			["pie menu help", function(helpEvt) {
+				var helpMenu = new MenuMorph(this.items, this.targetMorph);
+				helpMenu.openIn(world, evt.mousePoint, false, this.helpString());
 			}.bind(this)]
-	    ], this.targetMorph);
-	normalMenu.addLine();
-	this.targetMorph.morphMenu(evt).getRawItems().forEach( function (item) { normalMenu.addRawItem(item); });
-	normalMenu.openIn(world, evt.mousePoint, false, Object.inspect(this.targetMorph).truncate());
-	evt.hand.setMouseFocus(normalMenu);
-    },
-    makeVisible: function(openEvent) {
-	if (this.hasCommitted) return;
-	var opacity = 0.5;
-	this.setFillOpacity(opacity);
-	this.setStrokeOpacity(opacity);
-	// Make an inner circle with 'menu'
-	var nItems = this.items.length;
-	if(nItems == 0) return;
-	for (var i=0; i<nItems; i++) {
-		var theta = (((i-this.offset)/nItems)-(1/4))*Math.PI*2;
-		var line = Morph.makeLine([Point.polar(this.r1, theta), Point.polar(this.r2, theta)], 1, Color.black);
-		line.setStrokeOpacity(opacity);
-		this.addMorph(line);
-		var labelString = this.items[i][0];
-		var x = labelString.indexOf('(');
-		if (x < 0) continue
-		labelString = labelString.slice(x+1, labelString.length-1);  // drop parens
-		var labelPt = Point.polar(this.r2*0.7, theta+(0.5/nItems*Math.PI*2))
-		this.addMorph(TextMorph.makeLabel(labelString).centerAt(labelPt));
-	}
-	this.addMorph(TextMorph.makeLabel("menu").centerAt(pt(0, 0)));
-    },
-    addHandleTo: function(morph, evt, mode) {
-    	var handle = new HandleMorph(evt.point(), lively.scene.Rectangle, evt.hand, morph, null);
-	handle.mode = mode;
-	handle.rollover = false;
-	morph.addMorph(handle);
-	evt.hand.setMouseFocus(handle);
-    }
+			], this.targetMorph);
+			normalMenu.addLine();
+			this.targetMorph.morphMenu(evt).getRawItems().forEach( function (item) { normalMenu.addRawItem(item); });
+			normalMenu.openIn(world, evt.mousePoint, false, Object.inspect(this.targetMorph).truncate());
+			evt.hand.setMouseFocus(normalMenu);
+		},
+		makeVisible: function(openEvent) {
+			if (this.hasCommitted) return;
+			var opacity = 0.5;
+			this.setFillOpacity(opacity);
+			this.setStrokeOpacity(opacity);
+			// Make an inner circle with 'menu'
+			var nItems = this.items.length;
+			if(nItems == 0) return;
+			for (var i=0; i<nItems; i++) {
+				var theta = (((i-this.offset)/nItems)-(1/4))*Math.PI*2;
+				var line = Morph.makeLine([Point.polar(this.r1, theta), Point.polar(this.r2, theta)], 1, Color.black);
+				line.setStrokeOpacity(opacity);
+				this.addMorph(line);
+				var labelString = this.items[i][0];
+				var x = labelString.indexOf('(');
+				if (x < 0) continue
+				labelString = labelString.slice(x+1, labelString.length-1);  // drop parens
+				var labelPt = Point.polar(this.r2*0.7, theta+(0.5/nItems*Math.PI*2))
+				this.addMorph(TextMorph.makeLabel(labelString).centerAt(labelPt));
+			}
+		this.addMorph(TextMorph.makeLabel("menu").centerAt(pt(0, 0)));
+	},
+	addHandleTo: function(morph, evt, mode) {
+		var handle = new HandleMorph(evt.point(), lively.scene.Rectangle, evt.hand, morph, null);
+		handle.mode = mode;
+		handle.rollover = false;
+		morph.addMorph(handle);
+		evt.hand.setMouseFocus(handle);
+	},
 });
 Object.extend(PieMenuMorph, {
     setUndo: function(undoFunction) {
