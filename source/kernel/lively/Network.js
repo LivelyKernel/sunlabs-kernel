@@ -344,7 +344,8 @@ View.subclass('NetRequest', {
 		this.requestNetworkAccess();
 		this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
 		this.transport.onprogress = this.onProgress.bind(this);
-		this.transport.upload.onprogress = this.onProgress.bind(this);
+		if (!UserAgent.isTouch) // FIXME crashes Mobile Safari
+			this.transport.upload.onprogress = this.onProgress.bind(this);
 		this.isSync = false;
 		this.requestHeaders = {};
 		$super(modelPlug)

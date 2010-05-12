@@ -5334,6 +5334,7 @@ lookTouchy: function(morph) {
         default:
             console.log("unknown event type " + evt.type);
         }
+evt.stop()
         evt.stopPropagation();
     }.logErrors('Event Handler'),
 

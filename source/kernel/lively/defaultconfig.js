@@ -99,15 +99,15 @@ var UserAgent = (function() {
 // Following iPhone/iPad code borrowed from...
 //	http://rossboucher.com/2008/08/19/iphone-touch-events-in-javascript/
 UserAgent.touchHandler = function(event) {
-    var touches = event.changedTouches,
-        first = touches[0],
+    var first = event.changedTouches[0],
         type = "";
-    switch(event.type)
-    {   case "touchstart": type = "mousedown"; break;
+    switch(event.type) {  
+		case "touchstart": type = "mousedown"; break;
         case "touchmove":  type="mousemove"; break;        
         case "touchend":   type="mouseup"; break;
         default: return;
     }
+
     //initMouseEvent(type, canBubble, cancelable, view, clickCount, 
     //           screenX, screenY, clientX, clientY, ctrlKey, 
     //           altKey, shiftKey, metaKey, button, relatedTarget);
@@ -118,6 +118,7 @@ UserAgent.touchHandler = function(event) {
                               false, false, false, 0/*left*/, null);
     first.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
+	event.stop()
 };
 UserAgent.touchBeMouse = function (evt) {
     if (this.touchIsMouse) return;
