@@ -343,9 +343,10 @@ View.subclass('NetRequest', {
 		this.transport = new XMLHttpRequest();
 		this.requestNetworkAccess();
 		this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
-		this.transport.onprogress = this.onProgress.bind(this);
-		if (!UserAgent.isTouch) // FIXME crashes Mobile Safari
-			this.transport.upload.onprogress = this.onProgress.bind(this);
+		// FIXME onprogress leads to strange 101 errors when no internet connection available
+		// this.transport.onprogress = this.onProgress.bind(this);
+		// if (!UserAgent.isTouch) // FIXME crashes Mobile Safari
+		// 	this.transport.upload.onprogress = this.onProgress.bind(this);
 		this.isSync = false;
 		this.requestHeaders = {};
 		$super(modelPlug)
