@@ -320,9 +320,9 @@ Object.extend(Config, {
 	loadTests: [], //e.g. ["FabrikTest", "RecordTest", "TestFrameworkTests", "ClassTest", "LKWikiTest", "DevelopTest", "MorphTest"]
 	showTesterRunner: false,
 	// Modules
-	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet', 'lively.Styles', 'lively.TouchSupport'], // evaluated first, even before ChangeSet of a world
+	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet', 'lively.Styles'], // evaluated first, even before ChangeSet of a world
 	modulesBeforeWorldLoad: [], // evaluated before all changes
-	modulesOnWorldLoad: [], // evaluated before ChangeSet initializer
+	modulesOnWorldLoad: ['lively.TouchSupport'], // evaluated before ChangeSet initializer
 	codeBase: Config.getDocumentDirectory(),
 	disableScriptCaching: false,
 	defaultDisplayTheme: 'lively'

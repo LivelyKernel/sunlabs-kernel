@@ -35,7 +35,6 @@ Event.addMethods({
 			this.addMousePoint(touch);
 		}
 	},
-	
 
 	isGesture: function() { return this.touches().length > 1 },
 	
@@ -97,6 +96,7 @@ Morph.addMethods({
 });
 
 
+// not yet
 HandMorph.addMethods({
 	
 	handleTouch: function(evt) {
