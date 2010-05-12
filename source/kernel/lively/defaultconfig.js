@@ -103,8 +103,8 @@ UserAgent.touchHandler = function(event) {
         type = "";
     switch(event.type) {  
 		case "touchstart": type = "mousedown"; break;
-        case "touchmove":  type="mousemove"; break;        
-        case "touchend":   type="mouseup"; break;
+        case "touchmove":  type = "mousemove"; break;        
+        case "touchend":   type = "mouseup"; break;
         default: return;
     }
 
@@ -118,7 +118,6 @@ UserAgent.touchHandler = function(event) {
                               false, false, false, 0/*left*/, null);
     first.target.dispatchEvent(simulatedEvent);
     event.preventDefault();
-	event.stop()
 };
 UserAgent.touchBeMouse = function (evt) {
     if (this.touchIsMouse) return;
