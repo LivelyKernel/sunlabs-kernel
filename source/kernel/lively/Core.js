@@ -564,36 +564,24 @@ console.log("Loaded basic DOM manipulation code");
 var Event = (function() {
     var tmp = Event; // note we're rebinding the name Event to point to a different class 
 
-    var capitalizer = {
-		mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
-		mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
-		keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp'
-	};
-
-
     var Event = Object.subclass('Event', {
 
+	capitalizer: {
+		mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
+		mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
+		keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp',
+	},
+	
 	initialize: function(rawEvent) {
 		this.rawEvent = rawEvent;
-		this.type = capitalizer[rawEvent.type] || rawEvent.type;
+		this.type = this.capitalizer[rawEvent.type] || rawEvent.type;
 		//this.charCode = rawEvent.charCode;
 
 		// fix timeStamp, e.g in Opera
 		this.timeStamp = this.rawEvent.timeStamp || new Date().getTime();
 
-		if (isMouse(rawEvent)) {
-			var x = rawEvent.pageX || rawEvent.clientX;
-			var y = rawEvent.pageY || rawEvent.clientY;
-			var topElement = this.canvas().parentNode; // ***DI: doesn't work if we are not top element;
-
-			// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-			// assume the parent node of Canvas has the same bounds as Canvas
-			this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
-			y - (topElement.offsetTop  || 0) - 3);
-			// console.log("mouse point " + this.mousePoint);
-			//event.mousePoint = pt(event.clientX, event.clientY  - 3);
-			this.priorPoint = this.mousePoint; 
-		} 
+		this.prepareMousePoint();
+		
 		this.hand = null;
 
 		// use event.timeStamp
@@ -601,6 +589,29 @@ var Event = (function() {
 		this.mouseButtonPressed = false;
 	},
 
+	prepareMousePoint: function() {
+		if (this.isMouseEvent())
+			this.addMousePoint(this.rawEvent)
+	},
+	
+	addMousePoint: function(evtOrTouch) {
+		var x = evtOrTouch.pageX || evtOrTouch.clientX;
+		var y = evtOrTouch.pageY || evtOrTouch.clientY;
+		var topElement = this.canvas().parentNode; // ***DI: doesn't work if we are not top element;
+
+		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
+		// assume the parent node of Canvas has the same bounds as Canvas
+		this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
+		y - (topElement.offsetTop  || 0) - 3);
+		// console.log("mouse point " + this.mousePoint);
+		//event.mousePoint = pt(event.clientX, event.clientY  - 3);
+		this.priorPoint = this.mousePoint;
+	},
+	
+	isMouseEvent: function() {
+		return Event.mouseEvents.include(this.rawEvent.type);
+	},
+	
 	simpleCopy: function() {
 		return new Event(this.rawEvent);
 	},
@@ -737,14 +748,10 @@ var Event = (function() {
 
     var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel"];
     var extendedMouseEvents = [ "mouseover", "mouseout"];
-    var mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
+    Event.mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
 
     Event.keyboardEvents = ["keypress", "keyup", "keydown"];
-    Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents);
-
-    function isMouse(rawEvent) {
-		return mouseEvents.include(rawEvent.type);
-    };
+    Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents).concat(["touchstart", "touchmove", "touchend", "touchcancel"]);
 
     return Event;
 })();
@@ -5312,30 +5319,30 @@ lookTouchy: function(morph) {
         return this.owner;
     },
 
-    // this is the DOM Event callback
-    handleEvent: function HandMorph$handleEvent(rawEvt) {
-        var evt = new Event(rawEvt);
-        evt.hand = this;
+	// this is the DOM Event callback
+	handleEvent: function HandMorph$handleEvent(rawEvt) {
+		var evt = new Event(rawEvt);
+		evt.hand = this;
 		//if(Config.showLivelyConsole) console.log("event type = " + rawEvt.type + ", platform = " +  window.navigator.platform);
 
-        lively.lang.Execution.resetDebuggingStack();
-        switch (evt.type) {
-        case "MouseWheel":
-        case "MouseMove":
-        case "MouseDown":
-        case "MouseUp":
-            this.handleMouseEvent(evt);
-            break;
-        case "KeyDown":
-        case "KeyPress": 
-        case "KeyUp":
-            this.handleKeyboardEvent(evt);
-            break;
-        default:
-            console.log("unknown event type " + evt.type);
-        }
-        evt.stopPropagation();
-    }.logErrors('Event Handler'),
+		lively.lang.Execution.resetDebuggingStack();
+		switch (evt.type) {
+			case "MouseWheel":
+			case "MouseMove":
+			case "MouseDown":
+			case "MouseUp":
+				this.handleMouseEvent(evt);
+				break;
+			case "KeyDown":
+			case "KeyPress": 
+			case "KeyUp":
+				this.handleKeyboardEvent(evt);
+				break;
+			default:
+				console.log("unknown event type " + evt.type);
+		}
+		evt.stopPropagation();
+	}.logErrors('Event Handler'),
 
     armProfileFor: function(evtType) { 
 		this.profileArmed = evtType;  // either "MouseDown" or "MouseUp"
