@@ -4139,40 +4139,42 @@ Morph.subclass("PieMenuMorph", {
 		this.remove();
 
 		// if this was a quick click, call clickFn if supplied and return
-		if (!this.hasSubmorphs() && this.clickFn) return this.clickFn(evt);
+		if (!this.hasSubmorphs() && this.clickFn) {
+			console.log('Calling PieMenu clickFn');
+			return this.clickFn(evt);
+		}
 
 		// Display a normal menu with this.items and a help item at the top.
 		var normalMenu = new MenuMorph([
 			["pie menu help", function(helpEvt) {
 				var helpMenu = new MenuMorph(this.items, this.targetMorph);
 				helpMenu.openIn(world, evt.mousePoint, false, this.helpString());
-			}.bind(this)]
-			], this.targetMorph);
-			normalMenu.addLine();
-			this.targetMorph.morphMenu(evt).getRawItems().forEach( function (item) { normalMenu.addRawItem(item); });
-			normalMenu.openIn(world, evt.mousePoint, false, Object.inspect(this.targetMorph).truncate());
-			evt.hand.setMouseFocus(normalMenu);
-		},
-		makeVisible: function(openEvent) {
-			if (this.hasCommitted) return;
-			var opacity = 0.5;
-			this.setFillOpacity(opacity);
-			this.setStrokeOpacity(opacity);
-			// Make an inner circle with 'menu'
-			var nItems = this.items.length;
-			if(nItems == 0) return;
-			for (var i=0; i<nItems; i++) {
-				var theta = (((i-this.offset)/nItems)-(1/4))*Math.PI*2;
-				var line = Morph.makeLine([Point.polar(this.r1, theta), Point.polar(this.r2, theta)], 1, Color.black);
-				line.setStrokeOpacity(opacity);
-				this.addMorph(line);
-				var labelString = this.items[i][0];
-				var x = labelString.indexOf('(');
-				if (x < 0) continue
-				labelString = labelString.slice(x+1, labelString.length-1);  // drop parens
-				var labelPt = Point.polar(this.r2*0.7, theta+(0.5/nItems*Math.PI*2))
-				this.addMorph(TextMorph.makeLabel(labelString).centerAt(labelPt));
-			}
+			}.bind(this)]], this.targetMorph);
+		normalMenu.addLine();
+		this.targetMorph.morphMenu(evt).getRawItems().forEach( function (item) { normalMenu.addRawItem(item); });
+		normalMenu.openIn(world, evt.mousePoint, false, Object.inspect(this.targetMorph).truncate());
+		evt.hand.setMouseFocus(normalMenu);
+	},
+	makeVisible: function(openEvent) {
+		if (this.hasCommitted) return;
+		var opacity = 0.5;
+		this.setFillOpacity(opacity);
+		this.setStrokeOpacity(opacity);
+		// Make an inner circle with 'menu'
+		var nItems = this.items.length;
+		if(nItems == 0) return;
+		for (var i=0; i<nItems; i++) {
+			var theta = (((i-this.offset)/nItems)-(1/4))*Math.PI*2;
+			var line = Morph.makeLine([Point.polar(this.r1, theta), Point.polar(this.r2, theta)], 1, Color.black);
+			line.setStrokeOpacity(opacity);
+			this.addMorph(line);
+			var labelString = this.items[i][0];
+			var x = labelString.indexOf('(');
+			if (x < 0) continue
+			labelString = labelString.slice(x+1, labelString.length-1);  // drop parens
+			var labelPt = Point.polar(this.r2*0.7, theta+(0.5/nItems*Math.PI*2))
+			this.addMorph(TextMorph.makeLabel(labelString).centerAt(labelPt));
+		}
 		this.addMorph(TextMorph.makeLabel("menu").centerAt(pt(0, 0)));
 	},
 	addHandleTo: function(morph, evt, mode) {
