@@ -288,7 +288,7 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 	},
 
 	getSourceForEval: function() {
-		return '(function() { ' + this.scriptSource + '})';
+		return '(function() { ' + this.scriptSource + '\n})';
 	},
 
 	doAction: function() {
