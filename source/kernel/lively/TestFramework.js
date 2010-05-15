@@ -165,10 +165,32 @@ Object.subclass('TestCase', {
 		cmp(leftObj, rightObj);
 		cmp(rightObj, leftObj);		
 	},
-
+	
+	assertMatches: function(expectedSpec, obj, msg) {
+	  for (var name in expectedSpec) {
+		var expected = expectedSpec[name];
+		var actual = obj[name];
+		if (expected === undefined || expected === null) {
+		  this.assertEquals(expected, actual, name + ' was expected to be ' + expected + (msg ? ' -- ' + msg : ''));
+		  continue;
+		}
+		if (expected.constructor === Function) continue;
+		//if (!expected && !actual) return;
+		switch (expected.constructor) {
+		  case String:
+		  case Boolean:
+		  case Number: {
+			this.assertEquals(expected, actual, name + ' was expected to be ' + expected + (msg ? ' -- ' + msg : ''));
+			continue;
+		  }
+		};
+		this.assertMatches(expected, actual, msg);
+	  }
+	},
+	
     assertIncludesAll: function(arrayShouldHaveAllItems, fromThisArray, msg) {
-        fromThisArray.each(function(ea) {
-            this.assert(arrayShouldHaveAllItems.include(ea), msg)
+        fromThisArray.each(function(ea, i) {
+            this.assert(arrayShouldHaveAllItems.include(ea), 'difference at: ' + i + ' ' + msg)
         }, this);
     },
     
