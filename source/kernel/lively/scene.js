@@ -934,7 +934,8 @@ this.Shape.subclass('lively.scene.Rectangle', {
 	partNameNear: function(p) {
 		return this.bounds().partNameNear(Rectangle.corners, p, this.controlPointProximity);
 	},
-allPartNames: function() {return Rectangle.corners; },
+
+	allPartNames: function() {return Rectangle.corners; },
 
 
 	partPosition: function(partName) {
@@ -1827,6 +1828,7 @@ this.Shape.subclass('lively.scene.Path', {
 
 	initialize: function($super, elements) {
 		this.rawNode = NodeFactory.create("path");
+		this.dontChangeShape = false;
 		this.setElements(elements || []);
 		return this;
 	},
@@ -1887,6 +1889,7 @@ this.Shape.subclass('lively.scene.Path', {
 	},
 	
 	setVertices: function(vertlist) {
+		if (this.dontChangeShape) return
 		// emit SVG path symbol based on point attributes
 		// p==point, i=array index
 		function map2svg(p,i) {
