@@ -241,6 +241,10 @@ TestCase.subclass('Tests.SceneTest.PathElementTest', {
 
 		var result = lively.scene.PathElement.parse('M  100 100');
 		this.assertPathsEqual(expected, result);
+		
+		var expected = ['MoveTo', {isAbsolute: true, x: -3e-6, y: 100}]
+		var result = lively.scene.PathElement.parse('M  -3e-6 100');
+		this.assertPathsEqual(expected, result);
 	},
 
 	test02ParseMultiplePaths1: function() {
@@ -269,8 +273,6 @@ TestCase.subclass('Tests.SceneTest.PathElementTest', {
 		var result = lively.scene.PathElement.parse(data);
 		this.assertPathsEqual(expected, result);
 	},
-
-
 
 	test03AttributeFormat: function() {
 		var data = "m 23.94392,1027.9701 c 0,3.8101 -2.42801,7.9937 -7.09725,9.2637 0,0.4856 0.0373,1.0086 0.0373,1.4942";

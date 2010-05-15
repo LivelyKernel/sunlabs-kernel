@@ -1349,8 +1349,8 @@ Object.extend(lively.scene.PathElement, {
 	parse: function(data) {
 		var
 			splitNumberRegex = /[\s*,\s*]+/,
-			splitTypeAndNumberRegex = /(NaN|[^a-zA-Z]+)?([A-Za-z])?(NaN|[^a-zA-Z]+)?/,
-			typeTestRegex = /[A-Za-z]/,
+			splitTypeAndNumberRegex = /(NaN|[^a-df-zA-Z]+)?([A-Za-df-z])?(NaN|[^a-df-zA-Z]+)?/,
+			typeTestRegex = /[a-df-zA-Z]/,
 			typeAbsTestRegex = /[A-Z]/;
 
 		// split number pairs
@@ -1367,7 +1367,7 @@ Object.extend(lively.scene.PathElement, {
 				all.push(splitted[3]);
 			return all;
 		});
-
+console.log(chunks)
 		// create PathElement objects from splitted data
 		var
 			pathElementClasses = lively.scene.PathElement.allSubclasses(),
@@ -1382,6 +1382,8 @@ Object.extend(lively.scene.PathElement, {
 				var klass = pathElementClasses.detect(function(klass) {
 					return klass.prototype.charCode == chunk.toUpperCase();
 				});
+				if (!klass)
+					throw dbgOn(new Error('Trying to parse SVG path elements. No support for ' + chunk));
 			} else {
 				currentChunks.push(Number(chunk) || 0);
 			};
