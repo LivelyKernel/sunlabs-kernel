@@ -584,7 +584,7 @@ Morph.subclass('HandleMorph', {
     
 	initialize: function($super, location, shapeType, hand, targetMorph, partName) {
 		$super(new shapeType(location.asRectangle().expandBy(5)));
-
+		this.location = location;
 		this.targetMorph = targetMorph;
 		this.partName = partName; // may be a name like "topRight" or a vertex index
 		this.initialScale = null;
@@ -592,110 +592,120 @@ Morph.subclass('HandleMorph', {
 		this.mode = null;
 		this.rollover = true;  // pops up near hangle locs, goes away if mouse rolls out
 		this.showingAllHandles = false;  // all handles are shown, eg, on touch screens
+		this.normalize();
 		return this;
 	},
     
-    getHelpText: function() {
-        return (this.shape instanceof lively.scene.Rectangle) ? this.controlHelpText : this.circleHelpText;
-    },
-    
-    showHelp: function($super, evt) {
-        if (this.helpCount > this.maxHelpCount) return false;
-        var wasShown = $super(evt);
-        if (wasShown) {
-            HandleMorph.prototype.helpCount++;
-        }
-        return wasShown;
-    },
+	getHelpText: function() {
+		return (this.shape instanceof lively.scene.Rectangle) ? this.controlHelpText : this.circleHelpText;
+	},
 
-    okToDuplicate: Functions.False,
+	showHelp: function($super, evt) {
+		if (this.helpCount > this.maxHelpCount) return false;
+		var wasShown = $super(evt);
+		if (wasShown) {
+			HandleMorph.prototype.helpCount++;
+		}
+		return wasShown;
+	},
 
-    
+	okToDuplicate: Functions.False,
 
-    onMouseDown: function(evt) {
-	//console.log("handle down");
-	evt.hand.setMouseFocus(this);
-	this.hideHelp();
-	if (!this.rollover) {  // if not a rollover, mode should be set
-		if (this.showingAllHandles)  this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
-		return;
-	}
-	if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
+	onMouseDown: function(evt) {
+		//console.log("handle down");
+		evt.hand.setMouseFocus(this);
+		this.hideHelp();
+		if (!this.rollover) {  // if not a rollover, mode should be set
+			if (this.showingAllHandles) this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
+			return;
+		}
+		if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
 		else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
 	},
 
-    
-    onMouseMove: function(evt) {
-	if (!evt.mouseButtonPressed) {
-		if (this.showingAllHandles) return;  // Showing all handles; just let mouse roll over
-        	if (this.rollover) {  // Mouse up: Remove handle if mouse drifts away
-		if (this.owner && !this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
-                	evt.hand.setMouseFocus(null);
-                	this.hideHelp();
-                	this.remove(); }
-            return;
+	onMouseMove: function(evt) {
+		if (!evt.mouseButtonPressed) {
+			if (this.showingAllHandles) return;  // Showing all handles; just let mouse roll over
+			if (this.rollover) {  // Mouse up: Remove handle if mouse drifts away
+				if (this.owner && !this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
+					evt.hand.setMouseFocus(null);
+					this.hideHelp();
+					this.remove();
+				}
+				return;
+			}
 		}
-	}
-	if (!this.owner) { console.warn("Handle " + this + " has no owner in onMouseMove!" ); return; }
-	//console.log("handle move");
-	// When dragged, I drag the designated control point of my target
-	this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
-	var p0 = evt.hand.lastMouseDownPoint; // in world coords
-	var p1 = evt.mousePoint;
-	if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
-	if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
-	var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
-	var v1 = p1.subPt(ctr); //vector from origin now
-	var v0 = p0.subPt(ctr); //vector from origin at mousedown
-	var d = p1.dist(p0); //dist from mousedown
-            
-	switch(this.mode) {  // Note mode is set in mouseDown
-	case 'scale' :
-	    var ratio = v1.r() / v0.r();
-	    ratio = Math.max(0.1,Math.min(10,ratio));
-	    this.targetMorph.setScale(this.initialScale*ratio);
-	    break; 
-	case 'rotate' :
-	    this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta());
-	    break; 
-	case 'borderWidth' :
-	    this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
-	    break;
-	case 'reshape' :
-	    this.handleReshape(this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.point()), false));
-	    break;
-        }
-    },
+		if (!this.owner) { console.warn("Handle " + this + " has no owner in onMouseMove!" ); return; }
+		//console.log("handle move");
+		// When dragged, I drag the designated control point of my target
+		this.align(this.bounds().center(), this.owner.localize(evt.mousePoint));
+		var p0 = evt.hand.lastMouseDownPoint; // in world coords
+		var p1 = evt.mousePoint;
+		if (!this.initialScale) this.initialScale = this.targetMorph.getScale();
+		if (!this.initialRotation) this.initialRotation = this.targetMorph.getRotation();
+		var ctr = this.targetMorph.owner.worldPoint(this.targetMorph.origin);  //origin for rotation and scaling
+		var v1 = p1.subPt(ctr); //vector from origin now
+		var v0 = p0.subPt(ctr); //vector from origin at mousedown
+		var d = p1.dist(p0); //dist from mousedown
+
+		switch (this.mode) {  // Note mode is set in mouseDown
+			case 'scale' :
+				var ratio = v1.r() / v0.r();
+				ratio = Math.max(0.1,Math.min(10,ratio));
+				this.targetMorph.setScale(this.initialScale*ratio);
+				break; 
+			case 'rotate' :
+				this.targetMorph.setRotation(this.initialRotation + v1.theta() - v0.theta());
+				break; 
+			case 'borderWidth' :
+				this.targetMorph.setBorderWidth(Math.max(0, Math.floor(d/3)/2), true);
+				break;
+			case 'reshape' :
+				this.handleReshape(this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.point()), false));
+				break;
+		}
+	},
     
-    onMouseUp: function(evt) {
-	//console.log("handle up");
-        if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
-	    // last call for, eg, vertex deletion
-	    if (this.partName) this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), true); 
-        }
-        this.remove();
+	onMouseUp: function(evt) {
+		//console.log("handle up");
+		if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
+			// last call for, eg, vertex deletion
+			if (this.partName) this.targetMorph.reshape(this.partName, this.targetMorph.localize(evt.mousePoint), true); 
+		}
+		this.remove();
 		if (this.showingAllHandles) this.targetMorph.addAllHandles(evt);
-    },
+	},
     
-    handleReshape: function(result) {
+	handleReshape: function(result) {
 		if (typeof result == "boolean") {
 			this.setBorderColor(result ? Color.red : Color.blue);
 		} else {
 			if (this.partName  < 0) this.partName = -this.partName;
 			this.type = "rect"; // become a regular handle
 		}
-    },
+	},
 
-    inspect: function($super) {
-        return $super() + " on " + Object.inspect(this.targetMorph);
-    },
+	inspect: function($super) {
+		return $super() + " on " + Object.inspect(this.targetMorph);
+	},
     
-    scaleFor: function(scaleFactor) {
-        this.applyFunctionToShape(function(s) {
-            this.setBounds(this.bounds().center().asRectangle().expandBy(5/s));
-            this.setStrokeWidth(1/s); 
-        }, scaleFactor);
-    }
+	scaleFor: function(scaleFactor) {
+		this.applyFunctionToShape(function(s) {
+			this.setBounds(this.bounds().center().asRectangle().expandBy(5/s));
+			this.setStrokeWidth(1/s); 
+		}, scaleFactor);
+	},
+	
+	normalize: function() {
+		// if targetMorph is scaled, I'm scaled, too. This function will undo it so that
+		// I appear not scaled
+		// FIXME: Only handled scale of direct targetMorph/owner!!!
+		// if (!this.targetMorph.owner) return
+		var invertScale = this.getScale() / this.targetMorph.getScale()
+		this.setScale(invertScale);
+		var p = this.getCenter();
+		this.align(p, this.location);
+	}
     
 });
 
