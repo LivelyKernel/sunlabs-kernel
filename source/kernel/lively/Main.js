@@ -294,11 +294,11 @@ function populateWorldWithExamples(world) {
                 var g = lively.scene;
                 // bezier blob
                 var shape = new g.Path([
-        		    new g.MoveTo(0, 0),
-        		    new g.CurveTo(50,0),
-        		    new g.CurveTo(50,50),
-        		    new g.CurveTo(0,50),
-        		    new g.CurveTo(0,0)
+        		    new g.MoveTo(true, 0,  0),
+        		    new g.CurveTo(true, 50, 0),
+        		    new g.CurveTo(true, 50, 50),
+        		    new g.CurveTo(true, 0, 50),
+        		    new g.CurveTo(true, 0, 0)
         		]);
                 var widget = widget = new Morph(shape);
         		widget.applyStyle({fill: Color.red, borderWidth: 3, borderColor: Color.black});
@@ -306,15 +306,15 @@ function populateWorldWithExamples(world) {
 	
                 // rectangle with rounded corners
                 var shape = new g.Path([
-        		    new g.MoveTo(10, 0),
-        		    new g.CurveTo(60,0),
-        		    new g.CurveTo(70,10),
-        		    new g.CurveTo(70,40),
-        		    new g.CurveTo(60,50),
-        		    new g.CurveTo(10,50),
-        		    new g.CurveTo(0,40),
-        		    new g.CurveTo(0,10),
-        		    new g.CurveTo(10,0),
+        		    new g.MoveTo(true, 10,  0),
+        		    new g.CurveTo(true, 60, 0),
+        		    new g.CurveTo(true, 70, 10),
+        		    new g.CurveTo(true, 70, 40),
+        		    new g.CurveTo(true, 60, 50),
+        		    new g.CurveTo(true, 10, 50),
+        		    new g.CurveTo(true, 0, 40),
+        		    new g.CurveTo(true, 0, 10),
+        		    new g.CurveTo(true, 10, 0),
         		]);
 	
                 // for (var i = 2; i<=8; i+=2) {
