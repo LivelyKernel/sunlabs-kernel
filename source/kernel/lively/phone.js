@@ -131,7 +131,7 @@ Morph.subclass('PhoneMorph', {
 		function fixPath(points) {
 			return points.collect(function(point, i) { // fix: path no longer created with points!
 				var klass = i === 0 ? lively.scene.MoveTo : lively.scene.CurveTo;
-				return new klass(point.x, point.y);
+				return new klass(true, point.x, point.y);
 			});
 		}
 		

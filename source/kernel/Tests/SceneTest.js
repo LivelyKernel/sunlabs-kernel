@@ -210,24 +210,86 @@ Object.subclass("FillCollectingBenchmark", {
 	}
 });
 
+
+TestCase.subclass('Tests.SceneTest.PathElementTest', {
+
+	assertPathsEqual: function(expected, result) {
+		this.assertEqual(expected.length/2, result.length, 'element count not the same');
+		for (var i = 0, j = 0; i < expected.length; i+=2, j++) {
+			// e sth like ['CurveTo', {isAbsolute: true, x: 100, y: 100}]
+			var eClassName = expected[i];
+			var props = expected[i+1]
+			var r = result[j];
+			rClassName = r.constructor.type
+			rClassName = rClassName.substring(rClassName.lastIndexOf('.')+1, rClassName.length);
+			this.assertEqual(eClassName, rClassName);
+			this.assertMatches(props, r);
+		}
+	},
+
+	test01ParsePathData: function() {
+		var expected = ['MoveTo', {isAbsolute: true, x: 100, y: 100}]
+
+		var result = lively.scene.PathElement.parse('M100,100');
+		this.assertPathsEqual(expected, result);
+
+		var result = lively.scene.PathElement.parse('M 100,100');
+		this.assertPathsEqual(expected, result);
+
+		var result = lively.scene.PathElement.parse('M100 ,100');
+		this.assertPathsEqual(expected, result);
+
+		var result = lively.scene.PathElement.parse('M  100 100');
+		this.assertPathsEqual(expected, result);
+	},
+
+	test02ParseMultiplePaths1: function() {
+		var data = 'm 1,2.97 c 0,3 -2.4,7 -7,9 0,0 0,1 0,1 l 0,-1.1 z';
+		var expected = [
+		'MoveTo', {isAbsolute: false, x: 1, y: 2.97},
+		'BezierCurve2CtlTo', {isAbsolute: false, x: -7, y: 9, controlX1: 0, controlY1: 3, controlX2: -2.4, controlY2: 7},
+		'BezierCurve2CtlTo', {isAbsolute: false, x: 0, y: 1, controlX1: 0, controlY1: 0, controlX2: 0, controlY2: 1},
+		'LineTo', {isAbsolute: false, x: 0, y: -1.1},
+		'ClosePath', {isAbsolute: false},
+		];
+
+		var result = lively.scene.PathElement.parse(data);
+		this.assertPathsEqual(expected, result);
+	},
+
+	test02ParseMultiplePaths2: function() {
+		var data = 'M0,0T48.25,-5.77T85.89,15.05T61.36,32.78';
+		var expected = [
+		'MoveTo', {isAbsolute: true, x: 0, y: 0},
+		'CurveTo', {x: 48.25, y: -5.77},
+		'CurveTo', {x: 85.89, y: 15.05},
+		'CurveTo', {x: 61.36, y: 32.78},
+		];
+
+		var result = lively.scene.PathElement.parse(data);
+		this.assertPathsEqual(expected, result);
+	},
+
+
+
+	test03AttributeFormat: function() {
+		var data = "m 23.94392,1027.9701 c 0,3.8101 -2.42801,7.9937 -7.09725,9.2637 0,0.4856 0.0373,1.0086 0.0373,1.4942";
+		var elems = lively.scene.PathElement.parse(data);
+		var result = elems.collect(function(ea) { return ea.attributeFormat() }).join(' ');
+		var expected = "m23.94392,1027.9701 c0,3.8101 -2.42801,7.9937 -7.09725,9.2637 c0,0.4856 0.0373,1.0086 0.0373,1.4942";
+		this.assertEquals(expected, result);
+	},
+	
+	test04NormalizeRelativePath: function() {
+		var data = "m1,101 c0,3 -2,7 -7,0 m7,3 L5,105 C3,107 2,110, 6,120 M1,89 Z";
+		p = new lively.scene.Path();
+		p.setElementsFromSVGData(data);
+		p.normalize();
+		var result = p.createSVGDataFromElements();
+		var expected = "m0,0 c0,3 -2,7 -7,0 m7,3 L4,4 C2,6 1,9 5,19 M0,-12 Z ";
+		this.assertEquals(expected, result);
+	},
+
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+});

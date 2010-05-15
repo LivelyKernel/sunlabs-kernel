@@ -1323,87 +1323,282 @@ this.Line = { // sugar syntax
 	}
 };
 
+
+// --------------------
+// --------- Paths ----
+// --------------------
+// see http://www.w3.org/TR/SVG/paths.html
 Wrapper.subclass('lively.scene.PathElement', {
-	isAbsolute: true,
+	initialize: function(isAbsolute) {
+		this.isAbsolute = isAbsolute;
+	},
+	realCharCode: function() {
+		return this.isAbsolute ? this.charCode.toUpperCase() : this.charCode.toLowerCase();
+	},
 	attributeFormat: function() {
-		// FIXME not a good base element
-		return this.charCode + this.x + "," + this.y;
-	}
+		throw new Error('subclass responsiblity');
+	},
+	translate:function(x, y, force) {
+		throw new Error('subclass responsiblity (' + this.constructor.type + ')');
+	},
+	toString: function() { return 'PathElement("' + this.attributeFormat() + '")' },
+});
+
+Object.extend(lively.scene.PathElement, {
+	parse: function(data) {
+		var
+			splitNumberRegex = /[\s*,\s*]+/,
+			splitTypeAndNumberRegex = /(NaN|[^a-zA-Z]+)?([A-Za-z])?(NaN|[^a-zA-Z]+)?/,
+			typeTestRegex = /[A-Za-z]/,
+			typeAbsTestRegex = /[A-Z]/;
+
+		// split number pairs
+		var chunks = data.split(splitNumberRegex);
+		// split up types
+		chunks = chunks.inject([], function(all, chunk) {
+			var splitted = splitTypeAndNumberRegex.exec(chunk);
+			if (!splitted) return all;
+			if (splitted[1] !== undefined)
+				all.push(splitted[1]);
+			if (splitted[2] !== undefined)
+				all.push(splitted[2]);
+			if (splitted[3] !== undefined)
+				all.push(splitted[3]);
+			return all;
+		});
+
+		// create PathElement objects from splitted data
+		var
+			pathElementClasses = lively.scene.PathElement.allSubclasses(),
+			pathElements = [],
+			klass = null,
+			currentChunks = [],
+			isAbsolute;
+		while (chunks.length > 0) {
+			var chunk = chunks.shift()
+			if (typeTestRegex.test(chunk)) {
+				isAbsolute = typeAbsTestRegex.test(chunk);
+				var klass = pathElementClasses.detect(function(klass) {
+					return klass.prototype.charCode == chunk.toUpperCase();
+				});
+			} else {
+				currentChunks.push(Number(chunk) || 0);
+			};
+			if (currentChunks.length == klass.dataLength) {
+				pathElements.push(klass.create(isAbsolute, currentChunks));
+				currentChunks = [];
+			}
+		}
+		return pathElements;
+	},	
 });
 
 this.PathElement.subclass('lively.scene.MoveTo', {
 	charCode: 'M',
 
-	initialize: function(x, y) {
+	initialize: function($super, isAbsolute, x, y) {
+		$super(isAbsolute);
 		this.x = x;
 		this.y = y;
 	},
 
 	allocateRawNode: function(rawPathNode) {
-		this.rawNode = rawPathNode.createSVGPathSegMovetoAbs(this.x, this.y);
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegMovetoAbs(this.x, this.y) :
+			rawPathNode.createSVGPathSegMovetoRel;
 		return this.rawNode;
 	},
 
 	controlPoints: function() {
 		return [pt(this.x, this.y)];
 	},
+	
+	attributeFormat: function() {
+		return this.realCharCode() + this.x + "," + this.y;
+	},
+	
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+		this.y += y;
+	},
 });
-
-Object.extend(this.MoveTo, {
+Object.extend(lively.scene.MoveTo, {
 	fromLiteral: function(literal) {
-		return new lively.scene.MoveTo(literal.x || 0.0, literal.y || 0.0);
-	}
-
+		return new lively.scene.MoveTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0);
+	},
+	parse: function(data) {
+		var codeExtractor = /([A-Za-z])\s?(-?[0-9]+(?:.[0-9]+)?|NaN),(-?[0-9]+(?:.[0-9]+)?|NaN)/;
+	},
+	dataLength: 2,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[0], arr[1])
+	},
 });
+
 
 this.PathElement.subclass('lively.scene.LineTo', {
 	charCode: 'L',
-	initialize: function(x, y) {
+	initialize: function($super, isAbsolute, x, y) {
+		$super(isAbsolute);
 		this.x = x;
 		this.y = y;
 	},
 
 	allocateRawNode: function(rawPathNode) {
-		this.rawNode = rawPathNode.createSVGPathSegLinetoAbs(this.x, this.y);
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegLinetoAbs(this.x, this.y) :
+			rawPathNode.createSVGPathSegLinetoRel(this.x, this.y);
 		return this.rawNode;
 	},
 
 	controlPoints: function() {
 		return [pt(this.x, this.y)];
-	}
+	},
+	
+	attributeFormat: function() {
+		return this.realCharCode() + this.x + "," + this.y;
+	},
+	
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+		this.y += y;
+	},
+});
+Object.extend(lively.scene.LineTo, {
+	fromLiteral: function(literal) {
+		return new lively.scene.LineTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0);
+	},
+	dataLength: 2,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[0], arr[1])
+	},
 });
 
-Object.extend(this.LineTo, {
-	fromLiteral: function(literal) {
-		return new lively.scene.LineTo(literal.x || 0.0, literal.y || 0.0);
-	}
+
+this.PathElement.subclass('lively.scene.HorizontalTo', {
+	charCode: 'H',
+	initialize: function($super, isAbsolute, x) {
+		$super(isAbsolute);
+		this.x = x;
+	},
+
+	allocateRawNode: function(rawPathNode) {
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegLinetoHorizontalAbs(this.x) :
+			rawPathNode.createSVGPathSegLinetoHorizontalRel(this.x);
+		return this.rawNode;
+	},
+
+	controlPoints: function() {
+		return [];
+	},
+	
+	attributeFormat: function() {
+		return this.realCharCode() + this.x;
+	},
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+	},
 });
+Object.extend(lively.scene.HorizontalTo, {
+	fromLiteral: function(literal) {
+		return new lively.scene.HorizontalTo(literal.isAbsolute, literal.x || 0.0);
+	},
+	dataLength: 1,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[0])
+	},
+});
+
+
+this.PathElement.subclass('lively.scene.VerticalTo', {
+	charCode: 'V',
+	initialize: function($super, isAbsolute, y) {
+		$super(isAbsolute);
+		this.y = y;
+	},
+
+	allocateRawNode: function(rawPathNode) {
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegLinetoVerticalAbs(this.y) :
+			rawPathNode.createSVGPathSegLinetoVerticalRel(this.y);
+		return this.rawNode;
+	},
+
+	controlPoints: function() {
+		return [];
+	},
+	
+	attributeFormat: function() {
+		return this.realCharCode() + this.y;
+	},
+	
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.y += y;
+	},
+});
+Object.extend(lively.scene.VerticalTo, {
+	fromLiteral: function(literal) {
+		return new lively.scene.VerticalTo(literal.isAbsolute, literal.y || 0.0);
+	},
+	dataLength: 1,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[0])
+	},
+});
+
 
 this.PathElement.subclass('lively.scene.CurveTo', {
 
 	charCode: 'T', // shouldn't it be the S type anyway?
 
-	initialize: function(x, y) {
+	initialize: function($super, isAbsolute, x, y) {
+		$super(isAbsolute);
 		this.x = x;
 		this.y = y;
 	},
 
 	allocateRawNode: function(rawPathNode) {
-		this.rawNode = rawPathNode.createSVGPathSegCurvetoQuadraticSmoothAbs(this.x, this.y);
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegCurvetoQuadraticSmoothAbs(this.x, this.y) :
+			rawPathNode.createSVGPathSegCurvetoQuadraticSmoothRel(this.x, this.y);
 		return this.rawNode;
 	},
 
 	controlPoints: function() {
 		return [pt(this.x, this.y)];
-	}
+	},
+	
+	attributeFormat: function() {
+		return this.realCharCode() + this.x + "," + this.y;
+	},
+	
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+		this.y += y;
+	},
 });
-
+Object.extend(lively.scene.CurveTo, {
+	fromLiteral: function(literal) {
+		return new lively.scene.CurveTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0);
+	},
+	dataLength: 2,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[0], arr[1])
+	},
+});
 
 this.PathElement.subclass('lively.scene.QuadCurveTo', {
 
 	charCode: 'Q',
 
-	initialize: function(x, y, controlX, controlY) {
+	initialize: function($super, isAbsolute, x, y, controlX, controlY) {
+		$super(isAbsolute);
 		this.x = x;
 		this.y = y;
 		this.controlX = controlX;
@@ -1411,7 +1606,9 @@ this.PathElement.subclass('lively.scene.QuadCurveTo', {
 	},
 
 	allocateRawNode: function(rawPathNode) {
-		this.rawNode = rawPathNode.createSVGPathSegCurvetoQuadraticAbs(this.x, this.y, this.controlX, this.controlY);
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegCurvetoQuadraticAbs(this.x, this.y, this.controlX, this.controlY) :
+			rawPathNode.createSVGPathSegCurvetoQuadraticRel(this.x, this.y, this.controlX, this.controlY);
 		return this.rawNode;
 	},
 
@@ -1420,24 +1617,182 @@ this.PathElement.subclass('lively.scene.QuadCurveTo', {
 	},
 
 	attributeFormat: function() {
-		return this.charCode + this.controlX + "," + this.controlY + "," + this.x + "," + this.y;
-	}
+		return this.realCharCode() + this.controlX + "," + this.controlY + " " + this.x + "," + this.y;
+	},
+
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+		this.y += y;
+		this.controlX += x;
+		this.controlY += y;
+	},
+});
+Object.extend(lively.scene.QuadCurveTo, {
+	fromLiteral: function(literal) {
+		return new lively.scene.QuadCurveTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0, 
+			literal.controlX || 0.0, literal.controlY || 0.0);
+	},
+	dataLength: 4,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[2], arr[3], arr[0], arr[1])
+	},
+}); 
+
+
+this.PathElement.subclass('lively.scene.BezierCurve2CtlTo', {
+
+	charCode: 'C',
+
+	initialize: function($super, isAbsolute, x, y, controlX1, controlY1, controlX2, controlY2) {
+		$super(isAbsolute);
+		this.x = x;
+		this.y = y;
+		this.controlX1 = controlX1
+		this.controlY1 = controlY1
+		this.controlX2 = controlX2
+		this.controlY2 = controlY2
+	},
+
+	allocateRawNode: function(rawPathNode) {
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegCurvetoCubicAbs(this.x, this.y, this.controlX1, this.controlY1, this.controlX2, this.controlY2) :
+			rawPathNode.createSVGPathSegCurvetoCubicRel(this.x, this.y, this.controlX1, this.controlY1, this.controlX2, this.controlY2);
+		return this.rawNode;
+	},
+
+	controlPoints: function() {
+		return [pt(this.controlX1, this.controlY1), pt(this.controlX2, this.controlY2), pt(this.x, this.y)];
+	},
+
+	attributeFormat: function() {
+		return this.realCharCode() + this.controlX1 + "," + this.controlY1 + " " + this.controlX2 + "," + this.controlY2 + " " + this.x + "," + this.y;
+	},
+	
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+		this.y += y;
+		this.controlX1 += x;
+		this.controlY1 += y;
+		this.controlX2 += x;
+		this.controlY2 += y;
+	},
 
 });
-
-Object.extend(this.QuadCurveTo, {
+Object.extend(lively.scene.BezierCurve2CtlTo, {
 	fromLiteral: function(literal) {
-		return new lively.scene.QuadCurveTo(literal.x || 0.0, literal.y || 0.0, 
-			literal.controlX || 0.0, literal.controlY || 0.0);
-	}
-}); 
+		return new lively.scene.BezierCurve2CtlTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0, 
+			literal.controlX1 || 0.0, literal.controlY1 || 0.0,
+			literal.controlX2 || 0.0, literal.controlY2 || 0.0);
+	},
+	dataLength: 6,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[4], arr[5], arr[0], arr[1], arr[2], arr[3])
+	},
+});
+
+
+this.PathElement.subclass('lively.scene.BezierCurve1CtlTo', {
+
+	charCode: 'S',
+
+	initialize: function($super, isAbsolute, x, y, controlX2, controlY2/*no typo*/) {
+		$super(isAbsolute);
+		this.x = x;
+		this.y = y;
+		this.controlX2 = controlX2
+		this.controlY2 = controlY2
+	},
+
+	allocateRawNode: function(rawPathNode) {
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegCurvetoCubicSmoothAbs(this.x, this.y, this.controlX2, this.controlY2) :
+			rawPathNode.createSVGPathSegCurvetoCubicSmoothAbs(this.x, this.y, this.controlX2, this.controlY2);
+		return this.rawNode;
+	},
+
+	controlPoints: function() {
+		return [pt(this.controlX2, this.controlY2), pt(this.x, this.y)];
+	},
+
+	attributeFormat: function() {
+		return this.realCharCode() + this.controlX2 + "," + this.controlY2 + " " + this.x + "," + this.y;
+	},
+	
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+		this.y += y;
+		this.controlX2 += x;
+		this.controlY2 += y;
+	},
+
+});
+Object.extend(lively.scene.BezierCurve1CtlTo, {
+	fromLiteral: function(literal) {
+		return new lively.scene.BezierCurve1CtlTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0, 
+			literal.controlX2 || 0.0, literal.controlY2 || 0.0);
+	},
+	dataLength: 4,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[2], arr[3], arr[0], arr[1])
+	},
+});
+
+
+this.PathElement.subclass('lively.scene.ArcTo', {
+
+	charCode: 'A',
+
+	initialize: function($super, isAbsolute, x, y, rx, ry, xRotation, largeFlag, sweepFlag) {
+		$super(isAbsolute);
+		this.x = x;
+		this.y = y;
+		this.rx = rx;
+		this.ry = ry;
+		this.xRotation = xRotation;
+		this.largeFlag = largeFlag;
+		this.sweepFlag = sweepFlag;
+	},
+
+	allocateRawNode: function(rawPathNode) {
+		this.rawNode = this.isAbsolute ?
+			rawPathNode.createSVGPathSegArcAbs(this.x, this.y, this.rx, this.ry, this.xRotation, this.largeFlag, this.sweepFlag) :
+			rawPathNode.createSVGPathSegArcRel(this.x, this.y, this.rx, this.ry, this.xRotation, this.largeFlag, this.sweepFlag);
+		return this.rawNode;
+	},
+
+	controlPoints: function() {
+		return [pt(this.rx, this.ry), pt(this.x, this.y)];
+	},
+
+	attributeFormat: function() {
+		return this.realCharCode() + this.rx + "," + this.ry + " " + this.xRotation + " " + this.largeFlag + " " + this.sweepFlag + " " + this.x + "," + this.y;
+	},
+	
+	translate:function(x, y, force) {
+		if (!this.isAbsolute && !force) return;
+		this.x += x;
+		this.y += y;
+	},
+
+});
+Object.extend(lively.scene.ArcTo, {
+	fromLiteral: function(literal) {
+		return new lively.scene.ArcTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0, 
+			literal.rx || 0, literal.ry || 0, literal.xRotation || 0, literal.largeFlag || 0, literal.sweepFlag || 0);
+	},
+	dataLength: 7,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute, arr[5], arr[6], arr[0], arr[1], arr[2], arr[3], arr[4])
+	},
+});
+
 
 this.PathElement.subclass('lively.scene.ClosePath', {
 
 	charCode: 'Z',
-
-	initialize: function() {
-	},
 
 	allocateRawNode: function(rawPathNode) {
 		this.rawNode = rawPathNode.createSVGPathSegClosePath();
@@ -1446,9 +1801,22 @@ this.PathElement.subclass('lively.scene.ClosePath', {
 
 	controlPoints: function() {
 		return [];
-	}
-
-
+	},
+	
+	attributeFormat: function() {
+		return this.realCharCode();
+	},
+	
+	translate:function(x, y, force) {},
+});
+Object.extend(lively.scene.ClosePath, {
+	fromLiteral: function(literal) {
+		return new lively.scene.ClosePath(literal.isAbsolute); // necessary?
+	},
+	dataLength: 0,
+	create: function(isAbsolute, arr) {
+		return new this(isAbsolute)
+	},
 });
 
 
@@ -1465,17 +1833,9 @@ this.Shape.subclass('lively.scene.Path', {
 	
 	deserialize: function($super, importer, rawNode) {
 		$super(importer, rawNode);
-		var codeExtractor = /([A-Z])(-?[0-9]+(?:.[0-9]+)?|NaN),(-?[0-9]+(?:.[0-9]+)?|NaN)/;
-		var pathElementClasses = lively.scene.PathElement.allSubclasses();
-		var pathElementLiterals = this.rawNode.getAttributeNS(null, 'd').split(' ').reject(function(ea) { return !ea });
-		var elements = pathElementLiterals.collect(function(literal) {
-			var parts = codeExtractor.exec(literal);
-			var pathElementClass = pathElementClasses.detect(function(klass) { return klass.prototype.charCode == parts[1] });
-			return new pathElementClass(Number(parts[2]) || 0, Number(parts[3]) || 0)
-		});
-		this.setElements(elements);
+		this.setElementsFromSVGData(rawNode.getAttributeNS(null, 'd'));
 	},
-	
+
 	copyFrom: function($super, copier, other) {
 		$super(copier, other);		
 		this.setElements(other.elements);
@@ -1486,19 +1846,46 @@ this.Shape.subclass('lively.scene.Path', {
 		// 		this.cachedVertices = other.cachedVertices;
 		// 		return res;		
 	},
+	
+	setElementsFromSVGData: function(data) {
+		var elements = lively.scene.PathElement.parse(data);
+		this.setElements(elements);
+	},
+	
+	createSVGDataFromElements: function() {
+		var attr = "";
+		for (var i = 0; i < this.elements.length; i++) {
+			// var seg = elts[i].allocateRawNode(this.rawNode);
+			// this.rawNode.pathSegList.appendItem(seg);
+			attr += this.elements[i].attributeFormat() + " ";
+		}
+		return attr
+	},
 
 	setElements: function(elts) {
 		this.cachedVertices = null;
 		this.elements = elts;
-		var attr = "";
-		for (var i = 0; i < elts.length; i++) {
-			var seg = elts[i].allocateRawNode(this.rawNode);
-			// this.rawNode.pathSegList.appendItem(seg);
-			attr += elts[i].attributeFormat() + " ";
-		}
-		this.rawNode.setAttributeNS(null, "d", attr);
+		this.rawNode.setAttributeNS(null, "d", this.createSVGDataFromElements());
 	},
 
+	normalize: function(hintX, hintY) {
+		// when elements are translated and are not beginning
+		// in origin translate them so they do
+		var first = this.elements[0];
+		if (first.constructor != lively.scene.MoveTo) {
+			console.warn('cannot normalize path not beginning with MoveTo');
+			return;
+		}
+		var x = first.x * -1 + (hintX || 0);
+		var y = first.y * -1 + (hintY || 0);
+		var isFirst = true;
+		for (var i = 0; i < this.elements.length; i++) {
+			this.elements[i].translate(x, y, isFirst);
+			isFirst = false;
+		}
+		this.setElements(this.elements);
+	},
+	
 	setVertices: function(vertlist) {
 		// emit SVG path symbol based on point attributes
 		// p==point, i=array index
@@ -1558,18 +1945,17 @@ this.Shape.subclass('lively.scene.Path', {
 
 	// poorman's traits :)
 	partNameNear: this.Polygon.prototype.partNameNear,
-allPartNames: this.Polygon.prototype.allPartNames,
+	allPartNames: this.Polygon.prototype.allPartNames,
 
 	partPosition: this.Polygon.prototype.partPosition,
 	reshape: this.Polygon.prototype.reshape,
 
 });
 
-Object.extend(this.Path, {
+Object.extend(lively.scene.Path, {
 	fromLiteral: function(literal) {
 		return new lively.scene.Path(literal.elements);
-	}
-
+	},
 });
 
 this.Shape.subclass('lively.scene.Group', {
@@ -1669,7 +2055,7 @@ this.translateBy(tx);
 	reshape: Functions.Empty,
 
 	partNameNear: this.Rectangle.prototype.partNameNear,
-allPartNames: this.Rectangle.prototype.allPartNames,
+	allPartNames: this.Rectangle.prototype.allPartNames,
 
 	partPosition: this.Rectangle.prototype.partPosition,
 	vertices: this.Rectangle.prototype.vertices

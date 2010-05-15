@@ -3004,15 +3004,14 @@ addAllHandles: function(evt) {
 		}
 		if (evt.hand.mouseFocus instanceof HandleMorph) evt.hand.mouseFocus.remove();
 	},
-hasHandles: function(h) { return this.submorphs.any(function (m) { return m instanceof HandleMorph }); },
-removeAllHandlesExcept: function(h) {
+	
+	hasHandles: function(h) { return this.submorphs.any(function (m) { return m instanceof HandleMorph }); },
+	
+	removeAllHandlesExcept: function(h) {
 		var removals = [];
 		this.submorphs.forEach(function (m) { if (m !== h && m instanceof HandleMorph) removals.push(m); });
 		removals.forEach(function (m) { m.remove(); });
 	},
-
-
-
 
 	makeHandle: function(position, partName, evt) { // can be overriden
 		var handleShape = Object.isString(partName) || partName >= 0 ? lively.scene.Rectangle : lively.scene.Ellipse;
@@ -3763,14 +3762,14 @@ Object.extend(Morph, {
 	makeHeart: function(position) {
 		var g = lively.scene;
 		var shape = new g.Path([
-			new g.MoveTo(0, 0),
-			new g.CurveTo(48.25,-5.77),
-			new g.CurveTo(85.89,15.05),
-			new g.CurveTo(61.36,32.78),
-			new g.CurveTo(53.22,46.00),
-			new g.CurveTo(25.02,68.58),
-			new g.CurveTo(1.03, 40.34),
-			new g.CurveTo(0, 0)
+			new g.MoveTo(true, 0,  0),
+			new g.CurveTo(true, 48.25, -5.77),
+			new g.CurveTo(true, 85.89, 15.05),
+			new g.CurveTo(true, 61.36, 32.78),
+			new g.CurveTo(true, 53.22, 46.00),
+			new g.CurveTo(true, 25.02, 68.58),
+			new g.CurveTo(true, 1.03,  40.34),
+			new g.CurveTo(true, 0,  0)
 		]);
 		var morph = new Morph(shape);
 		morph.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
