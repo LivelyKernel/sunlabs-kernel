@@ -160,7 +160,7 @@ Object.subclass('AttributeConnection', {
 
 AttributeConnection.addMethods({
 	toLiteral: function() {
-		if (!this.sourceObj.id || !this.targetObj.id) {
+		if (!this.sourceObj || !this.sourceObj.id || !this.targetObj || !this.targetObj.id) {
 			console.warn('Cannot serialize objects having no id');
 			return {
 				sourceObj: null,
@@ -179,7 +179,7 @@ AttributeConnection.addMethods({
 			converter: this.converter ? this.converter.toString() : null,
 			removeAfterUpdate: this.removeAfterUpdate,
 		};
-	}
+	},
 })
 
 Object.extend(AttributeConnection, {
