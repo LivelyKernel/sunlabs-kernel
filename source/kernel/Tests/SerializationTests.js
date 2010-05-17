@@ -1,4 +1,4 @@
-module('Tests.SerializationTests').requires('lively.TestFramework', 'lively.Fabrik').toRun(function(thisModule) {
+module('Tests.SerializationTests').requires('lively.TestFramework', 'lively.Fabrik', 'cop.Layers').toRun(function(thisModule) {
 
 /* Helper Classes */
 
@@ -14,6 +14,13 @@ Morph.subclass('DummyMorph', {
     }
 
 });
+
+createLayer('SerializationTestLayer')
+layerObject(SerializationTestLayer, lively.data.Wrapper, {
+	collectSystemDictionaryGarbage: function() {
+		// do nothing
+	}
+})
 
 Widget.subclass('DummyWidget', {
 
@@ -63,6 +70,12 @@ Widget.subclass('DummyWidget', {
 
 TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 
+	runTest: function($super, selector) {
+		withLayers([SerializationTestLayer], function() {
+			$super(selector)
+		})
+	},
+
     /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
     setUp: function($super) {
 		$super();
@@ -78,6 +91,9 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
         Global.document = this.dom;
         this.canvas = this.dom.documentElement;
         this.worldMorph = new WorldMorph(this.canvas);
+	 	var dict = NodeFactory.create("defs");
+		this.worldMorph.dictionary = function() {return dict};
+
         this.canvas.appendChild(this.worldMorph.rawNode);
         this.morphs = [];
         
@@ -129,12 +145,6 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
         var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
         this.doc = xml;   
         return new Importer().loadWorldContents(xml);
-    },
-
-    exportMorph: function(morph) {
-        var exporter = new Exporter(morph);
-        exporter.extendForSerialization();
-        return exporter.rootMorph.rawNode
     },
 
     getFieldNamed: function(node, fieldName) {
@@ -599,15 +609,21 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		// console.log(Exporter.stringify(doc));
 		// console.log(Exporter.stringify(widgetNode));
 	},
-	
-	
 
-        
 });
 TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	
+	runTest: function($super, selector) {
+		withLayers([SerializationTestLayer], function() {
+			$super(selector)
+		})
+	},
+	
 	setUp: function() {
 		this.world = new WorldMorph(WorldMorph.current().canvas());
+		var dict = NodeFactory.create("defs");
+		this.world.dictionary = function() {return dict};
+		
 		this.world.hands = [new HandMorph()]
 		this.world.currentSelection = new SelectionMorph(new Rectangle(0,0,200,200))
 		this.morph = new Morph.makeRectangle(new Rectangle(0,0,100,100));

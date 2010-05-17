@@ -516,11 +516,12 @@ Object.extend(lively.data.Wrapper, {
 		this.collectAllFillsInObjects(Object.values(Global), fills);
 		rootMorph.collectAllUsedFills(fills)
 		var usedFillIds = fills.collect(function(ea){return ea.id()});
-		$A(new lively.data.Wrapper().dictionary().childNodes).each(function(ea) {
+		var dict = rootMorph.dictionary();
+		$A(dict.childNodes).each(function(ea) {
 			// console.log("GC considering " + ea)
 			if(['linearGradient', 'radialGradient'].include(ea.tagName) && !usedFillIds.include(ea.id)) {
 				// console.log("SystemDictionary GC: remove " + ea)
-				lively.data.Wrapper.dictionary.removeChild(ea)
+				dict.removeChild(ea)
 			}
 		});
 	},

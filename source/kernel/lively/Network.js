@@ -888,7 +888,7 @@ Resource.subclass('SVNResource', {
 							spec.url = repoUrl; // hmmm???
 						else
 						spec.url = repoUrl.toString() + relPath.slice(1); 
-						console.log('Created spec.url:' + spec.url);
+						// console.log('Created spec.url:' + spec.url);
 						if (spec.change != null) {// was set before... assume only one change per rev
 							//	console.warn('multiple changes for one revision of ' + spec.url);
 							spec.url = null;
