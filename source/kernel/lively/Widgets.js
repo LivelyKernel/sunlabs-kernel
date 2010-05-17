@@ -53,6 +53,8 @@ BoxMorph.subclass('ButtonMorph', {
     formals: ["Value", "IsActive"],
 	connections: ['value', 'isActive', 'fire'],
 
+	openForDragAndDrop: false,
+
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
 	initialize: function($super, initialBounds) {
@@ -4951,6 +4953,7 @@ BoxMorph.subclass("StatusMessageContainer", {
 
 	suppressGrabbing: true,
 	suppressHandles: true,
+	openForDragAndDrop: false,
 	
 	layoutManager: new VerticalLayout(),
 
