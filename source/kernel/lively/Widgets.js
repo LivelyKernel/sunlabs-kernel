@@ -5061,6 +5061,89 @@ BoxMorph.subclass("StatusMessageContainer", {
 	}
 })
 
+/*
+ * A Slider with Text field that acts as an interface to the scale of other Morphs
+ * 
+ */
+BoxMorph.subclass('ScaleMorph', {
+	
+	defaultExtent: pt(40,200),
+	layoutManager: new VerticalLayout(),
+	padding: new Rectangle(5,5,0,0),
+	style: {fill: Color.gray},
+
+	initialize: function($super, bounds) {
+		bounds = bounds || pt(0,0).extent(this.defaultExtent	);
+
+		$super(bounds)		
+
+		this.scaleValue = 1;
+
+		this.scaleSlider =  Widget.makeSlider(new Rectangle(0,0,40,200));
+		this.scaleText = new  TextMorph(new Rectangle(0,0,40,20));
+
+		this.addMorph(this.scaleSlider);
+		this.addMorph(this.scaleText);
+
+		var m = this.scaleText;
+		m.setTextString("-");
+		m.beInputLine();
+		m.suppressHandles = true;
+		m.suppressGrabbing = true;
+
+		var m = this.scaleSlider;
+		m.suppressHandles = true;
+		m.suppressGrabbing = true;
+
+		// ok, fix layout for the moment
+		this.shape.setBounds(this.submorphBounds(true).outsetByRect(this.padding));
+		this.suppressHandles = true;
+
+		this.setupConnections();
+
+		return this.panel
+	},
+
+	setupConnections: function() {
+		connect(this, 'scaleValue', this.scaleText, 'setTextString', {
+			converter: function(value){return String(value.toFixed(2))}})
+
+		connect( this.scaleText, 'savedTextString', this, 'scaleValue', {converter: function(value) {return Number(value)}})
+
+		connect(this.scaleSlider, 'value', this, 'scaleValue', {converter: function(value){
+			var threshold = 5
+			if (value < threshold)
+				return  (value / threshold)
+			else 
+				return  value - threshold + 1
+		}})
+
+		// ATTENTION: bidirectional dataflow, may be dangerous...
+		connect(this, 'scaleValue', this.scaleSlider, 'setValue', {converter: function(value){
+			var threshold = 5
+			value = Number(value)
+			if (value < 1)
+				var result = value * threshold
+			else 
+				var result = value + threshold - 1
+			if (result < 0)
+				return 0;
+			if (result > 10)
+				return 10
+		}})
+	},
+
+	setTarget: function(target) {
+		// there should only be one target...
+		if (this.target) {
+			disconnect(this, 'scaleValue', this.target, 'setScale');
+		};
+		if (target) {
+			connect(this, 'scaleValue', target, 'setScale')
+		};
+		this.target = target;
+	},
+})
 
 console.log('loaded Widgets.js');
 
