@@ -1385,18 +1385,18 @@ sourceString: function($super) {
 
 	evalSource: function(newSource) {
 		if (!this.browser.evaluate) return false;
-		var className = this.target.className;
-		if (!Class.forName(className)) {
-			console.log('Didn\'t found class');
+		var ownerName = this.target.className || this.target.findOwnerFragment().name;
+		if (!Class.forName(ownerName)) {
+			console.log('Didn\'t found class/object');
 			return false
 		}
 		var methodName = this.target.name;
 		var methodString = this.target.getSourceCode();
 		var def;
 		if (this.target.isStatic())
-			def = 'Object.extend(' + className + ', {\n' + methodString +'\n});';
+			def = 'Object.extend(' + ownerName + ', {\n' + methodString +'\n});';
 		else
-			def = className + ".addMethods({\n" + methodString +'\n});';
+			def = ownerName + ".addMethods({\n" + methodString +'\n});';
 		// console.log('Eval: ' + def);
 		try {
 			eval(def);
