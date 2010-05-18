@@ -27,7 +27,7 @@ layerClass(JournalEntryLayer, TextMorph, {
 	onKeyDown: function(proceed, evt) {
 		// console.log("on key press" + evt)
 		if (evt.isCtrlDown() && (evt.getKeyCode() == 13)) {
-				this.splitInOwer();
+				this.splitInOwer(evt);
 				console.log("ctrl on key down" + evt)
 			return
 		}
