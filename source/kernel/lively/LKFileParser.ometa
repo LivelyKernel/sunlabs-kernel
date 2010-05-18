@@ -183,6 +183,7 @@ ometa LKFileParser <: Parser {
 	restKlassDef = ',' spaces classElems:descriptors										-> { {classElems: descriptors} }
 						| ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
 						| ',' klassName:trait																	-> { {trait: trait, classElems: []} }
+						| ',' token('{') spaces token('}')													-> { {classElems: []} }
 						| spaces																						-> { {classElems: []} },
 	klass 	            = namespaceId,
 	klassName           = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,

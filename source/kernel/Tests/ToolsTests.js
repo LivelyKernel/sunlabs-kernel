@@ -206,6 +206,19 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest1', {
         this.assertEqual(descriptor.subElements().length, 2);
         this.assertDescriptorsAreValid([descriptor]);
     },
+testParseEmptyClass: function() {   // Object.subclass
+        var src = 'Object.subclass(\'Foo\',  {\n\n\n});'
+        this.sut.src = src;
+        var descriptor = this.sut.parseClass();
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'Foo');
+        this.assertEqual(descriptor.superclassName, 'Object');
+        this.assertIdentity(descriptor.startIndex, 0);
+        this.assertIdentity(descriptor.stopIndex, src.length - 1);
+        this.assertEqual(descriptor.subElements().length, 0);
+        this.assertDescriptorsAreValid([descriptor]);
+    },
+
     
     testParseSimpleSubclassing: function() {
         var src = 'Wrapper.subclass(\'lively.scene.Node\');';
