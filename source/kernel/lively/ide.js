@@ -949,7 +949,15 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 	
 	removeFile: function(file) { this.allFiles = this.allFiles.without(file) },
 	
-	locationChanged: function() { this.allFiles = this.target.interestingLKFileNames(this.browser.getTargetURL()) },
+	locationChanged: function() {
+		try {
+			this.allFiles = this.target.interestingLKFileNames(this.browser.getTargetURL());
+		} catch(e) {
+			// can happen when browser in a serialized world that is moved tries to relativize a URL
+			console.error('Cannot get files for code browser ' + e)
+			this.allFiles = [];
+		}
+	},
 	
 	childNodes: function() {
 		// js files + OMeta files (.txt) + lkml files + ChangeSet current

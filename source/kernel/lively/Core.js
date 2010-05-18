@@ -4230,12 +4230,12 @@ Morph.subclass("PasteUpMorph", {
     
 });
 
-
+(function initDisplayThemes() {
 namespace('lively.Text');
 
 if (!Global.DisplayThemes)
 	Global.DisplayThemes = {};
-	
+
 DisplayThemes['lively'] = using(lively.paint).link({
 	styleName: 'lively',
 	raisedBorder: { // conenience grouping
@@ -4314,9 +4314,11 @@ DisplayThemes['lively'] = using(lively.paint).link({
 					{$:"Stop", offset: 0.50, color: Color.primary.blue.lighter()},
 					{$:"Stop", offset: 0.75, color: Color.primary.blue},
 					{$:"Stop", offset: 1.00, color: Color.primary.blue} ]}
-		
+
 	}
-}),
+})
+
+})() // initDisplayThemes
 
 
 PasteUpMorph.subclass("WorldMorph", {
