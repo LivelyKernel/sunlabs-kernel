@@ -111,7 +111,7 @@ Date.prototype.toJSON = function () {
 };
 
 
-JSON = (function () {
+CustomJSON = (function () {
 
     function defaultFilter(baseObj, key) {
         var result;
@@ -300,3 +300,11 @@ JSON = (function () {
         }
     };
 })();
+
+// reuse existing JSON implementation
+if (JSON) {
+	for (var name in CustomJSON)
+		JSON[name] = CustomJSON[name];
+} else {
+	JSON = CustomJSON
+}
