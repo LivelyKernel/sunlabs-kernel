@@ -114,11 +114,7 @@ BoxMorph.subclass('JournalEntryContainer', {
 	setupStyle: function() {
 		this.layoutManager = new VerticalLayout();
 		this.applyStyle(this.style);
-	},
-
-	
-
-	
+	},	
 
 	sortEntries: function($super) {
 		var sortedEntries = this.submorphs.clone();
@@ -188,6 +184,16 @@ Morph.subclass('JournalEntryMorph', {
 			if (ea.getBorderWidth() == 0) 
 				ea.setBorderWidth(0)
 		})
+	},
+
+	addMorph: function($super, m) {
+		console.log("add morph");
+		var result = $super(m);
+		connect(m, 'fullBounds', this, 'updateLayoutFor', {
+			converter: function() {return this.sourceObj }}).update();
+		// this.updateLayoutFor(m);
+
+		return result
 	},
 
 	removeMorph: function($super, m) {
