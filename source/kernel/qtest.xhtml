@@ -5,13 +5,6 @@
 
 <!--
 NOTE: This Version of index.xhtml loads minimal files for fast testing only
-It is suggested to use in together with a localconfig.js that contains only…
-    Config.showInnerWorld = false;
-    Config.showDeveloperWorld = false;
-    Config.showSlideWorld = false;
-    Config.showOnlySimpleMorphs = true;
-    Config.showStar = true;  // true to show star
-    Config.spinningStar = true;  // true to enable spinning
 -->
 
 <head> <title>Lively Kernel</title> </head>
@@ -38,6 +31,10 @@ It is suggested to use in together with a localconfig.js that contains only…
     Config.showOnlySimpleMorphs = true;
     Config.showStar = true;  // true to show star
     Config.spinningStar = true;  // true to enable spinning
+    UserAgent.isTouch = true;  // Test on non-iPad
+    Config.usePieMenus = UserAgent.isTouch;  // for iPad
+    Config.showLivelyConsole = UserAgent.isTouch;  // Visible console on iPad
+
 </script>
  <!-- add more localconfig if you like… (ignored if not found) -->
 <script type="text/ecmascript" xlink:href="lively/localconfig.js"/>

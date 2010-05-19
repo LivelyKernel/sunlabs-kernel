@@ -1180,21 +1180,20 @@ this.Shape.subclass('lively.scene.Polygon', {
 	},
 
 	partNameNear: function(p) {
-		var verts = this.vertices();
-
-		for (var i = 0; i < verts.length; i++) { // vertices
-			if (verts[i].dist(p) < this.controlPointProximity) return i; 
-		}
-		for (var i = 0; i < verts.length - 1; i++) { // midpoints (for add vertex) return - index
-			if (verts[i].midPt(verts[i + 1]).dist(p) < this.controlPointProximity) return -(i + 1); 
-		}
-		return null; 
+		var codes = this.allPartNames();
+		for (var i=0; i<codes.length; i++)
+			if (this.partPosition(codes[i]).dist(p) < this.controlPointProximity) return codes[i];
+		return null;
 	},
-allPartNames: function() {  // Returns an array of integers, being vertex # or -ve for a midpoint
+allPartNames: function() {
+		// Returns an array of integers, being vertex # or -ve for a midpoint (or control point)
 		var verts = this.vertices();
 		var locs = [];
 		for (var i = 0; i < verts.length; i++) { locs.push(i); };  // vertices
-		for (var i = 0; i < verts.length-1; i++) { locs.push(-(i + 1)); };  // midpoints
+
+		// Some polygons have last point = first; some don't
+		var nLines = (verts.first().eqPt(verts.last())) ? verts.length-1 : verts.length;
+		for (var i = 0; i < nLines; i++) { locs.push(-(i + 1)); };  // midpoints
 		return locs; 
 	},
 
@@ -1228,8 +1227,11 @@ allPartNames: function() {  // Returns an array of integers, being vertex # or -
 	},
 
 	partPosition: function(partName) {
-		var vertices = this.vertices();
-		return (partName >= 0) ? vertices[partName] : vertices[-partName].midPt(vertices[-partName - 1]); 
+		var verts = this.vertices();
+		if (partName >= 0) return verts[partName];
+		// Case of midpoint of last segment when first vertex is not dulicate
+		if (-partName > (verts.length-1)) return verts[-partName - 1].midPt(verts[0]); 
+		return verts[-partName].midPt(verts[-partName - 1]); 
 	}
 
 });

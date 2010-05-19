@@ -680,8 +680,10 @@ Morph.subclass('HandleMorph', {
     
 	handleReshape: function(result) {
 		if (typeof result == "boolean") {
+			// polygon reshape returns a bool = true if close to another vertex (for merge) else false
 			this.setBorderColor(result ? Color.red : Color.blue);
 		} else {
+			// insert-vertex handle has negative index; convert to normal handle after the insertion
 			if (this.partName  < 0) this.partName = -this.partName;
 			this.type = "rect"; // become a regular handle
 		}

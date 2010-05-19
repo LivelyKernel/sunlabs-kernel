@@ -116,7 +116,7 @@ function populateSlideWorld(world) {
         world.addMorph(widget);
 
         // Create a sample polygon
-        widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30),pt(0,0)], 1, Color.black, colors[2]);
+        widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30)], 1, Color.black, colors[2]);
         world.addMorph(widget);
         widget.setPosition(loc.addPt(dx));
         loc = loc.addPt(dy);

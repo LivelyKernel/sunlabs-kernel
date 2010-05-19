@@ -1796,6 +1796,30 @@ Object.extend(Morph, {
 });
 
 
+// Extend Polylines and polygons to curves
+Morph.addMethods({
+	makeCurve: function() {
+		//  Convert a polyline to a curve;  maybe a polygon to a blob  
+		var verts = this.shape.vertices();
+		var isClosed = this.shape instanceof lively.scene.Polygon;
+		// Need closing vertext for closed curves
+		if (verts.length < 2) return;
+		if (isClosed && (!verts[0].eqPt(verts.last()))) verts = verts.concat([verts[0]])
+		var current = verts[0];
+		var ctrl = current;
+		var controlPts = [];
+		controlPts.push(ctrl);
+		for (var i=1; i<verts.length; i++) {  // compute default control points
+			ctrl = current.subPt(ctrl).addPt(current);
+			controlPts.push(ctrl);
+			current = verts[i];
+		}
+		var morph = Morph.makeCurve(verts, controlPts, isClosed)
+		this.world().addMorph(morph);
+		morph.setPosition(this.position());
+}
+});
+
 // Fill Garbage Collection on Serialization...
 Morph.addMethods({
 	collectAllUsedFills: function($super, result) {
@@ -3521,8 +3545,10 @@ Morph.addMethods({
 		dbgOn(!this.shape);
 		var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
 
+		var borderMargin = this.getBorderWidth()/2;
 		// double border margin for polylines to account for elbow protrusions
-		bounds = bounds.expandBy(this.getBorderWidth()/2*(this.shape.hasElbowProtrusions ? 2 : 1));
+		if (this.shape.hasElbowProtrusions) borderMargin = borderMargin*2 + 1;
+		bounds = bounds.expandBy(borderMargin);
 		return bounds;
 	},
     
@@ -3758,6 +3784,22 @@ Object.extend(Morph, {
 		morph.setPosition(position);
 		return morph
 	},
+	makeCurve: function(verts, ctrls, closed) {
+		// Make up a new quadratic spline from the supplied vertices and control points.
+		// ctrls[i] is the ctrl point for segment from verts[i-1] to verts[i].  (ctrls[0] is never used)
+		if (verts.length < 2) return;
+		var g = lively.scene;
+		var cmds = [];
+		cmds.push(new g.MoveTo(true, verts[0].x,  verts[0].y));
+		for (var i=1; i<verts.length; i++) {
+			cmds.push(new g.QuadCurveTo(true, verts[i].x, verts[i].y, ctrls[i].x, ctrls[i].y));
+		}
+		var morph = new Morph(new g.Path(cmds));
+		if (closed) morph.applyStyle({ fill: Color.red, borderWidth: 1, borderColor: Color.black});
+			else morph.applyStyle({ fill: null, borderWidth: 3, borderColor: Color.red});
+		return morph;
+},
+
 
 	makeHeart: function(position) {
 		var g = lively.scene;
@@ -3769,7 +3811,7 @@ Object.extend(Morph, {
 			new g.CurveTo(true, 53.22, 46.00),
 			new g.CurveTo(true, 25.02, 68.58),
 			new g.CurveTo(true, 1.03,  40.34),
-			new g.CurveTo(true, 0,  0)
+			new g.CurveTo(true, 0,  0),
 		]);
 		var morph = new Morph(shape);
 		morph.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
@@ -5219,7 +5261,7 @@ Morph.subclass("HandMorph", {
     grabHaloLabelStyle: {fontSize: Math.floor((Config.defaultFontSize || 12) *0.85), padding: Rectangle.inset(0)},
 
     initialize: function($super, local) {
-        $super(new lively.scene.Polygon([pt(0,0), pt(9,5), pt(5,9), pt(0,0)]));
+        $super(new lively.scene.Polygon([pt(0,0), pt(10, 8), pt(4,9), pt(8,16), pt(4,9), pt(0, 12)]));
 		this.applyStyle({fill: local ? Color.primary.blue : Color.primary.red, borderColor: Color.black, borderWidth: 1});
 	
         this.isLocal = local;
@@ -5253,7 +5295,7 @@ Morph.subclass("HandMorph", {
 	},
 
     lookNormal: function(morph) {
-        this.shape.setVertices([pt(0,0), pt(10, 8), pt(4,9), pt(8,16), pt(4,9), pt(0, 12), pt(0,0)]);
+        this.shape.setVertices([pt(0,0), pt(10, 8), pt(4,9), pt(8,16), pt(4,9), pt(0, 12)]);
     },
 lookTouchy: function(morph) {
 	// Make the cursor look polygonal to indicate touch events go to pan/zoom
