@@ -355,6 +355,7 @@ lively.scene.Rectangle.addMethods({  // Graphic Shapes
 
 lively.scene.Polygon.addMethods({  // Graphic Shapes
     setPath: function(graphicContext, bnds) {
+	// Same as Polyline, except pat is clossed at end
 	var verts = this.vertices();
 	graphicContext.beginPath();
 	graphicContext.moveTo(verts[0].x, verts[0].y);
@@ -363,8 +364,13 @@ lively.scene.Polygon.addMethods({  // Graphic Shapes
 	}
 });
 
-lively.scene.Polyline.addMethods({
-    setPath: lively.scene.Polygon.prototype.setPath
+lively.scene.Polyline.addMethods({  // Graphic Shapes
+    setPath: function(graphicContext, bnds) {
+	var verts = this.vertices();
+	graphicContext.beginPath();
+	graphicContext.moveTo(verts[0].x, verts[0].y);
+	for (var i=1; i<verts.length; i++) graphicContext.lineTo(verts[i].x, verts[i].y);
+	}
 });
 
 lively.scene.Ellipse.addMethods({  // Ellipse as four quadratic Beziers
