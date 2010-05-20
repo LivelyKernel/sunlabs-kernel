@@ -1190,12 +1190,13 @@ this.Shape.subclass('lively.scene.Polygon', {
 		return null;
 	},
 allPartNames: function() {
-		// Note: for reshaping of polygons and lines, the "partNames" are integer codes as follows...
+		// Note: for reshaping of polygons and lines, the "partNames" are
+		//  integer codes with the following meaning...
 		//	0...(N-1)  -- the N vertices themselves
 		//	-1...-N  -- negative of the line segment index for inserting a new vertex
-		//  This scheme may calso be extended to curves as follows...
-		//	N...(2N-1)  -- first control point for the given line segment
-		//  2N...(3N-1)  -- second control point for the given line segment
+		//  This scheme may also be extended to curves as follows...
+		//	N...(2N-1)  -- first control point for the given (i-N)-th line segment
+		//  2N...(3N-1)  -- second control point for the (i-2N)-th line segment
 		// This encoding scheme is shared also by partPosition() and reshape()
 
 		var verts = this.vertices();
