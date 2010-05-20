@@ -1136,6 +1136,10 @@ this.Shape.subclass('lively.scene.Polygon', {
 	},
 
 	reshape: function(ix, newPoint, lastCall) {
+		// See the comment in allPartNames
+		// Here we decode the "partName" index to select a vertex, midpoint or control point
+		// and then replace that point with newPoint, and update the shape
+
 		// ix is an index into vertices
 		var verts = this.vertices();  // less verbose
 		if (ix < 0) { // negative means insert a vertex
@@ -1186,7 +1190,14 @@ this.Shape.subclass('lively.scene.Polygon', {
 		return null;
 	},
 allPartNames: function() {
-		// Returns an array of integers, being vertex # or -ve for a midpoint (or control point)
+		// Note: for reshaping of polygons and lines, the "partNames" are integer codes as follows...
+		//	0...(N-1)  -- the N vertices themselves
+		//	-1...-N  -- negative of the line segment index for inserting a new vertex
+		//  This scheme may calso be extended to curves as follows...
+		//	N...(2N-1)  -- first control point for the given line segment
+		//  2N...(3N-1)  -- second control point for the given line segment
+		// This encoding scheme is shared also by partPosition() and reshape()
+
 		var verts = this.vertices();
 		var locs = [];
 		for (var i = 0; i < verts.length; i++) { locs.push(i); };  // vertices
@@ -1227,9 +1238,11 @@ allPartNames: function() {
 	},
 
 	partPosition: function(partName) {
+		// See the comment in allPartNames
+		// Here we decode the "partName" index to select a vertex, midpoint or control point
 		var verts = this.vertices();
 		if (partName >= 0) return verts[partName];
-		// Case of midpoint of last segment when first vertex is not dulicate
+		// Case of midpoint of last segment when first vertex is not duplicated
 		if (-partName > (verts.length-1)) return verts[-partName - 1].midPt(verts[0]); 
 		return verts[-partName].midPt(verts[-partName - 1]); 
 	}
