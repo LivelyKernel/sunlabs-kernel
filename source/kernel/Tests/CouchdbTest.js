@@ -53,32 +53,6 @@ TestCase.subclass('Tests.CouchdbTest.CouchdbTest', {
 
 
 
-TestCase.subclass('MorphTestCase', {
-	
-
-	setUp: function() {
-		this.morphs = [];
-		this.world = WorldMorph.current();
-	},
-	
-	tearDown: function() {
-		if (this._errorOccured) {
-			// let the morphs stay open
-		} else {
-			this.morphs.each(function(ea) { ea.remove()})
-		}				
-	},
-	
-	openMorph: function(m) {
-		this.morphs.push(m);
-		this.world.addMorph(m)
-	},
-
-	openMorphAt: function(m, loc) {
-		this.morphs.push(m);
-		this.world.addMorphAt(m, loc)
-	},
-});
 
 
 MorphTestCase.subclass("Tests.CouchdbTest.JsonRestorer",{
