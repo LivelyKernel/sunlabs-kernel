@@ -3050,6 +3050,7 @@ addAllHandles: function(evt) {
 		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner) {
 			evt.hand.lastMorphMenu.remove(); // cleanup old open menus
 		};
+debugger
 		var menu = this.morphMenu(evt);
 		var menuCaption = this.getName() ? this.getName() + ' - ' : '';
 		menuCaption += Object.inspect(this).truncate();
@@ -4958,10 +4959,10 @@ WorldMorph.addMethods({
 	windowBounds: function() {
 		var topLeft = pt(Global.pageXOffset, Global.pageYOffset);
 		var width = Math.min(
-			Global.document.documentElement.clientWidth,
+			Global.document.documentElement.clientWidth * 1/this.world().getScale(),
 			WorldMorph.current().getExtent().x);
 		var height = Math.min(
-			Global.document.documentElement.clientHeight,
+			Global.document.documentElement.clientHeight * 1/this.world().getScale(),
 			WorldMorph.current().getExtent().y)
 		return topLeft.extent(pt(width, height))
 	},
