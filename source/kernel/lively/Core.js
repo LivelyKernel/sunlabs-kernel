@@ -4249,8 +4249,9 @@ Morph.subclass("PasteUpMorph", {
 
 		var oldScale = this.getScale();
 		var wheelDelta = evt.wheelDelta();
-		if (oldScale < 0.1 && wheelDelta < 0) return false;
-		if (oldScale > 50 && wheelDelta > 0) return false;
+		var minScale = 0.1, maxScale = 50;
+		if (oldScale < minScale && wheelDelta < 0) return false;
+		if (oldScale > maxScale && wheelDelta > 0) return false;
 		var scaleDelta = 1 + evt.wheelDelta() / 10000;
 		this.scaleBy(scaleDelta);
 
