@@ -1889,9 +1889,15 @@ Morph.addMethods({
 
 	getFillOpacity: function() { this.shape.getFillOpacity(); },
 
-    setFillOpacity: function(op) { this.shape.setFillOpacity(op); },
+    setFillOpacity: function(op) {
+	this.shape.setFillOpacity(op);
+	this.changed(); 
+},
 
-    setStrokeOpacity: function(op) { this.shape.setStrokeOpacity(op); },
+    setStrokeOpacity: function(op) { 
+	this.shape.setStrokeOpacity(op);
+	this.changed(); 
+},
 
 	getStrokeOpacity: function() { this.shape.getStrokeOpacity(); },
 

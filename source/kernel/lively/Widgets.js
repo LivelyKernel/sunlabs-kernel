@@ -4107,6 +4107,7 @@ Morph.subclass("PieMenuMorph", {
 		this.offset = offset;
 		this.clickFn = clickFn;
 		$super(new lively.scene.Ellipse(pt(100 + this.r2, 100 + this.r2), this.r2));
+		this.setBorderColor(Color.black);  this.setBorderWidth(1);
 		this.hasCommitted = false;  // Gesture not yet outside commitment radius
 		return this;
 	},
