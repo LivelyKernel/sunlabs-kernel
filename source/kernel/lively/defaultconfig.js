@@ -145,9 +145,6 @@ var UserAgent = (function() {
 //--------------------------
 var Config = {
 
-    // Temporary patch
-    chromeBorderPatch: UserAgent.isChrome,
-
     // Allows easy object duplication using the Shift key
     shiftDragForDup: true,
     

@@ -1203,8 +1203,9 @@ allPartNames: function() {
 		var locs = [];
 		for (var i = 0; i < verts.length; i++) { locs.push(i); };  // vertices
 
+		var nLines = verts.length-1;
 		// Some polygons have last point = first; some don't
-		var nLines = (verts.first().eqPt(verts.last())) ? verts.length-1 : verts.length;
+		if ((this instanceof lively.scene.Polygon) && !verts.first().eqPt(verts.last())) nLines = verts.length;
 		for (var i = 0; i < nLines; i++) { locs.push(-(i + 1)); };  // midpoints
 		return locs; 
 	},
@@ -1845,9 +1846,10 @@ this.Shape.subclass('lively.scene.Path', {
 
 	hasElbowProtrusions: true,
 
-	initialize: function($super, elements) {
+	initialize: function($super, elements, morph) {
 		this.rawNode = NodeFactory.create("path");
 		this.dontChangeShape = false;
+		this.morph = morph;  // Only for temporary testing -- see setVerticesAndControls
 		this.setElements(elements || []);
 		return this;
 	},
@@ -1934,19 +1936,41 @@ this.Shape.subclass('lively.scene.Path', {
 		if (d.length > 0)
 			this.rawNode.setAttributeNS(null, "d", d);
 	},
+setVerticesAndControls: function(verts, ctrls, closed) {
+		// Complete hack only so that we can play with editing.  
+		// May leaves garbage in DOM
+
+		// copied from Morph.makeCurve...
+		var g = lively.scene;
+		var cmds = [];
+		cmds.push(new g.MoveTo(true, verts[0].x,  verts[0].y));
+		for (var i=1; i<verts.length; i++) {
+			cmds.push(new g.QuadCurveTo(true, verts[i].x, verts[i].y, ctrls[i].x, ctrls[i].y));
+		}
+		this.setElements(cmds);
+	},
+
 	
 	vertices: function() {
+		// [DI] Note this is a test only -- not all path elements will work with this
 		var verts = this.cachedVertices;
 		if (verts == null) {
 			verts = [];
-			this.elements.forEach(function(el) {
-				verts = verts.concat(el.controlPoints());
-			});
+			this.elements.forEach(function(el) { verts.push(el.controlPoints().last()); });
 			this.cachedVertices = verts;
 		}
 		return verts;
-		//return this.verticesFromSVG();
 	},
+controlPoints: function() {
+		// [DI] Note this is a test only -- no caching, not all path elements will work with this
+		var ctls = [];
+			this.elements.forEach(function(el) { 
+				var cs = el.controlPoints();  // cs = [vert] or [p1, vert] or [p1, p2, vert]
+				ctls.push(cs.slice(0,cs.length-1));   // this is cs.butLast, ie [] or [p1] or [p1, p2]
+				});
+		return ctls;
+	},
+
 
 	containsPoint: function(p) {
 		var verts = this.vertices();
@@ -1967,10 +1991,124 @@ this.Shape.subclass('lively.scene.Path', {
 
 	// poorman's traits :)
 	partNameNear: this.Polygon.prototype.partNameNear,
-	allPartNames: this.Polygon.prototype.allPartNames,
+	allPartNames: function() {
+		// Note: for reshaping of polygons and lines, the "partNames" are
+		//  integer codes with the following meaning...
+		//	0...(N-1)  -- the N vertices themselves
+		//	-1...-N  -- negative of the line segment index for inserting a new vertex
+		//  This scheme may also be extended to curves as follows...
+		//	N...(2N-1)  -- first control point for the given (i-N)-th line segment
+		//  2N...(3N-1)  -- second control point for the (i-2N)-th line segment
+		// This encoding scheme is shared also by partPosition() and reshape()
 
-	partPosition: this.Polygon.prototype.partPosition,
-	reshape: this.Polygon.prototype.reshape,
+		// Vertices...
+		var locs = [];
+		var verts = this.vertices();
+		for (var i = 0; i < verts.length; i++) { locs.push(i); };  // vertices
+
+		// Midpoints (for insertion)
+		// Some polygons have last point = first; some don't
+		if (false) {  // Note: this wont work right for paths yet
+			var nLines = (verts.first().eqPt(verts.last())) ? verts.length-1 : verts.length;
+			for (var i = 0; i < nLines; i++) { locs.push(-(i + 1)); };  // midpoints
+		}
+
+		// Control points
+		var N = verts.length;
+		var ctls = this.controlPoints();
+		for (var i = 0; i < ctls.length; i++) { 
+			var cs = ctls[i];
+			if (cs.length > 0) locs.push(N + i);  // first control pt for curve elements
+			if (cs.length > 1) locs.push(2*N + i);  // second control pt for curve elements
+		};
+		return locs; 
+	},
+
+	partPosition: function(partName) {
+		// See the comment in allPartNames
+		// Here we decode the "partName" index to select a vertex, midpoint or control point
+		var verts = this.vertices();  var N = verts.length;
+
+		// Midpoint of segment
+		if (partName < 0) {  
+			// Check for midpoint of last segment when first vertex is not duplicated
+			if (-partName > (verts.length-1)) return verts[-partName - 1].midPt(verts[0]); 
+			return verts[-partName].midPt(verts[-partName - 1]);
+		}
+		// Normal vertex
+		if (partName < N) return verts[partName];
+
+		var ctls = this.controlPoints();
+		// First control point
+		if (partName < N*2) return ctls[partName - N][0];
+
+		// Second control point
+		if (partName < N*3) return ctls[partName - N*2][1];
+console.log("can't find partName = " + partName);
+console.log("verts = " + Object.inspect(verts));
+console.log("ctls = " + Object.inspect(ctls));
+	},
+
+
+	reshape: function(ix, newPoint, lastCall) {
+		// See the comment in allPartNames
+		// Here we decode the "partName" index to select a vertex, midpoint or control point
+		// and then replace that point with newPoint, and update the shape
+
+		// ix is an index into vertices
+		var verts = this.vertices();  // less verbose
+		var ctrls = this.controlPoints().map(function(elt) {return elt[0]; });
+		if (!ctrls[0]) ctrls[0] = ctrls[1];
+		if (ix < 0) { // negative means insert a vertex
+			return false;  // Inserting a vertex wont work yet without splicing in a controlpt as well
+			ix = -ix;
+			verts.splice(ix, 0, newPoint);
+			this.setVerticesAndControls(verts, ctrls);
+			return; // undefined result for insertion 
+		}
+		var N = verts.length;
+		var closed = verts[0].eqPt(verts[verts.length - 1]);
+		if (ix >= N) {
+			// Edit a control point
+			ctrls[ix-N] = newPoint;
+//console.log("verts = " + Object.inspect(verts));
+//console.log("ctrls = " + Object.inspect(ctrls));
+			this.setVerticesAndControls(verts, ctrls, closed);
+			return false; // normal -- no merging
+		}
+		if (closed && ix == 0) {  // and we're changing the shared point (will always be the first)
+			verts[0] = newPoint;  // then change them both
+			verts[verts.length - 1] = newPoint; 
+		} else {
+			verts[ix] = newPoint;
+		}
+
+		var shouldMerge = false;
+		var howClose = 6;
+		if (verts.length > 2) {
+			// if vertex being moved is close to an adjacent vertex, make handle show it (red)
+			// and if its the last call (mouse up), then merge this with the other vertex
+			if (ix > 0 && verts[ix - 1].dist(newPoint) < howClose) {
+				if (lastCall) { 
+					verts.splice(ix, 1); 
+					if (closed) verts[0] = verts[verts.length - 1]; 
+				} else {
+					shouldMerge = true;
+				} 
+			}
+
+			if (ix < verts.length - 1 && verts[ix + 1].dist(newPoint) < howClose) {
+				if (lastCall) { 
+					verts.splice(ix, 1); 
+					if (closed) verts[verts.length - 1] = verts[0];
+				} else {
+					shouldMerge = true;
+				} 
+			}
+		}
+		this.setVerticesAndControls(verts, ctrls, closed); 
+		return shouldMerge;
+	},
 
 });
 

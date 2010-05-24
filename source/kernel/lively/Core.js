@@ -701,7 +701,7 @@ var Event = (function() {
 	    // FIXME: make browser-independent
 	    return this.rawEvent.wheelDelta;
 	},
-	
+
 	point: function() {
 	    // likely origin of event, obvious for mouse events, the hand's position for
 	    // keyboard events
@@ -1064,6 +1064,16 @@ Copier.subclass('Importer', {
 		}
 	},
 
+	resizeCanvasToFitWorld: function(world) {
+		console.log('Resizing SVG canvas');
+		var canvas = world.rawNode.parentNode;
+		if (!canvas) return;
+		if (canvas.clientWidth != world.bounds().width)
+			canvas.setAttribute("width", world.bounds().width);
+		if (canvas.clientHeight != world.bounds().height)
+			canvas.setAttribute("height", world.bounds().height);
+	},
+
 	startScripts: function(world) {
 		this.verbose && console.log("start scripts %s in %s", this.scripts, world);
 		// sometimes there are null values in this.scripts. Filter them out
@@ -1127,6 +1137,12 @@ Copier.subclass('Importer', {
 	},
 
 	finishImport: function(world) {
+		if (Config.resizeScreenToWorldBounds) {
+			// when called without delay the call to canvas.clientWidth/Height
+			// causes the simple subworld to disappear
+			// (call toRemoveo 'early', SVG not yet initialized?)
+			this.resizeCanvasToFitWorld.curry(world).delay(2);
+		}
 		this.patchReferences();
 		this.hookupModels();
 		this.runDeserializationHooks();
@@ -1798,6 +1814,8 @@ Morph.addMethods({
 			controlPts.push(ctrl);
 			current = verts[i];
 		}
+		// Fix first control point if we have 3 or more verts
+		if (verts.length <= 3) controlPts[1] = verts[1].subPt(verts[2]).addPt(verts[1]);
 		var morph = Morph.makeCurve(verts, controlPts, isClosed)
 		this.world().addMorph(morph);
 		morph.setPosition(this.position());
@@ -1843,12 +1861,13 @@ Morph.addMethods({
 	},
 
 	setBorderWidth: function(newWidth) {
-		// this.changed();
-		if (Config.chromeBorderPatch && newWidth == 0) 
-			this.shape.setStrokeWidth(0.01); 
-		else 
-			this.shape.setStrokeWidth(newWidth); 
-		// this.changed();
+		var oldWidth = this.getBorderWidth();
+		if (newWidth == oldWidth) return;
+
+		// Opt: only notify change with the bigger of two bounds
+		if (oldWidth > newWidth) this.changed();
+		this.shape.setStrokeWidth(newWidth); 
+		if (newWidth > oldWidth) this.changed();
 	},
 
 	getBorderWidth: function() {
@@ -2289,20 +2308,20 @@ Morph.addMethods({
     	return -1;  // not there
 	},
 
-	getInsertPositionFor: function(m, isFront) {
-		if (this.submorphs.length == 0) return null; // if no submorphs, append to nodes
-		return isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
-	},
-	
 	insertMorph: function(m, isFront) { // low level, more like Node.insertBefore?
-		var insertionPt = this.getInsertPositionFor(m, isFront); // the last one, so drawn last, so front
+		var insertionPt = this.submorphs.length == 0 ? null : // if no submorphs, append to nodes
+		isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
+		// the last one, so drawn last, so front
 		this.rawNode.insertBefore(m.rawNode, insertionPt);
-		if (isFront) this.submorphs.push(m);
-		else this.submorphs.unshift(m);
+
+		if (isFront)
+			this.submorphs.push(m);
+		else
+		this.submorphs.unshift(m);
 		m.owner = this;
 		return m;
 	},
-	
+
 	removeMorph: function(m) {// FIXME? replaceMorph() with remove as a special case
 
 		var index = this.submorphs.indexOf(m);
@@ -2886,7 +2905,7 @@ Morph.addMethods({
 		if (evt.mouseButtonPressed && this==evt.hand.mouseFocus && this.owner && this.owner.openForDragAndDrop) { 
 			this.moveBy(evt.mousePoint.subPt(evt.priorPoint));
 		} // else this.checkForControlPointNear(evt);
-		if (!evt.mouseButtonPressed && !Config.usePieMenus) this.checkForControlPointNear(evt);
+		if (!evt.mouseButtonPressed && !this.hasHandles()) this.checkForControlPointNear(evt);
 	},
 
 	onMouseUp: function(evt) { }, //default behavior
@@ -2913,10 +2932,7 @@ Morph.addMethods({
 		this.hideHelp();
 	}, 
 
-	onMouseWheel: function(evt) {
-		if (!this.world()) return false;
-		return this.world().onMouseWheel(evt);
-	},
+	onMouseWheel: function(evt) {}, // default behavior
 
 	takesKeyboardFocus: Functions.False,
 
@@ -2987,6 +3003,7 @@ Morph.addMethods({
 	checkForControlPointNear: function(evt) {
 		if (this.suppressHandles) return false; // disabled
 		if (this.owner == null) return false; // cant reshape the world
+		if (this.hasHandles()) return false; // handles already on - no rollovers
 		var partName = this.shape.partNameNear(this.localize(evt.point()));
 		if (partName == null) return false;
 
@@ -3050,7 +3067,6 @@ addAllHandles: function(evt) {
 		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner) {
 			evt.hand.lastMorphMenu.remove(); // cleanup old open menus
 		};
-debugger
 		var menu = this.morphMenu(evt);
 		var menuCaption = this.getName() ? this.getName() + ' - ' : '';
 		menuCaption += Object.inspect(this).truncate();
@@ -3058,13 +3074,16 @@ debugger
 		evt.hand.lastMorphMenu = menu;
 	},
 
-	morphMenu: function(evt) {
+	morphMenu: function(evt) { 
 		var items = [
 			["remove", this.remove],
 			["drill", this.showOwnerChain.curry(evt)],
 			["grab", this.pickMeUp.curry(evt)],
 			["drag", this.dragMe.curry(evt)],
 			["edit style", function() { new StylePanel(this).open()}],
+			[((this.hasHandles()) ? "hide" : "show") + " all handles", function(evt) {
+				if (this.hasHandles()) this.removeAllHandlesExcept(null);
+					else this.addAllHandles(evt) }.bind(this) ],		
 			["inspect", function(evt) { new SimpleInspector(this).openIn(this.world())}],
 			["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
 				browser.openIn(this.world(), evt.point());
@@ -3072,6 +3091,9 @@ debugger
 			];
 		if (this.okToDuplicate())
 			items.unshift(["duplicate", this.copyToHand.curry(evt.hand)]);
+
+		if (this.shape instanceof lively.scene.Polyline || this.shape instanceof lively.scene.Polygon)
+			items.push( ["copy to curve", this.makeCurve]);
 
 		if (this.getModel() instanceof SyntheticModel)
 			items.push( ["show Model dump", this.addModelInspector.curry(this)]);
@@ -3137,7 +3159,7 @@ debugger
 				PieMenuMorph.setUndo(function() { targetMorph.setScale(oldScale); });
 				menu.addHandleTo(targetMorph, evt, 'scale');
 				}],
-			['show handles ([])', function(evt) {
+			[((targetMorph.hasHandles()) ? "hide" : "show") + " all handles ([])", function(evt) {
 				if (targetMorph.hasHandles()) targetMorph.removeAllHandlesExcept(null);
 					else targetMorph.addAllHandles(evt) }],
 			['delete (X)', function(evt) {
@@ -3298,7 +3320,6 @@ debugger
 			return null;
 
 		if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
-		
 		// First check all the submorphs, front first
 		for (var i = this.submorphs.length - 1; i >= 0; i--) {
 			var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
@@ -3489,11 +3510,11 @@ Morph.addMethods({
 Morph.addMethods({ 
     
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
-	bounds: function(ignoreTransients, ignoreTransform) {
+	bounds: function(ignoreTransients) {
 		if (this.fullBounds != null) return this.fullBounds;
 
 		var tfm = this.getTransform();
-		var fullBounds = this.localBorderBounds(ignoreTransform ? null : tfm);
+		var fullBounds = this.localBorderBounds(tfm);
 
 		var subBounds = this.submorphBounds(ignoreTransients);
 		if (subBounds != null) {
@@ -3777,6 +3798,8 @@ Object.extend(Morph, {
 		// Make up a new quadratic spline from the supplied vertices and control points.
 		// ctrls[i] is the ctrl point for segment from verts[i-1] to verts[i].  (ctrls[0] is never used)
 		if (verts.length < 2) return;
+		// console.log("verts = " + Object.inspect(verts));
+		// console.log("ctrls = " + Object.inspect(ctrls));
 		var g = lively.scene;
 		var cmds = [];
 		cmds.push(new g.MoveTo(true, verts[0].x,  verts[0].y));
@@ -4206,20 +4229,19 @@ Morph.subclass("PasteUpMorph", {
         return $super(bounds, shapeType);
     },
     
-	captureMouseEvent: function PasteUpMorph$captureMouseEvent($super, evt, hasFocus) {
-		if (evt.type == "MouseDown" && this.onMouseDown(evt)) return;
-		if (evt.type == "MouseWheel" && this.onMouseWheel(evt)) return;
-		$super(evt, hasFocus); 
-	},
+    captureMouseEvent: function PasteUpMorph$captureMouseEvent($super, evt, hasFocus) {
+        if (evt.type == "MouseDown" && this.onMouseDown(evt)) return; 
+        $super(evt, hasFocus); 
+    },
 
 	onMouseDown: function PasteUpMorph$onMouseDown($super, evt) {  //default behavior is to grab a submorph
 		$super(evt);
 		var m = this.morphToReceiveEvent(evt);
+		if (false && m instanceof HandleMorph) { // Verify handles work with pie menus, then delete
+			m.onMouseDown(evt);  // fixme
+			return true;
+		}
 		if (Config.usePieMenus) {
-			if (m instanceof HandleMorph) {
-				m.onMouseDown(evt);  // fixme
-				return true;
-			}
 			if (m.handlesMouseDown(evt)) return false;
 			m.showPieMenu(evt, m);
 			return true;
@@ -4238,40 +4260,6 @@ Morph.subclass("PasteUpMorph", {
 		return true; 
 	},
 
-
-	bounds: function($super, ignoreTransients, ignoreTransform) {
-		return $super(ignoreTransients, true);
-	},
-	
-	onMouseWheel: function(evt) {
-		if (!evt.isCommandKey()) return false;
-		evt.preventDefault();
-
-		var oldScale = this.getScale();
-		var wheelDelta = evt.wheelDelta();
-		var minScale = 0.1, maxScale = 50;
-		if (oldScale < minScale && wheelDelta < 0) return false;
-		if (oldScale > maxScale && wheelDelta > 0) return false;
-		var scaleDelta = 1 + evt.wheelDelta() / 10000;
-		this.scaleBy(scaleDelta);
-
-		// actually this should be a layoutChanged but implementing
-		// layoutChanged in WorldMorph is expensive since it is always called when a
-		// submorph's layout is changed (owner chain propagation)
-		this.resizeCanvasToFitWorld();
-		
-		// Zoom into/out of the current mouse position:
-		// p is the current mouse position. If we wouldn't move the window the new mouse pos would be scaledP.
-		// We calculate the vector from scaledP to p and scale that by the current scale factor
-		// We end up with a vector that can be used to scroll the screen to zoom in/out
-		var p = evt.point();
-		var scaledP = p.scaleBy(1/scaleDelta);
-		var translatedP = p.subPt(scaledP).scaleBy(this.getScale());
-		window.scrollBy(translatedP.x, translatedP.y)
-
-		return true
-	},
-	
     okToBeGrabbedBy: function(evt) {
         // Paste-ups, especially the world, cannot be grabbed normally
         return null; 
@@ -4454,76 +4442,57 @@ PasteUpMorph.subclass("WorldMorph", {
 		return usedFills
 	},
     
-	remove: function() {
-		if (!this.rawNode.parentNode) return null;  // already removed
-		this.stopStepping();
-		this.removeRawNode();
-		return this;
-	},
+    remove: function() {
+        if (!this.rawNode.parentNode) return null;  // already removed
+        this.stopStepping();
+	this.removeRawNode();
+        return this;
+    },
 
-	// called by insertMorph to determine the rawNode after the new inserted morph
-	getInsertPositionFor: function(m, isFront) {
-		if (this.submorphs.length == 0) return this.hands.length > 0 ? this.hands[0].rawNode : null;
-		return isFront ? this.submorphs.last().rawNode.nextSibling : this.submorphs.first().rawNode;
-	},
+    toggleNativeCursor: function(flag) {
+	this.canvas().setAttributeNS(null, "cursor", flag ? "auto" : "none");
+    },
+
+    displayOnCanvas: function(canvas) {
+	// this.remove();
+	if (this.rawNode.parentNode !== canvas) canvas.appendChild(this.rawNode);
+        var hand = this.addHand(new HandMorph(true));
+	WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
+        this.onEnter(); 
 	
-	toggleNativeCursor: function(flag) {
-		this.canvas().setAttributeNS(null, "cursor", flag ? "auto" : "none");
-	},
-
-	resizeCanvasToFitWorld: function() {
-		var canvas = this.rawNode.parentNode;
-		if (!canvas) return;
-		this.transformChanged();
-		this.fullBounds = null;
-		if (canvas.clientWidth != this.bounds().width)
-			canvas.setAttribute("width", this.bounds().width);
-		if (canvas.clientHeight != this.bounds().height)
-			canvas.setAttribute("height", this.bounds().height);
-	},
-
-	displayOnCanvas: function(canvas) {
-		// this.remove();
-		if (this.rawNode.parentNode !== canvas) canvas.appendChild(this.rawNode);
-		var hand = this.addHand(new HandMorph(true));
-		WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
-		if (Config.resizeScreenToWorldBounds)
-			this.resizeCanvasToFitWorld(this);
-		this.onEnter(); 
-
-		this.enterCount ++;
-	},
+	this.enterCount ++;
+    },
     
-	addHand: function(hand) {
-		if (this.hands.length > 0 && !this.hands.first())
-			this.hands.shift(); // FIXME: Quick bugfix. When deserializing the world the hands.first() is sometimes undefined
-		this.hands.push(hand);
-		hand.owner = this;
-		hand.registerForEvents(this);
-		hand.registerForEvents(hand);
-		hand.layoutChanged();
+    addHand: function(hand) {
+        if (this.hands.length > 0 && !this.hands.first())
+            this.hands.shift(); // FIXME: Quick bugfix. When deserializing the world the hands.first() is sometimes undefined
+        this.hands.push(hand);
+        hand.owner = this;
+        hand.registerForEvents(this);
+        hand.registerForEvents(hand);
+        hand.layoutChanged();
+	
+        Event.keyboardEvents.forEach(function(each) {
+            document.documentElement.addEventListener(each, hand, hand.handleOnCapture);
+        });
 
-		Event.keyboardEvents.forEach(function(each) {
-			document.documentElement.addEventListener(each, hand, hand.handleOnCapture);
-		});
-
-		this.rawNode.appendChild(hand.rawNode);
-		return hand;
-	},
+        this.rawNode.parentNode.appendChild(hand.rawNode);
+	return hand;
+    },
     
-	removeHand: function(hand) {
-		hand.setMouseFocus(null); // cleanup, just in case
-		hand.setKeyboardFocus(null); // cleanup (calls blur(), which will remove the focus halo)
-		hand.removeRawNode();
-		hand.unregisterForEvents(this);
-		hand.unregisterForEvents(hand);
+    removeHand: function(hand) {
+	hand.setMouseFocus(null); // cleanup, just in case
+	hand.setKeyboardFocus(null); // cleanup (calls blur(), which will remove the focus halo)
+	hand.removeRawNode();
+        hand.unregisterForEvents(this);
+        hand.unregisterForEvents(hand);
 
-		Event.keyboardEvents.forEach(function(each) {
-			document.documentElement.removeEventListener(each, hand, hand.handleOnCapture);
-		});
+        Event.keyboardEvents.forEach(function(each) {
+            document.documentElement.removeEventListener(each, hand, hand.handleOnCapture);
+        });
 
-		this.hands.splice(this.hands.indexOf(hand), 1);
-	},
+        this.hands.splice(this.hands.indexOf(hand), 1);
+    },
 
 
     toggleBalloonHelp: function() {
@@ -4950,9 +4919,7 @@ WorldMorph.addMethods({
 	saveWorld: function(optURL) {
 		optURL = optURL || URL.source.filename()
 		var start = new Date().getTime();
-		this.removeHand(this.firstHand());
 		Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this.world()), optURL);
-		this.addHand(new HandMorph(true));
 		var time = new Date().getTime() - start;
 		this.setStatusMessage("world saved to " + optURL + " in " + time + "ms", Color.green, 3)
 	},
@@ -4960,10 +4927,10 @@ WorldMorph.addMethods({
 	windowBounds: function() {
 		var topLeft = pt(Global.pageXOffset, Global.pageYOffset);
 		var width = Math.min(
-			Global.document.documentElement.clientWidth * 1/this.world().getScale(),
+			Global.document.documentElement.clientWidth,
 			WorldMorph.current().getExtent().x);
 		var height = Math.min(
-			Global.document.documentElement.clientHeight * 1/this.world().getScale(),
+			Global.document.documentElement.clientHeight,
 			WorldMorph.current().getExtent().y)
 		return topLeft.extent(pt(width, height))
 	},
@@ -4983,7 +4950,7 @@ WorldMorph.addMethods({
 			this._statusMorphContainer.startUpdate();		
 		};
 		var container = this._statusMorphContainer;
-		container.align(container.bounds().topRight(), this.visibleBounds().topRight());
+		container.align(container.bounds().topRight(), this.windowBounds().topRight());
 		container.name = "statusMorphContainer";
 		container.bringToFront();
 		container.addStatusMessage(msg, color, delay, callback, optStyle, messageKind);
@@ -5001,7 +4968,6 @@ WorldMorph.addMethods({
 	morphMenu: function($super, evt) { 
 		var menu = $super(evt);
 		menu.keepOnlyItemsNamed(["inspect", "edit style"]);
-		menu.addItems([['reset scale', function(evt) { var w = evt.hand.world(); w.setScale(1); w.resizeCanvasToFitWorld() }]]);
 		menu.addLine();
 		menu.addItems(this.subMenuItems(evt));
 		menu.addLine();
@@ -5470,11 +5436,9 @@ lookTouchy: function(morph) {
 
 	reallyHandleMouseEvent: function HandMorph$reallyHandleMouseEvent(evt) { 
 		// console.log("reallyHandleMouseEvent " + evt + " focus " +  this.mouseFocus);
-		// var rawPosition = evt.mousePoint;
-		var world = this.owner;
-		evt.mousePoint = evt.mousePoint.matrixTransform(world.getTransform().createInverse()); // for scaling
 		evt.setButtonPressedAndPriorPoint(this.mouseButtonPressed, 
 					  this.lastMouseEvent ? this.lastMouseEvent.mousePoint : null);
+		var world = this.owner;
 		//-------------
 		// mouse move
 		//-------------
@@ -5895,17 +5859,31 @@ lookTouchy: function(morph) {
 		}	
     },
 
-	bounds: function($super) {
-		// account for the extra extent of the drop shadow
-		// FIXME drop shadow ...
-		return this.shadowMorph ? $super().expandBy(this.shadowOffset.x) : $super();
-	},
+    bounds: function($super) {
+        // account for the extra extent of the drop shadow
+        // FIXME drop shadow ...
+        if (this.shadowMorph)
+            return $super().expandBy(this.shadowOffset.x);
+        else return $super();
+    },
 
-	getInsertPositionFor: function(m, isFront) {
-		if (this.submorphs.length == 0) return this.shape.rawNode;
-		return isFront ? this.submorphs.last().rawNode : this.submorphs.first().rawNode;
-	},
+	insertMorph: function(m, isFront) {
+		// overrides Morph.prototype.insertMorph
+		var insertionPt = this.submorphs.length == 0 ? 
+			this.shape.rawNode :
+			(isFront ? this.submorphs.last().rawNode : this.submorphs.first().rawNode);
+			// the last one, so drawn last, so front
+	
+		this.rawNode.insertBefore(m.rawNode, insertionPt);
 
+		if (isFront)
+			this.submorphs.push(m);
+		else
+			this.submorphs.unshift(m);
+		m.owner = this;
+		return m;
+	},
+    
     toString: function($super) { 
         var superString = $super();
         var extraString = Strings.format(", local=%s,id=%s", this.isLocal, this.id());
@@ -6483,10 +6461,10 @@ ClipboardHack = {
 }
 
 Global.basicResize = function(world, canvas, newWidth, newHeight) {
-	canvas.setAttribute("width", newWidth);
+  canvas.setAttribute("width", newWidth);
 	canvas.setAttribute("height", newHeight);
 	world.setExtent(pt(newWidth, newHeight));
-	world.fullBounds = new Rectangle(0, 0, newWidth, newHeight);
+  world.fullBounds = new Rectangle(0, 0, newWidth, newHeight);
 };
 
 window.onresize = function(evt) {

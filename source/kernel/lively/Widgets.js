@@ -591,7 +591,7 @@ Morph.subclass('HandleMorph', {
 		this.partName = partName; // may be a name like "topRight" or a vertex index
 		this.initialScale = null;
 		this.initialRotation = null; 
-		this.mode = null;
+		this.mode = 'reshape';
 		this.rollover = true;  // pops up near hangle locs, goes away if mouse rolls out
 		this.showingAllHandles = false;  // all handles are shown, eg, on touch screens
 		this.normalize();
@@ -613,17 +613,16 @@ Morph.subclass('HandleMorph', {
 
 	okToDuplicate: Functions.False,
 
-	onMouseDown: function(evt) {
+	handlesMouseDown: function(evt) { return true },
+onMouseDown: function(evt) {
 		//console.log("handle down");
 		evt.hand.setMouseFocus(this);
 		this.hideHelp();
-		if (!this.rollover) {  // if not a rollover, mode should be set
-			if (this.showingAllHandles) this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
-			return;
-		}
+		if (this.showingAllHandles) this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
 		if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
-		else this.mode = evt.isShiftDown() ? 'borderWidth' : 'reshape';
+		else if (evt.isShiftDown()) this.mode = 'borderWidth';
 	},
+
 
 	onMouseMove: function(evt) {
 		if (!evt.mouseButtonPressed) {
