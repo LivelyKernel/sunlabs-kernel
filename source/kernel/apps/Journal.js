@@ -185,14 +185,20 @@ Morph.subclass('JournalEntryMorph', {
 				ea.setBorderWidth(0)
 		})
 	},
+	
+	visibleSubmorphs: function($super) {
+		return $super().reject(function(ea){ return ea instanceof HandleMorph})
+	},
 
 	addMorph: function($super, m) {
 		console.log("add morph");
 		var result = $super(m);
-		connect(m, 'fullBounds', this, 'updateLayoutFor', {
-			converter: function() {return this.sourceObj }}).update();
-		// this.updateLayoutFor(m);
 
+		if (! m instanceof HandleMorph) {
+			connect(m, 'fullBounds', this, 'updateLayoutFor', {
+				converter: function() {return this.sourceObj }}).update();
+			// this.updateLayoutFor(m);
+		};
 		return result
 	},
 
