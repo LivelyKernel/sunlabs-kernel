@@ -138,22 +138,34 @@ Widget.subclass('WikiNavigator', {
 	prepareForSaving: function() {
 	    if (this.panel) this.panel.remove();
         // remove all control btns.... remove this when all pages updated
-        var x = WorldMorph.current().submorphs.select(function(ea) { return ea.constructor == TextMorph });
-        x = x.select(function(ea) { return ea.textContent && ea.textContent.rawNode.textContent == 'Wikicontrol' });
-        x.each(function(ea) { ea.remove() });
-        // if (this.btn) this.btn.remove();
+		var w = WorldMorph.current();
+        var btns = w.submorphs.select(function(ea) { return ea.constructor == TextMorph });
+        btns.forEach(function(ea) {
+			if (ea.textContent && ea.textContent.rawNode.textContent != 'Wiki control')
+ 				ea.remove();
+		});
+		w.removeHand(w.firstHand());
 	},
 	
-	doSave: function(doNotOverwrite, optUrl) {
+	afterSaving: function() {
+		WorldMorph.current().addHand(new HandMorph(true));
+	},
+	
+	doSave: function(doNotOverwrite, optUrl) { // ok, clean this whole thing up!!!!
 		this.prepareForSaving();
 		var worldDoc = Exporter.shrinkWrapMorph(WorldMorph.current()); // why not this.world()?
 		var myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null;
+		var status;
 		if (optUrl) { // save page elsewhere
-			var svnR = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: optUrl.toString(), HeadRevision: null, Metadata: null}));
-			return svnR.store(worldDoc, true).getStatus();
+			var svnR = new SVNResource(
+				this.repoUrl(),
+				Record.newPlainInstance({URL: optUrl.toString(), HeadRevision: null, Metadata: null}));
+			status = svnR.store(worldDoc, true).getStatus();
 		} else {
-			return this.svnResource.store(worldDoc, true, null, myRevision).getStatus();
-		}		
+			status = this.svnResource.store(worldDoc, true, null, myRevision).getStatus();
+		}
+		this.afterSaving();
+		return status;
 	},
 
 	interactiveSaveWorld: function(optUrl) {

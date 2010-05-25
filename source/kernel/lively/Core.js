@@ -4196,19 +4196,19 @@ Model.subclass('SyntheticModel', {
 
 
 Morph.addMethods({
-    
-    exportLinkedFile: function(filename) {
-	var url;
-	if (Global["WikiNavigator"] && WikiNavigator.current) {
-		var nav = WikiNavigator.current;
-		url = WikiNavigator.fileNameToURL(filename);
-		nav.interactiveSaveWorld(url);
-	} else {
-		url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this), filename);
+
+	exportLinkedFile: function(filename) {
+		var url;
+		if (Global["WikiNavigator"] && WikiNavigator.current) {
+			var nav = WikiNavigator.current;
+			url = WikiNavigator.fileNameToURL(filename);
+			nav.interactiveSaveWorld(url);
+		} else {
+			url = WorldMorph.current().saveWorld(filename);
+		}
+		if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
+		return url;
 	}
-	if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
-	return url;
-    }
 
 });
 
@@ -4925,9 +4925,10 @@ WorldMorph.addMethods({
 	saveWorld: function(optURL) {
 		optURL = optURL || URL.source.filename()
 		var start = new Date().getTime();
-		Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this.world()), optURL);
+		var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this.world()), optURL);
 		var time = new Date().getTime() - start;
 		this.setStatusMessage("world saved to " + optURL + " in " + time + "ms", Color.green, 3)
+		return url;
 	},
 	
 	windowBounds: function() {
