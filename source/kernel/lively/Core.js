@@ -541,7 +541,34 @@ LivelyNS = {
 	}
 };
 
-    
+XHTMLNS = {
+
+	create: function(name, attributes) {
+		return NodeFactory.createNS(Namespace.XHTML, name, attributes);
+	},
+
+	getAttribute: function(node, name) {
+		if (UserAgent.isOpera) return node.getAttribute(name); // Fix for Opera 10.10
+		return node.getAttributeteNS(null, name);
+	},
+
+	removeAttribute: function(node, name) {
+		return node.removeAttributeNS(null, name);
+	},
+
+	setAttribute: function(node, name, value) {
+		node.setAttributeNS(null, name, value);
+	},
+
+	getType: function(node) {
+		return node.getAttributeNS(Namespace.LIVELY, "type");
+	},
+
+	setType: function(node, string) {
+		node.setAttributeNS(Namespace.LIVELY, "type", string);
+	}
+};
+  
 Class.addMixin(lively.data.DOMRecord, lively.data.Wrapper.prototype);
 Class.addMixin(lively.data.DOMNodeRecord, lively.data.Wrapper.prototype);
 
