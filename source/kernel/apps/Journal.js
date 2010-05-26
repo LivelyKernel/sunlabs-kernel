@@ -191,16 +191,18 @@ Morph.subclass('JournalEntryMorph', {
 	},
 
 	addMorph: function($super, m) {
-		console.log("add morph");
-		var result = $super(m);
+			console.log("add morph");
+			var result = $super(m);
 
-		if (! m instanceof HandleMorph) {
-			connect(m, 'fullBounds', this, 'updateLayoutFor', {
-				converter: function() {return this.sourceObj }}).update();
-			// this.updateLayoutFor(m);
-		};
-		return result
-	},
+			if (m instanceof HandleMorph) {
+				// console.log("normal add...")
+			} else {
+				connect(m, 'fullBounds', this, 'updateLayoutFor', {
+					converter: function() {return this.sourceObj }}).update();
+				// this.updateLayoutFor(m);
+			} 
+			return result
+		},
 
 	removeMorph: function($super, m) {
 		console.log("add morph");
