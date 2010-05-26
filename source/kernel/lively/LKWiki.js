@@ -141,7 +141,7 @@ Widget.subclass('WikiNavigator', {
 		var w = WorldMorph.current();
         var btns = w.submorphs.select(function(ea) { return ea.constructor == TextMorph });
         btns.forEach(function(ea) {
-			if (ea.textContent && ea.textContent.rawNode.textContent != 'Wiki control')
+			if (ea.textContent && ea.textContent.rawNode.textContent == 'Wiki control')
  				ea.remove();
 		});
 		w.removeHand(w.firstHand());
