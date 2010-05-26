@@ -132,7 +132,6 @@ Global.BinFileReader = function BinFileReader(fileURL){
 		BinFileReaderImpl_IE.apply(this, [fileURL]);
 	else
 		BinFileReaderImpl.apply(this, [fileURL]);
-});
-
+}
 
 }); // endof module
