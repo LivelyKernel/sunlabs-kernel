@@ -78,6 +78,12 @@ BoxMorph.subclass('ButtonMorph', {
         this.changeAppearanceFor(this.value);
     },
 
+	setFill: function($super, fill) {
+		$super(fill);
+		this.baseFill = fill;
+		this.initColor(); // be careful to not call setFill again...!
+	},
+	
 	// FIXME interference with old model on connectModel/relayToModel???
 	getIsActive: function() { return this.isActive },
 	
@@ -122,7 +128,7 @@ BoxMorph.subclass('ButtonMorph', {
 			this.initColor();
 		}
 		var fill = value ?  this.lighterFill : this.normalFill;
-		this.setFill(fill);
+		this.shape.setFill(fill);
 	},
 
   	initColor: function() {
@@ -148,7 +154,8 @@ BoxMorph.subclass('ButtonMorph', {
         	this.normalFill = this.baseFill.lighter(0);
             this.lighterFill = this.baseFill.lighter(1);
         } else if (this.baseFill == null || this.baseFill == undefined) {
-			this.setFill(null);
+			this.lighterFill = null;
+			this.normalFill = null;
 		} else {
 			throw new Error('unsupported fill type ' + this.baseFill);
 		}
