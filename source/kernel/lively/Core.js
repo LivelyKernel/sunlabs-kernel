@@ -1938,6 +1938,8 @@ Morph.addMethods({
 			if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
 				this.shape.roundEdgesBy(spec.borderRadius);
 			}
+			if (spec.suppressGrabbing !== undefined) this.suppressGrabbing = spec.suppressGrabbing;
+			if (spec.suppressHandles !== undefined) this.suppressHandles = spec.suppressHandles;
 		}
 		return this;
 	},
@@ -2646,7 +2648,7 @@ Morph.addMethods({
 	},
 
     centerAt: function(p) {
-	return this.align(this.bounds().center(), p); 
+		return this.align(this.bounds().center(), p); 
     },
 
 	getCenter: function() { return this.bounds().center() },
