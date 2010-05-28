@@ -1936,7 +1936,8 @@ this.Shape.subclass('lively.scene.Path', {
 		if (d.length > 0)
 			this.rawNode.setAttributeNS(null, "d", d);
 	},
-setVerticesAndControls: function(verts, ctrls, closed) {
+
+	setVerticesAndControls: function(verts, ctrls, closed) {
 		// Complete hack only so that we can play with editing.  
 		// May leaves garbage in DOM
 
@@ -1945,7 +1946,10 @@ setVerticesAndControls: function(verts, ctrls, closed) {
 		var cmds = [];
 		cmds.push(new g.MoveTo(true, verts[0].x,  verts[0].y));
 		for (var i=1; i<verts.length; i++) {
-			cmds.push(new g.QuadCurveTo(true, verts[i].x, verts[i].y, ctrls[i].x, ctrls[i].y));
+			var el = ctrls[i] ?
+				new g.QuadCurveTo(true, verts[i].x, verts[i].y, ctrls[i].x, ctrls[i].y) :
+				new g.CurveTo(true, verts[i].x, verts[i].y);
+			cmds.push(el);
 		}
 		this.setElements(cmds);
 	},
@@ -1953,15 +1957,16 @@ setVerticesAndControls: function(verts, ctrls, closed) {
 	
 	vertices: function() {
 		// [DI] Note this is a test only -- not all path elements will work with this
-		var verts = this.cachedVertices;
-		if (verts == null) {
-			verts = [];
-			this.elements.forEach(function(el) { verts.push(el.controlPoints().last()); });
-			this.cachedVertices = verts;
-		}
-		return verts;
+		if (this.cachedVertices != null) return this.cachedVertices;
+		this.cachedVertices = [];
+		this.elements.forEach(function(el) {
+			var vertex = el.controlPoints().last(); // FIXME controlPoints method should be fixed!
+			if (vertex) this.cachedVertices.push(vertex);
+		}, this);
+		return this.cachedVertices;
 	},
-controlPoints: function() {
+
+	controlPoints: function() {
 		// [DI] Note this is a test only -- no caching, not all path elements will work with this
 		var ctls = [];
 			this.elements.forEach(function(el) { 
