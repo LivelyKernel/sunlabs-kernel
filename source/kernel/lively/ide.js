@@ -43,7 +43,9 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	emptyText: '-----',
 
 	panelSpec: [
-			['locationPane', newTextPane, new Rectangle(0, 0, 1, 0.05)],
+			['locationPane', newTextPane, new Rectangle(0, 0, 0.8, 0.05)],
+			['codeBaseDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.8, 0, 0.12, 0.05)],
+			['localDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.92, 0, 0.08, 0.05)],
 			['Pane1', newDragnDropListPane, new Rectangle(0, 0.05, 0.3, 0.32)],
 			['Pane2', newDragnDropListPane, new Rectangle(0.3, 0.05, 0.35, 0.35)],
 			['Pane3', newDragnDropListPane, new Rectangle(0.65, 0.05, 0.35, 0.35)],
@@ -785,6 +787,11 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 		connect(this, 'targetURL', this.locationInput(), 'setTextString', function(value) { return value.toString() })
 		connect(this.locationInput(), 'savedTextString', this, 'setTargetURL', function(value) { return new URL(value) })
 		this.targetURL = this.targetURL // hrmpf
+
+		this.panel.codeBaseDirBtn.setLabel('codebase');
+		connect(this.panel.codeBaseDirBtn, 'fire', this, 'setTargetURL', function() { return URL.codeBase.withFilename('lively/') })
+		this.panel.localDirBtn.setLabel('local');
+		connect(this.panel.localDirBtn, 'fire', this, 'setTargetURL', function() { return URL.source.getDirectory() })
 	},
 	
 	getTargetURL: function() {
