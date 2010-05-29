@@ -6131,160 +6131,170 @@ Morph.subclass('LinkMorph', {
         "onto me to transport objects between worlds.",
     openForDragAndDrop: false,
     suppressHandles: true,
-    style: {borderColor: Color.black, 
-	    fill: lively.lang.let(lively.paint, function(g) { 
-		return new g.RadialGradient([new g.Stop(0, Color.blue.lighter()) , new g.Stop(0.5, Color.blue), 
-					     new g.Stop(1, Color.blue.darker())], pt(0.4, 0.2))})
-	   },
+	style: {
+		borderColor: Color.black, 
+		fill: lively.lang.let(lively.paint, function(g) { 
+			return new g.RadialGradient([new g.Stop(0, Color.blue.lighter()) , new g.Stop(0.5, Color.blue), 
+			new g.Stop(1, Color.blue.darker())], pt(0.4, 0.2))})
+	},
     
-    initialize: function($super, otherWorld, initialPosition) {
-        // In a scripter, type: world.addMorph(new LinkMorph(null))
+	initialize: function($super, otherWorld, initialPosition) {
+		// In a scripter, type: world.addMorph(new LinkMorph(null))
 
-        // Note: Initial position can be specified either as a rectangle or point.
-        // If no position is specified, place the icon in the lower left corner
-        // of the screen.
-        initialPosition = initialPosition || WorldMorph.current().bounds().bottomLeft().addXY(50, -50);
-        $super(new lively.scene.Ellipse(initialPosition, 25));
-	var bounds = this.shape.bounds();
-	       
-        // Make me look a bit like a world
-        [new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].forEach(function(each) {
-            // Make longitude / latitude lines
-	    var lineMorph = new Morph(new lively.scene.Ellipse(bounds.scaleByRect(each)));
-	    lineMorph.applyStyle({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
-            this.addMorph(lineMorph);
-        }, this);
+		// Note: Initial position can be specified either as a rectangle or point.
+		// If no position is specified, place the icon in the lower left corner
+		// of the screen.
+		initialPosition = initialPosition || WorldMorph.current().bounds().bottomLeft().addXY(50, -50);
+		$super(new lively.scene.Ellipse(initialPosition, 25));
+		var bounds = this.shape.bounds();
 
-        if (!otherWorld) {
-            this.myWorld = this.makeNewWorld(this.canvas());
-	    this.addPathBack();
-	} else 
-            this.myWorld = otherWorld;
+		// Make me look a bit like a world
+		[new Rectangle(0.15,0,0.7,1), new Rectangle(0.35,0,0.3,1), new Rectangle(0,0.3,1,0.4)].forEach(function(each) {
+			// Make longitude / latitude lines
+			var lineMorph = new Morph(new lively.scene.Ellipse(bounds.scaleByRect(each)));
+			lineMorph.applyStyle({fill: null, borderWidth: 1, borderColor: Color.black}).ignoreEvents();
+			this.addMorph(lineMorph);
+		}, this);
 
-        return this;
-    },
+		if (!otherWorld) {
+			this.myWorld = this.makeNewWorld(this.canvas());
+			this.addPathBack();
+		} else {
+			this.myWorld = otherWorld;
+		}
+		return this;
+	},
     
-    makeNewWorld: function(canvas) {
-	return new WorldMorph(canvas);
-    },
+	makeNewWorld: function(canvas) {
+		return new WorldMorph(canvas);
+	},
     
-    addPathBack: function() {
-	var pathBack = new LinkMorph(WorldMorph.current(), this.bounds().center());
-	
-        pathBack.setFill(lively.lang.let(lively.paint, function(gfx) {
-	    return new gfx.RadialGradient([new gfx.Stop(0, Color.orange), 
-					   new gfx.Stop(0.5, Color.red), 
-					   new gfx.Stop(1, Color.red.darker(2))],
-					  pt(0.4, 0.2));
-	}));
-	
-        this.myWorld.addMorph(pathBack);
-	return pathBack;
-    },
+	addPathBack: function() {
+		var pathBack = new LinkMorph(WorldMorph.current(), this.bounds().center());
+
+		pathBack.setFill(lively.lang.let(lively.paint, function(gfx) {
+			return new gfx.RadialGradient([new gfx.Stop(0, Color.orange), 
+			new gfx.Stop(0.5, Color.red), 
+			new gfx.Stop(1, Color.red.darker(2))],
+			pt(0.4, 0.2));
+		}));
+
+		this.myWorld.addMorph(pathBack);
+		return pathBack;
+	},
     
-    onDeserialize: function() {
-        //if (!this.myWorld) 
-	this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
-    },
+	onDeserialize: function() {
+		//if (!this.myWorld) 
+		this.myWorld = WorldMorph.current(); // a link to the current world: a reasonable default?
+	},
 
-    handlesMouseDown: function(evt) {
-        return true; 
-    },
-    onMouseDown: function(evt) {
-        this.enterMyWorld(evt); 
-        return true; 
-    },
+	handlesMouseDown: function(evt) {
+		return true; 
+	},
 
-    morphMenu: function($super, evt) { 
-        var menu = $super(evt);
-        menu.addItem(["publish linked world as ... ", function() { 
-	    this.world().prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
-	menu.replaceItemNamed("package", ["package linked world", function(evt) {
-	    new PackageMorph(this.myWorld).openIn(this.world(), this.bounds().topLeft()); this.remove()} ]);
-        return menu;
-    },
+	onMouseDown: function(evt) {
+		this.enterMyWorld(evt); 
+		return true; 
+	},
 
-    enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
-        carriedMorphs = [];
+	morphMenu: function($super, evt) { 
+		var menu = $super(evt);
+		menu.addItem(["publish linked world as ... ", function() { 
+		this.world().prompt("world file (.xhtml)", this.exportLinkedFile.bind(this)); }]);
+		menu.replaceItemNamed("package", ["package linked world", function(evt) {
+			new PackageMorph(this.myWorld).openIn(this.world(), this.bounds().topLeft()); this.remove()} ]);
+		return menu;
+	},
 
-        // Save, and suspend stepping of, any carried morphs
-        evt.hand.unbundleCarriedSelection();
-        evt.hand.carriedMorphsDo( function (m) {
-            m.suspendAllActiveScripts();
-            carriedMorphs.splice(0, 0, m);
+	enterMyWorld: function(evt) { // needs vars for oldWorld, newWorld
+		carriedMorphs = [];
+
+		// Save, and suspend stepping of, any carried morphs
+		evt.hand.unbundleCarriedSelection();
+		evt.hand.carriedMorphsDo( function (m) {
+			m.suspendAllActiveScripts();
+			carriedMorphs.splice(0, 0, m);
 			evt.hand.shadowMorphsDo( function(m) { m.stopAllStepping(); });
-	    	evt.hand.showAsUngrabbed(m);
-         });
-	evt.hand.removeAllMorphs();
-        this.hideHelp();
-        this.myWorld.changed();
-        var oldWorld = WorldMorph.current();
-        oldWorld.onExit();    
-        // remove old hands
-        oldWorld.hands.clone().forEach(function(hand) { 
-            oldWorld.removeHand(hand);
-        });
-       
-        if (Config.suspendScriptsOnWorldExit) {
-            oldWorld.suspendAllActiveScripts();
-        }
+			evt.hand.showAsUngrabbed(m);
+		});
+		evt.hand.removeAllMorphs();
+		this.hideHelp();
+		this.myWorld.changed();
+		var oldWorld = WorldMorph.current();
+		oldWorld.onExit();    
+		// remove old hands
+		oldWorld.hands.clone().forEach(function(hand) { 
+			oldWorld.removeHand(hand);
+		});
 
-        var canvas = oldWorld.canvas();
-        oldWorld.remove(); // some SVG calls may stop working after this point in the old world.
-        
-        console.log('left world %s through %s', oldWorld, this);
-	
-        // display world first, then add hand, order is important!
-        var newWorld = this.myWorld;
-        if (newWorld.owner) {
-            console.log("new world had an owner, removing");
-            newWorld.remove();
-        }
+		if (Config.suspendScriptsOnWorldExit) {
+			oldWorld.suspendAllActiveScripts();
+		}
 
-        newWorld.displayOnCanvas(canvas);  // Becomes current at this point
-	
-        if (Config.suspendScriptsOnWorldExit) { 
-            newWorld.resumeAllSuspendedScripts();
-        }
+		var canvas = oldWorld.canvas();
+		oldWorld.remove(); // some SVG calls may stop working after this point in the old world.
 
-        carriedMorphs.forEach(function(m) {
-	    var hand = newWorld.firstHand();
-            m.resumeAllSuspendedScripts();
-	    hand.addMorphAsGrabbed(m);
-        });
+		console.log('left world %s through %s', oldWorld, this);
 
-        if (Config.showThumbnail) {
-            var scale = 0.1;
-            if (newWorld.thumbnail) {
-                console.log("disposing of a thumbnail");
-                newWorld.thumbnail.remove();
-            }
-            newWorld.thumbnail = Morph.makeRectangle(Rectangle.fromElement(canvas));
-            newWorld.thumbnail.setPosition(this.bounds().bottomRight());
-            newWorld.addMorph(newWorld.thumbnail);
-            newWorld.thumbnail.setScale(scale);
-            newWorld.thumbnail.addMorph(oldWorld);
-        }
+		// display world first, then add hand, order is important!
+		var newWorld = this.myWorld;
+		if (newWorld.owner) {
+			console.log("new world had an owner, removing");
+			newWorld.remove();
+		}
 
-        if (carriedMorphs.length > 0) newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
-    },
+		newWorld.displayOnCanvas(canvas);  // Becomes current at this point
+
+		if (Config.suspendScriptsOnWorldExit) { 
+			newWorld.resumeAllSuspendedScripts();
+		}
+
+		carriedMorphs.forEach(function(m) {
+			var hand = newWorld.firstHand();
+			m.resumeAllSuspendedScripts();
+			hand.addMorphAsGrabbed(m);
+		});
+
+		if (Config.showThumbnail) {
+			var scale = 0.1;
+			if (newWorld.thumbnail) {
+				console.log("disposing of a thumbnail");
+				newWorld.thumbnail.remove();
+			}
+			newWorld.thumbnail = Morph.makeRectangle(Rectangle.fromElement(canvas));
+			newWorld.thumbnail.setPosition(this.bounds().bottomRight());
+			newWorld.addMorph(newWorld.thumbnail);
+			newWorld.thumbnail.setScale(scale);
+			newWorld.thumbnail.addMorph(oldWorld);
+		}
+
+		if (carriedMorphs.length > 0) newWorld.firstHand().emergingFromWormHole = true; // prevent re-entering
+	},
     
-    onMouseOver: function($super, evt) {
-        if (evt.hand.hasSubmorphs()) { // if hand is laden enter world bearing gifts
-            if (!evt.hand.emergingFromWormHole) this.enterMyWorld(evt);
-        } else {
-	    $super(evt);
-	}
-    },
-    
-    onMouseOut: function($super, evt) {
-        evt.hand.emergingFromWormHole = false;
-	$super(evt);
-    },
+	onMouseOver: function($super, evt) {
+		if (evt.hand.hasSubmorphs()) { // if hand is laden enter world bearing gifts
+			if (!evt.hand.emergingFromWormHole) this.enterMyWorld(evt);
+		} else {
+			$super(evt);
+		}
+	},
 
-    getHelpText: function() {
-	return this.helpText;
-    }
+	onMouseOut: function($super, evt) {
+		evt.hand.emergingFromWormHole = false;
+		$super(evt);
+	},
+
+	getHelpText: function() {
+		return this.helpText;
+	},
+	
+	addLabel: function(text) {
+		var label = new TextMorph(pt(110, 25).extentAsRectangle(), text).applyStyle({borderRadius: 10, borderWidth: 2});
+		this.addMorph(label);
+		label.align(label.bounds().leftCenter(), this.shape.bounds().rightCenter().addXY(5, 0));
+		label.linkToStyles(['raisedBorder']);
+		return label;
+	},
     
 });
 
