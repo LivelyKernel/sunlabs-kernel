@@ -220,12 +220,12 @@ BoxMorph.subclass('ButtonMorph', {
         return false;
     },
 
-    setLabel: function(txt) {
-        this.label && this.label.remove();
-	this.label = TextMorph.makeLabel(txt).centerAt(this.innerBounds().center());
-        this.addMorph(this.label);
-        return this;
-    },
+	setLabel: function(txt) {
+		this.label && this.label.remove();
+		this.label = TextMorph.makeLabel(txt).centerAt(this.innerBounds().center());
+		this.addMorph(this.label);
+		return this;
+	},
 
 	getLabel: function() {
 		if (!this.label) 
