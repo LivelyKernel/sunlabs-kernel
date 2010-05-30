@@ -22,41 +22,56 @@
 
 
 /* Code loader. Appends file to DOM. */
-var Loader = {
-    
-    loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
-		if (document.getElementById(url)) return;
+Object.subclass('ScriptLoader', {
+	
+	getScripts: function() { return $A(document.getElementsByTagName('script')) },
+
+	loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
+		if (this.scriptInDOM(url)) {
+			console.log('script ' + url + ' already loaded');
+			return
+		};
+		console.log('loading script ' + url);
 		// FIXME Assumption that first def node has scripts
-		var node = document.getElementsByTagName("defs")[0];
-		if (!node) throw(dbgOn(new Error('Cannot load script ' + url)));
+		var node = document.getElementsByTagName("defs")[0] || this.getScripts()[0].parentElement;
+		if (!node) throw(dbgOn(new Error('Cannot load script ' + url + ' dont know where to append it')));
 		var exactUrl = Config.disableScriptCaching ? url + '?' + new Date().getTime() : url;
 		var xmlNamespace = node.namespaceURI;
+
 		var script = document.createElementNS(xmlNamespace, 'script');
 		script.setAttributeNS(null, 'id', url);
 		script.setAttributeNS(null, 'type', 'text/ecmascript');
-		if (xmlNamespace)
+
+		if (xmlNamespace == Namespace.SVG)
 			script.setAttributeNS(Namespace.XLINK, 'href', exactUrl);
 		else
-			script.setAttributeNS(null, 'src', exactUrl);
-		script.setAttributeNS(null, 'onload', onLoadCb);
-		node.appendChild(script);
-    },
-    
-    scriptInDOM: function(url) {
-        if (document.getElementById(url)) return true;
-        var scriptElements = document.getElementsByTagName('script');
-        for (var i = 0; i < scriptElements.length; i++)
-			if (Loader.scriptElementLinksTo(scriptElements[i], url))
-				return true
-        return false;
-    },
+		script.setAttributeNS(null, 'src', exactUrl);
 
-	scriptElementLinksTo: function(element, url) {
-		if (!element.getAttribute) return false;
+		script.setAttributeNS(null, 'onload', onLoadCb);
+
+		node.appendChild(script);
+	},
+
+	scriptInDOM2: function(url) {
+		return this.getScripts().some(function(e) {
+			return (e.getAttribute('xlink:href') && e.getAttribute('xlink:href') == url) ||
+				(e.getAttribute('src') && e.getAttribute('src') == url)
+		});
+	},
+
+	scriptInDOM: function(url) {
+		if (document.getElementById(url)) return true;
+		var scriptElements = this.getScripts();
+		for (var i = 0; i < scriptElements.length; i++)
+			if (this.scriptElementLinksTo(scriptElements[i], url)) return true;
+		return false;
+	},
+
+	scriptElementLinksTo: function(el, url) {
+		if (!el.getAttribute) return false;
 		// FIXME use namespace consistently
-		if (element.getAttribute('id') == url) return true;
-		var link = element.getAttributeNS(Namespace.XLINK, 'href') ||
-			element.getAttributeNS(null, 'src');
+		if (el.getAttribute('id') == url) return true;
+		var link = el.getAttribute('xlink:href') || el.getAttribute('src');
 		if (!link) return false;
 		if (url == link) return true;
 		// Hack
@@ -65,8 +80,13 @@ var Loader = {
 		var linkName = link.split('/').last().split('?').first();
 		var urlName = url.split('/').last().split('?').first();
 		return linkName == urlName;
-	}
-};
+	},
+	
+}); 
+
+Object.extend(Global, {
+	Loader: new ScriptLoader(),
+});
 
 // test which checks if all modules are loaded
 (function testModuleLoad() {
@@ -624,14 +644,11 @@ var Event = (function() {
 	addMousePoint: function(evtOrTouch) {
 		var x = evtOrTouch.pageX || evtOrTouch.clientX;
 		var y = evtOrTouch.pageY || evtOrTouch.clientY;
-		var topElement = this.canvas().parentNode; // ***DI: doesn't work if we are not top element;
-
+		var topElement = this.canvas();
+		
 		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-		// assume the parent node of Canvas has the same bounds as Canvas
-		this.mousePoint = pt(x - (topElement.offsetLeft || 0), 
-		y - (topElement.offsetTop  || 0) - 3);
+		this.mousePoint = pt(x - (topElement.offsetLeft || 0), y - (topElement.offsetTop  || 0) - 3);
 		// console.log("mouse point " + this.mousePoint);
-		//event.mousePoint = pt(event.clientX, event.clientY  - 3);
 		this.priorPoint = this.mousePoint;
 	},
 	
