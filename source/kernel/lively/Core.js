@@ -641,14 +641,26 @@ var Event = (function() {
 			this.addMousePoint(this.rawEvent)
 	},
 	
-	addMousePoint: function(evtOrTouch) {
-		var x = evtOrTouch.pageX || evtOrTouch.clientX;
-		var y = evtOrTouch.pageY || evtOrTouch.clientY;
-		var topElement = this.canvas();
-		
+	offset: function() {
 		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-		this.mousePoint = pt(x - (topElement.offsetLeft || 0), y - (topElement.offsetTop  || 0) - 3);
-		// console.log("mouse point " + this.mousePoint);
+		var topElement = this.canvas();
+		if (Config.isEmbedded) {
+			var offsetX = 0;
+			var offsetY = -3;
+			do {
+				offsetX += topElement.offsetLeft
+				offsetY += topElement.offsetTop
+				topElement = topElement.offsetParent;
+			} while (topElement && topElement.tagName != 'BODY');
+			return pt(offsetX, offsetY);
+		} else {
+			return pt(topElement.offsetLeft || 0, (topElement.offsetTop  || 0) - 3);
+		}
+	},
+	
+	addMousePoint: function(evtOrTouch) {
+		var pos = pt(evtOrTouch.pageX || evtOrTouch.clientX, evtOrTouch.pageY || evtOrTouch.clientY);
+		this.mousePoint = pos.subPt(this.offset());
 		this.priorPoint = this.mousePoint;
 	},
 	
@@ -786,8 +798,22 @@ var Event = (function() {
 		KEY_INSERT:   45,
 
 		// not in prototype.js:
-		KEY_SPACEBAR: 32
-
+		KEY_SPACEBAR: 32,
+		
+		prepareEventSystem: function() {
+		    var disabler = {    
+				handleEvent: function(evt) { 	
+			    	evt.preventDefault(); 
+			    	return false;
+				}
+		    };
+		    var canvas = Global.document.getElementById("canvas");
+			if (!canvas) return
+		    canvas.addEventListener("dragstart", disabler, true);
+		    canvas.addEventListener("selectstart", disabler, true);
+			if (Config.suppressDefaultMouseBehavior)
+				Global.document.oncontextmenu = Functions.False
+		},
     });
 
     var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel"];
@@ -799,24 +825,6 @@ var Event = (function() {
 
     return Event;
 })();
-
-
-(function prepareEventSystem() {
-    var disabler = {    
-	handleEvent: function(evt) { 	
-	    evt.preventDefault(); 
-	    return false;
-	}
-    };
-    var canvas = Global.document.getElementById("canvas");
-	if (!canvas) return
-    canvas.addEventListener("dragstart", disabler, true);
-    canvas.addEventListener("selectstart", disabler, true);
-	if (Config.suppressDefaultMouseBehavior)
-		Global.document.oncontextmenu = Functions.False
-})();
-
-
 
 function equals(leftObj, rightObj) {
     if (!leftObj && !rightObj) return true;
@@ -4535,14 +4543,14 @@ PasteUpMorph.subclass("WorldMorph", {
 	},
 
 	resizeCanvasToFitWorld: function() {
-		var canvas = this.rawNode.parentNode;
+		var canvas = this.canvas();
 		if (!canvas) return;
 		this.transformChanged();
 		this.fullBounds = null;
 		if (canvas.clientWidth != this.bounds().width)
-			canvas.setAttribute("width", this.bounds().width);
+			canvas.setAttribute("width", this.bounds().width + canvas.offsetLeft * this.getScale());
 		if (canvas.clientHeight != this.bounds().height)
-			canvas.setAttribute("height", this.bounds().height);
+			canvas.setAttribute("height", this.bounds().height + canvas.offsetTop * this.getScale());
 	},
 
 	displayOnCanvas: function(canvas) {
@@ -6503,7 +6511,7 @@ ClipboardHack = {
 			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:100px; height:30px;");
 		} else {
 			// the Clipboard buffer needs a minimum width, otherwise it will scroll the page on the first paste
-			buffer.setAttribute("style","position:fixed;z-index: -5;left:0px; top:0px; width:50px; height:1px;");
+			buffer.setAttribute("style","position:fixed;z-index: -5;left:0px; top:0px; width:50px; height:1px; visibility: hidden;");
 		}
 		buffer.textContent = "NoText";
 		var outerBody = Global.document.body || Global.parent.document.body;
@@ -6631,4 +6639,3 @@ Object.subclass('ClipboardCopier', {
 
 
 console.log('loaded Core.js');
-
