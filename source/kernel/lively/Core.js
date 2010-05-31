@@ -1400,9 +1400,11 @@ lively.data.Wrapper.subclass('Morph', {
 		}
 	},
 
+	createRawNode: function() { return NodeFactory.create("g") },
+	
     initialize: function(shape) {
 		//console.log('initializing morph %s %s', initialBounds, shapeType);
-		this.internalInitialize(NodeFactory.create("g"), true);
+		this.internalInitialize(this.createRawNode(), true);
 		dbgOn(!shape.bounds);
 		// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
 		if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
