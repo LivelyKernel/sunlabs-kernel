@@ -110,6 +110,7 @@ Object.subclass('lively.Main.Loader', {
 	    }
 	    var importer = new Importer();
 
+		Event.prepareEventSystem();
 
 		if (loader.documentHasSerializedMorphs(document)) {
 			loader.setupCounter(document);
