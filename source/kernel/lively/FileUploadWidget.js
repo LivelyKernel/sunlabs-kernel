@@ -7,8 +7,9 @@ module("lively.FileUploadWidget").requires().toRun(function(){
  *	adapted from Andrea Giammarchi (webreflection.blogspot.com) original version (under MIT)
  */
 Object.subclass("FileUploadHelper", {
+	uploadFileMaxSize: 30*1024*1024,
+
 	initialize: function() {
-		this.uploadFileMaxSize = 1024000;
 		this.prefix = ""
 	},
 
