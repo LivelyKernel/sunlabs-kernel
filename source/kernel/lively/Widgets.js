@@ -2022,7 +2022,7 @@ Morph.subclass("MenuMorph", {
         borderWidth: 0.5,
         fill: Color.blue.lighter(5),
         borderRadius: 4, 
-        fillOpacity: 0.75, 
+        fillOpacity: 0.9, 
         wrapStyle: text.WrapStyle.Shrink
     },
 
@@ -2034,7 +2034,7 @@ Morph.subclass("MenuMorph", {
         padding: Rectangle.inset(3),
 		borderWidth: 1, 
         borderRadius: 4, 
-        fillOpacity: 0.75, 
+        fillOpacity: 0.9, 
         wrapStyle: text.WrapStyle.Shrink
     },
 
