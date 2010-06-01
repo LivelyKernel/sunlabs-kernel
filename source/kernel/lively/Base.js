@@ -390,6 +390,8 @@ Object.extend(Function.prototype, {
 
 		for (var property in source) {
 
+			if (property == 'constructor') continue;
+			
 			var getter = source.__lookupGetter__(property);
 			if (getter) this.prototype.__defineGetter__(property, getter);
 			var setter = source.__lookupSetter__(property);
