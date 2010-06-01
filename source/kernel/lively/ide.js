@@ -789,9 +789,9 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 		this.targetURL = this.targetURL // hrmpf
 
 		this.panel.codeBaseDirBtn.setLabel('codebase');
-		connect(this.panel.codeBaseDirBtn, 'fire', this, 'setTargetURL', function() { return URL.codeBase.withFilename('lively/') })
+		connect(this.panel.codeBaseDirBtn, 'fire', this, 'setTargetURL', {converter: function() { return URL.codeBase.withFilename('lively/')} })
 		this.panel.localDirBtn.setLabel('local');
-		connect(this.panel.localDirBtn, 'fire', this, 'setTargetURL', function() { return URL.source.getDirectory() })
+		connect(this.panel.localDirBtn, 'fire', this, 'setTargetURL', {converter: function() { return URL.source.getDirectory() }})
 	},
 	
 	getTargetURL: function() {

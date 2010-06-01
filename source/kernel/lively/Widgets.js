@@ -4903,14 +4903,14 @@ BoxMorph.subclass('HorizontalDivider', {
 
 	onMouseDown: function(evt) {
 		this.oldPoint = evt.point();
-		this.pointerConnection = connect(evt.hand, 'origin', this, 'movedVerticallyBy', function(pos) {
+		this.pointerConnection = connect(evt.hand, 'origin', this, 'movedVerticallyBy', {converter: function(pos) {
 			var resizer = this.getTargetObj();
 			var p1 = resizer.oldPoint;
 			var p2 = pos;
 			var deltaY = p2.y - p1.y;
 			resizer.oldPoint = pos;
 			return deltaY
-		});
+		}});
 	},
 
 	onMouseUp: function(evt) {
@@ -5049,7 +5049,7 @@ BoxMorph.subclass("StatusMessageContainer", {
 					callback();
 				}
 			}};
-			connect(moreButton, "fire", this, "relinquishKeyboardFocus", function(){ return WorldMorph.current().firstHand()})
+			connect(moreButton, "fire", this, "relinquishKeyboardFocus", {converter: function(){ return WorldMorph.current().firstHand()}})
 			connect(moreButton, "fire", callbackObject, "callback")
 			statusMorph.addMorph(moreButton);
 		}
