@@ -1898,8 +1898,14 @@ Morph.addMethods({
 		return new Color(Importer.marker, this.shape.getStroke());
 	},
 
+	nearlyZeroBorderWidth: 0.00001,
+
 	setBorderWidth: function(newWidth) {
 		if (newWidth == null) newWidth = 0;
+		// Workaround Chrome Windows BUG
+		// that displays a line when the strok width is 0
+		if (newWidth == 0) newWidth = this.nearlyZeroBorderWidth;
+		
 		var oldWidth = this.getBorderWidth();
 		if (newWidth == oldWidth) return;
 
