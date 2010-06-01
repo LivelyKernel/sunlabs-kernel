@@ -5760,7 +5760,6 @@ lookTouchy: function(morph) {
 		// But for now we simply drop on world, so this isn't needed
 		this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
 		if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
-		debugger
 		this.addMorphAsGrabbed(grabbedMorph);
 		// grabbedMorph.updateOwner(); 
 		this.changed(); //for drop shadow

@@ -2549,6 +2549,8 @@ BoxMorph.subclass("ScrollPane", {
     scrollBarWidth: 14,
     ScrollBarFormalRelay: Relay.create({Value: "ScrollPosition", SliderExtent: "-VisibleExtent"}), // a class for relays
 
+	openForDragAndDrop: false,
+
     initialize: function($super, morphToClip, initialBounds) {
         $super(initialBounds);
 
