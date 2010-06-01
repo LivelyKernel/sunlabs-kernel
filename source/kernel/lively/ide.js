@@ -289,8 +289,6 @@ Widget.subclass('lively.ide.BasicBrowser', {
         return siblings.without(node);
     },
 
-
-
     nodesInPane: function(paneName) { // panes have listItems, no nodes
              var listItems = this['get' + paneName + 'Content']();
              if (!listItems) return [];
@@ -300,11 +298,11 @@ Widget.subclass('lively.ide.BasicBrowser', {
     		}
             return listItems.collect(function(ea) { return ea.value })    
     },
-selectionInPane: function(pane) {
-	return this['get'+pane+'Selection'](); 
-},
 
-    
+	selectionInPane: function(pane) {
+		return this['get'+pane+'Selection'](); 
+	},
+
     filterChildNodesOf: function(node, filters) {
     	return filters.inject(node.childNodes(), function(nodes, filter) {
     		return filter.apply(nodes)
@@ -320,6 +318,7 @@ selectionInPane: function(pane) {
 		var setter = 'set' + paneName + 'Filters';
     	this[setter](this[getter]().concat([filter]).uniq());
     },
+
     uninstallFilters: function(testFunc, paneName) {
     	// testFunc returns true if the filter should be removed
 		var getter = 'get' + paneName + 'Filters';
@@ -410,20 +409,20 @@ selectionInPane: function(pane) {
     hasUnsavedChanges: function() {
         return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
     },
-onPane1ContentUpdate: function() {
-},
-onPane2ContentUpdate: function() {
-},
 
-onPane3ContentUpdate: function(items, source) {
- if (source !== this.panel.Pane3.innerMorph())
-     return;
- // handle drag and drop of items
- console.log('Got ' + items);
-},
+	onPane1ContentUpdate: function() {
+	},
 
+	onPane2ContentUpdate: function() {
+	},
 
-    
+	onPane3ContentUpdate: function(items, source) {
+		if (source !== this.panel.Pane3.innerMorph())
+		    return;
+		// handle drag and drop of items
+		console.log('Got ' + items);
+	},
+	    
 	allChanged: function(keepUnsavedChanges, changedNode) {
 		// optimization: if no node looks like the changed node in my browser do nothing
 		if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
@@ -460,7 +459,8 @@ onPane3ContentUpdate: function(items, source) {
 		if (!src) return;
 		//this.setSourceString(src);
 		var text = this.panel.sourcePane.innerMorph();
-		text.textString = src; text.changed()
+		text.setTextString(src.toString())
+		// text.changed()
 		text.showChangeClue(); // FIXME
 	},
 
@@ -509,20 +509,20 @@ onPane3ContentUpdate: function(items, source) {
 			this._statusMorph.applyStyle({borderWidth: 0})
 		}
 		var statusMorph = this._statusMorph;
-		statusMorph.textString = msg;
+		statusMorph.setTextString(msg);
 		s.addMorph(statusMorph);
 		statusMorph.setTextColor(color || Color.black);
 		statusMorph.centerAt(s.innerBounds().center());
 		(function() { statusMorph.remove() }).delay(delay || 2);
 	},
 
-
-
 });
 PanelMorph.subclass('lively.ide.BrowserPanel', {
 
 	documentation: 'Hack for deserializing my browser widget',
 
+	openForDragAndDrop: false,
+	
 	onDeserialize: function($super) {
 		var widget = new this.ownerWidget.constructor();
 		if (widget instanceof lively.ide.WikiCodeBrowser) return; // FIXME deserialize wiki browser
@@ -683,16 +683,18 @@ Object.subclass('lively.ide.BrowserNode', {
         this.browser.textChanged(this);
     },
     
-onDrag: function() {
-    console.log(this.asString() + 'was dragged');
-},
-onDrop: function(nodeDroppedOntoOrNull) {
-    console.log(this.asString() + 'was dropped');
-},
-handleDrop: function(nodeDroppedOntoMe) {
-	// for double dispatch
-	return false;
-},
+	onDrag: function() {
+	    console.log(this.asString() + 'was dragged');
+	},
+
+	onDrop: function(nodeDroppedOntoOrNull) {
+	    console.log(this.asString() + 'was dropped');
+	},
+
+	handleDrop: function(nodeDroppedOntoMe) {
+		// for double dispatch
+		return false;
+	},
 
  
 });

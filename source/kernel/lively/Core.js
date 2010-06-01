@@ -3067,7 +3067,8 @@ Morph.addMethods({
 		evt.hand.setMouseFocus(handle);
 		return true; 
 	},
-addAllHandles: function(evt) {
+	
+	addAllHandles: function(evt) {
 		if (this.suppressHandles) return false; // disabled
 		if (this.owner == null) return false; // can't reshape the world
 		var partNames = this.shape.allPartNames();  // Array of name
@@ -3098,7 +3099,6 @@ addAllHandles: function(evt) {
 
     copySubmorphsOnGrab: false, // acts as a palette if true.
     
-
 	suppressGrabbing: false,
 
     // May be overridden to preempt (by returning null) the default action of grabbing me
@@ -5760,6 +5760,7 @@ lookTouchy: function(morph) {
 		// But for now we simply drop on world, so this isn't needed
 		this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
 		if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
+		debugger
 		this.addMorphAsGrabbed(grabbedMorph);
 		// grabbedMorph.updateOwner(); 
 		this.changed(); //for drop shadow

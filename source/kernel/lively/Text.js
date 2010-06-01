@@ -1112,7 +1112,7 @@ BoxMorph.subclass('TextMorph', {
 		this.ignoreEvents();
 		// this.isAccepting = false;
 		this.layoutChanged();
-		this.okToBeGrabbedBy = Functions.Null;
+		this.suppressGrabbing = true;
 		return this;
 	},
 
@@ -1122,9 +1122,9 @@ BoxMorph.subclass('TextMorph', {
 		this.ignoreEvents();
 		this.suppressHandles = true;
 		this.acceptInput = false;
-		this.okToBeGrabbedBy = Functions.Null;
+		this.suppressGrabbing = true;
 		this.focusHaloBorderWidth = 0;
-		this.drawSelection = Functions.Empty;
+		this.drawSelection = Functions.Empty; // TODO does not serialize
 		return this;
 	},
 	
@@ -1220,7 +1220,7 @@ BoxMorph.subclass('TextMorph', {
 		["find source (F)", this.doSearch.bind(this)],
 		["do it (d)", this.doDoit.bind(this)],
 		["print it (p)", this.doPrintit.bind(this)],
-		["inspect it (I)", this.doInspect.bind(this)],
+		["inspect it (shift + i)", this.doInspect.bind(this)],
 		["print it (p)", this.doPrintit.bind(this)],
 		["accept changes (s)", this.doSave.bind(this)],
 		["color (o)", this.colorSelection.bind(this)],
