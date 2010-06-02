@@ -2380,8 +2380,8 @@ BoxMorph.subclass('TextMorph', {
 
 		switch(evt.getKeyCode()) {
 			// Font Size
-			case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.fontSize*=0.8).roundTo(1)}); return true; }
-			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.fontSize*=1.2).roundTo(1)}); return true; }
+			case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 0.8).roundTo(1)))}); return true; }
+			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 1.2).roundTo(1)))}); return true; }
 			// indent/outdent selection
 			case 221/*cmd+]*/: { this.indentSelection(); evt.stop(); return true }
 			case 219/*cmd+]*/: { this.outdentSelection(); evt.stop(); return true }
