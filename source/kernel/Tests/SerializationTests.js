@@ -159,7 +159,13 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
             return ea.getAttribute("name") == fieldName});
         this.assert(result, "" + node + " (id: " + node.id + ") no array named: " + fieldName);
         return result
-    }
+    },
+
+	exportMorph: function(morph) {
+		var exporter = new Exporter(morph);
+		exporter.extendForSerialization();
+		return exporter.rootMorph.rawNode
+	},
 
 });
 
