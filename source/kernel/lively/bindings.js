@@ -71,13 +71,14 @@ Object.subclass('AttributeConnection', {
 		sourceObj[newAttrName] = sourceObj[sourceAttrName];
 
 		this.sourceObj.__defineSetter__(sourceAttrName, function(newVal) {
+			var oldVal = sourceObj[newAttrName];
 			sourceObj[newAttrName] = newVal;
 			if (sourceObj.attributeConnections === undefined)
 				throw new Error('Sth wrong with sourceObj, has no attributeConnections')
 			for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 				var c = sourceObj.attributeConnections[i];
 				if (c.getSourceAttrName() == sourceAttrName)
-					c.update(newVal);
+					c.update(newVal, oldVal);
 			}
 		})
 
@@ -109,12 +110,12 @@ Object.subclass('AttributeConnection', {
 				return conns[i];
 	},
 
-	update: function(newValue) {
+	update: function(newValue, oldValue) {
 		if (this.isRecursivelyActivated()) return;
 		try {
 			this.activate();
 			if (this.converter)
-				newValue = this.converter.call(this, newValue);
+				newValue = this.converter.call(this, newValue, oldValue);
 			if (Object.isFunction(this.targetObj[this.targetMethodName]))
 				this.targetObj[this.targetMethodName](newValue);
 			else

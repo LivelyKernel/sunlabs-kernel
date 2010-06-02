@@ -149,6 +149,16 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 
 	},
 
+	test15ProvideOldValueInConverters: function () {
+		var obj1 = {value: 10};
+		var obj2 = {delta: null};
+		connect(obj1, 'value', obj2, 'delta', {converter: function(newValue, oldValue) {
+			return newValue - oldValue
+		}})
+		obj1.value = 15;
+		this.assertEqual(obj2.delta, 5)
+	},
+
 });
 
 Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.ConnectionSerializationTest', {
