@@ -1621,6 +1621,7 @@ TextListMorph.subclass("ListMorph", {
             this.addMorph(m);
             m.closeDnD();
             m.relayMouseEvents(this);
+			m.morphMenu = this.morphMenu.bind(this);
         }
     },
     
