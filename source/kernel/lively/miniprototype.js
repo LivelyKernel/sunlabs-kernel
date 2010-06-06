@@ -19,7 +19,7 @@ Object.extend = function(destination, source) {
 	var sourceObj = source[property];
 	destination[property] = sourceObj;
 	if (sourceObj instanceof Function &&
-		sourceObj.name && sourceObj.name.length == 0 &&
+		(!sourceObj.name || (sourceObj.name.length == 0)) &&
 		!sourceObj.displayName)
 			sourceObj.displayName = property;
   }
