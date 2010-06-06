@@ -436,30 +436,30 @@ lively.data.Wrapper.subclass('lively.Text.TextWord', {
 
 
 Object.subclass('lively.Text.TextLine', {
-    documentation: 'renders lines composed of words and whitespace',
+	documentation: 'renders lines composed of words and whitespace',
 
-    lineHeightFactor: 1.2, // multiplied with the font size to set the distance between the lines, 
-    // semantics analogous to CSS 
-    
-    whiteSpaceDict: {' ': true, '\t': true, '\r': true, '\n': true},
-    
-    // create a new line
-    initialize: function(textString, textStyle, startIndex, topLeft, font, defaultStyle) {
-        this.textString = textString;
-        this.textStyle = textStyle;
-        this.startIndex = startIndex;
-        this.overallStopIndex = textString.length - 1;
-        this.topLeft = topLeft;
-        this.currentFont = font;
-	this.alignment = 'left';
-        this.defaultStyle = defaultStyle;  // currently unused 
-	// Should probably call adoptStyle(defaultStyle) here
-	//	this.adoptStyle(defaultStyle);
-	this.spaceWidth = font.getCharWidth(' ');
-        this.tabWidth = this.spaceWidth * 4;
-        this.chunks = null;  //  Will be an array after compose
-    },
-    
+	lineHeightFactor: 1.2, // multiplied with the font size to set the distance between the lines, 
+	// semantics analogous to CSS 
+	
+	whiteSpaceDict: {' ': true, '\t': true, '\r': true, '\n': true},
+	
+	// create a new line
+	initialize: function(textString, textStyle, startIndex, topLeft, font, defaultStyle) {
+		this.textString = textString;
+		this.textStyle = textStyle;
+		this.startIndex = startIndex;
+		this.overallStopIndex = textString.length - 1;
+		this.topLeft = topLeft;
+		this.currentFont = font;
+		this.alignment = 'left';
+		this.defaultStyle = defaultStyle;  // currently unused 
+		// Should probably call adoptStyle(defaultStyle) here
+		//	this.adoptStyle(defaultStyle);
+		this.spaceWidth = font.getCharWidth(' ');
+		this.tabWidth = this.spaceWidth * 4;
+		this.chunks = null;	 //	 Will be an array after compose
+	},
+	
 	adjustAfterEdits: function(newTextString, newTextStyle, delta, Ydelta) {
 		// tag: newText
 		this.textString = newTextString;
@@ -472,244 +472,245 @@ Object.subclass('lively.Text.TextLine', {
 		for (var i = 0; i < this.chunks.length; i++) this.chunks[i].adjustAfterEdits(delta, Ydelta);
 	},
 
-    lineHeight: function() {
-	return this.lineHeightFactor * this.currentFont.getSize();
-    },
-    
-    isWhiteSpace: function(c) {
-	// is the character 'c' what we consider to be whitespace? (private) 
-	// return this.whiteSpaceDict[c];
-	return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
-    },
-    
-    isNewLine: function(c) {
-	// is the character 'c' what we consider to be a newline? (private)
-	return (c == '\r' || c == '\n');
-    },
-    
-    endsWithNewLine: function() {
-	// Does this line end with a newLine character?
-	return this.chunks.last().isNewLine;
-    },
-    
-    baselineY: function() {
-	return this.topLeft.y + this.currentFont.getBaselineHeight();
-    },
+	lineHeight: function() {
+		return this.lineHeightFactor * this.currentFont.getSize();
+	},
+	
+	isWhiteSpace: function(c) {
+		// is the character 'c' what we consider to be whitespace? (private) 
+		// return this.whiteSpaceDict[c];
+		return (c == ' ' || c == '\t' || c == '\r' || c == '\n');
+	},
+	
+	isNewLine: function(c) {
+		// is the character 'c' what we consider to be a newline? (private)
+		return (c == '\r' || c == '\n');
+	},
+	
+	endsWithNewLine: function() {
+		// Does this line end with a newLine character?
+		return this.chunks.last().isNewLine;
+	},
+	
+	baselineY: function() {
+		return this.topLeft.y + this.currentFont.getBaselineHeight();
+	},
 
-    interline: function() {
-	return (this.lineHeightFactor - 1) * this.currentFont.getSize();
-    },
+	interline: function() {
+		return (this.lineHeightFactor - 1) * this.currentFont.getSize();
+	},
 
-    getCharWidthAt: function(index) {
-	return this.currentFont.getCharWidth(this.textString.charAt(index));
-    },
+	getCharWidthAt: function(index) {
+		return this.currentFont.getCharWidth(this.textString.charAt(index));
+	},
 
-    compose: function(compositionWidth, chunkStream) {
+	compose: function(compositionWidth, chunkStream) {
 		// tag: newText
-	// compose a line of text, breaking it appropriately at compositionWidth
-	// nSpaceChunks is used for alignment in adjustAfterComposition
-	this.nSpaceChunks = 0; 
-	var lastBounds = this.topLeft.extent(pt(0, this.currentFont.getSize())); 
-	var runningStartIndex = this.startIndex;
-	var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
-	this.chunks = new Array();
+		// compose a line of text, breaking it appropriately at compositionWidth
+		// nSpaceChunks is used for alignment in adjustAfterComposition
+		this.nSpaceChunks = 0; 
+		var lastBounds = this.topLeft.extent(pt(0, this.currentFont.getSize())); 
+		var runningStartIndex = this.startIndex;
+		var nextStyleChange = (this.textStyle) ? 0 : this.textString.length;
+		this.chunks = new Array();
 
-//	console.log("this.textString = /" + this.textString + "/, len = " + this.textString.length);
-	var hasStyleChanged = false;
-	var lastNonWhite = null;
-        for (var i=0; true; i++) {
-            var c = chunkStream.nextChunk();
+		//	console.log("this.textString = /" + this.textString + "/, len = " + this.textString.length);
+		var hasStyleChanged = false;
+		var lastNonWhite = null;
+		for (var i=0; true; i++) {
+			var c = chunkStream.nextChunk();
 			if (c == null) break;
-//		console.log(i.toString() + ": " + c);
+			//		console.log(i.toString() + ": " + c);
 			this.chunks.push(c);
-//		console.log("c.startIndex = " + c.startIndex + ", nextStyleChange = " + nextStyleChange);
+			//		console.log("c.startIndex = " + c.startIndex + ", nextStyleChange = " + nextStyleChange);
 
-	    if (c.startIndex >= nextStyleChange) {
-			hasStyleChanged = true;
-			// Don't bother to change style at line breaks
-			if (!c.isNewLine) this.adoptStyle(this.textStyle.valueAt(c.startIndex), c.startIndex); 
-			nextStyleChange = c.startIndex + this.textStyle.runLengthAt(c.startIndex);
-	    }
-		if (c.isWhite) {  // Various whitespace chunks...
-			c.bounds = lastBounds.withX(lastBounds.maxX());
+			if (c.startIndex >= nextStyleChange) {
+				hasStyleChanged = true;
+				// Don't bother to change style at line breaks
+				if (!c.isNewLine) this.adoptStyle(this.textStyle.valueAt(c.startIndex), c.startIndex);
+				var runLength = this.textStyle.runLengthAt(c.startIndex)
+				if (runLength == 0) throw new Error('TextLine composition: remaining textStyle runLength is 0')
+				nextStyleChange = c.startIndex + runLength;
+			}
+			if (c.isWhite) {  // Various whitespace chunks...
+				c.bounds = lastBounds.withX(lastBounds.maxX());
 
-			if (c.isNewLine) {
-				c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
+				if (c.isNewLine) {
+					c.bounds.width = (this.topLeft.x + compositionWidth) - c.bounds.x;
+					runningStartIndex = c.getNextStartIndex();
+					break;
+				}
+				this.nSpaceChunks ++ ;	// DI: shouldn't this only be incase of spaces (ie, not tabs)?
+				if (c.isTab) {
+					var tabXBoundary = c.bounds.x - this.topLeft.x;
+					c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
+				} else {
+					var spaceIncrement = this.spaceWidth;
+					c.bounds.width = spaceIncrement * c.length;
+				}
 				runningStartIndex = c.getNextStartIndex();
-				break;
-			}
-			this.nSpaceChunks ++ ;  // DI: shouldn't this only be incase of spaces (ie, not tabs)?
-			if (c.isTab) {
-				var tabXBoundary = c.bounds.x - this.topLeft.x;
-				c.bounds.width = Math.floor((tabXBoundary + this.tabWidth) / this.tabWidth) * this.tabWidth - tabXBoundary;
-			} else {
-				var spaceIncrement = this.spaceWidth;
-				c.bounds.width = spaceIncrement * c.length;
-			}
-			runningStartIndex = c.getNextStartIndex();
+			} else {  // Not whitespace...
+				c.allocRawNode(); 
+				lastNonWhite = c;
 
-	} else {  // Not whitespace...
-		c.allocRawNode(); 
-		lastNonWhite = c;
+				if (hasStyleChanged) {
+					// once we notice one change, we will reapply font-size to chunk
+					this.currentFont.applyTo(c);
+					if (this.localColor) {
+						var colorSpec = this.localColor;
+						if (!(colorSpec instanceof Color)) colorSpec = Color[colorSpec]; // allow color names
+						if (colorSpec instanceof Color) c.rawNode.setAttributeNS(null, "fill", String(colorSpec));
+					}
+				}
+				var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
+				if (didLineBreak) {	 // This chunk ran beyond compositionWidth
+					if (i == 0) {  // If first chunk, then have to trim it
+						runningStartIndex = c.getStopIndex() + 1;
+					} else {
+						// Otherwise, drop it entirely, to be rendered on next line
+						runningStartIndex = c.startIndex;
+						this.chunks.pop();
+					}
+					this.nSpaceChunks-- ;  // This makes last interior space no longer interior
+					break;
+				}
+				runningStartIndex = c.getNextStartIndex();
+			}
+			lastBounds = c.bounds;
+		}
+		this.overallStopIndex = runningStartIndex - 1;
+	},
+	
+	adoptStyle: function(emph, charIx) {
+		var fontFamily = this.currentFont.getFamily();
+		var fontSize = this.currentFont.getSize();
+		var fontStyle = 'normal';
+		this.localColor = null;
+		this.alignment = 'left';
+		Properties.forEachOwn(emph, function(p, v) {
+			if (p == "family") fontFamily = v;
+			if (p == "size")  fontSize = v;
+			if (p == "style") fontStyle = v;
+			if (p == "color") this.localColor = v;
+			if (p == "align") this.alignment = v;
+		}.bind(this));
+		// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);
+		this.currentFont = thisModule.Font.forFamily(fontFamily, fontSize, fontStyle);
+		this.spaceWidth = this.currentFont.getCharWidth(' ');
+		this.tabWidth = this.spaceWidth * 4;
+	},
+	
+	getStopIndex: function() {
+		// accessor function (maybe delete - kam)
+		return this.overallStopIndex;
+	},
+	
+	// after this line, where do we start from?
+	getNextStartIndex: function() {
+		return this.overallStopIndex + 1;
+	},
+	
+	// accessor function
+	getTopY: function() {
+		return this.topLeft.y;
+	},
 
-		if (hasStyleChanged) {
-			// once we notice one change, we will reapply font-size to chunk
-			this.currentFont.applyTo(c);
-			if (this.localColor) {
-				var colorSpec = this.localColor;
-				if (!(colorSpec instanceof Color)) colorSpec = Color[colorSpec]; // allow color names
-				if (colorSpec instanceof Color) c.rawNode.setAttributeNS(null, "fill", String(colorSpec));
+	// get the bounds of the character at stringIndex
+	getBounds: function(stringIndex) {
+		for (var i = 0; i < this.chunks.length; i++) {
+			var c = this.chunks[i];
+			if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
+			return c.getBounds(this, stringIndex);
+			}
+			return null;
+	},
+	
+	// find the pointer into 'textString' for a given X coordinate in character metric space
+	indexForX: function(x) {
+		for (var i = 0; i < this.chunks.length; i++) {
+			var c = this.chunks[i];
+		if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(this, x);
+		}
+		return 0; // should not get here unless rightX is out of bounds
+	},
+	
+	// return a boolean if this line contains this pointer into 'textString'
+	containsThisIndex: function(index) {
+		return this.startIndex <= index && index <= this.getStopIndex();
+	},
+
+	testForIndex: function(index) {
+		// Return -1, 0 or +1 depending on whether this index is in 
+		//		  a previous line, this line, or a later line
+		if (index < this.startIndex) return -1;
+		if (index > this.overallStopIndex) return +1;
+		return 0;  
+	},
+
+	testForY: function(y) {
+		// Return -1, 0 or +1 depending on whether this y value is in 
+		//		  a previous line, this line, or a later line
+		if (y < this.getTopY()) return -1;
+		if (y >= (this.getTopY() + this.lineHeight())) return +1;
+		return 0;  
+	},
+
+	adjustAfterComposition: function(textString, compositionWidth) {
+
+		// Align the text after composition
+		var deltaX = 0;
+		var paddingX = 0;
+		var spaceRemaining = 0;
+		var lastIndex = this.chunks.length-1;  // Index of last character chunk
+		if (this.chunks[lastIndex].isNewLine) lastIndex = Math.max(lastIndex-1, 0);
+
+		if (this.alignment != 'left') {
+			spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[lastIndex].bounds.maxX();
+			if (this.alignment == 'right') deltaX = spaceRemaining;
+			if (this.alignment == 'center') deltaX = spaceRemaining / 2;
+			if (this.alignment == 'justify' && (this.overallStopIndex !=  this.textString.length-1)
+			&& !(this.chunks.last().isNewLine)) {
+				//	Distribute remaining space over the various space chunks
+				var nSpaces = this.nSpaceChunks;
+				paddingX = spaceRemaining / Math.max(1, nSpaces); 
 			}
 		}
-		var didLineBreak = c.compose(this, lastBounds.maxX(), this.topLeft.y, this.topLeft.x  + compositionWidth);
-		if (didLineBreak) {  // This chunk ran beyond compositionWidth
-			if (i == 0) {  // If first chunk, then have to trim it
-				runningStartIndex = c.getStopIndex() + 1;
-			} else {
-				// Otherwise, drop it entirely, to be rendered on next line
-				runningStartIndex = c.startIndex;
-				this.chunks.pop();
-			}
-			this.nSpaceChunks-- ;  // This makes last interior space no longer interior
-			break;
+		var baselineY = this.baselineY();
+		for (var i = 0; i <= lastIndex; i++) {
+			this.chunks[i].adjustAfterComposition(textString, deltaX, paddingX, baselineY);
+			if (this.chunks[i].isSpaces()) deltaX += paddingX;
 		}
-		runningStartIndex = c.getNextStartIndex();
+	},
+	
+	render: function(textContent) {
+		// render each word contained in the line
+		for (var i = 0; i < this.chunks.length; i++) {
+			if (this.chunks[i].rawNode && this.chunks[i].shouldRender) {
+				textContent.rawNode.appendChild(this.chunks[i].rawNode);
+			}
+		}
+	},
+	
+	removeRawNodes: function(textContent) {
+		// remove all rawNodes held by the line
+		for (var i = 0; i < this.chunks.length; i++)
+			this.chunks[i].removeRawNode();
+	},
+	
+	setTabWidth: function(w, asSpaces) {
+		this.tabWidth = asSpaces ? w * this.spaceWidth : w;
+	},
+
+	toString: function() {
+		// string representation
+		var lString = "textString: (" + this.textString + ")" +
+			" startIndex: " + this.startIndex +
+			" overallStopIndex: " + this.overallStopIndex +
+			" topLeft: " + Object.inspect(this.topLeft) +
+			" spaceWidth: " + this.spaceWidth;
+		return lString;
 	}
-	lastBounds = c.bounds;
-	}
-	this.overallStopIndex = runningStartIndex - 1;
-    },
-    
-    adoptStyle: function(emph, charIx) {
-	var fontFamily = this.currentFont.getFamily();
-	var fontSize = this.currentFont.getSize();
-	var fontStyle = 'normal';
-	this.localColor = null;
-	this.alignment = 'left';
-	Properties.forEachOwn(emph, function(p, v) {
-	    if (p == "family") fontFamily = v;
-	    if (p == "size")  fontSize = v;
-	    if (p == "style") fontStyle = v;
-	    if (p == "color") this.localColor = v;
-	    if (p == "align") this.alignment = v;
-	}.bind(this));
-	// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);
-	this.currentFont = thisModule.Font.forFamily(fontFamily, fontSize, fontStyle);
-        this.spaceWidth = this.currentFont.getCharWidth(' ');
-        this.tabWidth = this.spaceWidth * 4;
-    },
-    
-    getStopIndex: function() {
-	// accessor function (maybe delete - kam)
-        return this.overallStopIndex;
-    },
-    
-    // after this line, where do we start from?
-    getNextStartIndex: function() {
-        return this.overallStopIndex + 1;
-    },
-    
-    // accessor function
-    getTopY: function() {
-        return this.topLeft.y;
-    },
-
-    // get the bounds of the character at stringIndex
-    getBounds: function(stringIndex) {
-	for (var i = 0; i < this.chunks.length; i++) {
-		var c = this.chunks[i];
-		if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
-		return c.getBounds(this, stringIndex);
-        }
-        return null;
-    },
-    
-    // find the pointer into 'textString' for a given X coordinate in character metric space
-    indexForX: function(x) {
-        for (var i = 0; i < this.chunks.length; i++) {
-            var c = this.chunks[i];
-	    if (x >= c.bounds.x && x <= c.bounds.maxX()) return c.indexForX(this, x);
-        }
-        return 0; // should not get here unless rightX is out of bounds
-    },
-    
-    // return a boolean if this line contains this pointer into 'textString'
-    containsThisIndex: function(index) {
-        return this.startIndex <= index && index <= this.getStopIndex();
-    },
-testForIndex: function(index) {
-	// Return -1, 0 or +1 depending on whether this index is in 
-	//        a previous line, this line, or a later line
-	if (index < this.startIndex) return -1;
-	if (index > this.overallStopIndex) return +1;
-	return 0;  
-    },
-testForY: function(y) {
-	// Return -1, 0 or +1 depending on whether this y value is in 
-	//        a previous line, this line, or a later line
-	if (y < this.getTopY()) return -1;
-	if (y >= (this.getTopY() + this.lineHeight())) return +1;
-	return 0;  
-    },
-
-
-
-    adjustAfterComposition: function(textString, compositionWidth) {
-
-	// Align the text after composition
-	var deltaX = 0;
-	var paddingX = 0;
-	var spaceRemaining = 0;
-	var lastIndex = this.chunks.length-1;  // Index of last character chunk
-	if (this.chunks[lastIndex].isNewLine) lastIndex = Math.max(lastIndex-1, 0);
-
-	if (this.alignment != 'left') {
-	    spaceRemaining =  (this.topLeft.x + compositionWidth) - this.chunks[lastIndex].bounds.maxX();
-	    if (this.alignment == 'right') deltaX = spaceRemaining;
-	    if (this.alignment == 'center') deltaX = spaceRemaining / 2;
-	    if (this.alignment == 'justify' && (this.overallStopIndex !=  this.textString.length-1)
-		&& !(this.chunks.last().isNewLine)) {
-		//  Distribute remaining space over the various space chunks
-		var nSpaces = this.nSpaceChunks;
-		paddingX = spaceRemaining / Math.max(1, nSpaces); 
-	    }
-	}
-	var baselineY = this.baselineY();
-        for (var i = 0; i <= lastIndex; i++) {
-	    this.chunks[i].adjustAfterComposition(textString, deltaX, paddingX, baselineY);
-            if (this.chunks[i].isSpaces()) deltaX += paddingX;
-        }
-    },
-    
-    render: function(textContent) {
-	// render each word contained in the line
-        for (var i = 0; i < this.chunks.length; i++) {
-            if (this.chunks[i].rawNode && this.chunks[i].shouldRender) {
-                textContent.rawNode.appendChild(this.chunks[i].rawNode);
-            }
-        }
-    },
-    
-    removeRawNodes: function(textContent) {
-	// remove all rawNodes held by the line
-	for (var i = 0; i < this.chunks.length; i++)
-		this.chunks[i].removeRawNode();
-    },
-    
-    setTabWidth: function(w, asSpaces) {
-        this.tabWidth = asSpaces ? w * this.spaceWidth : w;
-    },
-
-    toString: function() {
-	// string representation
-        var lString = "textString: (" + this.textString + ")" +
-            " startIndex: " + this.startIndex +
-            " overallStopIndex: " + this.overallStopIndex +
-            " topLeft: " + Object.inspect(this.topLeft) +
-            " spaceWidth: " + this.spaceWidth;
-        return lString;
-    }
-    
+	
 });
 
 // in the future, support multiple locales
@@ -2579,6 +2580,14 @@ TextMorph.addMethods({
 		// DI: Might want to put the maxSafeSize test in clients
 		dbgOn(!replacement.truncate);
 		this.textString = replacement.truncate(this.maxSafeSize);
+		
+		if (this.textStyle && (this.textString.size() !== this.textStyle.length())) {
+			// throw new Error('setting textString length does not match textStyle length')
+			// If textStyle and textString does not match, remove Style
+			this.textStyle = null;
+		}
+		
+		
 		this.composeAfterEdits(replacementHints);
 	},
 	

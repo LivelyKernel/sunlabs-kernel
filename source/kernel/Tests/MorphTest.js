@@ -269,7 +269,26 @@ TestCase.subclass('TextMorphTest', {
 		this.assertEqual(m.getSelectionString(), '');
 		m.extendSelection(4);*/
 	},
- 
+
+	testSetTextUpdatesStyle: function() {
+		var m = this.m;
+		m.setTextString("1234")
+		m.emphasizeAll({color: "green"})
+		this.assertEqual(m.textString.size(), m.textStyle.length() - 1, "style broken 1")	
+
+		m.setTextString("1234 Bla Bla")
+		this.assert(!m.textStyle, "text style is not removed")	
+	},
+
+	testBrokenTextStyleIsDetected: function() {
+		var m = this.m;
+		m.setTextString("Hello")
+		m.emphasizeAll({color: "green"})
+		this.assertEqual(m.textString.size(), m.textStyle.length() - 1, "text and style have differnt length")	
+		m.setTextString("Hello World")
+		m.fitText();
+	},
+
     tearDown: function() {
 		if (this.dontRemove) {
 			this.m.requestKeyboardFocus(WorldMorph.current().firstHand());
