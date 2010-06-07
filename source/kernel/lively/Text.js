@@ -2739,9 +2739,10 @@ TextMorph.addMethods({
 	
 	resetScrollPane: function() {
 		var sp = this.enclosingScrollPane();
-		if (sp) {
-			sp.scrollToTop();
-		}
+		if (!sp) return
+		// is the scrollbar to low to see the text contents?
+		if (sp.slideRoom() <= 0) sp.scrollToTop()
+		sp.setScrollPosition(sp.getScrollPosition());
 	},
 	
 	scrollSelectionIntoView: function() { 
