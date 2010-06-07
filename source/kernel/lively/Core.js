@@ -5018,12 +5018,12 @@ PasteUpMorph.subclass("WorldMorph", {
 
 Object.subclass('DocLinkConverter', {
 
-initialize: function(codeBase, toDir) {
+	initialize: function(codeBase, toDir) {
 		this.codeBase = new URL(codeBase);
 		this.toDir = new URL(toDir).withRelativePartsResolved();
 	},
 
-convert: function(doc) {
+	convert: function(doc) {
 		var scripts = $A(doc.getElementsByTagName('script'));
 		if (scripts.length <= 0) {
 			console.warn('could not convert scripts in doc in DocLinkConverter because no scripts found!');
@@ -5034,7 +5034,7 @@ convert: function(doc) {
 		return doc;
 	},
 
-convertAndRemoveCodeBaseDefs: function(scripts) {
+	convertAndRemoveCodeBaseDefs: function(scripts) {
 		var codeBaseDefs = scripts.select(function(el) {
 			return el.firstChild && el.firstChild.data && el.firstChild.data.startsWith('Config.codeBase=');
 		});
@@ -5065,7 +5065,7 @@ convertAndRemoveCodeBaseDefs: function(scripts) {
 			codeBaseDefs[i].parentNode.removeChild(codeBaseDefs[i]);
 	},
 
-convertLinks: function(scripts) {
+	convertLinks: function(scripts) {
 		var links = scripts.select(function(el) { return this.getURLFrom(el) != null }, this);
 		links.forEach(function(el) {
 			var url = this.getURLFrom(el);
@@ -5074,13 +5074,13 @@ convertLinks: function(scripts) {
 		}, this);
 	},
 
-convertPath: function(path) {
+	convertPath: function(path) {
 		var fn = this.extractFilename(path);
 		var relative = this.relativeLivelyPathFrom(this.codeBase, this.toDir);
 		return relative + fn;
 	},
 
-relativeCodeBaseFrom: function(codeBase, toDir) {
+	relativeCodeBaseFrom: function(codeBase, toDir) {
 		codeBase = new URL(codeBase);
 		toDir = new URL(toDir);
 		var relative = toDir.relativePathFrom(codeBase);
@@ -5091,30 +5091,30 @@ relativeCodeBaseFrom: function(codeBase, toDir) {
 		return result;
 	},
 
-relativeLivelyPathFrom: function(codeBase, toDir) {
+	relativeLivelyPathFrom: function(codeBase, toDir) {
 		return this.relativeCodeBaseFrom(codeBase, toDir) + 'lively/';
 	},
 
-extractFilename: function(url) {
+	extractFilename: function(url) {
 		return url.substring(url.lastIndexOf('/') + 1, url.length);
 	},
 
-createCodeBaseDef: function(relPath) {
+	createCodeBaseDef: function(relPath) {
 		return Strings.format('Config.codeBase=Config.getDocumentDirectory()+\'%s\'', relPath);
 	},
 
-findScriptEndingWith: function(str, scripts) {
+	findScriptEndingWith: function(str, scripts) {
 		return scripts.detect(function(node) {
 				var url = this.getURLFrom(node);
 				return url && url.endsWith(str)
 			}, this);
 	},
 
-getURLFrom: function(el) {
+	getURLFrom: function(el) {
 		return el.getAttribute('xlink:href')
 	},
 
-setURLTo: function(el, url) {
+	setURLTo: function(el, url) {
 		el.setAttribute('xlink:href', url)
 	},
 

@@ -157,6 +157,7 @@ Widget.subclass('WikiNavigator', {
 		var myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null;
 		var status;
 		if (optUrl) { // save page elsewhere
+			new DocLinkConverter(this.repoUrl(), optUrl.getDirectory()).convert(worldDoc);
 			var svnR = new SVNResource(
 				this.repoUrl(),
 				Record.newPlainInstance({URL: optUrl.toString(), HeadRevision: null, Metadata: null}));
