@@ -932,15 +932,16 @@ Object.extend(Exporter, {
 		doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(newDict, true));
 	},
 
-	saveDocumentToFile: function(doc, filename) {
+	saveDocumentToFile: function(doc, urlOrFilename) {
 		console.group("save document")
-		if (!filename) return null;
-		if (!filename.endsWith('.xhtml')) {
-			filename += ".xhtml";
-			console.log("changed url to " + filename + " for base " + URL.source);
+		if (!urlOrFilename) return null;
+		var string = urlOrFilename.toString();
+		if (!string.endsWith('.xhtml')) {
+			string += ".xhtml";
+			console.log("changed url to " + string);
 		}
-
-		var url = URL.source.withFilename(filename);
+		
+		var url = string.startsWith('http') ? new URL(string) : URL.source.withFilename(string);
 		
 		var r = new WebResource(url);
 		connect(r, 'status', this, 'showSaveStatus');
@@ -5014,7 +5015,110 @@ PasteUpMorph.subclass("WorldMorph", {
 
 });
 
-// Give Feedback on Saving
+
+Object.subclass('DocLinkConverter', {
+
+initialize: function(codeBase, toDir) {
+		this.codeBase = new URL(codeBase);
+		this.toDir = new URL(toDir).withRelativePartsResolved();
+	},
+
+convert: function(doc) {
+		var scripts = $A(doc.getElementsByTagName('script'));
+		if (scripts.length <= 0) {
+			console.warn('could not convert scripts in doc in DocLinkConverter because no scripts found!');
+			return doc;
+		}
+		this.convertLinks(scripts);
+		this.convertAndRemoveCodeBaseDefs(scripts);
+		return doc;
+	},
+
+convertAndRemoveCodeBaseDefs: function(scripts) {
+		var codeBaseDefs = scripts.select(function(el) {
+			return el.firstChild && el.firstChild.data && el.firstChild.data.startsWith('Config.codeBase=');
+		});
+
+		var codeBaseDef = this.createCodeBaseDef(this.relativeCodeBaseFrom(this.codeBase, this.toDir));
+		
+		if (codeBaseDefs.length == 0) {
+			var script = NodeFactory.create('script');
+			script.setAttribute('name', 'codeBase');
+			script.appendChild(NodeFactory.createCDATA(codeBaseDef));
+
+			var localConfigScript = this.findScriptEndingWith('localconfig.js', scripts);
+			if (localConfigScript) {
+				localConfigScript.parentNode.insertBefore(script, localConfigScript);
+				localConfigScript.parentNode.insertBefore(NodeFactory.createNL(), localConfigScript);
+			}
+			return;
+		}
+
+		if (codeBaseDefs.length >= 1) {
+
+			var cdata = codeBaseDefs[0].firstChild;
+			cdata.data = codeBaseDef;
+		}
+
+		// remove remaining
+		for (var i = 1; i < codeBaseDefs.length; i++)
+			codeBaseDefs[i].parentNode.removeChild(codeBaseDefs[i]);
+	},
+
+convertLinks: function(scripts) {
+		var links = scripts.select(function(el) { return this.getURLFrom(el) != null }, this);
+		links.forEach(function(el) {
+			var url = this.getURLFrom(el);
+			var newUrl = this.convertPath(url);
+			this.setURLTo(el, newUrl);
+		}, this);
+	},
+
+convertPath: function(path) {
+		var fn = this.extractFilename(path);
+		var relative = this.relativeLivelyPathFrom(this.codeBase, this.toDir);
+		return relative + fn;
+	},
+
+relativeCodeBaseFrom: function(codeBase, toDir) {
+		codeBase = new URL(codeBase);
+		toDir = new URL(toDir);
+		var relative = toDir.relativePathFrom(codeBase);
+		if (relative.startsWith('/')) throw new Error('relative looks different than expected')
+		var levels = relative.split('/').length -1
+		var result = range(1, levels).collect(function() { return '..' }).join('/');
+		if (result.length > 0) result += '/';
+		return result;
+	},
+
+relativeLivelyPathFrom: function(codeBase, toDir) {
+		return this.relativeCodeBaseFrom(codeBase, toDir) + 'lively/';
+	},
+
+extractFilename: function(url) {
+		return url.substring(url.lastIndexOf('/') + 1, url.length);
+	},
+
+createCodeBaseDef: function(relPath) {
+		return Strings.format('Config.codeBase=Config.getDocumentDirectory()+\'%s\'', relPath);
+	},
+
+findScriptEndingWith: function(str, scripts) {
+		return scripts.detect(function(node) {
+				var url = this.getURLFrom(node);
+				return url && url.endsWith(str)
+			}, this);
+	},
+
+getURLFrom: function(el) {
+		return el.getAttribute('xlink:href')
+	},
+
+setURLTo: function(el, url) {
+		el.setAttribute('xlink:href', url)
+	},
+
+});// Give Feedback on Saving
 WorldMorph.addMethods({
 
 	promptAndSaveWorld: function() {
@@ -5026,14 +5130,18 @@ WorldMorph.addMethods({
 		}.bind(this)); 
 	},
 
-	saveWorld: function(optURL) {
-		optURL = optURL || URL.source.filename()
+	saveWorld: function(optURLOrPath) {
+		var url = optURLOrPath || URL.source;
+		// make relative to absolute URL
+		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
 		var start = new Date().getTime();
 		this.removeHand(this.firstHand());
-		var url = Exporter.saveDocumentToFile(Exporter.shrinkWrapMorph(this.world()), optURL);
+		var doc = Exporter.shrinkWrapMorph(this.world());
+		new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);
+		var url = Exporter.saveDocumentToFile(doc, url);
 		this.addHand(new HandMorph(true));
 		var time = new Date().getTime() - start;
-		this.setStatusMessage("world saved to " + optURL + " in " + time + "ms", Color.green, 3)
+		this.setStatusMessage("world saved to " + url + " in " + time + "ms", Color.green, 3)
 		return url;
 	},
 	
@@ -6028,7 +6136,22 @@ WorldMorph.addMethods({
 	takesKeyboardFocus: Functions.True,
 	
 	onKeyDown: function(evt) {
-		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )		
+		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
+		if (evt.isCommandKey() && !evt.isShiftDown()) {
+			var key = evt.getKeyChar();
+			if (key.toLowerCase() == 'b') {
+				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
+				return true;
+			}
+			if (key.toLowerCase() == 'l') { // (L)ogger
+				new ConsoleWidget().open();
+				return true;
+			}
+			if (key.toLowerCase() == 'k') { // Workspace
+				this.addTextWindow("Workspace");
+				return true;
+			}
+		}
 		return ClipboardHack.tryClipboardAction(evt, this);
 	},
 	
