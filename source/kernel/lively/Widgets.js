@@ -1761,12 +1761,12 @@ ListMorph.subclass('DragnDropListMorph', {
     dragEnabled: true,
 
     onMouseDown: function($super, evt) {
-        $super(evt);
+		$super(evt);
+		if (!this.dragEnabled) return;
 		var target = this.morphToReceiveEvent(evt);
 		var index = this.submorphs.indexOf(target);
-        if (this.dragEnabled)
-    		this.dragItem = this.itemList[index];    
-    },
+		this.dragItem = this.itemList[index];    
+	},
 
     onMouseUp: function(evt) {
     	if (this.dragEnabled)
