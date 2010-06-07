@@ -291,8 +291,11 @@ layerClass(PageNavigationLayer, WorldMorph, {
 	},
 	
 	ensurePageNumberMorph: function() {
-		if (this.pageNumberMorph()) return;
 		var no = PageNavigation.current().pageNumber().toString();
+		if (this.pageNumberMorph()) {
+			this.pageNumberMorph().setTextString(no);
+			return;
+		};
 		var morph = new TextMorph(pt(0,0).extent(pt(100,100)), no);
 		morph.name = this.pageNumberMorphName();
 		morph.applyStyle({fill: null, fontSize: 18, borderWidth: 0});
