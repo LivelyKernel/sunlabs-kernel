@@ -289,6 +289,8 @@ Change.subclass('ChangeSet', {
 		this.addChange(DoitChange.create(source, name));
 	},
 
+	// used in SimpleBrowser, lively.Tools. No changes are recorded yet...
+	logChange: function(spec) {},
 });
 
 
