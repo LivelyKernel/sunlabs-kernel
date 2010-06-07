@@ -197,10 +197,22 @@ ometa LKFileParser <: Parser {
 							spec.classElems,
 							{trait: spec.trait, superclassName: sName})
 					},
-    basicKlassExt = "Object.extend" '(' klass:n restKlassDef:spec ')'
--> { spec.classElems.forEach(function(ea) { ea.className = n; ea._isStatic = true }); {name: n, trait: spec.trait, subElements: spec.classElems } }
-| (nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
--> { clElems.forEach(function(ea) { ea.className = n; ea._isStatic = false }); {name: n, subElements: clElems } },
+    basicKlassExt =
+	"Object.extend" '(' klass:n restKlassDef:spec ')'
+	-> {
+		spec.classElems.forEach(function(ea) { ea.className = n; ea._isStatic = true });
+		{name: n, trait: spec.trait, subElements: spec.classElems } }
+|	(nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems ')'
+	-> {
+		clElems.forEach(function(ea) { ea.className = n; ea._isStatic = false });
+		{name: n, subElements: clElems } }
+|	"layerClass" '(' namespaceId:layerName spaces ',' spaces klass:n restKlassDef:spec ')'
+	-> {
+		spec.classElems.forEach(function(ea) {
+			ea.layerName = layerName;
+			ea.className = n;
+			ea._isStatic = false });
+		{name: n, layerName: layerName, subElements: spec.classElems } },
     klassExtensionDef   = pos:p basicKlassExt:spec defEnd
                         -> { this._fragment(spec.name + ' (extension)', 'klassExtensionDef', p, this.pos()-1, spec.subElements, {trait: spec.trait}) },
     
