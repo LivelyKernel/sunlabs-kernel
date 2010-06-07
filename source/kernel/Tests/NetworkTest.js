@@ -167,8 +167,30 @@ TestCase.subclass('Tests.NetworkTest.WebResourceTest', {
 	},
 
 	testGetVersions: function() {
-		this.assert(false, 'not yet implemented!')
+		var sut = new WebResource(this.plainTextFileURL);
+		sut.getVersions();
+		this.assert(sut.headRevision);
+		this.assertEqual(1, sut.versions.length);
 	},
+testGetWithVersion: function() {
+		this.writeFile(this.plainTextFileURL, 'new version of file');
+		var sut = new WebResource(this.plainTextFileURL);
+		var versions = sut.getVersions().versions;
+		this.assertEqual(2, versions.length);
+		var rev = versions[0].rev;
+		this.assert(this.plainTextString, sut.get(rev).content);
+	},
+testGetHeadRevision: function() {
+console.log('test started')
+debugger
+		var sut = new WebResource(this.plainTextFileURL);
+		var rev1 = sut.getHeadRevision().headRevision;
+		sut.put('new version of file');
+		var rev2 = sut.getHeadRevision().headRevision;
+		this.assert(rev1< rev2);
+	},
+
+
 
 });
 

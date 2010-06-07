@@ -766,7 +766,7 @@ Resource.subclass('SVNResource', {
 	},
 
 	fetchHeadRevision: function(optSync) {
-		this.setHeadRevision(null); // maybe there is a new one
+		//this.setHeadRevision(null); // maybe there is a new one
 		var req = new NetRequest({
 			model: this,
 			setResponseXML: "pvtSetHeadRevFromDoc",
@@ -861,11 +861,14 @@ Resource.subclass('SVNResource', {
 
 	pvtScanLogReportForVersionInfos: function(logReport) {
 		// FIXME Refactor: method object?
-		var depth = this.reportDepth;
+		var errorQ = new Query('D:error//m:human-readable');
+		
+		var depth = this.reportDepth;		
 		var logItemQ = new Query('//S:log-item');
 		var versionInfos = [];
 		//var repoUrl = new URL(this.repoUrl);
 		var repoUrl = this.repoUrl;
+
 		logItemQ.findAll(logReport).forEach(function(logElement) {
 			var spec = {};
 			$A(logElement.childNodes).forEach(function(logProp) {
@@ -1215,7 +1218,7 @@ Object.subclass('WebResource', {
 // make WebResource async
 WebResource.addMethods({
 
-	connections: ['status', 'content', 'contentDocument', 'isExisting', 'subCollections', 'subDocuments', 'progress', 'readystate'],
+	connections: ['status', 'content', 'contentDocument', 'isExisting', 'subCollections', 'subDocuments', 'progress', 'readystate', 'versions', 'headRevision'],
 
 	reset: function() {
 		this.status = null;
@@ -1228,20 +1231,28 @@ WebResource.addMethods({
 	createResource: function() {
 		var self = this;
 		var resource = new SVNResource(
-			this.getURL().toString(),
+			URL.codeBase.toString(), // FIXME repo!
 			{
 				model: {
-					getURL: function() { return self.getURL().toString() },
+					url: self.getURL().toString(),
+					getURL: function() { return this.url },
+					setURL: function(url) { this.url = url },
 					setRequestStatus: function(reqStatus) { self.status = reqStatus; self.isExisting = reqStatus.isSuccess() },
 					setContentText: function(string) { self.content = string },
 					setContentDocument: function(doc) { self.contentDocument = doc },
 					setProgress: function(progress) { self.progress = progress },
+					setHeadRevision: function(rev) { self.headRevision = rev },
+					getHeadRevision: function() { return self.headRevision },
+					setMetadata: function(metadata) { self.versions = metadata },
 				},
 				getURL: 'getURL',
 				setRequestStatus: 'setRequestStatus',
 				setContentText: 'setContentText',
 				setContentDocument: 'setContentDocument',
 				setProgress: 'setProgress',
+				setHeadRevision: 'setHeadRevision',
+				getHeadRevision: 'getHeadRevision',
+				setMetadata: 'setMetadata',
 			});
 		resource.removeNetRequestReporterTrait();
 		return resource
@@ -1321,26 +1332,55 @@ WebResource.addMethods({
 	getSubElements: function(depth) {
 		if (!depth) depth = 1;
 		var req = this.createNetRequest();
-		connect(this, 'contentDocument', this, 'pvtProcessPropfind', {removeAfterUpdate: true});
+		connect(this, 'contentDocument', this, 'pvtProcessPropfindForSubElements', {removeAfterUpdate: true});
 		req.propfind(this.getURL(), depth);
 		return this;
 	},
+getVersions: function(startRev, endRev) {
+		var res = this.createResource();
+		//connect(this, 'contentDocument', this, 'pvtProcessPropfindForGetVersions', {removeAfterUpdate: true});
+		if (!startRev) {
+			if (this.headRevision) {
+				startRev = this.headRevision;
+			} else {
+				connect(this, 'headRevision', this, 'getVersions', {removeAfterUpdate: true});
+				// FIXME if only endRev is passed in, it's forgotten here...
+				this.getHeadRevision();
+				return this;
+			}
+		}
+		res.fetchMetadata(this.isSync(), null, startRev, endRev, null);
+		return this;
+	},
+getHeadRevision: function() {
+	var res = this.createResource();
+	res.fetchHeadRevision(this.isSync());
+	return this;
+},
+
+
 	
-	pvtProcessPropfind: function(doc) {
+	pvtProcessPropfindForSubElements: function(doc) {
 		if (!this.status.isSuccess())
 			throw new Error('Cannot access subElements of ' + this.getURL());
 		// FIXME: resolve prefix "D" to something meaningful?
 		var nodes = new Query("/D:multistatus/D:response").findAll(doc.documentElement)
+		var urlQ = new Query('D:href');
 		nodes.shift(); // remove first since it points to this WebResource
 		var result = [];
 		for (var i = 0; i < nodes.length; i++) {
-			var url = new Query('D:href').findFirst(nodes[i]).textContent;
-			if (!/!svn/.test(url)) // ignore svn dirs
-				result.push(new WebResource(this.getURL().withPath(url)))
+			var url = urlQ.findFirst(nodes[i]).textContent;
+			if (/!svn/.test(url)) continue;// ignore svn dirs
+			var child = new WebResource(this.getURL().withPath(url));
+			var revNode = nodes[i].getElementsByTagName('version-name')[0];
+			if (revNode) child.headRevision = Number(revNode.textContent);
+			result.push(child);
 		}
 		this.subCollections = result.select(function(ea) { return ea.isCollection() });
 		this.subDocuments = result.select(function(ea) { return !ea.isCollection() });
 	},
+
+
 
 });
 
