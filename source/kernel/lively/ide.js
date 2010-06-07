@@ -119,7 +119,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
                 this.onMouseOver = function(evt) { browser.showButtons(evt, morph, paneName) };
                 this.onMouseDown = this.onMouseDown.wrap(function(proceed, evt) {
 					browser.showButtons(evt, morph, paneName);
-                    proceed(evt);
+					browser.ensureSourceNotAccidentlyDeleted(proceed.curry(evt));
                 });
                 this.onMouseOut = function(evt) { browser.hideButtons(evt, morph, paneName) };
             })
@@ -184,16 +184,22 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		var y = morph.getExtent().y * 0.44 - height;
 
 		var btns = cmds.forEach(function(cmd, i) {
+			// Refactor me!!!
 			var btn = new ButtonMorph(new Rectangle(i*width, y, width, height));
+			btn.command = cmd; // used in connection
 			btn.setLabel(cmd.asString());
+			lively.bindings.connect(btn, 'fire', cmd, 'trigger');
+			lively.bindings.connect(btn, 'fire', btn, 'setLabel', {
+				converter: function() { return this.getSourceObj().command.asString() }
+			});
+			// *wuergs* mixed old model and connect FIXME!!!
 			var btnModel = {
-				action: function(val) { if (!val) cmd.trigger(); btn.setLabel(cmd.asString()); },
-				/*UGLY hack, btn has no real model*/
 				setIsActive: function(val) { btn.onIsActiveUpdate(val) },
 				getIsActive: function(val) { return cmd.isActive() }
 			};
-			btn.connectModel({model: btnModel, setValue: 'action', setIsActive: 'setIsActive', getIsActive: 'getIsActive'});
-			cmd.button = btn;
+			btn.connectModel({model: btnModel, setIsActive: 'setIsActive', getIsActive: 'getIsActive'});
+			cmd.button = btn; // used in onPaneXUpdate, to be removed!!!
+
 			morph.addMorph(btn);
 			btnModel.setIsActive(cmd.isActive());
 		})
@@ -262,6 +268,10 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.setPane1Content(this.childsFilteredAndAsListItems(this.rootNode(), this.getRootFilters()));
 		this.mySourceControl().registerBrowser(this);
     },
+stop: function() {
+		this.mySourceControl().unregisterBrowser(this);
+    },
+
 
     rootNode: function() {
         throw dbgOn(new Error('To be implemented from subclass'));
@@ -344,7 +354,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	},
 	
     onPane1SelectionUpdate: function(node) {
-	
+
 		this.panel['Pane2'] && this.panel['Pane2'].innerMorph().clearFilter(); // FIXME, lis filter, not a browser filter!
 		
         this.setPane2Selection(null, true);
@@ -427,10 +437,13 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		// optimization: if no node looks like the changed node in my browser do nothing
 		if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
 			return;
-	      // FIXME remove duplication
+
+		// FIXME remove duplication
         var oldN1 = this.getPane1Selection();
         var oldN2 = this.getPane2Selection();
         var oldN3 = this.getPane3Selection();
+
+		var sourcePos = this.panel.sourcePane.getScrollPosition();
 
 		var src = keepUnsavedChanges &&
 						this.hasUnsavedChanges() &&
@@ -456,10 +469,15 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		revertStateOfPane('Pane2', oldN2);
 		revertStateOfPane('Pane3', oldN3);
 
-		if (!src) return;
+		if (!src) {
+			this.panel.sourcePane.setScrollPosition(sourcePos);
+			return;
+		}
+
 		//this.setSourceString(src);
 		var text = this.panel.sourcePane.innerMorph();
 		text.setTextString(src.toString())
+		this.panel.sourcePane.setScrollPosition(sourcePos);
 		// text.changed()
 		text.showChangeClue(); // FIXME
 	},
@@ -515,6 +533,21 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		statusMorph.centerAt(s.innerBounds().center());
 		(function() { statusMorph.remove() }).delay(delay || 2);
 	},
+confirm: function(question, callback) {
+	WorldMorph.current().confirm(question, callback.bind(this));
+},
+
+ensureSourceNotAccidentlyDeleted: function(callback) {
+	// checks if the source code has unsaved changes if it hasn't or if the
+	// user wants to discard them then run the callback
+	// otherwise do nothing
+	if (!this.hasUnsavedChanges()) {
+		callback.apply(this);
+		return;
+	}
+	this.confirm('There are unsaved changes. Discard them?',
+		function() { callback.apply(this) });
+},
 
 });
 PanelMorph.subclass('lively.ide.BrowserPanel', {
@@ -560,6 +593,17 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 		for (var paneName in selectionSpec)
 			widget.inPaneSelectNodeNamed(paneName, selectionSpec[paneName]);
 	},
+shutdown: function($super) {
+	$super();
+	var browser = this.ownerWidget;
+	if (!browser.stop) {
+		console.log('cannot unregister browser: ' + browser);
+		return;
+	}
+	console.log('unregister browser: ' + browser);
+	browser.stop();
+},
+
 });
  
 Object.subclass('lively.ide.BrowserNode', {
@@ -802,21 +846,23 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	},
 	
 	setTargetURL: function(url) {
-		var prevURL = this.targetURL;
-		if (!url.toString().endsWith('/'))
-			url = new URL(url.toString() + '/');
-		try {
-			this.targetURL = url;
-			this.rootNode().locationChanged();
-			this.allChanged();
-		} catch(e) {
-			console.log('couldn\'t set new URL ' + url + ' because ' + e);
-			this.targetURL = prevURL;
-			this.locationInput().setTextString(prevURL.toString());
-			return
-		}
-		this.panel.targetURL = url; // FIXME for persistence
-		console.log('new url: ' + url);
+		this.ensureSourceNotAccidentlyDeleted(function() {
+			var prevURL = this.targetURL;
+			if (!url.toString().endsWith('/'))
+				url = new URL(url.toString() + '/');
+			try {
+				this.targetURL = url;
+				this.rootNode().locationChanged();
+				this.allChanged();
+			} catch(e) {
+				console.log('couldn\'t set new URL ' + url + ' because ' + e);
+				this.targetURL = prevURL;
+				this.locationInput().setTextString(prevURL.toString());
+				return
+			}
+			this.panel.targetURL = url; // FIXME for persistence
+			console.log('new url: ' + url);
+		});
 	},
 	
 	rootNode: function() {
@@ -963,7 +1009,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 			this.allFiles = this.target.interestingLKFileNames(this.browser.getTargetURL());
 		} catch(e) {
 			// can happen when browser in a serialized world that is moved tries to relativize a URL
-			console.error('Cannot get files for code browser ' + e)
+			console.warn('Cannot get files for code browser ' + e)
 			this.allFiles = [];
 		}
 	},
@@ -1062,15 +1108,20 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 		var spec = $super();
 		var node = this;
 		spec.push(['add sibling below', function() {
-			var world = WorldMorph.current();
-			world.prompt('Enter source code', function(input) {
-				node.target.addSibling(input);
-				node.browser.allChanged();
+			node.browser.ensureSourceNotAccidentlyDeleted(function() {
+				var world = WorldMorph.current();
+				world.prompt('Enter source code', function(input) {
+					node.target.addSibling(input);
+					node.browser.allChanged();
+				});
 			});
 		}]);
 		spec.push(['remove', function() {
-			node.target.remove();
-			node.browser.allChanged() }]);
+			node.browser.ensureSourceNotAccidentlyDeleted(function() {
+				node.target.remove();
+				node.browser.allChanged()
+			});
+		}]);
 		return spec;
 	},
 
@@ -1402,10 +1453,15 @@ sourceString: function($super) {
 		var methodName = this.target.name;
 		var methodString = this.target.getSourceCode();
 		var def;
-		if (this.target.isStatic())
+		if (this.target.layerName) {
+			def = Strings.format('layerClass(%s, %s, {\n\t%s})',
+				this.target.layerName, this.target.className, this.target.getSourceCode());
+			console.log('Going to eval ' + def);
+		} if (this.target.isStatic()) {
 			def = 'Object.extend(' + ownerName + ', {\n' + methodString +'\n});';
-		else
+		} else {
 			def = ownerName + ".addMethods({\n" + methodString +'\n});';
+		}
 		// console.log('Eval: ' + def);
 		try {
 			eval(def);
@@ -1681,8 +1737,11 @@ ide.BrowserCommand.subclass('lively.ide.ShowLineNumbersCommand', {
 	asString: function() { return 'LineNo' },
 
 	trigger: function() {
-		this.browser.showLines = !this.browser.showLines;
-		this.browser.allChanged();
+		browser = this.browser;
+		browser.ensureSourceNotAccidentlyDeleted(function() {
+			browser.showLines = !browser.showLines;
+			browser.allChanged();
+		});
 	}
 
 });
@@ -1696,7 +1755,10 @@ ide.BrowserCommand.subclass('lively.ide.RefreshCommand', {
 	asString: function() { return 'Refresh' },
 
 	trigger: function() {
-		this.browser.allChanged();
+		var browser = this.browser;
+		browser.ensureSourceNotAccidentlyDeleted(function() {
+			browser.allChanged();
+		});
 	}
 
 });
@@ -1751,14 +1813,18 @@ ide.BrowserCommand.subclass('lively.ide.SortCommand', {
 
 	trigger: function() {
 		var filter = this.filter;
-		var b = this.browser;
-		var isSorting = this.browserIsSorting()
-		b.filterPlaces.forEach(function(ea) {
-			isSorting ?
-				b.uninstallFilters(function(f) { return f === filter }, ea) :
-				b.installFilter(filter, ea);
+		var browser = this.browser;
+		var isSorting = this.browserIsSorting();
+
+		browser.ensureSourceNotAccidentlyDeleted(function() {
+			browser.filterPlaces.forEach(function(ea) {
+				isSorting ?
+					browser.uninstallFilters(function(f) { return f === filter }, ea) :
+					browser.installFilter(filter, ea);
+			});
+			browser.allChanged();
 		});
-		b.allChanged();
+
 	},
 
 	browserIsSorting: function() {
@@ -1796,7 +1862,9 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 				browser.inPaneSelectNodeNamed('Pane1', filename);
 			}
 		};
-		world.prompt('Enter filename (something like foo or foo.js)', createFileIfAbsent);
+		browser.ensureSourceNotAccidentlyDeleted(function() {
+			world.prompt('Enter filename (something like foo or foo.js)', createFileIfAbsent);
+		});
 	},
 
 	
@@ -1840,8 +1908,11 @@ lively.ide.BrowserCommand.subclass('lively.ide.ViewSourceCommand', {
 		{caption: 'smalltalk', value: 'smalltalk'}];
 	var items = spec.collect(function(ea) {
 	  return [ea.caption,function(evt) {
+			browser.ensureSourceNotAccidentlyDeleted(function() {
 				browser.viewAs = ea.value;
-				browser.selectedNode().signalTextChange() }]
+				browser.selectedNode().signalTextChange()
+			});
+		}];
 	});
 	var menu = new MenuMorph(items);
 	menu.openIn(world,world.firstHand().getPosition());
@@ -2963,6 +3034,9 @@ ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 	getFileString: function() {
         return this.fileString
     },
+});
+Widget.subclass('lively.ide.FileVersionViewer', {
+	
 });
 
 });

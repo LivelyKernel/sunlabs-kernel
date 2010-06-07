@@ -1590,6 +1590,7 @@ m.openInWorld();';
 		cs.addChange(c2);
 	},
 });
+TestCase.subclass('Tests.ToolsTests.FileVersionViewerTests', {});
 
 TestCase.subclass('Tests.ToolsTests.KeyboardTest', {
     
