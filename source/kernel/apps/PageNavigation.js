@@ -1,7 +1,7 @@
 module('apps.PageNavigation').requires('cop.Layers').toRun(function() {
 
-createLayer("PageNavigationLayer")
-enableLayer(PageNavigationLayer)
+createLayer("PageNavigationLayer");
+enableLayer(PageNavigationLayer);
 
 (function generalSettings() {
 	Config.showWikiNavigator = false
