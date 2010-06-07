@@ -5019,6 +5019,8 @@ PasteUpMorph.subclass("WorldMorph", {
 Object.subclass('DocLinkConverter', {
 
 	initialize: function(codeBase, toDir) {
+		if (!codeBase.toString().endsWith('/')) codeBase = codeBase.toString() + '/';
+		if (!toDir.toString().endsWith('/')) toDir = toDir.toString() + '/';
 		this.codeBase = new URL(codeBase);
 		this.toDir = new URL(toDir).withRelativePartsResolved();
 	},
@@ -5084,7 +5086,7 @@ Object.subclass('DocLinkConverter', {
 		codeBase = new URL(codeBase);
 		toDir = new URL(toDir);
 		var relative = toDir.relativePathFrom(codeBase);
-		if (relative.startsWith('/')) throw new Error('relative looks different than expected')
+		if (relative.startsWith('/')) throw dbgOn(new Error('relative looks different than expected'));
 		var levels = relative.split('/').length -1
 		var result = range(1, levels).collect(function() { return '..' }).join('/');
 		if (result.length > 0) result += '/';
