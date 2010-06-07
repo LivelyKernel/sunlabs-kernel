@@ -3,6 +3,20 @@ module('apps.PageNavigation').requires('cop.Layers').toRun(function() {
 createLayer("PageNavigationLayer")
 enableLayer(PageNavigationLayer)
 
+(function generalSettings() {
+	Config.showWikiNavigator = false
+	Config.resizeScreenToWorldBounds = false
+	createLayer('ResizeWorldLayer')
+	enableLayer(ResizeWorldLayer);
+})();
+
+layerClass(ResizeWorldLayer, WorldMorph, {
+	displayOnCanvas: function(proceed, canvas) {
+		proceed(canvas);
+		basicResize(this, this.canvas(), 1020, 760)
+	}
+});
+
 Object.subclass("PageNavigation", {
 
 	url: null,
@@ -62,6 +76,7 @@ Object.subclass("PageNavigation", {
 		if (url)
 			Global.window.location.assign(url);
 	},
+	
 	ensureNavigationMorph: function() {
 		"PageNavigation.current().ensureNaviationMorph()"
 
@@ -74,28 +89,27 @@ Object.subclass("PageNavigation", {
 		morph.name = 'PageNavigation';
 		this.world().addMorph(morph);
 	},
-world: function() {
+	
+	world: function() {
 		return WorldMorph.current()
 	},
 
-
-styleAll: function() {
-	// can be overridden to apply a "master layout" for slide
-},
-styleWorldMorph: function() {
+	styleAll: function() {
+		// can be overridden to apply a "master layout" for slide
+	},
+	
+	styleWorldMorph: function() {
 		// shrink the world to demo size
 		basicResize(this.world(), this.world().canvas(), 1024, 768);
 		this.world().setBorderColor(Color.black);
 		this.world().setBorderWidth(0.25)
 	},
-customPageStyle: {
+
+	customPageStyle: {
 		itemLevel1: { fontSize: 30},
 		itemLevel2: { fontSize: 20},
 	},
-
-
-
-		
+	
 });
 
 // PageNavigation.current()
@@ -103,22 +117,84 @@ Object.extend(PageNavigation, {
 	pageNavigations: {},
 
 	current: function() {
-	if (this._current) return this._current;
-	if (!Config.pageNavigationName || Config.pageNavigationName == 'nothing') {
-		console.warn('Cannot find page navigation instance!');
-	}
+		if (this._current) return this._current;
+		if (!Config.pageNavigationName || Config.pageNavigationName == 'nothing') {
+			console.warn('Cannot find page navigation instance!');
+		}
 
-	var klass = Global[Config.pageNavigationName];
-	if (klass && Class.isClass(klass)) {
-		this._current = new klass();
-		return this._current
-	}
+		var klass = Global[Config.pageNavigationName];
+		if (klass && Class.isClass(klass)) {
+			this._current = new klass();
+			return this._current
+		}
 
-	// FIXME why store pageNavigations in Config?! pollution!
-	return this.pageNavigations[Config.pageNavigationName] ||
-		Config.pageNavigations[Config.pageNavigationName]
-},
+		// FIXME why store pageNavigations in Config?! pollution!
+		return this.pageNavigations[Config.pageNavigationName] ||
+			Config.pageNavigations[Config.pageNavigationName];
+	},
+
 });
+
+
+PageNavigation.subclass('HPIPresentationTemplate', {
+
+	styleAll: function($super) {
+		$super();
+
+		CustomColor = {
+			orange: Color.rgb(223,70,0),
+			tangerine: Color.rgb(248, 149,24),
+			blue:  Color.rgb(0,90,143),
+			black: Color.rgb(40,40,40),
+			tungsten: Color.rgb(51,51,51),
+		}
+
+		var m;
+
+		m = $morph("topTitle");
+		if (m) {
+			m.ignoreEvents()
+			m.setPosition(pt(-2,-2))
+			m.setFontSize(16)
+		}
+
+		m = $morph("titleText");
+		if (m) {
+			m.setTextColor(CustomColor.blue)
+			m.setPosition(pt(50.0,30.0));
+		}
+
+		m = $morph("subtitleText")
+		if (m) {
+			m.setTextColor(CustomColor.tangerine);
+		}
+
+		m = $morph("logoImage");
+		if (m) {
+			m.setPosition(pt(950.0,15.0));
+			m.setExtent(pt(60,60));
+			m.suppressHandles = true;
+			m.suppressGrabbing = true;
+		}
+
+		m = $morph("contentText");
+		if (m) {
+			m.setTextColor(CustomColor.tungsten)
+			m.setPosition(pt(60,130))
+		}
+
+		if (DisplayThemes['hpi'])
+			WorldMorph.current().setDisplayTheme(DisplayThemes['hpi'])
+
+		this.styleWorldMorph();
+		this.ensureNavigationMorph();
+
+		return true;
+	},
+
+});
+
+
 BoxMorph.subclass("PageNavigationMorph", {
 
 	styleClass: ['PageNavigator'],
@@ -203,7 +279,8 @@ layerClass(PageNavigationLayer, WorldMorph, {
 		else
 			this.removePageNumberMorph();
 	},
-pageNumberMorphName: function() {
+
+	pageNumberMorphName: function() {
 		// FIXME! ContextJS does wrap attributes
 		return 'pageNumber'
 	},
@@ -292,4 +369,4 @@ layerClass(PageNavigationLayer, TextMorph, {
 });
 
 
-}) // end of module
+}); // end of module
