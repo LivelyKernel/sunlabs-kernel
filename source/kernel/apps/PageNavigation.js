@@ -1,22 +1,29 @@
-module('apps.PageNavigation').requires('cop.Layers', 'lively.TestFramework').toRun(function() {
+module('apps.PageNavigation').requires('cop.Layers').toRun(function() {
+
+createLayer("PageNavigationLayer")
+enableLayer(PageNavigationLayer)
 
 Object.subclass("PageNavigation", {
-	initialize: function(base, list) {
-		this.base = base;
-		this.list = list;
+
+	url: null,
+	slideNames: null,
+
+	initialize: function(baseURL, slideNames) {
+		this.baseURL = this.url || baseURL;
+		this.slides = this.slideNames || slideNames;
 	},
 
 	nextPageName: function(){
-		return  this.list[(this.pageIndex() + 1) % this.list.length]
+		return  this.slides[(this.pageIndex() + 1) % this.slides.length]
 	},
 
 	prevPageName: function(){
-		return  this.list[(this.pageIndex() - 1) % this.list.length]
+		return  this.slides[(this.pageIndex() - 1) % this.slides.length]
 	},
 
 	getURLWithPageNavigation: function(name) {
 		if (!name) return;
-		var url = this.base.withFilename(name)
+		var url = this.baseURL.withFilename(name)
 		if (Config.pageNavigationName != 'nothing') {
 			var queries = Object.extend(url.getQuery(), {
 				pageNavigationName: Config.pageNavigationName,
@@ -35,13 +42,13 @@ Object.subclass("PageNavigation", {
 	},
 	
 	pageIndex: function() {
-		return this.list.indexOf(this.pageName())
+		return this.slides.indexOf(this.pageName())
 	},	
 	
 	pageNumber: function() { return this.pageIndex() + 1 },
 	
 	pageName: function () {
-			return new URL(document.location).relativePathFrom(new URL(this.base));
+			return URL.source.relativePathFrom(new URL(this.baseURL));
 	},
 
 	visitNextPage:  function() {
@@ -55,16 +62,63 @@ Object.subclass("PageNavigation", {
 		if (url)
 			Global.window.location.assign(url);
 	},
+	ensureNavigationMorph: function() {
+		"PageNavigation.current().ensureNaviationMorph()"
+
+		var oldMorph = this.world().submorphs.detect(function(ea) {
+			return ea instanceof PageNavigationMorph;
+		});
+		if (oldMorph) oldMorph.remove();
+		var morph = new PageNavigationMorph();
+		morph.align(morph.bounds().bottomRight(), this.world().bounds().bottomRight());
+		morph.name = 'PageNavigation';
+		this.world().addMorph(morph);
+	},
+world: function() {
+		return WorldMorph.current()
+	},
+
+
+styleAll: function() {
+	// can be overridden to apply a "master layout" for slide
+},
+styleWorldMorph: function() {
+		// shrink the world to demo size
+		basicResize(this.world(), this.world().canvas(), 1024, 768);
+		this.world().setBorderColor(Color.black);
+		this.world().setBorderWidth(0.25)
+	},
+customPageStyle: {
+		itemLevel1: { fontSize: 30},
+		itemLevel2: { fontSize: 20},
+	},
+
+
+
 		
 });
 
 // PageNavigation.current()
 Object.extend(PageNavigation, {
-	current: function() {
-		return Config.pageNavigations[Config.pageNavigationName]
-	}
-})
+	pageNavigations: {},
 
+	current: function() {
+	if (this._current) return this._current;
+	if (!Config.pageNavigationName || Config.pageNavigationName == 'nothing') {
+		console.warn('Cannot find page navigation instance!');
+	}
+
+	var klass = Global[Config.pageNavigationName];
+	if (klass && Class.isClass(klass)) {
+		this._current = new klass();
+		return this._current
+	}
+
+	// FIXME why store pageNavigations in Config?! pollution!
+	return this.pageNavigations[Config.pageNavigationName] ||
+		Config.pageNavigations[Config.pageNavigationName]
+},
+});
 BoxMorph.subclass("PageNavigationMorph", {
 
 	styleClass: ['PageNavigator'],
@@ -114,27 +168,6 @@ BoxMorph.subclass("PageNavigationMorph", {
 
 });
 
-TestCase.subclass("PageNavigationTest", {
-	setUp: function() {
-		this.sut = new PageNavigation(
-			new URL(Config.codeBase).withRelativePartsResolved().withFilename('ProjectSeminar2010/'),
-			[
-				"introduction/title.xhtml",
-				"introduction/contents.xhtml",
-				"introduction/template.xhtml",
-			]);
-	},
-	
-	xtestPageName: function() {
-		this.assertEqual(this.sut.pageName(),  "introduction/template.xhtml")
-	},
-
-	xtestPageIndex: function() {
-		this.assertEqual(this.sut.pageIndex(), 2)
-	}
-})
-
-createLayer("PageNavigationLayer")
 layerClass(PageNavigationLayer, WorldMorph, {
 
 	complexMorphsSubMenuItems: function(proceed, evt) {
@@ -163,19 +196,25 @@ layerClass(PageNavigationLayer, WorldMorph, {
 
 	displayOnCanvas: function(proceed, canvas) {
 		proceed(canvas);
-		if (Config.showPageNumber && PageNavigation.current() && PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
-			this.ensurePageNumberMorph();
+		if (Config.showPageNumber &&
+			PageNavigation.current() &&
+			PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
+				this.ensurePageNumberMorph();
 		else
 			this.removePageNumberMorph();
 	},
-	
-	pageNumberMorphName: function() {
+pageNumberMorphName: function() {
 		// FIXME! ContextJS does wrap attributes
-		return 'pageNumber';
+		return 'pageNumber'
+	},
+
+	
+	pageNumberMorph: function() {
+		return $morph(this.pageNumberMorphName());
 	},
 	
 	ensurePageNumberMorph: function() {
-		if ($morph(this.pageNumberMorphName())) return;
+		if (this.pageNumberMorph()) return;
 		var no = PageNavigation.current().pageNumber().toString();
 		var morph = new TextMorph(pt(0,0).extent(pt(100,100)), no);
 		morph.name = this.pageNumberMorphName();
@@ -186,9 +225,25 @@ layerClass(PageNavigationLayer, WorldMorph, {
 	},
 	
 	removePageNumberMorph: function() {
-		if (!$morph(this.pageNumberMorphName())) return;
-		$morph(this.pageNumberMorphName()).remove();
-	},	
+		if (this.pageNumberMorph())
+			this.pageNumberMorph().remove();
+	},
+
+	applyCustomStyles: function() {
+		PageNavigation.current().styleAll();
+	},
+
+	morphMenu: function(proceed, evt) {
+		var menu = proceed(evt);
+		if (!menu) return menu;
+		if (this.pageNumberMorph())
+			menu.addItem(['remove slide number',   this, 'removePageNumberMorph' ]);
+		else
+			menu.addItem(['add slide number',   this, 'ensurePageNumberMorph' ]);
+		menu.addItem(["apply custom styles",   this, 'applyCustomStyles' ]);
+		return menu
+	},
+	
 });
 
 layerClass(PageNavigationLayer, TextMorph, {
@@ -234,9 +289,7 @@ layerClass(PageNavigationLayer, TextMorph, {
 		}
 		proceed(evt, url.toString())
 	}
-})
-
-enableLayer(PageNavigationLayer)
+});
 
 
 }) // end of module
