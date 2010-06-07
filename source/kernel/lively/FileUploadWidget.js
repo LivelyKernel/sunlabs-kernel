@@ -1,4 +1,3 @@
-
 module("lively.FileUploadWidget").requires().toRun(function(){
 
 
@@ -119,6 +118,8 @@ Morph.subclass('FileUploadMorph', {
 
 		$super(new lively.scene.Rectangle(bounds));
 
+		this.urlPrefix = "media/";
+
 		this.xeno = new FileUploadXenoMorph(tempRect);
 		this.addMorph(this.xeno);
 
@@ -127,14 +128,29 @@ Morph.subclass('FileUploadMorph', {
 		this.bar.setValue(0);
 		this.addMorph(this.bar);
 
+		this.prefixInput = new TextMorph(tempRect, this.urlPrefix);
+		this.prefixInput.suppressGrabbing = true;
+		this.prefixInput.suppressHandles = true;
+		this.prefixInput.noEval = true;
+
+		this.addMorph(this.prefixInput);
+
+		connect(this.prefixInput, "textString", this, "urlPrefix");
+
 		this.result = new TextMorph(tempRect);
-		this.result.ignoreEvents();
+		this.result.suppressGrabbing = true;
+		this.result.suppressHandles = true;
+
 		this.addMorph(this.result);
 
 		this.applyStyle({fill: Color.blue.darker(2).lighter(1), borderRadius: 10});
 
-		this.urlPrefix = "media/";
+
 		
+
+		
+
+
 		this.adjustForNewBounds();
 	},
 	
@@ -154,6 +170,10 @@ Morph.subclass('FileUploadMorph', {
 
 		var height = 20;
 		this.bar.setBounds(new Rectangle(padding, runningY, innerWidth, height))
+		runningY += height + padding;
+
+		var height = 20;
+		this.prefixInput.setBounds(new Rectangle(padding, runningY, innerWidth, height))
 		runningY += height + padding;
 
 		var remainingHeight = newExtent.y - runningY - padding;
@@ -198,6 +218,77 @@ XenoMorph.subclass("FileUploadXenoMorph", {
 		this.setupHTMLContent()
 	},
 
+	startUpload: function(input) {
+		var self = this;
+		var size = function(bytes){	  // simple function to show a friendly size
+			var i = 0;
+			while(1023 < bytes){
+				bytes /= 1024;
+				++i;
+			};
+			return	i ? bytes.toFixed(2) + ["", " Kb", " Mb", " Gb", " Tb"][i] : bytes + " bytes";
+		};
+
+		var upload = new FileUploadHelper()				
+		if (self.owner.urlPrefix) {		
+			upload.prefix = self.owner.urlPrefix;
+		
+			if (upload.prefix.endsWith("/")) {
+				var dir = new WebResource(URL.source.withFilename(upload.prefix));
+				if (!dir.exists()) {
+					console.log("create " + upload.prefix)
+					dir.create()
+				}
+				
+
+			}
+
+
+		}
+
+		upload.sendMultipleFiles({
+
+			// list of files to upload
+			files: input.files,
+
+			// clear the container 
+			onloadstart:function(){
+			},
+
+			// do something during upload ...
+			onprogress:function(rpe){
+				self.owner.bar.setValue(rpe.loaded / rpe.total)
+				self.owner.result.setTextString([
+					"Uploading: " + this.file.fileName,
+					"Sent: " + size(rpe.loaded) + " of " + size(rpe.total),
+					"Total Sent: " + size(this.sent + rpe.loaded) + " of " + size(this.total)
+					].join("\n"));
+				},
+
+			// fired when last file has been uploaded
+			onload:function(rpe, xhr){
+
+				var response =	upload.parseServerResponse(xhr.responseText);
+				console.log("response " + response + " source: " + xhr.responseText);
+				Global.areg = xhr.responseText;
+				if (response.message) {
+					self.owner.result.setTextString( self.owner.result.textString + 
+						" \nServer Response: "	+ response.message);
+				} 
+				// enable the input again
+				input.removeAttribute("disabled");
+			},
+
+			// if something is wrong ... (from native instance or because of size)
+			onerror:function(){
+				self.owner.result.setTextString( "The file " + this.file.fileName + 
+				" is too big [" + size(this.file.fileSize) + "]");				   
+				// enable the input again
+				input.removeAttribute("disabled");
+			}
+		});
+	},
+
 	setupHTMLContent: function() {
 
 		var input = document.createElement("input");
@@ -207,65 +298,13 @@ XenoMorph.subclass("FileUploadXenoMorph", {
 
 		this.foRawNode.appendChild(input);
 
-		var size = function(bytes){	  // simple function to show a friendly size
-			var i = 0;
-			while(1023 < bytes){
-				bytes /= 1024;
-				++i;
-			};
-			return	i ? bytes.toFixed(2) + ["", " Kb", " Mb", " Gb", " Tb"][i] : bytes + " bytes";
-		};
+	
 		var self = this;
 
 		input.addEventListener("change", function(){				
 			// disable the input
 			input.setAttribute("disabled", "true");
-
-			var upload = new FileUploadHelper()				
-			if (self.owner.urlPrefix)
-				upload.prefix = self.owner.urlPrefix;
-
-			   upload.sendMultipleFiles({
-
-				   // list of files to upload
-				   files: input.files,
-
-				   // clear the container 
-				   onloadstart:function(){
-				   },
-
-				   // do something during upload ...
-				onprogress:function(rpe){
-					self.owner.bar.setValue(rpe.loaded / rpe.total)
-					   self.owner.result.setTextString([
-						   "Uploading: " + this.file.fileName,
-						   "Sent: " + size(rpe.loaded) + " of " + size(rpe.total),
-						   "Total Sent: " + size(this.sent + rpe.loaded) + " of " + size(this.total)
-					   ].join("\n"));
-				   },
-
-				   // fired when last file has been uploaded
-					onload:function(rpe, xhr){
-
-					var response =	upload.parseServerResponse(xhr.responseText);
-					console.log("response " + response + " source: " + xhr.responseText);
-					Global.areg = xhr.responseText;
-					if (response.message) {
-						self.owner.result.setTextString( self.owner.result.textString + 
-							" \nServer Response: "	+ response.message);
-					} 
-					   // enable the input again
-					   input.removeAttribute("disabled");
-				   },
-
-				   // if something is wrong ... (from native instance or because of size)
-				   onerror:function(){
-					   self.owner.result.setTextString( "The file " + this.file.fileName + 
-						" is too big [" + size(this.file.fileSize) + "]");				   
-					   // enable the input again
-					   input.removeAttribute("disabled");
-				   }
-			   });
+			self.startUpload(input);		
 		}, false);
 	},
 })
@@ -280,6 +319,5 @@ FileUploadMorph.openSample = function() {
 	fileUploadMorph.openInWorld();
 	fileUploadMorph.name = "FileUpload"
 }
-
 
 })
