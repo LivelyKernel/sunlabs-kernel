@@ -146,7 +146,6 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		obj1.value = 2
 		this.assertEqual(3, obj2.value);
 		this.assert(!obj1.attributeConnections || obj1.attributeConnections.length == 0, 'connection not removed!');
-
 	},
 
 	test15ProvideOldValueInConverters: function () {
@@ -161,19 +160,30 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 test16Updater: function () {
 		var obj1 = {x: null};
 		var obj2 = {x: null};
+
 		var c = connect(obj1, 'x', obj2, 'x',
 			{updater: function($proceed, newValue, oldValue) { $proceed(newValue) }});
 		obj1.x = 15;
-		this.assertEqual(obj2.x, 15);
+		this.assertEqual(obj2.x, 15, 'proceed called');
 		c.disconnect();
 
 		c = connect(obj1, 'x', obj2, 'x',
 			{updater: function($proceed, newValue, oldValue) { }});
 		obj1.x = 3;
-		this.assertEqual(obj2.x, 15);
+		this.assertEqual(obj2.x, 15, 'proceed not called');
 		c.disconnect();
 	},
-test17UpdaterAndConverter: function () {
+test17Updater: function () {
+		var obj1 = {x: 42};
+		var obj2 = {m: function(a, b) { obj2.a = a; obj2.b = b }};
+		var c = connect(obj1, 'x', obj2, 'm',
+			{updater: function($proceed, newValue, oldValue) { $proceed(newValue, oldValue) }});
+		obj1.x = 15;
+		this.assertEqual(obj2.a, 15);
+		this.assertEqual(obj2.b, 42);
+	},
+
+test18UpdaterAndConverter: function () {
 		var obj1 = {x: null};
 		var obj2 = {x: null};
 		var c = connect(obj1, 'x', obj2, 'x',
@@ -182,6 +192,37 @@ test17UpdaterAndConverter: function () {
 		obj1.x = 15;
 		this.assertEqual(obj2.x, 16);
 	},
+test19NoUpdaterNoConverter: function () {
+		var obj1 = {x: null};
+		var obj2 = {x: null};
+		var c = connect(obj1, 'x', obj2, 'x',
+			{updater: function($proceed, newValue, oldValue) { this.getSourceObj().updaterWasCalled = true },
+			converter: function(v) { this.getSourceObj().converterWasCalled = true; return v }});
+		obj1.x = 3;
+		this.assert(obj1.updaterWasCalled, 'no updater called');
+		this.assert(!obj1.converterWasCalled, 'converter called');
+	},
+test20RemoveAfterUpdateOnlyIfUpdaterProceeds: function() {
+		// no proceed, no remove
+		var obj1 = {};
+		var obj2 = {};
+		var c = connect(obj1, 'x', obj2, 'x',
+			{updater: function(procced, val) { }, removeAfterUpdate: true});
+		obj1.x = 2
+		this.assertEqual(null, obj2.x, 'a');
+		this.assertEqual(1, obj1.attributeConnections.length, 'connection removed!');
+		c.disconnect();
+
+		// proceed triggered then remove
+		var c = connect(obj1, 'x', obj2, 'y',
+			{updater: function($upd, val) { debugger; $upd(val) }, removeAfterUpdate: true});
+		obj1.x = 2
+		this.assertEqual(2, obj2.y, 'b');
+		this.assert(!obj1.attributeConnections || obj1.attributeConnections.length == 0,
+			'connection not removed!');
+},
+
+
 
 
 
@@ -248,6 +289,84 @@ test03UpdaterIsSerialzed: function() {
 	},
 
 
+});
+Object.subclass('Tests.BindingsTest.BindingsProfiler', {
+
+connectCount: 20000,
+
+startAndShow: function() {
+	lively.bindings.connect(this, 'result', WorldMorph.current(), 'addTextWindow');
+	this.start()
+},
+
+start: function() {
+	var runPrefix = 'run';
+	var self = this;
+	var methods = Functions.all(this).select(function(name) { return name.startsWith(runPrefix) });
+	var result = 'Bindings profiling ' + new Date() + '\n' + navigator.userAgent;
+	var progressBar = WorldMorph.current().addProgressBar();
+	methods.forEachShowingProgress(progressBar, function(name) {
+		var time = self[name]();
+		name = name.substring(runPrefix.length, name.length);
+		result += '\n' + name + ':\t' + time;
+	},
+	function(name) { return 'running ' + name },
+	function(name) { progressBar.remove(); self.result = result });
+	return this
+},
+
+connectAndRun: function(target, targetProp, options) {
+	var source = {x: null};
+	var sourceProp = 'x';
+	lively.bindings.connect(source, sourceProp, target, targetProp, options);
+
+	var now = new Date();
+	for (var i = 0; i < this.connectCount; i++) source.x = i
+	return new Date() - now;
+},
+
+runSimpleConnect: function() { return this.connectAndRun({y: null}, 'y') },
+runMethodConnect: function() { return this.connectAndRun({m: function(v) { this.x = v }}, 'm') },
+
+runConverterConnectAttribute: function() {
+	return this.connectAndRun({m: function(v) { this.x = v }}, 'm',
+		{converter: function(v) { return v + 1 }});
+},
+
+runConverterConnectMethod: function() {
+	return this.connectAndRun({y: null}, 'y', 
+		{converter: function(v) { return v + 1 }});
+},
+
+runUpdaterConnectAttribute: function() {
+	return this.connectAndRun({y: null}, 'y',
+		{updater: function(upd, newV, oldV) { upd.call(this, newV, oldV) }});
+},
+
+runUpdaterConnectMethod: function() {
+	return this.connectAndRun({m: function(v1, v2) { this.x = v1++ }}, 'm',
+		{updater: function(upd, newV, oldV) { upd.call(this, newV + oldV, oldV) }});
+},
+
+runTextMorphConnect: function() {
+	var source = new TextMorph(new Rectangle(0,0, 100, 100), '');
+	var sourceProp = 'textString';
+	var target = new TextMorph(new Rectangle(0,0, 100, 100), '');
+	var targetProp = 'setTextString'
+	lively.bindings.connect(source, sourceProp, target, targetProp);
+
+	var now = new Date();
+	for (var i = 0; i < (this.connectCount / 10); i++) source.textString = i.toString()
+	return new Date() - now;
+},
+
+runCreateConnection: function() {
+	var now = new Date()
+	var source = {x: null}, target = {y: null};
+	for (var i = 0; i < this.connectCount; i++)
+		lively.bindings.connect(source, 'x', target, 'y');
+	return new Date() - now
+},
 });
 
 }); // end of module

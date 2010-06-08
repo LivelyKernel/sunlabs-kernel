@@ -48,7 +48,7 @@ Widget.subclass('WikiNavigator', {
     initialize: function($super, url, world, rev) {
 		$super(null);
 		if (!world) world = WorldMorph.current();
-		this.world = world;
+		this._world = world;
 		url = new URL(url).notSvnVersioned().withoutQuery();
 		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: url.toString(), HeadRevision: null, Metadata: null}));
 		if (!rev) {
@@ -60,6 +60,10 @@ Widget.subclass('WikiNavigator', {
 		
 		return this;
 	},
+world: function() {
+	return WorldMorph.current();
+},
+
 	
 	buildView: function(extent) {
 	    var panel = PanelMorph.makePanedPanel(extent, [
@@ -77,33 +81,27 @@ Widget.subclass('WikiNavigator', {
 			this.remove();
         });
 
-		var self = this;
-		var btnAction = function(func) {
-			return {setValue: 'btn', model: {btn: function(btnVal) { if (!btnVal) func.apply(self) }}}
-		};
-
 		var saveContentButton = panel.saveContentButton;
 		saveContentButton.setLabel("Save");
-		saveContentButton.connectModel(btnAction(this.saveWorld));
+		lively.bindings.connect(saveContentButton, 'fire', this, 'saveWorld');
 
 		var registerButton = panel.registerButton;
 		registerButton.setLabel("Register");
-		registerButton.connectModel(btnAction(function() {
-			console.log(this);
-			panel.remove(); new UserRegistrationDialog().open();
-		}));
+		lively.bindings.connect(registerButton, 'fire', this, 'openRegisterDialog');
+		lively.bindings.connect(registerButton, 'fire', panel, 'remove');
 
 		var loginButton = panel.loginButton;
 		loginButton.setLabel("Login");
-		loginButton.connectModel(btnAction(function() {panel.remove(); this.login()}));
+		lively.bindings.connect(loginButton, 'fire', this, 'login');
+		lively.bindings.connect(loginButton, 'fire', panel, 'remove');
 
 		var deletePageButton = panel.deletePageButton;
 		deletePageButton.setLabel("Delete");
-		deletePageButton.connectModel(btnAction(function() { this.askToDeleteCurrentWorld() }));
+		lively.bindings.connect(deletePageButton, 'fire', this, 'askToDeleteCurrentWorld');
+
 		/*
 		var lockButton = panel.lockButton;
 		lockButton.setLabel("Lock");
-		//saveContentButton.connectModel({model: this, setValue: "saveWorld"});
 		*/
 		
 /*****/
@@ -130,6 +128,7 @@ Widget.subclass('WikiNavigator', {
         //         this.model);
         //         versionList.connectModel(relay, true /* kickstart if morph was deleted*/);
 /*****/
+
         this.findVersions();
 		this.panel = panel;
 		return panel;
@@ -153,7 +152,7 @@ Widget.subclass('WikiNavigator', {
 	
 	doSave: function(doNotOverwrite, optUrl) { // ok, clean this whole thing up!!!!
 		this.prepareForSaving();
-		var worldDoc = Exporter.shrinkWrapMorph(WorldMorph.current()); // why not this.world()?
+		var worldDoc = Exporter.shrinkWrapMorph(this.world()); // why not this.world()?
 		var myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null;
 		var status;
 		if (optUrl) { // save page elsewhere
@@ -286,6 +285,10 @@ Widget.subclass('WikiNavigator', {
 		};
 	    this.svnResource.fetchHeadRevision();
 	},
+openRegisterDialog: function() {
+	new UserRegistrationDialog().open();
+},
+
 
 // -------------
 	registerUser: function(username, pwd, name, email, successCb, failureCb) {
@@ -345,7 +348,7 @@ Widget.subclass('WikiNavigator', {
 		btn.handlesMouseDown = Functions.True;
 		btn.onMouseDown = function(evt) {
 			var navMorph = self.buildView(pt(800,105));
-			self.world.addMorph(navMorph);
+			self.world().addMorph(navMorph);
 			navMorph.setPosition(pt(0, 0))
 		};
 		btn.positionInLowerLeftCorner = function() { btn.setPosition(pt(0, 0)) };
@@ -385,7 +388,7 @@ Object.extend(WikiNavigator, {
 		WorldMorph.current().submorphs.select(function(ea) { return ea.textString == 'Wiki control' }).invoke('remove') // FIXME
 		var url = optUrl || URL.source;
 		var nav = old ?
-			new WikiNavigator(url, old.world, old.model.getOriginalRevision()) :
+			new WikiNavigator(url, old.world(), old.model.getOriginalRevision()) :
 			new WikiNavigator(url);
         if (!nav.isActive()) return;
         nav.createWikiNavigatorButton();

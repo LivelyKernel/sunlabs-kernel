@@ -13,6 +13,7 @@ Object.subclass('AttributeConnection', {
 			// serialize it. To fail as early as possible we will serialize the converter
 			// already here
 			this.converter = spec.converter ? eval('(' + spec.converter.toString() + ')') : null
+			this.updater = spec.updater ? eval('(' + spec.updater.toString() + ')') : null
 		}
 	},
 
@@ -51,7 +52,7 @@ Object.subclass('AttributeConnection', {
 			return this.getSourceAttrName() == con.getSourceAttrName();
 		}, this);
 		if (connectionsWithSameSourceAttr.length == 0)
-			this.removeSourceObjGetterAndSetter()
+			this.removeSourceObjGetterAndSetter();
 	},
 
 	addSourceObjGetterAndSetter: function() {
@@ -78,9 +79,6 @@ Object.subclass('AttributeConnection', {
 			for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 				var c = sourceObj.attributeConnections[i];
 				if (c.getSourceAttrName() == sourceAttrName) {
-					if (c.updater)
-						c.updater(c.update.bind(c), newVal, oldVal);
-					else
 						c.update(newVal, oldVal);
 				}
 			}
@@ -115,22 +113,43 @@ Object.subclass('AttributeConnection', {
 	},
 
 	update: function(newValue, oldValue) {
+		// This method is optimized for Safari and Chrome. See Tests.BindingsTest.BindingsProfiler
+		// and http://lively-kernel.org/repository/webwerkstatt/draft/ModelRevised.xhtml
+		// The following requirements exists:
+		// - run converter with oldValue and newValue
+		// - when updater is existing run converter only if update is proceeded
+		// - bind is slow
+		// - arguments is slow when it's items are accessed or it's converted using $A
+
 		if (this.isRecursivelyActivated()) return;
+		var self = this;
+		var callOrSetTarget = function(newValue) {
+			// use a function and not a method to capture this in self and so that no bind is necessary
+			// and oldValue is accessible. Note that when updater calls this method arguments can be
+			// more than just the new value
+			if (self.converter)
+				newValue = self.converter.call(self, newValue, oldValue);
+			var targetMethod = self.targetObj[self.targetMethodName]
+			var result = Object.isFunction(targetMethod) ?
+				targetMethod.apply(self.targetObj, arguments) :
+				self.targetObj[self.targetMethodName] = newValue;
+			if (self.removeAfterUpdate) self.disconnect();
+			return result;
+		};
+
 		try {
 			this.activate();
-			if (this.converter)
-				newValue = this.converter.call(this, newValue, oldValue);
-			if (Object.isFunction(this.targetObj[this.targetMethodName]))
-				this.targetObj[this.targetMethodName](newValue);
+			if (this.updater)
+				this.updater.call(this, callOrSetTarget, newValue, oldValue);
 			else
-				this.targetObj[this.targetMethodName] = newValue;
+				callOrSetTarget(newValue);		
 		} catch(e) {
-			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
+			console.warn('Error when trying to update ' + self + ' with value ' + newValue + ':\n' + e);
 		} finally {
-			this.deactivate();
-			if (this.removeAfterUpdate) this.disconnect();
+			self.deactivate();
 		}
 	},
+
 	isRecursivelyActivated: function() {
 		// is this enough? Maybe use Stack?
 		return this.isActive
