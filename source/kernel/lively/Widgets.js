@@ -2342,42 +2342,89 @@ BoxMorph.subclass("SliderMorph", {
 	documentation: "Slider/scroll control",
 
 	mss: 12,  // minimum slider size
-	formals: { 
-		Value:		  {byDefault: 0}, // from: function(value) { alert('from!' + value); return value;}}, 
-		SliderExtent: {mode: "-", byDefault: 0} 
-	},
+
 	style: {borderWidth: 1, borderColor: Color.black},
-	selfModelClass: PlainRecord.prototype.create({Value: { byDefault: 0 }, SliderExtent: { byDefault: 0}}),
 	
 	connections: ['value'],
 
 	initialize: function($super, initialBounds, scaleIfAny) {
 		$super(initialBounds);
-		// this default self connection may get overwritten by, eg, connectModel()...
-		var modelClass = this.selfModelClass;
-		var model = new modelClass({}, {});
-		this.connectModel(model.newRelay({Value: "Value", SliderExtent: "SliderExtent"}));
+
+		this.setValue(0);
+		this.setSliderExtent(0.1);
+		
 		this.valueScale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
 		var slider = Morph.makeRectangle(0, 0, this.mss, this.mss);
-		slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
 		this.slider = this.addMorph(slider);
 		this.slider.linkToStyles(['slider']);
+		this.setupMouseEventRelays();
+
 		this.adjustForNewBounds();
 		this.adjustFill();
+		
 		return this;
+	},
+
+	setupMouseEventRelays: function() {
+		this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});		
 	},
 
  	onDeserialize: function() {
 		if (!this.slider) {
-			console.warn('no slider in %s, %s', this, this.textContent);
+				console.warn('no slider in %s, %s', this, this.textContent);
 		   return;
 		}
-		this.slider.relayMouseEvents(this, {onMouseDown: "sliderPressed", onMouseMove: "sliderMoved", onMouseUp: "sliderReleased"});
+		this.setupMouseEventRelays()
 		// TODO: remove this workarounds by serializing observer relationsships
 		if (this.formalModel && this.formalModel.addObserver) {
 			this.formalModel.addObserver(this)
 		}	
 	},
+	
+	copyFrom: function($super, copier, other) {
+		$super(copier, other);
+		this.setupMouseEventRelays();
+		return this;
+	},
+	
+	// BEGIN Accessors
+	// To get rid of the Records, we need our own accessors
+	// Until we have a replacement: manually written...
+	
+	// the old formal Model code could go into a Compatiblity Layer.... :-)
+	getValue: function() {
+		// compatibilty
+		if (this.formalModel)
+			return this.formalModel.getValue();
+		return this.value;
+	},
+	
+	setValue: function(value) {
+		// compatibilty
+		if (this.formalModel) 
+			return this.formalModel.setValue(value);	
+		
+		this.value = value
+		this.onValueUpdate(value)
+	},
+	
+	getSliderExtent: function() {
+		// compatibilty
+		if (this.formalModel)
+			return this.formalModel.getSliderExtent();
+
+		return this.sliderExtent
+	},
+
+	setSliderExtent: function(value) {
+		// compatibilty
+		if (this.formalModel) 
+			return this.formalModel.setValue(value);	
+
+		this.sliderExtent = value
+		this.onSliderExtentUpdate(value)
+	},
+	// END Accessors
 	
 	vertical: function() {
 		var bnds = this.shape.bounds();
@@ -2399,6 +2446,10 @@ BoxMorph.subclass("SliderMorph", {
 	},
 	
 	adjustSliderParts: function($super) {
+		
+		if(!this.slider)
+			return;
+		
 		// This method adjusts the slider for changes in value as well as geometry
 		var val = this.getScaledValue();
 		var bnds = this.shape.bounds();
@@ -4731,21 +4782,7 @@ Widget.makeSlider = function(bounds, range) {
 	bounds = bounds || new Rectangle(0, 0, 100, 20)
 	range = range || 10.0;
 	
-	// Why are simple morphs not funcitonal without any model underneath?
-	
-	// Why should widgets not be graphical? 
-	// and when they are not where should we put them
-	var widget = new Widget();
-	// why could widgets and other morphs not act as a model?
-	var model = Record.newNodeInstance({Value: null,  SliderExtent: null});
-	widget.ownModel(model);
-
 	slider = new SliderMorph(bounds, range)
-	slider.connectModel(model);
-	slider.ownerWidget = widget 
-
-	// TODO 
-	model.addObserver(slider)
 	return slider
 }
 	
