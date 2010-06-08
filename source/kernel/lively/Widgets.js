@@ -1600,7 +1600,7 @@ BoxMorph.subclass("TextListMorph", {
 // it should be the other way round...
 TextListMorph.subclass("ListMorph", {
 
-    documentation: 'Can handle list items, not only strings. {isListItem: true, string: string, value: object}',
+    documentation: 'Can handle list items, not only strings. {isListItem: true, string: string, value: object, onDrag: function, onDrop: function}',
     
     initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
         $super(initialBounds, itemList, optPadding, optTextStyle)
@@ -1672,6 +1672,14 @@ TextListMorph.subclass("ListMorph", {
         $super(newList);
         this.suppressSelectionOnUpdate || this.selectLineAt(this.selectedLineNo);
     }
+});
+
+Object.extend(Array.prototype, {
+	asListItemArray: function() {
+		return this.collect(function(ea) {
+			return {isListItem: true, string: ea.toString(), value: ea};
+		});
+	},
 });
 
 Morph.subclass('DragWrapper', {
