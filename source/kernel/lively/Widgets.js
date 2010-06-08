@@ -506,22 +506,22 @@ ButtonMorph.subclass("ImageButtonMorph", {
 
 BoxMorph.subclass("ClipMorph", {
 
-    documentation: "A clipping window/view",
-    // A clipMorph is like a window through which its submorphs are seen
-    // Its bounds are strictly limited by its shape
-    // Display of its submorphs are strictly clipped to its shape, and
-    // (optionally) reports of damage from submorphs are also clipped so that,
-    // eg, scrolling can be more efficient
-    
-    style: { fill: null, borderWidth: 0},
-    
+	documentation: "A clipping window/view",
+	// A clipMorph is like a window through which its submorphs are seen
+	// Its bounds are strictly limited by its shape
+	// Display of its submorphs are strictly clipped to its shape, and
+	// (optionally) reports of damage from submorphs are also clipped so that,
+	// eg, scrolling can be more efficient
+	
+	style: { fill: null, borderWidth: 0},
+	
 	openForDragAndDrop: false,
 
-    initialize: function($super, initialBounds) {
+	initialize: function($super, initialBounds) {
 		$super(initialBounds);
 		this.setupClipNode();
 		this.isClipMorph = true;
-    },
+	},
 
 	setupClipNode: function() {
 		var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
@@ -530,16 +530,15 @@ BoxMorph.subclass("ClipMorph", {
 		this.clip.applyTo(this);		
 	},
 	
-	
 	restoreFromDefsNode: function($super, importer, node) {
 		$super(importer, node);
-	    var clips = node.getElementsByTagName('clipPath');
-	    if (clips.length > 0) {
+		var clips = node.getElementsByTagName('clipPath');
+		if (clips.length > 0) {
 			this.clip = new lively.scene.Clip(importer, clips.item(0));
- 			this.clip.applyTo(this);
+			this.clip.applyTo(this);
 			importer.addMapping(this.clip.id(), this.clip);
-	    }
-    },
+		}
+	},
 
 	setBounds: function($super, bnds) { // this reshapes
 		$super(bnds);
@@ -547,7 +546,7 @@ BoxMorph.subclass("ClipMorph", {
 	},
 
 	bounds: function(ignoreTransients) {
-		// intersection  of its shape and its children's shapes
+		// intersection	 of its shape and its children's shapes
 		if (!this.fullBounds) {
 			var tfm = this.getTransform();
 			var bounds = this.shape.bounds();
@@ -578,21 +577,21 @@ BoxMorph.subclass("ClipMorph", {
 // ===========================================================================
 
 Morph.subclass('HandleMorph', {
-    
-    style: {fill: null, borderColor: Color.blue, borderWidth: 1},
+	
+	style: {fill: null, borderColor: Color.blue, borderWidth: 1},
 
-    controlHelpText: "Drag to resize this object\n" + 
-        "Alt+drag to rotate the object \n" +
-        "Alt+shift+drag to scale the object \n" + 
-        "Shift+drag to change border width ", 
-    circleHelpText: "Drag to reshape the line\n" + 
-        "Cmd+drag to rotate the object \n" +
-        "Cmd+shift+drag to scale the object \n" + 
-        "Shift+drag to change width ",
-    maxHelpCount: 20,
-    helpCount: 0,
-    isEpimorph: true,
-    
+	controlHelpText: "Drag to resize this object\n" + 
+		"Alt+drag to rotate the object \n" +
+		"Alt+shift+drag to scale the object \n" + 
+		"Shift+drag to change border width ", 
+	circleHelpText: "Drag to reshape the line\n" + 
+		"Cmd+drag to rotate the object \n" +
+		"Cmd+shift+drag to scale the object \n" + 
+		"Shift+drag to change width ",
+	maxHelpCount: 20,
+	helpCount: 0,
+	isEpimorph: true,
+	
 	initialize: function($super, location, shapeType, hand, targetMorph, partName) {
 		$super(new shapeType(location.asRectangle().expandBy(5)));
 		this.location = location;
@@ -602,11 +601,11 @@ Morph.subclass('HandleMorph', {
 		this.initialRotation = null; 
 		this.mode = 'reshape';
 		this.rollover = true;  // pops up near hangle locs, goes away if mouse rolls out
-		this.showingAllHandles = false;  // all handles are shown, eg, on touch screens
+		this.showingAllHandles = false;	 // all handles are shown, eg, on touch screens
 		this.normalize();
 		return this;
 	},
-    
+	
 	getHelpText: function() {
 		return (this.shape instanceof lively.scene.Rectangle) ? this.controlHelpText : this.circleHelpText;
 	},
@@ -623,19 +622,19 @@ Morph.subclass('HandleMorph', {
 	okToDuplicate: Functions.False,
 
 	handlesMouseDown: function(evt) { return true },
-onMouseDown: function(evt) {
+
+	onMouseDown: function(evt) {
 		//console.log("handle down");
 		evt.hand.setMouseFocus(this);
 		this.hideHelp();
-		if (this.showingAllHandles) this.targetMorph.removeAllHandlesExcept(this);  // remove other handles during reshape
+		if (this.showingAllHandles) this.targetMorph.removeAllHandlesExcept(this);	// remove other handles during reshape
 		if (evt.isCommandKey()) this.mode = evt.isShiftDown() ? 'scale' : 'rotate';
 		else if (evt.isShiftDown()) this.mode = 'borderWidth';
 	},
 
-
 	onMouseMove: function(evt) {
 		if (!evt.mouseButtonPressed) {
-			if (this.showingAllHandles) return;  // Showing all handles; just let mouse roll over
+			if (this.showingAllHandles) return;	 // Showing all handles; just let mouse roll over
 			if (this.rollover) {  // Mouse up: Remove handle if mouse drifts away
 				if (this.owner && !this.bounds().expandBy(5).containsPoint(this.owner.localize(evt.mousePoint))) {
 					evt.hand.setMouseFocus(null);
@@ -675,7 +674,7 @@ onMouseDown: function(evt) {
 				break;
 		}
 	},
-    
+	
 	onMouseUp: function(evt) {
 		//console.log("handle up");
 		if (!evt.isShiftDown() && !evt.isCommandKey() && !evt.isMetaDown()) {
@@ -685,7 +684,7 @@ onMouseDown: function(evt) {
 		this.remove();
 		if (this.showingAllHandles) this.targetMorph.addAllHandles(evt);
 	},
-    
+	
 	handleReshape: function(result) {
 		if (typeof result == "boolean") {
 			// polygon reshape returns a bool = true if close to another vertex (for merge) else false
@@ -700,7 +699,7 @@ onMouseDown: function(evt) {
 	inspect: function($super) {
 		return $super() + " on " + Object.inspect(this.targetMorph);
 	},
-    
+	
 	scaleFor: function(scaleFactor) {
 		this.applyFunctionToShape(function(s) {
 			this.setBounds(this.bounds().center().asRectangle().expandBy(5/s));
@@ -718,7 +717,7 @@ onMouseDown: function(evt) {
 		var p = this.getCenter();
 		this.align(p, this.location);
 	}
-    
+	
 });
 
 BoxMorph.subclass("SelectionMorph", {
