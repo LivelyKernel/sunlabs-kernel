@@ -77,8 +77,12 @@ Object.subclass('AttributeConnection', {
 				throw new Error('Sth wrong with sourceObj, has no attributeConnections')
 			for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 				var c = sourceObj.attributeConnections[i];
-				if (c.getSourceAttrName() == sourceAttrName)
-					c.update(newVal, oldVal);
+				if (c.getSourceAttrName() == sourceAttrName) {
+					if (c.updater)
+						c.updater(c.update.bind(c), newVal, oldVal);
+					else
+						c.update(newVal, oldVal);
+				}
 			}
 		})
 
@@ -178,6 +182,7 @@ AttributeConnection.addMethods({
 			targetObj: this.targetObj.id(),
 			targetMethodName: this.targetMethodName,
 			converter: this.converter ? this.converter.toString() : null,
+			updater: this.updater ? this.updater.toString() : null,
 			removeAfterUpdate: this.removeAfterUpdate,
 		};
 	},
@@ -190,14 +195,19 @@ Object.extend(AttributeConnection, {
 
 		// just create the connection, connection not yet installed!!!
 		var con = new AttributeConnection(
-			null, literal.sourceAttrName, null, literal.targetMethodName,
-			{converter: literal.converter, removeAfterUpdate: literal.removeAfterUpdate});
+			null, literal.sourceAttrName, null, literal.targetMethodName, {
+				updater: literal.updater,
+				converter: literal.converter,
+				removeAfterUpdate: literal.removeAfterUpdate,
+			});
 
 		importer.addPatchSite(con, 'sourceObj', literal.sourceObj);
 		importer.addPatchSite(con, 'targetObj', literal.targetObj);
 
-		new AttributeConnection(con, 'sourceObj', con, 'onSourceAndTargetRestored', {removeAfterUpdate: true}).connect();
-		new AttributeConnection(con, 'targetObj', con, 'onSourceAndTargetRestored', {removeAfterUpdate: true}).connect();
+		new AttributeConnection(con, 'sourceObj', con, 'onSourceAndTargetRestored',
+			{removeAfterUpdate: true}).connect();
+		new AttributeConnection(con, 'targetObj', con, 'onSourceAndTargetRestored',
+			{removeAfterUpdate: true}).connect();
 
 		return con;
 	}

@@ -158,6 +158,32 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		obj1.value = 15;
 		this.assertEqual(obj2.delta, 5)
 	},
+test16Updater: function () {
+		var obj1 = {x: null};
+		var obj2 = {x: null};
+		var c = connect(obj1, 'x', obj2, 'x',
+			{updater: function($proceed, newValue, oldValue) { $proceed(newValue) }});
+		obj1.x = 15;
+		this.assertEqual(obj2.x, 15);
+		c.disconnect();
+
+		c = connect(obj1, 'x', obj2, 'x',
+			{updater: function($proceed, newValue, oldValue) { }});
+		obj1.x = 3;
+		this.assertEqual(obj2.x, 15);
+		c.disconnect();
+	},
+test17UpdaterAndConverter: function () {
+		var obj1 = {x: null};
+		var obj2 = {x: null};
+		var c = connect(obj1, 'x', obj2, 'x',
+			{updater: function($proceed, newValue, oldValue) { $proceed(newValue) },
+			converter: function(v) { return v + 1 }});
+		obj1.x = 15;
+		this.assertEqual(obj2.x, 16);
+	},
+
+
 
 });
 
@@ -203,6 +229,24 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.
 		newTextMorph1.updateTextString('bar');
 		this.assertEqual('barfoo', newTextMorph2.textString, 'connect not working after deserialization');
 	},
+test03UpdaterIsSerialzed: function() {
+		var textMorph1 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
+		var textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'xyz');
+		this.worldMorph.addMorph(textMorph1);
+		this.worldMorph.addMorph(textMorph2);
+		connect(textMorph1, 'textString', textMorph2, 'updateTextString',
+			{updater: function(proceed, newV, oldV) { proceed(oldV + newV) }});
+		textMorph1.updateTextString('foo');
+		this.assertEqual('abcfoo', textMorph2.textString, 'updater not working');
+		var doc = this.exportMorph(this.worldMorph) // WorldMorph is test specific
+		var newWorld = new Importer().loadWorldContents(doc.ownerDocument);
+		var newTextMorph1 = newWorld.submorphs[0];
+		var newTextMorph2 = newWorld.submorphs[1];
+		this.assertEqual(newTextMorph1.textString, 'foo', 'morph serialization problem');
+		newTextMorph1.updateTextString('bar');
+		this.assertEqual('foobar', newTextMorph2.textString, 'connect not working after deserialization');
+	},
+
 
 });
 
