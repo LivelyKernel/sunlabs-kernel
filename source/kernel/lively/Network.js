@@ -158,8 +158,12 @@ Object.subclass('URL', {
 	
 	eq: function(url) {
 		if (!url) return false;
-		return url.protocol == this.protocol && url.port == this.port && url.normalizedHostname() == this.url.normalizedHostname()
-			&& url.pathname == this.pathname && url.search == this.search && url.hash == this.hash;
+		return url.protocol == this.protocol &&
+			url.port == this.port &&
+			url.normalizedHostname() == this.normalizedHostname() &&
+			url.pathname == this.pathname &&
+			url.search == this.search &&
+			url.hash == this.hash;
 	},
 
 	relativePathFrom: function(origin) {
