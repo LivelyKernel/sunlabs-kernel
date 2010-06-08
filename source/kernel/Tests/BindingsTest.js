@@ -367,6 +367,14 @@ runCreateConnection: function() {
 		lively.bindings.connect(source, 'x', target, 'y');
 	return new Date() - now
 },
+runSimpleMethodCall: function() {
+	var now = new Date()
+	var source = {m: function(v) { source.x = v; target.m(v) }}, target = {m: function(v) { target.x = v }};
+	for (var i = 0; i < this.connectCount*10; i++)
+		source.m(i);
+	return new Date() - now
+},
+
 });
 
 }); // end of module

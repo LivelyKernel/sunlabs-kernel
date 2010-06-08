@@ -78,9 +78,8 @@ Object.subclass('AttributeConnection', {
 				throw new Error('Sth wrong with sourceObj, has no attributeConnections')
 			for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 				var c = sourceObj.attributeConnections[i];
-				if (c.getSourceAttrName() == sourceAttrName) {
+				if (c.getSourceAttrName() === sourceAttrName)
 						c.update(newVal, oldVal);
-				}
 			}
 		})
 
@@ -121,7 +120,9 @@ Object.subclass('AttributeConnection', {
 		// - bind is slow
 		// - arguments is slow when it's items are accessed or it's converted using $A
 
-		if (this.isRecursivelyActivated()) return;
+		if (this.isActive/*this.isRecursivelyActivated()*/) return;
+		this.isActive = true; // this.activate();
+
 		var self = this;
 		var callOrSetTarget = function(newValue) {
 			// use a function and not a method to capture this in self and so that no bind is necessary
@@ -130,7 +131,7 @@ Object.subclass('AttributeConnection', {
 			if (self.converter)
 				newValue = self.converter.call(self, newValue, oldValue);
 			var targetMethod = self.targetObj[self.targetMethodName]
-			var result = Object.isFunction(targetMethod) ?
+			var result = (typeof targetMethod === 'function') ?
 				targetMethod.apply(self.targetObj, arguments) :
 				self.targetObj[self.targetMethodName] = newValue;
 			if (self.removeAfterUpdate) self.disconnect();
@@ -138,15 +139,14 @@ Object.subclass('AttributeConnection', {
 		};
 
 		try {
-			this.activate();
 			if (this.updater)
 				this.updater.call(this, callOrSetTarget, newValue, oldValue);
 			else
 				callOrSetTarget(newValue);		
 		} catch(e) {
-			console.warn('Error when trying to update ' + self + ' with value ' + newValue + ':\n' + e);
+			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
 		} finally {
-			self.deactivate();
+			this.isActive = false;
 		}
 	},
 
@@ -261,9 +261,10 @@ Object.extend(lively.bindings, {
 	
 	signal: function(sourceObj, attrName, newVal) {
 		if (!sourceObj.attributeConnections) return;
+		var oldVal = sourceObj[attrName];
 		for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 			var c = sourceObj.attributeConnections[i];
-			if (c.getSourceAttrName() == attrName) c.update(newVal);
+			if (c.getSourceAttrName() == attrName) c.update(newVal, oldVal);
 		}
 	},
 
