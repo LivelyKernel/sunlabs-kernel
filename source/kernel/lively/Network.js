@@ -1337,7 +1337,8 @@ WebResource.addMethods({
 		req.propfind(this.getURL(), depth);
 		return this;
 	},
-getVersions: function(startRev, endRev) {
+	
+	getVersions: function(startRev, endRev) {
 		var res = this.createResource();
 		//connect(this, 'contentDocument', this, 'pvtProcessPropfindForGetVersions', {removeAfterUpdate: true});
 		if (!startRev) {
@@ -1353,13 +1354,12 @@ getVersions: function(startRev, endRev) {
 		res.fetchMetadata(this.isSync(), null, startRev, endRev, null);
 		return this;
 	},
-getHeadRevision: function() {
-	var res = this.createResource();
-	res.fetchHeadRevision(this.isSync());
-	return this;
-},
 
-
+	getHeadRevision: function() {
+		var res = this.createResource();
+		res.fetchHeadRevision(this.isSync());
+		return this;
+	},
 	
 	pvtProcessPropfindForSubElements: function(doc) {
 		if (!this.status.isSuccess())

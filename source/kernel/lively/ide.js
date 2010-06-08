@@ -1240,7 +1240,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		menu.unshift(['load', function() {
 			try { node.target.getFileString() } catch (e) { WorldMorph.current().notify('Error: ' + e)} }]);
 		menu.unshift(['show versions', function() {
-			var url = browser.targetURL.withFilename(node.target.fileName);
+			var url = URL.codeBase.withFilename(node.target.fileName);
 			new lively.ide.FileVersionViewer().openForURL(url) }]);
 		menu.unshift(['open ChangeList viewer', function() {
 			new ChangeList(node.moduleName, null, node.target.flattened()).openIn(WorldMorph.current()) }]);
@@ -3107,8 +3107,10 @@ setTarget: function(url) {
 		this.panel.urlPane.innerMorph().setTextString(this.url.toString());
 	}
 
+	var versionList = this.panel.versionList.innerMorph();
+	versionList.updateList(['loading']);
 	var res = new WebResource(url);
-	lively.bindings.connect(res, 'versions', this.panel.versionList.innerMorph(), 'updateList',
+	lively.bindings.connect(res, 'versions', versionList, 'updateList',
 		{converter: function(list) { return list.asListItemArray() }});
 	res.beAsync().getVersions();
 },
