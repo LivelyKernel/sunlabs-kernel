@@ -515,6 +515,8 @@ BoxMorph.subclass("ClipMorph", {
     
     style: { fill: null, borderWidth: 0},
     
+	openForDragAndDrop: false,
+
     initialize: function($super, initialBounds) {
 		$super(initialBounds);
 		this.setupClipNode();
