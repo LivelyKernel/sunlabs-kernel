@@ -569,7 +569,7 @@ XHTMLNS = {
 
 	getAttribute: function(node, name) {
 		if (UserAgent.isOpera) return node.getAttribute(name); // Fix for Opera 10.10
-		return node.getAttributeteNS(null, name);
+		return node.getAttributeNS(null, name);
 	},
 
 	removeAttribute: function(node, name) {
