@@ -5354,7 +5354,13 @@ WorldMorph.addMethods({
 					new LatestWikiChangesList(url).openIn(world);
 			}); }
 				world.prompt('Url to observe', cb, URL.source.getDirectory().toString()); 
-			}]
+			}],
+			["Version Viewer", function(evt) {
+				require('lively.ide').toRun(function() {
+					ChangeSet.current().addWorldRequirement('lively.ide');
+					new lively.ide.FileVersionViewer().openForURL(URL.source);
+				});
+			}],
 		];
 
 		if (Config.debugExtras) { var index = -1;
