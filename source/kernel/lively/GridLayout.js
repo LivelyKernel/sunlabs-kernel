@@ -224,9 +224,10 @@ BoxMorph.subclass('GridLayoutMorph', {
     // It should go into the main event loop
     
     scheduleUpdate: function() {
-	if (this.updateScheduled) return;  // already scheduled
+	var w = WorldMorph.current();
+	if (this.updateScheduled || !w) return;  // already scheduled
 	this.updateScheduled = new SchedulableAction(this, "update", null, 0);
-	WorldMorph.current().scheduleForLater(this.updateScheduled, 0, true);  // zero delay runs on next cycle
+	w.scheduleForLater(this.updateScheduled, 0, true);  // zero delay runs on next cycle
     },
     
     update: function() {
