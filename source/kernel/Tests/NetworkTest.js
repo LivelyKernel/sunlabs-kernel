@@ -172,7 +172,8 @@ TestCase.subclass('Tests.NetworkTest.WebResourceTest', {
 		this.assert(sut.headRevision);
 		this.assertEqual(1, sut.versions.length);
 	},
-testGetWithVersion: function() {
+	
+	testGetWithVersion: function() {
 		this.writeFile(this.plainTextFileURL, 'new version of file');
 		var sut = new WebResource(this.plainTextFileURL);
 		var versions = sut.getVersions().versions;
@@ -180,9 +181,8 @@ testGetWithVersion: function() {
 		var rev = versions[0].rev;
 		this.assert(this.plainTextString, sut.get(rev).content);
 	},
-testGetHeadRevision: function() {
-console.log('test started')
-debugger
+	
+	testGetHeadRevision: function() {
 		var sut = new WebResource(this.plainTextFileURL);
 		var rev1 = sut.getHeadRevision().headRevision;
 		sut.put('new version of file');

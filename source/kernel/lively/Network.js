@@ -1246,6 +1246,7 @@ WebResource.addMethods({
 					setMetadata: function(metadata) { self.versions = metadata },
 				},
 				getURL: 'getURL',
+				setURL: 'setURL',
 				setRequestStatus: 'setRequestStatus',
 				setContentText: 'setContentText',
 				setContentDocument: 'setContentDocument',
