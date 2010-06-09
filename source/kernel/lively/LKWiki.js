@@ -49,8 +49,10 @@ Widget.subclass('WikiNavigator', {
 		$super(null);
 		if (!world) world = WorldMorph.current();
 		this._world = world;
-		url = new URL(url).notSvnVersioned().withoutQuery();
-		this.svnResource = new SVNResource(this.repoUrl(), Record.newPlainInstance({URL: url.toString(), HeadRevision: null, Metadata: null}));
+		this.url = new URL(url).notSvnVersioned().withoutQuery();
+
+		this.svnResource = new SVNResource(this.repoUrl(),
+			Record.newPlainInstance({URL: this.url.toString(), HeadRevision: null, Metadata: null}));
 		if (!rev) {
 			this.svnResource.fetchHeadRevision(true);
 			rev = this.svnResource.getHeadRevision();
@@ -72,7 +74,7 @@ world: function() {
 			//['lockButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.5, 0.1, 0.3)],
 			['registerButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.85, 0.2, 0.1, 0.3)],
 			['loginButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.85, 0.5, 0.1, 0.3)],
-			['versionList', newTextListPane, new Rectangle(0.15, 0.2, 0.7, 0.6)],
+			['versionList', newDragnDropListPane, new Rectangle(0.15, 0.2, 0.7, 0.6)],
 		]);
 
         // delete panel when moving the mouse away from it
@@ -105,19 +107,22 @@ world: function() {
 		*/
 		
 /*****/
-        var versionList = panel.versionList;
+		var versionList = panel.versionList;
 		versionList.applyStyle({borderWidth:1, borderColor:Color.black})
+
         // FIXME This is for value conversion. Much better is using conversion method support of relay (see below)
-        var convertSVNMetadataToStrings = function(data) { return data.collect(function(ea) { return ea.toString() }) };
-        versionList.innerMorph().setList = versionList.innerMorph().setList.wrap(function(proceed, values) {
-            console.log("wrapped setList");
-            proceed(convertSVNMetadataToStrings(values));
-        });    
-        versionList.innerMorph().onListUpdate = versionList.innerMorph().onListUpdate.wrap(function(proceed, values) {
-            console.log("wrapped onListUpdate");
-            proceed(convertSVNMetadataToStrings(values));
-        });
+        // var convertSVNMetadataToStrings = function(data) { return data.collect(function(ea) { return ea.toString() }) };
+        // versionList.innerMorph().setList = versionList.innerMorph().setList.wrap(function(proceed, values) {
+            // console.log("wrapped setList");
+            // proceed(convertSVNMetadataToStrings(values));
+        // });    
+        // versionList.innerMorph().onListUpdate = versionList.innerMorph().onListUpdate.wrap(function(proceed, values) {
+            // console.log("wrapped onListUpdate");
+            // proceed(convertSVNMetadataToStrings(values));
+        // });
         versionList.connectModel(this.model.newRelay({List: "Versions", Selection: "Version"}), true /* kickstart if morph was deleted*/);
+
+
         //When using conversion methods this.model.setVersions no longer triggers the onListUpdate... why?
         // Relay.create({List: {mode: '', name: 'Versions', from: Number, to: String}})
         // var relay = Relay.newInstance({
@@ -147,7 +152,7 @@ world: function() {
 	},
 	
 	afterSaving: function() {
-		WorldMorph.current().addHand(new HandMorph(true));
+		this.world().addHand(new HandMorph(true));
 	},
 	
 	doSave: function(doNotOverwrite, optUrl) { // ok, clean this whole thing up!!!!
@@ -258,33 +263,28 @@ world: function() {
 			Global.window.location.assign(url);
 	},
 	
-	onVersionUpdate: function(versionString) {
-	    // FIXME ... looking for correct version ... better with conversion methods
-	    var selectedVersion = this.model.getVersions().detect(function(ea) { return ea.toString() == versionString});
+	onVersionUpdate: function(listItem) {
+		if (Object.isString(listItem)) {
+			console.warn('WikiNav got strange list item: ' + listItem);
+			return;
+		}
+	    var selectedVersion = listItem;
 	    var svnres = this.svnResource;
 	    svnres.withBaselineUriDo(selectedVersion.rev, function() {
-	        console.log("visiting: " + svnres.getURL());
-	        // FIXME use navigateToUrl
-            Config.askBeforeQuit = false;
-            window.location.assign(svnres.getURL());
-	    });
-	    
+			this.navigateToUrl(svnres.getURL(), true);
+		}.bind(this));
 	},
 	
 	findVersions: function() {
-	    if (this.model.getVersions().length == 0) this.model.setVersions(['Please wait, fetching version infos...']);
-		if (!this.svnResource.wasWrapped) {
-			this.svnResource.wasWrapped = true;
-			this.svnResource.formalModel.addObserver({onHeadRevisionUpdate: function(headRevision) {
-				if (!headRevision) return;
-				this.svnResource.fetchMetadata(false, null, headRevision);
-			}.bind(this)});
-			this.svnResource.formalModel.addObserver({onMetadataUpdate: function() {
-				this.model.setVersions(this.svnResource.getMetadata());
-			}.bind(this)});
-		};
-	    this.svnResource.fetchHeadRevision();
+		var m = this.model;
+		if (m.getVersions().length == 0)
+			m.setVersions(['Please wait, fetching version infos...']);
+		var res = new WebResource(this.url).beAsync();
+		lively.bindings.connect(res, 'versions', m, 'setVersions',
+			{converter: function(versions) { return versions.asListItemArray() }});
+		res.getVersions();
 	},
+
 openRegisterDialog: function() {
 	new UserRegistrationDialog().open();
 },
@@ -337,7 +337,13 @@ openRegisterDialog: function() {
 	login: function() {
 		// Just do a write, if the server allow authenticated users write access,
 		// a browser login popup should appear
-		new NetRequest().put(this.model.getURL().withFilename('auth'));
+		var res = new WebResource(this.url.withFilename('auth'));
+		lively.bindings.connect(res, 'status', this.world(), 'setStatusMessage',
+			{updater: function($upd, status) {
+				if (status.isSuccess()) $upd('Successfully logged in', Color.green, 3)
+				else $upd('Could not login: ' + status, Color.red, 5)
+			}})
+		res.beAsync().put('');
 	},
 // -------------
 		
@@ -359,12 +365,12 @@ openRegisterDialog: function() {
 		if (Config.wikiRepoUrl)
 			return true;
 	    // just look if url seems to point to a wiki file
-        return this.model.getURL().toString().include("wiki");
+        return this.url.toString().include("wiki");
 	},
 	
     worldExists: function(optURL) {
 		var url = optURL || this.model.getURL();
-        return new NetRequest().beSync().get(url).getStatus().isSuccess();
+        return new WebResource(url).get().status.isSuccess();
     },
 
 	askToDeleteCurrentWorld: function() {
@@ -374,14 +380,22 @@ openRegisterDialog: function() {
 		}.bind(this));
 	},
 	
-	deleteCurrentWorld: function() { return this.deleteWorld(this.model.getURL()) },
+	deleteCurrentWorld: function() { this.deleteWorld(this.url) },
 	
-	deleteWorld: function(url) { return this.svnResource.del().getStatus() },
+	deleteWorld: function(url) {
+	var res = new WebResource(this.url.withFilename('auth'));
+	lively.bindings.connect(res, 'status', this.world(), 'setStatusMessage',
+		{updater: function($upd, status) {
+			if (status.isSuccess()) $upd('Successfully deleted ' + url, Color.green, 3)
+			else $upd('Could not delete ' + url + ' because ' + status, Color.red, 5) }});
+	res.beAsync().del();
+},
 
 });
 
 Object.extend(WikiNavigator, {
     enableWikiNavigator: function(force, optUrl) {
+		// WikiNavigator.enableWikiNavigator(true)
 		var old = WikiNavigator.current;
         if (!force && old) return;
 		// if (old && old.btn) old.btn.remove();
