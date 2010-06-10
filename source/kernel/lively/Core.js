@@ -982,6 +982,7 @@ Object.subclass('Copier', {
 
 	initialize: function() {
 		this.wrapperMap = {};
+		this.patchSites = [];
 	},
 
 	addMapping: function(oldId, newMorph) {
@@ -1005,6 +1006,15 @@ Object.subclass('Copier', {
 		return replacement
 	},
 
+	lookUpOrTakeOriginal: function(original) {
+		if (!original) 
+			return null;
+		var replacement = this.lookup(original.id());
+		if (!replacement) {
+			return original
+		};
+		return replacement
+	},
 
 	shallowCopyProperties: function(wrapper, other) {	
 		for (var p in other) {
@@ -1012,7 +1022,24 @@ Object.subclass('Copier', {
 		} 
 	},	
 
+	copyProperties: function(wrapper, other) {	
+		for (var p in other) {
+		    this.copyProperty(p, wrapper, other)
+		} 
+	},
+
+	copyNewProperties: function(wrapper, other) {	
+		for (var p in other) {
+		    if (wrapper[p])
+				continue;
+			this.copyProperty(p, wrapper, other)
+		} 
+	},
+
 	shallowCopyProperty: function(property, wrapper, other) {
+		// console.log("smartCopyProperty " + property + " " + wrapper + " from: " + other)
+		if (!other.hasOwnProperty(property))
+			return;
 	    if (!(other[property] instanceof Function) 
 			&& other.hasOwnProperty(property) 
 			&& other.noShallowCopyProperties
@@ -1037,7 +1064,85 @@ Object.subclass('Copier', {
 				wrapper[property] = this.lookUpOrCopy(original)
 			};
 		};
-	}
+	},
+	
+	copyOrPatchProperty: function(property, object, other) {
+		var original = other[property]
+		if (original.id && (original.id instanceof Function)) {
+			this.addPatchSite(object, property, original.id());
+			object[property] = this.lookUpOrTakeOriginal(original)
+		} else {
+			// shallow copy
+			object[property] = original
+		}		
+	},
+	
+	copyProperty: function(property, object, other) {
+		// console.log("smartCopyProperty " + property + " " + object + " from: " + other)
+	    if ((other[property] instanceof Function) 
+		 	|| ! other.hasOwnProperty(property) 
+		 	|| (other.doNotCopyProperties && other.doNotCopyProperties.include(property)))
+			return; // copy nothing		
+		var original = other[property];
+		if (original) {
+			if (Object.isArray(original)) {
+				var a = original.clone();
+				for (var i=0; i<a.length; i++) {
+					// var ea = a[i];
+					// if (ea.id && (ea.id instanceof Function)) {
+					//	a[i] = this.lookUpOrTakeOriginal(ea)
+					// }
+					this.copyOrPatchProperty(i, a, original)
+				};
+				object[property] = a;
+			} else {			
+				this.copyOrPatchProperty(property, object, other)
+			};
+		};
+	},
+	
+	addPatchSite: function(wrapper, name, ref, optIndex) {
+		this.patchSites.push([wrapper, name, ref, optIndex]);
+    },
+
+    patchReferences: function() {
+		for (var i = 0, N = this.patchSites.length; i < N; i++) {
+		    var site = this.patchSites[i];
+		    var wrapper = site[0];
+		    var name = site[1];
+		    var ref = site[2];
+		    var index = site[3];
+		    var found;
+		    if (index !== undefined) {
+				if (!wrapper[name]) {
+					wrapper[name] = [];
+				} else if (!(wrapper[name] instanceof Array)) { 
+					throw new Error('whoops, serialization problem?');
+				}
+				found = (wrapper[name])[index] = this.lookup(ref);
+		    } else {
+				found = this.lookup(ref);
+				if (found)
+					wrapper[name] = found; // don't override the original if we could not patch it
+		    }
+			if (!found  && name === 'clip') {
+				// last hope, not clean
+				found = wrapper[name] = new lively.scene.Clip(this, Global.document.getElementById(ref));
+				if (found) console.warn('Found reference somehow but not in the way it was intended to be found!!!')
+			}
+		    if (!found) {
+				// If we could not found it, we assume that it was reference to an object not copied
+				// console.warn("no value found for field %s ref %s in wrapper %s", name, ref, wrapper);
+		    } else {
+				//console.log("found " + name + "=" + found + " and assigned to " + wrapper);
+		    }
+		}
+    },
+	
+	finish: function() {
+		this.patchReferences();
+	},
+
 }); 
 
 // 'dummy' copier for simple objects
@@ -1045,6 +1150,8 @@ Copier.marker = Object.extend(new Copier(), {
     addMapping: Functions.Empty,
     lookup: Functions.Null
 });
+
+
 
 Copier.subclass('Importer', {
     documentation: "Implementation class for morph de-serialization",
@@ -1122,11 +1229,7 @@ Copier.subclass('Importer', {
 		// sometimes there are null values in this.scripts. Filter them out
 		this.scripts.select(function(ea) {return ea}).forEach(function(s) { s.start(world); });
 	},
-    
-    addPatchSite: function(wrapper, name, ref, optIndex) {
-		this.patchSites.push([wrapper, name, ref, optIndex]);
-    },
-    
+        
     importWrapperFromNode: function(rawNode) {
 		///console.log('making morph from %s %s', node, LivelyNS.getType(node));
 		// call reflectively b/c 'this' is not a Visual yet. 
@@ -1190,36 +1293,7 @@ Copier.subclass('Importer', {
 		}
 	},
 
-    patchReferences: function() {
-		for (var i = 0, N = this.patchSites.length; i < N; i++) {
-		    var site = this.patchSites[i];
-		    var wrapper = site[0];
-		    var name = site[1];
-		    var ref = site[2];
-		    var index = site[3];
-		    var found;
-		    if (index !== undefined) {
-				if (!wrapper[name]) {
-					wrapper[name] = [];
-				} else if (!(wrapper[name] instanceof Array)) { 
-					throw new Error('whoops, serialization problem?');
-				}
-				found = (wrapper[name])[index] = this.lookup(ref);
-		    } else {
-				found = wrapper[name] = this.lookup(ref);
-		    }
-			if (!found  && name === 'clip') {
-				// last hope, not clean
-				found = wrapper[name] = new lively.scene.Clip(this, Global.document.getElementById(ref));
-				if (found) console.warn('Found reference somehow but not in the way it was intended to be found!!!')
-			}
-		    if (!found) {
-				console.warn("no value found for field %s ref %s in wrapper %s", name, ref, wrapper);
-		    } else {
-				//console.log("found " + name + "=" + found + " and assigned to " + wrapper);
-		    }
-		}
-    },
+
 
 	hookupModels: function() {
 		Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
@@ -1384,7 +1458,12 @@ lively.data.Wrapper.subclass('Morph', {
     layoutHandler: null, //a LayoutHandler for special response to setExtent, etc
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
-    noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
+
+  	// depricated
+  	noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'], 
+
+	doNotCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
+
     isEpimorph: false, // temporary additional morph that goes away quickly, not included in bounds
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
@@ -1423,7 +1502,9 @@ lively.data.Wrapper.subclass('Morph', {
 
 	duplicate: function () { 
 		// Return a full copy of this morph and its submorphs, with owner == null
-		var copy = this.copy(new Copier());
+		var copier = new Copier()
+		var copy = this.copy(copier);
+		copier.finish()
 		copy.owner = null;
 		return copy;
 	},
@@ -1472,13 +1553,14 @@ lively.data.Wrapper.subclass('Morph', {
 	},
 	
 	copyAttributesFrom: function(copier, other) {
+
 		for (var p in other) {
 			if (other[p] instanceof Function || !other.hasOwnProperty(p) || this.noShallowCopyProperties.include(p))
 				continue;
 
 			if (other[p] instanceof Morph) {
-				var replacement = (p === "owner") ? null : copier.lookup(other[p].id());
-				if (replacement !== this[p] && this.submorphs.include(this[p])) {
+				var replacement = (p === "owner") ? null : copier.copyOrPatchProperty(p, this, other);
+				if (this[p]  && replacement && replacement !== this[p] && this.submorphs.include(this[p])) {
 					// when the morph is replaced from the attribute it probably should also removed from the submorphs
 					// this should fix the problem with node creation in initializePersistentState
 					this.removeMorph(this[p]);					
@@ -1491,7 +1573,7 @@ lively.data.Wrapper.subclass('Morph', {
 				// should point to a copy of the submorph
 				continue;
 			}
-
+								
 			if (other[p] instanceof lively.scene.Image) {
 				this[p] = other[p].copy(copier);
 				this.addWrapper(this[p]);
@@ -1515,13 +1597,14 @@ lively.data.Wrapper.subclass('Morph', {
 						spec)
 				}, this)
 				continue;
-			}
+			};
+			// no gradients?
+			if (other[p] instanceof lively.paint.Gradient) 
+				continue;
 
-			if (!(other[p] instanceof lively.paint.Gradient)) {
-				this[p] = other[p];
-			}
-
-		} // shallow copy by default, note that arrays of Morphs are not handled
+			// shallow copy by default, note that arrays of Morphs are not handled
+			// this[p] = other[p];
+		};
 	},
 
 	copyActiveScriptsFrom: function(copier, other) {
@@ -1548,6 +1631,7 @@ lively.data.Wrapper.subclass('Morph', {
 	},
 
 	copyFrom: function(copier, other) {
+		
 		this.internalInitialize(other.rawNode.cloneNode(false), true);
 		copier.addMapping(other.id(), this);
 		
@@ -1557,8 +1641,14 @@ lively.data.Wrapper.subclass('Morph', {
 		this.initializePersistentState(other.shape.copy(copier));
 
 		this.copySubmorphsFrom(copier, other);
-		this.copyAttributesFrom(copier, other);
+
+
+		this.copyAttributesFrom(copier, other); // special cases
+		copier.copyNewProperties(this, other); // general case
+		
 		this.copyModelFrom(copier, other);
+
+
 
 		this.internalSetShape(other.shape.copy());
 		this.origin = other.origin.copy();
@@ -3333,9 +3423,16 @@ Morph.addMethods({
 		new MenuMorph(items, this).openIn(this.world(), evt.point(), false, "Top item is topmost");
 	},
 
-	copyToHand: function(hand) {
+	copyToHand: function(hand, evt, optCopier) {
 		// Function.prototype.shouldTrace = true;
-		var copy = this.copy(new Copier());
+		if (optCopier)
+			var copier = optCopier;
+		else
+			var copier = new Copier();
+		var copy = this.copy(copier);
+		if (!optCopier)
+			copier.finish(); // if copier comes from outside it should call finish
+
 		// when copying submorphs, make sure that the submorph that becomes a top-level morph 
 		// reappears in the same location as its original.
 		console.log('copied %s', copy);

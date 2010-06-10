@@ -145,6 +145,8 @@ TestCase.subclass('Tests.CoreTest.TestModel', {
 
 lively.data.Wrapper.subclass('DummyCopierObject', {
 
+	doNotCopyProperties: ['id', 'rawNode', 'child', 'children'],
+
 	initialize: function() {
 		this.a = "Hello";
 		this.b = 23;
@@ -162,14 +164,26 @@ lively.data.Wrapper.subclass('DummyCopierObject', {
 		this.shallowChild = other.shallowChild;
 		
 		copier.smartCopyProperty("child", this, other);	
-		
 		copier.smartCopyProperty("children", this, other);
+		
+		copier.copyProperties(this, other);
 		
 		return this;
 	},
 });	
 
 TestCase.subclass('Tests.CoreTest.CopierTest', {
+	
+	createObjectStructure: function() {
+		var objects = {
+			obj1: new DummyCopierObject(),
+			obj2: new DummyCopierObject(),
+			obj3: new DummyCopierObject(),
+		}
+		objects.obj1.child = objects.obj2;
+		objects.obj1.children = [objects.obj2, objects.obj3];
+		return objects
+	},
 	
 	testSimpleCopy: function() {
 		var obj = new DummyCopierObject();
@@ -201,19 +215,24 @@ TestCase.subclass('Tests.CoreTest.CopierTest', {
 	},
 
 	testNestedCopy: function() {
-		var obj = new DummyCopierObject();
-		var obj2 = new DummyCopierObject();
-		var obj3 = new DummyCopierObject();
-		obj.child = obj2;
-		obj.children = [obj2, obj3];
+		var objects = this.createObjectStructure();
+		var copy = objects.obj1.copy(new Copier());
 		
-		var copy = obj.copy(new Copier());
-		
-		this.assert(copy.child !== obj2, "copy.child is obj2");
-		this.assert(copy.child.id() !== obj2.id(), "copy.child.id() is obj2.id()");
+		this.assert(copy.child !== objects.obj2, "copy.child is obj2");
+		this.assert(copy.child.id() !== objects.obj2.id(), "copy.child.id() is obj2.id()");
 
 		this.assert(copy.children.first().id() === copy.child.id(), "obj2 got copied twice");
-		this.assert(copy.children[1].id() !== obj.children[1].id(), "obj3 in collection stayed the same");
+		this.assert(copy.children[1].id() !== objects.obj1.children[1].id(), "obj3 in collection stayed the same");
+	},
+
+	testCopyArray: function() {
+		var objects = this.createObjectStructure();
+		objects.obj1.customarray = [objects.obj2, objects.obj3, "Hello", this];
+		var copy = objects.obj1.copy(new Copier());
+		this.assert(copy.customarray, "array got not copied");
+		this.assert(objects.obj1.customarray !== copy.customarray, "array stayed the same ");
+		this.assert(objects.obj1.customarray[0] !== copy.customarray[0], "array[0] stayed the same");
+
 	},
 
 	testCyclicCopy: function() {
@@ -304,7 +323,52 @@ TestCase.subclass('Tests.CoreTest.CopierTest', {
 		var morphCopy = morph.copy(new Copier());
 		this.assert(morphCopy.rawNode.childNodes.length == morph.rawNode.childNodes.length, "morphCopy.rawNode.childNodes got messed up");
 	},
+	
+	testCopyTwoObjectsWithSameCopier: function() {
+		var objects = {
+			obj1: new DummyCopierObject(),
+			obj2: new DummyCopierObject(), 
+			foreign: new DummyCopierObject(), 	
+		};
+		objects.obj1.other = objects.obj2;
+		objects.obj2.other = objects.obj1;
+	
+		objects.obj1.foreign = objects.foreign;
+
+		var copier = new Copier();
+		var copy1 = objects.obj1.copy(copier);
+		var copy2 = objects.obj2.copy(copier);
+		copier.patchReferences();
+		
+		this.assert(copy1.other === copy2, "copy1 broken");
+		this.assert(copy2.other === copy1, "copy2 broken");
+		
+		this.assert(copy1.foreign === objects.foreign, "foreign broken");	
+	}
+	
+	
+
+	
+	
 });
+
+
+TestCase.subclass("Tests.CoreTest.CopyMorphTest", {
+
+	testMorphCustomAttribut: function() {
+		var morph = Morph.makeRectangle(new Rectangle(0, 0, 10, 10));
+		morph.customString = "Hello";
+		morph.customObject = { a: "Hello", b: 4};
+		morph.customArray = ["Hello", morph.customObject, 3];
+		morph.name = "testMorphCustomAttributMorph"
+		var morphCopy = morph.copy(new Copier());
+		this.assertEqual(morphCopy.customString, morph.customString, " customString broken");
+		this.assertEqual(morphCopy.customObject.a, "Hello", " customObject broken");
+		this.assertEqual(morphCopy.customArray.length, 3, " customArray broken");
+	},
+})
+	
+
 
 
 TestCase.subclass("Tests.CoreTest.EncodeWrapperJSONTest", {

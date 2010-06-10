@@ -872,8 +872,10 @@ BoxMorph.subclass("SelectionMorph", {
 		});
 	},
  
-	copyToHand: function(hand) { 
-		this.selectedMorphs.invoke('copyToHand', hand);
+	copyToHand: function(hand, evt) { 
+		var copier = new Copier();
+		this.selectedMorphs.invoke('copyToHand', hand, evt, copier);
+		copier.finish();
 	},
 	
 	setBorderWidth: function($super, width) { 

@@ -10,7 +10,63 @@ TestCase.subclass("Tests.ConnectorTest.NodeMorphLayeredMorphTest", {
 		var line = "LineMock";
 		this.morph.connectLineMorph(line);
 		this.assert(this.morph.connectorMorphs.include(line));
-	}
+	},
+	
+});
+
+TestCase.subclass("Tests.ConnectorTest.ConnectorNodeInteractionTest", {
+
+	testConnectMorphs: function() {
+		var m1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var m2 = Morph.makeRectangle(new Rectangle(100,100,50,50));		
+		var c = Morph.makeConnector(pt(0,0), pt(1,1));
+		c.connectMorphs(m1, m2);
+	},
+
+	testCopyConnector: function() {
+		var container = Morph.makeRectangle(new Rectangle(0,0,300,300));
+		container.m1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		container.m2 = Morph.makeRectangle(new Rectangle(100,100,50,50));		
+		container.c = Morph.makeConnector(pt(0,0), pt(1,1));
+
+		container.addMorph(container.m1);
+		container.addMorph(container.m2);
+		container.addMorph(container.c);
+		
+		container.c.connectMorphs(container.m1, container.m2);
+		var containerCopy = container.duplicate();
+		this.assert(container.m1 !== containerCopy.m1, " m1 did not copy")
+		this.assert(container.c !== containerCopy.c, " c did not copy")
+		this.assert(container.c.startMorph !== containerCopy.c.startMorph, " startMorph did not copy")
+		this.assert(container.m1.connectorMorphs !== containerCopy.m1.connectorMorphs, " connectorMorphs array did not copy")		
+		this.assert(container.m1.connectorMorphs[0] !== containerCopy.m1.connectorMorphs[0], " connectorMorphs[0] did not copy")		
+		
+		this.assert(containerCopy.c.startMorph === containerCopy.m1, " startMorph did not copy")		
+		this.assert(containerCopy.c.endMorph === containerCopy.m2, " endMorph did not copy")
+	},
+
+	testCopyConnectorWithoutContainer: function() {
+		var m1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var m2 = Morph.makeRectangle(new Rectangle(100,100,50,50));		
+		var c = Morph.makeConnector(pt(0,0), pt(1,1));
+		
+		c.connectMorphs(m1, m2);
+		var copier = new Copier();
+		// Change order of coping...
+		var cC = c.copy(copier); 
+		var m1C = m1.copy(copier);
+		var m2C = m2.copy(copier);
+		copier.finish();
+
+		this.assert(m1 !== m1C, " m1 did not copy")
+		this.assert(c !== cC, " c did not copy")
+		this.assert(c.startMorph !== cC.startMorph, " startMorph did not copy")
+		this.assert(m1.connectorMorphs !== m1C.connectorMorphs, " connectorMorphs array did not copy")		
+		this.assert(m1.connectorMorphs[0] !== m1C.connectorMorphs[0], " connectorMorphs[0] did not copy")		
+		
+		this.assert(cC.startMorph === m1C, " startMorph did not copy")		
+		this.assert(cC.endMorph === m2C, " endMorph did not copy")
+	},
 
 });
 

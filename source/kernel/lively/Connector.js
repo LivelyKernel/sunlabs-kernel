@@ -281,7 +281,24 @@ layerClass(ConnectorMorphLayer, Morph, {
 
 	getGlobalEndPos: function(proceed, p) {
 		return this.worldPoint(this.getEndPos());
-	}
+	},
+	
+	connectMorphs: function(proceed, startMorph, endMorph) {
+		startMorph.setWithLayers([NodeMorphLayer]);
+		endMorph.setWithLayers([NodeMorphLayer]);
+		
+		if (this.startMorph) this.startMorph.deconnectLineMorph(this);
+		if (this.endMorph) this.endMorph.deconnectLineMorph(this)
+		
+		this.startMorph = startMorph;
+		this.endMorph = endMorph;
+			
+		startMorph.connectLineMorph(this);
+		endMorph.connectLineMorph(this);
+		
+		this.updateConnection();
+				
+	},
 });
 
 createLayer("FindMorphLayer");
