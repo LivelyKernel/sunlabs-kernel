@@ -2178,13 +2178,13 @@ Object.subclass("Color", {
 	toString: function() {
 		function floor(x) { return Math.floor(x*255.99) };
 		// 06/10/10 currently no rgba support for SVG - http://code.google.com/p/chromium/issues/detail?id=45435
-		// return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + floor(this.a) + ")";
+		// return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + this.a + ")";
 		return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";		
 	},
 
 	toRGBAString: function() {
 		function floor(x) { return Math.floor(x*255.99) };
-		return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + floor(this.a) + ")";
+		return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + this.a + ")";
 	},
 	
 	toTuple: function() {
@@ -2267,7 +2267,7 @@ Object.extend(Color, {
 	},
 
 	rgba: function(r, g, b, a) {
-		return new Color(r/255, g/255, b/255, a/255);
+		return new Color(r/255, g/255, b/255, a);
 	},
 	
 	fromLiteral: function(spec) {
