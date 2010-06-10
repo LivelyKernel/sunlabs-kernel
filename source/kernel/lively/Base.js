@@ -2146,19 +2146,21 @@ function rect(location, corner) {
 
 Object.subclass("Color", { 
 
-	documentation: "Fully portable support for RGB colors",
+	documentation: "Fully portable support for RGB colors. A bit of rgba support is also included.",
 
-	initialize: function(r, g, b) {
+	initialize: function(r, g, b, a) {
 		this.r = r;
 		this.g = g;
 		this.b = b;
+		if (!a && a !== 0) a = 1;
+		this.a = a;
 	},
 
 	// Mix with another color -- 1.0 is all this, 0.0 is all other
 	mixedWith: function(other, proportion) { 
 		var p = proportion;
 		var q = 1.0 - p;
-		return new Color(this.r*p + other.r*q, this.g*p + other.g*q, this.b*p + other.b*q); 
+		return new Color(this.r*p + other.r*q, this.g*p + other.g*q, this.b*p + other.b*q, this.a*p + other.a*q); 
 	},
 
 	darker: function(recursion) { 
@@ -2175,11 +2177,18 @@ Object.subclass("Color", {
 
 	toString: function() {
 		function floor(x) { return Math.floor(x*255.99) };
-		return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";
+		// 06/10/10 currently no rgba support for SVG - http://code.google.com/p/chromium/issues/detail?id=45435
+		// return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + floor(this.a) + ")";
+		return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";		
 	},
 
+	toRGBAString: function() {
+		function floor(x) { return Math.floor(x*255.99) };
+		return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + floor(this.a) + ")";
+	},
+	
 	toTuple: function() {
-		return [this.r, this.g, this.b];
+		return [this.r, this.g, this.b, this.a];
 	},
 	
 	deserialize: function(importer, colorStringOrTuple) {
@@ -2192,6 +2201,8 @@ Object.subclass("Color", {
 		this.r = color.r;
 		this.g = color.g;
 		this.b = color.b;
+		if (!color.a && color.a !== 0) color.a = 1;
+		this.a = color.a;
 	}
 });
 
@@ -2255,12 +2266,16 @@ Object.extend(Color, {
 		return new Color(r/255, g/255, b/255);
 	},
 
+	rgba: function(r, g, b, a) {
+		return new Color(r/255, g/255, b/255, a/255);
+	},
+	
 	fromLiteral: function(spec) {
-		return new Color(spec.r, spec.g, spec.b);
+		return new Color(spec.r, spec.g, spec.b, spec.a);
 	},
 
 	fromTuple: function(tuple) {
-		return new Color(tuple[0], tuple[1], tuple[2]);
+		return new Color(tuple[0], tuple[1], tuple[2], tuple[3]);
 	},
 
 	fromString: function(str) {
