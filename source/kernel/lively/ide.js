@@ -170,7 +170,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 
 		// buttons
 		panel.submorphs.forEach(function(m) {
-			if (m.constructor == ButtonMorph)
+			if (m.constructor == ButtonMorph && m != panel.codeBaseDirBtn && m != panel.localDirBtn)
 				panel.midResizer.addFixed(m);
 		})
 
