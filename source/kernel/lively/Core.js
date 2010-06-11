@@ -6247,17 +6247,22 @@ WorldMorph.addMethods({
 	onKeyDown: function(evt) {
 		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
 		if (evt.isCommandKey() && !evt.isShiftDown()) {
-			var key = evt.getKeyChar();
-			if (key.toLowerCase() == 'b') {
+			var key = evt.getKeyChar().toLowerCase();
+			if (key == 'b') {
 				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
 				return true;
 			}
-			if (key.toLowerCase() == 'l') { // (L)ogger
+			if (key == 'l') { // (L)ogger
 				new ConsoleWidget().open();
 				return true;
 			}
-			if (key.toLowerCase() == 'k') { // Workspace
+			if (key == 'k') { // Workspace
 				this.addTextWindow("Workspace");
+				return true;
+			}
+			if (key == 's') { // save
+				WorldMorph.current().saveWorld()
+				evt.stop();
 				return true;
 			}
 		}
