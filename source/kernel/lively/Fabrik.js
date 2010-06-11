@@ -1965,7 +1965,21 @@ Widget.subclass('Component', {
 	},
 	
 	copySelectionAsXMLString: function() {
-		return new ClipboardCopier().copySelectionAsXMLString(this)
+		var clipboardCopier = new ClipboardCopier();
+		var component = this;
+		var copier = new Copier();
+		var componentCopy = component.copy(copier);
+		copier.finish();
+		var copy = componentCopy.panel;		
+		var doc = clipboardCopier.createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		worldNode.appendChild(copy.rawNode);
+		var exporter = new Exporter(copy);
+		// todo: what about the SystemDictionary
+		var helpers = exporter.extendForSerialization();
+		var result = Exporter.stringify(copy.rawNode);
+		exporter.removeHelperNodes(helpers);
+		return result
 	},
 	
 	

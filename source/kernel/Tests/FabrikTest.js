@@ -2325,6 +2325,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 		this.assert(text1.panel.component instanceof TextComponent, "panel has no text component");
 		var text1String = text1.copySelectionAsXMLString();
 		// console.log(text1String);
+		debugger
 		var morphs = this.copier.loadMorphsWithWorldTrunkFromSource(text1String);
 		this.assertEqual(morphs.size(), 1, "wrong number of morphs")
 		var morph1 = morphs[0];
@@ -2338,7 +2339,9 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 		var string = "Hello Copy and Paste";
 		text1.setText(string);
 		fabrik.plugin(text1);
-		fabrik.buildView(pt(400, 400));
+		var view = fabrik.buildView(pt(400, 400));
+		// view.openInWorld();
+		
 		text1.panel.setExtent(pt(50,100));
 		
         fabrik.panel.automaticLayout();
@@ -2370,9 +2373,102 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 
 		var components2 = fabrik.pasteComponentFromXMLString(text1String);
 		var text3 = components2.first();
-    }
+    },
+
+})
+
+Tests.SerializationTests.SerializationBaseTestCase.subclass('ATests.SerializationTests.TextComponentDeserializationBug', {
+
+	testCopyTextComponentTestFull: function() {
+		var text1 = new TextComponent();
+		var morph = text1.buildView()
+		// morph.openInWorld();
+		var text1String = text1.copySelectionAsXMLString();
+	    var xml = 	new ClipboardCopier().createBaseDocument(text1String);
+
+		var clipMorphRawNodeId = xml.getElementsByName("isClipMorph")[0].parentNode.id
+		var clipMorphRawNodeRef = xml.getElementsByName("clipMorph")[0].getAttribute("ref")
+		this.assertEqual(clipMorphRawNodeId, clipMorphRawNodeRef, "clipMorph ref is broken")
+
+		var importer = new Importer();
+		var nodes = importer.canvasContent(xml);
+		var morphs = importer.importFromNodeList(nodes);
+
+		var worldMorph = morphs[0];
+		var textComponent = worldMorph.submorphs[0];
+		var scrollPane = textComponent.submorphs[0];
+
+		importer.finish()
+		
+		this.assert(scrollPane.clipMorph, "no clipMorph")
+	},
+
+
+	testCopyTextComponentTestBasic: function() {
+		var component = new TextComponent();
+		var morph = component.buildView();
+
+		var copier = new Copier();
+		// This is the wrong way....  the morphs should be responsible for the copying, at least in lively
+		var componentCopy = component.copy(copier); 
+		copier.finish();
+		
+		this.assert(component.panel, "no panel morph")
+		this.assert(componentCopy.panel, "no panel did not get copied")
+
+		// original
+		var textMorph = component.panel.text;
+		var clipMorph = textMorph.owner;
+		var scrollMorph = clipMorph.owner;
+		this.assertIdentity(clipMorph, scrollMorph.clipMorph, " clipMorph is not identical")
+		
+		// copy
+		var textComponentMorphCopy = componentCopy.panel
+		var textMorphCopy = textComponentMorphCopy.text;
+		var clipMorphCopy = textMorphCopy.owner;
+		var scrollMorphCopy = clipMorphCopy.owner;
+		this.assertIdentity(clipMorphCopy, scrollMorphCopy.clipMorph, " clipMorphCopy is not identical")
+		
+		this.assertIdentity(textComponentMorphCopy.submorphs[0].submorphs[0].submorphs[0], textComponentMorphCopy.text, "TextMorph changed on copy")
+		
+		debugger
+		
+		// serialize
+		var doc = new ClipboardCopier().createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		worldNode.appendChild(textComponentMorphCopy.rawNode);
+		var exporter = new Exporter(textComponentMorphCopy);
+		var helpers = exporter.extendForSerialization();
+		var result = Exporter.stringify(textComponentMorphCopy.rawNode);
+		exporter.removeHelperNodes(helpers);
+		
+	
+		
+		// and now back to objects		
+	    var xml = 	new ClipboardCopier().createBaseDocument(result);
+		var clipMorphFieldNode = xml.getElementsByName("isClipMorph")[0];
+		this.assert(clipMorphFieldNode, "no clipMorph field serialized")
+		var clipMorphRawNodeId = clipMorphFieldNode.parentNode.id
+		var clipMorphRawNodeRef = xml.getElementsByName("clipMorph")[0].getAttribute("ref")
+		
+		this.assertEqual(clipMorphRawNodeId, clipMorphRawNodeRef, "clipMorph ref is broken")
+		
+		
+	},
+
+	testCopyTextPane: function() {
+		var textPane = newTextPane(new Rectangle(0, 0, 100, 100), "Hello");
+		this.assert(textPane.clipMorph, "no clipMorph 1")
+		var copyPane = textPane.duplicate();
+		this.assert(copyPane.clipMorph, "no clipMorph 2")
+	},
+
+
+
+
+
 });
 
 console.log("Loaded FabrikTest.js");
 
-}); // end of require
+}); // end of require `

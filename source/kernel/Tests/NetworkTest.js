@@ -335,7 +335,6 @@ TestCase.subclass('Tests.LKWikiTest.FileDirectoryTest', {
             test.assertEqual(local, subDirName, 'wrong dir created');
             createDirCalled = true;
         }
-        debugger;
         this.sut.copySubdirectory(subDirName, null, toFileDir, false);
         
         this.assert(createDirCalled, 'createDirCalled not');

@@ -72,6 +72,18 @@ layerClass(ProfileEachTestLayer, TestCase, {
 	},
 });
 
-Config.profileTestRuns = true
+Config.profileTestRuns = true;
+
+
+createLayer("DebugTestCaseLayer");
+layerClass(DebugTestCaseLayer, TestCase, {
+	assert: function(proceed, bool, msg) {
+		if (!bool)
+			debugger
+		proceed(bool, msg)
+	}
+})
+enableLayer(DebugTestCaseLayer)
+
 
 });

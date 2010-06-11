@@ -1127,6 +1127,10 @@ Object.subclass('Copier', {
 		    }
 			if (!found  && name === 'clip') {
 				// last hope, not clean
+				var clipRawNode = Global.document.getElementById(ref);
+				if (!clipRawNode)
+					return;
+				// ok, there must be a better way to deal with it...
 				found = wrapper[name] = new lively.scene.Clip(this, Global.document.getElementById(ref));
 				if (found) console.warn('Found reference somehow but not in the way it was intended to be found!!!')
 			}
@@ -1797,7 +1801,7 @@ lively.data.Wrapper.subclass('Morph', {
             }
             default: {
                 if (node.nodeType === Node.TEXT_NODE) {
-                    console.log('text tag name %s', node.tagName);
+                    //console.log('text tag name %s', node.tagName);
                     // whitespace, ignore
                 } else if (!this.restoreFromSubnode(importer, node)) {
                     console.warn('not handling %s, %s', node.tagName || node.nodeType, node.textContent);
@@ -6286,7 +6290,8 @@ WorldMorph.addMethods({
 		};
 		
 		var copier = new Copier();
-		var doc = new ClipboardCopier().createBaseDocument();
+		var clipboardCopier = new ClipboardCopier();
+		var doc = clipboardCopier.createBaseDocument();
 		var worldNode = doc.childNodes[0].childNodes[0];
 		
 		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
@@ -6295,7 +6300,7 @@ WorldMorph.addMethods({
 		selectedMorphs.each(function(ea) {
 			container.addMorph(ea.copy(copier));
 		})
-		
+		copier.finish()
 		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
 		systemDictionary.setAttribute("id", "SystemDictionary");
 		
@@ -6772,8 +6777,11 @@ ClipboardHack = {
 		this.selectPasteBuffer();
         var buffer = this.ensurePasteBuffer();
         if(!buffer) return false;
-        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {		
-            buffer.onpaste = function() {
+        if (evt.getKeyChar().toLowerCase() === "v" || evt.getKeyCode() === 22) {	
+			var paste_executed = false;
+		    buffer.onpaste = function() {
+				if (paste_executed) return; // BUG Workaround: Safari 5.0 (6533.16), calls the paste two times
+				paste_executed = true;
 				TextMorph.clipboardString = event.clipboardData.getData("text/plain");
                 if(target.doPaste) target.doPaste();
             };
@@ -6830,20 +6838,6 @@ Global.inspect = function(inspectee) {
 };
 
 Object.subclass('ClipboardCopier', {
-	
-	copySelectionAsXMLString: function(component) {
-		var componentCopy = component.copy(new Copier());
-		var copy = componentCopy.panel;		
-		var doc = this.createBaseDocument();
-		var worldNode = doc.childNodes[0].childNodes[0];
-		worldNode.appendChild(copy.rawNode);
-		var exporter = new Exporter(copy);
-		// todo: what about the SystemDictionary
-		var helpers = exporter.extendForSerialization();
-		var result = Exporter.stringify(copy.rawNode);
-		exporter.removeHelperNodes(helpers);
-		return result
-	},
 	
 	createBaseDocument: function(source) {
 		return new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?>' +
