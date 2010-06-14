@@ -3270,7 +3270,11 @@ Morph.addMethods({
 			[((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
 			[(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 			["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
-			[(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }]
+			[(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }],
+			["color chooser (gray)", function() { 
+				var colorChooser = new ColorChooserWidget(this);
+				var window = colorChooser.buildView()
+				this.world().addFramedMorph(pane, "gray", this.world().positionForNewMorph(pane))}]
 		]
 	},
 	

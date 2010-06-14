@@ -5207,6 +5207,53 @@ BoxMorph.subclass('ScaleMorph', {
 	},
 })
 
+
+Widget.subclass("ColorChooserWidget", {
+
+	initialize: function($super, target) {
+		$super();
+		this.target = target
+	},
+
+	buildView: function(extent) {
+		extent = extent || pt(140,140)
+		pane = new BoxMorph(pt(0,0).extent(extent))
+		pane.setFill(Color.gray)
+		pane.ownerWidget =this;
+		
+		slider = new SliderMorph(new Rectangle(10,10,30,100));
+		slider.valueScale = 255;
+
+		connect(
+			slider, 'value', 
+			slider.slider, 'setFill',
+			{converter: 
+				function(value) { return Color.rgb(value,value,value)}
+			});
+
+		connect(
+			slider, 'value', 
+			this.target, 'setFill',
+			{converter: 
+				function(value) { return Color.rgb(value,value,value)}
+			});
+			
+		var oldFill = this.target.getFill();		
+		if (oldFill instanceof Color) {
+			slider.setValue(oldFill.grayValue() * 255)
+		}
+
+		pane.addMorph(slider)
+		pane.openInWorld()	
+		return pane
+	}
+
+})
+
+
+
+
+
 console.log('loaded Widgets.js');
 
 

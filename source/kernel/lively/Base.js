@@ -2203,7 +2203,12 @@ Object.subclass("Color", {
 		this.b = color.b;
 		if (!color.a && color.a !== 0) color.a = 1;
 		this.a = color.a;
-	}
+	},
+	
+	grayValue: function() {
+		return (this.r + this.g + this.b) / 3
+	},
+	
 });
 
 Object.extend(Color, {
