@@ -1606,8 +1606,9 @@ lively.data.Wrapper.subclass('Morph', {
 			if (other[p] instanceof lively.paint.Gradient) 
 				continue;
 
-			// shallow copy by default, note that arrays of Morphs are not handled
-			// this[p] = other[p];
+			// default case
+			copier.copyProperty(p, this, other)
+	
 		};
 	},
 
@@ -1646,10 +1647,7 @@ lively.data.Wrapper.subclass('Morph', {
 
 		this.copySubmorphsFrom(copier, other);
 
-
-		this.copyAttributesFrom(copier, other); // special cases
-		copier.copyNewProperties(this, other); // general case
-		
+		this.copyAttributesFrom(copier, other); 		
 		this.copyModelFrom(copier, other);
 
 

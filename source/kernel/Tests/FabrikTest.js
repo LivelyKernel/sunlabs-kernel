@@ -2462,11 +2462,48 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('ATests.Serializatio
 		var copyPane = textPane.duplicate();
 		this.assert(copyPane.clipMorph, "no clipMorph 2")
 	},
+});
 
 
 
 
+TestCase.subclass('PinMorphInteractionTest', {
 
+    testHandleMouseEventPinMorph: function() {
+        var world = WorldMorph.current();
+        var hand = world.hands.first();
+        hand.mouseFocus = null;
+
+        var fabrik = new FabrikComponent();
+        var component = Fabrik.addTextComponent(fabrik); 
+        this.window = fabrik.openIn(world);
+        this.window.setPosition(pt(100,100));
+        component.panel.setPosition(pt(100,100));
+        
+        var pinMorph = component.getPinHandle("Text").morph;
+        var pos = pinMorph.worldPoint(pt(5,5));
+        var evt = newFakeMouseEvent(pos);
+        hand.reallyHandleMouseEvent(evt)
+        this.assert(!hand.mouseFocus, "there is a focus where there should not be one");
+        this.assert(hand.mouseOverMorph === pinMorph, "morph is not mouseOverMorph");              
+        
+        //var m = new Morph();
+        // BUG: opening a morph in the world make the next morph loopup fail
+        //WorldMorph.current().addMorph(m);
+        //this.window.addMorph(m)
+        // m.setPosition(pt(400,400));
+
+        var pos = pinMorph.worldPoint(pt(6,6));
+        var evt = newFakeMouseEvent(pos);
+        hand.reallyHandleMouseEvent(evt)
+        this.assert(!hand.mouseFocus, "there is a focus where there should not be one");
+        this.assert(hand.mouseOverMorph === pinMorph, "morph is not mouseOverMorph");              
+
+    },
+
+    tearDown: function(){
+        if(this.window) this.window.remove();
+    },
 });
 
 console.log("Loaded FabrikTest.js");

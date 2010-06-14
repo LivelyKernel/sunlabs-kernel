@@ -356,49 +356,6 @@ TestCase.subclass('ScrollPaneTest', {
 });
 
 
-
-
-TestCase.subclass('PinMorphInteractionTest', {
-
-    testHandleMouseEventPinMorph: function() {
-        var world = WorldMorph.current();
-        var hand = world.hands.first();
-        hand.mouseFocus = null;
-
-        var fabrik = new FabrikComponent();
-        var component = Fabrik.addTextComponent(fabrik); 
-        this.window = fabrik.openIn(world);
-        this.window.setPosition(pt(100,100));
-        component.panel.setPosition(pt(100,100));
-        
-        var pinMorph = component.getPinHandle("Text").morph;
-        var pos = pinMorph.worldPoint(pt(5,5));
-        var evt = newFakeMouseEvent(pos);
-        hand.reallyHandleMouseEvent(evt)
-        this.assert(!hand.mouseFocus, "there is a focus where there should not be one");
-        this.assert(hand.mouseOverMorph === pinMorph, "morph is not mouseOverMorph");              
-        
-        //var m = new Morph();
-        // BUG: opening a morph in the world make the next morph loopup fail
-        //WorldMorph.current().addMorph(m);
-        //this.window.addMorph(m)
-        // m.setPosition(pt(400,400));
-
-        var pos = pinMorph.worldPoint(pt(6,6));
-        var evt = newFakeMouseEvent(pos);
-        hand.reallyHandleMouseEvent(evt)
-        this.assert(!hand.mouseFocus, "there is a focus where there should not be one");
-        this.assert(hand.mouseOverMorph === pinMorph, "morph is not mouseOverMorph");              
-
-    },
-
-    tearDown: function(){
-        if(this.window) this.window.remove();
-    },
-
-
-});
-
 TestCase.subclass('VideoMorphTest', {
 
 	sourceFromYoutube: function() {
@@ -778,6 +735,28 @@ TestCase.subclass("VerticalLayoutTest", {
 			this.morph.remove()
 		}		
 	},
+})
+
+
+MorphTestCase.subclass("ATests.MorphTest.DuplicateTextMorphTest", {
+
+	setUp: function() {
+		this.sut = new TextMorph(new Rectangle(0,0,100,100, "Hello World"));
+	},
+	
+	testDuplicateWithFontSize: function() {
+		var fontSize = 50;
+		this.sut.setFontSize(fontSize);
+		var copy = this.sut.duplicate();
+		this.assertEqual(copy.fontSize, fontSize, "font size did not copy")	
+	},
+	
+	testDuplicateCustomProperty: function() {
+		var custom = "Hello Text";
+		this.sut.myCustom = custom;
+		var copy = this.sut.duplicate();
+		this.assertEqual(copy.myCustom, custom, "custom property did not copy")	
+	}
 })
 
 
