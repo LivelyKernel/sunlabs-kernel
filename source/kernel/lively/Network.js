@@ -347,13 +347,17 @@ View.subclass('NetRequest', {
 		this.transport = new XMLHttpRequest();
 		this.requestNetworkAccess();
 		this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
-		// FIXME onprogress leads to strange 101 errors when no internet connection available
-		// this.transport.onprogress = this.onProgress.bind(this);
-		// if (!UserAgent.isTouch) // FIXME crashes Mobile Safari
-		// 	this.transport.upload.onprogress = this.onProgress.bind(this);
 		this.isSync = false;
 		this.requestHeaders = {};
 		$super(modelPlug)
+	},
+
+	enableProgress: function() {
+		console.log("enableProgress")
+		// FIXME onprogress leads to strange 101 errors when no internet connection available
+		this.transport.onprogress = this.onProgress.bind(this);
+		if (!UserAgent.isTouch) // FIXME crashes Mobile Safari
+			this.transport.upload.onprogress = this.onProgress.bind(this);
 	},
 
 	requestNetworkAccess: function() {
@@ -672,6 +676,8 @@ View.subclass('Resource', NetRequestReporterTrait, {
 		if (sync) req.beSync();
 		if (this.contentType) req.setContentType(this.contentType);
 		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+		if (this.isShowingProgress)
+			req.enableProgress();
 		req.get(this.getURL());
 		return req;
 	},
@@ -704,6 +710,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 		if (optSync) req.beSync();
 		if (this.contentType) req.setContentType(this.contentType);
 		if (optRequestHeaders) req.setRequestHeaders(optRequestHeaders);
+		if (this.isShowingProgress)	req.enableProgress();
 		req.put(this.getURL(), content);
 		return req;
 	},
@@ -1125,6 +1132,10 @@ Object.subclass('WebResource', {
 
 	beAsync: function() { this._isSync = false; return this },
 
+	enableShowingProgress: function() {
+		this.isShowingProgress = true;
+	},
+
 	forceUncached: function() {
 		this._url = this.getURL().withQuery({time: new Date().getTime()});
 		return this;
@@ -1137,6 +1148,7 @@ Object.subclass('WebResource', {
 			Record.newPlainInstance({URL: this.getURL().toString(), ContentText: null}));
 		if (contentType)
 			resource.contentType = contentType;
+		resource.isShowingProgress = this.isShowingProgress;
 		resource.fetch(true, null, rev);
 		return resource.getContentText();
 	},
@@ -1259,6 +1271,7 @@ WebResource.addMethods({
 				getHeadRevision: 'getHeadRevision',
 				setMetadata: 'setMetadata',
 			});
+		resource.isShowingProgress = this.isShowingProgress;
 		resource.removeNetRequestReporterTrait();
 		return resource
 	},

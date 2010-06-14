@@ -157,7 +157,8 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		obj1.value = 15;
 		this.assertEqual(obj2.delta, 5)
 	},
-test16Updater: function () {
+	
+	test16Updater: function () {
 		var obj1 = {x: null};
 		var obj2 = {x: null};
 
@@ -173,7 +174,8 @@ test16Updater: function () {
 		this.assertEqual(obj2.x, 15, 'proceed not called');
 		c.disconnect();
 	},
-test17Updater: function () {
+
+	test17Updater: function () {
 		var obj1 = {x: 42};
 		var obj2 = {m: function(a, b) { obj2.a = a; obj2.b = b }};
 		var c = connect(obj1, 'x', obj2, 'm',
@@ -183,7 +185,7 @@ test17Updater: function () {
 		this.assertEqual(obj2.b, 42);
 	},
 
-test18UpdaterAndConverter: function () {
+	test18UpdaterAndConverter: function () {
 		var obj1 = {x: null};
 		var obj2 = {x: null};
 		var c = connect(obj1, 'x', obj2, 'x',
@@ -192,7 +194,8 @@ test18UpdaterAndConverter: function () {
 		obj1.x = 15;
 		this.assertEqual(obj2.x, 16);
 	},
-test19NoUpdaterNoConverter: function () {
+		
+	test19NoUpdaterNoConverter: function () {
 		var obj1 = {x: null};
 		var obj2 = {x: null};
 		var c = connect(obj1, 'x', obj2, 'x',
@@ -202,8 +205,9 @@ test19NoUpdaterNoConverter: function () {
 		this.assert(obj1.updaterWasCalled, 'no updater called');
 		this.assert(!obj1.converterWasCalled, 'converter called');
 	},
-test20RemoveAfterUpdateOnlyIfUpdaterProceeds: function() {
-		// no proceed, no remove
+		
+	test20RemoveAfterUpdateOnlyIfUpdaterProceeds: function() {
+			// no proceed, no remove
 		var obj1 = {};
 		var obj2 = {};
 		var c = connect(obj1, 'x', obj2, 'x',
@@ -220,12 +224,21 @@ test20RemoveAfterUpdateOnlyIfUpdaterProceeds: function() {
 		this.assertEqual(2, obj2.y, 'b');
 		this.assert(!obj1.attributeConnections || obj1.attributeConnections.length == 0,
 			'connection not removed!');
-},
+	},
 
-
-
-
-
+	test21DualUpdate: function() {
+			// no proceed, no remove
+			var obj1 = {};
+			var obj2 = {};
+			var obj3 = {};
+			var c1 = connect(obj1, 'x', obj2, 'x');
+			var c2 = connect(obj1, 'x', obj3, 'x');
+			obj1.x = 3;
+			
+			this.assertEqual(obj2.x, 3, "obj2 update broken");
+			this.assertEqual(obj3.x, 3, "obj3 update broken");
+			
+	},
 });
 
 Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.ConnectionSerializationTest', {
@@ -270,7 +283,8 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.
 		newTextMorph1.updateTextString('bar');
 		this.assertEqual('barfoo', newTextMorph2.textString, 'connect not working after deserialization');
 	},
-test03UpdaterIsSerialzed: function() {
+	
+	test03UpdaterIsSerialzed: function() {
 		var textMorph1 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
 		var textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'xyz');
 		this.worldMorph.addMorph(textMorph1);
