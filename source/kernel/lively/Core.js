@@ -3223,7 +3223,7 @@ Morph.addMethods({
 		evt.hand.lastMorphMenu = menu;
 	},
 
-	morphMenu: function(evt) { 
+	morphMenuBasicItems: function(evt) {
 		var items = [
 			["remove", this.remove],
 			["drill", this.showOwnerChain.curry(evt)],
@@ -3246,20 +3246,22 @@ Morph.addMethods({
 
 		if (this.getModel() instanceof SyntheticModel)
 			items.push( ["show Model dump", this.addModelInspector.curry(this)]);
+		return items
+	},
 
-		var menu = new MenuMorph(items, this);
 
+	morphMenu: function(evt) { 
+
+		var menu = new MenuMorph(this.morphMenuBasicItems(evt), this);
 		menu.addLine();
 		menu.addItem( ["world...", function() {this.world().showMorphMenu(evt)}.bind(this)]);
-
 		menu.addLine();
-
 		menu.addItems(this.subMenuItems(evt));
 		return menu;
 	},
 
-	subMenuItems: function(evt) {
-		var propertiesItems =  [
+	subMenuPropertiesItems: function(evt) {
+		return  [
 			["edit name...", function() { this.world().prompt('edit name', function(input) { this.setName(input) }.bind(this), this.getName()) }],
 			["reset rotation", this.setRotation.curry(0)],
 			["reset scaling", this.setScale.curry(1)],
@@ -3269,8 +3271,11 @@ Morph.addMethods({
 			[(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 			["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
 			[(this.copySubmorphsOnGrab ? "unpalettize" :  "palettize"), function() { this.copySubmorphsOnGrab = !this.copySubmorphsOnGrab; }]
-		];
-		var windowItems = [
+		]
+	},
+	
+	subMenuWindowItems: function(evt) {
+		return [
 			["put me in a window", this.putMeInAWindow.curry(this.position())], 
 			["put me in a tab", this.putMeInATab.curry(this.position())],
 			["put me in the open", this.putMeInTheWorld.curry(this.position())],
@@ -3278,10 +3283,13 @@ Morph.addMethods({
 			["package", function(evt) {  // FIXME insert package morph in exactly the same position?
 				new PackageMorph(this).openIn(this.world(), evt.point()); this.remove(); } ],
 			["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
-		];
+		]
+	},
+	
+	subMenuItems: function(evt) {
 		return [
-			['Properties', propertiesItems],
-			['Window and World', windowItems]
+			['Properties', this.subMenuPropertiesItems(evt)],
+			['Window and World', this.subMenuWindowItems(evt)]
 		]
 	},
 
