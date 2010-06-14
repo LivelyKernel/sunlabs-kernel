@@ -5073,24 +5073,37 @@ BoxMorph.subclass("StatusMessageContainer", {
 		}
 	},
 
+	addProgressBar: function(msg, options) {
+		var statusMorph = this.addStatusMessage(msg)
+		var progressBar = new ProgressBarMorph(new Rectangle(0,20,100,10));
+		statusMorph.addMorph(progressBar);
+		connect(
+			progressBar, 'value', 
+			statusMorph, 'remove', 
+			{updater: function($proceed, newValue, oldValue) {
+				if (newValue == 1) $proceed() 
+			}})
+		return progressBar
+	},
+
 	addStatusMessage: function(msg, color, delay, callback, optStyle, kind) {	
 		console.log((kind ? kind : "status msg: ") + msg)
 		this.showDismissAllButton();
 
-		var statusMorph = new TextMorph(pt(400,30).extentAsRectangle())
+		var statusMorph = new TextMorph(pt(400,30).extentAsRectangle());
 	
-		var closeButton = new ButtonMorph(pt(20,20).extentAsRectangle())
+		var closeButton = new ButtonMorph(pt(20,20).extentAsRectangle());
 		closeButton.setLabel("X");
-		closeButton.applyStyle({fill: Color.white})
+		closeButton.applyStyle({fill: Color.white});
 		closeButton.align(closeButton.bounds().rightCenter(), statusMorph.shape.bounds().rightCenter().subPt(pt(5,0)));
-		connect(closeButton, "fire", statusMorph, "remove")
+		connect(closeButton, "fire", statusMorph, "remove");
 		statusMorph.addMorph(closeButton);
 
 
 		if (callback) {
-			var moreButton = new ButtonMorph(pt(40,20).extentAsRectangle())
+			var moreButton = new ButtonMorph(pt(40,20).extentAsRectangle());
 			moreButton.setLabel("more");
-			moreButton.applyStyle({fill: Color.white})
+			moreButton.applyStyle({fill: Color.white});
 			moreButton.align(moreButton.bounds().topRight(), closeButton.bounds().topLeft().subPt(pt(5,0)));
 			var pressed = false;
 			var callbackObject = {callback: function() {
@@ -5100,8 +5113,8 @@ BoxMorph.subclass("StatusMessageContainer", {
 					callback();
 				}
 			}};
-			connect(moreButton, "fire", this, "relinquishKeyboardFocus", {converter: function(){ return WorldMorph.current().firstHand()}})
-			connect(moreButton, "fire", callbackObject, "callback")
+			connect(moreButton, "fire", this, "relinquishKeyboardFocus", {converter: function(){ return WorldMorph.current().firstHand()}});
+			connect(moreButton, "fire", callbackObject, "callback");
 			statusMorph.addMorph(moreButton);
 		}
 
@@ -5118,8 +5131,9 @@ BoxMorph.subclass("StatusMessageContainer", {
 			statusMorph.removeAtTime = new Date().getTime() + (delay * 1000);
 		};
 		
-		this.startUpdate() // actually not needed but to be sure....
+		this.startUpdate(); // actually not needed but to be sure....
 		
+		return statusMorph
 	}
 })
 

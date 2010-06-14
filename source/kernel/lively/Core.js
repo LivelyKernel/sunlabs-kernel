@@ -5277,18 +5277,28 @@ WorldMorph.addMethods({
 		return upperLeft.extent(lowerRight);
 	},
 
-	setStatusMessage: function(msg, color, delay, callback, optStyle, messageKind) {
-		if (!this._statusMorphContainer) {
-			this._statusMorphContainer = new StatusMessageContainer();
-			this.addMorph(this._statusMorphContainer);
-			this._statusMorphContainer.startUpdate();		
+	ensureStatusMessageContainer: function() {
+		if (!this._statusMessageContainer) {
+			this._statusMessageContainer = new StatusMessageContainer();
+			this.addMorph(this._statusMessageContainer);
+			this._statusMessageContainer.startUpdate();		
 		};
-		var container = this._statusMorphContainer;
+		return this._statusMessageContainer
+	},
+
+	setStatusMessage: function(msg, color, delay, callback, optStyle, messageKind) {
+		var container = this.ensureStatusMessageContainer();
 		container.align(container.bounds().topRight(), this.visibleBounds().topRight());
 		container.name = "statusMorphContainer";
 		container.bringToFront();
 		container.addStatusMessage(msg, color, delay, callback, optStyle, messageKind);
 	},	
+
+	showStatusProgress: function(msg) {
+		var container = this.ensureStatusMessageContainer();
+		var progressBar = container.addProgressBar(msg);		
+		return progressBar
+	}
 });
 
 /**
