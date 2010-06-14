@@ -5291,7 +5291,7 @@ WorldMorph.addMethods({
 		container.align(container.bounds().topRight(), this.visibleBounds().topRight());
 		container.name = "statusMorphContainer";
 		container.bringToFront();
-		container.addStatusMessage(msg, color, delay, callback, optStyle, messageKind);
+		return container.addStatusMessage(msg, color, delay, callback, optStyle, messageKind);
 	},	
 
 	showStatusProgress: function(msg) {
