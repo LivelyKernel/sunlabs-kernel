@@ -5074,9 +5074,10 @@ BoxMorph.subclass("StatusMessageContainer", {
 	},
 
 	addProgressBar: function(msg, options) {
-		var statusMorph = this.addStatusMessage(msg)
-		var progressBar = new ProgressBarMorph(new Rectangle(0,20,100,10));
+		var statusMorph = this.addStatusMessage("");
+		var progressBar = new ProgressBarMorph(new Rectangle(5,5, 370,20));
 		statusMorph.addMorph(progressBar);
+		progressBar.setLabel(msg);
 		connect(
 			progressBar, 'value', 
 			statusMorph, 'remove', 
