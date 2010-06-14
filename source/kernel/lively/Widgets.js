@@ -2396,14 +2396,14 @@ BoxMorph.subclass("SliderMorph", {
 	// the old formal Model code could go into a Compatiblity Layer.... :-)
 	getValue: function() {
 		// compatibilty
-		if (this.formalModel)
+		if (this.formalModel && this.formalModel.getValue)
 			return this.formalModel.getValue();
 		return this.value;
 	},
 	
 	setValue: function(value) {
 		// compatibilty
-		if (this.formalModel) 
+		if (this.formalModel && this.formalModel.setValue) 
 			return this.formalModel.setValue(value);	
 		
 		this.value = value
@@ -2412,7 +2412,7 @@ BoxMorph.subclass("SliderMorph", {
 	
 	getSliderExtent: function() {
 		// compatibilty
-		if (this.formalModel)
+		if (this.formalModel && this.formalModel.getSliderExtent)
 			return this.formalModel.getSliderExtent();
 
 		return this.sliderExtent
@@ -2420,8 +2420,8 @@ BoxMorph.subclass("SliderMorph", {
 
 	setSliderExtent: function(value) {
 		// compatibilty
-		if (this.formalModel) 
-			return this.formalModel.setValue(value);	
+		if (this.formalModel && this.formalModel.setSliderExtent) 
+			return this.formalModel.setSliderExtent(value);	
 
 		this.sliderExtent = value
 		this.onSliderExtentUpdate(value)
