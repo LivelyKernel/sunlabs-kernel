@@ -396,9 +396,16 @@ TestCase.subclass('Tests.BindingsTest.BindingsDuplicateTest', {
 	setUp: function() {
 		this.sut = Morph.makeRectangle(new Rectangle(100,100,100,50));
 		this.sut.text = new TextMorph(new Rectangle(0,0,100,20));
+		this.sut.addMorph(this.sut.text);
 
-		connect(this.sut, 'origin', this.sut.text, 'setTextString', 
-			function(ea) {return String(ea)}).update()
+		connect(this.sut, 'origin', this.sut.text, 'setTextString', {
+			converter: function(ea) {return String(ea)}}).update();
+
+		connect(this.sut, 'origin', this.sut.text, 'setFill', {
+			converter: function(ea) {return Color.red},
+			updater: function($proceed, newVal, oldVal) {
+				if (newVal.x > 200) $proceed(newVal, oldVal)}
+			}).update();
 	},
 
 	testBindingWorks: function() {
@@ -409,19 +416,23 @@ TestCase.subclass('Tests.BindingsTest.BindingsDuplicateTest', {
 
 	testDuplicateBinding: function() {
 		var p = pt(50,50);
-		var copy = this.sut.duplicate();
-
+		copy = this.sut.duplicate();
+		this.assertEqual(copy.attributeConnections.length, this.sut.attributeConnections.length,
+			 	" number of attributes connections is broken");
+		this.assert(copy.attributeConnections[1].getTargetObj(), "no source object in copy");
+		this.assert(copy.attributeConnections[1].getTargetObj(), "no taget object in copy");
+		this.assert(copy.text !== this.sut.text, "text object did not change");
+		
+		this.assertIdentity(copy.attributeConnections[1].getTargetObj(), copy.text,"no taget object in copy");
 		copy.setPosition(p);
-		this.assertEqual(this.sut.text.textString, String(p))
+		this.assertEqual(copy.text.textString, String(p))
 	},
 
 	testAttributeConnectionsAreDuplicated: function() {
 		var copy = this.sut.duplicate();
-
 		this.assert(this.sut.attributeConnections, "original has no connections");
 		this.assert(copy.attributeConnections, "copy has no connections");
 		this.assert(copy.attributeConnections !== this.sut.attributeConnections, "cconnections are not copied");
-
 	},
 
 	testCopyHasObservers: function() {
@@ -429,6 +440,22 @@ TestCase.subclass('Tests.BindingsTest.BindingsDuplicateTest', {
 		var copy = this.sut.duplicate();
 		this.assert(copy.__lookupGetter__('origin'), "copy as no observer")
 
+	},
+
+	testUpdaterIsCopied: function() {
+		this.assert(this.sut.attributeConnections[1].updater, "no update in fillConnection");
+		var copy = this.sut.duplicate();
+		this.assert(copy.attributeConnections[1].updater, "no update in fillConnection copy");
+	},
+	
+	testCopyPlainObjects: function() {
+		var o1 = {x: null};
+		var o2 = {y: null};
+		var sut = lively.bindings.connect(o1, 'x', o2, 'y');
+		
+		this.assert(this.sut.attributeConnections[1].updater, "no update in fillConnection");
+		var copy = this.sut.duplicate();
+		this.assert(copy.attributeConnections[1].updater, "no update in fillConnection copy");
 	},
 
 });

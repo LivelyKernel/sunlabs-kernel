@@ -740,7 +740,8 @@ TestCase.subclass("VerticalLayoutTest", {
 
 MorphTestCase.subclass("ATests.MorphTest.DuplicateTextMorphTest", {
 
-	setUp: function() {
+	setUp: function($super) {
+		$super();
 		this.sut = new TextMorph(new Rectangle(0,0,100,100, "Hello World"));
 	},
 	
@@ -756,7 +757,23 @@ MorphTestCase.subclass("ATests.MorphTest.DuplicateTextMorphTest", {
 		this.sut.myCustom = custom;
 		var copy = this.sut.duplicate();
 		this.assertEqual(copy.myCustom, custom, "custom property did not copy")	
-	}
+	},
+	
+	
+	testDuplicateRectangle: function() {
+		var morph = Morph.makeRectangle(new Rectangle(100,100,100,50));
+		morph.text = new TextMorph(new Rectangle(0,0,100,20));
+		morph.addMorph(morph.text)
+
+		// this.openMorph(morph);
+
+		
+		var copy = morph.duplicate();
+		
+		// this.assert(false)
+		this.assert(morph.text !== copy.text, "text did not get copied")
+	},
+	
 })
 
 

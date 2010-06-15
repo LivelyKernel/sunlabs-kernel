@@ -62,11 +62,14 @@ Object.subclass('AttributeConnection', {
 			newAttrName = this.privateAttrName(sourceAttrName);
 
 		if (sourceObj[newAttrName])
-			throw new Error('newAttrName ' + newAttrName + ' already exists. Are there already other connections?');
-
+			throw dbgOn(new Error('newAttrName ' + newAttrName + ' already exists. Are there already other connections?'));
+			
 		// add new attr to the serialization ignore list
 		if (sourceObj.doNotSerialize !== undefined && sourceObj.doNotSerialize.push)
 			sourceObj.doNotSerialize.push(newAttrName);
+
+		if (sourceObj.doNotCopyProperties !== undefined && sourceObj.doNotCopyProperties.push)
+			sourceObj.doNotCopyProperties.push(newAttrName);
 
 		// assign old value to new slot
 		sourceObj[newAttrName] = sourceObj[sourceAttrName];
@@ -122,7 +125,6 @@ Object.subclass('AttributeConnection', {
 
 		if (this.isActive/*this.isRecursivelyActivated()*/) return;
 		this.isActive = true; // this.activate();
-
 		var self = this;
 		var callOrSetTarget = function(newValue) {
 			// use a function and not a method to capture this in self and so that no bind is necessary
@@ -179,6 +181,10 @@ Object.subclass('AttributeConnection', {
 			this.getTargetObj(),
 			this.getTargetMethodName());
 	},
+	
+	copy: function(copier) {
+		return AttributeConnection.fromLiteral(this.toLiteral(), copier);
+	}
 
 });
 
@@ -191,7 +197,8 @@ AttributeConnection.addMethods({
 				sourceAttrName: this.sourceAttrName,
 				targetObj: null,
 				targetMethodName: this.targetMethodName,
-				converter: null,
+				converter: this.converter ? this.converter.toString() : null,
+				updater: this.updater ? this.updater.toString() : null,
 				removeAfterUpdate: this.removeAfterUpdate,
 			}; 
 		};

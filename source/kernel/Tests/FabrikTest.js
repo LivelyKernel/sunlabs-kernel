@@ -2325,7 +2325,6 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 		this.assert(text1.panel.component instanceof TextComponent, "panel has no text component");
 		var text1String = text1.copySelectionAsXMLString();
 		// console.log(text1String);
-		debugger
 		var morphs = this.copier.loadMorphsWithWorldTrunkFromSource(text1String);
 		this.assertEqual(morphs.size(), 1, "wrong number of morphs")
 		var morph1 = morphs[0];
@@ -2430,8 +2429,6 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('ATests.Serializatio
 		this.assertIdentity(clipMorphCopy, scrollMorphCopy.clipMorph, " clipMorphCopy is not identical")
 		
 		this.assertIdentity(textComponentMorphCopy.submorphs[0].submorphs[0].submorphs[0], textComponentMorphCopy.text, "TextMorph changed on copy")
-		
-		debugger
 		
 		// serialize
 		var doc = new ClipboardCopier().createBaseDocument();
