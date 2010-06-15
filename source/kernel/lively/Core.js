@@ -932,25 +932,34 @@ Object.extend(Exporter, {
 		doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(newDict, true));
 	},
 
-	saveDocumentToFile: function(doc, urlOrFilename) {
+	saveDocumentToFile: function(doc, urlOrFilename, callback) {
 		console.group("save document")
 		if (!urlOrFilename) return null;
 		var string = urlOrFilename.toString();
 		if (!string.endsWith('.xhtml')) {
 			string += ".xhtml";
 			console.log("changed url to " + string);
-		}
+		};
 		
 		var url = string.startsWith('http') ? new URL(string) : URL.source.withFilename(string);
 		
 		var r = new WebResource(url);
+		r.enableShowingProgress();
 		connect(r, 'status', this, 'showSaveStatus');
+
+		var progressBar  =  WorldMorph.current().showStatusProgress("");
+		progressBar.setLabel("saving " + urlOrFilename);
+		progressBar.setValue(0);
+		connect(r, 'progress', progressBar, 'setValue', {converter: function(rpe) { return (rpe.loaded / rpe.total)}});
+
+		var onFinishedObj = {callback: function(status) {
+			console.log("finished saving")
+			progressBar.setValue(1);
+			callback(status)
+		}};
+		connect(r, 'status', onFinishedObj, 'callback');
 		
-		// TODO add progress bar
-		// connect(r, 'progress', WorldMorph.current(), 'alert', {converter: function(rpe) { return rpe.loaded }});
-		
-		r.beAsync().put(doc)
-		
+		r.beAsync().put(doc)		
 		return url;
 	},
 
@@ -5248,13 +5257,25 @@ WorldMorph.addMethods({
 		// make relative to absolute URL
 		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
 		var start = new Date().getTime();
-		this.removeHand(this.firstHand());
-		var doc = Exporter.shrinkWrapMorph(this.world());
-		new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);
-		var url = Exporter.saveDocumentToFile(doc, url);
-		this.addHand(new HandMorph(true));
-		var time = new Date().getTime() - start;
-		this.setStatusMessage("world saved to " + url + " in " + time + "ms", Color.green, 3)
+		var self = this;
+		var serializeTime;
+		var onFinished = function() {
+			var time = new Date().getTime() - start;
+			self.setStatusMessage("world saved to " + optURLOrPath + " in " + time + "ms \n(" + serializeTime + "ms serialization)", Color.green, 3)
+		}
+		var statusMessage = WorldMorph.current().setStatusMessage("serializing....");
+		(function() {
+			var oldHand = this.firstHand()
+			this.removeHand(oldHand);
+			var doc = Exporter.shrinkWrapMorph(this.world());
+			this.addHand(oldHand);
+			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);			
+			statusMessage.remove();
+			serializeTime = new Date().getTime() - start;
+			(function() {
+				Exporter.saveDocumentToFile(doc, url, onFinished);
+			}).bind(this).delay(0);
+		}).bind(this).delay(0);
 		return url;
 	},
 	
