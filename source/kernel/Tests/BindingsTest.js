@@ -306,89 +306,132 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.
 });
 Object.subclass('Tests.BindingsTest.BindingsProfiler', {
 
-connectCount: 20000,
+	connectCount: 20000,
 
-startAndShow: function() {
-	lively.bindings.connect(this, 'result', WorldMorph.current(), 'addTextWindow');
-	this.start()
-},
-
-start: function() {
-	var runPrefix = 'run';
-	var self = this;
-	var methods = Functions.all(this).select(function(name) { return name.startsWith(runPrefix) });
-	var result = 'Bindings profiling ' + new Date() + '\n' + navigator.userAgent;
-	var progressBar = WorldMorph.current().addProgressBar();
-	methods.forEachShowingProgress(progressBar, function(name) {
-		var time = self[name]();
-		name = name.substring(runPrefix.length, name.length);
-		result += '\n' + name + ':\t' + time;
+	startAndShow: function() {
+		lively.bindings.connect(this, 'result', WorldMorph.current(), 'addTextWindow');
+		this.start()
 	},
-	function(name) { return 'running ' + name },
-	function(name) { progressBar.remove(); self.result = result });
-	return this
-},
 
-connectAndRun: function(target, targetProp, options) {
-	var source = {x: null};
-	var sourceProp = 'x';
-	lively.bindings.connect(source, sourceProp, target, targetProp, options);
+	start: function() {
+		var runPrefix = 'run';
+		var self = this;
+		var methods = Functions.all(this).select(function(name) { return name.startsWith(runPrefix) });
+		var result = 'Bindings profiling ' + new Date() + '\n' + navigator.userAgent;
+		var progressBar = WorldMorph.current().addProgressBar();
+		methods.forEachShowingProgress(progressBar, function(name) {
+			var time = self[name]();
+			name = name.substring(runPrefix.length, name.length);
+			result += '\n' + name + ':\t' + time;
+		},
+		function(name) { return 'running ' + name },
+		function(name) { progressBar.remove(); self.result = result });
+		return this
+	},
 
-	var now = new Date();
-	for (var i = 0; i < this.connectCount; i++) source.x = i
-	return new Date() - now;
-},
+	connectAndRun: function(target, targetProp, options) {
+		var source = {x: null};
+		var sourceProp = 'x';
+		lively.bindings.connect(source, sourceProp, target, targetProp, options);
 
-runSimpleConnect: function() { return this.connectAndRun({y: null}, 'y') },
-runMethodConnect: function() { return this.connectAndRun({m: function(v) { this.x = v }}, 'm') },
+		var now = new Date();
+		for (var i = 0; i < this.connectCount; i++) source.x = i
+		return new Date() - now;
+	},
 
-runConverterConnectAttribute: function() {
-	return this.connectAndRun({m: function(v) { this.x = v }}, 'm',
-		{converter: function(v) { return v + 1 }});
-},
+	runSimpleConnect: function() { return this.connectAndRun({y: null}, 'y') },
+	runMethodConnect: function() { return this.connectAndRun({m: function(v) { this.x = v }}, 'm') },
 
-runConverterConnectMethod: function() {
-	return this.connectAndRun({y: null}, 'y', 
-		{converter: function(v) { return v + 1 }});
-},
+	runConverterConnectAttribute: function() {
+		return this.connectAndRun({m: function(v) { this.x = v }}, 'm',
+			{converter: function(v) { return v + 1 }});
+	},
 
-runUpdaterConnectAttribute: function() {
-	return this.connectAndRun({y: null}, 'y',
-		{updater: function(upd, newV, oldV) { upd.call(this, newV, oldV) }});
-},
+	runConverterConnectMethod: function() {
+		return this.connectAndRun({y: null}, 'y', 
+			{converter: function(v) { return v + 1 }});
+	},
 
-runUpdaterConnectMethod: function() {
-	return this.connectAndRun({m: function(v1, v2) { this.x = v1++ }}, 'm',
-		{updater: function(upd, newV, oldV) { upd.call(this, newV + oldV, oldV) }});
-},
+	runUpdaterConnectAttribute: function() {
+		return this.connectAndRun({y: null}, 'y',
+			{updater: function(upd, newV, oldV) { upd.call(this, newV, oldV) }});
+	},
 
-runTextMorphConnect: function() {
-	var source = new TextMorph(new Rectangle(0,0, 100, 100), '');
-	var sourceProp = 'textString';
-	var target = new TextMorph(new Rectangle(0,0, 100, 100), '');
-	var targetProp = 'setTextString'
-	lively.bindings.connect(source, sourceProp, target, targetProp);
+	runUpdaterConnectMethod: function() {
+		return this.connectAndRun({m: function(v1, v2) { this.x = v1++ }}, 'm',
+			{updater: function(upd, newV, oldV) { upd.call(this, newV + oldV, oldV) }});
+	},
 
-	var now = new Date();
-	for (var i = 0; i < (this.connectCount / 10); i++) source.textString = i.toString()
-	return new Date() - now;
-},
+	runTextMorphConnect: function() {
+		var source = new TextMorph(new Rectangle(0,0, 100, 100), '');
+		var sourceProp = 'textString';
+		var target = new TextMorph(new Rectangle(0,0, 100, 100), '');
+		var targetProp = 'setTextString'
+		lively.bindings.connect(source, sourceProp, target, targetProp);
 
-runCreateConnection: function() {
-	var now = new Date()
-	var source = {x: null}, target = {y: null};
-	for (var i = 0; i < this.connectCount; i++)
-		lively.bindings.connect(source, 'x', target, 'y');
-	return new Date() - now
-},
-runSimpleMethodCall: function() {
-	var now = new Date()
-	var source = {m: function(v) { source.x = v; target.m(v) }}, target = {m: function(v) { target.x = v }};
-	for (var i = 0; i < this.connectCount*10; i++)
-		source.m(i);
-	return new Date() - now
-},
+		var now = new Date();
+		for (var i = 0; i < (this.connectCount / 10); i++) source.textString = i.toString()
+		return new Date() - now;
+	},
+
+	runCreateConnection: function() {
+		var now = new Date()
+		var source = {x: null}, target = {y: null};
+		for (var i = 0; i < this.connectCount; i++)
+			lively.bindings.connect(source, 'x', target, 'y');
+		return new Date() - now
+	},
+	runSimpleMethodCall: function() {
+		var now = new Date()
+		var source = {m: function(v) { source.x = v; target.m(v) }}, target = {m: function(v) { target.x = v }};
+		for (var i = 0; i < this.connectCount*10; i++)
+			source.m(i);
+		return new Date() - now
+	},
 
 });
+
+TestCase.subclass('Tests.BindingsTest.BindingsDuplicateTest', {
+
+	setUp: function() {
+		this.sut = Morph.makeRectangle(new Rectangle(100,100,100,50));
+		this.sut.text = new TextMorph(new Rectangle(0,0,100,20));
+
+		connect(this.sut, 'origin', this.sut.text, 'setTextString', 
+			function(ea) {return String(ea)}).update()
+	},
+
+	testBindingWorks: function() {
+		var p = pt(50,50);
+		this.sut.setPosition(p);
+		this.assertEqual(this.sut.text.textString, String(p))
+	},
+
+	testDuplicateBinding: function() {
+		var p = pt(50,50);
+		var copy = this.sut.duplicate();
+
+		copy.setPosition(p);
+		this.assertEqual(this.sut.text.textString, String(p))
+	},
+
+	testAttributeConnectionsAreDuplicated: function() {
+		var copy = this.sut.duplicate();
+
+		this.assert(this.sut.attributeConnections, "original has no connections");
+		this.assert(copy.attributeConnections, "copy has no connections");
+		this.assert(copy.attributeConnections !== this.sut.attributeConnections, "cconnections are not copied");
+
+	},
+
+	testCopyHasObservers: function() {
+		this.assert(this.sut.__lookupGetter__('origin'), "original as no observer")
+		var copy = this.sut.duplicate();
+		this.assert(copy.__lookupGetter__('origin'), "copy as no observer")
+
+	},
+
+});
+
 
 }); // end of module
