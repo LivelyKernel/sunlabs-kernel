@@ -6331,9 +6331,11 @@ WorldMorph.addMethods({
 		
 		worldNode.appendChild(container.rawNode);
 		var exporter = new Exporter(container);
+		container.dictionary = function() { return systemDictionary}
 		var helpers = exporter.extendForSerialization(systemDictionary);
 		var result = Exporter.stringify(container.rawNode);
 		exporter.removeHelperNodes(helpers);
+		delete container.dictionary
 	
 		return result
 	},
