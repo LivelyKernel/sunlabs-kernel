@@ -1492,7 +1492,7 @@ lively.data.Wrapper.subclass('Morph', {
 		dbgOn(!shape.bounds);
 		// we must make sure the Morph keeps its original size (wrt/fisheyeScale)
 		if (this.fisheyeScale != 1) this.scalePoint = this.scalePoint.scaleBy(1 / this.fisheyeScale);
-		this.origin = shape.origin();
+		this.origin = shape.getOrigin();
 		shape.translateBy(this.origin.negated());
 		this.initializePersistentState(shape);
 		this.initializeTransientState();

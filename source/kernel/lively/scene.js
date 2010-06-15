@@ -821,7 +821,7 @@ this.Node.subclass('lively.scene.Shape', {
 		throw new Error('unimplemented');
 	},
 
-	origin: function() {
+	getOrigin: function() {
 		return this.bounds().topLeft();
 	}
 });
@@ -1007,7 +1007,7 @@ this.Shape.subclass('lively.scene.Ellipse', {
 		return pt(this.rawNode.cx.baseVal.value, this.rawNode.cy.baseVal.value);
 	},
 
-	origin: function() {
+	getOrigin: function() {
 		return this.center();
 	},
 
@@ -1130,7 +1130,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 			return Rectangle.unionPts(vertices);
 	},
 
-	origin: function() {
+	getOrigin: function() {
 		// no natural choice to pick the origin of a polgon/polyline
 		return pt(0, 0);
 	},
@@ -1315,7 +1315,7 @@ lively.scene.Shape.subclass('lively.scene.Polyline', {
 	
 	// poorman's traits :)
 	bounds: this.Polygon.prototype.bounds,
-	origin: this.Polygon.prototype.origin,
+	getOrigin: this.Polygon.prototype.getOrigin,
 	vertices: this.Polygon.prototype.vertices,
 	setVertices: this.Polygon.prototype.setVertices,
 	reshape: this.Polygon.prototype.reshape,
@@ -2194,7 +2194,7 @@ this.translateBy(tx);
 		return this.content.some(function(item) { return item.containsPoint(p); });
 	},
 
-	origin: function(shape) { 
+	getOrigin: function(shape) { 
 		return this.bounds().topLeft();
 	},
 
