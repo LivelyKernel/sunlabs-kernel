@@ -4676,10 +4676,16 @@ PasteUpMorph.subclass("WorldMorph", {
 		if (!canvas) return;
 		this.transformChanged();
 		this.fullBounds = null;
-		if (canvas.clientWidth != this.bounds().width)
-			canvas.setAttribute("width", this.bounds().width + canvas.offsetLeft * this.getScale());
-		if (canvas.clientHeight != this.bounds().height)
-			canvas.setAttribute("height", this.bounds().height + canvas.offsetTop * this.getScale());
+		if (canvas.clientWidth != this.bounds().width) {
+			var width = this.bounds().width;
+			if (canvas.offsetLeft) width += canvas.offsetLeft * this.getScale()
+			canvas.setAttribute("width",  width);
+		}
+		if (canvas.clientHeight != this.bounds().height) {
+			var height = this.bounds().height;
+			if (canvas.offsetTop) height += canvas.offsetTop * this.getScale()
+			canvas.setAttribute("width",  height);
+		}
 	},
 
 	displayOnCanvas: function(canvas) {
