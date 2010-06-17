@@ -2209,6 +2209,11 @@ Object.subclass("Color", {
 		return (this.r + this.g + this.b) / 3
 	},
 	
+	equals: function(other) {
+		if(!other) return false;
+		return this.r === other.r && this.g === other.g && this.b === other.b;
+	},
+
 });
 
 Object.extend(Color, {
@@ -2288,25 +2293,48 @@ Object.extend(Color, {
 		return tuple && Color.fromTuple(tuple);
 	},
 
-	parse: function(str) { 
-		// FIXME this should be much more refined
+	rgbaRegex: new RegExp('\\s*rgba?\\s*\\(\\s*(\\d+)(%?)\\s*,\\s*(\\d+)(%?)\\s*,\\s*(\\d+)(%?)\\s*(?:,\\s*([0-9\\.]+)\\s*)?\\)\\s*'),
+
+	parse: function(str) {
 		// FIXME handle keywords
-		if (!str || str == 'none')
-			return null;
-		var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
-		var r,g,b;
-		if (match) { 
-			r = parseInt(match[1])/255;
-			g = parseInt(match[2])/255;
-			b = parseInt(match[3])/255;
-			return [r, g, b];
-		} else if (str.length == 7 && str.charAt(0) == '#') {
-			r = parseInt(str.substring(1,3), 16)/255;
-			g = parseInt(str.substring(3,5), 16)/255;
-			b = parseInt(str.substring(5,7), 16)/255;
-			return [r, g, b];
-		} else return null;
-	}
+		if (!str || str == 'none') return null;
+		return str.startsWith('#') ? this.parseHex(str) : this.parseRGB(str);
+	},
+
+	parseRGB: function(str) {
+		// match string of the form rgb([r],[g],[b]) or rgb([r%],[g%],[b%]), allowing whitespace between all components
+		var match = str.match(this.rgbaRegex);
+		if (match) {
+			var r = parseInt(match[1]) / (match[2] ? 100 : 255);
+			var g = parseInt(match[3]) / (match[4] ? 100 : 255);
+			var b = parseInt(match[5]) / (match[6] ? 100 : 255);
+			var a = match[7] ? parseInt(match[7]) : 0;
+			return [r, g, b, a];
+		} 
+		return null;
+	},
+	
+	parseHex: function(str) {
+		var rHex, gHex, bHex;
+		if (str.length == 7) { // like #CC0000
+			rHex = str.substring(1,3);
+			gHex = str.substring(3,5);
+			bHex = str.substring(5,7);
+		} else if (str.length == 4) { // short form like #C00
+			rHex = str.substring(1,2);
+			rHex += rHex;
+			gHex = str.substring(2,3);
+			gHex += gHex;
+			bHex = str.substring(3,4);
+			bHex += bHex;
+		} else {
+			return null
+		}
+		var r = parseInt(rHex, 16)/255;
+		var g = parseInt(gHex, 16)/255;
+		var b = parseInt(bHex, 16)/255;
+		return [r, g, b];
+	},
 });
 
 
