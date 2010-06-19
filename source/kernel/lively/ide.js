@@ -2423,6 +2423,7 @@ CodeParser.subclass('OMetaParser', {
 Object.subclass('lively.ide.ModuleWrapper', {
 
 	documentation: 'Compatibility layer around normal modules for SourceCodeDatabase and other tools. Will probably merged with normal modules in the future.',
+	forceUncached: true,
 	
 	initialize: function(moduleName, type) {
 		if (!moduleName || !type)
@@ -2442,7 +2443,10 @@ Object.subclass('lively.ide.ModuleWrapper', {
 	moduleName: function() { return this._moduleName },
 	
 	fileURL: function() {
-		return URL.codeBase.withFilename(this.fileName());
+		var fn = this.fileName();
+		if (this.forceUncached)
+		 	fn += '?' + new Date().getTime();
+		return URL.codeBase.withFilename(fn);
 	},
 	
 	fileName: function() {
