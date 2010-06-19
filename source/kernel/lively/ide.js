@@ -2443,10 +2443,8 @@ Object.subclass('lively.ide.ModuleWrapper', {
 	moduleName: function() { return this._moduleName },
 	
 	fileURL: function() {
-		var fn = this.fileName();
-		if (this.forceUncached)
-		 	fn += '?' + new Date().getTime();
-		return URL.codeBase.withFilename(fn);
+		var url = URL.codeBase.withFilename(fn);
+		return this.forceUncached ? url.forceUncached() : url;
 	},
 	
 	fileName: function() {
