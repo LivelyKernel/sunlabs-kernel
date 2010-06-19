@@ -2443,8 +2443,7 @@ Object.subclass('lively.ide.ModuleWrapper', {
 	moduleName: function() { return this._moduleName },
 	
 	fileURL: function() {
-		var url = URL.codeBase.withFilename(this.fileName());
-		return this.forceUncached ? url.forceUncached() : url;
+		return URL.codeBase.withFilename(this.fileName());
 	},
 	
 	fileName: function() {
@@ -2452,7 +2451,9 @@ Object.subclass('lively.ide.ModuleWrapper', {
 	},
 	
 	getSourceUncached: function() {
-		this._cachedSource = new WebResource(this.fileURL()).getContent() || '';
+		var webR = new WebResource(this.fileURL());
+		if (this.forceUncached) webR.forceUncached();
+		this._cachedSource = webR.getContent() || '';
 		return this._cachedSource;
 	},
 	
