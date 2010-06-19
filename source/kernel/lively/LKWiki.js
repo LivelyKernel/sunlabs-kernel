@@ -195,7 +195,7 @@ world: function() {
 		var msg = ' saving world at ' + this.model.getURL().toString() + '. Status: ' + status.code();
     	if (status.isSuccess()) {
     	    console.log('Success' + msg);
-            this.navigateToUrl();
+            this.navigateToUrl(this.model.getURL(), false, true);
     	} else {
     	    console.log('Failure' + msg);
 			WikiNavigator.enableWikiNavigator(true, this.model.getURL());
@@ -208,20 +208,23 @@ world: function() {
 			var status = this.doSave(false, optUrl);
 			console.log(status.code());
 			if (status.isSuccess() && gotoUrl)
-				this.navigateToUrl(optUrl);
+				this.navigateToUrl(optUrl, false, true);
 		}.bind(this));
 	},
 	askToNavigateToUrl: function(url, openInNewWindow) {
 		WorldMorph.current().confirm('Navigate to ' + url.toString() + '?', function(response) {
 			if (!response) return;
-			this.navigateToUrl(url, openInNewWindow);
+			this.navigateToUrl(url, openInNewWindow, true);
 		}.bind(this));
 	},
 
 
 	
 	askToSaveAndNavigateToUrl: function(world, openInNewWindow) {    
-	if (!Config.confirmNavigation) {this.navigateToUrl(null, openInNewWindow); return; }  // No other browsers confirm clickaway
+	if (!Config.confirmNavigation) { // No other browsers confirm clickaway
+		this.navigateToUrl(null, openInNewWindow, true);
+		return;
+	}
 
 	var msg = 'Go to ' + this.model.getURL() + ' ?';
 	var worldExists = this.worldExists();
@@ -235,7 +238,7 @@ world: function() {
                      if (!value) return;
                      if (WikiNavigator.current && WikiNavigator.current.doSave().isSuccess()) {
                          if (!worldExists) this.doSave(); // create other world
-                         this.navigateToUrl(null, openInNewWindow);
+                         this.navigateToUrl(null, openInNewWindow, true);
                          return; // Alibi
                      }
                      world.alert('World cannot be saved. Did not follow link.');
@@ -244,7 +247,7 @@ world: function() {
                      if (!value) return;
                      if (!worldExists)
                         if (!this.doSave().isSuccess()) return;
-                     this.navigateToUrl(null, openInNewWindow)
+                     this.navigateToUrl(null, openInNewWindow, true)
                  }.bind(this)});
              var dialog = new WikiLinkDialog(model.newRelay({
                  Button1: "+Button1", Button2: "+Button2", Message: "-Message",
@@ -253,10 +256,11 @@ world: function() {
 			return dialog;
     },
 	    
-	navigateToUrl: function(url, openInNewWindow) {
+	navigateToUrl: function(url, openInNewWindow, addTimestamp) {
 	    Config.askBeforeQuit = false;
 		if (!url) url = this.model.getURL();
-		url = url.toString() + '?' + new Date().getTime();
+		if (addTimestamp)
+			url = url.toString() + '?' + new Date().getTime();
 		if (openInNewWindow)
 			Global.window.open(url)
 		else
@@ -271,7 +275,7 @@ world: function() {
 	    var selectedVersion = listItem;
 	    var svnres = this.svnResource;
 	    svnres.withBaselineUriDo(selectedVersion.rev, function() {
-			this.navigateToUrl(svnres.getURL(), true);
+			this.navigateToUrl(svnres.getURL(), true, false);
 		}.bind(this));
 	},
 	
