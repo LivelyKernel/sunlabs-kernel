@@ -2443,7 +2443,7 @@ Object.subclass('lively.ide.ModuleWrapper', {
 	moduleName: function() { return this._moduleName },
 	
 	fileURL: function() {
-		var url = URL.codeBase.withFilename(fn);
+		var url = URL.codeBase.withFilename(this.fileName());
 		return this.forceUncached ? url.forceUncached() : url;
 	},
 	
