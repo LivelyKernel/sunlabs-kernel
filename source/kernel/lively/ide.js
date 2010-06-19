@@ -3088,6 +3088,7 @@ Widget.subclass('lively.ide.FileVersionViewer', {
 		m.setLabel('show');
 
 		m= panel.versionList.innerMorph();
+		m.dragEnabled = false;
 		m.connectModel(Record.newPlainInstance({List: [], Selection: null})); // FIXME
 		
 		this.panel = panel;

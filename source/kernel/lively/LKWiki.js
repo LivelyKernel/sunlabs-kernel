@@ -106,33 +106,10 @@ world: function() {
 		lockButton.setLabel("Lock");
 		*/
 		
-/*****/
 		var versionList = panel.versionList;
+		versionList.innerMorph().dragEnabled = false;
 		versionList.applyStyle({borderWidth:1, borderColor:Color.black})
-
-        // FIXME This is for value conversion. Much better is using conversion method support of relay (see below)
-        // var convertSVNMetadataToStrings = function(data) { return data.collect(function(ea) { return ea.toString() }) };
-        // versionList.innerMorph().setList = versionList.innerMorph().setList.wrap(function(proceed, values) {
-            // console.log("wrapped setList");
-            // proceed(convertSVNMetadataToStrings(values));
-        // });    
-        // versionList.innerMorph().onListUpdate = versionList.innerMorph().onListUpdate.wrap(function(proceed, values) {
-            // console.log("wrapped onListUpdate");
-            // proceed(convertSVNMetadataToStrings(values));
-        // });
-        versionList.connectModel(this.model.newRelay({List: "Versions", Selection: "Version"}), true /* kickstart if morph was deleted*/);
-
-
-        //When using conversion methods this.model.setVersions no longer triggers the onListUpdate... why?
-        // Relay.create({List: {mode: '', name: 'Versions', from: Number, to: String}})
-        // var relay = Relay.newInstance({
-        //         List: {name: 'Versions', mode: '',
-        //                 to: function(list) { console.log("to conv setVersions triggered!"); return ['list']; },
-        //                 from: function(list) { console.log("from conv of setVersions triggered!"); return list; }},
-        //         Selection: {name: 'Version', mode: '', to: String}},
-        //         this.model);
-        //         versionList.connectModel(relay, true /* kickstart if morph was deleted*/);
-/*****/
+		versionList.connectModel(this.model.newRelay({List: "Versions", Selection: "Version"}), true /* kickstart if morph was deleted*/);
 
         this.findVersions();
 		this.panel = panel;
@@ -268,6 +245,7 @@ world: function() {
 	},
 	
 	onVersionUpdate: function(listItem) {
+		if (!listItem) return;
 		if (Object.isString(listItem)) {
 			console.warn('WikiNav got strange list item: ' + listItem);
 			return;
@@ -277,12 +255,15 @@ world: function() {
 	    svnres.withBaselineUriDo(selectedVersion.rev, function() {
 			this.navigateToUrl(svnres.getURL(), true, false);
 		}.bind(this));
+		(function() { 
+			this.panel.versionList.innerMorph().relinquishKeyboardFocus(this.world().firstHand());
+			this.panel.versionList.innerMorph().selectLineAt(-1, true);
+		}).delay(0)
 	},
 	
 	findVersions: function() {
 		var m = this.model;
-		if (m.getVersions().length == 0)
-			m.setVersions(['Please wait, fetching version infos...']);
+		m.setVersions(['Please wait, fetching version infos...']);
 		var res = new WebResource(this.url).beAsync();
 		lively.bindings.connect(res, 'versions', m, 'setVersions',
 			{converter: function(versions) { return versions.asListItemArray() }});
