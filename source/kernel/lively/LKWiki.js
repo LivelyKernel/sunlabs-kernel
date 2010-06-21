@@ -368,14 +368,14 @@ openRegisterDialog: function() {
 	deleteCurrentWorld: function() { this.deleteWorld(this.url) },
 	
 	deleteWorld: function(url) {
-	var res = new WebResource(this.url.withFilename('auth'));
-	lively.bindings.connect(res, 'status', this.world(), 'setStatusMessage',
-		{updater: function($upd, status) {
-			if (status.isSuccess()) $upd('Successfully deleted ' + url, Color.green, 3)
-			else $upd('Could not delete ' + url + ' because ' + status, Color.red, 5) }});
-	res.beAsync().del();
-},
-
+		var res = new WebResource(this.url);
+		lively.bindings.connect(res, 'status', this.world(), 'setStatusMessage',
+			{updater: function($upd, status) {
+				var url = this.getSourceObj().getURL();
+				if (status.isSuccess()) $upd('Successfully deleted ' + url, Color.green, 3)
+				else $upd('Could not delete ' + url + ' because ' + status, Color.red, 5) }});
+		res.beAsync().del();
+	},
 });
 
 Object.extend(WikiNavigator, {
