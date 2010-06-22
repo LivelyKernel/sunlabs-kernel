@@ -336,13 +336,16 @@ openRegisterDialog: function() {
 		var btn =  new TextMorph(new Rectangle(0,0,80,50), 'Wiki control');
 		var self = this;
 		btn.suppressHandles = true;
+		btn.suppressGrabbing = true;
+		btn.handlesMouseMove = Functions.True;
 		btn.handlesMouseDown = Functions.True;
+		btn.onMouseMove = function(evt) {};
 		btn.onMouseDown = function(evt) {
 			var navMorph = self.buildView(pt(800,105));
 			self.world().addMorph(navMorph);
-			navMorph.setPosition(pt(0, 0))
+			navMorph.setPosition(pt(0, 0));
 		};
-		btn.positionInLowerLeftCorner = function() { btn.setPosition(pt(0, 0)) };
+		btn.setFill(null);
 		this.btn = btn;
 	},
 	
@@ -392,7 +395,6 @@ Object.extend(WikiNavigator, {
         if (!nav.isActive()) return;
         nav.createWikiNavigatorButton();
         WorldMorph.current().addMorph(nav.btn);
-        nav.btn.startStepping(1000, "positionInLowerLeftCorner");
         WikiNavigator.current = nav;
     },
 	fileNameToURL: function(fileName) {
