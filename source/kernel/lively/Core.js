@@ -2251,8 +2251,11 @@ Object.subclass('LayoutManager', {
 
 	bottomPaddingOf: function(morph) {
 		return morph.padding ? morph.padding.bottom() : 0;
+	},
+	
+	toLiteral: function() {
+		return {}
 	}
-    
 });
 
 LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
@@ -2290,6 +2293,9 @@ LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 		}
 	},
 });
+Object.extend(HorizontalLayout, { 
+	fromLiteral: function(literal) { return new this() } 
+})
 
 
 LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
@@ -2327,6 +2333,12 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 	},
 
 });
+
+Object.extend(VerticalLayout, { 
+	fromLiteral: function(literal) { return new this() } 
+})
+
+
 
 Morph.addMethods({
     

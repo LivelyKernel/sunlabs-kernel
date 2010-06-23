@@ -615,7 +615,6 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		// console.log(Exporter.stringify(doc));
 		// console.log(Exporter.stringify(widgetNode));
 	},
-
 });
 TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	

@@ -623,10 +623,21 @@ TestCase.subclass('Tests.MorphTest.HorizontalDividerTest', {
 
 
 TestCase.subclass("HorizontalLayoutTest", {
-
+	
 	setUp: function() {
 
 	},
+
+	testToLiteral: function() {
+		var sut = new HorizontalLayout();
+		this.assertEqualState(sut.toLiteral(), {} )
+	},
+	
+	testFromLiteral: function() {
+		var sut = HorizontalLayout.fromLiteral({})
+		this.assert(sut instanceof HorizontalLayout)
+	},
+
 
 	createTestMorph: function(name) {
 		if($morph(name))
