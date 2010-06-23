@@ -2204,10 +2204,18 @@ Object.subclass('LayoutManager', {
     beforeAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
     },
 
-    removeMorph: function(supermorph, submorph) {
+    afterAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
+    },
+
+    beforeRemoveMorph: function(supermorph, submorph) {
+
+    },
+
+    afterRemoveMorph: function(supermorph, submorph) {
 		// new behavior:
 		supermorph.layoutChanged();
     },
+
 
 	layout: function(supermorph) {
 		// subclass responsibility
@@ -2410,6 +2418,7 @@ Morph.addMethods({
 		} 
 		this.layoutManager.beforeAddMorph(this, m, isFront);
 		this.insertMorph(m, isFront);
+		this.layoutManager.afterAddMorph(this, m, isFront);
 		m.changed();
 		m.layoutChanged();
 		this.layoutChanged();
@@ -2467,6 +2476,7 @@ Morph.addMethods({
 	},
 	
 	removeMorph: function(m) {// FIXME? replaceMorph() with remove as a special case
+		this.layoutManager.beforeRemoveMorph(this, m);
 
 		var index = this.submorphs.indexOf(m);
 		if (index < 0) {
@@ -2485,7 +2495,7 @@ Morph.addMethods({
 		m.owner = null;
 		m.setHasKeyboardFocus(false);
 
-		this.layoutManager.removeMorph(this, m);
+		this.layoutManager.afterRemoveMorph(this, m);
 		return m;
     },
 
