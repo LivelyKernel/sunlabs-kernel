@@ -1953,8 +1953,8 @@ Morph.addMethods({
 
 // Fill Garbage Collection on Serialization...
 Morph.addMethods({
-	collectAllUsedFills: function($super, result) {
-		result = $super(result);
+	collectAllUsedFills: function(/*$super, */result) {
+		// result = $super(result);
 		var fill = this.getFill();
 		if (fill instanceof lively.paint.Gradient)
 			result.push(fill);
