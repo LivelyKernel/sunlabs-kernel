@@ -122,9 +122,12 @@ Object.extend(Function.prototype, {
 
   wrap: function wrap(wrapper) {
     var __method = this;
-    return function wrapped() {
-      return wrapper.apply(this, [__method.bind(this)].concat($A(arguments)));
+    var wrappedFunc = function wrapped() {
+      var wrapperArgs = wrapper.isWrapper ? $A(arguments) : [__method.bind(this)].concat($A(arguments));
+      return wrapper.apply(this, wrapperArgs);
     }
+	wrappedFunc.isWrapper = true;
+	return wrappedFunc;
   }
 
 });
