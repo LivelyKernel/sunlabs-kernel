@@ -16,7 +16,7 @@ Morph.subclass('DummyMorph', {
 });
 
 createLayer('SerializationTestLayer')
-layerObject(SerializationTestLayer, lively.data.Wrapper, {
+cop.layerObject(SerializationTestLayer, lively.data.Wrapper, {
 	collectSystemDictionaryGarbage: function() {
 		// do nothing
 	}

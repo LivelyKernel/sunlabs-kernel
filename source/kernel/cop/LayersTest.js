@@ -298,7 +298,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 
 	makeLayer1: function() {
 		this.layer1 = {};
-		layerObject(this.layer1, this.object1, {
+		cop.layerObject(this.layer1, this.object1, {
 			f: function(proceed, a, b) {
 				currentTest.execution.push("l1.f");
 				console.log("execute layer1 function for f");
@@ -310,7 +310,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 
 	makeLayer2: function() {
 		this.layer2 = {};
-		layerObject(this.layer2, this.object1, {
+		cop.layerObject(this.layer2, this.object1, {
 			f: function(proceed, a, b) {
 				currentTest.execution.push("l2.f");
 				// console.log("execute layer2 function for f");
@@ -332,7 +332,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 
 	makeLayer3: function() {
 		this.layer3 = {};
-		layerObject(this.layer3, this.object1, {
+		cop.layerObject(this.layer3, this.object1, {
 			f: function(proceed, a, b) {
 				currentTest.execution.push("l3.f");
 				// console.log("execute layer3 function for f");
@@ -469,7 +469,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 	testLayerObject: function() {
 		var layer1 = {};
 		this.makeObject1();
-		layerObject(layer1, this.object1, {
+		cop.layerObject(layer1, this.object1, {
 			f: function(proceed, a, b) {
 				currentTest.execution.push("l1.f");
 				// console.log("execute layer1 function for f");
@@ -498,12 +498,12 @@ TestCase.subclass('cop.tests.LayerTest', {
 		var layer = {};
 		var o1 = {f: function() {return 1}};
 		var o2 = {f: function() {return 2}};
-		layerObject(layer, o1, {
+		cop.layerObject(layer, o1, {
 			f: function() {
 				return 3 
 			},
 		});
-		layerObject(layer, o2, {
+		cop.layerObject(layer, o2, {
 			f: function() {
 				return 4 
 			},
@@ -598,7 +598,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 	testErrorInLayeredActivation: function() {
 		var layer1 = {}
 		this.makeObject1();
-		layerObject(layer1, this.object1, {
+		cop.layerObject(layer1, this.object1, {
 			f: function(proceed) {
 				throw {testError: true}
 			},
@@ -617,7 +617,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 	testErrorInLayeredDeactivation: function() {
 		var layer1 = {};
 		this.makeObject1();
-		layerObject(layer1, this.object1, {
+		cop.layerObject(layer1, this.object1, {
 			f: function(proceed) {
 				throw {testError: true};
 			},
@@ -663,7 +663,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 		var thisObject = this.object1;
 		var testCase = this;
 		var result = false;
-		layerObject(layer1, this.object1, {
+		cop.layerObject(layer1, this.object1, {
 			f: function(proceed) {
 				result = thisObject === this;
 			},
@@ -784,7 +784,7 @@ TestCase.subclass('cop.tests.AdaptArgumentsInLayer', {
 	testAdaptArgumentsInLayer: function() {
 		var o = {say: function(a) {return "Say: " +a}};
 		var l = {toString: function() {return "L"}};
-		layerObject(l,o, { say: function(proceed, a) {return proceed(a + " World") + "!"}})
+		cop.layerObject(l,o, { say: function(proceed, a) {return proceed(a + " World") + "!"}})
 		this.assertEqual(o.say("Hello"), "Say: Hello", "test is broken");	
 		withLayers([l], function() {
 			console.group("SayHello");
@@ -1068,7 +1068,7 @@ TestCase.subclass('cop.tests.LayerStateTest', {
 		//var o = {get a(){return 5}};
 		var layer1 = {};
 		this.assertEqual(o.a, 5, "property access is broken");
-		layerObject(layer1, o, {
+		cop.layerObject(layer1, o, {
 			get a() {
 				return 10;
 			},		
@@ -1090,7 +1090,7 @@ TestCase.subclass('cop.tests.LayerStateTest', {
 		this.assertEqual(o.a, 5, "property access is broken");
 
 		var l1_value = 10;
-		layerObject(layer1, o, {
+		cop.layerObject(layer1, o, {
 			get a() {
 				return l1_value;
 			},
