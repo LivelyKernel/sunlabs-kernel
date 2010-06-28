@@ -9,7 +9,7 @@ Morph.prototype.activateLayersFrom = ["owner"];
 
 createLayer("TokyoTimeLayer");
 
-layerClass(TokyoTimeLayer, ClockMorph, {
+cop.layerClass(TokyoTimeLayer, ClockMorph, {
  	get timeZoneOffset() {
  		return  8;
  	}

@@ -73,7 +73,7 @@ Object.subclass('cop.example.Employer', {
 	}
 });
 
-layerClass(AddressLayer, cop.example.Employer, {
+cop.layerClass(AddressLayer, cop.example.Employer, {
 	print: function(proceed) {
 		return proceed() + "; Address: " + this.address;
 	}
@@ -253,13 +253,13 @@ TestCase.subclass('cop.tests.LayerTest', {
 	setUp: function() {
 		this.execution  = [];
 		currentTest = this;
-		this.oldGlobalLayers = GlobalLayers;
-		GlobalLayers = []; // ok, when we are testing layers, there should be no other layers active in the system (to make thinks easier)
+		this.oldGlobalLayers = cop.GlobalLayers;
+		cop.GlobalLayers = []; // ok, when we are testing layers, there should be no other layers active in the system (to make thinks easier)
 		resetLayerStack();
 	},
 	
 	tearDown: function() {
-		GlobalLayers = this.oldGlobalLayers;
+		cop.GlobalLayers = this.oldGlobalLayers;
 		resetLayerStack();
 	},
 
@@ -430,7 +430,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 
 	testLayerClass: function() {
 		var layer1 = {};
-		layerClass(layer1, cop.example.DummyClass, {
+		cop.layerClass(layer1, cop.example.DummyClass, {
 			f: function(proceed, a, b) {
 				this.execution.push("l1.f");
 				// console.log("execute layer1 function for f");
@@ -679,12 +679,12 @@ TestCase.subclass('cop.tests.LayerTest', {
 		var layer2 = {name: "Layer2"};
 		enableLayer(layer1);
 		enableLayer(layer2);
-		this.assertIdentity(GlobalLayers[0], layer1, "layer1 not global");
-		this.assertIdentity(GlobalLayers[1], layer2, "layer2 not global");
+		this.assertIdentity(cop.GlobalLayers[0], layer1, "layer1 not global");
+		this.assertIdentity(cop.GlobalLayers[1], layer2, "layer2 not global");
 		disableLayer(layer1);
-		this.assertIdentity(GlobalLayers[0], layer2, "layer1 not removed from global");
+		this.assertIdentity(cop.GlobalLayers[0], layer2, "layer1 not removed from global");
 		disableLayer(layer2);
-		this.assertIdentity(GlobalLayers.length, 0, "global layers still active");
+		this.assertIdentity(cop.GlobalLayers.length, 0, "global layers still active");
 	},
 
 	testEnableDisableLayer: function() {
@@ -693,7 +693,7 @@ TestCase.subclass('cop.tests.LayerTest', {
 		this.assertEqual(currentLayers().length, 1, "layer 1 is not enabled");
 		// console.log("current layers: " + currentLayers())
 		disableLayer(layer1);
-		this.assert(!LayerStack.last().composition, "there is a cached composition!");
+		this.assert(!cop.LayerStack.last().composition, "there is a cached composition!");
 		this.assertEqual(currentLayers().length, 0, "layer 1 is not disabeled");
 	},
 	
@@ -929,7 +929,7 @@ LayerExamples = {
 		HandMorph.prototype.lookupLayersIn = [""];
 	
 		createLayer("LogPostionLayer");
-		layerClass(LogPostionLayer, Morph, {
+		cop.layerClass(LogPostionLayer, Morph, {
 			setPosition: function(proceed, pos) { 
 				console.log(this + "setPosition(" + pos +")")
 				return proceed(pos);
@@ -1112,7 +1112,7 @@ TestCase.subclass('cop.tests.LayerStateTest', {
 		var o1 = new cop.example.DummyClass();
 		var o2 = new cop.example.DummyClass();
 		var layer1 = {};
-		layerClass(layer1, cop.example.DummyClass, {
+		cop.layerClass(layer1, cop.example.DummyClass, {
 			get a() {
 				return this.l1_value;
 			},
@@ -1136,7 +1136,7 @@ TestCase.subclass('cop.tests.LayerStateTest', {
 		var o2 = new cop.example.DummyClass();
 		o2.toString= function(){return "[o2]"};
 		var layer1 = {};
-		layerClass(layer1, cop.example.DummyClass, {
+		cop.layerClass(layer1, cop.example.DummyClass, {
 			get a() {
 				return 10;
 			},		
@@ -1405,7 +1405,7 @@ cop.tests.LayerTestCase.subclass('cop.tests.LayerActivationRestrictionTest', {
 		this.dummyClass().addMethods({m1:function(){return "m1"}});
 		this.dummyClass().addMethods(LayerableObjectTrait);
 		this.dummyClass().prototype.lookupLayersIn = ["owner"];
-		layerClass(this.dummyLayer(), this.dummyClass(), {m1:function(p){return "L$m1," + p()}});
+		cop.layerClass(this.dummyLayer(), this.dummyClass(), {m1:function(p){return "L$m1," + p()}});
 
 		this.o1 = new (this.dummyClass())();
 		this.o2 = new (this.dummyClass())();

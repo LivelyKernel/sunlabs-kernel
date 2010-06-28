@@ -26,7 +26,7 @@ Object.extend(Morph.prototype, LayerableObjectTrait);
 Morph.prototype.lookupLayersIn = ["owner"];
 
 createLayer("WorkspaceLayer");
-layerClass(WorkspaceLayer, TextMorph, {
+cop.layerClass(WorkspaceLayer, TextMorph, {
 
 	toggleEvalOnWorldLoad: function() {
 		this.evalOnWorldLoad = ! this.evalOnWorldLoad; 
@@ -53,7 +53,7 @@ layerClass(WorkspaceLayer, TextMorph, {
 
 // Static Instrumentatioan
 createLayer("WorkspaceControlLayer");
-layerClass(WorkspaceControlLayer, WindowMorph, {
+cop.layerClass(WorkspaceControlLayer, WindowMorph, {
 
 	isWorkspaceLayerEnabled: function() {
 			var layers = this.getWithLayers();
@@ -98,7 +98,7 @@ layerClass(WorkspaceControlLayer, WindowMorph, {
 	}
 });
 
-layerClass(WorkspaceControlLayer, WorldMorph, {
+cop.layerClass(WorkspaceControlLayer, WorldMorph, {
 	askForWorldTitle: function(){
 		var self = this;
 		this.prompt('new world title', function(input) {
@@ -117,7 +117,7 @@ layerClass(WorkspaceControlLayer, WorldMorph, {
 	}
 });
 
-layerClass(WorkspaceControlLayer, WorldMorph, {
+cop.layerClass(WorkspaceControlLayer, WorldMorph, {
 	askForWorldTitle: function(){
 		var self = this;
 		this.prompt('new world title', function(input) {

@@ -7,7 +7,7 @@ createLayer("TokyoTimeLayer");
 createLayer("BerlinTimeLayer");
 
 
-layerClass(WorldClockLayer, ClockMorph, {
+cop.layerClass(WorldClockLayer, ClockMorph, {
 	setHands: function(proceed) {
 		if (this.name == "Tokyo") {
 			withLayers([TokyoTimeLayer], function() {
@@ -20,20 +20,20 @@ layerClass(WorldClockLayer, ClockMorph, {
 	}
 });
 
-layerClass(TokyoTimeLayer, ClockMorph, {
+cop.layerClass(TokyoTimeLayer, ClockMorph, {
  	get timeZoneOffset(proceed) {
  		return 9;
  	}		
 });
 
-// layerClass(BerlinTimeLayer, ClockMorph, {
+// cop.layerClass(BerlinTimeLayer, ClockMorph, {
 //  	get timeZoneOffset(proceed) {
 //  		return 2;
 //  	}		
 // });
 
 
-// layerClass(TokyoTimeLayer, Date, {
+// cop.layerClass(TokyoTimeLayer, Date, {
 // 	getTimezoneOffset: function(proceed) {
 // 		return - 9 * 60;
 // 	}		

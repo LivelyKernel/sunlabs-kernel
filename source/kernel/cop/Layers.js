@@ -327,10 +327,10 @@ Global.composeLayers = function Layers$composeLayers(stack, index, obj) {
 		if (obj && obj.getActivatedLayers) {
 			var objectLayers = obj.getActivatedLayers();
 			if (objectLayers) {
-				return GlobalLayers.clone().concat(objectLayers)
+				return cop.GlobalLayers.clone().concat(objectLayers)
 			}
 		};
-		return GlobalLayers.clone();
+		return cop.GlobalLayers.clone();
 	};
 	var current = stack[index];
 	var rest = Global.composeLayers(stack, index - 1, obj);
@@ -346,17 +346,17 @@ Global.composeLayers = function Layers$composeLayers(stack, index, obj) {
 };
 
 Global.currentLayers= function Layers$currentLayers(obj) {
-	if (Global.LayerStack.length == 0) {
+	if (cop.LayerStack.length == 0) {
 		throw new Error("The default layer is missing");
 	};
 	var result;
 	// NON OPTIMIZED VERSION FOR STATE BASED LAYER ACTIVATION
 	if (obj) {
-		result = composeLayers(Global.LayerStack, Global.LayerStack.length - 1, obj);
+		result = composeLayers(cop.LayerStack, cop.LayerStack.length - 1, obj);
 	} else {
-		var current = Global.LayerStack.last();
+		var current = cop.LayerStack.last();
 		if (!current.composition) {
-			current.composition = composeLayers(Global.LayerStack, Global.LayerStack.length - 1);
+			current.composition = composeLayers(cop.LayerStack, cop.LayerStack.length - 1);
 		} 
 		result = current.composition
 	}
@@ -371,18 +371,16 @@ Global.currentLayers= function Layers$currentLayers(obj) {
 
 // clear cached layer compositions
 var invalidateLayerComposition = function Layers$invalidateLayerComposition() {
-	Global.LayerStack.each(function(ea) {
+	cop.LayerStack.each(function(ea) {
 		ea.composition = null;
 	});
 };
 
 Global.resetLayerStack = function() {
-	Global.LayerStack = [{isStatic: true, toString: function() {return "BaseLayer"}, composition: null}];
+	cop.LayerStack = [{isStatic: true, toString: function() {return "BaseLayer"}, composition: null}];
 	invalidateLayerComposition();
 };
 
-
-// can be replaced with basic objects
 Object.subclass("Layer", {
 	
 	initialize: function(name) {
@@ -439,17 +437,20 @@ Global.layerObject = function(layer, object, defs) {
 		layerProperty(layer, object, function_name, defs);
 	});
 };
+cop.layerObject = Global.layerObject;
+
 
 // layer around only the class methods
 Global.layerClass = function(layer, classObject, defs) {
 	layerObject(layer, classObject.prototype, defs);
 };
+cop.layerClass = Global.layerClass;
 
 // layer around class methods and all subclass methods
 // (might be related to Aspect oriented programming)
 Global.layerClassAndSubclasses = function(layer, classObject, defs) {
 	// log("layerClassAndSubclasses");
-	layerClass(layer, classObject, defs);
+	cop.layerClass(layer, classObject, defs);
 	
 	// and now wrap all overriden methods...
 	classObject.allSubclasses().each(function(eaClass) {
@@ -468,83 +469,71 @@ Global.layerClassAndSubclasses = function(layer, classObject, defs) {
 	})
 };
 
+cop.layerClassAndSubclasses = Global.layerClassAndSubclasses;
+
 /* Layer Activation */
 
 Global.withLayers = function withLayers(layers, func) {
-	LayerStack.push({withLayers: layers});
+	cop.LayerStack.push({withLayers: layers});
 	// console.log("callee: " + withLayers.caller)
 	try {
 		func();
 	} finally {
-		LayerStack.pop();
+		cop.LayerStack.pop();
 	}
 };
+cop.withLayers  = Global.withLayers;
 
 Global.withoutLayers = function withoutLayers(layers, func) {
-	LayerStack.push({withoutLayers: layers});
+	cop.LayerStack.push({withoutLayers: layers});
 	try {
 		func();
 	} finally {
-		LayerStack.pop();
+		cop.LayerStack.pop();
 	}
 };
+cop.withoutLayers = Global.withoutLayers;
 
 /* Global Layer Activation */
 
 
 Global.enableLayer = function(layer) {
-	if (GlobalLayers.include(layer))
+	if (cop.GlobalLayers.include(layer))
 		return;
 	else {
-		GlobalLayers.push(layer);
+		cop.GlobalLayers.push(layer);
 		invalidateLayerComposition();
 	};
 };
+cop.enableLayer = Global.enableLayer;
 
 Global.disableLayer = function(layer) {
-	if (!GlobalLayers.include(layer))
+	if (!cop.GlobalLayers.include(layer))
 		return;
 	else {
-		GlobalLayers = GlobalLayers.reject(function(ea) { return ea == layer;});
+		cop.GlobalLayers = cop.GlobalLayers.reject(function(ea) { return ea == layer;});
 		invalidateLayerComposition();
 	}
 };
+cop.disableLayer = Global.disableLayer;
 
 /* Example implementation of a layerable object */
-
-// encode layers as strings for serialization...
-var layerToStrings = function Laysers$layerToStrings(layers) {
-	if (layers) {
-		return layers.collect(function(ea) {return ea.getName()}) 
-	};
-};
-
-var stringsToLayer = function Layers$stringsToLayer(strings) {
-	if (strings) {
-		return strings.collect(function(ea) {return Global[ea]}) 
-	};
-};
 
 
 LayerableObjectTrait = {
 	
 	setWithLayers: function(layers) {
 		this.withLayers = layers
-		//this._withLayers = layerToStrings(layers);
 	},
 
 	setWithoutLayers: function(layers) {
 		this.withoutLayers = layers
-		//this._withoutLayers = layerToStrings(layers);;
 	},
 	
 	getWithLayers: function(layers) {
 		if (this.withLayers) {
 			return this.withLayers
 		};
-		// if (this._withLayers) {
-		//	return stringsToLayer(this._withLayers)
-		//};
 		return [];
 	},
 
@@ -552,12 +541,8 @@ LayerableObjectTrait = {
 		if (this.withoutLayers) {
 			return this.withoutLayers
 		};
-		//if (this._withoutLayers) {
-		//	return stringsToLayer(this._withoutLayers)
-		//};
 		return [];
 	},
-
 
 	// FLAG: REWRITE for performance...
 	getActivatedLayers: function LayerableObjectTrait$getActivatedLayers(optCallerList) {
@@ -580,59 +565,8 @@ LayerableObjectTrait = {
 		});
 		return layers;
 	},
-
-	// less generic, support only "owner" relationship
-	// getActivatedLayers: function LayerableObjectTrait$getActivatedLayers() {
-	// 	var layers = this.getWithLayers();
-	// 	var withoutLayers  = this.getWithoutLayers();		
-	// 	var self= this;
-	// 	if (this.owner) {
-	// 		var parentLayers = self.owner.getActivatedLayers().reject(function(ea){return layers.include(ea)});
-	// 		layers = layers.concat(parentLayers);
-	// 		layers = layers.reject(function(ea){return withoutLayers.include(ea)})
-	// 	};
-	// 	return layers;
-	// },
-
-	
-	// Experiment with both directions to find a good solution
-	// activateLayersOn: [],   // forward  // DEPRICATED, but may be usable for generating events
 	
 	lookupLayersIn: [], // backward  
-	
-	// propagateLayers: function(property, action, layers) {
-	// 	if(!this[property]) { 
-	// 		return;
-	// 	};
-	// 	
-	// 	if(this[property][action]) {
-	// 		this[property][action](layers);
-	// 	} else if(this[property] instanceof Array) {
-	// 		// iterate over collection if property is a collection
-	// 		this[property].each(function(ea) {
-	// 			if(ea && ea[action]) {
-	// 				ea[action](layers);
-	// 			}
-	// 		})
-	// 	}
-	// },
-	
-	// activateLayers: function(layers) { 
-	// 	this.setWithLayers(layers);
-	// 	var self = this;
-	// 	this.activateLayersOn.each(function(ea) {
-	// 		self.propagateLayers(ea, "activateLayers", layers);
-	// 	});
-	// },
-	// 
-	// deactivateLayers: function(layers) {
-	// 	// layers is not used at the moment
-	// 	this.setWithLayers(undefined);
-	// 	var self = this;
-	// 	this.activateLayersOn.each(function(ea) { 
-	// 		self.propagateLayers(ea, "deactivateLayers", layers);
-	// 	});
-	// },
 	
 };
 
@@ -640,7 +574,9 @@ Object.subclass("LayerableObject");
 Object.extend(LayerableObject.prototype, LayerableObjectTrait) // I don't know why .prototype is neccessary here
 
 // Static Initialize
-GlobalLayers = [];
+// cop.GlobalLayers = [];
+cop.GlobalLayers = [];
+
 resetLayerStack();
 
 });
