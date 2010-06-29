@@ -26,88 +26,88 @@
  */
 
 module('lively.Text').requires().toRun(function(thisModule) {
-        
+		
 Object.subclass('lively.Text.CharacterInfo', {
-    // could simply use Point as extent.
-    documentation: "simple printable info about a character's extent",
+	// could simply use Point as extent.
+	documentation: "simple printable info about a character's extent",
 
-    initialize: function(width, height) {
-	this.width = width;
-	this.height = height;
-    },
+	initialize: function(width, height) {
+		this.width = width;
+		this.height = height;
+	},
 
-    toString: function() {
-	return this.width + "x" + this.height;
-    }
+	toString: function() {
+		return this.width + "x" + this.height;
+	}
 
 });
 
 
 Object.subclass('lively.Text.Font', {
 
-    documentation: "representation of a font",
-    baselineFactor: 0.80,
-    
-    initialize: function(family/*:String*/, size/*:Integer*/, style/*:String*/){
-        this.family = family;
-        this.size = size;
-        this.style = style ? style : 'normal';
-        this.extents = null;
-        // this.extents = this.computeExtents(family, size);
-    },
-    computeExtents: function(family, size) {
+	documentation: "representation of a font",
+	baselineFactor: 0.80,
+	
+	initialize: function(family/*:String*/, size/*:Integer*/, style/*:String*/){
+		this.family = family;
+		this.size = size;
+		this.style = style ? style : 'normal';
+		this.extents = null;
+		// this.extents = this.computeExtents(family, size);
+	},
+	computeExtents: function(family, size) {
 	// Note: this gets overridden depending on the environment.
-        return [];
-    },
-    getSize: function() {
-        return this.size;
-    },
+		return [];
+	},
+	getSize: function() {
+		return this.size;
+	},
 
-    getBaselineHeight: function() { // the distance between the top of the glyph to the baseline.
-	return this.size * this.baselineFactor;
-    },
+	getBaselineHeight: function() { // the distance between the top of the glyph to the baseline.
+		return this.size * this.baselineFactor;
+	},
 
-    getFamily: function() {
-        return this.family;
-    },
+	getFamily: function() {
+		return this.family;
+	},
 
-    toString: function() {
-        return this.family + " " + this.getSize();
-    },
+	toString: function() {
+		return this.family + " " + this.getSize();
+	},
 
- 	getCharWidth: function(charString) {
-        var code = charString.charCodeAt(0);
-        if (!this.extents) this.extents = this.computeExtents(this.family, this.size, this.style);
+	getCharWidth: function(charString) {
+		var code = charString.charCodeAt(0);
+		if (!this.extents) this.extents = this.computeExtents(this.family, this.size, this.style);
 			var w = this.extents[code] ? this.extents[code].width : 4;
-        if (isNaN(w)) {
-            console.warn('getCharWidth: no width for ' + charString);
-	    return 4;  // don't crash
-        }
+		if (isNaN(w)) {
+			console.warn('getCharWidth: no width for ' + charString);
+		return 4;  // don't crash
+		}
 		return w * 1;
-    },
+	},
 
-    getCharHeight: function(charString) {
-        var code = charString.charCodeAt(0);
-        if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
-        return this.extents[code] ? this.extents[code].height : 12;
-    },
+	getCharHeight: function(charString) {
+		var code = charString.charCodeAt(0);
+		if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
+		return this.extents[code] ? this.extents[code].height : 12;
+	},
 
-    applyTo: function(wrapper) {
-	var rawNode = wrapper.rawNode;
-        rawNode.setAttributeNS(null, "font-size", this.getSize());
-        rawNode.setAttributeNS(null, "font-family", this.getFamily());
-        if (this.style == 'bold' || this.style == 'bold-italic') rawNode.setAttributeNS(null, "font-weight", 'bold');
-        if (this.style == 'italic' || this.style == 'bold-italic') rawNode.setAttributeNS(null, "font-style", 'italic');
-        //if (this.style == 'normal') {
-	//    rawNode.setAttributeNS(null, "font-style", 'normal');
-	//    rawNode.setAttributeNS(null, "font-weight", 'normal');
+	applyTo: function(wrapper) {
+		var rawNode = wrapper.rawNode;
+		rawNode.setAttributeNS(null, "font-size", this.getSize());
+		rawNode.setAttributeNS(null, "font-family", this.getFamily());
+		if (this.style == 'bold' || this.style == 'bold-italic') rawNode.setAttributeNS(null, "font-weight", 'bold');
+		if (this.style == 'italic' || this.style == 'bold-italic') rawNode.setAttributeNS(null, "font-style", 'italic');
+		//if (this.style == 'normal') {
+	//	  rawNode.setAttributeNS(null, "font-style", 'normal');
+	//	  rawNode.setAttributeNS(null, "font-weight", 'normal');
 	//}
-        // if (this.getSize() == 18 || this.style == 'bold' || this.style == 'italic') 
+		// if (this.getSize() == 18 || this.style == 'bold' || this.style == 'italic') 
 	//	console.log("applying " + this.getSize() + this.style);
-    }
+	}
 
 });
-    
+	
 
 Object.extend(thisModule.Font, {
 	fontCache: {},
@@ -117,7 +117,7 @@ Object.extend(thisModule.Font, {
 		if (style == 'bold') styleKey = 'b';
 		if (style == 'italic') styleKey = 'i';
 		if (style == 'bold-italic') styleKey = 'bi';
-		var key  = familyName + ":" + size + ":" + styleKey ;
+		var key	 = familyName + ":" + size + ":" + styleKey ;
 		var entry = cache[key];
 		if (entry) 
 			return entry;
@@ -131,306 +131,308 @@ Object.extend(thisModule.Font, {
 		return entry;
 	}
 });
-    
-    
+	
+	
 if (Config.fakeFontMetrics) { 
-    
-    thisModule.Font.addMethods({
-        // wer're faking here, b/c native calls don't seem to work
-        computeExtents: function(family, size) {
-	    // adapted from the IE port branch
-            var extents = [];
-            for (var i = 33; i < 255; i++) {
-		var ch = String.fromCharCode(i);
-		switch (ch) {
-                case 'i': case 'I': case 'l': case 't': case '.': case ',': case '\'':
-                    //extents[i] = new thisModule.CharacterInfo(size*0.245, size);
-		    extents[i] = new thisModule.CharacterInfo(size*0.345, size);
-		    break;
-		case 'M': case 'm': case 'W': case 'B': 
-		case 'w': case 'S': case 'D': case 'A': case 'H': case 'C': case 'E':
-                    extents[i] = new thisModule.CharacterInfo(size*0.820, size);
-		    break;
-		default:
-                    extents[i] = new thisModule.CharacterInfo(size*0.505, size);
-		    break;
-                }
-            }
-            return extents;
-        }
-    });
-    
-} else if (Config.fontMetricsFromHTML)  {
-    
+	
 thisModule.Font.addMethods({
- 	computeExtents: function (family, size, style) {
-	        var extents = [];
-	        var body = null;
-	        var doc; // walk up the window chain to find the (X)HTML context
-	        for (var win = window; win; win = win.parent) {
-	            doc = win.document;
-	            var bodies = doc.documentElement.getElementsByTagName('body');
-	            if (bodies && bodies.length > 0) {
-	                body = bodies[0];
-	                break;
-	            }
-	        }
-
-	        if (!body) return [];
-
-	        function create(name) {
-	            // return doc.createElement(name);
-	            return doc.createElementNS(Namespace.XHTML, name);
-	        }
-			// body = document.body
-	        var d = body.appendChild(create("div"));
-
-	        d.style.kerning    = 0;
-	        d.style.fontFamily = family;
-	        d.style.fontSize   = size + "px";
-			if (style) {
-				d.style.fontWeight = style;
+	// wer're faking here, b/c native calls don't seem to work
+	computeExtents: function(family, size) {
+		// adapted from the IE port branch
+		var extents = [];
+		for (var i = 33; i < 255; i++) {
+			var ch = String.fromCharCode(i);
+			switch (ch) {
+				case 'i': case 'I': case 'l': case 't': case '.': case ',': case '\'':
+				//extents[i] = new thisModule.CharacterInfo(size*0.245, size);
+					extents[i] = new thisModule.CharacterInfo(size*0.345, size);
+					break;
+				case 'M': case 'm': case 'W': case 'B': 
+				case 'w': case 'S': case 'D': case 'A': case 'H': case 'C': case 'E':
+					extents[i] = new thisModule.CharacterInfo(size*0.820, size);
+					break;
+				default:
+					extents[i] = new thisModule.CharacterInfo(size*0.505, size);
+					break;
 			}
-	        var xWidth = -1;
-	        var xCode = 'x'.charCodeAt(0);
-	        for (var i = 33; i < 255; i++) {
-	            var sub = d.appendChild(create("span"));
-	            sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
-	            extents[i] = new lively.Text.CharacterInfo(sub.offsetWidth,  sub.offsetHeight);
-	            if (i == xCode) xWidth = extents[i].width;
-	        }
-
-	        if (xWidth < 0) { 
-	            throw new Error('x Width is ' + xWidth);
-	        }
-
-	        if (d.offsetWidth == 0) {
-	            console.log("timing problems, expect messed up text for font %s", this);
-	        }
-
-	        // handle spaces
-	        var sub = d.appendChild(create("span"));
-	        sub.appendChild(doc.createTextNode('x x'));
-
-	        var spaceWidth = sub.offsetWidth - xWidth*2;
-	        console.log("font " + this + ': space width ' + spaceWidth + ' from ' + sub.offsetWidth + ' xWidth ' + xWidth);    
-
-	        // tjm: sanity check as Firefox seems to do this wrong with certain values
-	        if (spaceWidth > 100) {    
-	            extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(2*xWidth/3, sub.offsetHeight);
-	        } else {
-	            extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(spaceWidth, sub.offsetHeight);
-	        }
-
-	        //d.removeChild(span);
-	        body.removeChild(d);
-	        return extents;
-	    }
-});
-} else if (Config.fontMetricsFromSVG)  {
-    
+		}
+		return extents;
+	   }
+   });
+	
+} else if (Config.fontMetricsFromHTML)	{
+	
 thisModule.Font.addMethods({
-    
-    computeExtents: function(family, size) {
-        var extents = [];
-	var canvas = document.getElementById("canvas");
-	var text = canvas.appendChild(document.createElementNS(Namespace.SVG, "text"));
-	text.setAttributeNS(null, "font-size", size);
-	text.setAttributeNS(null, "font-family", family);
+	computeExtents: function (family, size, style) {
+		var extents = [];
+		var body = null;
+		var doc; // walk up the window chain to find the (X)HTML context
+		for (var win = window; win; win = win.parent) {
+			doc = win.document;
+			var bodies = doc.documentElement.getElementsByTagName('body');
+			if (bodies && bodies.length > 0) {
+				body = bodies[0];
+				break;
+			}
+		}
 
-	//text.setAttributeNS(null, "y", "100");
-	var b = 33;
-	var string = "";
-	for (var i = b; i < 255; i++) {
-	    string += String.fromCharCode(i);
+		if (!body) return [];
+
+		function create(name) {
+			// return doc.createElement(name);
+			return doc.createElementNS(Namespace.XHTML, name);
+		}
+		// body = document.body
+		var d = body.appendChild(create("div"));
+
+		d.style.kerning	   = 0;
+		d.style.fontFamily = family;
+		d.style.fontSize   = size + "px";
+		if (style) {
+			d.style.fontWeight = style;
+		}
+		var xWidth = -1;
+		var xCode = 'x'.charCodeAt(0);
+		for (var i = 33; i < 255; i++) {
+			var sub = d.appendChild(create("span"));
+			sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
+			extents[i] = new lively.Text.CharacterInfo(sub.offsetWidth,	 sub.offsetHeight);
+			if (i == xCode) xWidth = extents[i].width;
+		}
+
+		if (xWidth < 0) { 
+			throw new Error('x Width is ' + xWidth);
+		}
+
+		if (d.offsetWidth == 0) {
+			console.log("timing problems, expect messed up text for font %s", this);
+		}
+
+		// handle spaces
+		var sub = d.appendChild(create("span"));
+		sub.appendChild(doc.createTextNode('x x'));
+
+		var spaceWidth = sub.offsetWidth - xWidth*2;
+		console.log("font " + this + ': space width ' + spaceWidth + ' from ' + sub.offsetWidth + ' xWidth ' + xWidth);	   
+
+		// tjm: sanity check as Firefox seems to do this wrong with certain values
+		if (spaceWidth > 100) {	   
+			extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(2*xWidth/3, sub.offsetHeight);
+		} else {
+			extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(spaceWidth, sub.offsetHeight);
+		}
+
+		//d.removeChild(span);
+		body.removeChild(d);
+		return extents;
 	}
-	text.appendChild(document.createTextNode(string));
-	for (var i = b; i < 255; i++) {
-	    var end = text.getEndPositionOfChar(i - b);
-	    var start = text.getStartPositionOfChar(i - b);
-	    var ext = text.getExtentOfChar(i - b);
-	    extents[i] = new thisModule.CharacterInfo(end.x - start.x, start.y - ext.y);
-	}
-        canvas.removeChild(text);
-	return extents;
-    }
-    
 });
 
-}    
-    
+} else if (Config.fontMetricsFromSVG)  {
+	
+thisModule.Font.addMethods({
+	
+	computeExtents: function(family, size) {
+		var extents = [];
+		var canvas = document.getElementById("canvas");
+		var text = canvas.appendChild(document.createElementNS(Namespace.SVG, "text"));
+		text.setAttributeNS(null, "font-size", size);
+		text.setAttributeNS(null, "font-family", family);
+
+		//text.setAttributeNS(null, "y", "100");
+		var b = 33;
+		var string = "";
+		for (var i = b; i < 255; i++) {
+			string += String.fromCharCode(i);
+		}
+		text.appendChild(document.createTextNode(string));
+		for (var i = b; i < 255; i++) {
+			var end = text.getEndPositionOfChar(i - b);
+			var start = text.getStartPositionOfChar(i - b);
+			var ext = text.getExtentOfChar(i - b);
+			extents[i] = new thisModule.CharacterInfo(end.x - start.x, start.y - ext.y);
+		}
+		canvas.removeChild(text);
+		return extents;
+	}
+	
+});
+
+}	 
+	
 lively.data.Wrapper.subclass('lively.Text.TextWord', {
 
-    documentation: "represents a chunk of text which might be printable or might be whitespace",
+	documentation: "represents a chunk of text which might be printable or might be whitespace",
 
-    isWhite: false,
-    isNewLine: false,
-    isTab: false,
+	isWhite: false,
+	isNewLine: false,
+	isTab: false,
 
-    initialize: function(offset, length) {
-	this.startIndex = offset;
-	this.stopIndex  = offset;
-	this.length = length;
-	this.shouldRender = true;
-	this.bounds = null;
-	this.rawNode = null;
-    },
+	initialize: function(offset, length) {
+		this.startIndex = offset;
+		this.stopIndex	= offset;
+		this.length = length;
+		this.shouldRender = true;
+		this.bounds = null;
+		this.rawNode = null;
+	},
 
-    adjustAfterEdits: function(delta, Ydelta) {
-	this.startIndex += delta;
-	this.stopIndex += delta;
-	if (Ydelta != 0) {
-		if (this.bounds) this.bounds = this.bounds.withY(this.bounds.y + Ydelta);
-		if (this.rawNode) this.rawNode.setAttributeNS(null, "y",
-												Number(this.rawNode.getAttributeNS(null, "y")) + Ydelta );
-	}
-    },
-
-    deserialize: function(importer, rawNode) {
-        this.rawNode = rawNode;
-    },
-    
-    adjustAfterComposition: function(textString, deltaX, paddingX, baselineY) {
-	// Align the text after composition
-        if (deltaX != 0) this.bounds = this.bounds.withX(this.bounds.x + deltaX);
-	if (paddingX != 0 && this.isSpaces()) this.bounds = this.bounds.withWidth(this.bounds.width + paddingX);
-	if (this.rawNode != null) {
-	    this.replaceRawNodeChildren(NodeFactory.createText(textString.substring(this.startIndex, this.getStopIndex() + 1))); 
-            this.rawNode.setAttributeNS(null, "x", this.bounds.x);
-	    this.rawNode.setAttributeNS(null, "y", baselineY);
-	}
-    },
-    
-    allocRawNode: function() {
-	this.rawNode = NodeFactory.create("tspan");
-    },
-    
-    compose: function(textLine, startLeftX, topLeftY, rightX) {
-	// compose a word between startLeftX and rightX, stopping if the width or string width is exceeded
-	// return true if we bumped into the width limit while composing
-
-	this.font = textLine.currentFont;  // Cache for canvas display
-	this.bounds = new Rectangle(startLeftX, topLeftY, undefined, this.font.getSize());
-        var leftX = startLeftX;
-	
-        // get the character bounds until it hits the right side of the compositionWidth
-        for (var i = this.startIndex; i < textLine.textString.length && i < this.getNextStartIndex(); i++) {
-            var rightOfChar = leftX + textLine.getCharWidthAt(i);
-	    if (rightOfChar >= rightX) {
-		// Hit right bounds -- wrap at word break if possible
-		if (i > this.startIndex)  {
-		    this.stopIndex = i - 1;
-		    this.bounds.width = leftX - startLeftX;
-		} else {
-		    this.stopIndex = this.startIndex;
-		    this.bounds.width = rightOfChar - startLeftX;
+	adjustAfterEdits: function(delta, Ydelta) {
+		this.startIndex += delta;
+		this.stopIndex += delta;
+		if (Ydelta != 0) {
+			if (this.bounds) this.bounds = this.bounds.withY(this.bounds.y + Ydelta);
+			if (this.rawNode) 
+				this.rawNode.setAttributeNS(null, "y",
+					Number(this.rawNode.getAttributeNS(null, "y")) + Ydelta );
 		}
-                return true;
-            }
-	    leftX = rightOfChar;
-        }
-        // Reached the end of text
-        this.stopIndex = i - 1;
-	this.bounds.width = rightOfChar - startLeftX;
-	return false;
-    },
-    
-    // accessor function
-    getStopIndex: function() {
-        return this.stopIndex;
-    },
+	},
 
-    getNextStartIndex: function() {
-	return this.startIndex + this.length;
-    },
+	deserialize: function(importer, rawNode) {
+		this.rawNode = rawNode;
+	},
+	
+	adjustAfterComposition: function(textString, deltaX, paddingX, baselineY) {
+		// Align the text after composition
+		if (deltaX != 0) this.bounds = this.bounds.withX(this.bounds.x + deltaX);
+		if (paddingX != 0 && this.isSpaces()) this.bounds = this.bounds.withWidth(this.bounds.width + paddingX);
+		if (this.rawNode != null) {
+			this.replaceRawNodeChildren(NodeFactory.createText(textString.substring(this.startIndex, this.getStopIndex() + 1))); 
+			this.rawNode.setAttributeNS(null, "x", this.bounds.x);
+			this.rawNode.setAttributeNS(null, "y", baselineY);
+		}
+	},
+	
+	allocRawNode: function() {
+		this.rawNode = NodeFactory.create("tspan");
+	},
+	
+	compose: function(textLine, startLeftX, topLeftY, rightX) {
+		// compose a word between startLeftX and rightX, stopping if the width or string width is exceeded
+		// return true if we bumped into the width limit while composing
 
-    getContent: function(string) {
-	return string.substring(this.startIndex, this.stopIndex);
-    },
+		this.font = textLine.currentFont;  // Cache for canvas display
+		this.bounds = new Rectangle(startLeftX, topLeftY, undefined, this.font.getSize());
+		var leftX = startLeftX;
 
-    indexForX: function(textLine, x) {
-	if (this.rawNode == null) {
-	    var virtualSpaceSize = this.bounds.width / this.length;
-	    var spacesIn = Math.floor((x - this.bounds.x) / virtualSpaceSize);
-	    return this.startIndex + spacesIn;
-	} else {
-	    var leftX = this.bounds.x;
-	    for (var j = this.startIndex; j < (this.startIndex + this.length); j++) {
-		var rightX = leftX + textLine.getCharWidthAt(j);
-		if (x >= leftX && x <= rightX) break;
-		leftX = rightX;
-	    }
-	    return j;
+		// get the character bounds until it hits the right side of the compositionWidth
+		for (var i = this.startIndex; i < textLine.textString.length && i < this.getNextStartIndex(); i++) {
+			var rightOfChar = leftX + textLine.getCharWidthAt(i);
+			if (rightOfChar >= rightX) {
+				// Hit right bounds -- wrap at word break if possible
+				if (i > this.startIndex)  {
+					this.stopIndex = i - 1;
+					this.bounds.width = leftX - startLeftX;
+				} else {
+					this.stopIndex = this.startIndex;
+					this.bounds.width = rightOfChar - startLeftX;
+				}
+				return true;
+			}
+			leftX = rightOfChar;
+		}
+		// Reached the end of text
+		this.stopIndex = i - 1;
+		this.bounds.width = rightOfChar - startLeftX;
+		return false;
+	},
+	
+	// accessor function
+	getStopIndex: function() {
+		return this.stopIndex;
+	},
+
+	getNextStartIndex: function() {
+		return this.startIndex + this.length;
+	},
+
+	getContent: function(string) {
+		return string.substring(this.startIndex, this.stopIndex);
+	},
+
+	indexForX: function(textLine, x) {
+		if (this.rawNode == null) {
+			var virtualSpaceSize = this.bounds.width / this.length;
+			var spacesIn = Math.floor((x - this.bounds.x) / virtualSpaceSize);
+			return this.startIndex + spacesIn;
+		} else {
+			var leftX = this.bounds.x;
+			for (var j = this.startIndex; j < (this.startIndex + this.length); j++) {
+			var rightX = leftX + textLine.getCharWidthAt(j);
+			if (x >= leftX && x <= rightX) break;
+			leftX = rightX;
+		}
+			return j;
+		}
+		return this.startIndex; // failsafe
+	},
+	
+	getBounds: function(textLine, stringIndex) {
+		// get the bounds of the character at stringIndex
+		// DI: change order of this if, and dont test for getBounds
+		if (this.rawNode) {
+			var leftX = this.bounds.x;
+			for (var j = this.startIndex; j <= stringIndex; j++) {
+				var rightX = leftX + textLine.getCharWidthAt(j);
+				if (j >= stringIndex) break;
+				leftX = rightX;
+			}
+			return this.bounds.withX(leftX).withWidth(rightX - leftX);
+		} else {
+			if (this.isSpaces()) {
+				var virtualSpaceSize = this.bounds.width / this.length;
+				var b = this.bounds.withWidth(virtualSpaceSize);
+				b.x += virtualSpaceSize * (stringIndex - this.startIndex);
+				return b;
+			} else {
+				return this.bounds;
+			}
+		}
+	},
+
+	isSpaces: function() {
+		return this.isWhite && !this.isTab && !this.isNewLine;
+	},
+	
+	// clone a chunk only copying minimal information
+	
+	
+	// string representation
+	toString: function() {
+		var lString = "TextWord start: " + this.startIndex +
+			" length: " + this.length +
+			" isWhite: " + this.isWhite +
+			" isNewLine: " + this.isNewLine +
+			" isTab: " + this.isTab;
+		if (this.bounds == null) {
+			lString += " null bounds";
+		} else {
+			lString += " @(" + this.bounds.topLeft() + ")(" + this.bounds.extent() + ")";
+		}
+		return lString;
+	},
+	
+	// create a chunk representing whitespace (typically space characters)
+	asWhite: function() {
+		this.isWhite = true;
+		return this;
+	},
+	
+	// create a chunk representing a newline   
+	asNewLine: function() {
+		this.isWhite = true;
+		this.isNewLine = true;
+		this.length = 1;
+		return this;
+	},
+	
+	// create a chunk representing a tab
+	asTab: function() {
+		this.isWhite = true;
+		this.isTab = true;
+		this.length = 1;
+		return this;
 	}
-	return this.startIndex; // failsafe
-    },
-    
-    getBounds: function(textLine, stringIndex) {
-    	// get the bounds of the character at stringIndex
-	// DI: change order of this if, and dont test for getBounds
-	if (this.rawNode) {
-	    var leftX = this.bounds.x;
-	    for (var j = this.startIndex; j <= stringIndex; j++) {
-		var rightX = leftX + textLine.getCharWidthAt(j);
-		if (j >= stringIndex) break;
-		leftX = rightX;
-	    }
-	    return this.bounds.withX(leftX).withWidth(rightX - leftX);
-	} else {
-	    if (this.isSpaces()) {
-		var virtualSpaceSize = this.bounds.width / this.length;
-		var b = this.bounds.withWidth(virtualSpaceSize);
-		b.x += virtualSpaceSize * (stringIndex - this.startIndex);
-		return b;
-	    } else {
-		return this.bounds;
-	    }
-	}
-    },
-
-    isSpaces: function() {
-        return this.isWhite && !this.isTab && !this.isNewLine;
-    },
-    
-    // clone a chunk only copying minimal information
-    
-    
-    // string representation
-    toString: function() {
-        var lString = "TextWord start: " + this.startIndex +
-            " length: " + this.length +
-            " isWhite: " + this.isWhite +
-            " isNewLine: " + this.isNewLine +
-            " isTab: " + this.isTab;
-        if (this.bounds == null) {
-            lString += " null bounds";
-        } else {
-            lString += " @(" + this.bounds.topLeft() + ")(" + this.bounds.extent() + ")";
-        }
-        return lString;
-    },
-    
-    // create a chunk representing whitespace (typically space characters)
-    asWhite: function() {
-        this.isWhite = true;
-        return this;
-    },
-    
-    // create a chunk representing a newline   
-    asNewLine: function() {
-        this.isWhite = true;
-        this.isNewLine = true;
-        this.length = 1;
-        return this;
-    },
-    
-    // create a chunk representing a tab
-    asTab: function() {
-        this.isWhite = true;
-        this.isTab = true;
-        this.length = 1;
-        return this;
-    }
 });
 
 
