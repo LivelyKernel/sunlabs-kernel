@@ -1,4 +1,4 @@
-module('lively.Connector').requires('cop.Layers', 'lively.Helper').toRun(function() {
+module('lively.Connector').requires('cop.Layers', 'lively.Helper', 'lively.LayerableMorphs').toRun(function() {
 
 cop.createLayer("ConnectorMorphLayer");
 cop.createLayer("NodeMorphLayer");

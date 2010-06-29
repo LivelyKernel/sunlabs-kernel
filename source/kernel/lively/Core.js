@@ -5353,7 +5353,14 @@ WorldMorph.addMethods({
 		var container = this.ensureStatusMessageContainer();
 		var progressBar = container.addProgressBar(msg);		
 		return progressBar
-	}
+	},
+	
+	askForWorldTitle: function() {
+		var self = this;
+		this.prompt('new world title', function(input) {
+			document.title = input;
+		});
+	},
 });
 
 /**
@@ -5382,7 +5389,7 @@ WorldMorph.addMethods({
 		]);
 		if (Global.URL && (URL.source.filename() != "index.xhtml") ) { // Global. avoids an error if Network.js not loaded
 			// save but only if it's not the startup world
-			menu.addItem(["save current world to current URL", function() { 
+			menu.addItem(["save current world to current URL (s)", function() { 
 				menu.remove(); 
 				this.saveWorld();
 			}]);
@@ -5486,7 +5493,7 @@ WorldMorph.addMethods({
 		var world = this.world();
 		var toolMenuItems = [
 //			["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
-			["System code browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world)})}],
+			["System code browser (b)", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world)})}],
 			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world)})}],
 			["Wiki code Browser", function(evt) { require('lively.ide', 'lively.LKWiki').toRun(function(unused, ide) {
 				var cb = function(input) {
@@ -5507,7 +5514,7 @@ WorldMorph.addMethods({
 			["Enable profiling", function() {
 					Config.debugExtras = true;
 					lively.lang.Execution.installStackTracers(); }],
-			["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
+			["Console (l)", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
 			["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world) }) }],
 			["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().openIn(world); }) }],
 			["Call Stack Viewer", function(evt) { 
@@ -5586,9 +5593,11 @@ WorldMorph.addMethods({
 			[HandMorph.prototype.applyDropShadowFilter ? "don't use filter shadows" : "use filter shadows (if supported)",
 			  function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
 			[(Config.useDebugBackground ? "use normal background" : "use debug background"),
-					  this.toggleDebugBackground]
+					  this.toggleDebugBackground],
+			["change title",   this, 'askForWorldTitle']
 		];
 	},
+	
 
 	helpSubMenuItems: function(evt) {
 		var world = this.world();

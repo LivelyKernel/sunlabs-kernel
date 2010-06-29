@@ -1,6 +1,6 @@
 
 
-module('lively.Graffle').requires(['cop.Layers', 'lively.Connector']).toRun(function() {
+module('lively.Graffle').requires(['cop.Layers', 'lively.Connector', 'lively.LayerableMorphs']).toRun(function() {
 	
 cop.createLayer("GraffleLayer");
 cop.enableLayer(GraffleLayer);
