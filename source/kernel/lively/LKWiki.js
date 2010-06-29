@@ -519,7 +519,7 @@ PanelMorph.subclass('LatestWikiChangesListPanel', {
         this.owner.targetMorph.setPosition(this.getPosition());
         this.remove();
 		widget.searchForNewestFiles();
-    }
+    },
 
 });
 

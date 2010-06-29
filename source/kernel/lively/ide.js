@@ -1478,10 +1478,11 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 		}
 		var methodName = this.target.name;
 		var methodString = this.target.getSourceCode();
+		var layerCommand = this.target.isStatic() ? 'layerObject' : 'layerClass';
 		var def;
 		if (this.target.layerName) {
-			def = Strings.format('cop.layerClass(%s, %s, {\n\t%s})',
-				this.target.layerName, this.target.className, this.target.getSourceCode());
+			def = Strings.format('%s(%s, %s, {\n\t%s})',
+				layerCommand, this.target.layerName, this.target.className, this.target.getSourceCode());
 			console.log('Going to eval ' + def);
 		} if (this.target.isStatic()) {
 			def = 'Object.extend(' + ownerName + ', {\n' + methodString +'\n});';
