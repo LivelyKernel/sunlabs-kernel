@@ -31,7 +31,7 @@ the system can be run from it */
  * - http://www.cjohansen.no/en/javascript/test_driven_development_with_javascript_part_two
  */
 
-module('lively.TestFramework').requires().toRun(function(thisModule) {
+module('lively.TestFramework').requires('lively.bindings').toRun(function(thisModule) {
 
 Object.subclass('TestCase', {
 
@@ -458,6 +458,22 @@ Object.subclass('TestResult', {
 		return this.succeeded.collect(function(ea) { return ea.classname + '.' + ea.selector });
 	}
 });
+PanelMorph.subclass('TestRunnerPanel', {
+
+	documentation: 'Just a hack for deserializing my widget',
+
+	urlString: URL.source.getDirectory().toString(),
+	
+	onDeserialize: function($super) {
+	//	$super();
+        // FIXME
+		var widget = new TestRunner();
+        this.owner.targetMorph = this.owner.addMorph(widget.buildView(this.getExtent()));
+        this.owner.targetMorph.setPosition(this.getPosition());
+        this.remove();
+    }
+
+});
 
 Widget.subclass('TestRunner', {
 
@@ -560,13 +576,15 @@ Widget.subclass('TestRunner', {
 	},
 	
 	buildView: function(extent) {
-		var panel = PanelMorph.makePanedPanel(extent, [
-		   ['testClassList', newRealListPane, new Rectangle(0, 0, 1, 0.6)],
+		var panel;
+		panel = new TestRunnerPanel(extent);
+		panel = PanelMorph.makePanedPanel(extent, [
+		   ['testClassList', newDragnDropListPane, new Rectangle(0, 0, 1, 0.6)],
 		   ['runButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.6, 0.5, 0.05)],
 		   ['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.6, 0.5, 0.05)],
 		   ['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
 		   ['failuresList', newTextListPane, new Rectangle(0, 0.7, 1, 0.3)],
-		]);
+		], panel);
 
 		var model = this.getModel();
 		// necessary?
@@ -588,11 +606,11 @@ Widget.subclass('TestRunner', {
 	
 		var runButton = panel.runButton;
 		runButton.setLabel("Run TestCase");
-		runButton.connectModel({model: self, setValue: "runTests"});
+		lively.bindings.connect(runButton, 'fire', this, 'runTests');
 		
 		var runAllButton = panel.runAllButton;
 		runAllButton.setLabel("Run All TestCases");
-		runAllButton.connectModel({model: self, setValue: "runAllTests"});
+		lively.bindings.connect(runAllButton, 'fire', this, 'runAllTests');
 		
 		// directly using the morph for setting the color -- 
 		this.resultBar = panel.resultBar;
