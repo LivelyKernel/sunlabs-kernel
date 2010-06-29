@@ -625,8 +625,24 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
 		this.assert(doc.getElementById(morph.id()), "morph should be serialized")
 		this.assert(!(doc.getElementById(epimorph.id())), "epimorph should not be serialized")
-	}
+	},
+
+	testSerializeJSONConformantObjects: function() {
+		var morph = new Morph(new lively.scene.Rectangle(this.bounds));
+		morph.obj = {a: "Hello", b: [1,2], isJSONConformant: true};
+		this.worldMorph.addMorph(morph);
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+
+		var node = doc.getElementById(morph.id());
 	
+		var world2 = new Importer().loadWorldContents(doc);
+		var morph2 = world2.submorphs[0];
+		
+		this.assert(morph2.obj, "morph.obj serialization failed");
+		this.assertEqualState(morph2.obj, morph.obj, "morph.obj != morph2.obj");
+	}
+
+
 });
 
 

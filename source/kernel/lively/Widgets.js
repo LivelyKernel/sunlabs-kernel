@@ -5023,6 +5023,11 @@ BoxMorph.subclass("StatusMessageContainer", {
 		$super(this.defaultExtent.extentAsRectangle());
 		this.setFill(null);
 		this.setupDismissAllButton();
+		
+		// Do not serialize it...
+		// (it can not be defined in the class, because we have to identify the nodes with it....)
+		this.ignoreWhenCopying = true; 
+		
 	},
 
 	setupDismissAllButton: function(){
@@ -5045,17 +5050,19 @@ BoxMorph.subclass("StatusMessageContainer", {
 	showDismissAllButton: function() {
 		if (!this.dismissAllButton) {
 			this.setupDismissAllButton();
-		}
+		};
 		if (!this.dismissAllButton.owner) {
 			this.addMorphBack(this.dismissAllButton);
 			this.relayout()
-		}
+		};
 	},
 
 	onDeserialize: function() {
+		// DEPRICATED because "ignoreWhenCopying" takes care now
 		this.dismissAll();
 		this.stopStepping(); // ensure that  it works even for old potentially broken pages...		
 		this.startUpdate();
+		this.ignoreWhenCopying = true;  // for old instances ...
 	},
 
 	updateMessages: function() {

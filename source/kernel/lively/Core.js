@@ -921,15 +921,22 @@ Object.extend(Exporter, {
 		this.addSystemDictionary(newDoc);
 		importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
 		this.stripEpimorphs(newDoc);
+		this.stripIgnoredMorphs(newDoc);
 		return newDoc;
 	},
 	
 	stripEpimorphs: function(doc) {
-		var epimorphFields = doc.getElementsByName("isEpimorph"); 
-		$A(epimorphFields).each(function(fieldNode){
+		this.stripMorphsOfFields(doc.getElementsByName("isEpimorph"))
+	},
+	
+	stripIgnoredMorphs: function(doc) {
+		this.stripMorphsOfFields(doc.getElementsByName("ignoreWhenCopying")); 
+	},
+	
+	stripMorphsOfFields: function(fields) {
+		$A(fields).each(function(fieldNode){
 			var morphNode = fieldNode.parentNode;
 			morphNode.parentNode.removeChild(morphNode)
-			console.log("remove node " + morphNode)
 		})
 	},
 	
@@ -1489,6 +1496,7 @@ lively.data.Wrapper.subclass('Morph', {
 	doNotCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
 
     isEpimorph: false, // temporary additional morph that goes away quickly, not included in bounds
+	ignoreWhenCopying: false, // hint, that the morph should not be serialized or copied
 
     suppressBalloonHelp: Config.suppressBalloonHelp,
 
