@@ -1,16 +1,16 @@
 module('apps.PageNavigation').requires('cop.Layers').toRun(function() {
 
 cop.createLayer("PageNavigationLayer");
-enableLayer(PageNavigationLayer);
+cop.enableLayer(PageNavigationLayer);
 
 (function generalSettings() {
 	Config.showWikiNavigator = false
 	Config.resizeScreenToWorldBounds = false
 	cop.createLayer('ResizeWorldLayer')
-	enableLayer(ResizeWorldLayer);
+	cop.enableLayer(ResizeWorldLayer);
 })();
 
-layerClass(ResizeWorldLayer, WorldMorph, {
+cop.layerClass(ResizeWorldLayer, WorldMorph, {
 	displayOnCanvas: function(proceed, canvas) {
 		proceed(canvas);
 		basicResize(this, this.canvas(), 1020, 760)
@@ -244,7 +244,7 @@ BoxMorph.subclass("PageNavigationMorph", {
 
 });
 
-layerClass(PageNavigationLayer, WorldMorph, {
+cop.layerClass(PageNavigationLayer, WorldMorph, {
 
 	complexMorphsSubMenuItems: function(proceed, evt) {
 		var menu = proceed(evt);
@@ -326,7 +326,7 @@ layerClass(PageNavigationLayer, WorldMorph, {
 	
 });
 
-layerClass(PageNavigationLayer, TextMorph, {
+cop.layerClass(PageNavigationLayer, TextMorph, {
 
 	morphMenu: function(proceed, evt) {
 		var menu = proceed(evt);
@@ -360,7 +360,7 @@ layerClass(PageNavigationLayer, TextMorph, {
 // an alternative way to get that context information is the possibility
 // of the destination website to ask: document.referrer
 // to get the URL of the refering website
-layerClass(PageNavigationLayer, TextMorph, {
+cop.layerClass(PageNavigationLayer, TextMorph, {
 	doLinkThing: function(proceed, evt, link) {
 		var url = new URL.ensureAbsoluteURL(link);
 		if (Config.pageNavigationName != 'nothing') {

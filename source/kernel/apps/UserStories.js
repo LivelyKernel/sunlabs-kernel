@@ -26,7 +26,7 @@ Object.extend(Global, {
 });
 
 cop.createLayer('UserStoryLayer');
-layerClass(UserStoryLayer, WorldMorph, {
+cop.layerClass(UserStoryLayer, WorldMorph, {
 	toolSubMenuItems: function(proceed, evt) {
 		var menuItems = proceed(evt);
 		menuItems.push(["User Sory controls", function(evt) {
@@ -64,7 +64,7 @@ layerClass(UserStoryLayer, WorldMorph, {
 		return menuItems;
 	}
 });
-enableLayer(UserStoryLayer);
+cop.enableLayer(UserStoryLayer);
 
 BoxMorph.subclass('apps.UserStories.UserStoryBaseMorph', {
 

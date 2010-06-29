@@ -92,8 +92,8 @@ BoxMorph.subclass("SimpleDataStore", {//PanelMorph makes problems because of foc
 			console.log("create new Stack");
 			this.makeStackWithoutGivenName();
 			if(!this.stack) {
-				throw new Error('WebCards: Stack creation failed in newCard')
-			}
+				throw new Error('WebCards: Stack creation failed in newCard');
+			};
 		}
 		var freshCard = this.stack.newCard();
 		this.showCard(freshCard);		
@@ -217,7 +217,7 @@ BoxMorph.subclass("SimpleDataStore", {//PanelMorph makes problems because of foc
     	}
     	this.relaxedMgmt.initExistingStack(stackname);
     	var stk;
-    	withoutLayers([WebcardsLayer], function() {
+    	cop.withoutLayers([WebcardsLayer], function() {
     		stk = this.relaxedMgmt.getStackObjForName(stackname);
     	}.bind(this));
     	if(stk){
@@ -676,21 +676,21 @@ PanelMorph.subclass("CompositCard", {
 	addBackground: function(backC){
 		console.log("addBackground "+backC.id()+" to "+this.id());
 		this.backgrounds.each(function(ea){
-			withoutLayers([WebcardsLayer], function() {
+			cop.withoutLayers([WebcardsLayer], function() {
  				ea.setFillOpacity(0);
  			}.bind(this));
 		}.bind(this));
 		this.backgrounds.push(backC);
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
 			backC.setFillOpacity(1);
 		}.bind(this));
 		if(this.backgrounds.length===1){//only nessecary, when adding first background
-			withoutLayers([WebcardsLayer], function() {
+			cop.withoutLayers([WebcardsLayer], function() {
 				this.foreground.setFillOpacity(0.5);
 			}.bind(this));
 			this.foreground.mouseHandler= new MouseHandlerForForeground(this.foreground);
 		}		
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
 			this.normalize(backC);			
 			this.generateCardForBackground(backC);
 		}.bind(this));
@@ -787,7 +787,7 @@ Copier.subclass('SpecialIdHandlingCopier',{
 			
 			var org = givenOwnerProg.relaxedMgmt.getMappedObj(ea.$oldId);
 			if(org){
-				withLayers([WebcardsLayer], function() {
+				cop.withLayers([WebcardsLayer], function() {
 					org.addSubChild(ea);
 				}.bind(this));
 			}else{
@@ -1331,7 +1331,7 @@ CommandObject.subclass('SetGetCommandObject',{
 			return;
 		}
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
  			result =  func(this.newValue);
  		}.bind(this));
  		return result;
@@ -1368,7 +1368,7 @@ CommandObject.subclass('SetGetCommandObject',{
 			return;
 		}
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
  			result =  func(this.oldValue);
  		}.bind(this));
  		return result;
@@ -1407,7 +1407,7 @@ SetGetCommandObject.subclass('MultiArgsSetGetCommandObject',{
 			return;
 		}
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
 			if(this.nrOfArgs>1){
 				var result = func.apply(this.target, val);
 			}else{
@@ -1428,7 +1428,7 @@ SetGetCommandObject.subclass('MultiArgsSetGetCommandObject',{
 			return;
 		}
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
 			if(this.nrOfArgs===2){//special handling vor setTextString
 				var result = func.apply(this.target, [val,undefined]);
 			}else{
@@ -1461,7 +1461,7 @@ CommandObject.subclass('AddRemoveCommandObject',{
 		}
 		else{
 			var result;
-			withoutLayers([WebcardsLayer], function() {
+			cop.withoutLayers([WebcardsLayer], function() {
 				result = this.target[this.action](this.newValue);
 			}.bind(this));
 			return result;
@@ -1475,7 +1475,7 @@ CommandObject.subclass('AddRemoveCommandObject',{
 		
 		if(this.target[this.reverseAction]){
 			var result;
-			withoutLayers([WebcardsLayer], function() {
+			cop.withoutLayers([WebcardsLayer], function() {
 				result = this.target[this.reverseAction](this.newValue);
 			}.bind(this));
 			return result;
@@ -1538,7 +1538,7 @@ SetGetCommandObject.subclass('AccumulateingCommandObject',{
 			return;
 		}
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
 			result = func(val);
 		}.bind(this));
 		return result;
@@ -1787,7 +1787,7 @@ Object.subclass("RelaxedMgmt",{
     		this.commandCdb.injectToCach(currentJso._id, currentJso);
     		var cmd;
     		try{
-	    		withoutLayers([WebcardsLayer], function() {
+	    		cop.withoutLayers([WebcardsLayer], function() {
 	    			cmd = this.restoreCmd(currentJso);
 	    		}.bind(this));
 	    		if(!cmd){
@@ -3281,7 +3281,7 @@ StaticHelper = {
 //// Layer
 /////////////
 
-layerClass(WebcardsLayer, CompositCard, {
+cop.layerClass(WebcardsLayer, CompositCard, {
 
 	addBackground: function(proceed, value) {
 		return this.genericAddRemove('addBackground', '', proceed, value);
@@ -3321,7 +3321,7 @@ cop.layerClassAndSubclasses(WebcardsLayer, ContentButtonMorph, {
 	
 });
 
-layerClass(WebcardsLayer, Stack, {
+cop.layerClass(WebcardsLayer, Stack, {
 	
 	addCard: function(proceed, value) {
 		return this.genericAddRemove('addCard', 'removeCard', proceed, value);
@@ -3433,13 +3433,13 @@ cop.layerClassAndSubclasses(FrontMorphLayer, Morph, {
     if (this.isHalloVisible()) {
         if (this.handObserver) return; // we are not finished yet
         var self = this;
-    	withoutLayers([WebcardsLayer], function() {
+    	cop.withoutLayers([WebcardsLayer], function() {
 			 this.addMorph(this.halos);//no command should be send
 		}.bind(this));
         this.updateHaloItemPositions();
         this.handObserver = new HandPositionObserver(function(value) {
             if (!self.owner || !self.bounds().expandBy(10).containsPoint(self.owner.localize(value))) {
-                withoutLayers([WebcardsLayer], function() {
+                cop.withoutLayers([WebcardsLayer], function() {
 			 		self.removeMorph(self.halos);//no command should be send
 				});
                 self.adjustForNewBounds();
@@ -3513,13 +3513,13 @@ cop.layerClassAndSubclasses(FrontMorphLayer, Morph, {
 });
 
 
-layerClass(FrontMorphLayer, Card, {
+cop.layerClass(FrontMorphLayer, Card, {
 	onMouseOver: function(proceed, evt){
 		return proceed(evt);
 	}
 });
 
-layerClass(WebcardsLayer, Morph, {
+cop.layerClass(WebcardsLayer, Morph, {
 	handlesMouseDown: Functions.True,
 
   	//changes default behavior such that not too much cmds are produced
@@ -3531,7 +3531,7 @@ layerClass(WebcardsLayer, Morph, {
     }
 });
 
-layerClass(WebcardsLayer, PasteUpMorph, {
+cop.layerClass(WebcardsLayer, PasteUpMorph, {
 	handlesMouseDown: Functions.True,
 
     onMouseDown: function PasteUpMorph$onMouseDown(proceed, evt, hasFocus) {  //default behavior is to grab a submorph
@@ -3679,7 +3679,7 @@ cop.layerClassAndSubclasses(WebcardsLayer, Morph, {
 	
 	duplicate: function (proceed) { 
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
 			result = proceed();
 		}.bind(this));
 		this.deleteSuffFromWebcard(result);
@@ -3702,7 +3702,7 @@ cop.layerClassAndSubclasses(WebcardsLayer, Morph, {
     
     copyToHand: function(proceed) { 
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
 			result = proceed();
 		}.bind(this));
 		this.deleteSuffFromWebcard(result);
@@ -4120,12 +4120,12 @@ cop.layerClassAndSubclasses(WebcardsLayer, Morph, {
 		var mouseRelay= {
 			captureMouseEvent: function(e) { 
 				if (e.type == "MouseMove"){
-					withoutLayers([WebcardsLayer], function() {
+					cop.withoutLayers([WebcardsLayer], function() {
  						this.setPosition(this.owner.localize(e.hand.getPosition()).addPt(offset));
  					}.bind(this));
 				}
 				if (e.type == "MouseDown" || e.type == "MouseUp"){
-					withoutLayers([WebcardsLayer], function() {
+					cop.withoutLayers([WebcardsLayer], function() {
  						this.setPosition(this.owner.localize(e.hand.getPosition()).addPt(offset));
  					}.bind(this));
 					this.forceSetCmd("setPosition", "getPosition", this.getPosition(), startPos);
@@ -4272,7 +4272,7 @@ cop.layerClassAndSubclasses(WebcardsLayer, Morph, {
 	
 });
 
-layerClass(WebcardsLayer, TextMorph, {
+cop.layerClass(WebcardsLayer, TextMorph, {
 	
 	setTextString: function(proceed, replacement, replacementHints) { 
 		if(this.textStyle){
@@ -4362,11 +4362,11 @@ layerClass(WebcardsLayer, TextMorph, {
 	
 });
 
-layerClass(WebcardsLayer, Invocation, {
+cop.layerClass(WebcardsLayer, Invocation, {
 	
 	exec: function(proceed) {
 		var result;
-		withoutLayers([WebcardsLayer], function() {
+		cop.withoutLayers([WebcardsLayer], function() {
  			result =  proceed();
  		}.bind(this));
  		return result;
@@ -4394,7 +4394,7 @@ cop.layerClassAndSubclasses(MasterContentLayer, Morph, {
 		
 });
 
-layerClass(FrontMorphLayer, ContentRectangle,{
+cop.layerClass(FrontMorphLayer, ContentRectangle,{
 	//COPY AND PAST from Fabrik.js
 	minExtent: function() { return pt(50,25); },
 	padding: Rectangle.inset(7),
