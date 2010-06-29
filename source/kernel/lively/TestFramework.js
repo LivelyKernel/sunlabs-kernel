@@ -121,8 +121,10 @@ Object.subclass('TestCase', {
 	assertEqual: function(firstValue, secondValue, msg) { this.assertEquals(firstValue, secondValue, msg) },
 	
 	assertEquals: function(firstValue, secondValue, msg){
-	    if (firstValue && firstValue.constructor === Point && secondValue &&
-	        secondValue.constructor === Point && firstValue.eqPt(secondValue)) return;
+		if (firstValue && firstValue.constructor === Point && secondValue &&
+			secondValue.constructor === Point && firstValue.eqPt(secondValue)) return;
+		if (firstValue && firstValue.constructor === Color && secondValue &&
+			secondValue.constructor === Color && firstValue.equals(secondValue)) return;
 		if (firstValue == secondValue) return;
 		this.assert(false, (msg ? msg : '') + ' (' + firstValue +' != ' + secondValue +')');
 	},
