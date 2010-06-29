@@ -1433,6 +1433,34 @@ cop.tests.LayerTestCase.subclass('cop.tests.LayerActivationRestrictionTest', {
 });
 
 
+cop.tests.LayerTestCase.subclass('cop.tests.LayerAltSyntaxTest', {
+	
+	testNewSyntax: function() {
+		var l = cop.layer("MyDummyLayer2");
+		this.assert(l instanceof Layer, "l is no layer")
+		this.assert(l.layerClass instanceof Function, "l does not respond to layerClass")
+		this.assert(l.layerObject instanceof Function, "l does not respond to layerObject")
+	},
+
+	testCreateLayer: function() {
+		var l = cop.create("MyDummyLayer2");
+		this.assert(l instanceof Layer, "l is no layer")
+	},
+
+	testRefineClass: function() {
+		var l = cop.create("MyDummyLayer2");
+		this.assert(l.refine instanceof Function, "l does not respond to refine")
+	},
+
+	testBeGlobal: function() {
+		var l = cop.layer("MyDummyLayer2");
+		l.beGlobal();		
+		this.assert(cop.GlobalLayers.include(l), "be global is broken")
+		
+	}
 });
 
+
+});
 console.log("loaded LayersTest.js");
+

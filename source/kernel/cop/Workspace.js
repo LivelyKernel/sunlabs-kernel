@@ -20,139 +20,110 @@
  * THE SOFTWARE.
  */
 
-module("cop.Workspace").requires(["lively.Text", "cop.Layers", "lively.Undo"]).toRun(function() {
+module("cop.Workspace").requires(["lively.Text", "cop.Layers", "lively.Undo", 'lively.LayerableMorphs']).toRun(function() {
 
-Object.extend(Morph.prototype, LayerableObjectTrait);
-Morph.prototype.lookupLayersIn = ["owner"];
+cop.create('WorkspaceLayer').
+	refine(TextMorph, {
+		toggleEvalOnWorldLoad: function() {
+			this.evalOnWorldLoad = ! this.evalOnWorldLoad; 
+		},
 
-cop.createLayer("WorkspaceLayer");
-cop.layerClass(WorkspaceLayer, TextMorph, {
+		morphMenu: function(proceed, evt) {
+			var menu = proceed(evt);
+			if (menu) {
+				menu.addItem([
+					(this.evalOnWorldLoad ? "disable" : "enable") + " eval on world load",   this, 
+					'toggleEvalOnWorldLoad']);
+			}
+			return menu;
+		},
 
-	toggleEvalOnWorldLoad: function() {
-		this.evalOnWorldLoad = ! this.evalOnWorldLoad; 
-	},
-
-	morphMenu: function(proceed, evt) {
-		var menu = proceed(evt);
-		if (menu) {
-			menu.addItem([
-				(this.evalOnWorldLoad ? "disable" : "enable") + " eval on world load",   this, 
-				'toggleEvalOnWorldLoad']);
+		onDeserialize: function(proceed) {
+			proceed();
+			if (this.evalOnWorldLoad) {
+				// console.log("eval workspace is " + this.evalOnWorldLoad + ":"+ this.textString );
+				this.tryBoundEval(this.textString);
+			}
 		}
-		return menu
-	},
-
-	onDeserialize: function(proceed) {
-		proceed();
-		if (this.evalOnWorldLoad) {
-			// console.log("eval workspace is " + this.evalOnWorldLoad + ":"+ this.textString );
-			this.tryBoundEval(this.textString);
-		}
-	},
-})
+});
 
 // Static Instrumentatioan
-cop.createLayer("WorkspaceControlLayer");
-cop.layerClass(WorkspaceControlLayer, WindowMorph, {
+cop.create('WorkspaceControlLayer').
+	beGlobal().
+	refine(WindowMorph, {
 
-	isWorkspaceLayerEnabled: function() {
-			var layers = this.getWithLayers();
-			return layers && layers.include(WorkspaceLayer);
-	},
+		isWorkspaceLayerEnabled: function() {
+				l3 = cop.layer('WorkspaceControlLayer2');
+				var layers = this.getWithLayers();
+				return layers && layers.include(WorkspaceLayer);
+		},
 
-	toggleWorkspace: function() {
-		console.log("this= " + this);
-		if (this.isWorkspaceLayerEnabled()) {
-			console.log("disable workspace for " + this); 
-			this.setWithLayers([]);
-		} else {
-			console.log("enable workspace for " + this);
-			this.setWithLayers([WorkspaceLayer, UndoLayer]);
-			// RESEARCH: here we need to signal the new LayerActivation for interested objects...
+		toggleWorkspace: function() {
+			console.log("this= " + this);
+			if (this.isWorkspaceLayerEnabled()) {
+				console.log("disable workspace for " + this); 
+				this.setWithLayers([]);
+			} else {
+				console.log("enable workspace for " + this);
+				this.setWithLayers([WorkspaceLayer, UndoLayer]);
+				// RESEARCH: here we need to signal the new LayerActivation for interested objects...
+			}
+		},
+
+		askForNewTitle: function() {
+			var self = this;
+			WorldMorph.current().prompt('new name', function(input) {
+				self.setTitle(input);
+			});	
+		},
+
+		morphMenu: function(proceed, evt) {
+			var menu = proceed(evt);
+			if (menu) {
+				menu.addItem([
+					"change title",   this, 
+					'askForNewTitle']);
+
+				menu.addItem([
+					(this.isWorkspaceLayerEnabled() ? "disable" : "enable") +
+					" workspace",   this, 
+					'toggleWorkspace']);
+			}
+			return menu;
 		}
-	},
-
-
-	askForNewTitle: function() {
-		var self = this;
-		WorldMorph.current().prompt('new name', function(input) {
-			self.setTitle(input)
-		})
 		
-	},
+	}).refine(WorldMorph, {
+		onKeyDown: function(proceed, evt) {
+			var key = evt.getKeyChar().toLowerCase();
+			if (evt.isCommandKey() && !evt.isShiftDown()) {
+				if (key == 'k') { 
+					WorldMorph.current().addWorkspace();
+					return true;
+				}
+			}
+			proceed(evt)
+		},
+	
+		toolSubMenuItems: function(proceed, evt) {
+			var menu = proceed(evt);
+			menu.push(["Workspace (k) ", function(evt) {
+				WorldMorph.current().addWorkspace()
+			}]);
+			return menu;
+		},
 
-	morphMenu: function(proceed, evt) {
-		console.log("morph menu : ")
-		var menu = proceed(evt);
-		if (menu) {
-			menu.addItem([
-				"change title",   this, 
-				'askForNewTitle']);
-
-			menu.addItem([
-				(this.isWorkspaceLayerEnabled() ? "disable" : "enable") +
-				" workspace",   this, 
-				'toggleWorkspace']);
-		}
-		return menu
-	}
-});
-
-cop.layerClass(WorkspaceControlLayer, WorldMorph, {
-	askForWorldTitle: function(){
-		var self = this;
-		this.prompt('new world title', function(input) {
-			document.title = input;
-		})
-	},
-
-	morphMenu: function(proceed, evt) {
-		var menu = proceed(evt);
-		if (menu) {
-			menu.addItem([
-				"change title",   this, 'askForWorldTitle']);
-
-		}
-		return menu
-	}
-});
-
-cop.layerClass(WorkspaceControlLayer, WorldMorph, {
-	askForWorldTitle: function(){
-		var self = this;
-		this.prompt('new world title', function(input) {
-			document.title = input;
-		})
-	},
-
-	morphMenu: function(proceed, evt) {
-		var menu = proceed(evt);
-		if (menu) {
-			menu.addItem([
-				"change title",   this, 'askForWorldTitle']);
-
-		}
-		return menu
-	},
-
-	complexMorphsSubMenuItems: function(proceed, evt) {
-		var menu = proceed(evt);
-		menu.push(["Workspace", function(evt) { 
-			var pane = WorldMorph.current().addTextWindow("Editable text"); 
+		addWorkspace: function(proceed, initialText) {
+			initialText = initialText || "Editable text";
+			var pane = WorldMorph.current().addTextWindow({content: initialText}); 
+			pane.owner.setTitle("Workspace");
 			pane.owner.toggleWorkspace();
 			var textMorph = pane.submorphs[0].submorphs[0];
 			textMorph.setFontFamily('Courier');
-		}])
-		return menu
-	}
+			textMorph.requestKeyboardFocus(WorldMorph.current().firstHand());
+			textMorph.doSelectAll();
+		}
 });
 
 
 
-
-
-
-cop.enableLayer(WorkspaceControlLayer);
-
-})
-
+});

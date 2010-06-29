@@ -396,7 +396,33 @@ Object.subclass("Layer", {
 		return {
 			name: this.name
 		};
+	},
+	
+	layerClass: function(classObj, methods) {
+		cop.layerClass(this, classObj, methods);
+		return this;
+	},
+	
+	layerObject: function(obj, methods) {
+		cop.layerObject(this, obj, methods);
+		return this;
+	},
+	
+	beGlobal: function() {
+		cop.enableLayer(this);
+		return this;
+	},
+
+	beNotGlobal: function() {
+		cop.disableLayer(this);
+		return this;
+	},
+	
+	refine: function(classObj, methods) {
+		cop.layerClass(this, classObj, methods);
+		return this
 	}
+	
 });
 
 
@@ -422,6 +448,14 @@ cop.createLayer = function(name, silent) {
 	var layer = new Layer(name);
 	Global[name] = layer;
 	return layer;
+};
+
+cop.layer = function(name) {
+	return cop.createLayer(name, true);
+};
+
+cop.create = function(name) {
+	return cop.createLayer(name, false);
 };
 
 // Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
