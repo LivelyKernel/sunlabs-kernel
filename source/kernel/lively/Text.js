@@ -759,14 +759,14 @@ var Locale = {
 		if (myI2-myI1 >= 1) return [myI1, myI2];
 	
         var prev = (i1<str.length) ? str[i1] : "";
-	while (i1-1 >= 0 && (this.charSet.alphaNum.include(str[i1-1]) || this.periodWithDigit(str[i1-1], prev))) {
-            prev = str[i1-1];
-	    i1 --;
-        }
-	while (i2+1 < str.length && (this.charSet.alphaNum.include(str[i2+1]) || this.periodWithDigit(str[i2+1], prev))) {
-            prev = str[i2+1];
-	    i2 ++;
-	}
+		while (i1-1 >= 0 && (this.charSet.alphaNum.include(str[i1-1]) || this.periodWithDigit(str[i1-1], prev))) {
+	        prev = str[i1-1];
+		    i1 --;
+	    }
+		while (i2+1 < str.length && (this.charSet.alphaNum.include(str[i2+1]) || this.periodWithDigit(str[i2+1], prev))) {
+	        prev = str[i2+1];
+		    i2 ++;
+		}
         return [i1, i2]; 
     },
 
@@ -804,90 +804,90 @@ var Locale = {
 
 
 thisModule.WrapStyle = Class.makeEnum([ 
-    "Normal",  // fits text to bounds width using word wrap and sets height
-    "None", // simply sets height based on line breaks only
-    "Shrink" // sets both width and height based on line breaks only
+	"Normal",  // fits text to bounds width using word wrap and sets height
+	"None", // simply sets height based on line breaks only
+	"Shrink" // sets both width and height based on line breaks only
 ]);
 
 Morph.subclass('TextSelectionMorph', {
 
-    documentation: "Visual representation of the text selection",
-    style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
-    isEpimorph: true,
-    
-    initialize: function($super) {
-	$super(new lively.scene.Group());
-	this.applyStyle({fill: null, borderWidth: 0});
-	this.ignoreEvents();
-    },
+	documentation: "Visual representation of the text selection",
+	style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
+	isEpimorph: true,
+	
+	initialize: function($super) {
+		$super(new lively.scene.Group());
+		this.applyStyle({fill: null, borderWidth: 0});
+		this.ignoreEvents();
+	},
 
-    addRectangle: function(rect) {
-	var m = this.addMorph(Morph.makeRectangle(rect));
-	m.applyStyle(this.style);
-	m.ignoreEvents();
-    },
+	addRectangle: function(rect) {
+		var m = this.addMorph(Morph.makeRectangle(rect));
+		m.applyStyle(this.style);
+		m.ignoreEvents();
+	},
 
-    undraw: function() {
-	this.removeAllMorphs();
-    }
+	undraw: function() {
+		this.removeAllMorphs();
+	}
 });
 
 Object.subclass('lively.Text.ChunkStream', {
 
-    documentation: "Parses a string with style into chunks of text or white space",
-    
-    whiteSpaceDict: {' ': true, '\t': true, '\r': true, '\n': true},
+	documentation: "Parses a string with style into chunks of text or white space",
 
-    initialize: function(str, style, stringIndex) {
+	whiteSpaceDict: {' ': true, '\t': true, '\r': true, '\n': true},
+
+	initialize: function(str, style, stringIndex) {
 		this.str = str;
 		this.style = style;
 		this.stringIndex = stringIndex;
-   },
+	},
 
-    nextChunk: function() {
-	// look at str starting at stringIndex and return the next appropriate chunk
-	// Note: if style is not null, then break at style changes as well as other chunk boundaries
+	nextChunk: function() {
+		// look at str starting at stringIndex and return the next appropriate chunk
+		// Note: if style is not null, then break at style changes as well as other chunk boundaries
 
-	if (this.stringIndex >= this.str.length) return null;
+		if (this.stringIndex >= this.str.length) return null;
 
-	var nextChar = this.str[this.stringIndex];
-	var chunkSize = 1; // default is one character long
-	if (this.whiteSpaceDict[nextChar]) {
-		if (nextChar == '\r' || nextChar == '\n') {
-			return new lively.Text.TextWord(this.stringIndex++).asNewLine(); }
-		if (nextChar == '\t') {
-			return new lively.Text.TextWord(this.stringIndex++).asTab(); }
-		var chunkSize = this.chunkLengthForSpaces(this.str, this.stringIndex);
-		var chunk = new lively.Text.TextWord(this.stringIndex, chunkSize).asWhite();
-		this.stringIndex += chunkSize ;
+		var nextChar = this.str[this.stringIndex];
+		var chunkSize = 1; // default is one character long
+		if (this.whiteSpaceDict[nextChar]) {
+			if (nextChar == '\r' || nextChar == '\n') {
+				return new lively.Text.TextWord(this.stringIndex++).asNewLine(); }
+			if (nextChar == '\t') {
+				return new lively.Text.TextWord(this.stringIndex++).asTab(); }
+			var chunkSize = this.chunkLengthForSpaces(this.str, this.stringIndex);
+			var chunk = new lively.Text.TextWord(this.stringIndex, chunkSize).asWhite();
+			this.stringIndex += chunkSize ;
+			return chunk;
+		}
+		var chunkSize = this.chunkLengthForWord(this.str, this.stringIndex);
+		if(this.style) {  // if style breaks within this chunk, shorten chunk to end at the break
+			var styleSize = this.style.runLengthAt(this.stringIndex);  // length remaining in run
+			if (styleSize < chunkSize) chunkSize = styleSize;
+		}	
+		var chunk = new lively.Text.TextWord(this.stringIndex, chunkSize);
+		this.stringIndex += chunkSize;
 		return chunk;
-	}
-	var chunkSize = this.chunkLengthForWord(this.str, this.stringIndex);
-	if(this.style) {  // if style breaks within this chunk, shorten chunk to end at the break
-		var styleSize = this.style.runLengthAt(this.stringIndex);  // length remaining in run
-		if (styleSize < chunkSize) chunkSize = styleSize;
-	}	
-	var chunk = new lively.Text.TextWord(this.stringIndex, chunkSize);
-	this.stringIndex += chunkSize;
-	return chunk;
-    },
+	},
 
-chunkLengthForSpaces: function(str, index) {
-	// we found a space at str[index];  return the corresponding chunk length
-	// Note:  This and ...ForWord should probably be inline, and they can start at index+1
-	// Further note:  Both might be faster with a regex
-	// Dominant stats would be 1 space only, and typically 4-5 characters
+	chunkLengthForSpaces: function(str, index) {
+		// we found a space at str[index];	return the corresponding chunk length
+		// Note:  This and ...ForWord should probably be inline, and they can start at index+1
+		// Further note:  Both might be faster with a regex
+		// Dominant stats would be 1 space only, and typically 4-5 characters
 		for (var i = index; i < str.length; i++)
 			if (str[i] != ' ') return i - index;
 		return i - index;
-    },
+	},
 
-chunkLengthForWord: function(str, index) {
-	// we found a non-blank at str[index];  return the corresponding chunk length
-	for (var i = index; i < str.length; i++)
-	    if (this.whiteSpaceDict[str[i]])  return i - index;
-	return i - index;
-    }
+	chunkLengthForWord: function(str, index) {
+		// we found a non-blank at str[index];	return the corresponding chunk length
+		for (var i = index; i < str.length; i++)
+			if (this.whiteSpaceDict[str[i]])  return i - index;
+		return i - index;
+	}
 });
 
 
