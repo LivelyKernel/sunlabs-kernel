@@ -2,15 +2,15 @@
 
 module('lively.FabrikExtensions').requires('lively.Helper', 'cop.Layers').toRun(function() {
 
-createLayer("WorldClockLayer");
-createLayer("TokyoTimeLayer");
-createLayer("BerlinTimeLayer");
+cop.createLayer("WorldClockLayer");
+cop.createLayer("TokyoTimeLayer");
+cop.createLayer("BerlinTimeLayer");
 
 
 cop.layerClass(WorldClockLayer, ClockMorph, {
 	setHands: function(proceed) {
 		if (this.name == "Tokyo") {
-			withLayers([TokyoTimeLayer], function() {
+			cop.withLayers([TokyoTimeLayer], function() {
 				return proceed();
 			});
 			return;
@@ -39,7 +39,7 @@ cop.layerClass(TokyoTimeLayer, ClockMorph, {
 // 	}		
 // });
 
-enableLayer(WorldClockLayer);
+cop.enableLayer(WorldClockLayer);
 	
 
 

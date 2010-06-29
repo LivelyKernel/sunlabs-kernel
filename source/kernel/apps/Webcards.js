@@ -4,9 +4,9 @@
 // ===========================================================================
 module('apps.Webcards').requires('lively.Helper','apps.JComponents','apps.CouchDB','cop.Layers').toRun(function() {
 
-createLayer("WebcardsLayer");
-createLayer("FrontMorphLayer");
-createLayer("MasterContentLayer");
+cop.createLayer("WebcardsLayer");
+cop.createLayer("FrontMorphLayer");
+cop.createLayer("MasterContentLayer");
 
 BoxMorph.subclass("SimpleDataStore", {//PanelMorph makes problems because of focus, which eates droped Morpphs.
 	documentation: "SimpleDataStore is the main class of WebCards",
@@ -3313,7 +3313,7 @@ layerClass(WebcardsLayer, CompositCard, {
 	
 });
 
-layerClassAndSubclasses(WebcardsLayer, ContentButtonMorph, {
+cop.layerClassAndSubclasses(WebcardsLayer, ContentButtonMorph, {
 	
 	setScript: function(proceed, value) {
 		return this.genericSet('setScript','getScript', proceed, value);
@@ -3333,7 +3333,7 @@ layerClass(WebcardsLayer, Stack, {
 	
 });
 
-layerClassAndSubclasses(FrontMorphLayer, Morph, {
+cop.layerClassAndSubclasses(FrontMorphLayer, Morph, {
 	
 	/* Halos (by  Lively Fabrik) */
 
@@ -3552,7 +3552,7 @@ layerClass(WebcardsLayer, PasteUpMorph, {
     
 });
 
-layerClassAndSubclasses(WebcardsLayer, Morph, {
+cop.layerClassAndSubclasses(WebcardsLayer, Morph, {
 
 	setPosition: function(proceed, value) {
 		return this.genericSet('setPosition','getPosition', proceed, value);
@@ -4374,7 +4374,7 @@ layerClass(WebcardsLayer, Invocation, {
 
 });
 
-layerClassAndSubclasses(MasterContentLayer, Morph, {
+cop.layerClassAndSubclasses(MasterContentLayer, Morph, {
 	
 	handlesMouseDown: Functions.True,
 	

@@ -1478,7 +1478,7 @@ sourceString: function($super) {
 		var methodString = this.target.getSourceCode();
 		var def;
 		if (this.target.layerName) {
-			def = Strings.format('layerClass(%s, %s, {\n\t%s})',
+			def = Strings.format('cop.layerClass(%s, %s, {\n\t%s})',
 				this.target.layerName, this.target.className, this.target.getSourceCode());
 			console.log('Going to eval ' + def);
 		} if (this.target.isStatic()) {

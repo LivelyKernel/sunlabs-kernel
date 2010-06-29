@@ -1,6 +1,6 @@
 module('apps.Journal').requires('cop.Layers', 'apps.DateFormat').toRun(function() {
 
-createLayer('JournalEntryLayer')
+cop.createLayer('JournalEntryLayer')
 
 layerClass(JournalEntryLayer, TextMorph, {
 	splitInOwer: function(proceed, evt) {

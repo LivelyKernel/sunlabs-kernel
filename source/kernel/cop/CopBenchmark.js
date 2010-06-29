@@ -51,16 +51,16 @@ benchmakeBlock = function(name, unrolledOps, func) {
 	CopBenchmark.printEachResult(result);
 }
 
-createLayer("L1");
-createLayer("L2");
-createLayer("L3");
-createLayer("L4");
-createLayer("L5");
-createLayer("L6");
-createLayer("L7");
-createLayer("L8");
-createLayer("L9");
-createLayer("L10");
+cop.createLayer("L1");
+cop.createLayer("L2");
+cop.createLayer("L3");
+cop.createLayer("L4");
+cop.createLayer("L5");
+cop.createLayer("L6");
+cop.createLayer("L7");
+cop.createLayer("L8");
+cop.createLayer("L9");
+cop.createLayer("L10");
 
 
 Object.subclass('cop.benchmark.BenchClass', {
@@ -543,7 +543,7 @@ addLayerBenchmarks2 = function() {
 		},
 
 	{name: "ContextJS:Method:WithLayer:1 ", run: function(name) {
-		withLayers([L1], function() {
+		cop.withLayers([L1], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -568,7 +568,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:2 ", run: function(name) {
-		withLayers([L1, L2], function() {
+		cop.withLayers([L1, L2], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -593,7 +593,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:3 ", run: function(name) {
-		withLayers([L1, L2, L3], function() {
+		cop.withLayers([L1, L2, L3], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -618,7 +618,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:4 ", run: function(name) {
-		withLayers([L1, L2, L3, L4], function() {
+		cop.withLayers([L1, L2, L3, L4], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -643,7 +643,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:5 ", run: function(name) {
-		withLayers([L1, L2, L3, L4, L5], function() {
+		cop.withLayers([L1, L2, L3, L4, L5], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -668,7 +668,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:6 ", run: function(name) {
-		withLayers([L1, L2, L3, L4, L5, L6], function() {
+		cop.withLayers([L1, L2, L3, L4, L5, L6], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -693,7 +693,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:7 ", run: function(name) {
-		withLayers([L1, L2, L3, L4, L5, L6, L7], function() {
+		cop.withLayers([L1, L2, L3, L4, L5, L6, L7], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -718,7 +718,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:8 ", run: function(name) {
-		withLayers([L1, L2, L3, L4, L5, L6, L7, L8], function() {
+		cop.withLayers([L1, L2, L3, L4, L5, L6, L7, L8], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -743,7 +743,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:9 ", run: function(name) {
-		withLayers([L1, L2, L3, L4, L5, L6, L7, L8, L9], function() {
+		cop.withLayers([L1, L2, L3, L4, L5, L6, L7, L8, L9], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -768,7 +768,7 @@ addLayerBenchmarks2 = function() {
 	},
 
 	{name: "ContextJS:Method:WithLayer:10 ", run: function(name) {
-		withLayers([L1, L2, L3, L4, L5, L6, L7, L8, L9, L10], function() {
+		cop.withLayers([L1, L2, L3, L4, L5, L6, L7, L8, L9, L10], function() {
 			benchmakeBlock(name, 16, function(size, obj) {
 				for(var i = 0; i < size; i++) {		
 					obj.countWithLayers();	
@@ -858,7 +858,7 @@ addLayerBenchmarks3 = function() {
 	{name: "ContextJS:ActivateLayer:1 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1], function() {
+				cop.withLayers([L1], function() {
 					o1.m1();
 					o1.m2();
 					o1.m3();
@@ -871,9 +871,9 @@ addLayerBenchmarks3 = function() {
 	{name: "ContextJS:ActivateLayer:2 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1], function() {
+				cop.withLayers([L1], function() {
 					o1.m1();
-					withLayers([L2], function() {
+					cop.withLayers([L2], function() {
 						o1.m2();
 						o1.m3();
 						o1.m4();
@@ -886,11 +886,11 @@ addLayerBenchmarks3 = function() {
 	{name: "ContextJS:ActivateLayer:3 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1], function() {
+				cop.withLayers([L1], function() {
 					o1.m1();
-					withLayers([L2], function() {
+					cop.withLayers([L2], function() {
 						o1.m2();
-						withLayers([L3], function() {
+						cop.withLayers([L3], function() {
 							o1.m3();
 							o1.m4();
 							o1.m5();
@@ -903,13 +903,13 @@ addLayerBenchmarks3 = function() {
 	{name: "ContextJS:ActivateLayer:4 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1], function() {
+				cop.withLayers([L1], function() {
 					o1.m1();
-					withLayers([L2], function() {
+					cop.withLayers([L2], function() {
 						o1.m2();
-						withLayers([L3], function() {
+						cop.withLayers([L3], function() {
 							o1.m3();
-							withLayers([L4], function() {
+							cop.withLayers([L4], function() {
 								o1.m4();
 								o1.m5();
 							});
@@ -922,15 +922,15 @@ addLayerBenchmarks3 = function() {
 	{name: "ContextJS:ActivateLayer:5 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1], function() {
+				cop.withLayers([L1], function() {
 					o1.m1();
-					withLayers([L2], function() {
+					cop.withLayers([L2], function() {
 						o1.m2();
-						withLayers([L3], function() {
+						cop.withLayers([L3], function() {
 							o1.m3();
-							withLayers([L4], function() {
+							cop.withLayers([L4], function() {
 								o1.m4();
-								withLayers([L5], function() {
+								cop.withLayers([L5], function() {
 									o1.m5();
 								});
 							});
@@ -961,7 +961,7 @@ addLayerBenchmarks4 = function() {
 	{name: "ContextJS:ActivateLayerFlat:1 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1], function() {
+				cop.withLayers([L1], function() {
 					o1.m1();
 					o1.m2();
 					o1.m3();
@@ -974,7 +974,7 @@ addLayerBenchmarks4 = function() {
 	{name: "ContextJS:ActivateLayerFlat:2 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1, L2], function() {
+				cop.withLayers([L1, L2], function() {
 					o1.m1();
 					o1.m2();
 					o1.m3();
@@ -987,7 +987,7 @@ addLayerBenchmarks4 = function() {
 	{name: "ContextJS:ActivateLayerFlat:3 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1, L2, L3], function() {
+				cop.withLayers([L1, L2, L3], function() {
 					o1.m1();
 					o1.m2();
 					o1.m3();
@@ -1000,7 +1000,7 @@ addLayerBenchmarks4 = function() {
 	{name: "ContextJS:ActivateLayerFlat:4 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1, L2, L3, L4], function() {
+				cop.withLayers([L1, L2, L3, L4], function() {
 					o1.m1();
 					o1.m2();
 					o1.m3();
@@ -1013,7 +1013,7 @@ addLayerBenchmarks4 = function() {
 	{name: "ContextJS:ActivateLayerFlat:5 ", run: function(name) {
 		benchmakeBlock(name, 1, function(size, obj) {
 			for(var i = 0; i < size; i++) {
-				withLayers([L1, L2, L3, L4, L5], function() {
+				cop.withLayers([L1, L2, L3, L4, L5], function() {
 					o1.m1();
 					o1.m2();
 					o1.m3();

@@ -4,9 +4,9 @@
  */
 module('lively.TestRunnerExtensions').requires('lively.Helper', 'cop.Layers', 'lively.TestFramework').toRun(function() {
 	
-createLayer("TimeEachTestLayer");
+cop.createLayer("TimeEachTestLayer");
 
-layerClass(TimeEachTestLayer, TestCase, {
+cop.layerClass(TimeEachTestLayer, TestCase, {
 	runTest: function(proceed, selector) {
 		var start = (new Date()).getTime();	
 		proceed(selector);
@@ -15,7 +15,7 @@ layerClass(TimeEachTestLayer, TestCase, {
 	},
 });
 
-layerClass(TimeEachTestLayer, TestResult, {
+cop.layerClass(TimeEachTestLayer, TestResult, {
 
 	setTimeOfTestRun: function(proceed, selector, time) {
 		if (!this.timeOfTestRuns)
@@ -34,7 +34,7 @@ layerClass(TimeEachTestLayer, TestResult, {
 });
 
 
-layerClass(TimeEachTestLayer, TestRunner, {
+cop.layerClass(TimeEachTestLayer, TestRunner, {
 	setResultOf: function(proceed, testObject) {
 		proceed(testObject);
 		WorldMorph.current().setStatusMessage("\nTestRun: " + testObject.constructor.type + "\n" +
@@ -43,10 +43,10 @@ layerClass(TimeEachTestLayer, TestRunner, {
 	},
 })
 
-createLayer("TimeTestLayer");
-enableLayer(TimeTestLayer);
+cop.createLayer("TimeTestLayer");
+cop.enableLayer(TimeTestLayer);
 
-layerClass(TimeTestLayer, TestRunner, {
+cop.layerClass(TimeTestLayer, TestRunner, {
 	
 	layersForTestRun: function() {
 		var layers = [TimeEachTestLayer];
@@ -56,14 +56,14 @@ layerClass(TimeTestLayer, TestRunner, {
 	},
 
 	runSelectedTestCase: function(proceed) {
-		withLayers(this.layersForTestRun(), function() {
+		cop.withLayers(this.layersForTestRun(), function() {
 			proceed()
 		})
 	}
 })
 
-createLayer("ProfileEachTestLayer");
-layerClass(ProfileEachTestLayer, TestCase, {
+cop.createLayer("ProfileEachTestLayer");
+cop.layerClass(ProfileEachTestLayer, TestCase, {
 	runTest: function(proceed, selector) {
 		var profileName = "profile "  + this.currentSelector 
 		console.profile(profileName);
@@ -75,15 +75,15 @@ layerClass(ProfileEachTestLayer, TestCase, {
 Config.profileTestRuns = true;
 
 
-createLayer("DebugTestCaseLayer");
-layerClass(DebugTestCaseLayer, TestCase, {
+cop.createLayer("DebugTestCaseLayer");
+cop.layerClass(DebugTestCaseLayer, TestCase, {
 	assert: function(proceed, bool, msg) {
 		if (!bool)
 			debugger
 		proceed(bool, msg)
 	}
 })
-enableLayer(DebugTestCaseLayer)
+cop.enableLayer(DebugTestCaseLayer)
 
 
 });

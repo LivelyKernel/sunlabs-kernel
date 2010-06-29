@@ -76,13 +76,13 @@ UndoableCommand.subclass("ReplaceTextCommand", {
 
 	undo: function() {
 		// console.log("undo from " + this.index + " to " + this.newText.size())
-		withoutLayers([UndoLayer], function() {
+		cop.withoutLayers([UndoLayer], function() {
 			this.morph.setSelectionRange(this.index, this.index + this.newText.size());
 			this.morph.replaceSelectionWith(this.oldText);
 		}.bind(this))
 	},	
 	redo: function() {
-		withoutLayers([UndoLayer], function() {
+		cop.withoutLayers([UndoLayer], function() {
 			this.morph.setSelectionRange(this.index, this.index + this.oldText.size());
 			this.morph.replaceSelectionWith(this.newText);
 			var pos = this.index + this.newText.size();
@@ -91,8 +91,8 @@ UndoableCommand.subclass("ReplaceTextCommand", {
 	},	
 });
 
-createLayer("UndoLayer")
-layerClass(UndoLayer, TextMorph, {
+cop.createLayer("UndoLayer")
+cop.layerClass(UndoLayer, TextMorph, {
 
 	getUndoHistory: function() {
 		if (!this.undoHistory)
@@ -141,7 +141,7 @@ layerClass(UndoLayer, TextMorph, {
 			var cmd = new ReplaceTextCommand(this, from, oldText, replacement)
 			undoHistory.addCommand(cmd);
 		};
-		withoutLayers([UndoLayer], function(){
+		cop.withoutLayers([UndoLayer], function(){
 			return proceed(replacement);
 		})
 	},
@@ -149,7 +149,7 @@ layerClass(UndoLayer, TextMorph, {
 	emphasizeFromTo: function(proceed, emph, from, to) {
 		var undoHistory = this.getUndoHistory();
 		var oldText = this.textSliceFromTo(from, to);
-		withoutLayers([UndoLayer], function(){
+		cop.withoutLayers([UndoLayer], function(){
 			proceed(emph, from, to);
 		})
 		var newText = this.textSliceFromTo(from, to);
@@ -169,10 +169,10 @@ layerClass(UndoLayer, TextMorph, {
 			var cmd = new ReplaceTextCommand(this, from, oldText, string)
 			undoHistory.addCommand(cmd);
 		};
-		withoutLayers([UndoLayer], function(){
+		cop.withoutLayers([UndoLayer], function(){
 			proceed(string);
 		})
  	},
 });
-enableLayer(UndoLayer);
+cop.enableLayer(UndoLayer);
 })

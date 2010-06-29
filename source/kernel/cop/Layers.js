@@ -403,7 +403,7 @@ Object.subclass("Layer", {
 Object.extend(Layer, {
 	fromLiteral: function(literal) {
 		// console.log("Deserializing Layer Activation from: " + literal.name)
-		return createLayer(literal.name, false);
+		return cop.createLayer(literal.name, false);
 	}
 });
 
@@ -413,7 +413,7 @@ Object.extend(Layer, {
 /* Layer Definition */
 
 // creates a named global layer
-Global.createLayer = function(name, silent) {
+cop.createLayer = function(name, silent) {
 	if (Global[name]) {
 		if (!silent)
 			console.log("Layer "+ name + " is already there");
@@ -425,25 +425,23 @@ Global.createLayer = function(name, silent) {
 };
 
 // Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
-Global.cop.layerObject = function(layer, object, defs) {
+cop.layerObject = function(layer, object, defs) {
 	// log("cop.layerObject");
 	Object.keys(defs).each(function(function_name) {
 		// log(" layer property: " + function_name);
 		layerProperty(layer, object, function_name, defs);
 	});
 };
-cop.layerObject = cop.layerObject;
 
 
 // layer around only the class methods
-Global.layerClass = function(layer, classObject, defs) {
+cop.layerClass = function(layer, classObject, defs) {
 	cop.layerObject(layer, classObject.prototype, defs);
 };
-cop.layerClass = Global.layerClass;
 
 // layer around class methods and all subclass methods
 // (might be related to Aspect oriented programming)
-Global.layerClassAndSubclasses = function(layer, classObject, defs) {
+cop.layerClassAndSubclasses = function(layer, classObject, defs) {
 	// log("layerClassAndSubclasses");
 	cop.layerClass(layer, classObject, defs);
 	
@@ -464,22 +462,19 @@ Global.layerClassAndSubclasses = function(layer, classObject, defs) {
 	});
 };
 
-cop.layerClassAndSubclasses = Global.layerClassAndSubclasses;
-
 /* Layer Activation */
 
-Global.withLayers = function withLayers(layers, func) {
+cop.withLayers = function withLayers(layers, func) {
 	cop.LayerStack.push({withLayers: layers});
-	// console.log("callee: " + withLayers.caller)
+	// console.log("callee: " + cop.withLayers.caller)
 	try {
 		func();
 	} finally {
 		cop.LayerStack.pop();
 	}
 };
-cop.withLayers  = Global.withLayers;
 
-Global.withoutLayers = function withoutLayers(layers, func) {
+cop.withoutLayers = function withoutLayers(layers, func) {
 	cop.LayerStack.push({withoutLayers: layers});
 	try {
 		func();
@@ -487,12 +482,12 @@ Global.withoutLayers = function withoutLayers(layers, func) {
 		cop.LayerStack.pop();
 	}
 };
-cop.withoutLayers = Global.withoutLayers;
+
 
 /* Global Layer Activation */
 
 
-Global.enableLayer = function(layer) {
+cop.enableLayer = function(layer) {
 	if (cop.GlobalLayers.include(layer))
 		return;
 	else {
@@ -500,9 +495,8 @@ Global.enableLayer = function(layer) {
 		invalidateLayerComposition();
 	};
 };
-cop.enableLayer = Global.enableLayer;
 
-Global.disableLayer = function(layer) {
+cop.disableLayer = function(layer) {
 	if (!cop.GlobalLayers.include(layer))
 		return;
 	else {
@@ -510,10 +504,30 @@ Global.disableLayer = function(layer) {
 		invalidateLayerComposition();
 	}
 };
-cop.disableLayer = Global.disableLayer;
+
+// Mark old ContextJS API as Depricated
+
+var markNamespaceEntryAsDepricated = function(newNamespace, newName, oldNamespace, oldName) {
+	oldNamespace[oldName] = newNamespace[newName].wrap(function(proceed) {
+		if (Config.throwErrorOnDepricated) throw new Error("DEPRICATED ERROR: " + oldName + " is depricated");
+		if (Config.logDepricated) console.log("DEPRICATED WARNING: " + oldName + " is depricated");	
+		var args = $A(arguments);
+		args.shift();
+		return proceed.apply(this, args);
+	});
+};
+
+markNamespaceEntryAsDepricated(cop, "enableLayer", Global,  "enableLayer");
+markNamespaceEntryAsDepricated(cop, "disableLayer", Global,  "disableLayer");
+markNamespaceEntryAsDepricated(cop, "withLayers", Global,  "withLayers");
+markNamespaceEntryAsDepricated(cop, "withoutLayers", Global,  "withoutLayers");
+markNamespaceEntryAsDepricated(cop, "createLayer", Global,  "createLayer");
+markNamespaceEntryAsDepricated(cop, "layerObject", Global,  "layerObject");
+markNamespaceEntryAsDepricated(cop, "layerClass", Global,  "layerClass");
+markNamespaceEntryAsDepricated(cop, "layerClassAndSubclasses", Global,  "layerClassAndSubclasses");
+
 
 /* Example implementation of a layerable object */
-
 
 LayerableObjectTrait = {
 	

@@ -2,10 +2,10 @@
 
 module('lively.Graffle').requires(['cop.Layers', 'lively.Connector']).toRun(function() {
 	
-createLayer("GraffleLayer");
-enableLayer(GraffleLayer);
+cop.createLayer("GraffleLayer");
+cop.enableLayer(GraffleLayer);
 
-layerClass(GraffleLayer, PasteUpMorph, {
+cop.layerClass(GraffleLayer, PasteUpMorph, {
 
 	addMorhWithHandleToWorld: function(proceed, morph) {
 		this.world().addMorph(morph);
@@ -41,7 +41,7 @@ layerClass(GraffleLayer, PasteUpMorph, {
 	}
 });
 
-layerClass(GraffleLayer, WorldMorph, {
+cop.layerClass(GraffleLayer, WorldMorph, {
 	onKeyPress: function(proceed, evt) {
 		var map = {S: "shape", C: "connect", T: "text"};
 		var mode = map[evt.getKeyChar().toUpperCase()];				
@@ -142,11 +142,11 @@ Morph.subclass('MorphDuplicatorMorph', {
 	activeLayers: function() { return []}
 });
 
-createLayer("MorphPrototypeLayer");
+cop.createLayer("MorphPrototypeLayer");
 
 // Disabled for performance issues
 /*
-layerClassAndSubclasses(MorphPrototypeLayer, Morph, {
+cop.layerClassAndSubclasses(MorphPrototypeLayer, Morph, {
 	get openForDragAndDrop() {
 		return false;
 	},

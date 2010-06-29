@@ -1,12 +1,12 @@
 module('apps.PageNavigation').requires('cop.Layers').toRun(function() {
 
-createLayer("PageNavigationLayer");
+cop.createLayer("PageNavigationLayer");
 enableLayer(PageNavigationLayer);
 
 (function generalSettings() {
 	Config.showWikiNavigator = false
 	Config.resizeScreenToWorldBounds = false
-	createLayer('ResizeWorldLayer')
+	cop.createLayer('ResizeWorldLayer')
 	enableLayer(ResizeWorldLayer);
 })();
 

@@ -25,7 +25,7 @@ Object.extend(Global, {
 	
 });
 
-createLayer('UserStoryLayer');
+cop.createLayer('UserStoryLayer');
 layerClass(UserStoryLayer, WorldMorph, {
 	toolSubMenuItems: function(proceed, evt) {
 		var menuItems = proceed(evt);

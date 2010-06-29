@@ -15,7 +15,7 @@ Morph.subclass('DummyMorph', {
 
 });
 
-createLayer('SerializationTestLayer')
+cop.createLayer('SerializationTestLayer')
 cop.layerObject(SerializationTestLayer, lively.data.Wrapper, {
 	collectSystemDictionaryGarbage: function() {
 		// do nothing
@@ -71,7 +71,7 @@ Widget.subclass('DummyWidget', {
 TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 
 	runTest: function($super, selector) {
-		withLayers([SerializationTestLayer], function() {
+		cop.withLayers([SerializationTestLayer], function() {
 			$super(selector)
 		})
 	},
@@ -650,7 +650,7 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	
 	runTest: function($super, selector) {
-		withLayers([SerializationTestLayer], function() {
+		cop.withLayers([SerializationTestLayer], function() {
 			$super(selector)
 		})
 	},

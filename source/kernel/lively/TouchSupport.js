@@ -46,8 +46,8 @@ Event.addMethods({
 });
 
 // overwrite default behavior
-createLayer('TouchSupportLayer')
-layerClass(TouchSupportLayer, HandMorph, {
+cop.createLayer('TouchSupportLayer')
+cop.layerClass(TouchSupportLayer, HandMorph, {
 
 	handleEvent: function(proceed, rawEvt) {
 		
@@ -83,7 +83,7 @@ layerClass(TouchSupportLayer, HandMorph, {
 
 });
 
-enableLayer(TouchSupportLayer)
+cop.enableLayer(TouchSupportLayer)
 
 
 

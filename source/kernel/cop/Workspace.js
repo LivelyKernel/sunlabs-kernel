@@ -25,7 +25,7 @@ module("cop.Workspace").requires(["lively.Text", "cop.Layers", "lively.Undo"]).t
 Object.extend(Morph.prototype, LayerableObjectTrait);
 Morph.prototype.lookupLayersIn = ["owner"];
 
-createLayer("WorkspaceLayer");
+cop.createLayer("WorkspaceLayer");
 cop.layerClass(WorkspaceLayer, TextMorph, {
 
 	toggleEvalOnWorldLoad: function() {
@@ -52,7 +52,7 @@ cop.layerClass(WorkspaceLayer, TextMorph, {
 })
 
 // Static Instrumentatioan
-createLayer("WorkspaceControlLayer");
+cop.createLayer("WorkspaceControlLayer");
 cop.layerClass(WorkspaceControlLayer, WindowMorph, {
 
 	isWorkspaceLayerEnabled: function() {
@@ -152,7 +152,7 @@ cop.layerClass(WorkspaceControlLayer, WorldMorph, {
 
 
 
-enableLayer(WorkspaceControlLayer);
+cop.enableLayer(WorkspaceControlLayer);
 
 })
 
