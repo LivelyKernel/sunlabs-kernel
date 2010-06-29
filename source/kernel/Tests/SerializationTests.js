@@ -4,14 +4,14 @@ module('Tests.SerializationTests').requires('lively.TestFramework', 'lively.Fabr
 
 Morph.subclass('DummyMorph', {
 
-    initialize: function($super) { 
-        $super(rect(pt(0,0), pt(100,050)), "rect");
-        this.formalModel = Record.newInstance({MyValue: {}},{});
-    },
-    
-    onDeserialize: function() {
-        this.onDeserializeWasRun = true
-    }
+	initialize: function($super) { 
+		$super(rect(pt(0,0), pt(100,050)), "rect");
+		this.formalModel = Record.newInstance({MyValue: {}},{});
+	},
+	
+	onDeserialize: function() {
+		this.onDeserializeWasRun = true
+	}
 
 });
 
@@ -24,45 +24,45 @@ cop.layerObject(SerializationTestLayer, lively.data.Wrapper, {
 
 Widget.subclass('DummyWidget', {
 
-    description: "Dummy Widget for serialization",
-    viewTitle: "Dummy Widget",
-    initialViewExtent: pt(250, 260),
+	description: "Dummy Widget for serialization",
+	viewTitle: "Dummy Widget",
+	initialViewExtent: pt(250, 260),
 
-    initialize: function($super) { 
-        $super();
-        this.model = Record.newNodeInstance({MyText: "tada"});
-        this.relayToModel(this.model, {MyText: "+MyText"});
-        this.ownModel(this.model);
-    },
-    
-    sayHello: function() {
-        this.model.setMyText("Hello World");
-    },
-    
-    buildView: function(extent) {
-        this.panel = new Morph(new lively.scene.Rectangle(rect(pt(20,20), pt(150,150))));
-        this.panel.setFill(Color.green);
-        this.panel.widget = this; // backreference
-        this.myMorph1 = new TextMorph(rect(pt(10,10), pt(100,30)), "text one", true);
-        this.myMorph2 = new TextMorph(rect(pt(10,40), pt(100,60)), "text two", false);
-        this.myMorph1.connectModel(this.model.newRelay({Text: "MyText"}));
-        this.myMorph2.connectModel(this.model.newRelay({Text: "MyText"}));
-        this.panel.addMorph(this.myMorph1);
-        this.panel.addMorph(this.myMorph2);
-        
-        // this.panel.rawNode.appendChild(this.rawNode); // should we do this manually?
-        this.panel.ownerWidget = this;
-        return  this.panel;
-    },
+	initialize: function($super) { 
+		$super();
+		this.model = Record.newNodeInstance({MyText: "tada"});
+		this.relayToModel(this.model, {MyText: "+MyText"});
+		this.ownModel(this.model);
+	},
+	
+	sayHello: function() {
+		this.model.setMyText("Hello World");
+	},
+	
+	buildView: function(extent) {
+		this.panel = new Morph(new lively.scene.Rectangle(rect(pt(20,20), pt(150,150))));
+		this.panel.setFill(Color.green);
+		this.panel.widget = this; // backreference
+		this.myMorph1 = new TextMorph(rect(pt(10,10), pt(100,30)), "text one", true);
+		this.myMorph2 = new TextMorph(rect(pt(10,40), pt(100,60)), "text two", false);
+		this.myMorph1.connectModel(this.model.newRelay({Text: "MyText"}));
+		this.myMorph2.connectModel(this.model.newRelay({Text: "MyText"}));
+		this.panel.addMorph(this.myMorph1);
+		this.panel.addMorph(this.myMorph2);
+		
+		// this.panel.rawNode.appendChild(this.rawNode); // should we do this manually?
+		this.panel.ownerWidget = this;
+		return	this.panel;
+	},
 
-    onDeserialize: function() {
-        this.onDeserializeWasRun = true
-    },
-    
-    open: function(){
-        this.buildView();
-        WorldMorph.current().addMorph(this.panel);
-    }
+	onDeserialize: function() {
+		this.onDeserializeWasRun = true
+	},
+	
+	open: function(){
+		this.buildView();
+		WorldMorph.current().addMorph(this.panel);
+	}
 });
 
 
@@ -76,62 +76,62 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 		})
 	},
 
-    /* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
-    setUp: function($super) {
+	/* For Serialization tests we need a own WorldMorph and thus a own SVG canvas */
+	setUp: function($super) {
 		$super();
-        this.realWorld = WorldMorph.current();
-        this.dom = stringToXML(
-            '<svg xmlns="http://www.w3.org/2000/svg" xmlns:lively="http://www.experimentalstuff.com/Lively" '+
-                'xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xhtml="http://www.w3.org/1999/xhtml" '+
-                'id="canvas" width="100%" height="100%" xml:space="preserve" '+
-                'xmlns:xml="http://www.w3.org/XML/1998/namespace" zoomAndPan="disable">' +
-                '<title>Lively Kernel canvas</title>' + 
-            '</svg>').parentNode;
-        this.oldGlobalDocument = Global.document; // importFromNodeList uses Global.document, so we fake it
-        Global.document = this.dom;
-        this.canvas = this.dom.documentElement;
-        this.worldMorph = new WorldMorph(this.canvas);
-	 	var dict = NodeFactory.create("defs");
+		this.realWorld = WorldMorph.current();
+		this.dom = stringToXML(
+			'<svg xmlns="http://www.w3.org/2000/svg" xmlns:lively="http://www.experimentalstuff.com/Lively" '+
+				'xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xhtml="http://www.w3.org/1999/xhtml" '+
+				'id="canvas" width="100%" height="100%" xml:space="preserve" '+
+				'xmlns:xml="http://www.w3.org/XML/1998/namespace" zoomAndPan="disable">' +
+				'<title>Lively Kernel canvas</title>' + 
+			'</svg>').parentNode;
+		this.oldGlobalDocument = Global.document; // importFromNodeList uses Global.document, so we fake it
+		Global.document = this.dom;
+		this.canvas = this.dom.documentElement;
+		this.worldMorph = new WorldMorph(this.canvas);
+		var dict = NodeFactory.create("defs");
 		this.worldMorph.dictionary = function() {return dict};
 
-        this.canvas.appendChild(this.worldMorph.rawNode);
-        this.morphs = [];
-        
-        this.bounds = rect(pt(10,10), pt(100,100));
-	    this.parentMorph =  Morph.makeRectangle(0,0, 300, 300);
-    },
-    
-    tearDown: function() {
-        WorldMorph.currentWorld = this.realWorld;
-        this.morphs.each(function(each){ each.remove()})
-        Global.document = this.oldGlobalDocument 
-    },
+		this.canvas.appendChild(this.worldMorph.rawNode);
+		this.morphs = [];
+		
+		this.bounds = rect(pt(10,10), pt(100,100));
+		this.parentMorph =	Morph.makeRectangle(0,0, 300, 300);
+	},
+	
+	tearDown: function() {
+		WorldMorph.currentWorld = this.realWorld;
+		this.morphs.each(function(each){ each.remove()})
+		Global.document = this.oldGlobalDocument 
+	},
 
-    showMyWorld: function(optWorld) {
-        if (optWorld) {
-            this.worldMorph = optWorld
-        };
-        // for debugging
-        var oldCanvas = document.getElementById('canvas');
-        var owner = oldCanvas.parentElement;
-        // hack, so that we do not run into a conflict: when calling importNode the canvas changes
-        if (this.worldMorph.rawNode.parentNode) {
-            this.worldMorph.rawNode.parentNode.removeChild(this.worldMorph.rawNode);
-        };
-        var newCanvas = document.importNode(this.canvas, true);
+	showMyWorld: function(optWorld) {
+		if (optWorld) {
+			this.worldMorph = optWorld
+		};
+		// for debugging
+		var oldCanvas = document.getElementById('canvas');
+		var owner = oldCanvas.parentElement;
+		// hack, so that we do not run into a conflict: when calling importNode the canvas changes
+		if (this.worldMorph.rawNode.parentNode) {
+			this.worldMorph.rawNode.parentNode.removeChild(this.worldMorph.rawNode);
+		};
+		var newCanvas = document.importNode(this.canvas, true);
 
-        var oldWorld = this.realWorld;
-        oldWorld.onExit();    
-        oldWorld.hands.clone().forEach(function(hand) {oldWorld.removeHand(hand)});
-        oldWorld.suspendAllActiveScripts(); // ???
-        oldWorld.remove();
+		var oldWorld = this.realWorld;
+		oldWorld.onExit();	  
+		oldWorld.hands.clone().forEach(function(hand) {oldWorld.removeHand(hand)});
+		oldWorld.suspendAllActiveScripts(); // ???
+		oldWorld.remove();
 
-        var newWorld = this.worldMorph;
-        newWorld.displayOnCanvas(newCanvas); 
-        newWorld.resumeAllSuspendedScripts();  
+		var newWorld = this.worldMorph;
+		newWorld.displayOnCanvas(newCanvas); 
+		newWorld.resumeAllSuspendedScripts();  
 
-        owner.replaceChild(newCanvas, oldCanvas);     
-    },
+		owner.replaceChild(newCanvas, oldCanvas);	  
+	},
 
 	fileContent: function(fileName) {
 		return new WebResource(URL.source.withFilename(fileName)).getContent();
@@ -141,25 +141,25 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 		return this.loadWorldFromSource(this.fileContent(fileName));
 	},
 	
-    loadWorldFromSource: function(xmlString) {
-        var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
-        this.doc = xml;   
-        return new Importer().loadWorldContents(xml);
-    },
+	loadWorldFromSource: function(xmlString) {
+		var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + xmlString, "text/xml");
+		this.doc = xml;	  
+		return new Importer().loadWorldContents(xml);
+	},
 
-    getFieldNamed: function(node, fieldName) {
-        var result = $A(node.getElementsByTagName("field")).detect(function(ea) {
-            return ea.getAttribute("name") == fieldName});
-        this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
-        return result
-    },
+	getFieldNamed: function(node, fieldName) {
+		var result = $A(node.getElementsByTagName("field")).detect(function(ea) {
+			return ea.getAttribute("name") == fieldName});
+		this.assert(result, "" + node + " (id: " + node.id + ") no field named: " + fieldName);
+		return result
+	},
 
-    getArrayNamed: function(node, fieldName) {
-        var result = $A(node.getElementsByTagName("array")).detect(function(ea) {
-            return ea.getAttribute("name") == fieldName});
-        this.assert(result, "" + node + " (id: " + node.id + ") no array named: " + fieldName);
-        return result
-    },
+	getArrayNamed: function(node, fieldName) {
+		var result = $A(node.getElementsByTagName("array")).detect(function(ea) {
+			return ea.getAttribute("name") == fieldName});
+		this.assert(result, "" + node + " (id: " + node.id + ") no array named: " + fieldName);
+		return result
+	},
 
 	exportMorph: function(morph) {
 		var exporter = new Exporter(morph);
@@ -171,200 +171,200 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 
 thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.SerializationTest', {
    
-    testWorldMorphOnCanvas: function() {
-        this.assert(this.worldMorph, 'No WorldMorph');
-        this.assert(this.worldMorph.rawNode, 'RawNode');
-        this.assertIdentity(this.worldMorph.rawNode.ownerDocument, this.dom, 'wrong owner');
-        this.assert(this.dom.getElementById(this.worldMorph.rawNode.id), 'WorldMorph not on canvas');
-    },
+	testWorldMorphOnCanvas: function() {
+		this.assert(this.worldMorph, 'No WorldMorph');
+		this.assert(this.worldMorph.rawNode, 'RawNode');
+		this.assertIdentity(this.worldMorph.rawNode.ownerDocument, this.dom, 'wrong owner');
+		this.assert(this.dom.getElementById(this.worldMorph.rawNode.id), 'WorldMorph not on canvas');
+	},
 
-    testAddMorphAppendsRawNode: function() {
-        var morph = Morph.makeRectangle(pt(100,200).extentAsRectangle());
-        this.worldMorph.addMorph(morph);
-        this.assert(this.dom.getElementById(morph.rawNode.id), 'rawNode not in DOM!');
-        this.assert(this.worldMorph.submorphs.include(morph), 'rawNode not in DOM!');
-        // this.showMyWorld();
-    },
-    
-    testImportNode: function() {
-        var string = 
-            '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">'+
-                '<g type="Morph" id="101:Morph" transform="matrix(1 0 0 1 11 11)">'+
-                    '<rect x="0" y="0" width="130" height="130" fill="rgb(250,250,250)"/>'+
-                '</g>'+
-            '</svg>';
-        var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");   
-        this.assertEqual(xml.childNodes[0].childNodes[0].getAttribute("id"), "101:Morph");
-        this.assert(xml.childNodes[0].childNodes[0].getAttribute("transform"), "has no transform");
+	testAddMorphAppendsRawNode: function() {
+		var morph = Morph.makeRectangle(pt(100,200).extentAsRectangle());
+		this.worldMorph.addMorph(morph);
+		this.assert(this.dom.getElementById(morph.rawNode.id), 'rawNode not in DOM!');
+		this.assert(this.worldMorph.submorphs.include(morph), 'rawNode not in DOM!');
+		// this.showMyWorld();
+	},
+	
+	testImportNode: function() {
+		var string = 
+			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">'+
+				'<g type="Morph" id="101:Morph" transform="matrix(1 0 0 1 11 11)">'+
+					'<rect x="0" y="0" width="130" height="130" fill="rgb(250,250,250)"/>'+
+				'</g>'+
+			'</svg>';
+		var xml = new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?> ' + string, "text/xml");	
+		this.assertEqual(xml.childNodes[0].childNodes[0].getAttribute("id"), "101:Morph");
+		this.assert(xml.childNodes[0].childNodes[0].getAttribute("transform"), "has no transform");
 
-        var node = Global.document.importNode(xml.childNodes[0].childNodes[0], true);
-        this.assertEqual(node.id, "101:Morph", "imported node has no id");
-        this.assert(node.transform, "imported nod has no transform");
+		var node = Global.document.importNode(xml.childNodes[0].childNodes[0], true);
+		this.assertEqual(node.id, "101:Morph", "imported node has no id");
+		this.assert(node.transform, "imported nod has no transform");
 
-        var morph = (new Importer()).importWrapperFromNode(node);
-        this.assert(morph instanceof Morph, "result element is no morph")
-        this.assert(morph.shape, "morph has  no shape")    
-    },
-    
-    /* things learned:
-     * the svg element is the canvas and is needed for deserialization
-     */
-    testLoadTwoMorphsWithoutWorld: function() {
-        var world = this.loadWorldFromSource( 
-            '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
-                '<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)">'+
-                    '<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
-                '</g>'+
-                '<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
-                    '<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
-                '</g>'+
-            '</svg>');
-        this.assert(world instanceof WorldMorph, "world is no WorldMorph");
-        this.assertEqual(world.submorphs.length, 2, "world hasn't two submorphs");
-         
-        //this.showMyWorld(world)
-    },
-    
-    
-    testRunOnDeserializeMorph: function() {
-         var world = this.loadWorldFromSource( 
-                '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
-                    '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
-                        '<rect x="0" y="0" width="800" height="600"/>' +
-                        '<g type="DummyMorph" id="102:DummyMorph" transform="matrix(1 0 0 1 11 11)">'+
-                            '<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
-                            '<field name="myWidget" ref="104:DummyWidget"></field>' +
-                            '<widget id="104:DummyWidget">'   +                    
-                            '</widget>' +  
-                        '</g>'+
-                    '</g>'+
-                '</svg>');
-        var morph1 = world.submorphs[0];
-        var widget = morph1.myWidget;
-        this.assertEqual(world.submorphs.length, 1, "world submorphs are wrong");
-        this.assert(morph1 instanceof DummyMorph, " morph1 is no DummyMorph");
-        this.assert(morph1.onDeserializeWasRun, "onDesieralize was not run");
+		var morph = (new Importer()).importWrapperFromNode(node);
+		this.assert(morph instanceof Morph, "result element is no morph")
+		this.assert(morph.shape, "morph has	 no shape")	   
+	},
+	
+	/* things learned:
+	 * the svg element is the canvas and is needed for deserialization
+	 */
+	testLoadTwoMorphsWithoutWorld: function() {
+		var world = this.loadWorldFromSource( 
+			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+				'<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)">'+
+					'<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
+				'</g>'+
+				'<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
+					'<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
+				'</g>'+
+			'</svg>');
+		this.assert(world instanceof WorldMorph, "world is no WorldMorph");
+		this.assertEqual(world.submorphs.length, 2, "world hasn't two submorphs");
+		 
+		//this.showMyWorld(world)
+	},
+	
+	
+	testRunOnDeserializeMorph: function() {
+		 var world = this.loadWorldFromSource( 
+				'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+					'<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
+						'<rect x="0" y="0" width="800" height="600"/>' +
+						'<g type="DummyMorph" id="102:DummyMorph" transform="matrix(1 0 0 1 11 11)">'+
+							'<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
+							'<field name="myWidget" ref="104:DummyWidget"></field>' +
+							'<widget id="104:DummyWidget">'	  +					   
+							'</widget>' +  
+						'</g>'+
+					'</g>'+
+				'</svg>');
+		var morph1 = world.submorphs[0];
+		var widget = morph1.myWidget;
+		this.assertEqual(world.submorphs.length, 1, "world submorphs are wrong");
+		this.assert(morph1 instanceof DummyMorph, " morph1 is no DummyMorph");
+		this.assert(morph1.onDeserializeWasRun, "onDesieralize was not run");
 
-        this.assert(widget instanceof DummyWidget, " widget is no DummyWidget");
-        this.assert(widget.onDeserializeWasRun, "onDesieralize was not run in widget");
+		this.assert(widget instanceof DummyWidget, " widget is no DummyWidget");
+		this.assert(widget.onDeserializeWasRun, "onDesieralize was not run in widget");
 
-    },
-    
-    testLoadWorldWithTwoMorphs: function() {
-        var world = this.loadWorldFromSource( 
-            '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
-                '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
-                    '<rect x="0" y="0" width="800" height="600"/>' +
-                    '<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)">'+
-                        '<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
-                        '<field name="exampleAttributePointAsValue" family="Point"><![CDATA[{"x":12,"y":34}]]></field>' +
-                        '<field name="exampleReference" ref="103:Morph"></field>' +
+	},
+	
+	testLoadWorldWithTwoMorphs: function() {
+		var world = this.loadWorldFromSource( 
+			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+				'<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
+					'<rect x="0" y="0" width="800" height="600"/>' +
+					'<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)">'+
+						'<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
+						'<field name="exampleAttributePointAsValue" family="Point"><![CDATA[{"x":12,"y":34}]]></field>' +
+						'<field name="exampleReference" ref="103:Morph"></field>' +
 						'<array name="exampleArray">' +
 							'<item><![CDATA["Hallo"]]></item>' +
 							'<item ref="103:Morph"></item>' +
 						'</array>' +
-                    '</g>'+
-                    '<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
-                        '<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
-                        '<field name="exampleReference" ref="102:Morph"></field>' +
-                    '</g>'+
-                '</g>'+
-            '</svg>');
-        this.assert(world instanceof WorldMorph, "world is no WorldMorph");
-        var morph1 = world.submorphs[0];
-        var morph2 = world.submorphs[1];
+					'</g>'+
+					'<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
+						'<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
+						'<field name="exampleReference" ref="102:Morph"></field>' +
+					'</g>'+
+				'</g>'+
+			'</svg>');
+		this.assert(world instanceof WorldMorph, "world is no WorldMorph");
+		var morph1 = world.submorphs[0];
+		var morph2 = world.submorphs[1];
 
-        this.assertEqual(morph1.exampleAttributePointAsValue, pt(12,34),"exampleAttributePointAsValue failed");
-        this.assertEqual(morph1.id(), "102:Morph", "wrong id");
-        this.assertIdentity(morph1.exampleReference, morph2, "morph1 failed to reference morph2");
-        this.assertIdentity(morph2.exampleReference, morph1, "morph2 failed to reference morph1");
+		this.assertEqual(morph1.exampleAttributePointAsValue, pt(12,34),"exampleAttributePointAsValue failed");
+		this.assertEqual(morph1.id(), "102:Morph", "wrong id");
+		this.assertIdentity(morph1.exampleReference, morph2, "morph1 failed to reference morph2");
+		this.assertIdentity(morph2.exampleReference, morph1, "morph2 failed to reference morph1");
 		
 		this.assertIdentity(morph1.owner, world, "morph1 owner is not the world");
-        
-		this.assert(morph1.exampleArray, "exampleArray is mising");
-        this.assertEqual(morph1.exampleArray[0], "Hallo", "String in array failed");
-        this.assertIdentity(morph1.exampleArray[1], morph2, "Referebce in array failed");
 		
-        //this.showMyWorld(show)
-    },
-    
+		this.assert(morph1.exampleArray, "exampleArray is mising");
+		this.assertEqual(morph1.exampleArray[0], "Hallo", "String in array failed");
+		this.assertIdentity(morph1.exampleArray[1], morph2, "Referebce in array failed");
+		
+		//this.showMyWorld(show)
+	},
+	
 
 
 
-    /*
-     * - test an widget embedded into a morph and referenced from a different morph
-     */
-    testLoadWorldWithTwoMorphsAndWidget: function() {
-        var world = this.loadWorldFromSource(
-            '<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
-                '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
-                    '<rect x="0" y="0" width="800" height="600"/>' +
-                    '<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)">'+
-                        '<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
-                        '<field name="exampleAttributePointAsValue" family="Point"><![CDATA[{"x":12,"y":34}]]></field>' +
-                        '<field name="exampleReference" ref="103:Morph"></field>' +
-                        '<field name="myWidget" ref="104:DummyWidget"></field>' +
-                        '<widget id="104:DummyWidget">'   +
-                            '<field name="myMorph1" ref="102:Morph"></field>' +
-                            '<field name="myMorph2" ref="103:Morph"></field>' +
-                            '<field name="myPointValue" family="Point"><![CDATA[{"x":3,"y":4}]]></field>' +
-                            '<field name="formalModel" ref="105:anonymous_106"/>' +
-                            '<field name="otherWidget" ref="106:DummyWidget"></field>' +
-                            '<array name="myArray">' +
-                                '<item ref="102:Morph"/>' +
-                                '<item ref="103:Morph"/>' +
-                            '</array>' +
-                            '<record id="105:anonymous_106">' +
-                                '<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
-                                '<field name="Name"><![CDATA["EinName"]]></field>' +
-                                '<field name="Text"><![CDATA["DiesIstKeinText"]]></field>' +
-                            '</record>' +
-                        '</widget>' +
-                    '</g>'+
-                    '<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
-                        '<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
-                        '<field name="exampleReference" ref="102:Morph"></field>' +
-                        '<field name="myWidget" ref="104:DummyWidget"></field>' +
-                    '</g>'+
-                    '<g type="Morph" id="107:Morph" transform="matrix(1 0 0 1 100 100)">'+
-                        '<rect x="0" y="0" width="100" height="100" fill="rgb(0,250,250)"/>'+
-                        '<field name="exampleReference" ref="102:Morph"></field>' +
-                        '<field name="myWidget" ref="106:DummyWidget"></field>' +
-                        '<widget id="106:DummyWidget">'   +
-                            '<field name="otherWidget" ref="104:DummyWidget"></field>' +                
-                        '</widget>' +        
-                    '</g>'+
-                '</g>'+
-            '</svg>'); 
-        var morph1 = world.submorphs[0];
-        var morph2 = world.submorphs[1];
-        var morph3 = world.submorphs[2];
-                
-        var widget = morph1.myWidget;
-        var widget2 = morph3.myWidget;
-        this.assert(widget instanceof DummyWidget, "morph1.myWidget is not DummyWidget");
-        
-        this.assertIdentity(morph1.myWidget, morph2.myWidget, "morph1.myWidget is not identical to morph2.myWidget");
-        
-        this.assert(widget.myMorph1, "widget.myMorph1 not set");
-        this.assertIdentity(morph1, widget.myMorph1, "widget.morph1 is not identical to morph1");
+	/*
+	 * - test an widget embedded into a morph and referenced from a different morph
+	 */
+	testLoadWorldWithTwoMorphsAndWidget: function() {
+		var world = this.loadWorldFromSource(
+			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+				'<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
+					'<rect x="0" y="0" width="800" height="600"/>' +
+					'<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)">'+
+						'<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
+						'<field name="exampleAttributePointAsValue" family="Point"><![CDATA[{"x":12,"y":34}]]></field>' +
+						'<field name="exampleReference" ref="103:Morph"></field>' +
+						'<field name="myWidget" ref="104:DummyWidget"></field>' +
+						'<widget id="104:DummyWidget">'	  +
+							'<field name="myMorph1" ref="102:Morph"></field>' +
+							'<field name="myMorph2" ref="103:Morph"></field>' +
+							'<field name="myPointValue" family="Point"><![CDATA[{"x":3,"y":4}]]></field>' +
+							'<field name="formalModel" ref="105:anonymous_106"/>' +
+							'<field name="otherWidget" ref="106:DummyWidget"></field>' +
+							'<array name="myArray">' +
+								'<item ref="102:Morph"/>' +
+								'<item ref="103:Morph"/>' +
+							'</array>' +
+							'<record id="105:anonymous_106">' +
+								'<definition><![CDATA[{"Name":{},"Text":{"to":null}}]]></definition>' +
+								'<field name="Name"><![CDATA["EinName"]]></field>' +
+								'<field name="Text"><![CDATA["DiesIstKeinText"]]></field>' +
+							'</record>' +
+						'</widget>' +
+					'</g>'+
+					'<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
+						'<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
+						'<field name="exampleReference" ref="102:Morph"></field>' +
+						'<field name="myWidget" ref="104:DummyWidget"></field>' +
+					'</g>'+
+					'<g type="Morph" id="107:Morph" transform="matrix(1 0 0 1 100 100)">'+
+						'<rect x="0" y="0" width="100" height="100" fill="rgb(0,250,250)"/>'+
+						'<field name="exampleReference" ref="102:Morph"></field>' +
+						'<field name="myWidget" ref="106:DummyWidget"></field>' +
+						'<widget id="106:DummyWidget">'	  +
+							'<field name="otherWidget" ref="104:DummyWidget"></field>' +				
+						'</widget>' +		 
+					'</g>'+
+				'</g>'+
+			'</svg>'); 
+		var morph1 = world.submorphs[0];
+		var morph2 = world.submorphs[1];
+		var morph3 = world.submorphs[2];
+				
+		var widget = morph1.myWidget;
+		var widget2 = morph3.myWidget;
+		this.assert(widget instanceof DummyWidget, "morph1.myWidget is not DummyWidget");
+		
+		this.assertIdentity(morph1.myWidget, morph2.myWidget, "morph1.myWidget is not identical to morph2.myWidget");
+		
+		this.assert(widget.myMorph1, "widget.myMorph1 not set");
+		this.assertIdentity(morph1, widget.myMorph1, "widget.morph1 is not identical to morph1");
 
-        this.assert(widget.myPointValue, "widget.myPointValue not set");
-        this.assert(widget.myArray, "widget.myArray not set"); 
+		this.assert(widget.myPointValue, "widget.myPointValue not set");
+		this.assert(widget.myArray, "widget.myArray not set"); 
  
-        this.assert(widget.formalModel, "widget.formalModel not set"); 
-      
-        this.assertEqual(widget.formalModel.getName(), "EinName",  "widget.formalModel not set");
-      
-        this.assertIdentity(widget2.otherWidget, widget,  "backreference: widget2.otherWidget is not widget");
-        this.assertIdentity(widget.otherWidget, widget2,  "forwardreference: widget.otherWidget is not widget2");
-        
-        //this.showMyWorld(world)
-    },
+		this.assert(widget.formalModel, "widget.formalModel not set"); 
+	  
+		this.assertEqual(widget.formalModel.getName(), "EinName",  "widget.formalModel not set");
+	  
+		this.assertIdentity(widget2.otherWidget, widget,  "backreference: widget2.otherWidget is not widget");
+		this.assertIdentity(widget.otherWidget, widget2,  "forwardreference: widget.otherWidget is not widget2");
+		
+		//this.showMyWorld(world)
+	},
 
 	testLoadWidgetWithObservingMorph: function() {
-        // generate with textmate replace: "(<.*>$)" with: "'$1' +"
-        var world = this.loadWorldFromSource(
+		// generate with textmate replace: "(<.*>$)" with: "'$1' +"
+		var world = this.loadWorldFromSource(
 			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
 				'<g type="WorldMorph" id="529:WorldMorph">' +
 					'<rect x="0" y="0" width="1280" height="1024" fill="url(#530:lively.paint.LinearGradient)"/>' +
@@ -484,46 +484,46 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 	
 	},
 
-    /* Serialize Tests */
+	/* Serialize Tests */
 
-    testSerializeMorph: function() {
-            var morph = new Morph(new lively.scene.Rectangle(this.bounds));
-        morph.simpleNumber = 12345;
-        morph.simpleString = "eineZeichenkette";
+	testSerializeMorph: function() {
+		var morph = new Morph(new lively.scene.Rectangle(this.bounds));
+		morph.simpleNumber = 12345;
+		morph.simpleString = "eineZeichenkette";
 		morph.arrayOfStrings = ["Hallo", "Welt"]
-        this.worldMorph.addMorph(morph);
-        var doc = Exporter.shrinkWrapMorph(this.worldMorph);
-        
-        this.assert(doc, "shrinkWrapMorph failed");
-        var worldNode = doc.getElementById(this.worldMorph.id());
-        this.assert(worldNode, "no world node by id found (" + this.worldMorph.id() + ")");
-        var morphNode = doc.getElementById(morph.id());
-        this.assert(morphNode, "no morph node by id found (" + morph.id() + ")"); 
+		this.worldMorph.addMorph(morph);
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		
+		this.assert(doc, "shrinkWrapMorph failed");
+		var worldNode = doc.getElementById(this.worldMorph.id());
+		this.assert(worldNode, "no world node by id found (" + this.worldMorph.id() + ")");
+		var morphNode = doc.getElementById(morph.id());
+		this.assert(morphNode, "no morph node by id found (" + morph.id() + ")"); 
 
-        // console.log(Exporter.stringify(morphNode));
-        /*
-        <g xmlns="http://www.w3.org/2000/svg" type="Morph" id="171:Morph" transform="translate(10,10)">
-           <rect x="0" y="0" width="90" height="90"/><field name="origin" family="Point"><![CDATA[{"x":10,"y":10}]]></field>
-           <field name="fullBounds">null</field>
-           <field name="simpleNumber">12345</field>
-           <field name="simpleString"><![CDATA["eineZeichenkette"]]></field>
+		// console.log(Exporter.stringify(morphNode));
+		/*
+		<g xmlns="http://www.w3.org/2000/svg" type="Morph" id="171:Morph" transform="translate(10,10)">
+		   <rect x="0" y="0" width="90" height="90"/><field name="origin" family="Point"><![CDATA[{"x":10,"y":10}]]></field>
+		   <field name="fullBounds">null</field>
+		   <field name="simpleNumber">12345</field>
+		   <field name="simpleString"><![CDATA["eineZeichenkette"]]></field>
 		   <array name="arrayOfStrings">
-		      <item><![CDATA["Hallo"]]></item>
-		      <item><![CDATA["Welt"]]></item>
+			  <item><![CDATA["Hallo"]]></item>
+			  <item><![CDATA["Welt"]]></item>
 		   </array>
-        </g>
-        */
-        var numberNode = this.getFieldNamed(morphNode, "simpleNumber");
-        this.assertEqual(numberNode.textContent, "12345", "simpleNumber failed");
-        
-        var stringNode = this.getFieldNamed(morphNode, "simpleString");    
-        this.assertEqual(stringNode.textContent, '"eineZeichenkette"', "simpleString failed");
+		</g>
+		*/
+		var numberNode = this.getFieldNamed(morphNode, "simpleNumber");
+		this.assertEqual(numberNode.textContent, "12345", "simpleNumber failed");
+		
+		var stringNode = this.getFieldNamed(morphNode, "simpleString");	   
+		this.assertEqual(stringNode.textContent, '"eineZeichenkette"', "simpleString failed");
 
 		var arrayNode = this.getArrayNamed(morphNode, "arrayOfStrings");
 		 
-    },
+	},
 
-    testSerializeDummyWidget: function() {
+	testSerializeDummyWidget: function() {
 		var widget = new DummyWidget();
 		widget.sayHello(); 
 		var view = widget.buildView();
@@ -539,16 +539,16 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		var widgetNode = doc.getElementById(widget.id());
 		this.assert(widgetNode, "no widget node by id found (" + widget.id() + ")");
 
-		var widgetNodeMyMorph1Field = this.getFieldNamed(widgetNode, "myMorph1");    
+		var widgetNodeMyMorph1Field = this.getFieldNamed(widgetNode, "myMorph1");	 
 		this.assertEqual(widgetNodeMyMorph1Field.getAttribute("ref"), widget.myMorph1.id() ,"wrong ref to myMorph1");
 
 		var widgetNodeMyMorph2Field = this.getFieldNamed(widgetNode, "myMorph2");
 		this.assertEqual(widgetNodeMyMorph2Field.getAttribute("ref"), widget.myMorph2.id() ,"wrong ref to myMorph2");
 
 		// console.log(Exporter.stringify(worldNode));
-    },
-    
-    testSerializeDummyWidgetAddField: function() {
+	},
+	
+	testSerializeDummyWidgetAddField: function() {
 		var widget = new DummyWidget();
 		widget.sayHello();
 		widget.model.addField("MyDynamicField");
@@ -563,7 +563,7 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 
 		this.assertEqual(definition.textContent, '{"MyText":{},"MyDynamicField":{}}', "dynamic definition missing in serialization")
 		//console.log(Exporter.stringify(widgetNode));
-    },
+	},
 
 	testSerializeFieldWithCoercion: function() {
 		var widget = new DummyWidget();
@@ -581,10 +581,10 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		// This fails because, it is a functions can't be serialized in that way
 		// we need something more declarative
 		// this.assertEqual(definition.textContent, '{"MyText":{},"MyDynamicField":{to: String}}', 
-		//    "dynamic definition with coercion specmissing in serialization")
+		//	  "dynamic definition with coercion specmissing in serialization")
 		//console.log(Exporter.stringify(widgetNode));
-    },
-    
+	},
+	
 	testSerializeDynamicFieldObserver: function() {
 		var widget = new DummyWidget();
 		var observerMorph = new TextMorph();
@@ -615,6 +615,12 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		// console.log(Exporter.stringify(doc));
 		// console.log(Exporter.stringify(widgetNode));
 	},
+	
+	
+	testStripEpimorphs: function() {
+		
+	}
+	
 });
 TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	
@@ -697,7 +703,7 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 		var fillUrl = copy.shape.rawNode.getAttribute('fill');
 		var rawFill = lively.data.FragmentURI.getElement(fillUrl);
 		this.assert(rawFill, "no rawFill found for " + fillUrl)
-		var fillCopy =  copy.getFill();		
+		var fillCopy =	copy.getFill();		
 		this.assertEqual(fillCopy.constructor.name, "LinearGradient", "no fill in copy")
 		this.assertEqual(oldMorphs.length + 1, newMorphs.length);	
 	},
@@ -714,7 +720,7 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 		var m1 = Morph.makeRectangle(new Rectangle(10,10,20,20));
 		var m2 = Morph.makeRectangle(new Rectangle(30,30,50,50));
 		this.world.selectedMorphs = [m1, m2];
-		var string = this.world.copySelectionAsXMLString();	
+		var string = this.world.copySelectionAsXMLString(); 
 		var xml = this.stringToXml(string);		
 		var selectionNode = xml.childNodes[0];
 	},
@@ -758,15 +764,15 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 
 TestCase.subclass('Tests.SerializationTests.DomRecordTest', {
 
-    testAddField: function() {
-        this.model = Record.newNodeInstance({StaticField: null});
-        this.assertEqualState(this.model.definition, {StaticField: {}});
-        this.model.addField("DynamicField");
-        this.assertEqualState(this.model.definition, {StaticField: {}, DynamicField: {}});
-        this.assert(this.model.getDynamicField && this.model.setDynamicField);
-    }
-        
-    
+	testAddField: function() {
+		this.model = Record.newNodeInstance({StaticField: null});
+		this.assertEqualState(this.model.definition, {StaticField: {}});
+		this.model.addField("DynamicField");
+		this.assertEqualState(this.model.definition, {StaticField: {}, DynamicField: {}});
+		this.assert(this.model.getDynamicField && this.model.setDynamicField);
+	}
+		
+	
 });
 
 }) // end of module
