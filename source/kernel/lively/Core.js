@@ -882,14 +882,15 @@ Object.subclass('Exporter', {
 			n.parentNode.removeChild(n);
 		}
 	},
-
+	
 	serialize: function(destDocument) {
 		// model is inserted as part of the root morph.
 		var helpers = this.extendForSerialization();
 		var result = destDocument.importNode(this.rootMorph.rawNode, true);
 		this.removeHelperNodes(helpers);
 		return result;
-	}
+		
+	},
 });
 
 Object.extend(Exporter, {
@@ -919,7 +920,17 @@ Object.extend(Exporter, {
 		// FIXME this should go to another place?
 		this.addSystemDictionary(newDoc);
 		importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
+		this.stripEpimorphs(newDoc);
 		return newDoc;
+	},
+	
+	stripEpimorphs: function(doc) {
+		var epimorphFields = doc.getElementsByName("isEpimorph"); 
+		$A(epimorphFields).each(function(fieldNode){
+			var morphNode = fieldNode.parentNode;
+			morphNode.parentNode.removeChild(morphNode)
+			console.log("remove node " + morphNode)
+		})
 	},
 	
 	addSystemDictionary: function(doc) {

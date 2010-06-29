@@ -616,12 +616,21 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		// console.log(Exporter.stringify(widgetNode));
 	},
 	
-	
 	testStripEpimorphs: function() {
-		
+		var morph = new Morph(new lively.scene.Rectangle(this.bounds));
+		var epimorph = new Morph(new lively.scene.Rectangle(new Rectangle(0,0,10,10)));
+		epimorph.isEpimorph = true;
+		morph.addMorph(epimorph);
+		this.worldMorph.addMorph(morph);
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		this.assert(doc.getElementById(morph.id()), "morph should be serialized")
+		this.assert(!(doc.getElementById(epimorph.id())), "epimorph should not be serialized")
 	}
 	
 });
+
+
+
 TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	
 	runTest: function($super, selector) {
