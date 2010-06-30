@@ -1754,10 +1754,21 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CopFragmentNode', {
 	isClassNode: true,
 
 	childNodes: function() {
-	return this.target.subElements().collect(function(fileFragment) {
-		return new lively.ide.CopRefineFragmentNode(fileFragment, this.browser, this.target)
-	}, this);
-},
+		return this.target.subElements().collect(function(fileFragment) {
+			return new lively.ide.CopRefineFragmentNode(fileFragment, this.browser, this.target)
+		}, this);
+	},
+
+	evalSource: function(newSource) {
+		try {
+			eval(newSource);
+		} catch (er) {
+			console.log("error evaluating layer:" + er);
+			throw(er)
+		}
+		console.log('Successfully evaluated layer');
+        return true;
+    },
 
 });
 

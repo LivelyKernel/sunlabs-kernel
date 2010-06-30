@@ -85,9 +85,7 @@ TestCase.subclass('Tests.ToolsTests.SystemBrowserTests', {
 		this.assertIdentity(result[2], n1);
 	},
 testBrowserFourthPane: function() {
-	var browser = new lively.ide.BasicBrowser();
-	var root = this.createMockNode(browser);
-	browser.rootNode = function() { return root };
+	var browser = this.browser;
 
 	var n4 = this.createMockNode(browser, [], null, 'd');
 	var n3 = this.createMockNode(browser, [n4], null, 'c');
@@ -108,6 +106,30 @@ testBrowserFourthPane: function() {
 	this.assertIdentity(n4, browser.nodesInPane('Pane4')[0]);
 },
 
+
+});
+Tests.ToolsTests.SystemBrowserTests.subclass('Tests.ToolsTests.BrowserNodeTest', {
+
+	test01CopFragmentEvaluate: function() {
+		this.browser.buildView();
+
+		var initialFragment = {
+			name: 'testLayer',
+			type: 'copDef',
+			startIndex: 0,
+			stopIndex: 24,
+			subElements: function() { return [] },
+			getName: function() { return this.name },
+		};
+
+		var node = new lively.ide.CopFragmentNode(initialFragment, this.browser, null);
+		var klass = Object.subclass('CopBrowserNodeDummy');
+		var src = 'cop.create("testLayer").refineClass(CopBrowserNodeDummy, { m: function() { return 23 } });'
+		node.newSource(src);
+		withLayers([testLayer], function() {
+			this.assertEquals(23, new klass().m());
+		}.bind(this))		
+	},
 
 });
 
