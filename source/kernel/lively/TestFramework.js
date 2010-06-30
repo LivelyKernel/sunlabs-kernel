@@ -458,6 +458,9 @@ Object.subclass('TestResult', {
 		return this.succeeded.collect(function(ea) { return ea.classname + '.' + ea.selector });
 	}
 });
+
+if (lively.Widgets) { // for usage in non lively environments
+	
 PanelMorph.subclass('TestRunnerPanel', {
 
 	documentation: 'Just a hack for deserializing my widget',
@@ -795,7 +798,9 @@ Widget.subclass('ErrorStackViewer', {
 		return parameterString.split(", ").reject(function(ea) { return ea == '' });
 	}
 });
-    
+
+} // end of if (lively.Widgets)
+ 
 /* 
  * *** Error properties for documentation: ***
  *  Example from WebKit

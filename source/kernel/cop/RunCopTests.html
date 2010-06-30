@@ -8,25 +8,23 @@
 	<script type="text/javascript" src="../lively/miniprototype.js" ></script>
 	<script type="text/javascript" src="../lively/Base.js" ></script>
 	<script type="text/javascript" src="LkCompat.js" ></script>
-	<script type="text/javascript" src="Layers.js" ></script>
-	<script type="text/javascript" src="../lively/TestFramework.js" ></script>	
-	<script type="text/javascript" src="CopBenchmark.js" ></script>
-	<script type="text/javascript" src="LayersTest.js" ></script>
+	<script type="text/ecmascript">Config.codeBase="../"</script>
 </head>
+
 <body>
 	<h2>Run Context JavaScript Tests</h2> 
 
 	<pre id="result"></pre>
 
-
 	<script type="text/ecmascript">
-
-	var result = "run LayerTests:";	
-	TestCase.allSubclasses().each(function(eaClass) {
-		var test = new eaClass();
-		test.runAll();
-		result= result + "\n" + test.result.printResult();
-		document.getElementById("result").textContent= result;	
+	require('cop.LayersTest').toRun(function() {
+		var result = "run LayerTests:";	
+		TestCase.allSubclasses().each(function(eaClass) {
+			var test = new eaClass();
+			test.runAll();
+			result= result + "\n" + test.result.printResult();
+			document.getElementById("result").textContent = result;
+		});		
 	});
 	</script>
 

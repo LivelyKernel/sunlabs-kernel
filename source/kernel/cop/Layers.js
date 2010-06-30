@@ -90,37 +90,34 @@ Object.extend(Function.prototype, {
  * Private Helper Methods
  */
 var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType, n) {
-	if (layer) {
-		// we have to look for layers defintions for self, self.prototype, ... there may be layered methods 
-		// in a subclass of "obj"			
-		var layer_defition_for_object = getLayerDefinitionForObject(layer, self);
-		if(layer_defition_for_object) {
-			// log("  found layer definitions for object");
-			var layered_function;
-			// TODO: optional proceed goes here....
-			if (methodType == 'getter') {
-				layered_function = layer_defition_for_object.__lookupGetter__(function_name);
-			} else if (methodType == 'setter'){
-				layered_function = layer_defition_for_object.__lookupSetter__(function_name);
-			} else {
-				layered_function = layer_defition_for_object[function_name];
-			};
+	if (!layer) return undefined;
+	// we have to look for layers defintions for self, self.prototype, ... there may be layered methods 
+	// in a subclass of "obj"			
+	var layered_function, layer_definition_for_object = getLayerDefinitionForObject(layer, self);
+	if (layer_definition_for_object) {
+		// log("  found layer definitions for object");
+		// TODO: optional proceed goes here....
+		if (methodType == 'getter') {
+			layered_function = layer_definition_for_object.__lookupGetter__(function_name);
+		} else if (methodType == 'setter'){
+			layered_function = layer_definition_for_object.__lookupSetter__(function_name);
+		} else {
+			layered_function = layer_definition_for_object[function_name];
 		}
-		if(!layered_function)  {
-			// try the superclass hierachy
-			// log("look for superclass of: " + self.constructor)
-			var superclass = self.constructor.superclass;
-			if (superclass) {
-				foundClass = superclass;
-				// log("layered function is not found in this partial method, lookup for my prototype?")
-				return lookupLayeredFunctionForObject(superclass.prototype, layer, obj, function_name, methodType);
-			} else {
-				// log("obj has not prototype")
-			}
-		};
-		return layered_function;
-		
-	};
+	}
+	if (!layered_function) {
+		// try the superclass hierachy
+		// log("look for superclass of: " + self.constructor)
+		var superclass = self.constructor.superclass;
+		if (superclass) {
+			foundClass = superclass;
+			// log("layered function is not found in this partial method, lookup for my prototype?")
+			return lookupLayeredFunctionForObject(superclass.prototype, layer, obj, function_name, methodType);
+		} else {
+			// log("obj has not prototype")
+		}
+	}
+	return layered_function;
 };
 
 var executeWithLayers = function ContextJS$executeWithLayers(base_function, self, layers, index, obj, function_name, args, methodType) {
@@ -207,7 +204,7 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 	} 
 	var setter = base_obj.__lookupSetter__(property);
 	if (!setter) {
-		var setter = function(value, value2) {
+		setter = function(value, value2) {
 			// log(this.toString() + " set " + property +" to " +value );
 			//base_obj[layered_property] = value
 			this[layered_property] = value;
@@ -228,14 +225,9 @@ Global.makePropertyLayerAware = function(base_obj, property) {
 
 Global.getLayerDefinitionForObject = function Layers$getLayerDefinitionForObject(layer, object) {
 	// log("getLayerDefinitionForObject(" + layer + "," + object +")")
-	if (!layer || !object)
-		return;
+	if (!layer || !object) return;
 	var result = layer[object._layer_object_id];
-	if (result) {
-		return result;
-	} else {
-		return getLayerDefinitionForObject(layer, object.prototype);
-	}
+	return result ? result : getLayerDefinitionForObject(layer, object.prototype);
 };
 
 var object_id_counter = 0; // hack, to work around absence of identity dictionaries in JavaScript 
