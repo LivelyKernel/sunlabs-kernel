@@ -245,6 +245,19 @@ ometa LKFileParser <: Parser {
     comment = pos:p space+ -> { this._fragment(null, 'comment', p, this.pos()-1) },
     
     blankLine = pos:p (nl | (char:c ?(c.charCodeAt(0) === 32))* nl) -> { this._fragment(null, 'blankLine', p, this.pos()-1) },
+copDef =
+	pos:p "cop.create(" klassName:n ")" spacesNoNl nl* copSubElement*:subs spaces defEnd
+	-> { this._fragment(n, 'copDef', p, this.pos()-1, subs) },
+copSubElement =
+	pos:p spaces '.' copRefinement:spec
+	-> { this._fragment(spec.name, 'copSubElement', p, this.pos()-1, spec.subElementSpec.classElems,
+		{trait: spec.subElementSpec.trait, refineSelector: spec.refineSelector}) },
+copRefinement = 
+	( "refineClass" | "refineObject" ):sel '(' klass:n restKlassDef:spec ')'
+	-> { {name: n, refineSelector: sel, subElementSpec: spec} },
+
+
+
     unknown = pos:p somethingBigRelated defEnd -> { this._fragment(null, 'unknown', p, this.pos()-1) }
                         
 };

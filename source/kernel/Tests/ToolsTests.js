@@ -84,6 +84,30 @@ TestCase.subclass('Tests.ToolsTests.SystemBrowserTests', {
 		this.assertIdentity(result[1], n3);
 		this.assertIdentity(result[2], n1);
 	},
+testBrowserFourthPane: function() {
+	var browser = new lively.ide.BasicBrowser();
+	var root = this.createMockNode(browser);
+	browser.rootNode = function() { return root };
+
+	var n4 = this.createMockNode(browser, [], null, 'd');
+	var n3 = this.createMockNode(browser, [n4], null, 'c');
+	var n2 = this.createMockNode(browser, [n3], null, 'b');
+	var n1 = this.createMockNode(browser, [n2], null, 'a');
+	
+	browser.rootNode().children = [n1];
+
+	var m = browser.buildView();
+	
+	browser.selectNode(n1);
+	browser.selectNode(n2);
+	browser.selectNode(n3);
+
+	// m.openInWorld()
+
+	this.assertEqual(browser.nodesInPane('Pane4').length, 1);	
+	this.assertIdentity(n4, browser.nodesInPane('Pane4')[0]);
+},
+
 
 });
 
@@ -434,7 +458,7 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserParsesCoreTest', {
             
 	shouldRun: false,
 	
-    testParseCoreAlternativ: function() {
+    test01ParseCoreAlternativ: function() {
         // var url = URL.source.withFilename('Core.js');
         // var result = this.sut.parseFileFromUrl(url);
         var db = new SourceDatabase();
@@ -443,6 +467,8 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserParsesCoreTest', {
         this.assert(result && !result.isError)
         // this.assertDescriptorsAreValid(result);
     },
+
+
 
 });
 
@@ -736,6 +762,42 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest3', {
 		this.assertEqual(descriptor.type, 'klassDef');
 	},
     
+});
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.ContextJSParserTest', {
+	test01ParseSimpleLayerDef: function() {
+	var src = 'cop.create("TestLayer");';
+	this.sut.src = src;
+	var descriptor = this.sut.callOMeta("copDef");
+	this.assert(descriptor, 'no descriptor');
+	this.assertEqual(descriptor.name, 'TestLayer');
+    },
+test02ParseCopAsFile: function() {
+	var src = 'cop.create("TestLayer");';
+	var result = this.sut.parseSource(src);
+	this.assertEqual(result.length, 1);
+	this.assertEqual(result[0].type, 'copDef');
+	this.assertEqual(result[0].subElements().length, 0);
+},
+test03ParseCopSubElements: function() {
+	var src = 'cop.create("TestLayer")\n\t.refineClass(Foo);';
+	this.sut.src = src;
+	var descriptor = this.sut.callOMeta("copDef");
+	this.assertEqual(descriptor.subElements().length, 1);
+	this.assertEqual(descriptor.subElements()[0].name, 'Foo');
+},
+test04ParseCopSubElements2: function() {
+	var src = '.refineObject(Foo, {m1: function() {},\n\t\tm2: function() {},})';
+	this.sut.src = src;
+	var descriptor = this.sut.callOMeta("copSubElement");
+	this.assertEqual(descriptor.name, 'Foo');
+	this.assertEqual(descriptor.subElements().length, 2);
+	this.assertEqual(descriptor.subElements()[0].name, 'm1');
+	this.assertEqual(descriptor.subElements()[1].name, 'm2');
+},
+
+
+
+
 });
 
 thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTest', {

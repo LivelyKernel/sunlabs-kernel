@@ -22,6 +22,7 @@ cop.layerObject(SerializationTestLayer, lively.data.Wrapper, {
 	}
 })
 
+
 Widget.subclass('DummyWidget', {
 
 	description: "Dummy Widget for serialization",

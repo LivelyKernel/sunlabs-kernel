@@ -39,29 +39,31 @@ module('lively.ide').requires('lively.Tools', 'lively.Ometa', 'lively.LKFilePars
 Widget.subclass('lively.ide.BasicBrowser', {
 
 	documentation: 'Abstract widget with three list panes and one text pane. Uses nodes to display and manipulate content.',
-	initialViewExtent: pt(620, 550),
+	initialViewExtent: pt(820, 550),
 	emptyText: '-----',
 
 	panelSpec: [
 			['locationPane', newTextPane, new Rectangle(0, 0, 0.8, 0.05)],
 			['codeBaseDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.8, 0, 0.12, 0.05)],
 			['localDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.92, 0, 0.08, 0.05)],
-			['Pane1', newDragnDropListPane, new Rectangle(0, 0.05, 0.3, 0.32)],
-			['Pane2', newDragnDropListPane, new Rectangle(0.3, 0.05, 0.35, 0.35)],
-			['Pane3', newDragnDropListPane, new Rectangle(0.65, 0.05, 0.35, 0.35)],
+			['Pane1', newDragnDropListPane, new Rectangle(0, 0.05, 0.25, 0.32)],
+			['Pane2', newDragnDropListPane, new Rectangle(0.25, 0.05, 0.25, 0.35)],
+			['Pane3', newDragnDropListPane, new Rectangle(0.5, 0.05, 0.25, 0.35)],
+			['Pane4', newDragnDropListPane, new Rectangle(0.75, 0.05, 0.25, 0.35)],
 			['midResizer', function(bnds) { return new HorizontalDivider(bnds) }, new Rectangle(0, 0.44, 1, 0.01)],
 			['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.49)],
 			['bottomResizer', function(bnds) { return new HorizontalDivider(bnds) }, new Rectangle(0, 0.94, 1, 0.01)],
 			['commentPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
 		],
 
-	allPaneNames: ['Pane1', 'Pane2', 'Pane3'],
-	filterPlaces: ['Root', 'Pane1', 'Pane2', 'Pane3'],
+	allPaneNames: ['Pane1', 'Pane2', 'Pane3', 'Pane4'],
+	filterPlaces: ['Root', 'Pane1', 'Pane2', 'Pane3', 'Pane4'],
 	formals: ["Pane1Content", "Pane1Selection", "Pane1Menu", "Pane1Filters",
 			"Pane2Content", "Pane2Selection", "Pane2Menu", "Pane2Filters",
 			"Pane3Content", "Pane3Selection", "Pane3Menu", "Pane3Filters",
+			"Pane4Content", "Pane4Selection", "Pane4Menu", "Pane4Filters",
 			"SourceString", "StatusMessage", "RootFilters"],
-	connections: ['targetURL', 'sourceString', 'pane1Selection', 'pane2Selection', 'pane3Selection'],
+	connections: ['targetURL', 'sourceString', 'pane1Selection', 'pane2Selection', 'pane3Selection', 'pane4Selection'],
 
 	commands: function() { return [] },
 
@@ -284,8 +286,8 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
  
 	selectedNode: function() {
-		return this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
-	},
+	return this.getPane4Selection() || this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
+},
 
 	selectNode: function(node) {
 		var paneName = this.paneNameOfNode(node);
@@ -404,31 +406,50 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
     },
  
-    onPane3SelectionUpdate: function(node) {
-
+	onPane3SelectionUpdate: function(node) {
 		this.pane3Selection = node; // for bindings
 
+		this.panel['Pane4'] && this.panel['Pane4'].innerMorph().clearFilter(); // FIXME, lis filter, not a browser filter!
+	
+        this.setPane4Selection(null);
+        this.setPane4Content([this.emptyText]);        
         if (!node) {
             this.hideButtons(null, this.panel.Pane3, 'Pane3')
             return
         }
+        this.setPane4Content(this.childsFilteredAndAsListItems(node, this.getPane3Filters()));
         this.setSourceString(node.sourceString());
 		this.updateTitle();
 
 		this.setPane3Menu(this.commandMenuSpec('Pane3').concat(node.menuSpec()));
+		this.setPane4Menu(this.commandMenuSpec('Pane4'));
 
 		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
     },
- 
-    onSourceStringUpdate: function(methodString, source) {
+
+	onPane4SelectionUpdate: function(node) {
+		this.pane4Selection = node; // for bindings
+
+		if (!node) {
+			this.hideButtons(null, this.panel.Pane3, 'Pane3')
+			return
+		}
+		this.setSourceString(node.sourceString());
+		this.updateTitle();
+
+		this.setPane4Menu(this.commandMenuSpec('Pane4').concat(node.menuSpec()));
+		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
+    },
+
+	onSourceStringUpdate: function(methodString, source) {
 		this.sourceString = methodString;
-        if (!methodString || methodString == this.emptyText) return;
-        if (this.selectedNode().sourceString() == methodString &&
+		if (!methodString || methodString == this.emptyText) return;
+		if (this.selectedNode().sourceString() == methodString &&
 			source !== this.panel.sourcePane.innerMorph())
 				return;
-        this.selectedNode().newSource(methodString);
-        this.nodeChanged(this.selectedNode());
-    },
+		this.selectedNode().newSource(methodString);
+		this.nodeChanged(this.selectedNode());
+	},
 
     hasUnsavedChanges: function() {
         return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
@@ -446,55 +467,60 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		// handle drag and drop of items
 		console.log('Got ' + items);
 	},
+
+	onPane4ContentUpdate: function(items, source) {
+	},
 	    
 	allChanged: function(keepUnsavedChanges, changedNode) {
-		// optimization: if no node looks like the changed node in my browser do nothing
-		if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
-			return;
+	// optimization: if no node looks like the changed node in my browser do nothing
+	if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
+		return;
 
-		// FIXME remove duplication
-        var oldN1 = this.getPane1Selection();
-        var oldN2 = this.getPane2Selection();
-        var oldN3 = this.getPane3Selection();
+	// FIXME remove duplication
+       var oldN1 = this.getPane1Selection();
+       var oldN2 = this.getPane2Selection();
+       var oldN3 = this.getPane3Selection();
+	var oldN4 = this.getPane4Selection();
 
-		var sourcePos = this.panel.sourcePane.getScrollPosition();
+	var sourcePos = this.panel.sourcePane.getScrollPosition();
 
-		var src = keepUnsavedChanges &&
-						this.hasUnsavedChanges() &&
-						this.panel.sourcePane.innerMorph().textString;
+	var src = keepUnsavedChanges &&
+					this.hasUnsavedChanges() &&
+					this.panel.sourcePane.innerMorph().textString;
 
-		if (this.hasUnsavedChanges())
-			this.setSourceString(this.emptyText);
-					
-		var revertStateOfPane = function(paneName, oldNode) {
-			if (!oldNode) return;
-			var nodes = this.nodesInPane(paneName);
-			var newNode = nodes.detect(function(ea) {
-			    return ea && ea.target && (ea.target == oldNode.target || (ea.target.eq && ea.target.eq(oldNode.target)))
-			});
-			if (!newNode)
-				newNode = nodes.detect(function(ea) {return ea && ea.asString() === oldNode.asString()});
-            this['set' + paneName + 'Selection'](newNode, true);
-		}.bind(this);
-		
-		this.start(); // select rootNode and generate new subnodes
+	if (this.hasUnsavedChanges())
+		this.setSourceString(this.emptyText);
+				
+	var revertStateOfPane = function(paneName, oldNode) {
+		if (!oldNode) return;
+		var nodes = this.nodesInPane(paneName);
+		var newNode = nodes.detect(function(ea) {
+		    return ea && ea.target && (ea.target == oldNode.target || (ea.target.eq && ea.target.eq(oldNode.target)))
+		});
+		if (!newNode)
+			newNode = nodes.detect(function(ea) {return ea && ea.asString() === oldNode.asString()});
+           this['set' + paneName + 'Selection'](newNode, true);
+	}.bind(this);
+	
+	this.start(); // select rootNode and generate new subnodes
 
-		revertStateOfPane('Pane1', oldN1);
-		revertStateOfPane('Pane2', oldN2);
-		revertStateOfPane('Pane3', oldN3);
+	revertStateOfPane('Pane1', oldN1);
+	revertStateOfPane('Pane2', oldN2);
+	revertStateOfPane('Pane3', oldN3);
+	revertStateOfPane('Pane4', oldN4);
 
-		if (!src) {
-			this.panel.sourcePane.setScrollPosition(sourcePos);
-			return;
-		}
-
-		//this.setSourceString(src);
-		var text = this.panel.sourcePane.innerMorph();
-		text.setTextString(src.toString())
+	if (!src) {
 		this.panel.sourcePane.setScrollPosition(sourcePos);
-		// text.changed()
-		text.showChangeClue(); // FIXME
-	},
+		return;
+	}
+
+	//this.setSourceString(src);
+	var text = this.panel.sourcePane.innerMorph();
+	text.setTextString(src.toString())
+	this.panel.sourcePane.setScrollPosition(sourcePos);
+	// text.changed()
+	text.showChangeClue(); // FIXME
+},
 
     nodeChanged: function(node) {
         // currently update everything, this isn't really necessary
@@ -512,17 +538,19 @@ Widget.subclass('lively.ide.BasicBrowser', {
 	},
 
 	updateTitle: function() {
-		var window = this.panel.owner;
-		if (!window) return;
-		var n1 = this.getPane1Selection();
-        var n2 = this.getPane2Selection();
-        var n3 = this.getPane3Selection();
-		var title = '';
-		if (n1) title += n1.asString();
-		if (n2) title += ':' + n2.asString();
-		if (n3) title += ':' + n3.asString();
-		window.setTitle(title);
-	},
+	var window = this.panel.owner;
+	if (!window) return;
+	var n1 = this.getPane1Selection();
+       var n2 = this.getPane2Selection();
+       var n3 = this.getPane3Selection();
+	var n4 = this.getPane4Selection();
+	var title = '';
+	if (n1) title += n1.asString();
+	if (n2) title += ':' + n2.asString();
+	if (n3) title += ':' + n3.asString();
+	if (n4) title += ':' + n4.asString();
+	window.setTitle(title);
+},
 
 	commandMenuSpec: function(pane) {
 		var result = this.commands()
@@ -1186,13 +1214,15 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
         if (!completeFileFragment) return [];
 		var typeToClass = function(type) {
 			if (type === 'klassDef' || type === 'klassExtensionDef')
-				return ide.ClassFragmentNode;
+				return lively.ide.ClassFragmentNode;
 			if (type === 'functionDef')
-				return ide.FunctionFragmentNode;
-			return ide.ObjectFragmentNode;
+				return lively.ide.FunctionFragmentNode;
+			if (type === 'copDef')
+				return lively.ide.CopFragmentNode;
+			return lively.ide.ObjectFragmentNode;
 		}
 		return this.target.subElements(2)
-		  .select(function(ea) { return ['klassDef','klassExtensionDef','functionDef','objectDef', 'propertyDef'].include(ea.type) })
+		  .select(function(ea) { return ['klassDef','klassExtensionDef','functionDef','objectDef', 'copDef', 'propertyDef'].include(ea.type) })
 		  .collect(function(ea) { return new (typeToClass(ea.type))(ea, browser) })
     },
  
@@ -1717,6 +1747,32 @@ menuSpec: function($super) {
 pushChangesBack: function() {
 	this.worldProxy.writeChangeSet(this.target);
 },
+
+});
+lively.ide.FileFragmentNode.subclass('lively.ide.CopFragmentNode', {
+
+	isClassNode: true,
+
+	childNodes: function() {
+	return this.target.subElements().collect(function(fileFragment) {
+		return new lively.ide.CopRefineFragmentNode(fileFragment, this.browser, this.target)
+	}, this);
+},
+
+});
+
+lively.ide.FileFragmentNode.subclass('lively.ide.CopRefineFragmentNode', {
+
+	childNodes: function() {
+		return this.target.subElements().collect(function(fileFragment) {
+			return new lively.ide.CopMemberFragmentNode(fileFragment, this.browser, this.target)
+		}, this);
+	},
+
+});
+lively.ide.FileFragmentNode.subclass('lively.ide.CopMemberFragmentNode', {
+
+
 
 });
 
@@ -2311,7 +2367,7 @@ CodeParser.subclass('JsParser', {
     debugMode: false,
 
     ometaRules: [/*'blankLine',*/ 'comment',
-               'klassDef', 'objectDef', 'klassExtensionDef', 'propertyDef',
+               'klassDef', 'objectDef', 'klassExtensionDef', 'copDef', 'propertyDef',
                'functionDef', 'unknown'],
     
     parseClass: function() {
