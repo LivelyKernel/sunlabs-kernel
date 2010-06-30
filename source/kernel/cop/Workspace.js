@@ -23,7 +23,7 @@
 module("cop.Workspace").requires(["lively.Text", "cop.Layers", "lively.Undo", 'lively.LayerableMorphs']).toRun(function() {
 
 cop.create('WorkspaceLayer').
-	refine(TextMorph, {
+	refineClass(TextMorph, {
 		toggleEvalOnWorldLoad: function() {
 			this.evalOnWorldLoad = ! this.evalOnWorldLoad; 
 		},
@@ -50,7 +50,7 @@ cop.create('WorkspaceLayer').
 // Static Instrumentatioan
 cop.create('WorkspaceControlLayer').
 	beGlobal().
-	refine(WindowMorph, {
+	refineClass(WindowMorph, {
 
 		isWorkspaceLayerEnabled: function() {
 				l3 = cop.layer('WorkspaceControlLayer2');
@@ -92,7 +92,7 @@ cop.create('WorkspaceControlLayer').
 			return menu;
 		}
 		
-	}).refine(WorldMorph, {
+	}).refineClass(WorldMorph, {
 		onKeyDown: function(proceed, evt) {
 			var key = evt.getKeyChar().toLowerCase();
 			if (evt.isCommandKey() && !evt.isShiftDown()) {

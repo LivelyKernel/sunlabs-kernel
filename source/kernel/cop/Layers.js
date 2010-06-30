@@ -418,8 +418,13 @@ Object.subclass("Layer", {
 		return this;
 	},
 	
-	refine: function(classObj, methods) {
+	refineClass: function(classObj, methods) {
 		cop.layerClass(this, classObj, methods);
+		return this
+	},
+
+	refineObject: function(obj, methods) {
+		cop.layerObject(this, obj, methods);
 		return this
 	}
 	

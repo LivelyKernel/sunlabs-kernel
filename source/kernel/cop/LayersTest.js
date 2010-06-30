@@ -1449,7 +1449,19 @@ cop.tests.LayerTestCase.subclass('cop.tests.LayerAltSyntaxTest', {
 
 	testRefineClass: function() {
 		var l = cop.create("MyDummyLayer2");
-		this.assert(l.refine instanceof Function, "l does not respond to refine")
+		this.assert(l.refineClass instanceof Function, "l does not respond to refineClass")
+	},
+
+	testRefineObject: function() {
+		var l = cop.create("MyDummyLayer2");
+		this.assert(l.refineObject instanceof Function, "l does not respond to refineObject")
+
+		var o = {foo: function() {return 1}}
+		var r = l.refineObject(o, {
+			foo: function(proceed) { }
+		});
+
+		this.assertIdentity(l, r, "refineObject does not return layer")
 	},
 
 	testBeGlobal: function() {
