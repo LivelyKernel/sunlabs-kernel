@@ -494,7 +494,7 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserParsesCoreTest', {
 
 });
 
-thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest2', {
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.JsParserTest2', {
 
    	testFindLinNo: function() {
         var str = 'abc\ndef123\n\n\nxyz\n';
@@ -724,6 +724,21 @@ testFailingRegex: function() {
 	this.assertIdentity(result.startIndex, 0);
 	this.assertIdentity(result.stopIndex, src.length - 1);
 },
+
+	testParseGetter: function() {   // xxx: function()...,
+        var src = 'get foo() { return 23 },';
+        this.sut.src = src;
+        var descriptor = this.sut.callOMeta('propertyDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'foo');
+    },
+	testParseSetter: function() {   // xxx: function()...,
+        var src = 'set foo(val) { this._val = val + 42 },';
+        this.sut.src = src;
+        var descriptor = this.sut.callOMeta('propertyDef');
+        this.assert(descriptor, 'no descriptor');
+        this.assertEqual(descriptor.name, 'foo');
+    },
 
 
 });

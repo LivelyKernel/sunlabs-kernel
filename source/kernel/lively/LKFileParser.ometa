@@ -172,9 +172,15 @@ ometa LKFileParser <: Parser {
 			};
 			this._fragment(pName, 'protoDef', p, this.pos()-1, null, {_isStatic: false})
 		},
+getterOrSetter =
+		pos:p ("get" | "set") spaces name:pName chunk('(', ')') spaces chunk('{', '}') classElemDefEnd
+		-> {
+			this._fragment(pName, 'protoDef', p, this.pos()-1, null, {_isStatic: false})
+		},
+
 
 	propertyDef =
-		(protoDef | methodModificationDef | staticProperty): spec
+		(protoDef | methodModificationDef | staticProperty | getterOrSetter): spec
 		-> {spec.type = 'propertyDef'; spec},
 
                                     
