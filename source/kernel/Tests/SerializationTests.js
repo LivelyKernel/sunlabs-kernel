@@ -807,12 +807,26 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('ATests.Serializatio
 		var doc = Exporter.shrinkWrapMorph(m);
 	},
 	
+	
+	testShrinkWrapMorphWithoutWorld: function() {
+		var m = Morph.makeRectangle(0,0,10,10);
+		var doc = Exporter.shrinkWrapMorph(m);
+		var result = doc.getElementById(m.id());
+		this.assert(result, 'morph rawNode not in document!')
+	},
+	
 	testAddSystemDictionary: function() {
 		var importer = new Importer();
 		var newDoc = importer.getBaseDocument();
 		var systemDictionary = Exporter.addSystemDictionary(newDoc);
-		this.assert(systemDictionary, "no systemDictionary returned")
-	}
+	
+		this.assert(systemDictionary, "no systemDictionary returned");
+		this.assert(systemDictionary, "no systemDictionary returned");
+
+	},
+	
+	
+	
 	
 })
 

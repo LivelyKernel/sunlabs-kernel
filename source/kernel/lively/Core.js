@@ -869,9 +869,11 @@ Object.subclass('Exporter', {
 		this.rootMorph.withAllSubmorphsDo(function() { 
 			exporter.verbose && console.log("serializing " + this);
 			this.prepareForSerialization(helperNodes, optSystemDictionary);			
-			var nl = NodeFactory.createNL();
-			this.rawNode.parentNode.insertBefore(nl, this.rawNode);
-			helperNodes.push(nl);
+			if (this.owner) { // just add a new line for better readability
+				var nl = NodeFactory.createNL();
+				this.rawNode.parentNode.insertBefore(nl, this.rawNode);
+				helperNodes.push(nl);
+			}
 		});
 		return helperNodes;
 	},
