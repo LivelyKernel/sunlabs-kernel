@@ -864,7 +864,7 @@ Object.subclass('Exporter', {
 
 		var exporter = this;
 
-		lively.data.Wrapper.collectSystemDictionaryGarbage(this.rootMorph);	
+		lively.data.Wrapper.collectSystemDictionaryGarbage(this.rootMorph, optSystemDictionary);	
 
 		this.rootMorph.withAllSubmorphsDo(function() { 
 			exporter.verbose && console.log("serializing " + this);
@@ -883,9 +883,9 @@ Object.subclass('Exporter', {
 		}
 	},
 	
-	serialize: function(destDocument) {
+	serialize: function(destDocument, optSystemDictionary) {
 		// model is inserted as part of the root morph.
-		var helpers = this.extendForSerialization();
+		var helpers = this.extendForSerialization(optSystemDictionary);
 		var result = destDocument.importNode(this.rootMorph.rawNode, true);
 		this.removeHelperNodes(helpers);
 		return result;
@@ -918,8 +918,8 @@ Object.extend(Exporter, {
 			throw new Error('Can not continue serializing World beacause the base document is broken')
 		newDoc.getElementsByTagName("title")[0].textContent = document.title; // persist the title
 		// FIXME this should go to another place?
-		this.addSystemDictionary(newDoc);
-		importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc));
+		var systemDictionary = this.addSystemDictionary(newDoc);
+		importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc, systemDictionary));
 		this.stripEpimorphs(newDoc);
 		this.stripIgnoredMorphs(newDoc);
 		return newDoc;
@@ -948,6 +948,7 @@ Object.extend(Exporter, {
 			preExisting.parentNode.removeChild(preExisting);
 		var newDict = dict.cloneNode(true);
 		doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(newDict, true));
+		return newDict
 	},
 
 	saveDocumentToFile: function(doc, urlOrFilename, callback) {

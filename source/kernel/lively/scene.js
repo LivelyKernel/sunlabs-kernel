@@ -508,7 +508,7 @@ Object.extend(lively.data.Wrapper, {
 		return result
 	},
 
-	collectSystemDictionaryGarbage: function(rootMorph) {
+	collectSystemDictionaryGarbage: function(rootMorph, optSystemDictionary) {
 		"lively.data.Wrapper.collectSystemDictionaryGarbage()"
 		if (!rootMorph)
 			rootMorph = WorldMorph.current();
@@ -516,7 +516,7 @@ Object.extend(lively.data.Wrapper, {
 		this.collectAllFillsInObjects(Object.values(Global), fills);
 		rootMorph.collectAllUsedFills(fills)
 		var usedFillIds = fills.collect(function(ea){return ea.id()});
-		var dict = rootMorph.dictionary();
+		var dict = optSystemDictionary || rootMorph.dictionary();
 		$A(dict.childNodes).each(function(ea) {
 			// console.log("GC considering " + ea)
 			if(['linearGradient', 'radialGradient'].include(ea.tagName) && !usedFillIds.include(ea.id)) {

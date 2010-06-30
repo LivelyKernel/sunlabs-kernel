@@ -786,7 +786,6 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 
 });
 
-
 TestCase.subclass('Tests.SerializationTests.DomRecordTest', {
 
 	testAddField: function() {
@@ -799,5 +798,24 @@ TestCase.subclass('Tests.SerializationTests.DomRecordTest', {
 		
 	
 });
+
+Tests.SerializationTests.SerializationBaseTestCase.subclass('ATests.SerializationTests.ExporterTest', {
+	
+	testShrinkWrapMorph: function() {
+		var m = Morph.makeRectangle(0,0,10,10);
+		this.worldMorph.addMorph(m)
+		var doc = Exporter.shrinkWrapMorph(m);
+	},
+	
+	testAddSystemDictionary: function() {
+		var importer = new Importer();
+		var newDoc = importer.getBaseDocument();
+		var systemDictionary = Exporter.addSystemDictionary(newDoc);
+		this.assert(systemDictionary, "no systemDictionary returned")
+	}
+	
+})
+
+
 
 }) // end of module
