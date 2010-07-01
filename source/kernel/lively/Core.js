@@ -4689,6 +4689,7 @@ PasteUpMorph.subclass("WorldMorph", {
     
 	remove: function() {
 		if (!this.rawNode.parentNode) return null;  // already removed
+		this.removeHand(this.firstHand());
 		this.stopStepping();
 		this.removeRawNode();
 		return this;

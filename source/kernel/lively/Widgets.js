@@ -74,8 +74,10 @@ BoxMorph.subclass('ButtonMorph', {
 	},
 
     onDeserialize: function() {
-        this.baseFill = this.shape.getFill();
-        this.changeAppearanceFor(this.value);
+		this.baseFill = this.shape.getFill();
+		if (Object.isString(this.baseFill)) // FIXME
+			this.baseFill = Color.fromString(this.baseFill) || Color.red
+		this.changeAppearanceFor(this.value);
     },
 
 	setFill: function($super, fill) {

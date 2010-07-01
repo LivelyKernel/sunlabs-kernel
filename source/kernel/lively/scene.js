@@ -2840,7 +2840,7 @@ lively.scene.Node.subclass('lively.scene.Text', {
 
 using(namespace('lively.paint'), lively.data.Wrapper).run(function(unused, Wrapper) {
 
-Wrapper.subclass('lively.paint.Stop', {
+lively.data.Wrapper.subclass('lively.paint.Stop', {
 	initialize: function(offset, color) {
 		dbgOn(isNaN(offset));
 		this.rawNode = NodeFactory.create("stop", { offset: offset, "stop-color": color});
