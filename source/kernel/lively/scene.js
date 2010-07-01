@@ -25,6 +25,64 @@
 // ===========================================================================
 
 
+Global.locateCanvas = function(optNode) { // dirty secret
+	// optNode can be rawNode or document or null
+
+	var maybeCanvas = optNode
+	while (maybeCanvas && maybeCanvas.getAttribute) {
+		if (maybeCanvas.getAttribute('lively:canvas'))
+			return maybeCanvas;
+		maybeCanvas = maybeCanvas.parentNode;
+	}
+
+	// find the first "svg" element with id "canvas"
+	var elements = optNode && optNode.getElementsByTagName("svg");
+	if (elements) {
+		for (var i = 0; i < elements.length; i++) {
+			var el = elements.item(i);
+			if (el.getAttribute("id") == "canvas") {
+				return el;
+			}
+		}
+	}
+	
+	return document.getElementById('canvas')
+	
+	// if (!UserAgent.usableOwnerSVGElement) {
+	// 	// so much for multiple worlds on one page
+	// 	return Global.document.getElementById("canvas");
+	// } else {
+	// 	return this.rawEvent.currentTarget.ownerSVGElement;
+	// }
+	// return Global.document.getElementById("canvas");
+	
+	// find the first "svg" element with id "canvas"
+	// var elements = doc.getElementsByTagName("svg");
+	// for (var i = 0; i < elements.length; i++) {
+	// 	var el = elements.item(i);
+	// 	if (el.getAttribute("id") == "canvas") {
+	// 		return el;
+	// 	}
+	// }
+	// console.log("canvas not found in document " + doc);
+	// return null;
+	
+	// if (!UserAgent.usableOwnerSVGElement) {
+	// 	// so much for multiple worlds on one page
+	// 	return Global.document.getElementById("canvas");
+	// } else {
+	// 	return (this.rawNode && this.rawNode.ownerSVGElement) || Global.document.getElementById("canvas");
+	// }
+	
+	// if (!UserAgent.usableOwnerSVGElement) {
+	// 	// so much for multiple worlds on one page
+	// 	
+	// } else {
+	// 	return (this.rawNode && this.rawNode.ownerSVGElement) || locateCanvas();
+	// }
+	
+}
+
 namespace('lively.data');
 
 Object.subclass('lively.data.Wrapper', {
@@ -317,7 +375,7 @@ Object.subclass('lively.data.Wrapper', {
 			return	lively.data.Wrapper.dictionary;
 		if (lively.data.Wrapper.dictionary = Global.document.getElementById("SystemDictionary"))
 			return lively.data.Wrapper.dictionary;
-		var canvas = Global.document.getElementById("canvas");
+		var canvas = locateCanvas();
 		lively.data.Wrapper.dictionary =  canvas.appendChild(NodeFactory.create("defs"));
 		lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary");
 		return lively.data.Wrapper.dictionary;
@@ -566,11 +624,6 @@ Object.extend(lively.data.Length.subclass('lively.data.Coordinate'), {
 
 using(namespace('lively.scene'), lively.data.Wrapper).run(function(unused, Wrapper) {
 
-function locateCanvas() {
-	// dirty secret
-	return Global.document.getElementById("canvas");
-}
-
 Wrapper.subclass('lively.scene.Node');
 	
 this.Node.addProperties({ 
@@ -632,20 +685,15 @@ this.Node.addMethods({
 	},
 
 	canvas: function() {
-		if (!UserAgent.usableOwnerSVGElement) {
-			// so much for multiple worlds on one page
-			return locateCanvas();
-		} else {
-			return (this.rawNode && this.rawNode.ownerSVGElement) || locateCanvas();
-		}
+		return locateCanvas();
 	},
 
 	nativeContainsWorldPoint: function(p) {
-		var r = this.canvas().createSVGRect();
+		var r = this.canvas(this.rawNode).createSVGRect();
 		r.x = p.x;
 		r.y = p.y;
 		r.width = r.height = 0;
-		return this.canvas().checkIntersection(this.rawNode, r);
+		return this.canvas(this.rawNode).checkIntersection(this.rawNode, r);
 	},
 
 	setVisible: function(flag) {
@@ -2495,7 +2543,7 @@ Object.subclass('lively.scene.Similitude', {
 	applyTo: function(rawNode) { 
 		if (Config.useTransformAPI) {
 			var list = rawNode.transform.baseVal;
-			var canvas = locateCanvas();
+			var canvas = locateCanvas(rawNode);
 
 			var translation = canvas.createSVGTransform();
 			translation.setTranslate(this.e, this.f);
@@ -2606,7 +2654,7 @@ Object.subclass('lively.scene.Similitude', {
 Wrapper.subclass('lively.scene.Transform', {
 	// a more direct wrapper for SVGTransform
 	initialize: function(rawNode, targetNode) {
-		if (!rawNode) rawNode = locateCanvas().createSVGTransform();
+		if (!rawNode) rawNode = locateCanvas(rawNode).createSVGTransform();
 		this.rawNode = rawNode;
 		// we remember the target node so that we can inform it that we changed
 		this.targetNode = targetNode; 

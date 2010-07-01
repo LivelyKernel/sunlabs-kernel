@@ -626,8 +626,6 @@ var Event = (function() {
 
 		// fix timeStamp, e.g in Opera
 		this.timeStamp = this.rawEvent.timeStamp || new Date().getTime();
-
-		this.prepareMousePoint();
 		
 		this.hand = null;
 
@@ -636,6 +634,11 @@ var Event = (function() {
 		this.mouseButtonPressed = false;
 	},
 
+	setCanvas: function(canvas) {
+		this.canvas = canvas;
+		this.prepareMousePoint();
+	},
+	
 	prepareMousePoint: function() {
 		if (this.isMouseEvent())
 			this.addMousePoint(this.rawEvent)
@@ -643,7 +646,7 @@ var Event = (function() {
 	
 	offset: function() {
 		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-		var topElement = this.canvas();
+		var topElement = this.canvas;
 		if (Config.isEmbedded) {
 			var offsetX = 0;
 			var offsetY = -3;
@@ -670,15 +673,6 @@ var Event = (function() {
 	
 	simpleCopy: function() {
 		return new Event(this.rawEvent);
-	},
-
-	canvas: function() {
-		if (!UserAgent.usableOwnerSVGElement) {
-			// so much for multiple worlds on one page
-			return Global.document.getElementById("canvas");
-		} else {
-			return this.rawEvent.currentTarget.ownerSVGElement;
-		}
 	},
 
 	stopPropagation: function() {
@@ -800,15 +794,14 @@ var Event = (function() {
 		// not in prototype.js:
 		KEY_SPACEBAR: 32,
 		
-		prepareEventSystem: function() {
+		prepareEventSystem: function(canvas) {
+			if (!canvas) return;
 		    var disabler = {    
 				handleEvent: function(evt) { 	
 			    	evt.preventDefault(); 
 			    	return false;
 				}
 		    };
-		    var canvas = Global.document.getElementById("canvas");
-			if (!canvas) return
 		    canvas.addEventListener("dragstart", disabler, true);
 		    canvas.addEventListener("selectstart", disabler, true);
 			if (Config.suppressDefaultMouseBehavior)
@@ -1204,16 +1197,7 @@ Copier.subclass('Importer', {
 	},
 
 	canvas: function(doc) {
-		// find the first "svg" element with id "canvas"
-		var elements = doc.getElementsByTagName("svg");
-		for (var i = 0; i < elements.length; i++) {
-			var el = elements.item(i);
-			if (el.getAttribute("id") == "canvas") {
-				return el;
-			}
-		}
-		console.log("canvas not found in document " + doc);
-		return null;
+		return locateCanvas(doc);
 	},
 
 	getBaseDocument: function() {
@@ -1873,12 +1857,7 @@ Morph.addMethods({	// tmp copy
 	},
 
 	canvas: function() {
-		if (!UserAgent.usableOwnerSVGElement) {
-			// so much for multiple worlds on one page
-			return Global.document.getElementById("canvas");
-		} else {
-			return (this.rawNode && this.rawNode.ownerSVGElement) || Global.document.getElementById("canvas");
-		}
+		return locateCanvas(this.rawNode);
 	},
 
 	setVisible: function(flag) { // FIXME delegate to sceneNode when conversion finished
@@ -5799,6 +5778,7 @@ lookTouchy: function(morph) {
 	// this is the DOM Event callback
 	handleEvent: function HandMorph$handleEvent(rawEvt) {
 		var evt = new Event(rawEvt);
+		evt.setCanvas(this.canvas());
 		evt.hand = this;
 		//if(Config.showLivelyConsole) console.log("event type = " + rawEvt.type + ", platform = " +  window.navigator.platform);
 
@@ -6919,7 +6899,6 @@ window.onresize = function(evt) {
 		return;
 	}		
 	// Todo: get rid of the arbitrary offset without getting scrollbars
-	var canvas = world.rawNode.parentNode;
     var newWidth = h.clientWidth - 4;
     var newHeight = h.clientHeight-  4;
 };

@@ -533,6 +533,7 @@ Object.subclass('ExpressionSerializer', {
 			var startEval = 'ExpressionSerializer.object=';
 			var result = '{'; 
 			for (var name in value) {
+				if (Object[name]) continue; // ignore Object extensions
 				result += '"' + name + '":' + this.serialize(value[name]) + ',';
 			}
 			return startEval + result + '}';

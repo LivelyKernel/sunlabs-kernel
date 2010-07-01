@@ -113,7 +113,7 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 			this.worldMorph = optWorld
 		};
 		// for debugging
-		var oldCanvas = document.getElementById('canvas');
+		var oldCanvas = locateCanvas();
 		var owner = oldCanvas.parentElement;
 		// hack, so that we do not run into a conflict: when calling importNode the canvas changes
 		if (this.worldMorph.rawNode.parentNode) {

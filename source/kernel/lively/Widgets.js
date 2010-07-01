@@ -4558,7 +4558,7 @@ Morph.subclass('NodeMorph', {
 	ensureToStayInWorldBounds: function() {
 		if (!this.activeBoundsOfWorld) {
 			// World bounds are sometimes wrong??? Use canvas ...
-			var canvas = Global.document.getElementById('canvas');
+			var canvas = this.canvas();
 			this.activeBoundsOfWorld = pt(canvas.clientWidth, canvas.clientHeight).subPt(this.getExtent()).extentAsRectangle();
 		//this.activeBoundsOfWorld =  pt(1051.9,584.5).extentAsRectangle();
 		}
