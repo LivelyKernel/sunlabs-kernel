@@ -651,13 +651,14 @@ TestCase.subclass('Tests.LKWikiTest.SerializerTest', {
 			'ExpressionSerializer.object={"a":Number(1),}':			{a:1},
 			'ExpressionSerializer.object={"a+2":Number(3),}': 	{"a+2": 3},
 			'ExpressionSerializer.func=function a() {}': 				function a() {},
-
 		};
 		var sut = new ExpressionSerializer();
 		for (var expr in basic) {
+			if (!basic.hasOwnProperty(expr)) continue; // ignore Object extensions
 			this.assertEqual(sut.serialize(basic[expr]), expr, 'serializing ' + expr);
 		}
 		for (var expr in basic) {
+			if (!basic.hasOwnProperty(expr)) continue; // ignore Object extensions
 			if (Object.isFunction(basic[expr]))
 				this.assertEqual(eval(expr).toString(), basic[expr].toString(), 'deserializing ' + expr);
 			else
