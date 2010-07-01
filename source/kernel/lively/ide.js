@@ -2643,7 +2643,10 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		return root;
 	},
 
-	allModules: function() { return Object.values(this.modules) },
+	allModules: function() {
+		return Object.values(this.modules)
+			.select(function(ea) { return ea instanceof lively.ide.ModuleWrapper });
+	},
 	
 	findModuleWrapperForFileName: function(fileName) {
 		return this.allModules().detect(function(ea) { return ea.fileName() == fileName })
