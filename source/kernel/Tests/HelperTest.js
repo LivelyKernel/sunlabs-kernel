@@ -8,7 +8,7 @@ TestCase.subclass('Tests.HelperTest.XMLConverterTest', {
 
 	setUp: function($super) {
 		$super();
-		this.sut = new XMLConverter();
+		this.sut = new lively.Helper.XMLConverter();
 	},
 
 	test01XMLNodeToJSON: function() {
