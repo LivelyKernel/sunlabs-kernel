@@ -608,17 +608,17 @@ console.log("Loaded basic DOM manipulation code");
   * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide).
   */
 
-var Event = (function() {
-    var tmp = Event; // note we're rebinding the name Event to point to a different class 
+(function() {
+var tmp = Event; // note we're rebinding the name Event to point to a different class 
 
-    var Event = Object.subclass('Event', {
+Object.subclass('Event', {
 
 	capitalizer: {
 		mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
 		mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
 		keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp',
 	},
-	
+
 	initialize: function(rawEvent) {
 		this.rawEvent = rawEvent;
 		this.type = this.capitalizer[rawEvent.type] || rawEvent.type;
@@ -626,7 +626,7 @@ var Event = (function() {
 
 		// fix timeStamp, e.g in Opera
 		this.timeStamp = this.rawEvent.timeStamp || new Date().getTime();
-		
+
 		this.hand = null;
 
 		// use event.timeStamp
@@ -638,12 +638,12 @@ var Event = (function() {
 		this.canvas = canvas;
 		this.prepareMousePoint();
 	},
-	
+
 	prepareMousePoint: function() {
 		if (this.isMouseEvent())
 			this.addMousePoint(this.rawEvent)
 	},
-	
+
 	offset: function() {
 		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
 		var topElement = this.canvas;
@@ -660,17 +660,17 @@ var Event = (function() {
 			return pt(topElement.offsetLeft || 0, (topElement.offsetTop  || 0) - 3);
 		}
 	},
-	
+
 	addMousePoint: function(evtOrTouch) {
 		var pos = pt(evtOrTouch.pageX || evtOrTouch.clientX, evtOrTouch.pageY || evtOrTouch.clientY);
 		this.mousePoint = pos.subPt(this.offset());
 		this.priorPoint = this.mousePoint;
 	},
-	
+
 	isMouseEvent: function() {
 		return Event.mouseEvents.include(this.rawEvent.type);
 	},
-	
+
 	simpleCopy: function() {
 		return new Event(this.rawEvent);
 	},
@@ -717,9 +717,9 @@ var Event = (function() {
 
 	toString: function() {
 		return Strings.format("#<Event:%s%s%s>",
-			this.type,
-			this.mousePoint ?  "@" + this.mousePoint : "",
-			this.getKeyCode() || "");
+		this.type,
+		this.mousePoint ?  "@" + this.mousePoint : "",
+		this.getKeyCode() || "");
 	},
 
 	setButtonPressedAndPriorPoint: function(buttonPressed, priorPoint) {
@@ -748,16 +748,16 @@ var Event = (function() {
 	},
 
 	wheelDelta: function() {
-	    // FIXME: make browser-independent
-	    return this.rawEvent.wheelDelta;
+		// FIXME: make browser-independent
+		return this.rawEvent.wheelDelta;
 	},
-	
+
 	point: function() {
-	    // likely origin of event, obvious for mouse events, the hand's position for
-	    // keyboard events
-	    return this.mousePoint || this.hand.getPosition();
+		// likely origin of event, obvious for mouse events, the hand's position for
+		// keyboard events
+		return this.mousePoint || this.hand.getPosition();
 	},
-	
+
 	isLeftMouseButtonDown: function() {
 		return this.rawEvent.button === 0;
 	},
@@ -768,55 +768,54 @@ var Event = (function() {
 
 	isRightMouseButtonDown: function() {
 		return this.rawEvent.button === 2;
-	}
+	},
 
-    });
+});
 
-    Event.rawEvent = tmp;
 
-    Object.extend(Event, {
-		// copied from prototype.js:
-		KEY_BACKSPACE: 8,
-		KEY_TAB:       9,
-		KEY_RETURN:   13,
-		KEY_ESC:      27,
-		KEY_LEFT:     37,
-		KEY_UP:       38,
-		KEY_RIGHT:    39,
-		KEY_DOWN:     40,
-		KEY_DELETE:   46,
-		KEY_HOME:     36,
-		KEY_END:      35,
-		KEY_PAGEUP:   33,
-		KEY_PAGEDOWN: 34,
-		KEY_INSERT:   45,
+Object.extend(Event, {
+	rawEvent: tmp,
+	
+	// copied from prototype.js:
+	KEY_BACKSPACE: 8,
+	KEY_TAB:       9,
+	KEY_RETURN:   13,
+	KEY_ESC:      27,
+	KEY_LEFT:     37,
+	KEY_UP:       38,
+	KEY_RIGHT:    39,
+	KEY_DOWN:     40,
+	KEY_DELETE:   46,
+	KEY_HOME:     36,
+	KEY_END:      35,
+	KEY_PAGEUP:   33,
+	KEY_PAGEDOWN: 34,
+	KEY_INSERT:   45,
 
-		// not in prototype.js:
-		KEY_SPACEBAR: 32,
-		
-		prepareEventSystem: function(canvas) {
-			if (!canvas) return;
-		    var disabler = {    
-				handleEvent: function(evt) { 	
-			    	evt.preventDefault(); 
-			    	return false;
-				}
-		    };
-		    canvas.addEventListener("dragstart", disabler, true);
-		    canvas.addEventListener("selectstart", disabler, true);
-			if (Config.suppressDefaultMouseBehavior)
-				Global.document.oncontextmenu = Functions.False
-		},
-    });
+	// not in prototype.js:
+	KEY_SPACEBAR: 32,
+	
+	prepareEventSystem: function(canvas) {
+		if (!canvas) return;
+		var disabler = {    
+			handleEvent: function(evt) { 	
+	   			evt.preventDefault(); 
+	   			return false;
+			}
+	  	};
+		canvas.addEventListener("dragstart", disabler, true);
+		canvas.addEventListener("selectstart", disabler, true);
+		if (Config.suppressDefaultMouseBehavior)
+			Global.document.oncontextmenu = Functions.False
+	},
+});
 
-    var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel"];
-    var extendedMouseEvents = [ "mouseover", "mouseout"];
-    Event.mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
+var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel"];
+var extendedMouseEvents = [ "mouseover", "mouseout"];
+Event.mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
+Event.keyboardEvents = ["keypress", "keyup", "keydown"];
+Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents).concat(["touchstart", "touchmove", "touchend", "touchcancel"]);
 
-    Event.keyboardEvents = ["keypress", "keyup", "keydown"];
-    Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents).concat(["touchstart", "touchmove", "touchend", "touchcancel"]);
-
-    return Event;
 })();
 
 function equals(leftObj, rightObj) {
