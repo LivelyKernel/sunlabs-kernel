@@ -22,8 +22,8 @@
 
 module("cop.Workspace").requires(["lively.Text", "cop.Layers", "lively.Undo", 'lively.LayerableMorphs']).toRun(function() {
 
-cop.create('WorkspaceLayer').
-	refineClass(TextMorph, {
+cop.create('WorkspaceLayer')
+	.refineClass(TextMorph, {
 		toggleEvalOnWorldLoad: function() {
 			this.evalOnWorldLoad = ! this.evalOnWorldLoad; 
 		},
@@ -48,9 +48,9 @@ cop.create('WorkspaceLayer').
 });
 
 // Static Instrumentatioan
-cop.create('WorkspaceControlLayer').
-	beGlobal().
-	refineClass(WindowMorph, {
+cop.create('WorkspaceControlLayer')
+	.beGlobal()
+	.refineClass(WindowMorph, {
 
 		isWorkspaceLayerEnabled: function() {
 				l3 = cop.layer('WorkspaceControlLayer2');
@@ -94,14 +94,14 @@ cop.create('WorkspaceControlLayer').
 		
 	}).refineClass(WorldMorph, {
 		onKeyDown: function(proceed, evt) {
-			var key = evt.getKeyChar().toLowerCase();
-			if (evt.isCommandKey() && !evt.isShiftDown()) {
+			var key = evt.getKeyChar() && evt.getKeyChar().toLowerCase();
+			if (key && evt.isCommandKey() && !evt.isShiftDown()) {
 				if (key == 'k') { 
 					WorldMorph.current().addWorkspace();
 					return true;
 				}
 			}
-			proceed(evt)
+			return proceed(evt);
 		},
 	
 		toolSubMenuItems: function(proceed, evt) {
