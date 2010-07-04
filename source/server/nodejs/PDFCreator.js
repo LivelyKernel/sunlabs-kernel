@@ -171,6 +171,9 @@ Object.subclass('PDFCreator', {
 		var request = writer.request('PUT', serverPath, {'host': host, 'Content-Length': content.length});
 		request.write(content, 'binary');
 		request.end();
+		request.addListener('response', function (response) {
+			sys.puts('upload status code: ' + response.statusCode);
+		});
 		sys.puts('uploading ' + content.length + ' bytes to ' + host + '   ' + serverPath);
 	},
 	
