@@ -5278,6 +5278,44 @@ Widget.subclass("ColorChooserWidget", {
 
 
 
+BoxMorph.subclass('CheckBoxMorph', {
+
+defaultExtent: pt(25,25),
+style: {fill: Color.gray.lighter(), borderWidth: 1, borderColor: Color.black, suppressHandles: true,},
+
+connections: ['state'],
+
+initialize: function($super, posOrRect) {
+	$super(posOrRect.constructor == Point ? posOrRect.extent(this.defaultExtent) : posOrRect);
+	this.state = false;
+	this.buildLabel();
+	this.updateLabel();
+},
+
+buildLabel: function() {
+	this.label = this.addMorph(new TextMorph(new Rectangle(0,0, 30, 10)))
+	this.label.applyStyle({fill: null, borderWidth: 0, fontSize: 18})
+	this.label.emphasizeAll({align: 'center'})
+	this.label.ignoreEvents()
+},
+
+handlesMouseDown: Functions.True,
+onMouseDown: function(evt) { this.toggleState() },
+onMouseMove: function(evt) { },
+
+toggleState: function() {
+	this.state = !this.state;
+	this.updateLabel();
+},
+
+updateLabel: function() {
+	this.label.setTextString(this.state ? 'X' : 'O');
+	this.label.align(this.label.getCenter().addPt(pt(1,1)), this.shape.bounds().center())
+},
+
+okToBeGrabbedBy: function(evt) { return null },
+
+});
 console.log('loaded Widgets.js');
 
 
