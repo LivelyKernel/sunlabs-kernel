@@ -1,1 +1,0 @@
-../../kernel/lively/miniprototype.js
