@@ -12,15 +12,20 @@ Object.subclass('AbstractHandler', {
 	},
 	
 	listenOn: function(port) {
-		var handler = this;
-		
+		var handlerClass = this.constructor;
+		var server = this;
 		http.createServer(function (request, response) {
-			var action = handler.actionFromURLString(request.url);
+			var handler = new handlerClass();
+			var action = server.actionFromURLString(request.url);
 			sys.puts(action);
 			
 			var errorHandler = function (err) {
-				sys.puts('Caught exception: ' + err + '\n' + err.stack);
-				handler.error(response, 'Cannot process request because: ' + err + '\n' + err.stack );
+				try {
+					handler.cleanup();
+				} finally {
+					sys.puts('Caught exception: ' + err + '\n' + err.stack);
+					handler.error(response, 'Cannot process request because: ' + err + '\n' + err.stack );
+				}
 			}
 			process.addListener('uncaughtException', errorHandler);
 			
@@ -44,6 +49,7 @@ Object.subclass('AbstractHandler', {
 		response.end(msg);
 	},
 	
+	cleanup: function() {},
 });
 
 exports.AbstractHandler = AbstractHandler;

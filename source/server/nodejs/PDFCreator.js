@@ -65,7 +65,7 @@ Object.subclass('FileHandler', {
 	currentDir: function() { return process.cwd() + '/' },
 	
 	createDir: function(path) { fs.mkdirSync(path, 0755) },
-	removeDir: function(dirName) { fs.rmdirSync(path) },
+	removeDir: function(dirName, callback) { runCommand('rm', ['-rfd', dirName], callback) },
 	
 	createNewDir: function() {
 		var path = this.currentDir() + count() + '_PDFCreator/';
@@ -95,30 +95,38 @@ Object.subclass('FileHandler', {
 });
 
 Object.subclass('LaTeXTypesetter', {
+	
+	noPDFCreated: function(pathToPDF, output) {
+		throw new Error('Couldn\'t create ' + pathToPDF + '\npdflatex output: ' + output);
+	},
+	
 	compile: function(pathToDir, relativePathToTexFile, callback) {
+		var self = this;
 		// if (!pathToDir.endsWith('/')) pathToDir += '/';
 		var completePath = path.join(pathToDir, relativePathToTexFile);
 		// when texFilename is HTML5/test.tex then dirOfTextFile != pathToDir
 		var dirOfTexFile = path.dirname(completePath);
 		var texFilename = path.basename(completePath);
 		var texFilenameNoExtension = path.basename(completePath, '.tex'); // remove .tex
+		var pathToPDF = path.join(dirOfTexFile, texFilenameNoExtension + '.pdf');
 		
 		sys.puts('Will run pdflatex and bibtex on ' + texFilenameNoExtension);
 		
 		var output = ''
 		runCommandInDir(dirOfTexFile, 'pdflatex', ['-halt-on-error', '-interaction=nonstopmode', texFilename], function(exitCode, stdout, stderr) {
+			if (exitCode != 0) {
+				self.noPDFCreated(pathToPDF, 'pdflatex stdout:\n' + stdout + '\n\n\n\npdflatex stderr:\n' + stderr);
+				return;
+			}
+				
 			runCommandInDir(dirOfTexFile, 'bibtex', [texFilenameNoExtension], function(exitCode, stdout, stderr) {
 				// output += output;
-				runCommandInDir(dirOfTexFile, 'pdflatex', ['-halt-on-error', '-interaction=nonstopmode', texFilename], function(exitCode, stdout, stderr) {
-					output += 'pdflatex stdout:\n' + stdout;
-					output += '\n\n------------------\n\n';
-					output += 'pdflatex stderr:\n' + stderr;
-					path.exists(path.join(dirOfTexFile, texFilenameNoExtension + '.pdf'), function(exists) {
-						if (!exists)
-							throw new Error('Couldn\'t create ' + texFilenameNoExtension + '.pdf.' +
-								'\npdflatex output: ' + output);
-						callback && callback(output);
-					})
+				runCommandInDir(dirOfTexFile, 'pdflatex', ['-halt-on-error', '-interaction=nonstopmode', texFilename], function(exitCode, stdout, stderr) {					
+					if (exitCode != 0) {
+						self.noPDFCreated(pathToPDF, 'pdflatex stdout:\n' + stdout + '\n\n\n\npdflatex stderr:\n' + stderr);
+						return;
+					}
+					callback && callback(stdout);
 				});
 			});
 		});
@@ -136,9 +144,10 @@ Object.subclass('PDFCreator', {
 	
 	downloadSources: function(url, callback) {
 		var path = this.fileHandler.createNewDir();
+		var self = this;
 		this.downloader.downloadContents(url, path, function() {
+			self.pathToDownloadedSource = path;
 			callback && callback(path) });
-		return path;
 	},
 		
 	compile: function(path, texFile, callback) {
@@ -178,9 +187,16 @@ Object.subclass('PDFCreator', {
 				sys.puts('.................. 3 -- Uploading started')
 				pdfCreator.uploadPdf(resultURL, content);
 				sys.puts('.................. 3 -- Uploading done')
+				pdfCreator.cleanup();
 				callback && callback();
 			});
 		});
+	},
+	
+	cleanup: function() {
+		if (!this.pathToDownloadedSource) return
+		sys.puts('Removing directory ' + this.pathToDownloadedSource);
+		this.fileHandler.removeDir(this.pathToDownloadedSource);
 	},
 });
 

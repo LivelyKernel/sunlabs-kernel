@@ -62,7 +62,12 @@ livelyServer.AbstractHandler.subclass('LaTeXHandler', {
 		// var lines = log.split('\r\n')
 		// result = lines.slice(-noOfLinesToShow).join('\n'); // last lines
 
-	}
+	},
+	
+	cleanup: function() {
+		this.pdfCreator.cleanup();
+	},
+	
 });
 
 var handler = new LaTeXHandler();
