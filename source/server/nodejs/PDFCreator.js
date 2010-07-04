@@ -202,9 +202,12 @@ Object.subclass('PDFCreator', {
 	},
 	
 	cleanup: function() {
-		if (!this.pathToDownloadedSource) return
-		sys.puts('Removing directory ' + this.pathToDownloadedSource);
-		this.fileHandler.removeDir(this.pathToDownloadedSource);
+		sys.puts('.................. Cleanup');
+		if (this.pathToDownloadedSource) {
+			sys.puts('Removing directory ' + this.pathToDownloadedSource);
+			this.fileHandler.removeDir(this.pathToDownloadedSource);
+		}
+		sys.puts('.................. Cleanup done');
 	},
 });
 
