@@ -1,4 +1,4 @@
-module('apps.paper').requires('cop.Layers').toRun(function() {
+module('apps.paper').requires('cop.Layers', 'lively.LayerableMorphs').toRun(function() {
 
 BoxMorph.subclass('PaperMorph', {
 
@@ -34,9 +34,11 @@ BoxMorph.subclass('PaperMorph', {
 	addHalos: function() {
 		var bounds = new Rectangle(0,0, 50, 20);
 
-		this.createAndAddHalo('openAsText', 'as text', bounds);
 		this.createAndAddHalo('order', 'order', bounds);
-		this.createAndAddHalo('addTextMorph', 'text', bounds);
+		this.createAndAddHalo('addTextMorph', 'add', bounds);
+		this.createAndAddHalo('openAsText', 'as text', bounds);
+		this.createAndAddHalo('setFileLocation', 'set file...', bounds);
+		this.createAndAddHalo('save', 'save', bounds);
 
 		this.alignHalosHorizontally();
 	},
@@ -64,14 +66,42 @@ BoxMorph.subclass('PaperMorph', {
 	},
 
 	openAsText: function() {
-		var text = this.contentMorphs().inject('', function(text, m) {
-			if (m.textString) return text + m.textString + '\n'
-			return text
-		});
-
-		this.world().addTextWindow(text);
+		this.world().addTextWindow(this.asText());
 	},
+asText: function() {
+	return this.contentMorphs().inject('', function(text, m) {
+		if (m.textString) return text + m.textString + '\n'
+		return text
+	});
+},
 
+setFileLocation: function() {
+	this.world().prompt('Where should the contents of this paper morph be stored?', function(input) {
+		this.fileLocation = input;
+	}.bind(this), this.fileLocation || URL.source.withFilename('text.txt').toString())
+},
+save: function() {
+	var w = this.world()
+	if (!this.fileLocation) {
+		w.alert('please set file location of paper morph first');
+		return
+	}
+	try {
+		var url = new URL(this.fileLocation);
+	} catch(e) {
+		w.alert('file location of paper morph not valid');
+		return
+	}
+	var writer = new WebResource(url);
+	lively.bindings.connect(writer, 'status', w, 'setStatusMessage', {
+		updater: function($upd, status) {
+			if (status.isSuccess())
+				$upd('successfully saved', Color.green, 3)
+			else
+				$upd('couldnt save, status code: ' + status.code(), Color.red, 5)
+		}});
+	writer.beAsync().put(this.asText());
+},
 
 });
 
@@ -138,13 +168,9 @@ PaperMorph.addMethods({ // Layout logiv
 });
 
 // layers
-Object.extend(Morph.prototype, LayerableObjectTrait);
-Morph.prototype.lookupLayersIn = ["owner"];
 
-createLayer('PaperMorphLayer');
-PaperMorph.prototype.setWithLayers([PaperMorphLayer])
-
-layerClass(PaperMorphLayer, TextMorph, {
+cop.create('PaperMorphLayer')
+.refineClass(TextMorph, {
 	getPaperMorph: function() {
 		return this.ownerChain().detect(function(ea) { return ea.isPaperMorph });
 	},
@@ -159,6 +185,8 @@ layerClass(PaperMorphLayer, TextMorph, {
 		return $proceed(evt);
 	}
 });
+
+PaperMorph.prototype.setWithLayers([PaperMorphLayer])
 
 createLayer('TeXLayer');
 // PaperMorph.prototype.setWithLayers([PaperMorphLayer, TeXLayer])
@@ -375,10 +403,116 @@ layerClass(TeXLayer, PaperMorph, {
 		return text
 	},
 
-	openAsText: function(proceed) {
-		var text = this.createLaTeXBody();
-		this.world().addTextWindow(text);
+	asText: function(proceed) {
+		return this.createLaTeXBody();
 	},
+
+});
+
+Widget.subclass('PDFGeneratorClient', {
+
+    viewTitle: "PDF generator",
+    initialViewExtent: pt(600, 100),
+
+	panelSpec: [
+		['latexSourcesLabel', function(bnds){return new TextMorph(bnds)}, 			new Rectangle(0, 		0, 		0.2, 0.2)],
+		['latexSourcesInput', function(bnds){return new TextMorph(bnds)}, 				new Rectangle(0.2, 	0, 		0.8, 0.2)],
+		['texFileLabel', function(bnds){return new TextMorph(bnds)}, 						new Rectangle(0, 		0.2, 		0.2, 0.2)],
+		['texFileInput', function(bnds){return new TextMorph(bnds)}, 							new Rectangle(0.2, 	0.2, 		0.8, 0.2)],
+		['pdfURLLabel', function(bnds){return new TextMorph(bnds)},	 					new Rectangle(0, 		0.4, 		0.2, 0.2)],
+		['pdfURLInput', function(bnds){return new TextMorph(bnds)}, 						new Rectangle(0.2, 	0.4, 		0.8, 0.2)],
+		['openPdfLabel', function(bnds){return new TextMorph(bnds)}, 					new Rectangle(0, 		0.6, 		0.2, 0.2)],
+		['openPdfCheckbox', function(bnds){return new CheckBoxMorph(bnds)}, 	new Rectangle(0.2,		0.6, 		0.1, 0.2)],
+		['generateButton', function(bnds){return new ButtonMorph(bnds)}, 				new Rectangle(0, 		0.8, 	1, 	0.2)],
+	],
+
+	buildView: function(extent) {
+		var panel = PanelMorph.makePanedPanel(extent, this.panelSpec);
+
+		var m;
+
+		m = panel.latexSourcesLabel;
+		m.setTextString('source dir:')
+		m.beLabel();
+
+		m = panel.texFileLabel;
+		m.setTextString('main tex file:')
+		m.beLabel();
+
+		m = panel.pdfURLLabel;
+		m.setTextString('URL for PDF:')
+		m.beLabel();
+
+		m = panel.openPdfLabel;
+		m.setTextString('open PDF:')
+		m.beLabel();
+
+		m = panel.latexSourcesInput;
+		m.applyStyle({suppressHandles: true, suppressGrabbing: true});
+
+		m = panel.texFileInput;
+		m.applyStyle({suppressHandles: true, suppressGrabbing: true});
+
+		m = panel.pdfURLInput;
+		m.applyStyle({suppressHandles: true, suppressGrabbing: true});
+
+		m = panel.generateButton;
+		m.setLabel('generate PDF')
+		lively.bindings.connect(m, 'fire', this, 'generate');
+
+		this.panel = panel		
+		return panel;
+	},
+
+	getSourceDir: function() { return this.panel.latexSourcesInput.textString },
+	getTexFilePath: function() { return this.panel.texFileInput.textString },
+	shouldOpenPDF: function() { return this.panel.openPdfCheckbox.state },
+
+	generate: function() {
+		
+		if (!this.getPDFURLString() || !this.getSourceDir() || !this.getTexFilePath()) {
+			this.failureMsg('Please enter information in all three fields');
+			return
+		}
+		
+		this.successMsg('Generating ' + this.getPDFURLString() + ' from ' + this.getSourceDir() + '. Please wait...');
+
+		// FIXME
+		var generatorURL = URL.source.toString().include('www') ?
+			'http://lively-kernel.org/nodejsLaTeX/createPdf' :
+			'http://www.lively-kernel.org/nodejsLaTeX/createPdf'
+
+		var webR = new WebResource(generatorURL);
+
+		var content = {
+			directoryURL: this.getSourceDir(),
+			texFile: this.getTexFilePath(),
+			resultURL: this.getPDFURLString(),
+		}
+		webR.beAsync().post(JSON.serialize(content));		
+
+		lively.bindings.connect(webR, 'content', this, 'dummy', {
+			removeAfterUpdate: true,
+			updater: function($upd, content) {
+				if (this.wasRun) return
+				this.wasRun = true // FIXME
+				var client = this.getTargetObj();
+				var status = this.getSourceObj().status
+				if (!status.isSuccess()) {
+					client.failureMsg('Error occured while generating pdf:' + content, Color.red, 5);
+					return
+				}
+				client.successMsg('Successfully generated pdf')
+				if (client.shouldOpenPDF()) window.open(content);
+			}});
+	},
+failureMsg: function(msg) {
+	this.panel.world().alert(msg)
+},
+
+successMsg: function(msg) {
+	this.panel.world().setStatusMessage(msg, Color.green, 3);
+},
 
 });
 
