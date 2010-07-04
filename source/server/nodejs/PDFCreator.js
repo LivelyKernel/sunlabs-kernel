@@ -171,6 +171,7 @@ Object.subclass('PDFCreator', {
 		var request = writer.request('PUT', serverPath, {'host': host, 'Content-Length': content.length});
 		request.write(content, 'binary');
 		request.end();
+		sys.puts('uploading ' + content.length + ' bytes to ' + host + '   ' + serverPath);
 	},
 	
 	downloadAndCompile: function(url, texFile, resultURL, callback) {
