@@ -34,7 +34,7 @@ livelyServer.AbstractHandler.subclass('LaTeXHandler', {
 
 		this.pdfCreator.downloadAndCompile(dir, texFile, resultURL, function() {
 			response.writeHead(200, {'Content-Type': 'text/plain'});
-			response.end();
+			response.end('Sieht gut aus');
 		});
 
 		// streaming directly doesn't work...? Encoding!?	
