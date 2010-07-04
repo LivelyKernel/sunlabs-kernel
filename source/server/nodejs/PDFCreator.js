@@ -168,7 +168,7 @@ Object.subclass('PDFCreator', {
 		serverPath = host.substring(host.indexOf('/'), host.length);
 		host = host.substring(0, host.indexOf('/'))
 		var writer = http.createClient(80, host);
-		var request = writer.request('PUT', serverPath, {'host': host, 'Content-Length': content.length});
+		var request = writer.request('PUT', serverPath, {'host': host, 'Content-Length': content.length, 'Authorization': 'Basic TGFUZVhHZW5lcmF0b3I6cG90YXRvY2Fubm9u'});
 		request.write(content, 'binary');
 		request.end();
 		request.addListener('response', function (response) {
