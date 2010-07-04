@@ -15,8 +15,6 @@ livelyServer.AbstractHandler.subclass('LaTeXHandler', {
 	createPdf: function(request, response, content) {
 		var self = this;
 		
-		sys.puts(JSON.stringify(request.headers));
-		
 		var errorHandler = function (err) {
 			try {
 				self.cleanup();
