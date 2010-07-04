@@ -14,20 +14,22 @@ Object.subclass('AbstractHandler', {
 	listenOn: function(port) {
 		var handlerClass = this.constructor;
 		var server = this;
+		
+		var errorHandler = function (err) {
+			sys.puts('Caught exception: ' + err + '\n' + err.stack);
+			// try {
+			// 	handler.cleanup();
+			// } finally {
+			// 	sys.puts('Caught exception: ' + err + '\n' + err.stack);
+			// 	handler.error(response, 'Cannot process request because: ' + err + '\n' + err.stack );
+			// }
+		}
+		process.addListener('uncaughtException', errorHandler);
+		
 		http.createServer(function (request, response) {
 			var handler = new handlerClass();
 			var action = server.actionFromURLString(request.url);
 			sys.puts(action);
-			
-			var errorHandler = function (err) {
-				try {
-					handler.cleanup();
-				} finally {
-					sys.puts('Caught exception: ' + err + '\n' + err.stack);
-					handler.error(response, 'Cannot process request because: ' + err + '\n' + err.stack );
-				}
-			}
-			process.addListener('uncaughtException', errorHandler);
 			
 			if (handler[action]) {
 				request.addListener('data', function (content) {
