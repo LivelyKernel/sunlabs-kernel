@@ -14,7 +14,7 @@ var runCommand = function(command, parameter, callback) {
 	proc.stdout.addListener('data', function (data) { stdout += data });
 	proc.stderr.addListener('data', function (data) { stderr += data });
 	proc.addListener('exit', function (code) {
-		sys.puts(command + ' done, exit code: ' + code);
+		// sys.puts(command + ' done, exit code: ' + code);
 		callback && callback(code, stdout, stderr);
 	});
 	return proc;
