@@ -160,7 +160,7 @@ Object.subclass('PDFCreator', {
 		});
 	},
 	
-	uploadPdf: function(resultURL, content) {
+	uploadPdf: function(resultURL, content, callback) {
 		if (!resultURL.endsWith('.pdf'))
 			throw new Error('resultURL should point to a pdf file but is ' + resultURL);
 		var host = resultURL, serverPath = '';
@@ -172,7 +172,10 @@ Object.subclass('PDFCreator', {
 		request.write(content, 'binary');
 		request.end();
 		request.addListener('response', function (response) {
+			if (response.statusCode >= 400)
+				throw new Error('Cannot upload ' + resultURL + ' status: ' + response.statusCode);
 			sys.puts('upload status code: ' + response.statusCode);
+			callback && callback();
 		});
 		sys.puts('uploading ' + content.length + ' bytes to ' + host + '   ' + serverPath);
 	},
@@ -189,10 +192,11 @@ Object.subclass('PDFCreator', {
 			pdfCreator.compile(path, texFile, function(content) {
 				sys.puts('.................. 2 -- Compiling done')
 				sys.puts('.................. 3 -- Uploading started')
-				pdfCreator.uploadPdf(resultURL, content);
-				sys.puts('.................. 3 -- Uploading done')
-				pdfCreator.cleanup();
-				callback && callback();
+				pdfCreator.uploadPdf(resultURL, content, function() {
+					sys.puts('.................. 3 -- Uploading done')
+					pdfCreator.cleanup();
+					callback && callback();
+				});
 			});
 		});
 	},
