@@ -14,6 +14,18 @@ livelyServer.AbstractHandler.subclass('LaTeXHandler', {
 	
 	createPdf: function(request, response, content) {
 		var self = this;
+		
+		var errorHandler = function (err) {
+			try {
+				self.cleanup();
+			} finally {
+				sys.puts('Caught exception: ' + err + '\n' + err.stack);
+				self.error(response, 'Cannot process request because: ' + err + '\n' + err.stack );
+				process.removeListener('uncaughtException', errorHandler);
+			}
+		}
+		process.addListener('uncaughtException', errorHandler);
+		
 		var json = JSON.parse(content.toString());
 		var dir = json.directoryURL;
 		var texFile = json.texFile;
