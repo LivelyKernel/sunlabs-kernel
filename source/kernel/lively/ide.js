@@ -1222,8 +1222,8 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 			return lively.ide.ObjectFragmentNode;
 		}
 		return this.target.subElements(2)
-		  .select(function(ea) { return ['klassDef','klassExtensionDef','functionDef','objectDef', 'copDef', 'propertyDef'].include(ea.type) })
-		  .collect(function(ea) { return new (typeToClass(ea.type))(ea, browser) })
+			.select(function(ea) { return ['klassDef','klassExtensionDef','functionDef','objectDef', 'copDef', /*'propertyDef'*/].include(ea.type) })
+			.collect(function(ea) { return new (typeToClass(ea.type))(ea, browser) })
     },
  
     buttonSpecs: function() {
