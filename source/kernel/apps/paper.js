@@ -466,6 +466,17 @@ Widget.subclass('PDFGeneratorClient', {
 
 	getSourceDir: function() { return this.panel.latexSourcesInput.textString },
 	getTexFilePath: function() { return this.panel.texFileInput.textString },
+getPDFURLString: function() {
+	var urlString = this.panel.pdfURLInput.textString;
+	try {
+		new URL(urlString);
+	} catch(e) {
+		// it's a relative url...
+		urlString = URL.source.withFilename(urlString).toString()
+	}
+	return urlString;
+},
+
 	shouldOpenPDF: function() { return this.panel.openPdfCheckbox.state },
 
 	generate: function() {
