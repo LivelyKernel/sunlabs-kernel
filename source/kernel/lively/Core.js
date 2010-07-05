@@ -5290,7 +5290,8 @@ WorldMorph.addMethods({
 	},
 	
 	windowBounds: function() {
-		var topLeft = pt(Global.pageXOffset, Global.pageYOffset);
+		var canvas = this.canvas();
+		var topLeft = pt(Global.pageXOffset - canvas.offsetLeft, Global.pageYOffset - canvas.offsetTop);
 		var width = Math.min(
 			Global.document.documentElement.clientWidth * 1/this.world().getScale(),
 			WorldMorph.current().getExtent().x);
