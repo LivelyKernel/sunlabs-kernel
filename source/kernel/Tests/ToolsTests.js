@@ -831,6 +831,12 @@ test04ParseCopSubElements2: function() {
 	this.assertEqual(descriptor.subElements()[0].name, 'm1');
 	this.assertEqual(descriptor.subElements()[1].name, 'm2');
 },
+test05ParseBeGlobal: function() {
+	var src = '.beGlobal()';
+	this.sut.src = src;
+	var descriptor = this.sut.callOMeta("copSubElement");
+	this.assertEqual(descriptor.name, 'beGlobal()');
+},
 
 
 
