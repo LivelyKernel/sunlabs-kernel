@@ -4715,13 +4715,11 @@ PasteUpMorph.subclass("WorldMorph", {
 			this.hands.shift(); // FIXME: Quick bugfix. When deserializing the world the hands.first() is sometimes undefined
 		this.hands.push(hand);
 		hand.owner = this;
-		hand.registerForEvents(this);
-		hand.registerForEvents(hand);
+		// FIXME mouse events are correctly dispatched when using canvas or world
+		// keyboard events only work when using documentElement --> problem with multiple worlds
+		hand.registerForKeyboardEvents(document.documentElement); // FIXME!!!
+		hand.registerForEvents(this.canvas());
 		hand.layoutChanged();
-
-		Event.keyboardEvents.forEach(function(each) {
-			document.documentElement.addEventListener(each, hand, hand.handleOnCapture);
-		});
 
 		this.rawNode.appendChild(hand.rawNode);
 		return hand;
@@ -4731,12 +4729,8 @@ PasteUpMorph.subclass("WorldMorph", {
 		hand.setMouseFocus(null); // cleanup, just in case
 		hand.setKeyboardFocus(null); // cleanup (calls blur(), which will remove the focus halo)
 		hand.removeRawNode();
-		hand.unregisterForEvents(this);
-		hand.unregisterForEvents(hand);
-
-		Event.keyboardEvents.forEach(function(each) {
-			document.documentElement.removeEventListener(each, hand, hand.handleOnCapture);
-		});
+		hand.unregisterForKeyboardEvents(document.documentElement); // FIXME!!!
+		hand.unregisterForEvents(this.canvas());
 
 		this.hands.splice(this.hands.indexOf(hand), 1);
 	},
@@ -5731,16 +5725,30 @@ lookTouchy: function(morph) {
 		this.shape.setVertices(verts);
 	},
 
-    registerForEvents: function(morph) {
-        Event.basicInputEvents.forEach(function(name) { 
-            morph.rawNode.addEventListener(name, this, this.handleOnCapture);}, this);
+	addOrRemoveEvents: function(morphOrNode, eventNames, isRemove) {
+		var node = morphOrNode.rawNode || morphOrNode;
+		var selector = isRemove ? 'removeEventListener' : 'addEventListener';
+		eventNames.forEach(function(name) { 
+            node[selector](name, this, this.handleOnCapture);
+		}, this);
+	},
+	
+    registerForEvents: function(morphOrNode) {
+		this.addOrRemoveEvents(morphOrNode, Event.basicInputEvents);
+    },
+
+    unregisterForEvents: function(morphOrNode) {
+		this.addOrRemoveEvents(morphOrNode, Event.basicInputEvents, true);
     },
     
-    unregisterForEvents: function(morph) {
-        Event.basicInputEvents.forEach(function(name) { 
-            morph.rawNode.removeEventListener(name, this, this.handleOnCapture);}, this);
+    registerForKeyboardEvents: function(morphOrNode) {
+		this.addOrRemoveEvents(morphOrNode, Event.keyboardEvents);
     },
-    
+
+    unregisterForKeyboardEvents: function(morphOrNode) {
+		this.addOrRemoveEvents(morphOrNode, Event.keyboardEvents, true);
+    },
+
     resetMouseFocusChanges: function() {
 		var result = this.mouseFocusChanges_;
 		this.mouseFocusChanges_ = 0;
@@ -6220,7 +6228,7 @@ lookTouchy: function(morph) {
 		if (!consumed) {
 			// console.log("not consumed " + evt)
 			// the single command key evt 
-			if (evt.isCommandKey())
+			if (evt.isCommandKey()) // rk: what is that supposed to do?
 				ClipboardHack.selectPasteBuffer();			
 				
 			// remember key down for mouse events
@@ -6848,6 +6856,7 @@ ClipboardHack = {
 	tryClipboardAction: function(evt, target) {
         // Copy and Paste Hack that works in Webkit/Safari
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
+		if (evt.hand.world().currentSelection != target && evt.hand.keyboardFocus != target) return false;
 		this.selectPasteBuffer();
         var buffer = this.ensurePasteBuffer();
         if(!buffer) return false;
