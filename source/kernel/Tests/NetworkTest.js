@@ -33,6 +33,27 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		this.assertEqual(expected, result.toString());
 	},
 	
+	testRemoveRelativeParts2: function() {
+		var urlString = 'http://localhost/webwerkstatt/projects/HTML5/presentation100720/../../../';
+		var result = new URL(urlString).withRelativePartsResolved();
+		var expected = 'http://localhost/webwerkstatt/';
+		this.assertEqual(expected, result.toString());
+	},
+testRemoveRelativeParts3: function() {
+		var urlString = 'http://localhost/foo//bar';
+		var result = new URL(urlString).withRelativePartsResolved();
+		var expected = 'http://localhost/foo/bar';
+		this.assertEqual(expected, result.toString());
+	},
+testRemoveRelativeParts4: function() {
+		var urlString = 'http://localhost/foo/./bar';
+		var result = new URL(urlString).withRelativePartsResolved();
+		var expected = 'http://localhost/foo/bar';
+		this.assertEqual(expected, result.toString());
+	},
+
+
+
 	testRelativePartsFrom: function() {
 		var expected = 'test/bar/baz';
 		

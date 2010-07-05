@@ -210,11 +210,15 @@ Object.subclass('URL', {
 	withRelativePartsResolved: function() {
 		var urlString = this.toString();
 		var result = urlString;
+		// resolve ..
 		do {
 			urlString = result;
-			result = urlString.replace(/\/[^\/]+\/\.\./g, '')
-			result = result.replace(/([^:])[\/]+/g, '$1/')
+			result = urlString.replace(/\/[^\/]+\/\.\./, '')
 		} while(result != urlString)
+		// foo//bar --> foo/bar
+		result = result.replace(/([^:])[\/]+/g, '$1/')
+		// foo/./bar --> foo/bar
+		result = result.replace(/\/\.\//g, '/')
 		return new URL(result)
 	},
 
