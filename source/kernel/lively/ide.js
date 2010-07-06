@@ -2781,16 +2781,18 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		var root = this.reparseModule(fileName).ast();
 		root.flattened().forEach(function(ea) { ea.sourceControl = this }, this);
 		return root
-	}
+	},
 });
  
-// see also lively.Tools.startSourceControl
-ide.startSourceControl = function() {
-    if (tools.SourceControl instanceof AnotherSourceDatabase)
+Object.extend(lively.ide, {
+	// see also lively.Tools.startSourceControl
+	startSourceControl: function() {
+	    if (tools.SourceControl instanceof AnotherSourceDatabase)
+			return tools.SourceControl;
+	    tools.SourceControl = new AnotherSourceDatabase();
 		return tools.SourceControl;
-    tools.SourceControl = new AnotherSourceDatabase();
-	return tools.SourceControl;
-};
+	},
+});
 
 // ===========================================================================
 // FileFragments, another SourceCodeDescriptor
