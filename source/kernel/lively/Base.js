@@ -759,7 +759,11 @@ var Functions = {
 		var startTime = (new Date()).getTime(); 
 		func();
 		return new Date().getTime() - startTime;
-	}
+	},
+	
+	notYetImplemented: function Functions$notYetImplemented() {
+		throw new Error('Not yet implemented');
+	},
 };
 	
 var Properties = {
