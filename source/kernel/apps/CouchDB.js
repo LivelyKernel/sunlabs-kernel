@@ -40,7 +40,7 @@ Object.subclass("CouchDB", {
 	createDb: function() {
 		this.last_req = this.request("PUT", this.uri);
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	// Deletes the database on the server
@@ -49,7 +49,7 @@ Object.subclass("CouchDB", {
 		if (this.last_req.status == 404)
 			return false;
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	// Save a document to the database
@@ -61,7 +61,7 @@ Object.subclass("CouchDB", {
 		encodeURIComponent(doc._id) + this.encodeOptions(options),
 		{body: this.toJSON(doc)});
 		this.maybeThrowError(this.last_req);
-		var result = this.fromeJSON(this.last_req.responseText);
+		var result = this.fromJSON(this.last_req.responseText);
 		doc._rev = result.rev;
 		return result;
 	},
@@ -95,7 +95,7 @@ Object.subclass("CouchDB", {
 		doc._id + this.encodeOptions(options),
 		{body: this.toJSON(doc)});
 		this.maybeThrowError(this.last_req);
-		var result = this.fromeJSON(this.last_req.responseText);
+		var result = this.fromJSON(this.last_req.responseText);
 		doc._rev = result.rev;
 		return result;
 	},
@@ -106,14 +106,22 @@ Object.subclass("CouchDB", {
 		if (this.last_req.status == 404)
 			return null;
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
+	},
+	
+	openDocAttachment: function(docId, attachmentId) {
+		this.last_req = this.request("GET", this.uri + encodeURIComponent(docId) + '/' + encodeURIComponent(attachmentId));
+		if (this.last_req.status == 404)
+			return null;
+		this.maybeThrowError(this.last_req);
+		return this.fromJSON(this.last_req.responseText);		
 	},
 
 	// Deletes a document from the database
 	deleteDoc: function(doc) {
 		this.last_req = this.request("DELETE", this.uri + encodeURIComponent(doc._id) + "?rev=" + doc._rev);
 		this.maybeThrowError(this.last_req);
-		var result = this.fromeJSON(this.last_req.responseText);
+		var result = this.fromJSON(this.last_req.responseText);
 		doc._rev = result.rev; //record rev in input document
 		doc._deleted = true;
 		return result;
@@ -123,7 +131,7 @@ Object.subclass("CouchDB", {
 	deleteDocAttachment: function(doc, attachment_name) {
 		this.last_req = this.request("DELETE", this.uri + encodeURIComponent(doc._id) + "/" + attachment_name + "?rev=" + doc._rev);
 		this.maybeThrowError(this.last_req);
-		var result = this.fromeJSON(this.last_req.responseText);
+		var result = this.fromJSON(this.last_req.responseText);
 		doc._rev = result.rev; //record rev in input document
 		return result;
 	},
@@ -150,11 +158,11 @@ Object.subclass("CouchDB", {
 			body: this.toJSON(json)
 		});
 		if (this.last_req.status == 417) {
-			return {errors: this.fromeJSON(this.last_req.responseText)};
+			return {errors: this.fromJSON(this.last_req.responseText)};
 		}
 		else {
 			this.maybeThrowError(this.last_req);
-			var results = this.fromeJSON(this.last_req.responseText);
+			var results = this.fromJSON(this.last_req.responseText);
 			for (var i = 0; i < docs.length; i++) {
 				if(results[i].rev)
 					docs[i]._rev = results[i].rev;
@@ -166,7 +174,7 @@ Object.subclass("CouchDB", {
 	ensureFullCommit: function() {
 		this.last_req = this.request("POST", this.uri + "_ensure_full_commit");
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	// Applies the map function to the contents of database and returns the results.
@@ -192,7 +200,7 @@ Object.subclass("CouchDB", {
 			body: this.toJSON(body)
 		});
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	view: function(viewname, options, keys) {
@@ -210,27 +218,44 @@ Object.subclass("CouchDB", {
 		if (this.last_req.status == 404)
 			return null;
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
+	},
+
+	list: function(listname, options, keys) {
+		var listParts = listname.split('/');
+		var listPath = this.uri + "_design/" + listParts[0] + "/_list/" + listParts[1] + "/" + listParts[2]+ this.encodeOptions(options);
+		if(!keys) {
+			this.last_req = this.request("GET", listPath);
+		} else {
+			this.last_req = this.request("POST", listPath, {
+				headers: {"Content-Type": "application/json"},
+				body: this.toJSON({keys:keys})
+			});
+		}
+		if (this.last_req.status == 404)
+			return null;
+		this.maybeThrowError(this.last_req);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	// gets information about the database
 	info: function() {
 		this.last_req = this.request("GET", this.uri);
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	// gets information about a design doc
 	designInfo: function(docid) {
 		this.last_req = this.request("GET", this.uri + docid + "/_info");
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	viewCleanup: function() {
 		this.last_req = this.request("POST", this.uri + "_view_cleanup");
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	allDocs: function(options,keys) {
@@ -243,7 +268,7 @@ Object.subclass("CouchDB", {
 			});
 		}
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	designDocs: function() {
@@ -261,13 +286,13 @@ Object.subclass("CouchDB", {
 			});
 		}
 		this.maybeThrowError(req);
-		return this.fromeJSON(req.responseText);
+		return this.fromJSON(req.responseText);
 	},
 
 	compact: function() {
 		this.last_req = this.request("POST", this.uri + "_compact");
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	setDbProperty: function(propId, propValue) {
@@ -275,13 +300,13 @@ Object.subclass("CouchDB", {
 			body:this.toJSON(propValue)
 		});
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	getDbProperty: function(propId) {
 		this.last_req = this.request("GET", this.uri + propId);
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	setAdmins: function(adminsArray) {
@@ -289,13 +314,13 @@ Object.subclass("CouchDB", {
 			body:this.toJSON(adminsArray)
 		});
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	getAdmins: function() {
 		this.last_req = this.request("GET", this.uri + "_admins");
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	// Convert a options object to an url query string.
@@ -323,7 +348,7 @@ Object.subclass("CouchDB", {
 		return obj !== null ? JSON.serialize(obj) : null;
 	},
 
-	fromeJSON: function(txt) {
+	fromJSON: function(txt) {
 		// JSON.parse is the original API
 		return JSON.unserialize(txt);
 	},
@@ -346,7 +371,7 @@ Object.subclass("CouchDB", {
 			"X-CouchDB-WWW-Authenticate": "Cookie"},
 			body: "username=" + encodeURIComponent(username) + "&password=" + encodeURIComponent(password)
 		});
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	logout: function() {
@@ -354,7 +379,7 @@ Object.subclass("CouchDB", {
 			headers: {"Content-Type": "application/x-www-form-urlencoded",
 			"X-CouchDB-WWW-Authenticate": "Cookie"}
 		});
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	createUser: function(username, password, email, roles, basicAuth) {
@@ -375,7 +400,7 @@ Object.subclass("CouchDB", {
 			+ "&email="+ encodeURIComponent(email)+ roles_str
 
 		});
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	updateUser: function(username, email, roles, password, old_password) {
@@ -399,7 +424,7 @@ Object.subclass("CouchDB", {
 			"X-CouchDB-WWW-Authenticate": "Cookie"},
 			body: body
 		});
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	allDbs: function() {
@@ -408,7 +433,7 @@ Object.subclass("CouchDB", {
 		if (this.last_req.status == "404")
 			throw new Error("No CouchDB found at " + url)
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	allDesignDocs: function() {
@@ -423,7 +448,7 @@ Object.subclass("CouchDB", {
 	getVersion: function() {
 		this.last_req = this.request("GET", this.urlStart+"");
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText).version;
+		return this.fromJSON(this.last_req.responseText).version;
 	},
 
 	replicate: function(source, target, rep_options) {
@@ -434,7 +459,7 @@ Object.subclass("CouchDB", {
 			body: this.toJSON({source: source, target: target})
 		});
 		this.maybeThrowError(this.last_req);
-		return this.fromeJSON(this.last_req.responseText);
+		return this.fromJSON(this.last_req.responseText);
 	},
 
 	newXhr: function() {
@@ -490,7 +515,7 @@ Object.subclass("CouchDB", {
 		}
 
 		var stat = this.request("GET", this.urlStart+"_stats/" + module + "/" + key + query_arg).responseText;
-		return this.fromeJSON(stat)[module][key];
+		return this.fromJSON(stat)[module][key];
 	},
 
 	newUuids: function(n) {
@@ -506,7 +531,7 @@ Object.subclass("CouchDB", {
 		} else {
 			this.last_req = this.request("GET", this.urlStart+"_uuids?count=" + (100 + n));
 			this.maybeThrowError(this.last_req);
-			var result = this.fromeJSON(this.last_req.responseText);
+			var result = this.fromJSON(this.last_req.responseText);
 			this.uuids_cache =
 			this.uuids_cache.concat(result.uuids.slice(0, 100));
 			return result.uuids.slice(100);
@@ -516,7 +541,7 @@ Object.subclass("CouchDB", {
 	maybeThrowError: function(req) {
 		if (req.status >= 400) {
 			try {
-				var result = this.fromeJSON(req.responseText);
+				var result = this.fromJSON(req.responseText);
 			} catch (e) {
 				var result = {error: e, reason:req.responseText};
 			}
