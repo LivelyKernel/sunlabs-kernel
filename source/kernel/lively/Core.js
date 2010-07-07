@@ -2704,12 +2704,8 @@ Morph.addMethods({
 	getGlobalTransform: function() {
 		var globalTransform = new lively.scene.Similitude();
 		var world = this.world();
-		// var trace = [];
-		for (var morph = this; morph != world; morph = morph.owner) {
+		for (var morph = this; morph != world; morph = morph.owner)
 			globalTransform.preConcatenate(morph.getTransform());
-			// trace.push(globalTransform.copy());
-		}
-		// console.log("global transform trace [" + trace + "] for " + this);
 		return globalTransform;
 	},
 

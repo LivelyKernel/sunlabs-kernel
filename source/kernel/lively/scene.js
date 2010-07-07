@@ -997,13 +997,12 @@ this.Shape.subclass('lively.scene.Rectangle', {
 
 	// consider arcWidth and arcHeight instead
 	roundEdgesBy: function(r) {
-		if (r) {
-			this.setLengthTrait("rx", r);
-			this.setLengthTrait("ry", r);
-			var w = this.getStrokeWidth();	// DI:	Needed to force repaint(!)
-			this.setStrokeWidth(w+1); 
-			this.setStrokeWidth(w); 
-		}
+		if (!r) return this;
+		this.setLengthTrait("rx", r);
+		this.setLengthTrait("ry", r);
+		var w = this.getStrokeWidth();	// DI:	Needed to force repaint(!)
+		this.setStrokeWidth(w+1); 
+		this.setStrokeWidth(w); 
 		return this;
 	}
 });
@@ -1099,7 +1098,8 @@ this.Shape.subclass('lively.scene.Ellipse', {
 	partNameNear: function(p) {
 		return this.bounds().partNameNear(Rectangle.sides, p, this.controlPointProximity);
 	},
-allPartNames: function() {return Rectangle.sides; },
+	
+	allPartNames: function() {return Rectangle.sides },
 
 
 	reshape: this.Rectangle.prototype.reshape,
@@ -1237,7 +1237,8 @@ this.Shape.subclass('lively.scene.Polygon', {
 			if (this.partPosition(codes[i]).dist(p) < this.controlPointProximity) return codes[i];
 		return null;
 	},
-allPartNames: function() {
+
+	allPartNames: function() {
 		// Note: for reshaping of polygons and lines, the "partNames" are
 		//  integer codes with the following meaning...
 		//	0...(N-1)  -- the N vertices themselves
