@@ -109,11 +109,9 @@ Object.subclass('TestCase', {
 		try {
 			this.setUp();
 			this[this.currentSelector]();
-			this.result.addSuccess(this.constructor.type, this.currentSelector);
-			this.success();
+			this.addAndSignalSuccess();
 		} catch (e) {
-			this.result.addFailure(this.constructor.type, this.currentSelector, e);
-			this.failure(e);
+			this.addAndSignalFailure(e);
 		} finally {
 			try {
 				this.tearDown();
@@ -249,6 +247,18 @@ Object.subclass('TestCase', {
 		this.show(message , 'color: red;');
 		this.statusUpdateFunc && this.statusUpdateFunc(this, 'failure', message);
 	},
+
+	addAndSignalSuccess: function() {
+		this.result.addSuccess(this.constructor.type, this.currentSelector);
+		this.success();
+	},
+
+	addAndSignalFailure: function(e) {
+		this.result.addFailure(this.constructor.type, this.currentSelector, e);
+		this.failure(e);
+	},
+
+
 	
 });
 
@@ -266,20 +276,27 @@ TestCase.subclass('AsyncTestCase', {
 
 	done: function() {
 		this._done = true;
-		if (!this._errorOccured) this.success();
 	},
 
 	isDone: function() { return this._done },
 
 	delay: function(func, ms) {
-		var sel = this.currentSelector;
-		console.log('Scheduled action for ' + sel)
-		func = func.bind(this);
-
+		var self = this;
+		console.log('Scheduled action for ' + self.currentSelector);
 		(function() {
-			console.log('running delayed action for ' + sel);
-			try { func() } catch(e) { this.failure(e) }
-		}).bind(this).delay(ms / 1000)
+			console.log('running delayed action for ' + self.currentSelector);
+			try { func.call(self) } catch(e) { self.addAndSignalFailure(e) }
+		}).delay(ms / 1000)
+	},
+
+	runTest: function(aSelector) {
+	    if (!this.shouldRun) return;
+		this.currentSelector = aSelector || this.currentSelector;
+		this.running();
+		try {
+			this.setUp();
+			this[this.currentSelector]();
+		} catch (e) { this.addAndSignalFailure(e) }
 	},
 
 	runAll: function(statusUpdateFunc) {
@@ -303,17 +320,24 @@ TestCase.subclass('AsyncTestCase', {
 	runAndDoWhenDone: function(func) {
 		this.runTest();
 		var self = this;
-		var waitMs = 100;
+		var waitMs = 100; // time for checking if test is done
 		(function doWhenDone(timeWaited) {
-			if (timeWaited >= self._maxWaitDelay) {
-				if (!self._errorOccured)
-					self.failure(new Error('Asynchronous test was not done after ' + timeWaited + 'ms'));
+				if (timeWaited >= self._maxWaitDelay) {
+					if (!self._errorOccured) {
+						var msg = 'Asynchronous test was not done after ' + timeWaited + 'ms';
+						self.addAndSignalFailure({message: msg, toString: function() { return msg }});
+					}
+					self.done();
+				}
+				if (!self.isDone()) {
+					doWhenDone.curry(timeWaited + waitMs).delay(waitMs / 1000);
+					return;
+				}
+				try {
+					self.tearDown();
+				} catch(e) { if (!self._errorOccured) self.addAndSignalFailure(e) }
+				if (!self._errorOccured) self.addAndSignalSuccess();
 				func();
-				return;
-			}
-			if (self.isDone()) { func(); return };
-			// console.log('Deferring test after ' + self.id());
-			doWhenDone.curry(timeWaited + waitMs).delay(waitMs / 1000);
 		})(0);
 	},
 
@@ -426,10 +450,13 @@ Object.subclass('TestResult', {
 	
 	addFailure: function(className, selector, error) {
 		this.failed.push({
-				classname: className,
-				selector: selector,
-				err: error,
-				toString: function(){ return this.classname + "." + this.selector + " failed: " + this.err }});
+			classname: className,
+			selector: selector,
+			err: error,
+			toString: function(){ return Strings.format('%s.%s failed: \n\t%s (%s)',
+				className, selector, error.toString(), error.constructor? error.constructor.type : '' ) 
+			},
+		});
 	},
 	
 	runs: function() {
@@ -478,8 +505,7 @@ Object.subclass('TestResult', {
 	
 	failureList: function() {
 		var result = this.failed.collect(function(ea) {
-			return ea.classname + '.' + ea.selector + '\n  -->' + ea.err.constructor.name + ":" + ea.err.message  +
-	            ' in ' + this.getFileNameFromError(ea.err) + 
+			return ea.toString() + ' in ' + this.getFileNameFromError(ea.err) + 
 	            (ea.err.line ? ' ( Line '+ ea.err.line + ')' : "");
 		}, this);
 		return result

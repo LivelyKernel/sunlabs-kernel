@@ -417,6 +417,11 @@ runAll: function($super, statusUpdateFunc) {
 
 	$super(statusUpdateFunc);
 },
+
+tearDown: function() {
+	this.tearDownCalled = true
+},
+
   
     test1: function() {
 	Global.test1Called = true;
@@ -429,6 +434,7 @@ runAll: function($super, statusUpdateFunc) {
 		Global.test2AsyncCalled = true;
 		this.assert(Global.test1Called, 'test1 was not called');
 		this.assert(!Global.test3Called, 'test3 was already called');
+		this.assert(!this.tearDownCalled, 'tearDown was already called');
 		this.done();
 	}, 800);
 	},
@@ -437,6 +443,7 @@ runAll: function($super, statusUpdateFunc) {
       this.assert(Global.test2AsyncCalled, 'test2AsyncCalled was not called');
       this.done();
     },
+
   });
   
   
