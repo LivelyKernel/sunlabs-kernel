@@ -33,6 +33,27 @@ the system can be run from it */
 
 module('lively.TestFramework').requires('lively.bindings').toRun(function(thisModule) {
 
+/* 
+ * *** Error properties for documentation: ***
+ *  Example from WebKit
+ *    message:  assert failed (no files read), 
+ *    line: 70
+ *    expressionBeginOffset: 1765
+ *    expressionEndOffset: 1836
+ *    sourceId: 18326
+ *    sourceURL: http://localhost/lk/kernel/TestFramework.js
+ */
+
+Global.printError = function printError(e) {
+   var s = "" + e.constructor.name + ": ";
+   for (i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
+   return s
+}
+
+Global.logError = function logError(e) {
+    console.log("Error: " + printError(e));
+}
+
 Object.subclass('TestCase', {
 
     shouldRun: true,
@@ -328,6 +349,16 @@ TestCase.subclass('MorphTestCase', {
 		this.morphs.push(m);
 		this.world.addMorphAt(m, loc)
 	},
+
+});
+Object.extend(TestCase, {
+	isAbstract: true
+});
+Object.extend(AsyncTestCase, {
+	isAbstract: true
+});
+Object.extend(MorphTestCase, {
+	isAbstract: true
 });
 
 
@@ -459,7 +490,7 @@ Object.subclass('TestResult', {
 	}
 });
 
-if (lively.Widgets) { // for usage in non lively environments
+if (!lively.Widgets) return // for usage in non lively environments
 	
 PanelMorph.subclass('TestRunnerPanel', {
 
@@ -496,12 +527,13 @@ Widget.subclass('TestRunner', {
 		this.onFailureUpdate = Functions.Null;
 		this.relayToModel(model, {TestClasses: 'TestClasses', SelectedTestClass: 'SelectedTestClass', ResultText: 'ResultText', FailureList: 'FailureList', Failure: 'Failure'});
 		
-		model.setTestClasses(optTestModule ?
-			this.testClassesOfModule(optTestModule) :
-			this.allTestClasses());
-
-		return this;
+		this.testModule = optTestModule;
+		this.refresh();
 	},
+refresh: function() {
+	this.getModel().setTestClasses(this.testModule ? this.testClassesOfModule(this.testModule) : this.allTestClasses());
+},
+
 	
 	runTests: function(buttonDown) {
 		if (buttonDown) return;
@@ -571,7 +603,7 @@ Widget.subclass('TestRunner', {
 
 	allTestClasses: function() {
 		return TestCase.allSubclasses()
-		    .select(function(ea) { return ea.prototype.shouldRun })
+		    .select(function(ea) { return ea.prototype.shouldRun && !ea.isAbstract })
 		    .collect(function(ea) { return ea.type })
 		    .select(function(ea) { return !ea.include('Dummy') })
 		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
@@ -582,11 +614,12 @@ Widget.subclass('TestRunner', {
 		var panel;
 		panel = new TestRunnerPanel(extent);
 		panel = PanelMorph.makePanedPanel(extent, [
-		   ['testClassList', newDragnDropListPane, new Rectangle(0, 0, 1, 0.6)],
-		   ['runButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.6, 0.5, 0.05)],
-		   ['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.6, 0.5, 0.05)],
-		   ['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
-		   ['failuresList', newTextListPane, new Rectangle(0, 0.7, 1, 0.3)],
+			['testClassList', newDragnDropListPane, new Rectangle(0, 0, 1, 0.6)],
+			['runButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.6, 0.35, 0.05)],
+			['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.35, 0.6, 0.35, 0.05)],
+			['refreshButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.7, 0.6, 0.3, 0.05)],
+			['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
+			['failuresList', newTextListPane, new Rectangle(0, 0.7, 1, 0.3)],
 		], panel);
 
 		var model = this.getModel();
@@ -615,6 +648,10 @@ Widget.subclass('TestRunner', {
 		runAllButton.setLabel("Run All TestCases");
 		lively.bindings.connect(runAllButton, 'fire', this, 'runAllTests');
 		
+		var refreshButton = panel.refreshButton;
+		refreshButton.setLabel("Refresh");
+		lively.bindings.connect(refreshButton, 'fire', this, 'refresh');
+
 		// directly using the morph for setting the color -- 
 		this.resultBar = panel.resultBar;
 		this.resultBar.connectModel(model.newRelay({Text: '-ResultText'}));
@@ -798,29 +835,6 @@ Widget.subclass('ErrorStackViewer', {
 		return parameterString.split(", ").reject(function(ea) { return ea == '' });
 	}
 });
-
-} // end of if (lively.Widgets)
- 
-/* 
- * *** Error properties for documentation: ***
- *  Example from WebKit
- *    message:  assert failed (no files read), 
- *    line: 70
- *    expressionBeginOffset: 1765
- *    expressionEndOffset: 1836
- *    sourceId: 18326
- *    sourceURL: http://localhost/lk/kernel/TestFramework.js
- */
-
-Global.printError = function printError(e) {
-   var s = "" + e.constructor.name + ": ";
-   for (i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
-   return s
-}
-
-Global.logError = function logError(e) {
-    console.log("Error: " + printError(e));
-}
 
 Global.openStackViewer = function openStackViewer() {
    var stack = getStack();
