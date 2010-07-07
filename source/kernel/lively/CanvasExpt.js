@@ -39,21 +39,20 @@
 Morph.addMethods({  // Damage propagation
 
 	changed: function() { // Means we have to redraw due to altered content
-		if(this.owner) this.owner.invalidRect(this.bounds());
+		if (this.owner) this.owner.invalidRect(this.bounds());
 	},
 
 	invalidRect: function(rect) { // rect is in local coordinates
 		// owner == null is presumably caught by WorldMorph's override
-		if(this.owner) this.owner.invalidRect(this.getTransform().transformRectToRect(rect));
+		if (this.owner) this.owner.invalidRect(this.getTransform().transformRectToRect(rect));
 	},
 });
 
 Morph.addMethods({  // Canvas Display
 
 	fullDrawOn: function(graphicContext, clipRect) {
-
 		// Display this morph and all of its submorphs (back to front)
-		if (!this.isVisible() || !(clipRect.intersects(this.bounds()))) return;
+		if (!this.isVisible() || !clipRect.intersects(this.bounds())) return;
 		var bnds = this.innerBounds();
 		graphicContext.save();
 		graphicContext.translate(this.origin.x, this.origin.y);
@@ -75,9 +74,9 @@ Morph.addMethods({  // Canvas Display
 
 	drawSubmorphsOn: function(graphicContext, clipRect) {
 		// Display all submorphs, back to front
-		if(this.submorphs == null || this.submorphs.length == 0) return;
+		if (this.submorphs == null || this.submorphs.length == 0) return;
 		var subClip = this.getTransform().createInverse().transformRectToRect(clipRect);
-		for(var i=0; i<this.submorphs.length; i++)
+		for (var i = 0; i < this.submorphs.length; i++)
 		this.submorphs[i].fullDrawOn(graphicContext, subClip);
 	},
 });
@@ -119,19 +118,19 @@ TextMorph.addMethods({  // Canvas Display
 		var firstLine = this.lineNumberForY(clipRect.y);
 		if (firstLine < 0) firstLine = 0;
 		var lastLine = this.lineNumberForY(clipRect.maxY());
-		if (lastLine < 0) lastLine = this.lines.length-1;
-		for (var i=firstLine; i<=lastLine; i++) {
+		if (lastLine < 0) lastLine = this.lines.length - 1;
+		for (var i = firstLine; i <= lastLine; i++) {
 			var line = this.lines[i];
 			var str = line.textString;
-			for (var j=0; j<line.chunks.length; j++) {
+			for (var j = 0; j < line.chunks.length; j++) {
 				var word = line.chunks[j];
-				var slice = str.slice(word.startIndex,word.stopIndex+1);
+				var slice = str.slice(word.startIndex,word.stopIndex + 1);
 				if (!word.isWhite) {
 					if (word.font && word.font !== currentFont) {
 						currentFont = word.font;
 						ctx.font = this.fontString(currentFont);
 					}
-					ctx.fillText(slice, word.bounds.x, word.bounds.y-2);  // *** why -2? Fix me
+					ctx.fillText(slice, word.bounds.x, word.bounds.y - 2);  // *** why -2? Fix me
 				}
 			}
 		}
@@ -154,24 +153,25 @@ ImageMorph.addMethods({  // Canvas Display
 
 	drawOn: function(graphicContext, bnds) {
 		var rawImage = this.image.rawNode;
-		if (rawImage && rawImage.tagName === 'img') {
-			// console.log(rawImage.width, bnds.width, rawImage.height, bnds.height);
-			try {
-				graphicContext.drawImage(rawImage, bnds.x, bnds.y, 
-					Math.min(rawImage.width, bnds.width), Math.min(rawImage.height, bnds.height));
-			} catch (e) {
-				console.log('whoops, ' + e);
-			}
+		if (!rawImage || rawImage.tagName !== 'img') return	
+		// console.log(rawImage.width, bnds.width, rawImage.height, bnds.height);
+		try {
+			graphicContext.drawImage(rawImage, bnds.x, bnds.y, 
+				Math.min(rawImage.width, bnds.width), Math.min(rawImage.height, bnds.height));
+		} catch (e) {
+			console.log('whoops, ' + e);
 		}
 	},
 	
 });
 
 ClipMorph.addMethods({  // Canvas Display
+	
 	// Note also the conditional clause in Morph.drawOn()
 	invalidRect: function($super, rect) { // limit damage report to clipped region
 		$super(rect.intersection(this.innerBounds()));
 	},
+
 });
 
 WorldMorph.addMethods({  // World
@@ -184,7 +184,7 @@ WorldMorph.addMethods({  // World
 	fullDrawOn: function($super, ctx, clipRect) {
 		$super(ctx, clipRect);
 		var hands = this.hands;
-		for (var i = hands.length-1; i >= 0; i--)
+		for (var i = hands.length - 1; i >= 0; i--)
 			hands[i].fullDrawOn(ctx, clipRect);
 	},
 	
@@ -214,7 +214,7 @@ WorldMorph.addMethods({  // World
 			this.fullDrawOn(ctx, this.bounds());
 		} else {
 			// Redisplay only damaged regions
-			for (var i=0; i<damageRects.length; i++) {
+			for (var i=0; i < damageRects.length; i++) {
 				var dr = damageRects[i].expandBy(1);
 				ctx.save();
 				// Note clipping routines only like integer coordinates...
@@ -228,7 +228,7 @@ WorldMorph.addMethods({  // World
 		if (this.showDamageRectangles) {
 			// Draw boxes around each damaged region
 			ctx.strokeStyle = 'blue';
-			for(var i=0; i<damageRects.length; i++) {
+			for (var i = 0; i < damageRects.length; i++) {
 				var dr = damageRects[i];
 				ctx.strokeRect(dr.x, dr.y, dr.width, dr.height);
 			}
@@ -251,30 +251,22 @@ WorldMorph.addMethods({  // World
 
 HandMorph.addMethods({  // Canvas Display
     
-	registerForEvents: function(morph) {
-		Event.basicInputEvents.forEach(function(name) {
-			morph.rawNode.addEventListener(name, this, this.handleOnCapture);
-		}, this);
+	registerForEvents: function(morphOrNode) {
+		this.addOrRemoveEvents(morphOrNode, Event.basicInputEvents);
 
 		// Register for events from the 2D canvas as well
 		var canvas = document.getElementById('lively.canvas');
-		if (morph === this || canvas == null) return;
-		Event.basicInputEvents.forEach(function(name) { 
-			canvas.addEventListener(name, this, this.handleOnCapture);
-		}, this);
+		if (morphOrNode === this || canvas == null) return;
+		this.addOrRemoveEvents(canvas, Event.basicInputEvents);
 	},
 
-	unregisterForEvents: function(morph) {
-		Event.basicInputEvents.forEach(function(name) { 
-			morph.rawNode.removeEventListener(name, this, this.handleOnCapture);
-		}, this);
-		
+	unregisterForEvents: function(morphOrNode) {
+		this.addOrRemoveEvents(morphOrNode, Event.basicInputEvents, true);
+				
 		// Unregister for events from the 2D canvas as well
 		var canvas = document.getElementById('lively.canvas');
-		if(morph === this || canvas == null) return;
-		Event.basicInputEvents.forEach(function(name) { 
-			canvas.removeEventListener(name, this, this.handleOnCapture);
-		}, this);
+		if (morphOrNode === this || canvas == null) return;
+		this.addOrRemoveEvents(canvas, Event.basicInputEvents, true);
 	},
 
 	handleEvent: HandMorph.prototype.handleEvent.wrap(function(originalFunc, arg) {
@@ -314,7 +306,7 @@ Object.subclass('DamageManager', {  // Damage repair
 		this.invalidRects.push(rect);
 	},  // add it as a separate rect
 
-	resetInvalidRects: function() { this.invalidRects = []; }
+	resetInvalidRects: function() { this.invalidRects = [] }
 });
 
 lively.scene.Shape.addMethods({  // Graphic Shapes
@@ -425,19 +417,21 @@ lively.scene.Polygon.addMethods({  // Graphic Shapes
 		var verts = this.vertices();
 		graphicContext.beginPath();
 		graphicContext.moveTo(verts[0].x, verts[0].y);
-		for (var i=1; i<verts.length; i++) graphicContext.lineTo(verts[i].x, verts[i].y);
+		for ( var i = 1; i < verts.length; i++) graphicContext.lineTo(verts[i].x, verts[i].y);
 		graphicContext.closePath();
 	},
 });
 
 lively.scene.Polyline.addMethods({  // Graphic Shapes
+	
 	setPath: function(graphicContext, bnds) {
 		var verts = this.vertices();
 		graphicContext.beginPath();
 		graphicContext.moveTo(verts[0].x, verts[0].y);
-		for (var i=1; i<verts.length; i++)
+		for (var i = 1; i < verts.length; i++)
 			graphicContext.lineTo(verts[i].x, verts[i].y);
 	},
+	
 });
 
 lively.scene.Ellipse.addMethods({  // Ellipse as four quadratic Beziers
