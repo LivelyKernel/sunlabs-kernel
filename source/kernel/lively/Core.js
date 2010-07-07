@@ -5782,6 +5782,10 @@ lookTouchy: function(morph) {
 	// this is the DOM Event callback
 	handleEvent: function HandMorph$handleEvent(rawEvt) {
 		var evt = new Event(rawEvt);
+		// for mutliple worlds since keyboard events can only be registered for entire documentElement
+		if (rawEvt.world && rawEvt.world != this.world())
+			return evt;
+		rawEvt.world = this.world();
 		evt.setCanvas(this.canvas());
 		evt.hand = this;
 		//if(Config.showLivelyConsole) console.log("event type = " + rawEvt.type + ", platform = " +  window.navigator.platform);
