@@ -3283,6 +3283,7 @@ Morph.addMethods({
 			["reset scaling", this.setScale.curry(1)],
 			[((this.suppressGrabbing) ? "[] grabbing" : "[X] grabbing"), function(){this.suppressGrabbing = !this.suppressGrabbing}.bind(this)],
 			[((this.suppressHandles) ? "[] handles" : "[X] handles"), function(){this.suppressHandles = !this.suppressHandles}.bind(this)],
+			[((this.openForDragAndDrop) ? "[X] accepts Drops" : "[] accepts Drops"), function(){this.openForDragAndDrop = !this.openForDragAndDrop}.bind(this)],
 			[((this.fishEye) ? "turn fisheye off" : "turn fisheye on"), this.toggleFisheye],
 			[(this.openForDragAndDrop ? "close DnD" : "open DnD"), this.toggleDnD.curry(evt.point())],
 			["add button behavior", function() { this.addMorph(new ButtonBehaviorMorph(this)); }],
