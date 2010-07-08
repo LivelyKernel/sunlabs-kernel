@@ -77,11 +77,12 @@ Object.subclass('lively.Text.Font', {
 
 	getCharWidth: function(charString) {
 		var code = charString.charCodeAt(0);
-		if (!this.extents) this.extents = this.computeExtents(this.family, this.size, this.style);
-			var w = this.extents[code] ? this.extents[code].width : 4;
+		if (!this.extents)
+			this.extents = this.computeExtents(this.family, this.size, this.style);
+		var w = this.extents[code] ? this.extents[code].width : 4;
 		if (isNaN(w)) {
 			console.warn('getCharWidth: no width for ' + charString);
-		return 4;  // don't crash
+			return 4;  // don't crash
 		}
 		return w * 1;
 	},
@@ -109,7 +110,7 @@ Object.subclass('lively.Text.Font', {
 });
 	
 
-Object.extend(thisModule.Font, {
+Object.extend(lively.Text.Font, {
 	fontCache: {},
 	forFamily: function(familyName, size, style) {
 		var cache = this.fontCache
@@ -135,7 +136,7 @@ Object.extend(thisModule.Font, {
 	
 if (Config.fakeFontMetrics) { 
 	
-thisModule.Font.addMethods({
+lively.Text.Font.addMethods({
 	// wer're faking here, b/c native calls don't seem to work
 	computeExtents: function(family, size) {
 		// adapted from the IE port branch
@@ -162,7 +163,7 @@ thisModule.Font.addMethods({
 	
 } else if (Config.fontMetricsFromHTML)	{
 	
-thisModule.Font.addMethods({
+lively.Text.Font.addMethods({
 	computeExtents: function (family, size, style) {
 		var extents = [];
 		var body = null;
@@ -200,27 +201,22 @@ thisModule.Font.addMethods({
 			if (i == xCode) xWidth = extents[i].width;
 		}
 
-		if (xWidth < 0) { 
+		if (xWidth < 0)
 			throw new Error('x Width is ' + xWidth);
-		}
 
-		if (d.offsetWidth == 0) {
+		if (d.offsetWidth == 0)
 			console.log("timing problems, expect messed up text for font %s", this);
-		}
 
 		// handle spaces
 		var sub = d.appendChild(create("span"));
 		sub.appendChild(doc.createTextNode('x x'));
 
-		var spaceWidth = sub.offsetWidth - xWidth*2;
+		var spaceWidth = sub.offsetWidth - xWidth * 2;
 		console.log("font " + this + ': space width ' + spaceWidth + ' from ' + sub.offsetWidth + ' xWidth ' + xWidth);	   
 
 		// tjm: sanity check as Firefox seems to do this wrong with certain values
-		if (spaceWidth > 100) {	   
-			extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(2*xWidth/3, sub.offsetHeight);
-		} else {
-			extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(spaceWidth, sub.offsetHeight);
-		}
+		if (spaceWidth > 100) spaceWidth = 2 * xWidth / 3
+		extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(spaceWidth, sub.offsetHeight);
 
 		//d.removeChild(span);
 		body.removeChild(d);
@@ -936,10 +932,8 @@ BoxMorph.subclass('TextMorph', {
 		// note selection is transient
 		this.lines = null;//: TextLine[]
 	
-		if (this.isInputLine) {	 // for discussion, see beInputLine...
+		if (this.isInputLine) // for discussion, see beInputLine...
 			this.beInputLine(this.historySize)
-		}
-
 	},
 
 	initializePersistentState: function($super, shape) {
@@ -1106,30 +1100,7 @@ BoxMorph.subclass('TextMorph', {
 		} else {
 			this.wrap = style;
 		}
-	},
-	
-	beLabel: function(styleMods) {
-		// Note default style is applied first, then any additional specified
-		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.Shrink, fontSize: 12, padding: Rectangle.inset(0)});
-		if (styleMods) this.applyStyleDeferred(styleMods);
-		this.ignoreEvents();
-		// this.isAccepting = false;
-		this.layoutChanged();
-		this.suppressGrabbing = true;
-		return this;
-	},
-
-	beListItem: function() {
-		// specify padding, otherwise selection will overlap
-		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
-		this.ignoreEvents();
-		this.suppressHandles = true;
-		this.acceptInput = false;
-		this.suppressGrabbing = true;
-		this.focusHaloBorderWidth = 0;
-		this.drawSelection = Functions.Empty; // TODO does not serialize
-		return this;
-	},
+	},	
 	
 	nextHistoryEntry: function() {
 		var history = this.getHistory();
@@ -1157,6 +1128,35 @@ BoxMorph.subclass('TextMorph', {
 		history.length > historySize && history.unshift();
 		this.setHistory(history);
 		this.setHistoryCursor(history.length);
+	},
+
+	beLabel: function(styleMods) {
+		// Note default style is applied first, then any additional specified
+		this.applyStyleDeferred({
+			borderWidth: 0,
+			fill: null,
+			wrapStyle: thisModule.WrapStyle.Shrink, 
+			fontSize: 12,
+			padding: Rectangle.inset(0),
+		});
+		if (styleMods) this.applyStyleDeferred(styleMods);
+		this.ignoreEvents();
+		// this.isAccepting = false;
+		this.layoutChanged();
+		this.suppressGrabbing = true;
+		return this;
+	},
+
+	beListItem: function() {
+		// specify padding, otherwise selection will overlap
+		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
+		this.ignoreEvents();
+		this.suppressHandles = true;
+		this.acceptInput = false;
+		this.suppressGrabbing = true;
+		this.focusHaloBorderWidth = 0;
+		this.drawSelection = Functions.Empty; // TODO does not serialize
+		return this;
 	},
 	
 	beInputLine: function(historySize) {
@@ -1194,8 +1194,8 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	beHelpBalloonFor: function(targetMorph) {
-		this.relayMouseEvents(targetMorph, 
-			{onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
+		this.relayMouseEvents(targetMorph, {
+			onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
 		// some eye candy for the help
 		this.linkToStyles(['helpText']);
 		this.setWrapStyle(thisModule.WrapStyle.Shrink);
@@ -1210,46 +1210,45 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	editMenuItems: function(evt) {
-	// Add a first item for type-in if it's an iPad or similar device...
-	return [
-		["cut (x)", this.doCut.bind(this)],
-		["copy (c)", this.doCopy.bind(this)],
-		["paste (v)", this.doPaste.bind(this)],
-		["replace next (m)", this.doMore.bind(this)],
-		["exchange (e)", this.doExchange.bind(this)],
-		["undo (z)", this.doUndo.bind(this)],
-		["find (f)", this.doFind.bind(this)],
-		["find next (g)", this.doFindNext.bind(this)],
-		["find source (F)", this.doSearch.bind(this)],
-		["do it (d)", this.doDoit.bind(this)],
-		["print it (p)", this.doPrintit.bind(this)],
-		["inspect it (shift + i)", this.doInspect.bind(this)],
-		["print it (p)", this.doPrintit.bind(this)],
-		["accept changes (s)", this.doSave.bind(this)],
-		["color (o)", this.colorSelection.bind(this)],
-		["make link (u)", this.linkifySelection.bind(this)],
-		["help", this.doHelp.bind(this)],
+		// Add a first item for type-in if it's an iPad or similar device...
+		return [
+			["cut (x)", this.doCut.bind(this)],
+			["copy (c)", this.doCopy.bind(this)],
+			["paste (v)", this.doPaste.bind(this)],
+			["replace next (m)", this.doMore.bind(this)],
+			["exchange (e)", this.doExchange.bind(this)],
+			["undo (z)", this.doUndo.bind(this)],
+			["find (f)", this.doFind.bind(this)],
+			["find next (g)", this.doFindNext.bind(this)],
+			["find source (F)", this.doSearch.bind(this)],
+			["do it (d)", this.doDoit.bind(this)],
+			["print it (p)", this.doPrintit.bind(this)],
+			["inspect it (shift + i)", this.doInspect.bind(this)],
+			["print it (p)", this.doPrintit.bind(this)],
+			["accept changes (s)", this.doSave.bind(this)],
+			["color (o)", this.colorSelection.bind(this)],
+			["make link (u)", this.linkifySelection.bind(this)],
+			["help", this.doHelp.bind(this)],
 
-		// Typeface		
-		["make italic (i)", (function(){this.emphasizeBoldItalic({style: 'italic'})}).bind(this)],
-		["make bold (b)",  (function(){this.emphasizeBoldItalic({style: 'bold'})}).bind(this)],		
+			// Typeface		
+			["make italic (i)", (function(){this.emphasizeBoldItalic({style: 'italic'})}).bind(this)],
+			["make bold (b)",  (function(){this.emphasizeBoldItalic({style: 'bold'})}).bind(this)],		
 
-		["eval as JavaScript code", function() { this.boundEval(this.textString); }],
-		["eval as Lively markup", function() { 
-			var importer = new Importer();
-			var txt = this.xml || this.textString;
-			// console.log('evaluating markup ' + txt);
-			var morph = importer.importFromString(txt);
-			this.world().addMorph(morph);
-			importer.finishImport(this.world()); }],
-		["save as ...", function() { 
-			this.world().prompt("save as...", function(filename) {
-				if (!filename) return;
-				var req = new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"});
-				req.put(URL.source.withFilename(filename), this.xml || this.textString);
-				}.bind(this));
-			}]
-		]
+			["eval as JavaScript code", function() { this.boundEval(this.textString); }],
+			["eval as Lively markup", function() { 
+				var importer = new Importer();
+				var txt = this.xml || this.textString;
+				// console.log('evaluating markup ' + txt);
+				var morph = importer.importFromString(txt);
+				this.world().addMorph(morph);
+				importer.finishImport(this.world()); }],
+			["save as ...", function() { 
+				this.world().prompt("save as...", function(filename) {
+					if (!filename) return;
+					var req = new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"});
+					req.put(URL.source.withFilename(filename), this.xml || this.textString);
+					}.bind(this));
+				}]];
 	},
 
 	// TextMorph composition functions
@@ -1289,7 +1288,7 @@ BoxMorph.subclass('TextMorph', {
 
 		if (Config.useOldText) return this.composeAfterEdits();	 // In case of emergency
 		var test = false && this.textString.startsWith("P = new");	// Check out all the new logic in this case
-		if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
+		if (test) for (var i = 0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
 		if (test) console.log("Last line y before = " + this.lines.last().topLeft.y);
 
 		// The hints tell what range of the prior text got replaced, and how large was the replacement
@@ -1298,14 +1297,16 @@ BoxMorph.subclass('TextMorph', {
 		var repLength = replacementHints.repLength;
 		var repStop = selStart + repLength;
 		var delta =	 repLength - (selStop+1 - selStart);  // index in string after replacement rel to before
-		if (test) console.log(", selStart = " + selStart + ", selStop = " + selStop + ", repLength = " + repLength + ", repStop = " + repStop + ", delta = " + delta);
 
+		if (test) console.log(Strings.format(", selStart = %s, selStop = %s, repLength = %s, repStop = %s, delta = %s", selStart, selStop, repLength, repStop, delta));
+		
 		var compositionWidth = this.compositionWidth();
 
 		// It is assumed that this textMorph is still fully rendered for the text prior to replacement
 		// Thus we can determine the lines affected by the change
 		var lastLineNoOfA = Math.max(this.lineNumberForIndex(selStart) - 1, -1);  // -1 means no lines in A
 		if (lastLineNoOfA >= 0 && !this.lines[lastLineNoOfA].endsWithNewLine()) lastLineNoOfA-- ;
+
 		if (test) console.log("Replacing from " + selStart + " in line " + this.lineNumberForIndex(selStart) + " preserving lines 0 through " + lastLineNoOfA);
 
 		var testEarlyEnd = function (lineStart) {
@@ -1351,12 +1352,12 @@ BoxMorph.subclass('TextMorph', {
 			this.lines[i].removeRawNodes();
 		}
 		//	Update the textString reference in lines retained before the replacement
-		for (var i = 0; i <= lastLineNoOfA; i++) 
-		this.lines[i].adjustAfterEdits(this.textString, this.textStyle, 0, 0);
+		for (var i = 0; i <= lastLineNoOfA; i++)
+			this.lines[i].adjustAfterEdits(this.textString, this.textStyle, 0, 0);
 
 		this.lines = this.lines.slice(0, lastLineNoOfA+1).concat(newLines);
 
-		if (test) for (var i=0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
+		if (test) for (var i = 0; i < this.lines.length; i++) console.log("Line " + i + " = " + [this.lines[i].startIndex, this.lines[i].getStopIndex()]);
 		if (test) console.log("Last line y after = " + this.lines.last().topLeft.y);
 
 		this.bounds(null, true);  // Call bounds now to set fullBounds and avoid re-rendering
@@ -1553,16 +1554,12 @@ BoxMorph.subclass('TextMorph', {
 	showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
 	
 	getTextSelection: function() {
-		if (!this.textSelection) {
-			this.initializeTextSelection();
-		}
+		if (!this.textSelection) this.initializeTextSelection();
 		return this.textSelection
 	},
 	
 	removeTextSelection: function() {
-		if (!this.textSelection) {
-			return
-		}
+		if (!this.textSelection) return
 		this.textSelection.remove();
 		delete this.textSelection;
 	},
@@ -1578,9 +1575,8 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	drawSelection: function(noScroll) { // should really be called buildSelection now
-		if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus) {
+		if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus)
 			return;
-		}
 
 		this.undrawSelection();
 		var selection = this.getTextSelection();
@@ -1808,7 +1804,7 @@ BoxMorph.subclass('TextMorph', {
 
 		this.setSelection(this.getSelectionString());
 		this.drawSelection(); 
-			ClipboardHack.invokeKeyboard();
+			ClipboardHack.invokeKeyboard(); // FIXME iPad
 	},
 	
 	// TextMorph text selection functions
@@ -1858,12 +1854,12 @@ BoxMorph.subclass('TextMorph', {
 	},
 
 	replaceSelectionWith: function(replacement) { 
-		if (! this.acceptInput) return;
+		if (!this.acceptInput) return;
 		var strStyle = this.textStyle;
 		var repStyle = replacement.style;
 		var oldLength = this.textString.length;
 
-		if (! this.typingHasBegun) { // save info for 'More' command
+		if (!this.typingHasBegun) { // save info for 'More' command
 			this.charsReplaced = this.getSelectionString();
 			this.lastFindLoc = this.selectionRange[0] + replacement.length;
 		}
@@ -2281,16 +2277,10 @@ BoxMorph.subclass('TextMorph', {
 				return
 			};
 
-			world.setStatusMessage(
-				msg,  
-				Color.red, 5,
-				function() {
-					require('lively.Helper').toRun(function() { 
-						alert('Ther was an errror\n' + printObject(e))
-					})
-				},
-				{fontSize: 12, fillOpacity: 1}
-			)
+			world.setStatusMessage(msg, Color.red, 5,
+				function() { require('lively.Helper').toRun(function() {
+					alert('Ther was an errror\n' + printObject(e)) }) },
+				{fontSize: 12, fillOpacity: 1});
 			if (e.expressionEndOffset) {
 				// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
 				this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
@@ -2403,16 +2393,14 @@ BoxMorph.subclass('TextMorph', {
 		var oldLink = ""
 		if (this.textStyle) {
 			var linkStyle = this.detectTextStyleInRange(this.selectionRange, 'link');
-			if (linkStyle) {
-				oldLink = linkStyle.link;
-			}
+			if (linkStyle) oldLink = linkStyle.link;
 		};
 		this.world().prompt("Enter the link...",
-				function(response) {
-					/*if (!response.startsWith('http://'))
-						response = URL.source.notSvnVersioned().withFilename(response).toString();*/
-					this.emphasizeSelection( {color: "blue", link: response} );
-				}.bind(this),oldLink);
+			function(response) {
+				/*if (!response.startsWith('http://'))
+					response = URL.source.notSvnVersioned().withFilename(response).toString();*/
+				this.emphasizeSelection({color: "blue", link: response});
+			}.bind(this), oldLink);
 	},
 
 	colorSelection: function(evt) {
@@ -2536,7 +2524,7 @@ TextMorph.addMethods({ // change clue additions
 	hasUnsavedChanges: function() {
 		// FIXME just another hack...
 		return this.submorphs.include(this.changeClue);
-	}
+	},
 });
 
 // TextMorph accessor functions
@@ -2572,8 +2560,7 @@ TextMorph.addMethods({
 		// tag: newText
 		// Note:  -delayComposition- is now ignored everyhere
 		replacement = replacement || "";
-		replacement 	
-		if(!this.typingHasBegun) { 
+		if (!this.typingHasBegun) { 
 			// Mark for undo, but not if continuation of type-in
 			this.undoTextString = this.textString;
 			this.undoSelectionRange = this.selectionRange;
@@ -2605,7 +2592,7 @@ TextMorph.addMethods({
 
 		// Note: renderAfterReplacement will call bounds pre-emptively to avoid re-rendering
 		if (replacementHints) this.renderAfterReplacement(replacementHints);
-			else this.lines = null;
+		else this.lines = null;
 		this.changed();	 // will cause bounds to be called, and hence re-rendering
 		if (oneLiner) this.bounds();  // Force a redisplay
 	},
@@ -2621,28 +2608,21 @@ TextMorph.addMethods({
 		this.world().addMorph(statusMorph);
 		statusMorph.setTextColor(color || Color.black);
 		statusMorph.ignoreEvents();
-		try {
+		try { // rk 7/8/10 why is this in try/catch?
 			var bounds = this.getCharBounds(this.selectionRange[0]);
-			if (bounds) {
-				var pos = bounds.bottomLeft();
-			} else {
-				pos = pt(0, 20);
-			}
+			var pos = bounds ? bounds.bottomLeft() : pt(0, 20);
 			statusMorph.setPosition(this.worldPoint(pos));
 		} catch(e) {
 			statusMorph.centerAt(this.worldPoint(this.innerBounds().center()));
 			console.log("problems: " + e)
 		};
-		(function() { 
-			// console.log("remove status")
-			statusMorph.remove() }).delay(delay || 4);
+		(function() { statusMorph.remove() }).delay(delay || 4);
 	},
 	
 	pvtPositionInString: function(lines, line, linePos) {
 		var pos = 0;
-		for(var i=0; i < (line - 1); i++) {
+		for (var i = 0; i < (line - 1); i++)
 			pos = pos + lines[i].length + 1
-		}
 		return pos + linePos
 	},
 		
@@ -2693,9 +2673,7 @@ TextMorph.addMethods({
 		}
 	},
 	
-	getFontFamily: function() {
-		return this.font.getFamily();
-	},
+	getFontFamily: function() { return this.font.getFamily() },
 	
 	setFontFamily: function(familyName) {
 		this.fontFamily = familyName;
@@ -2718,18 +2696,16 @@ TextMorph.addMethods({
 	
 	pvtReplaceBadControlCharactersInString: function(string) {
 		var allowedControlCharacters = "\n\t\r"
-		return $A(string).collect(function(ea){
-			if (allowedControlCharacters.include(ea))
-				return ea;
-			if (ea.charCodeAt(0) < 32)	
-				return '?'
-			else		
-				return ea }).join('')
+		return $A(string).collect(function(ea) {
+			if (allowedControlCharacters.include(ea)) return ea;
+			if (ea.charCodeAt(0) < 32) return '?'
+			else return ea;
+		}).join('')
 	},
 
 	setTextString: function(replacement, replacementHints) {
 		replacement = this.pvtReplaceBadControlCharactersInString(replacement);
-		if (Object.isString(replacement)) replacement = String(replacement); 
+		if (Object.isString(replacement)) replacement = String(replacement); // rk ??? Why call String()
 		if (this.autoAccept) this.setText(replacement);
 		this.pvtUpdateTextString(replacement, replacementHints);
 	},
@@ -2795,7 +2771,7 @@ TextMorph.addMethods({
 		else this.setNullSelectionAt(0);
 		this.lastSearchString = str;
 		this.lastFindLoc = i1;
-	}
+	},
 	
 });
 
@@ -2804,7 +2780,7 @@ Object.extend(TextMorph, {
 		var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
 		label.beLabel(styleIfAny);
 		return label;
-	}
+	},
 });
 
 TextMorph.subclass('PrintMorph', {
