@@ -261,6 +261,34 @@ Object.subclass('TestCase', {
 
 	
 });
+TestCase.addMethods({
+	// event simulation methods
+	// FIXME this does not really belon here?
+
+	createMouseEvent: function(type, pos) {
+		// event.initMouseEvent(type, canBubble, cancelable, view, 
+	    // detail, screenX, screenY, clientX, clientY, 
+	    // ctrlKey, altKey, shiftKey, metaKey, 
+	    // button, relatedTarget);
+
+		var simulatedEvent = document.createEvent("MouseEvent");
+		simulatedEvent.initMouseEvent(type, true, true, window, 1, 
+			pos.x, pos.y+100,
+			pos.x, pos.y,
+			false, false, false, false,
+			0/*left*/, null);
+		return simulatedEvent;
+	},
+
+	doMouseEvent: function(type, pos, targetMorph, shouldFocus) {
+		// type one of click, mousedown, mouseup, mouseover, mousemove, mouseout.
+		var hand = targetMorph.world().firstHand()
+		var evt = this.createMouseEvent(type, pos);
+		if (shouldFocus) hand.setMouseFocus(targetMorph);
+		targetMorph.world().rawNode.dispatchEvent(evt)
+	},
+
+});
 
 TestCase.subclass('AsyncTestCase', {
 
