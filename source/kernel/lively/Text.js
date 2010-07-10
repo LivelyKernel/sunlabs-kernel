@@ -105,40 +105,19 @@ Object.subclass('lively.Text.Font', {
 	//}
 		// if (this.getSize() == 18 || this.style == 'bold' || this.style == 'italic') 
 	//	console.log("applying " + this.getSize() + this.style);
-	}
-
-});
+	},
 	
-
-Object.extend(lively.Text.Font, {
-	fontCache: {},
-	forFamily: function(familyName, size, style) {
-		var cache = this.fontCache
-		var styleKey = 'n';
-		if (style == 'bold') styleKey = 'b';
-		if (style == 'italic') styleKey = 'i';
-		if (style == 'bold-italic') styleKey = 'bi';
-		var key	 = familyName + ":" + size + ":" + styleKey ;
-		var entry = cache[key];
-		if (entry) 
-			return entry;
-		try { 
-			entry = new thisModule.Font(familyName, size, style);
-		} catch(er) {
-			console.log("%s when looking for %s:%s", er, familyName, size);
-			return null;
-		}
-		cache[key] = entry;
-		return entry;
-	}
-});
+	computeExtents: function(family, size, style) {
+		if (Config.fakeFontMetrics)
+			return this.computeExtentsUsingFakeMetrics(family, size);
+		if (Config.fontMetricsFromHTML)
+			return this.computeExtentsUsingHTML(family, size, style);
+		if (Config.fontMetricsFromSVG)
+			return this.computeExtentsUsingSVG(family, size);
+		throw new Error('Cannot compute font metrics for ' + family + ' ' + size);
+	},
 	
-	
-if (Config.fakeFontMetrics) { 
-	
-lively.Text.Font.addMethods({
-	// wer're faking here, b/c native calls don't seem to work
-	computeExtents: function(family, size) {
+	computeExtentsUsingFakeMetrics: function(family, size) { // wer're faking here, b/c native calls don't seem to work
 		// adapted from the IE port branch
 		var extents = [];
 		for (var i = 33; i < 255; i++) {
@@ -158,13 +137,10 @@ lively.Text.Font.addMethods({
 			}
 		}
 		return extents;
-	   }
-   });
-	
-} else if (Config.fontMetricsFromHTML)	{
-	
-lively.Text.Font.addMethods({
-	computeExtents: function (family, size, style) {
+	   },
+
+
+	computeExtentsUsingHTML: function (family, size, style) {
 		var extents = [];
 		var body = null;
 		var doc; // walk up the window chain to find the (X)HTML context
@@ -176,26 +152,19 @@ lively.Text.Font.addMethods({
 				break;
 			}
 		}
-
 		if (!body) return [];
 
-		function create(name) {
-			// return doc.createElement(name);
-			return doc.createElementNS(Namespace.XHTML, name);
-		}
-		// body = document.body
-		var d = body.appendChild(create("div"));
+		var d = body.appendChild(XHTMLNS.create("div"));
 
-		d.style.kerning	   = 0;
+		d.style['letter-spacing'] = 0; // kerning
 		d.style.fontFamily = family;
 		d.style.fontSize   = size + "px";
-		if (style) {
-			d.style.fontWeight = style;
-		}
+		if (style) d.style.fontWeight = style;
+
 		var xWidth = -1;
 		var xCode = 'x'.charCodeAt(0);
 		for (var i = 33; i < 255; i++) {
-			var sub = d.appendChild(create("span"));
+			var sub = d.appendChild(XHTMLNS.create("span"));
 			sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
 			extents[i] = new lively.Text.CharacterInfo(sub.offsetWidth,	 sub.offsetHeight);
 			if (i == xCode) xWidth = extents[i].width;
@@ -208,7 +177,7 @@ lively.Text.Font.addMethods({
 			console.log("timing problems, expect messed up text for font %s", this);
 
 		// handle spaces
-		var sub = d.appendChild(create("span"));
+		var sub = d.appendChild(XHTMLNS.create("span"));
 		sub.appendChild(doc.createTextNode('x x'));
 
 		var spaceWidth = sub.offsetWidth - xWidth * 2;
@@ -221,14 +190,10 @@ lively.Text.Font.addMethods({
 		//d.removeChild(span);
 		body.removeChild(d);
 		return extents;
-	}
-});
+	},
 
-} else if (Config.fontMetricsFromSVG)  {
-	
-thisModule.Font.addMethods({
-	
-	computeExtents: function(family, size) {
+
+	computeExtentsUsingSVG: function(family, size) {
 		var extents = [];
 		var canvas = document.getElementById("canvas");
 		var text = canvas.appendChild(document.createElementNS(Namespace.SVG, "text"));
@@ -250,11 +215,34 @@ thisModule.Font.addMethods({
 		}
 		canvas.removeChild(text);
 		return extents;
-	}
+	},
+
+});
 	
+
+Object.extend(lively.Text.Font, {
+	fontCache: {},
+	forFamily: function(familyName, size, style) {
+		var cache = this.fontCache
+		var styleKey = 'n';
+		if (style == 'bold') styleKey = 'b';
+		if (style == 'italic') styleKey = 'i';
+		if (style == 'bold-italic') styleKey = 'bi';
+		var key	 = familyName + ":" + size + ":" + styleKey ;
+		var entry = cache[key];
+		if (entry) 
+			return entry;
+		try { 
+			entry = new lively.Text.Font(familyName, size, style);
+		} catch(er) {
+			console.log("%s when looking for %s:%s", er, familyName, size);
+			return null;
+		}
+		cache[key] = entry;
+		return entry;
+	},
 });
 
-}	 
 	
 lively.data.Wrapper.subclass('lively.Text.TextWord', {
 
