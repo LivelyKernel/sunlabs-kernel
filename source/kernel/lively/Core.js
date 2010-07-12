@@ -3565,26 +3565,27 @@ Morph.subclass('PseudoMorph', {
 // TODO: Is this still used?
 // Deprecated?
 PseudoMorph.subclass('Invocation', {
-    initialize: function($super, actor, scriptName, argIfAny) {
-	$super();
-	this.actor = actor;
-	this.scriptName = scriptName;
-	this.argIfAny = argIfAny; // better be primitive
-    },
 
-    exec: function Invocation$exec() {
-	if (!this.actor) {
-	    console.warn("no actor on script %s", this);
-	    return null;
-	}
-	var func = this.actor[this.scriptName];
-	if (func) {
-	    return func.call(this.actor, this.argIfAny);
-	} else {
-	    //console.warn("no callback on actor %s", this.actor);
-	    return null;
-	}
-    }
+	initialize: function($super, actor, scriptName, argIfAny) {
+		$super();
+		this.actor = actor;
+		this.scriptName = scriptName;
+		this.argIfAny = argIfAny; // better be primitive
+	},
+
+	exec: function Invocation$exec() {
+		if (!this.actor) {
+			console.warn("no actor on script %s", this);
+			return null;
+		}
+		var func = this.actor[this.scriptName];
+		if (func) {
+			return func.call(this.actor, this.argIfAny);
+		} else {
+			//console.warn("no callback on actor %s", this.actor);
+			return null;
+		}
+	},
 
 });
 
@@ -4817,12 +4818,11 @@ PasteUpMorph.subclass("WorldMorph", {
     },
     
     startSteppingFor: function(action) {
-        if (!action.scriptName)
-	    throw new Error("old code");
-        // New code for stepping schedulableActions
-        this.stopSteppingFor(action, true);  // maybe replacing arg or stepTime
-        this.scheduleAction(new Date().getTime(), action);
-    },
+		if (!action.scriptName) throw new Error("old code");
+		// New code for stepping schedulableActions
+		this.stopSteppingFor(action, true);  // maybe replacing arg or stepTime
+		this.scheduleAction(new Date().getTime(), action);
+	},
     
     stopSteppingFor: function(action, fromStart) { // should be renamed to unschedule()
         // fromStart means it is just getting rid of a previous one if there,
@@ -4881,68 +4881,68 @@ PasteUpMorph.subclass("WorldMorph", {
         // and until their day is come, they carry a msTime > a day
         // That way they won't interfere with daily scheduling, but they can
         // still be dealt with on world changes, day changes, save and load.
-	var msTime = new Date().getTime();
-	var timeOfNextStep = Infinity;
-        var list = this.scheduledActions;  // shorthand
-        var timeStarted = msTime;  // for tallying script overheads
-	while (list.length > 0 && list[list.length - 1][0] <= msTime) {
-            var schedNode = list.pop();  // [time, action] -- now removed
-            var action = schedNode[1];
-            this.currentScript = action; // so visible from stopStepping
-            lively.lang.Execution.resetDebuggingStack();  // Reset at each tick event
-	    try {
-                action.exec();
-            } catch (er) {
-                console.warn("error on actor %s: %s", action.actor, er);
-                dbgOn(true);
-                lively.lang.Execution.showStack();
-		timeStarted = new Date().getTime();
-		continue;
-            }
-            // Note: if error in script above, it won't get rescheduled below (this is good)
-	    
-            // Note: stopStepping may set currentScript to null so it won't get rescheduled
-            if (this.currentScript && action.stepTime > 0) {
-                var nextTime = msTime + action.stepTime;
-                this.scheduleAction(nextTime, action)
-            }
-            this.currentScript = null;
+		var msTime = new Date().getTime();
+		var timeOfNextStep = Infinity;
+		var list = this.scheduledActions;  // shorthand
+		var timeStarted = msTime;  // for tallying script overheads
+		while (list.length > 0 && list[list.length - 1][0] <= msTime) {
+			var schedNode = list.pop();  // [time, action] -- now removed
+			var action = schedNode[1];
+			this.currentScript = action; // so visible from stopStepping
+			lively.lang.Execution.resetDebuggingStack();  // Reset at each tick event
+			try {
+				action.exec();
+			} catch (er) {
+				console.warn("error on actor %s: %s", action.actor, er);
+				dbgOn(true);
+				lively.lang.Execution.showStack();
+				timeStarted = new Date().getTime();
+				continue; // Note: if error in script above, it won't get rescheduled below (this is good)
+			}
+ 
+			// Note: stopStepping may set currentScript to null so it won't get rescheduled
+			if (this.currentScript && action.stepTime > 0) {
+				var nextTime = msTime + action.stepTime;
+				this.scheduleAction(nextTime, action)
+			}
+			this.currentScript = null;
 
-            var timeNow = new Date().getTime();
-            var ticks = timeNow - timeStarted;
-            if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
-            timeStarted = timeNow;
-        }
-	//  Generate a mouseMove if any ticking scripts have run so that
-	//  simulations can respond where, eg, a morph moves under the mouse
-	//  DI:  This is *only* needed for the slide-keyboard-under-mouse demo (very cool)
-	//	Uses extra cycles, though, and currently fails in Opera
-	if(Config.nullMoveAfterTicks) { // set this true in localConfig for the demo
-		var myHand = this.firstHand();
-		if (myHand) myHand.makeANullMove();
-	}
-        if (list.length > 0) timeOfNextStep = Math.min(list[list.length-1][0], timeOfNextStep);
+			var timeNow = new Date().getTime();
+			var ticks = timeNow - timeStarted;
+			if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
+			timeStarted = timeNow;
+		}
 
-        // Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
-        if (!this.secondTick) this.secondTick = 0;
-        var secondsNow = Math.floor(msTime / 1000);
-        if (this.secondTick != secondsNow) {
-            this.secondTick = secondsNow;
-            var tallies = {};
-            for (var i=0; i<list.length; i++) {
-                var action = list[i][1];
-                tallies[action.scriptName] = action.ticks;
-                action.ticks *= 0.9 // 10-sec decaying moving window
-            }
-            if (Config.showSchedulerStats && secondsNow % 10 == 0) {
-                console.log('New Scheduler length = ' + this.scheduledActions.length);
-                console.log('Script timings...');  // approx ms per second per script
-                for (var p in tallies) console.log(p + ': ' + (tallies[p]/10).toString());
-            }
-        }
-        this.lastStepTime = msTime;
-        this.setNextStepTime(timeOfNextStep);
-    },
+		//  Generate a mouseMove if any ticking scripts have run so that
+		//  simulations can respond where, eg, a morph moves under the mouse
+		//  DI:  This is *only* needed for the slide-keyboard-under-mouse demo (very cool)
+		//	Uses extra cycles, though, and currently fails in Opera
+		if (Config.nullMoveAfterTicks) { // set this true in localConfig for the demo
+			var myHand = this.firstHand();
+			if (myHand) myHand.makeANullMove();
+		}
+		if (list.length > 0) timeOfNextStep = Math.min(list[list.length-1][0], timeOfNextStep);
+
+		// Each second, run through the tick tallies and mult by 0.9 to 10-sec "average"
+		if (!this.secondTick) this.secondTick = 0;
+		var secondsNow = Math.floor(msTime / 1000);
+		if (this.secondTick != secondsNow) {
+			this.secondTick = secondsNow;
+			var tallies = {};
+			for (var i=0; i<list.length; i++) {
+				var action = list[i][1];
+				tallies[action.scriptName] = action.ticks;
+				action.ticks *= 0.9 // 10-sec decaying moving window
+			}
+			if (Config.showSchedulerStats && secondsNow % 10 == 0) {
+				console.log('New Scheduler length = ' + this.scheduledActions.length);
+				console.log('Script timings...');  // approx ms per second per script
+				for (var p in tallies) console.log(p + ': ' + (tallies[p]/10).toString());
+			}
+		}
+		this.lastStepTime = msTime;
+		this.setNextStepTime(timeOfNextStep);
+	},
 
     setNextStepTime: function(timeOfNextStep) {
         if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
