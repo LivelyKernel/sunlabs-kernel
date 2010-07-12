@@ -4664,7 +4664,7 @@ PasteUpMorph.subclass("WorldMorph", {
     
 	remove: function() {
 		if (!this.rawNode.parentNode) return null;  // already removed
-		this.removeHand(this.firstHand());
+		this.hands.clone().forEach(function(hand) { this.removeHand(hand) }, this);
 		this.stopStepping();
 		this.removeRawNode();
 		return this;
@@ -6572,14 +6572,9 @@ Morph.subclass('LinkMorph', {
 		this.myWorld.changed();
 		var oldWorld = WorldMorph.current();
 		oldWorld.onExit();    
-		// remove old hands
-		oldWorld.hands.clone().forEach(function(hand) { 
-			oldWorld.removeHand(hand);
-		});
 
-		if (Config.suspendScriptsOnWorldExit) {
+		if (Config.suspendScriptsOnWorldExit)
 			oldWorld.suspendAllActiveScripts();
-		}
 
 		var canvas = oldWorld.canvas();
 		oldWorld.remove(); // some SVG calls may stop working after this point in the old world.
