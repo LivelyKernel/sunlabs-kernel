@@ -273,8 +273,8 @@ TestCase.addMethods({
 
 		var simulatedEvent = document.createEvent("MouseEvent");
 		simulatedEvent.initMouseEvent(type, true, true, window, 1, 
-			pos.x, pos.y+100,
-			pos.x, pos.y,
+			0, 0, //pos.x, pos.y+100,
+			pos.x - Global.scrollX, pos.y - Global.scrollY,
 			false, false, false, false,
 			0/*left*/, null);
 		return simulatedEvent;
