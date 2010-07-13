@@ -2152,6 +2152,8 @@ Object.subclass("Color", {
 
 	documentation: "Fully portable support for RGB colors. A bit of rgba support is also included.",
 
+	isColor: true,
+
 	initialize: function(r, g, b, a) {
 		this.r = r;
 		this.g = g;
@@ -2213,9 +2215,11 @@ Object.subclass("Color", {
 		return (this.r + this.g + this.b) / 3
 	},
 	
+	withA: function(a) { return new Color(this.r, this.g, this.b, a) },
+	
 	equals: function(other) {
 		if(!other) return false;
-		return this.r === other.r && this.g === other.g && this.b === other.b;
+		return this.r === other.r && this.g === other.g && this.b === other.b && this.a === other.a;
 	},
 
 });
