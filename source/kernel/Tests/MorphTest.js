@@ -749,7 +749,7 @@ TestCase.subclass("VerticalLayoutTest", {
 })
 
 
-MorphTestCase.subclass("ATests.MorphTest.DuplicateTextMorphTest", {
+MorphTestCase.subclass("Tests.MorphTest.DuplicateTextMorphTest", {
 
 	setUp: function($super) {
 		$super();
@@ -816,4 +816,37 @@ MorphTestCase.subclass("ATests.MorphTest.DuplicateTextMorphTest", {
 // logMethod(Morph.prototype, "onMouseDown");
 //logMethod(HandMorph.prototype, "reallyHandleMouseEvent");
 
+MorphTestCase.subclass('Tests.MorphTest.MouseEventTest', {
+
+	test01OwnerCanCaptureEvent: function() {
+		// tests if the owner morph's event handler is activated when first event handler returns false
+		var evtForMorph1WasCaptured = false, evtForMorph2WasCaptured = false;
+		var morph1 = new BoxMorph(new Rectangle(0,0, 100, 100))
+		var morph2 = new BoxMorph(new Rectangle(10,10, 70, 70))
+		morph1.setFill(Color.red); morph2.setFill(Color.green); // for debugging
+		morph1.addMorph(morph2);
+		this.openMorph(morph1);
+
+		morph1.handlesMouseDown = Functions.True;
+		morph2.handlesMouseDown = Functions.True;
+		morph1.onMouseWheel = function(evt) {
+			evtForMorph1WasCaptured = true
+			console.log('morph1')
+			return true;
+		}
+
+		morph2.onMouseWheel = function(evt) {
+			evtForMorph2WasCaptured = true
+			console.log('morph2')
+			return false;
+		}
+
+		this.world.firstHand().setMouseFocus(null)
+		this.doMouseEvent('mousewheel', pt(50,50), this.world);
+
+		this.assert(evtForMorph2WasCaptured, 'not captured in morph2')
+		this.assert(evtForMorph1WasCaptured, 'not captured in morph1')
+	},
+
+})
 }) // end of module
