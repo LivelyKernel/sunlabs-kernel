@@ -1730,6 +1730,30 @@ BoxMorph.subclass('TextMorph', {
 		evt.hand.indicator = undefined;
 	},
 
+	onMouseWheel: function($super, evt) {
+		
+		if (!this.owner || !this.owner.owner || ! this.owner.owner instanceof ScrollPane )
+			return $super(evt);
+
+		var scrollPane = this.owner.owner;
+		var slideRoom = scrollPane.slideRoom();
+		var scrollPos = scrollPane.getScrollPosition();
+
+		var offset = -1 * evt.wheelDelta() / 10;
+		var newScrollPos = (slideRoom * scrollPos + offset) / slideRoom;
+
+		if (newScrollPos < 0 )
+			 newScrollPos = 0;
+
+		if (newScrollPos > 1 )
+			 newScrollPos = 1;
+
+		scrollPane.setScrollPosition(newScrollPos)
+
+		evt.stop();
+		return true;
+	},
+
 	linkUnderMouse: function(evt) {	 
 		// Return null or a link encoded in the text
 		if (!this.textStyle) return null;
