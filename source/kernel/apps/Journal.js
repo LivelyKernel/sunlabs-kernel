@@ -32,8 +32,11 @@ cop.layerClass(JournalEntryLayer, TextMorph, {
 			return
 		}
 		return proceed(evt);
-	}
-		
+	},
+	
+	doSave: function() {
+		this.world().saveWorld()
+	}	
 })
 
 Widget.subclass('JournalWidget', {
