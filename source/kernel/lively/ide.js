@@ -1939,32 +1939,46 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 
 	asString: function() { return 'Add module' },
 
-	trigger: function() {
-		var world = WorldMorph.current();
-		var browser = this.browser;
-		var createFileIfAbsent = function(filename) {
+	world: function() { return WorldMorph.current() },
+
+	createFile: function(filename) {
+		var content = '', browser = this.browser;
+		if (filename.endsWith('.ometa')) {
+			content = this.ometaTemplate();
+		} else {
 			if (!filename.endsWith('.js')) filename += '.js';
-			var dir = new FileDirectory(browser.getTargetURL());
-			if (dir.fileOrDirectoryExists(filename)) {
-				world.notify('File ' + filename + ' already exists!');
-			} else {
-				var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
-				var moduleBase = browser.getTargetURL().withRelativePartsResolved().relativePathFrom(URL.codeBase);
-				var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
-				dir.writeFileNamed(
-					filename,
-					Strings.format('module(\'%s\').requires().toRun(function() {\n\n// Enter your code here\n\n}) // end of module',
-						moduleName));
-				browser.rootNode().locationChanged();
-				browser.allChanged();
-				browser.inPaneSelectNodeNamed('Pane1', filename);
-			}
-		};
-		browser.ensureSourceNotAccidentlyDeleted(function() {
-			world.prompt('Enter filename (something like foo or foo.js)', createFileIfAbsent);
-		});
+			content = this.moduleTemplateFor(filename);
+		}
+
+		var dir = new FileDirectory(this.browser.getTargetURL());
+		if (dir.fileOrDirectoryExists(filename)) {
+			this.world().notify('File ' + filename + ' already exists!');
+			return null
+		}
+		dir.writeFileNamed(filename, content);
+		browser.rootNode().locationChanged();
+		browser.allChanged();
+		browser.inPaneSelectNodeNamed('Pane1', filename);
 	},
 
+	moduleTemplateFor: function(filename) {
+		var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
+		var moduleBase = this.browser.getTargetURL().withRelativePartsResolved().relativePathFrom(URL.codeBase);
+		var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
+		return Strings.format('module(\'%s\').requires().toRun(function() {\n\n// Enter your code here\n\n}) // end of module',
+				moduleName);
+	},
+
+	ometaTemplate: function(filename) {
+		return 'ometa TestParser <: Parser {\n\texampleRule = 1\n}';
+	},
+
+	trigger: function() {
+		var browser = this.browser;
+		this.browser.ensureSourceNotAccidentlyDeleted(function() {
+			this.world().prompt('Enter filename (something like foo or foo.js or foo.ometa)', this.createFile.bind(this));
+		}.bind(this));
+	},
 	
 });
 
