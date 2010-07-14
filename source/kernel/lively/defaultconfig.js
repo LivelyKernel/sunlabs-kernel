@@ -306,6 +306,7 @@ Object.extend(Config, {
 	// Morphic
 	alignToGridSpace: 10, // determins the pixels to snap to during shift dragging with mouse
 	ballonHelpDelay: 1000,
+	silentFailOnWrapperClassNotFound: true,
 	// Fabrik
 	showFabrikComponentBox: false,
 	showFahrenheitCelsiusExample: false,
