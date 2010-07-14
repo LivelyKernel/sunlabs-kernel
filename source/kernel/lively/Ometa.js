@@ -27,8 +27,9 @@ module('lively.Ometa').requires('ometa.ometa-base', 'ometa.lk-parser-extensions'
     An Ometa Workspace like http://www.cs.ucla.edu/~awarth/ometa/.
     Uses Alessandro Warth OMeta-js 2 to evalute text. 
 */
+Object.subclass('OMetaSupport');
 
-OMetaSupport = {
+Object.extend(OMetaSupport, {
     
 	ometaGrammarDir: new URL(Config.codeBase),  
 
@@ -81,19 +82,20 @@ OMetaSupport = {
     },
     
     handleErrorDebug: function(src, rule, grammarInstance, errorIndex) {
-        var charsBefore = 500;
-        var charsAfter = 250;
-        console.log('OMeta Error -- ' + rule);
-        var startIndex = Math.max(0, errorIndex - charsBefore);
-        var stopIndex = Math.min(src.length, errorIndex + charsAfter);
+		var charsBefore = 500;
+		var charsAfter = 250;
+		var msg = 'OMeta Error -- ' + rule + '\n';
+		var startIndex = Math.max(0, errorIndex - charsBefore);
+		var stopIndex = Math.min(src.length, errorIndex + charsAfter);
 
 		//console.log('Last twenty Rules: ' + grammarInstance._ruleStack && grammarInstance._ruleStack.slice(grammarInstance._ruleStack.length-20));
-		if (src.constructor === Array) {
-			console.log(src = '[' + src.toString() + ']');
-		} else {
-			console.log(src.substring(startIndex, errorIndex) + '<--Error-->' + src.substring(errorIndex, stopIndex));
-		}
-    },
+		msg += src.constructor === Array ?
+			'src = [' + src.toString() + ']' :
+			src.substring(startIndex, errorIndex) + '<--Error-->' + src.substring(errorIndex, stopIndex);
+		console.log(msg)
+		WorldMorph.current().setStatusMessage(msg, Color.red, 8);
+		return msg
+	},
     
     handleError: function(src, rule, grammarInstance, errorIndex) {},
     
@@ -106,36 +108,58 @@ OMetaSupport = {
         var url = URL.codeBase.withFilename(fileName);
 		return new WebResource(url).setContent(src);
 	},    
-};
+});
 
-Widget.subclass('OmetaWorkspace', {
+
+TextMorph.subclass('OmetaWorkspace', {
+
+	style: {borderWidth: 0},
+
+	boundEval: function(str) {
+		return OMetaSupport.ometaEval.bind(this)(str)
+	},
     
-    defaultViewExtent: pt(400,250),
-    
-    buildView: function() {
-        var panel =  PanelMorph.makePanedPanel(this.defaultViewExtent, [
-                ['textPane', function (initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0, 1, 0.0)]]);
-        panel.textPane.setExtent(this.defaultViewExtent);
-        // override the standart eval function in this instance to evaluate Ometa Source instead of JavaScript
-        panel.textPane.tryBoundEval = function (str) {
-        	var result;
-        	try { result = OMetaSupport.ometaEval(str); }
-        	catch (e) { // this.world().alert("exception " + e);
-        	    console.log('error evaling ometa: ' + e) };
-        	return result;
-         };
-        return panel;
-    }
+	matchAll: function(grammar, src, rule) {
+		return this.callOMetaSupport(grammar, src, rule, 'matchAllWithGrammar')
+	},
+
+	match: function(grammar, src, rule) {
+		return this.callOMetaSupport(grammar, src, rule , 'matchWithGrammar')
+	},
+
+	callOMetaSupport: function(grammar, src, rule, selector) {
+		return OMetaSupport[selector](grammar, rule , src,
+			function(src, rule, grammar, errorIndex) {
+				var msg = OMetaSupport.handleErrorDebug(src, rule, grammar, errorIndex);
+				throw new Error(msg)
+			});
+	},
+
+	replaceTextMorph: function(textmorph) {
+		if (textmorph.constructor != TextMorph)
+			throw new Error('replaceTextMorph needs a text morph')
+		this.setExtent(textmorph.getExtent());
+		this.setPosition(textmorph.getPosition());
+		var clip = textmorph.owner;
+		textmorph.remove()
+		clip.addMorph(this);
+	},
+
+	open: function(str) {
+		var panel = WorldMorph.current().addTextWindow({title: 'OMeta workspace', content: str});
+		this.replaceTextMorph(panel.innerMorph());
+	},
     
 });
 
 /*
  * A sample OMeta Workspace with the simple interpreter from the OMeta-js Tutorial
  */
-OmetaWorkspace.openOmetaWorkspace = function() {
-    var w = new OmetaWorkspace(); 
-	w.openIn(WorldMorph.current(), pt(540, 20));
-	w.panel.textPane.setTextString("ometa Calc {  \n\
+
+Object.extend(OmetaWorkspace, {
+openOmetaWorkspace: function() {
+    var w = new OmetaWorkspace();
+	var content = "ometa Calc {  \n\
       digit    = super(#digit):d          -> digitValue(d),\n\
       number   = number:n digit:d         -> (n * 10 + d) \n\
                | digit,\n\
@@ -150,12 +174,14 @@ OmetaWorkspace.openOmetaWorkspace = function() {
       expr     = addExpr\n\
     }\n\
     \n\
-    Calc.matchAll('6*(4+3)', 'expr')");	
+    Calc.matchAll('6*(4+3)', 'expr')";
+	w.open(content);
 	return w
-};
+},
+});
+
 
 // Interface for using the parser. It would be better to extend the parser directly...
-
 lively.Text.createText = function(str, style) {
     return new lively.Text.Text(str, style);
 };

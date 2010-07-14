@@ -5490,7 +5490,7 @@ WorldMorph.addMethods({
 					lively.lang.Execution.installStackTracers(); }],
 			["Console (l)", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
 			["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world) }) }],
-			["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().openIn(world); }) }],
+			["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().open() }) }],
 			["Call Stack Viewer", function(evt) { 
 			if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
 			else new StackViewer(this).openIn(world); }],	  
