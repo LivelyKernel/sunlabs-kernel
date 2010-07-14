@@ -93,7 +93,6 @@ Object.extend(OMetaSupport, {
 			'src = [' + src.toString() + ']' :
 			src.substring(startIndex, errorIndex) + '<--Error-->' + src.substring(errorIndex, stopIndex);
 		console.log(msg)
-		WorldMorph.current().setStatusMessage(msg, Color.red, 8);
 		return msg
 	},
     
@@ -131,6 +130,7 @@ TextMorph.subclass('OmetaWorkspace', {
 		return OMetaSupport[selector](grammar, rule , src,
 			function(src, rule, grammar, errorIndex) {
 				var msg = OMetaSupport.handleErrorDebug(src, rule, grammar, errorIndex);
+				WorldMorph.current().setStatusMessage(msg, Color.red, 8);
 				throw new Error(msg)
 			});
 	},
