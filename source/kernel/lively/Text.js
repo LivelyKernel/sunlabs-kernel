@@ -1757,7 +1757,7 @@ BoxMorph.subclass('TextMorph', {
 
 	onMouseWheel: function($super, evt) {
 		
-		if (!this.owner || !this.owner.owner || ! this.owner.owner instanceof ScrollPane )
+		if (!this.owner || !this.owner.owner || ! (this.owner.owner instanceof ScrollPane) )
 			return $super(evt);
 
 		var scrollPane = this.owner.owner;
