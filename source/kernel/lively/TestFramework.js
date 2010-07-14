@@ -385,11 +385,9 @@ TestCase.subclass('MorphTestCase', {
 	},
 	
 	tearDown: function() {
-		if (this._errorOccured) {
-			// let the morphs stay open
-		} else {
+		if (!this._errorOccured)
 			this.morphs.each(function(ea) { ea.remove()})
-		}				
+		// let the morphs stay open otherwise
 	},
 	
 	openMorph: function(m) {
