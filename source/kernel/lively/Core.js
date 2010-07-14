@@ -1256,7 +1256,10 @@ Copier.subclass('Importer', {
 			if (Config.silentFailOnWrapperClassNotFound) {
 				console.log(Strings.format("ERROR: node %s (parent %s) cannot be a morph of %s",
 		    		   	rawNode.tagName, rawNode.parentNode, wrapperType));
-				return new Morph(this, rawNode)
+				var morph = new Morph(this, rawNode);
+				morph.applyStyle({borderColor: Color.red, borderWidth: 3});
+				morph.isEmergencyMorph = true;
+				return morph;
 			} else {
 			    throw new Error(Strings.format("node %s (parent %s) cannot be a morph of %s",
 			    	rawNode.tagName, rawNode.parentNode, wrapperType));	    
