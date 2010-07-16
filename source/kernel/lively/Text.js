@@ -2226,8 +2226,8 @@ BoxMorph.subclass('TextMorph', {
 	
 	doSearch: function() {
 		var whatToSearch = this.getSelectionString();
-		if (lively.Tools.SourceControl) {
-			lively.Tools.SourceControl.browseReferencesTo(whatToSearch);
+		if (lively.ide.SourceControl) {
+			lively.ide.SourceControl.browseReferencesTo(whatToSearch);
 			return;
 		};
 		var msg = 'No SourceControl available.\nStart SourceControl?';

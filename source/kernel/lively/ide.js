@@ -267,7 +267,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
     },
     
 	mySourceControl: function() {
-		var ctrl = lively.Tools.SourceControl;
+		var ctrl = lively.ide.startSourceControl();
 		if (!ctrl) throw new Error('Browser has no SourceControl!');
 		return ctrl;
 	},
@@ -710,7 +710,7 @@ Object.subclass('lively.ide.BrowserNode', {
 
 		// save source
 		try {
-			if (this.saveSource(newSource, tools.SourceControl)) {
+			if (this.saveSource(newSource, lively.ide.SourceControl)) {
 				msg += 'Successfully saved';
 			} else {
 				msg += 'Couldn\'t save';
@@ -917,9 +917,9 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	},
 	
 	rootNode: function() {
-		ide.startSourceControl();
+		var srcCtrl = lively.ide.startSourceControl();
 		if (!this._rootNode)
-			this._rootNode = new ide.SourceControlNode(tools.SourceControl, this, null);
+			this._rootNode = new lively.ide.SourceControlNode(srcCtrl, this, null);
 		return this._rootNode;
 	},
 
@@ -1179,7 +1179,7 @@ ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
 	getSourceControl: function() {
 		if (this.target.getSourceControl)
 			return this.target.getSourceControl();
-		return tools.SourceControl;
+		return lively.ide.SourceControl;
 	},
 
 	onDrop: function(other) {
@@ -1260,7 +1260,7 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 
 	loadModule: function() {
 		if (this.target) return;
-		this.target = tools.SourceControl.addModule(this.moduleName).ast();
+		this.target = lively.ide.SourceControl.addModule(this.moduleName).ast();
 		this.signalChange();
 	},
     
@@ -1400,7 +1400,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassFragmentNode', {
 		// 	});
 		// }]);
 		menu.unshift(['references', function() {
-			var list = tools.SourceControl
+			var list = lively.ide.SourceControl
 				.searchFor(searchName)
 				.without(fragment)
 			var title = 'references of' + fragment.name;
@@ -1462,7 +1462,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 		var searchName = fragment.name;
 		return [
     		['senders', function() {
-					var list = tools.SourceControl
+					var list = lively.ide.SourceControl
 						.searchFor(searchName)
 						.select(function(ea) {
 							if (!ea.name || !ea.name.include(searchName)) return true;
@@ -1472,7 +1472,7 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 					var title = 'senders of' + searchName;
 					new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }],
 			['implementors', function() {
-					var list = tools.SourceControl
+					var list = lively.ide.SourceControl
 						.searchFor(searchName)
 						.without(fragment)
 						.select(function(ea) { return ea.name === searchName });
@@ -1814,7 +1814,7 @@ ide.BrowserCommand.subclass('lively.ide.AllModulesLoadCommand', {
 	asString: function() { return 'Load all' },
 
 	trigger: function() { 
-		var srcCtrl = tools.SourceControl;
+		var srcCtrl = lively.ide.SourceControl;
 		var browser = this.browser;
 		var progressBar = WorldMorph.current().addProgressBar();
 		var files = srcCtrl.interestingLKFileNames(browser.getTargetURL());
@@ -2364,8 +2364,8 @@ parseNonFile: function(source) {
 
 	 /* loading */
     sourceFromUrl: function(url) {
-        if (!tools.SourceControl) tools.SourceControl = new SourceDatabase();
-        return tools.SourceControl.getCachedText(url.filename());        
+		var scrCtrl = lively.ide.startSourceControl();
+        return scrCtrl.getCachedText(url.filename());        
     },
     
     //FIXME cleanup
@@ -2722,7 +2722,7 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 
 	searchFor: function(str) {
 		// search modules
-		var roots = Object.values(lively.Tools.SourceControl.modules).collect(function(ea) { return ea.ast() });
+		var roots = Object.values(lively.ide.SourceControl.modules).collect(function(ea) { return ea.ast() });
 		var allFragments = roots.inject([], function(all, ea) { return all.concat(ea.flattened().uniq()) });
 
 		// search local code	
@@ -2801,10 +2801,10 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 Object.extend(lively.ide, {
 	// see also lively.Tools.startSourceControl
 	startSourceControl: function() {
-	    if (tools.SourceControl instanceof AnotherSourceDatabase)
-			return tools.SourceControl;
-	    tools.SourceControl = new AnotherSourceDatabase();
-		return tools.SourceControl;
+	    if (lively.ide.SourceControl instanceof AnotherSourceDatabase)
+			return lively.ide.SourceControl;
+	    lively.ide.SourceControl = new AnotherSourceDatabase();
+		return lively.ide.SourceControl;
 	},
 });
 
@@ -2975,7 +2975,7 @@ Object.subclass('lively.ide.FileFragment', {
 	},
 
 	getSourceControl: function() {
-		var ctrl = this.sourceControl || tools.SourceControl;
+		var ctrl = this.sourceControl || lively.ide.startSourceControl();
 		if (!ctrl) throw dbgOn(new Error('No sourcecontrol !! '));
 		if (!(ctrl instanceof AnotherSourceDatabase)) throw dbgOn(new Error('Using old source control, could lead to errors...'));
 		return ctrl;

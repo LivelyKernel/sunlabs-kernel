@@ -1257,7 +1257,7 @@ Copier.subclass('Importer', {
 				console.log(Strings.format("ERROR: node %s (parent %s) cannot be a morph of %s",
 		    		   	rawNode.tagName, rawNode.parentNode, wrapperType));
 				var morph = new Morph(this, rawNode);
-				morph.applyStyle({borderColor: Color.red, borderWidth: 3});
+				morph.applyStyle({borderColor: Color.red, borderWidth: 8});
 				morph.isEmergencyMorph = true;
 				return morph;
 			} else {

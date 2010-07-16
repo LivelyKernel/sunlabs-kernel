@@ -53,7 +53,6 @@ Widget.subclass('SimpleBrowser', {
     updateView: function(aspect, source) {
         var p = this.modelPlug;
         if (!p) return;
-
         switch (aspect) {
         case p.getClassName:
             var className = this.getModelValue('getClassName');
@@ -69,9 +68,20 @@ Widget.subclass('SimpleBrowser', {
             var className = this.getModelValue("getClassName");
             var methodName = this.getModelValue("getMethodName");
             var methodString = this.getModelValue("getMethodString");
-            var methodDef = className + ".prototype." + methodName + " = " + methodString;
+			var methodDef = className + ".prototype." + methodName + " = ";
+			// is it a method def in a class starting with the name like "asString: function() { return 'foo' },"?
+			var parts = methodString.match(/\s*([^:]*):\s*(function(.|\s)*),?/)
+            if (parts && parts[1] == methodName) {
+				var body = parts[2];
+				var endsWithComma = /,\s*$/.test(body);
+				if (endsWithComma) body = body.substring(0, body.lastIndexOf(','))
+				methodDef += body;
+			} else {
+				methodDef += methodString;
+			}
 	    try {
                 eval(methodDef);
+				WorldMorph.current().setStatusMessage('Successfully evaluated ' + methodName, Color.green, 4);
             } catch (er) {
                 WorldMorph.current().alert("error evaluating method " + methodDef);
             }
