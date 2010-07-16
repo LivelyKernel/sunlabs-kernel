@@ -2316,7 +2316,7 @@ Object.extend(Color, {
 			var r = parseInt(match[1]) / (match[2] ? 100 : 255);
 			var g = parseInt(match[3]) / (match[4] ? 100 : 255);
 			var b = parseInt(match[5]) / (match[6] ? 100 : 255);
-			var a = match[7] ? parseInt(match[7]) : 0;
+			var a = match[7] ? parseFloat(match[7]) : 1.0;
 			return [r, g, b, a];
 		} 
 		return null;
