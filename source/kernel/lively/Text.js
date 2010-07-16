@@ -605,10 +605,10 @@ Object.subclass('lively.Text.TextLine', {
 	getBounds: function(stringIndex) {
 		for (var i = 0; i < this.chunks.length; i++) {
 			var c = this.chunks[i];
-			if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex()) 
-			return c.getBounds(this, stringIndex);
-			}
-			return null;
+			if (stringIndex >= c.startIndex && stringIndex < c.getNextStartIndex())
+				return c.getBounds(this, stringIndex);
+		}
+		return null;
 	},
 	
 	// find the pointer into 'textString' for a given X coordinate in character metric space
