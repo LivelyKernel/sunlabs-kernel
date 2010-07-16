@@ -1540,7 +1540,6 @@ BoxMorph.subclass("TextListMorph", {
 	onSelectionUpdate: function(selection) {
 		console.log("got selection " + selection);
 		this.setSelectionToMatch(selection);
-		this.selection = selection; // for connect
 	},
 
     onDeletionConfirmationUpdate: function(conf) {
@@ -1606,7 +1605,7 @@ BoxMorph.subclass("TextListMorph", {
 TextListMorph.subclass("ListMorph", {
 
     documentation: 'Can handle list items, not only strings. {isListItem: true, string: string, value: object, onDrag: function, onDrop: function}',
-    
+    connections: ['itemList', 'selection', 'selectedLineNo'],
     initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
         $super(initialBounds, itemList, optPadding, optTextStyle)
         this.suppressSelectionOnUpdate = suppressSelectionOnUpdate;
@@ -1631,9 +1630,8 @@ TextListMorph.subclass("ListMorph", {
     },
     
     selectLineAt: function(lineNo, shouldUpdateModel) {  
-        if (this.selectedLineNo in this.submorphs) { 
+        if (this.selectedLineNo in this.submorphs)
             this.submorphs[this.selectedLineNo].setFill(this.savedFill);
-        }
 
         this.selectedLineNo = lineNo;
 
@@ -1648,20 +1646,17 @@ TextListMorph.subclass("ListMorph", {
             this.scrollItemIntoView(item);
         }
         shouldUpdateModel && this.setSelection(selectionContent, true);
+		this.selection = selectionContent; // for connect
     },
     
 	onSelectionUpdate: function($super, selection) {
 		if (!selection) {
 			this.selectLineAt(-1);
-			this.selection = null; // for connect
 			return;
 		}
 		if (!Object.isString(selection)) {
 			var item = this.itemList.detect(function(ea) { return ea.value === selection });
-			if (item) {
-				this.selectLineAt(this.itemList.indexOf(item));
-				this.selection = item; // for connect
-			}
+			if (item) this.selectLineAt(this.itemList.indexOf(item));
 			return
 		}
 		$super(selection);
@@ -1936,14 +1931,12 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 	onSelectionUpdate: function($super, selection) {
 		if (!selection) {
 			this.selectLineAt(-1);
-			this.selection = null; // for connect
 			return;
 		}
 		if (!Object.isString(selection)) {
 			var item = this.itemList.detect(function(ea) { return ea.value === selection });
 			if (item) {
 				this.selectLineAt(/*****/this.filteredItemList()/*changed for filter*/.indexOf(item));
-				this.selection = selection; // for connect
 			}
 			return
 		}
