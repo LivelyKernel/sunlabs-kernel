@@ -34,6 +34,10 @@ Object.subclass('ScriptLoader', {
 		console.log('loading script ' + url);
 		// FIXME Assumption that first def node has scripts
 		var node = document.getElementsByTagName("defs")[0] || this.getScripts()[0].parentElement;
+		// FIXME this is  a fix for a strange prolem with HTML serialization
+		var scripts = this.getScripts();
+		if (scripts[0].src && scripts[0].src.endsWith('bootstrap.js'))
+			node = scripts[0].parentNode;
 		if (!node) throw(dbgOn(new Error('Cannot load script ' + url + ' dont know where to append it')));
 		var exactUrl = Config.disableScriptCaching ? url + '?' + new Date().getTime() : url;
 		var xmlNamespace = node.namespaceURI;
@@ -93,7 +97,11 @@ Object.extend(Global, {
     var modules = Global.subNamespaces(true).select(function(ea) { return ea.wasDefined });
     modules
         .select(function(ea) { return ea.hasPendingRequirements() })
-        .forEach(function(ea) { console.warn(ea.uri() + ' has unloaded requirements: ' + ea.pendingRequirementNames()) });
+        .forEach(function(ea) {
+			var msg = Strings.format('%s has unloaded requirements: %s\n%s',
+				ea.uri(), ea.pendingRequirementNames(), ea._codeForDebug);
+			console.warn(msg); 
+		 });
     console.log('Module load check done. ' + modules.length + ' modules loaded.');
 }).delay(5);
 

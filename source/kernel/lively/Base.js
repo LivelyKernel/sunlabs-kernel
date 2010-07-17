@@ -295,6 +295,7 @@ function module(moduleName) {
 
 		return {
 			toRun: function(code) {
+				module._codeForDebug = code.getOriginal().toString();
 				code = code.curry(module); // pass in own module name for nested requirements
 				var codeWrapper = function() { // run code with namespace modules as additional parameters
 					code.apply(this, requiredModules);
