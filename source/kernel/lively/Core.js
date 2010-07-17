@@ -45,7 +45,7 @@ Object.subclass('ScriptLoader', {
 		if (xmlNamespace == Namespace.SVG)
 			script.setAttributeNS(Namespace.XLINK, 'href', exactUrl);
 		else
-		script.setAttributeNS(null, 'src', exactUrl);
+			script.setAttributeNS(null, 'src', exactUrl);
 
 		script.setAttributeNS(null, 'onload', onLoadCb);
 
@@ -535,30 +535,36 @@ XLinkNS = {
 
 LivelyNS = {
 
+	prefix: 'lively:',
+
 	create: function(name, attributes) {
-		return NodeFactory.createNS(Namespace.LIVELY, name, attributes);
+		// get takes qulaified name
+		return NodeFactory.createNS(Namespace.LIVELY, this.prefix + name, attributes);
 	},
 
 	getAttribute: function(node, name) {
 		if (UserAgent.isOpera) return node.getAttribute(name); // Fix for Opera 10.10
-		return node.getAttributeNS(Namespace.LIVELY, name);
+		// get takes only local name
+		return node.getAttributeNS(Namespace.LIVELY, name) || node.getAttribute(name);
 	},
 
 	removeAttribute: function(node, name) {
+		// remove takes local name
 		return node.removeAttributeNS(Namespace.LIVELY, name);
 	},
 
 	setAttribute: function(node, name, value) {
-		node.setAttributeNS(Namespace.LIVELY, name, value);
+		// set takes qualified name
+		node.setAttributeNS(Namespace.LIVELY, this.prefix + name, value);
 	},
 
 	getType: function(node) {
-		return node.getAttributeNS(Namespace.LIVELY, "type");
+		return node.getAttributeNS(Namespace.LIVELY, "type") || node.getAttribute("type");
 	},
 
 	setType: function(node, string) {
-		node.setAttributeNS(Namespace.LIVELY, "type", string);
-	}
+		node.setAttributeNS(Namespace.LIVELY, this.prefix +  "type", string);
+	},
 };
 
 XHTMLNS = {

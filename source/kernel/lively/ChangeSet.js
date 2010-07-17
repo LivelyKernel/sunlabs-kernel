@@ -232,16 +232,16 @@ Change.subclass('ChangeSet', {
 	addHookTo: function(node) {
 		if (!node)
 			throw dbgOn(new Error('Couldn\'t add ChangeSet'));
-		defNode = node.tagName == 'defs' ? node : this.findOrCreateDefNodeOfWorld(node);
+		defNode = node.localName == 'defs' ? node : this.findOrCreateDefNodeOfWorld(node);
 		this.xmlElement = LivelyNS.create("code");
 		defNode.appendChild(this.xmlElement);
 	},
 	
 	findOrCreateDefNodeOfWorld: function(doc) {
-		var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').findFirst(doc);
+		var defNode = new Query('.//*[@lively:type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc);
 		if (!defNode) {
 			var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
-			doc : new Query('.//*[@type="WorldMorph"]').findFirst(doc);
+			doc : new Query('.//*[@lively:type="WorldMorph"]').manualNSLookup().findFirst(doc);
 			if (!worldNode) dbgOn(true);
 			defNode = NodeFactory.create('defs');
 			worldNode.appendChild(defNode); // null Namespace?
@@ -343,7 +343,7 @@ Change.subclass('ClassChange', {
 
 Object.extend(ClassChange, {
 
-	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'class' },
+	isResponsibleFor: function(xmlElement) { return xmlElement.localName === 'class' },
 
 	create: function(name, superClassName) {
 		var element = LivelyNS.create('class');
@@ -385,7 +385,7 @@ Change.subclass('ProtoChange', {
 
 Object.extend(ProtoChange, {
 
-	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'proto' },
+	isResponsibleFor: function(xmlElement) { return xmlElement.localName === 'proto' },
 
 	create: function(name, source, optClassName) {
 		var element = LivelyNS.create('proto');
@@ -426,7 +426,7 @@ Change.subclass('StaticChange', {
 
 Object.extend(StaticChange, {
 
-	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'static' },
+	isResponsibleFor: function(xmlElement) { return xmlElement.localName === 'static' },
 
 	create: function(name, source, optClassName) { // duplication with proto!!!
 		var element = LivelyNS.create('static');
@@ -460,7 +460,7 @@ Change.subclass('DoitChange', {
 
 Object.extend(DoitChange, {
 
-	isResponsibleFor: function(xmlElement) { return xmlElement.tagName === 'doit' },
+	isResponsibleFor: function(xmlElement) { return xmlElement.localName === 'doit' },
 
 	create: function(source, optName) {
 		var element = LivelyNS.create('doit');
@@ -490,7 +490,7 @@ Object.subclass('AnotherCodeMarkupParser', {
 				klass = this.changeClasses[i];
 		if (!klass) { debugger; console.warn(
 				'Found no Change class for ' + Exporter.stringify(xmlElement).replace(/\n|\r/, ' ') +
-				'tag name: ' + xmlElement.tagName);
+				'tag name: ' + xmlElement.localName);
 			return null;
 		}
 		return new klass(xmlElement);

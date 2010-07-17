@@ -33,57 +33,62 @@ View.subclass('Query',  {
     xpe: Global.XPathEvaluator ? new XPathEvaluator() : (console.log('XPath not available') || null),
     
     formals: ["+Results", // Node[]
-	   "-ContextNode", // where to evaluate
-	  ],
+		"-ContextNode", // where to evaluate
+	],
 
-    initialize: function(expression, optPlug) {
-	//if (!this.xpe) throw new Error("XPath not available");
-	this.contextNode = null;
-	this.expression = expression;
-	if (optPlug) this.connectModel(optPlug);
-    },
+	initialize: function(expression, optPlug) {
+		//if (!this.xpe) throw new Error("XPath not available");
+		this.contextNode = null;
+		this.expression = expression;
+		if (optPlug) this.connectModel(optPlug);
+	},
 
+	establishContext: function(node) {
+		if (this.nsResolver) return;
+		var ctx = node.ownerDocument ? node.ownerDocument.documentElement : node.documentElement;
+		if (ctx !== this.contextNode) {
+			this.contextNode = ctx;
+			this.nsResolver = this.xpe.createNSResolver(ctx);
+		}
+	},
 
-    establishContext: function(node) {
-	var ctx = node.ownerDocument ? node.ownerDocument.documentElement : node.documentElement;
-	if (ctx !== this.contextNode) {
-	    this.contextNode = ctx;
-	    this.nsResolver = this.xpe.createNSResolver(ctx);
-	}
-    },
-
-    updateView: function(aspect, controller) {
-	var p = this.modelPlug;
-	if (!p) return;
-	switch (aspect) {
-	case p.getContextNode:
-	    this.onContextNodeUpdate(this.getContextNode());
-	    break;
-	}
-    },
+	manualNSLookup: function() {
+		this.nsResolver = function(prefix) {
+			return Namespace[prefix.toUpperCase()] || null;
+		}
+		return this
+	},
+	
+	updateView: function(aspect, controller) {
+		var p = this.modelPlug;
+		if (!p) return;
+		switch (aspect) {
+			case p.getContextNode:
+			this.onContextNodeUpdate(this.getContextNode());
+			break;
+		}
+	},
     
-    onContextNodeUpdate: function(node) {
-	if (node instanceof Document) node = node.documentElement;
-	var result = this.findAll(node, null);
-	this.setResults(result);
-    },
+	onContextNodeUpdate: function(node) {
+		if (node instanceof Document) node = node.documentElement;
+		var result = this.findAll(node, null);
+		this.setResults(result);
+	},
 
+	findAll: function(node, defaultValue) {
+		this.establishContext(node);
+		var result = this.xpe.evaluate(this.expression, node, this.nsResolver, XPathResult.ANY_TYPE, null);
+		var accumulator = [];
+		var res = null;
+		while (res = result.iterateNext()) accumulator.push(res);
+		return accumulator.length > 0 || defaultValue === undefined ? accumulator : defaultValue;
+	},
 
-    findAll: function(node, defaultValue) {
-	this.establishContext(node);
-	var result = this.xpe.evaluate(this.expression, node, this.nsResolver, XPathResult.ANY_TYPE, null);
-	var accumulator = [];
-	var res = null;
-	while (res = result.iterateNext()) accumulator.push(res);
-	return accumulator.length > 0 || defaultValue === undefined ? accumulator : defaultValue;
-    },
-
-
-    findFirst: function(node) {
-	this.establishContext(node);
-	var result = this.xpe.evaluate(this.expression, node, this.nsResolver, XPathResult.ANY_TYPE, null);
-	return result.iterateNext();
-    }
+	findFirst: function(node) {
+		this.establishContext(node);
+		var result = this.xpe.evaluate(this.expression, node, this.nsResolver, XPathResult.ANY_TYPE, null);
+		return result.iterateNext();
+	},
 
 });
 

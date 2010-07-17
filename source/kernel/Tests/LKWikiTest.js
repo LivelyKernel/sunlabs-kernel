@@ -602,7 +602,7 @@ createProxy: function(spec) {
 },
 
 findCodeNodeIn: function(doc) {
-	return new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]/code').findFirst(doc);
+	return new Query('.//*[@lively:type="WorldMorph"]/*[local-name()="defs"]/lively:code').manualNSLookup().findFirst(doc);
 },
 
 addChangeSetToWorld: function() {
