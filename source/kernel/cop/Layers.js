@@ -171,7 +171,10 @@ Object.extend(ContextJS, {
 			wrapped_function.displayName = 'wrapped ' + base_obj.constructor.name + "$" + function_name;
 		};
 		wrapped_function.isLayerAware = true;
-	
+		
+		// For wrapped_function.getOriginal()
+		wrapped_function.originalFunction = base_function;
+		
 		base_obj[function_name] = wrapped_function;
 	}
 });
@@ -239,12 +242,10 @@ var object_id_counter = 0; // hack, to work around absence of identity dictionar
 Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 	if (!layer)
 		throw new Error("in ensurePartialLayer: layer is nil");
-	if(!object.hasOwnProperty("_layer_object_id")) {
+	if (!object.hasOwnProperty("_layer_object_id"))
 		object._layer_object_id = object_id_counter++;
-	};
-	if (!layer[object._layer_object_id]) {
-		layer[object._layer_object_id] = {};
-	};	
+	if (!layer[object._layer_object_id])
+		layer[object._layer_object_id] = {_layered_object: object};
 	return layer[object._layer_object_id];
 };
 
@@ -535,6 +536,11 @@ cop.disableLayer = function(layer) {
 		invalidateLayerComposition();
 	}
 };
+
+/* Layer accessing */
+
+cop.getLayerDefinitionForObject = getLayerDefinitionForObject
+
 
 // Mark old ContextJS API as Depricated
 
