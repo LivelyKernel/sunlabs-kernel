@@ -84,7 +84,7 @@ TestCase.subclass('MethodManipulatorTest', {
 			{layer: 'function() { this.foo(); },', original: 'function(arg1, arg2) { this.bar() },'},
 			{layer: 'function($p, arg1) { this.foo(); },', original: 'function(arg1) { this.bar() },', expected: 'function(arg1) { this.foo(); },'},
 			{layer: 'function($p, arg1) { this.foo(); },', original: 'function(arg1) { this.bar() },', expected: 'function(arg1) { this.foo(); },'},
-			{layer: 'function($p) {\n$p()\nthis.foo(); },', original: 'function() { this.bar() },', expected: 'function() {\n(function() { this.bar() })()\nthis.foo(); },'},
+			{layer: 'function($p) {\n$p()\nthis.foo(); },', original: 'function() { this.bar() },', expected: 'function() {\n(function() { this.bar() }).call(this)\nthis.foo(); },'},
 		]
 		for (var i = 0; i < data.length; i++) {
 			var spec = data[i];
@@ -148,7 +148,7 @@ TestCase.subclass('FlattenTest', {
 		var x = (function(arg) {\n\
 			var result = arg * 3;\n\
 			return result + 9\n\
-		})(arg);\n\
+		}).call(this, arg);\n\
 		return  x + 9;\n\
 	},'
 		this.assertEquals(expected, result);
@@ -166,14 +166,14 @@ TestCase.subclass('FlattenTest', {
 	m1: function() { return 42 },\n\n\
 	m2: function(arg) { return arg + 3 },\n\n\
 	m3: function(arg) {\n\
-		(function(arg) { return arg + 9 })(arg);\n\
+		(function(arg) { return arg + 9 }).call(this, arg);\n\
 		return arg + 10;\n\
 	},\n\n\
 	m4: function(arg) {\n\
 		var x = (function(arg) {\n\
 			var result = arg * 3;\n\
 			return result + 9\n\
-		})(arg);\n\
+		}).call(this, arg);\n\
 		return  x + 9;\n\
 	},\n\n\
 });\n\n\
