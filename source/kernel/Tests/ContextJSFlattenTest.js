@@ -41,6 +41,9 @@ cop.create('FlattenTestLayer')
 .refineObject(Tests.ContextJSFlattenTest.Dummy, {
 	classMethod1: Functions.Null
 })
+.refineObject(Tests.ContextJSFlattenTest, {
+	get foo() { return 3 },
+})
 
 TestCase.subclass('MethodManipulatorTest', {
 
@@ -127,7 +130,7 @@ TestCase.subclass('FlattenTest', {
 
 	test01cFindAllLayeredObjects: function() {
 		var result = this.sut.layeredObjects();
-		var expected = [this.dummyClass.prototype, this.dummyClass];
+		var expected = [this.dummyClass.prototype, this.dummyClass, Tests.ContextJSFlattenTest];
 		this.assertEqualState(expected, result);
 	},
 
@@ -180,6 +183,9 @@ TestCase.subclass('FlattenTest', {
 });\n\n\
 Object.extend(Tests.ContextJSFlattenTest.Dummy, {\n\n\
 	classMethod1: function Functions$Null() { return null; },\n\n\
+});\n\n\
+Object.extend(Global.Tests.ContextJSFlattenTest, {\n\n\
+	get foo() { return 3 },\n\n\
 });'
 
 		this.assertEquals(expected, result);

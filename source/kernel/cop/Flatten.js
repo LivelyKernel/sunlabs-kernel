@@ -127,8 +127,14 @@ Layer.addMethods({
 	},
 	
 	namesOfLayeredProperties: function(obj) {
-		var layerDef = this.layerDefOfObject(obj);
-		return Properties.all(layerDef).reject(function(ea) { return layerDef[ea] == obj /*discard _layered_object*/});
+		var layerDef = this.layerDefOfObject(obj), result = [];
+		for (var name in layerDef) {
+			var value = layerDef[name];
+			if (value === obj) continue; /*discard _layered_object*/
+			if (Object.isFunction(value) && !obj.__lookupGetter__(name)) continue;
+			result.push(name);
+		}
+		return result
 	},
 
 	generateMethodReplacement: function(object, methodName) {
@@ -197,7 +203,8 @@ Layer.addMethods({
 	writeFlattened: function(moduleName) {
 		require('lively.ide').toRun(function() {
 			var flattened = this.flattened();
-			var note = Strings.format('/* This file was created with: %s.writeFlattened(\'%s\') */', this.name, moduleName);
+			var note = Strings.format('/*\n * Generated file\n * %s\n * %s.writeFlattened(\'%s\')\n */',
+				new Date(), this.name, moduleName);
 			var src = Strings.format('%s\nmodule(\'%s\').requires().toRun(function() {\n\n%s\n\n}); // end of module',
 				note, moduleName, flattened);
 			var w = new lively.ide.ModuleWrapper(moduleName, 'js');
