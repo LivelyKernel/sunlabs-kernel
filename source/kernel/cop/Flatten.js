@@ -15,6 +15,10 @@ Object.subclass('MethodManipulator', {
 	removeLeadingWhitespace: function(string) {
 		return string.replace(/^[\n\s]*(.*)/, '$1');
 	},
+removeSurroundingWhitespaces: function(str) {
+	return this.removeLeadingWhitespace(this.removeTrailingWhitespace(str));
+},
+
 
 	removeSpacesAfterFunctionKeyword: function(methodString) {
 		return methodString.replace(/\s*(function)\s*(\(.*)/, '$1$2');
@@ -24,43 +28,38 @@ Object.subclass('MethodManipulator', {
 		var result = methodString
 		result = result.substring(result.indexOf('{') + 1, result.length);
 		result = result.substring(0, result.lastIndexOf('}'));
-		result = this.removeLeadingWhitespace(this.removeTrailingWhitespace(result));
+		result = this.removeSurroundingWhitespaces(result);
 		return result
 	},
+parameterNames: function(methodString) {
+	var regexResult = this.parameterRegex.exec(methodString);
+	if (!regexResult || !regexResult[1]) return [];
+	var parameterString = regexResult[1];
+	if (parameterString.length == 0) return [];
+	var parameters = parameterString.split(',').collect(function(str) {
+		return this.removeSurroundingWhitespaces(str)
+	}, this);
+	return parameters;
+},
+
 
 	firstParameter: function(methodString) {
-		var regexResult = this.parameterRegex.exec(methodString);
-		if (!regexResult || !regexResult[1]) return null;
-		var parameterString = regexResult[1];
-		if (!parameterString || parameterString.length == 0) return null;
-
-		// if there is just one parameter return it
-		if (!parameterString.include(',')) return parameterString;
-
-		// if there are more parameters take the first one
-		return parameterString.substring(0, parameterString.indexOf(','));
+		return this.parameterNames(methodString)[0] || null
 	},
 
 	removeFirstParameter: function(methodString) {
-		// remove the first parameter if existing
-
-		var regexResult = this.parameterRegex.exec(methodString);
-		if (!regexResult || !regexResult[1]) return methodString
-		var parameterString = regexResult[1];
-
-		// if there is no or just one parameter then parameterString can be empty
-		// if there are more parameters remove the first one
-		if (parameterString.length > 0 && parameterString.include(','))
-				parameterString = parameterString.substring(parameterString.indexOf(',') + 1, parameterString.length)
-		else
-				parameterString = '';
-
-		// remove trailing spaces
-		parameterString = parameterString.replace(/^\s*(.*)/, '$1');
-
-		var result = methodString.replace(this.parameterRegex, 'function(' + parameterString + ')');
-		return result;
+		var params = this.parameterNames(methodString);
+		params.shift(); // remove first
+		return methodString.replace(this.parameterRegex, 'function(' + params.join(', ') + ')');
 	},
+
+
+addFirstParameter: function(methodString, param) {
+		var params = this.parameterNames(methodString);
+		params.unshift(param); // remove first
+		return methodString.replace(this.parameterRegex, 'function(' + params.join(', ') + ')');
+},
+
 
 	inlineProceed: function(layerSrc, originalSrc, proceedVarName) {
 		// if layerSrc has a proceed call then replace the call with originalSrc
@@ -68,14 +67,17 @@ Object.subclass('MethodManipulator', {
 		layerSrc = this.removeSpacesAfterFunctionKeyword(layerSrc);
 		originalSrc = this.removeSpacesAfterFunctionKeyword(originalSrc);
 
-		// super check
-		var hasSuperCall = originalSrc.include('$super(');
-		if (hasSuperCall)
-			throw new Error('inlineProceed recognized super class in method to be inlined, cannot handle it yet');
-
 		// remove proceed parameter
 		if (this.firstParameter(layerSrc) == proceedVarName)
 			layerSrc = this.removeFirstParameter(layerSrc);
+
+		// super check
+		var superVarName = '$super';
+		var hasSuper = this.firstParameter(originalSrc) == superVarName;
+		if (hasSuper) {
+			originalSrc = this.removeFirstParameter(originalSrc);
+			layerSrc = this.addFirstParameter(layerSrc, superVarName);
+		}
 
 		// remove trailing ,
 		originalSrc = this.removeTrailingWhitespace(originalSrc);
@@ -188,8 +190,9 @@ Layer.addMethods({
 	writeFlattened: function(moduleName) {
 		require('lively.ide').toRun(function() {
 			var flattened = this.flattened();
-			var src = Strings.format('module(\'%s\').requires().toRun(function() {\n\n%s\n\n}); // end of module',
-				moduleName, flattened);
+			var note = Strings.format('/* This file was created with: %s.writeFlattened(\'%s\') */', this.name, moduleName);
+			var src = Strings.format('%s\nmodule(\'%s\').requires().toRun(function() {\n\n%s\n\n}); // end of module',
+				note, moduleName, flattened);
 			var w = new lively.ide.ModuleWrapper(moduleName, 'js');
 			w.setSource(src);
 		}.bind(this));

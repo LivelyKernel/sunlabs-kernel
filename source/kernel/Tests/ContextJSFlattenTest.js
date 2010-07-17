@@ -85,6 +85,7 @@ TestCase.subclass('MethodManipulatorTest', {
 			{layer: 'function($p, arg1) { this.foo(); },', original: 'function(arg1) { this.bar() },', expected: 'function(arg1) { this.foo(); },'},
 			{layer: 'function($p, arg1) { this.foo(); },', original: 'function(arg1) { this.bar() },', expected: 'function(arg1) { this.foo(); },'},
 			{layer: 'function($p) {\n$p()\nthis.foo(); },', original: 'function() { this.bar() },', expected: 'function() {\n(function() { this.bar() }).call(this)\nthis.foo(); },'},
+			{layer: 'function($p) { $p() + 1 },', original: 'function($super) { $super(23) },', expected: 'function($super) { (function() { $super(23) }).call(this) + 1 },'},
 		]
 		for (var i = 0; i < data.length; i++) {
 			var spec = data[i];
