@@ -168,12 +168,19 @@ Layer.addMethods({
 	flattened: function() {
 		var objects = this.layeredObjects();
 		var objectDefs = [];
+		var createDefStart = function(obj) {
+			if (Class.isClass(obj))
+				return 'Object.extend(' + obj.type + ', {\n\n';
+			if (obj.namespaceIdentifier)
+				return 'Object.extend(' + obj.namespaceIdentifier + ', {\n\n';
+			if (Class.isClass(obj.constructor))
+				return obj.constructor.type + '.addMethods({\n\n';
+			return null;
+		}
 		for (var i = 0; i < objects.length; i++) {
 			var object = objects[i];
-			var isMetaClass = Class.isClass(object);
-			var isClass = !isMetaClass && Class.isClass(object.constructor);
-			if (!isClass && !isMetaClass) continue; // currently we do not deal with arbitrary objects
-			var def = isClass ? object.constructor.type + '.addMethods({\n\n' : 'Object.extend(' + object.type + ', {\n\n';
+			var def = createDefStart(object);
+			if (!def) continue;
 			var props = this.namesOfLayeredProperties(object);
 			def += props.collect(function(prop) { return '\t' + this.generatePropertyReplacement(object, prop) }, this). join('\n\n');
 			if (props.length > 0) def += '\n\n';
