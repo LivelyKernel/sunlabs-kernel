@@ -353,3 +353,5 @@ Config.pageNavigationWithKeys = true // boy, that's ugly!!!
 Config.showPageNumber = true;
 
 Config.touchBeMouse = UserAgent.isTouch
+
+Config.useFlattenedHTMLRenderingLayer = false
