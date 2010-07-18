@@ -817,8 +817,8 @@ Object.extend(Event, {
 	   			return false;
 			}
 	  	};
-		canvas.addEventListener("dragstart", disabler, true);
-		canvas.addEventListener("selectstart", disabler, true);
+		canvas.addEventListener("dragstart", disabler, false);
+		canvas.addEventListener("selectstart", disabler, false);
 		if (Config.suppressDefaultMouseBehavior)
 			Global.document.oncontextmenu = Functions.False
 	},
@@ -5674,7 +5674,7 @@ Morph.subclass("HandMorph", {
     useShadowMorphs: Config.useShadowMorphs,
 
     shadowOffset: pt(5,5),
-    handleOnCapture: true,
+    handleOnCapture: false,
     logDnD: Config.logDnD,
     grabHaloLabelStyle: {fontSize: Math.floor((Config.defaultFontSize || 12) *0.85), padding: Rectangle.inset(0)},
 
