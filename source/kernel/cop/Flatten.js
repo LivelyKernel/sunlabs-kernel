@@ -201,7 +201,7 @@ Layer.addMethods({
 			return '{object: ' + this.objectName(spec.object) + ', name: ' + spec.name + '}'
 		}, this);
 		require('lively.ide').toRun(function() {
-			var flattened = this.flattened();
+			var flattened = this.flattened(blacklist);
 			var note = Strings.format('/*\n * Generated file\n * %s\n * %s.writeFlattened(\'%s\', [%s])\n */',
 				new Date(), this.name, moduleName, blacklistDescr.join(','));
 			var src = Strings.format('%s\nmodule(\'%s\').requires().toRun(function() {\n\n%s\n\n}); // end of module',
