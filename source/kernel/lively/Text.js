@@ -25,7 +25,7 @@
  * Text.js.  Text-related functionality.
  */
 
-module('lively.Text').requires().toRun(function(thisModule) {
+module('lively.Text').requires().toRun(function() {
 		
 Object.subclass('lively.Text.CharacterInfo', {
 	// could simply use Point as extent.
@@ -124,15 +124,15 @@ Object.subclass('lively.Text.Font', {
 			var ch = String.fromCharCode(i);
 			switch (ch) {
 				case 'i': case 'I': case 'l': case 't': case '.': case ',': case '\'':
-				//extents[i] = new thisModule.CharacterInfo(size*0.245, size);
-					extents[i] = new thisModule.CharacterInfo(size*0.345, size);
+				//extents[i] = new lively.Text.CharacterInfo(size*0.245, size);
+					extents[i] = new lively.Text.CharacterInfo(size*0.345, size);
 					break;
 				case 'M': case 'm': case 'W': case 'B': 
 				case 'w': case 'S': case 'D': case 'A': case 'H': case 'C': case 'E':
-					extents[i] = new thisModule.CharacterInfo(size*0.820, size);
+					extents[i] = new lively.Text.CharacterInfo(size*0.820, size);
 					break;
 				default:
-					extents[i] = new thisModule.CharacterInfo(size*0.505, size);
+					extents[i] = new lively.Text.CharacterInfo(size*0.505, size);
 					break;
 			}
 		}
@@ -211,7 +211,7 @@ Object.subclass('lively.Text.Font', {
 			var end = text.getEndPositionOfChar(i - b);
 			var start = text.getStartPositionOfChar(i - b);
 			var ext = text.getExtentOfChar(i - b);
-			extents[i] = new thisModule.CharacterInfo(end.x - start.x, start.y - ext.y);
+			extents[i] = new lively.Text.CharacterInfo(end.x - start.x, start.y - ext.y);
 		}
 		canvas.removeChild(text);
 		return extents;
@@ -581,7 +581,7 @@ Object.subclass('lively.Text.TextLine', {
 			if (p == "align") this.alignment = v;
 		}.bind(this));
 		// console.log("adoptStyle/Font.forFamily" + fontFamily + fontSize + fontStyle + "; index = " + charIx);
-		this.currentFont = thisModule.Font.forFamily(fontFamily, fontSize, fontStyle);
+		this.currentFont = lively.Text.Font.forFamily(fontFamily, fontSize, fontStyle);
 		this.spaceWidth = this.currentFont.getCharWidth(' ');
 		this.tabWidth = this.spaceWidth * 4;
 	},
@@ -789,7 +789,7 @@ var Locale = {
 };
 
 
-thisModule.WrapStyle = Class.makeEnum([ 
+lively.Text.WrapStyle = Class.makeEnum([ 
 	"Normal",  // fits text to bounds width using word wrap and sets height
 	"None", // simply sets height based on line breaks only
 	"Shrink" // sets both width and height based on line breaks only
@@ -890,7 +890,7 @@ BoxMorph.subclass('TextMorph', {
 	backgroundColor: Color.veryLightGray,
 	style: { borderWidth: 1, borderColor: Color.black},
 	padding: Rectangle.inset(6, 4),
-	wrap: thisModule.WrapStyle.Normal,
+	wrap: lively.Text.WrapStyle.Normal,
 
 	maxSafeSize: 20000, 
 	tabWidth: 4,
@@ -945,7 +945,7 @@ BoxMorph.subclass('TextMorph', {
 			this.textContent = new lively.scene.Text(importer, rawNode);   
 			this.fontFamily = this.textContent.getFontFamily();
 			this.fontSize = this.textContent.getFontSize();
-			this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
+			this.font = lively.Text.Font.forFamily(this.fontFamily, this.fontSize);
 			this.textColor = new Color(Importer.marker, this.textContent.getFill());
 			return true;
 		} 
@@ -970,7 +970,7 @@ BoxMorph.subclass('TextMorph', {
 		$super(rect);
 		// KP: note layoutChanged will be called on addition to the tree
 		// DI: ... and yet this seems necessary!
-		if (this.textString instanceof thisModule.Text) {
+		if (this.textString instanceof lively.Text.Text) {
 			this.textStyle = this.textString.style;
 			this.textString = this.textString.string || "";
 		}
@@ -1039,7 +1039,7 @@ BoxMorph.subclass('TextMorph', {
 	applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
 		$super(spec);
 		if (spec.wrapStyle !== undefined) {
-			if (spec.wrapStyle in thisModule.WrapStyle) this.setWrapStyle(spec.wrapStyle);
+			if (spec.wrapStyle in lively.Text.WrapStyle) this.setWrapStyle(spec.wrapStyle);
 			else console.log("unknown wrap style " + spec.wrapStyle);
 		}
 		if (spec.fontSize !== undefined) {
@@ -1079,8 +1079,8 @@ BoxMorph.subclass('TextMorph', {
 	},
 	
 	setWrapStyle: function(style) {
-		if (!(style in thisModule.WrapStyle)) { 
-			console.log("unknown style " + style + " in " + thisModule.WrapStyle);
+		if (!(style in lively.Text.WrapStyle)) { 
+			console.log("unknown style " + style + " in " + lively.Text.WrapStyle);
 			return; 
 		}
 		if (style == TextMorph.prototype.wrap) {
@@ -1123,7 +1123,7 @@ BoxMorph.subclass('TextMorph', {
 		this.applyStyleDeferred({
 			borderWidth: 0,
 			fill: null,
-			wrapStyle: thisModule.WrapStyle.Shrink, 
+			wrapStyle: lively.Text.WrapStyle.Shrink, 
 			fontSize: 12,
 			padding: Rectangle.inset(0),
 		});
@@ -1137,7 +1137,7 @@ BoxMorph.subclass('TextMorph', {
 
 	beListItem: function() {
 		// specify padding, otherwise selection will overlap
-		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: thisModule.WrapStyle.None, padding: Rectangle.inset(4, 0)});
+		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: lively.Text.WrapStyle.None, padding: Rectangle.inset(4, 0)});
 		this.ignoreEvents();
 		this.suppressHandles = true;
 		this.acceptInput = false;
@@ -1186,7 +1186,7 @@ BoxMorph.subclass('TextMorph', {
 			onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"});
 		// some eye candy for the help
 		this.linkToStyles(['helpText']);
-		this.setWrapStyle(thisModule.WrapStyle.Shrink);
+		this.setWrapStyle(lively.Text.WrapStyle.Shrink);
 		this.openForDragAndDrop = false; // so it won't interfere with mouseovers
 		return this;
 	},
@@ -1282,7 +1282,7 @@ BoxMorph.subclass('TextMorph', {
 		// tag: newText
 		this.textContent.replaceRawNodeChildren(null);
 		this.textContent.setFill(this.textColor);
-		this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
+		this.font = lively.Text.Font.forFamily(this.fontFamily, this.fontSize);
 		this.font.applyTo(this.textContent);
 		this.lines = null;
 		this.lineNumberHint = 0;
@@ -1475,13 +1475,13 @@ BoxMorph.subclass('TextMorph', {
 
 	compositionWidth: function() {
 		var padding = this.padding;
-		if (this.wrap == thisModule.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
+		if (this.wrap == lively.Text.WrapStyle.Normal) return this.shape.bounds().width - padding.left() - padding.right();
 		else return 9999; // Huh??
 	},
 
 	// DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
 	fitText: function() { 
-		if (this.wrap == thisModule.WrapStyle.Normal) 
+		if (this.wrap == lively.Text.WrapStyle.Normal) 
 			this.fitHeight();
 		else 
 			this.fitWidth();
@@ -1556,9 +1556,9 @@ BoxMorph.subclass('TextMorph', {
 
 		// DI: This should just say, eg, this.shape.setBottomRight(bottomRight);
 		var b = this.shape.bounds();
-		if (this.wrap == thisModule.WrapStyle.None) {
+		if (this.wrap == lively.Text.WrapStyle.None) {
 			this.shape.setBounds(b.withHeight(bottomRight.y - b.y));
-		} else if (this.wrap == thisModule.WrapStyle.Shrink) {
+		} else if (this.wrap == lively.Text.WrapStyle.Shrink) {
 			this.shape.setBounds(b.withBottomRight(bottomRight));
 		}
 
@@ -1876,7 +1876,7 @@ BoxMorph.subclass('TextMorph', {
 	getSelectionText: function() {
 		return this.textStyle ? 
 		this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
-		: new thisModule.Text(this.getSelectionString());
+		: new lively.Text.Text(this.getSelectionString());
 	},
 
 	// FIXME integrate into model of TextMorph
@@ -1887,7 +1887,7 @@ BoxMorph.subclass('TextMorph', {
 	},
 	
 	getRichText: function() {
-		return new thisModule.Text(this.textString, this.textStyle); 
+		return new lively.Text.Text(this.textString, this.textStyle); 
 	},
 
 	replaceSelectionWith: function(replacement) { 
@@ -2714,7 +2714,7 @@ TextMorph.addMethods({
 	
 	setFontFamily: function(familyName) {
 		this.fontFamily = familyName;
-		this.font = thisModule.Font.forFamily(this.fontFamily, this.fontSize);
+		this.font = lively.Text.Font.forFamily(this.fontFamily, this.fontSize);
 		this.layoutChanged();
 		this.changed();
 	},
@@ -2725,7 +2725,7 @@ TextMorph.addMethods({
 		if (newSize == this.fontSize && this.font)	// make sure this.font is inited
 			return;
 		this.fontSize = newSize;
-		this.font = thisModule.Font.forFamily(this.fontFamily, newSize);
+		this.font = lively.Text.Font.forFamily(this.fontFamily, newSize);
 		this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
 		this.layoutChanged();
 		this.changed();
@@ -2924,7 +2924,7 @@ BoxMorph.subclass('LabeledTextMorph', {
         /* configure the text */
         var textPos = pt(0,label.getExtent().y/2);
         var text = new TextMorph(textPos.extent(rect.extent()), textString);
-        text.applyStyle({wrapStyle: thisModule.WrapStyle.Normal, borderColor: Color.veryLightGray.darker().darker(),
+        text.applyStyle({wrapStyle: lively.Text.WrapStyle.Normal, borderColor: Color.veryLightGray.darker().darker(),
                          padding: text.padding.withY(label.bounds().height / 2)});
         this.addMorphBack(text);
         text.composeAfterEdits = text.composeAfterEdits.wrap(function(proceed) {
@@ -3194,15 +3194,15 @@ Object.subclass('lively.Text.Text', {
 	},
 	substring: function (start, stop) {
 		// Return a substring with its emphasis as a Text
-		return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
+		return new lively.Text.Text(this.string.substring(start, stop), this.style.slice(start, stop));
 	},
 	subtext: function (start, stop) {
 		// Return a substring with its emphasis as a Text
-		return new thisModule.Text(this.string.substring(start, stop), this.style.slice(start, stop));
+		return new lively.Text.Text(this.string.substring(start, stop), this.style.slice(start, stop));
 	},
 	concat: function (other) {
 		// Modify the style of this text according to emph
-		return new thisModule.Text(this.string.concat(other.string), this.style.concat(other.style));
+		return new lively.Text.Text(this.string.concat(other.string), this.style.concat(other.style));
 	},
 	toString: function() {
 		return "Text for " + this.string + "<" + this.style + ">";
