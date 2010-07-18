@@ -1331,11 +1331,10 @@ ButtonMorph.subclass('EllipseMakerMorph', {
 		$super(loc.extent(pt(200, 50)));
 		this.ellipses = [];
 		this.report();
-		connect(this, 'value', this, 'makeNewEllipse');		
+		connect(this, 'fire', this, 'makeNewEllipse');		
 	},
 
-	makeNewEllipse: function(btnVal) {
-		if (!btnVal) return; // just make one, btn click would trigger it 2x
+	makeNewEllipse: function() {
 		var ext = this.owner.innerBounds().extent();
 		var s = Math.min(ext.x/40, ext.y/40, 20);
 		var e = new Morph(new lively.scene.Ellipse(pt(0,0), s));
@@ -1358,6 +1357,67 @@ ButtonMorph.subclass('EllipseMakerMorph', {
 
 });
 
+// ===========================================================================
+// Benchmarker
+// ===========================================================================
+Object.subclass('Benchmarker', {
+
+	initialize: function(world) {
+		this.defaultDuration = 20;
+		this.world = world || WorldMorph.current();
+	},
+	
+	reset: function() {
+		this.framerates = [];
+		this.duration = this.defaultDuration;
+
+		this.progress = new ProgressBarMorph(new Rectangle(0, 0, this.world.visibleBounds().width, 20));
+		this.progress.openInWorld()
+
+		this.framerateMorph = new FrameRateMorph(new Rectangle(this.world.visibleBounds().width/2, 20, 200, 100));
+		this.world.addMorph(this.framerateMorph)
+		this.framerateMorph.startSteppingScripts();
+	},
+	
+	run: function(duration) {
+		this.defaultDuration = duration || this.defaultDuration;
+		this.reset()
+		this.framerateConnection = connect(this.framerateMorph, 'lastTick', this, 'update')
+		return this;
+	},
+	
+	addFramerate: function(ticks) { this.framerates.push(ticks) },
+	
+	average: function() {
+		var sum = this.framerates.inject(0, function(sum, ticks) { return sum + ticks });
+		return sum / this.framerates.length
+	},
+	
+	update: function() {
+		this.addFramerate(this.framerateMorph.stepsSinceTick);
+		this.progress.setValue(Math.abs((this.duration - this.defaultDuration) / this.defaultDuration))
+		this.duration--;
+		if (this.duration <= 0) {
+			this.framerateConnection.disconnect();
+			this.progress.remove();
+			this.framerateMorph.remove();
+			if (this.ellipseMaker) {
+				this.ellipseMaker.ellipses.invoke('remove');
+				this.ellipseMaker.remove()
+			}
+			this.world.setStatusMessage(this.average().toString() + ' frames/sec avg');
+		}
+	},
+
+	addEllipses: function(number) {
+		this.ellipseMaker = new EllipseMakerMorph(this.world.visibleBounds().center());
+		this.world.addMorph(this.ellipseMaker);
+		while (number > 0) { this.ellipseMaker.makeNewEllipse(); number-- }
+		this.ellipseMaker.startSteppingScripts();
+		return this;
+	},
+	
+});
 
 // ===========================================================================
 // File Parser
