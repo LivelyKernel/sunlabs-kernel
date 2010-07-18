@@ -3813,14 +3813,14 @@ Morph.subclass("WindowControlMorph", {
     focus: pt(0.4, 0.2),
     formals: ["-HelpText", "-Trigger"],
     
-    initialize: function($super, rect, inset, color) {
-        $super(new lively.scene.Ellipse(rect.insetBy(inset)));
-	var gfx = lively.paint;
-        this.setFill(new gfx.RadialGradient([new gfx.Stop(0, color.lighter(2)),
-					     new gfx.Stop(0.5, color),
-					     new gfx.Stop(1, color.darker())], this.focus));
-        return this;
-    },
+	initialize: function($super, rect, inset, color) {
+		$super(new lively.scene.Ellipse(rect.insetBy(inset)));
+		var gfx = lively.paint;
+		this.setFill(new gfx.RadialGradient([new gfx.Stop(0, color.lighter(2)),
+		new gfx.Stop(0.5, color),
+		new gfx.Stop(1, color.darker())], this.focus));
+		return this;
+	},
 
     handlesMouseDown: Functions.True,
 
@@ -3830,23 +3830,27 @@ Morph.subclass("WindowControlMorph", {
         return this.formalModel.onTriggerUpdate(evt);
     },
 
-    onMouseOver: function($super, evt) {
-        var prevColor = this.getFill().stops[1].color();
-	var gfx = lively.paint;
-        this.setFill(new gfx.RadialGradient([new gfx.Stop(0, Color.white), 
-					     new gfx.Stop(0.5, prevColor),
-					     new gfx.Stop(1, prevColor.darker())], this.focus));
-        $super(evt);
-    },
+	onMouseOver: function($super, evt) {
+		if (this.getFill() instanceof lively.paint.Gradient) {
+			var prevColor = this.getFill().stops[1].color();
+			var gfx = lively.paint;
+			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, Color.white), 
+			new gfx.Stop(0.5, prevColor),
+			new gfx.Stop(1, prevColor.darker())], this.focus));
+		}
+		$super(evt);
+	},
     
-    onMouseOut: function($super, evt) {
-        var prevColor = this.getFill().stops[1].color();
-	var gfx = lively.paint;
-        this.setFill(new gfx.RadialGradient([new gfx.Stop(0, prevColor.lighter(2)),
-					     new gfx.Stop(0.5, prevColor),
-					     new gfx.Stop(1, prevColor.darker())], this.focus));
-        $super(evt);
-    },
+	onMouseOut: function($super, evt) {
+		if (this.getFill() instanceof lively.paint.Gradient) {
+			var prevColor = this.getFill().stops[1].color();
+			var gfx = lively.paint;
+			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, prevColor.lighter(2)),
+			new gfx.Stop(0.5, prevColor),
+			new gfx.Stop(1, prevColor.darker())], this.focus));
+		}
+		$super(evt);
+	},
     
     checkForControlPointNear: Functions.False,
     
