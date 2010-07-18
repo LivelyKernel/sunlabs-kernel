@@ -15,10 +15,10 @@ Object.subclass('MethodManipulator', {
 	removeLeadingWhitespace: function(string) {
 		return string.replace(/^[\n\s]*(.*)/, '$1');
 	},
-removeSurroundingWhitespaces: function(str) {
-	return this.removeLeadingWhitespace(this.removeTrailingWhitespace(str));
-},
-
+	
+	removeSurroundingWhitespaces: function(str) {
+		return this.removeLeadingWhitespace(this.removeTrailingWhitespace(str));
+	},
 
 	removeSpacesAfterFunctionKeyword: function(methodString) {
 		return methodString.replace(/\s*(function)\s*(\(.*)/, '$1$2');
@@ -31,17 +31,17 @@ removeSurroundingWhitespaces: function(str) {
 		result = this.removeSurroundingWhitespaces(result);
 		return result
 	},
-parameterNames: function(methodString) {
-	var regexResult = this.parameterRegex.exec(methodString);
-	if (!regexResult || !regexResult[1]) return [];
-	var parameterString = regexResult[1];
-	if (parameterString.length == 0) return [];
-	var parameters = parameterString.split(',').collect(function(str) {
-		return this.removeSurroundingWhitespaces(str)
-	}, this);
-	return parameters;
-},
 
+	parameterNames: function(methodString) {
+		var regexResult = this.parameterRegex.exec(methodString);
+		if (!regexResult || !regexResult[1]) return [];
+		var parameterString = regexResult[1];
+		if (parameterString.length == 0) return [];
+		var parameters = parameterString.split(',').collect(function(str) {
+			return this.removeSurroundingWhitespaces(str)
+		}, this);
+		return parameters;
+	},
 
 	firstParameter: function(methodString) {
 		return this.parameterNames(methodString)[0] || null
@@ -53,13 +53,11 @@ parameterNames: function(methodString) {
 		return methodString.replace(this.parameterRegex, 'function(' + params.join(', ') + ')');
 	},
 
-
-addFirstParameter: function(methodString, param) {
-		var params = this.parameterNames(methodString);
-		params.unshift(param); // remove first
-		return methodString.replace(this.parameterRegex, 'function(' + params.join(', ') + ')');
-},
-
+	addFirstParameter: function(methodString, param) {
+			var params = this.parameterNames(methodString);
+			params.unshift(param); // remove first
+			return methodString.replace(this.parameterRegex, 'function(' + params.join(', ') + ')');
+	},
 
 	inlineProceed: function(layerSrc, originalSrc, proceedVarName) {
 		// if layerSrc has a proceed call then replace the call with originalSrc
@@ -212,32 +210,26 @@ Layer.addMethods({
 			w.setSource(src);
 		}.bind(this));
 	},
-objectName: function(obj) {
-	if (Class.isClass(obj))
-		return obj.type;
-	if (obj.namespaceIdentifier)
-		obj.namespaceIdentifier;
-	if (Class.isClass(obj.constructor))
-		return obj.constructor.type + '.prototype';
-	return null;
-},
-objectDef: function(obj, bodyString) {
-	if (Class.isClass(obj))
-		return 'Object.extend(' + obj.type + ', {' + bodyString + '});';
-	if (obj.namespaceIdentifier)
-		return 'Object.extend(' + obj.namespaceIdentifier + ', {' + bodyString + '});';
-	if (Class.isClass(obj.constructor))
-		return obj.constructor.type + '.addMethods({' + bodyString + '});';
-	return null;
-},;
-	if (obj.namespaceIdentifier)
-		return 'Object.extend(' + obj.namespaceIdentifier + ', {\n\n' + bodyString + \n\n});
-	if (Class.isClass(obj.constructor))
-		return obj.constructor.type + '.addMethods({\n\n' + bodyString + \n\n});
-	return null;
-},
 
+	objectName: function(obj) {
+		if (Class.isClass(obj))
+			return obj.type;
+		if (obj.namespaceIdentifier)
+			obj.namespaceIdentifier;
+		if (Class.isClass(obj.constructor))
+			return obj.constructor.type + '.prototype';
+		return null;
+	},
 
+	objectDef: function(obj, bodyString) {
+		if (Class.isClass(obj))
+			return 'Object.extend(' + obj.type + ', {' + bodyString + '});';
+		if (obj.namespaceIdentifier)
+			return 'Object.extend(' + obj.namespaceIdentifier + ', {' + bodyString + '});';
+		if (Class.isClass(obj.constructor))
+			return obj.constructor.type + '.addMethods({' + bodyString + '});';
+		return null;
+	},
 
 });
 
