@@ -355,3 +355,4 @@ Config.showPageNumber = true;
 Config.touchBeMouse = UserAgent.isTouch
 
 Config.useFlattenedHTMLRenderingLayer = false
+Config.useDelayedHTMLRendering = false
