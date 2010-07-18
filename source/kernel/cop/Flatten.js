@@ -171,46 +171,73 @@ Layer.addMethods({
 		return result;
 	},
 
-	flattened: function() {
+	flattened: function(blacklist) {
+		blacklist = blacklist || [];
 		var objects = this.layeredObjects();
 		var objectDefs = [];
-		var createDefStart = function(obj) {
-			if (Class.isClass(obj))
-				return 'Object.extend(' + obj.type + ', {\n\n';
-			if (obj.namespaceIdentifier)
-				return 'Object.extend(' + obj.namespaceIdentifier + ', {\n\n';
-			if (Class.isClass(obj.constructor))
-				return obj.constructor.type + '.addMethods({\n\n';
-			return null;
-		}
 		for (var i = 0; i < objects.length; i++) {
 			var object = objects[i];
-			var def = createDefStart(object);
-			if (!def) continue;
+			if (!this.objectName(object)) continue;
+			var def = '\n\n';
 			var props = this.namesOfLayeredProperties(object);
+			props = props.reject(function(prop) {
+				return blacklist.any(function(spec) { return spec.object == object && spec.name == prop });
+			});
 			def += props.collect(function(prop) { return '\t' + this.generatePropertyReplacement(object, prop) }, this). join('\n\n');
 			if (props.length > 0) def += '\n\n';
 			var methods = this.namesOfLayeredMethods(object);
+			methods = methods.reject(function(method) {
+				return blacklist.any(function(spec) { return spec.object == object && spec.name == method });
+			});
 			def += methods.collect(function(method) { return '\t' + this.generateMethodReplacement(object, method) }, this). join('\n\n');
 			if (methods.length > 0) def += '\n\n';
-			def += '});'
-			objectDefs.push(def);
+			objectDefs.push(this.objectDef(object, def));
 		}
 
 		return objectDefs.join('\n\n')
 	},
 	
-	writeFlattened: function(moduleName) {
+	writeFlattened: function(moduleName, blacklist) {
+		blacklist = blacklist || [];
+		var blacklistDescr = blacklist.collect(function(spec) {
+			return '{object: ' + this.objectName(spec.object) + ', name: ' + spec.name + '}'
+		}, this);
 		require('lively.ide').toRun(function() {
 			var flattened = this.flattened();
-			var note = Strings.format('/*\n * Generated file\n * %s\n * %s.writeFlattened(\'%s\')\n */',
-				new Date(), this.name, moduleName);
+			var note = Strings.format('/*\n * Generated file\n * %s\n * %s.writeFlattened(\'%s\', [%s])\n */',
+				new Date(), this.name, moduleName, blacklistDescr.join(','));
 			var src = Strings.format('%s\nmodule(\'%s\').requires().toRun(function() {\n\n%s\n\n}); // end of module',
 				note, moduleName, flattened);
 			var w = new lively.ide.ModuleWrapper(moduleName, 'js');
 			w.setSource(src);
 		}.bind(this));
 	},
+objectName: function(obj) {
+	if (Class.isClass(obj))
+		return obj.type;
+	if (obj.namespaceIdentifier)
+		obj.namespaceIdentifier;
+	if (Class.isClass(obj.constructor))
+		return obj.constructor.type + '.prototype';
+	return null;
+},
+objectDef: function(obj, bodyString) {
+	if (Class.isClass(obj))
+		return 'Object.extend(' + obj.type + ', {' + bodyString + '});';
+	if (obj.namespaceIdentifier)
+		return 'Object.extend(' + obj.namespaceIdentifier + ', {' + bodyString + '});';
+	if (Class.isClass(obj.constructor))
+		return obj.constructor.type + '.addMethods({' + bodyString + '});';
+	return null;
+},;
+	if (obj.namespaceIdentifier)
+		return 'Object.extend(' + obj.namespaceIdentifier + ', {\n\n' + bodyString + \n\n});
+	if (Class.isClass(obj.constructor))
+		return obj.constructor.type + '.addMethods({\n\n' + bodyString + \n\n});
+	return null;
+},
+
+
 
 });
 

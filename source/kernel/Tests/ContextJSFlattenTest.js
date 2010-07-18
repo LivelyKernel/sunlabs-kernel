@@ -164,11 +164,11 @@ TestCase.subclass('FlattenTest', {
 		this.assertEquals(expected, result);
 	},
 	test06FlattenLayer: function() {
-		var result = this.sut.flattened();
+		var blacklist = [{object: Tests.ContextJSFlattenTest.Dummy.prototype, name: 'm2'}];
+		var result = this.sut.flattened(blacklist);
 		var expected = 'Tests.ContextJSFlattenTest.Dummy.addMethods({\n\n\
 	get x() { return 4 },\n\n\
 	m1: function() { return 42 },\n\n\
-	m2: function(arg) { return arg + 3 },\n\n\
 	m3: function(arg) {\n\
 		(function(arg) { return arg + 9 }).call(this, arg);\n\
 		return arg + 10;\n\
