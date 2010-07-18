@@ -195,17 +195,17 @@ Layer.addMethods({
 		return objectDefs.join('\n\n')
 	},
 	
-	writeFlattened: function(moduleName, blacklist) {
+	writeFlattened: function(moduleName, blacklist, requirements) {
 		blacklist = blacklist || [];
 		var blacklistDescr = blacklist.collect(function(spec) {
 			return '{object: ' + this.objectName(spec.object) + ', name: ' + spec.name + '}'
 		}, this);
 		require('lively.ide').toRun(function() {
 			var flattened = this.flattened(blacklist);
-			var note = Strings.format('/*\n * Generated file\n * %s\n * %s.writeFlattened(\'%s\', [%s])\n */',
-				new Date(), this.name, moduleName, blacklistDescr.join(','));
-			var src = Strings.format('%s\nmodule(\'%s\').requires().toRun(function() {\n\n%s\n\n}); // end of module',
-				note, moduleName, flattened);
+			var note = Strings.format('/*\n * Generated file\n * %s\n * %s.writeFlattened(\'%s\', [%s], [%s])\n */',
+				new Date(), this.name, moduleName, blacklistDescr.join(','), JSON.stringify(requirements));
+			var src = Strings.format('%s\nmodule(\'%s\').requires(%s).toRun(function() {\n\n%s\n\n}); // end of module',
+				note, moduleName, JSON.stringify(requirements), flattened);
 			var w = new lively.ide.ModuleWrapper(moduleName, 'js');
 			w.setSource(src);
 		}.bind(this));
