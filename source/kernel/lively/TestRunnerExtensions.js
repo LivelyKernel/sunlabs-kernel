@@ -4,9 +4,9 @@
  */
 module('lively.TestRunnerExtensions').requires('lively.Helper', 'cop.Layers', 'lively.TestFramework').toRun(function() {
 	
-cop.createLayer("TimeEachTestLayer");
+cop.create("TimeEachTestLayer");
 
-cop.layerClass(TimeEachTestLayer, TestCase, {
+TimeEachTestLayer.refineClass(TestCase, {
 	runTest: function(proceed, selector) {
 		var start = (new Date()).getTime();	
 		proceed(selector);
@@ -15,7 +15,7 @@ cop.layerClass(TimeEachTestLayer, TestCase, {
 	},
 });
 
-cop.layerClass(TimeEachTestLayer, TestResult, {
+TimeEachTestLayer.refineClass(TestResult, {
 
 	setTimeOfTestRun: function(proceed, selector, time) {
 		if (!this.timeOfTestRuns)
@@ -33,20 +33,19 @@ cop.layerClass(TimeEachTestLayer, TestResult, {
 	}
 });
 
-
-cop.layerClass(TimeEachTestLayer, TestRunner, {
+TimeEachTestLayer.refineClass(TestRunner, {
 	setResultOf: function(proceed, testObject) {
 		proceed(testObject);
-		WorldMorph.current().setStatusMessage("\nTestRun: " + testObject.constructor.type + "\n" +
-			testObject.result.getSortedTimesOfTestRuns(), Color.blue, 10);
-		testObject.timeOfTestRuns = {} // clear the run...
+		var msg = "TestRun: " + testObject.constructor.type + "\n" +
+			testObject.result.getSortedTimesOfTestRuns();
+		WorldMorph.current().setStatusMessage(msg, Color.blue, 10);
 	},
 })
 
-cop.createLayer("TimeTestLayer");
-cop.enableLayer(TimeTestLayer);
+cop.create("TimeTestLayer");
+TimeTestLayer.beGlobal();
 
-cop.layerClass(TimeTestLayer, TestRunner, {
+TimeTestLayer.refineClass(TestRunner, {
 	
 	layersForTestRun: function() {
 		var layers = [TimeEachTestLayer];
@@ -62,8 +61,18 @@ cop.layerClass(TimeTestLayer, TestRunner, {
 	}
 })
 
-cop.createLayer("ProfileEachTestLayer");
-cop.layerClass(ProfileEachTestLayer, TestCase, {
+
+TimeTestLayer.refineClass(TestRunner, {
+
+	runSelectedTestCase: function(proceed) {
+		cop.withLayers( [TimeEachTestLayer], function() {
+			proceed()
+		})
+	}
+})
+
+cop.create("ProfileEachTestLayer");
+ProfileEachTestLayer.refineClass(TestCase, {
 	runTest: function(proceed, selector) {
 		var profileName = "profile "  + this.currentSelector 
 		console.profile(profileName);
