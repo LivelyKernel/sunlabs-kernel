@@ -352,6 +352,8 @@ Config.pageNavigationName = "nothing"
 Config.pageNavigationWithKeys = true // boy, that's ugly!!!
 Config.showPageNumber = true;
 
+Config.ignoreLoadingErrors = true
+
 Config.touchBeMouse = UserAgent.isTouch
 
 Config.useFlattenedHTMLRenderingLayer = false

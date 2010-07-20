@@ -1367,6 +1367,14 @@ Object.subclass('Benchmarker', {
 		this.world = world || WorldMorph.current();
 	},
 	
+	cleanWorld: function(exceptions) {
+		if (!exceptions) exceptions = [];
+		exceptions.push(this.world.ensureStatusMessageContainer());
+		Array.prototype.without.apply(this.world.submorphs, exceptions).invoke('remove');
+		this.world.applyStyle({fill: Color.white, fillOpacity: 1});
+		return this
+	},
+	
 	reset: function() {
 		this.framerates = [];
 		this.duration = this.defaultDuration;

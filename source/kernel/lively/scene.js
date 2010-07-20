@@ -404,7 +404,11 @@ Object.subclass('lively.data.Wrapper', {
 		var family = LivelyNS.getAttribute(node, "family");
 		if (family) {
 			var cls = Class.forName(family);
-			if (!cls) throw new Error('unknown type ' + family);
+			if (!cls) {
+				if (!Config.ignoreLoadingErrors) throw new Error('unknown type ' + family);
+				console.warn('unknown type ' + family);
+				return null;
+			}
 			return cls.fromLiteral(JSON.unserialize(value), importer);
 		}
 			

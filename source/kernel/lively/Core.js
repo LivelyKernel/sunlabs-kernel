@@ -5221,6 +5221,7 @@ Object.subclass('DocLinkConverter', {
 	},
 
 	convertPath: function(path) {
+		if (path.startsWith('http')) return path;
 		var fn = this.extractFilename(path);
 		var relative = this.relativeLivelyPathFrom(this.codeBase, this.toDir);
 		return relative + fn;
