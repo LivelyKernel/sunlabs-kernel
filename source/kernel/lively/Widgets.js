@@ -5271,48 +5271,152 @@ Widget.subclass("ColorChooserWidget", {
 
 })
 
-
-
-
-
 BoxMorph.subclass('CheckBoxMorph', {
 
-defaultExtent: pt(25,25),
-style: {fill: Color.gray.lighter(), borderWidth: 1, borderColor: Color.black, suppressHandles: true,},
+	defaultExtent: pt(25,25),
+	style: {fill: Color.gray.lighter(), borderWidth: 1, borderColor: Color.black, suppressHandles: true,},
 
-connections: ['state'],
+	connections: ['state'],
 
-initialize: function($super, posOrRect) {
-	$super(posOrRect.constructor == Point ? posOrRect.extent(this.defaultExtent) : posOrRect);
-	this.state = false;
-	this.buildLabel();
-	this.updateLabel();
-},
+	initialize: function($super, posOrRect) {
+		$super(posOrRect.constructor == Point ? posOrRect.extent(this.defaultExtent) : posOrRect);
+		this.state = false;
+		this.buildLabel();
+		this.updateLabel();
+	},
 
-buildLabel: function() {
-	this.label = this.addMorph(new TextMorph(new Rectangle(0,0, 30, 10)))
-	this.label.applyStyle({fill: null, borderWidth: 0, fontSize: 18})
-	this.label.emphasizeAll({align: 'center'})
-	this.label.ignoreEvents()
-},
+	buildLabel: function() {
+		this.label = this.addMorph(new TextMorph(new Rectangle(0,0, 30, 10)))
+		this.label.applyStyle({fill: null, borderWidth: 0, fontSize: 18})
+		this.label.emphasizeAll({align: 'center'})
+		this.label.ignoreEvents()
+	},
 
-handlesMouseDown: Functions.True,
-onMouseDown: function(evt) { this.toggleState() },
-onMouseMove: function(evt) { },
+	handlesMouseDown: Functions.True,
+	onMouseDown: function(evt) { this.toggleState() },
+	onMouseMove: function(evt) { },
 
-toggleState: function() {
-	this.state = !this.state;
-	this.updateLabel();
-},
+	toggleState: function() {
+		this.state = !this.state;
+		this.updateLabel();
+	},
 
-updateLabel: function() {
-	this.label.setTextString(this.state ? 'X' : 'O');
-	this.label.align(this.label.getCenter().addPt(pt(1,1)), this.shape.bounds().center())
-},
+	updateLabel: function() {
+		this.label.setTextString(this.state ? 'X' : 'O');
+		this.label.align(this.label.getCenter().addPt(pt(1,1)), this.shape.bounds().center())
+	},
 
-okToBeGrabbedBy: function(evt) { return null },
-
+	okToBeGrabbedBy: function(evt) { return null },
 });
+
+BoxMorph.subclass("MiniMapEntryMorph", {
+	style: {fill: Color.gray, borderColor: Color.black, borderWidth: 2, fillOpacity: 0.5},
+	mouseHandler:null,
+});
+
+MiniMapEntryMorph.subclass("MiniMapWindowMorph", {
+	style: {fill: Color.gray, borderColor: Color.blue, borderWidth: 5, fillOpacity: 0},
+});
+
+BoxMorph.subclass("MiniMapMorph", {
+
+	initialize: function($super) {
+		$super(new Rectangle(0,0,300,300));
+		
+		this.setScale(300 / WorldMorph.current().getExtent().x);
+
+		this.windowBounds = new MiniMapWindowMorph();
+		this.addMorph(this.windowBounds);
+	},
+
+	style: {fill: Color.lightGray, fillOpacity: 0.9},
+
+	startSteppingScripts: function() {
+        this.startStepping(100, "updateMap"); // once per second
+    },
+
+	isMetaMorph: function(m) {
+        return (m instanceof MiniMapMorph) || (m instanceof StatusMessageContainer)
+    },
+
+	handlesMouseDown: Functions.True,
+
+	onMouseDown: function(evt) {
+		var pos = this.localize(evt.mousePoint)
+		if (evt.mouseButtonPressed) { 
+			if (pos) {
+				this.updateScroll(pos)
+			}
+		}
+	},
+
+	updateScroll: function(pos) {
+			// this.world().setStatusMessage("scroll " + pos , Color.black, 3)		
+			var windowExtent = this.world().windowBounds().extent()
+			Global.scrollTo(pos.x - 0.5 * windowExtent.x ,pos.y - 0.5 * windowExtent.y)
+			this.updatePosition();				
+	},
+
+	updatePosition: function() {
+			var pos = this.world().windowBounds().bottomLeft();
+			this.setPosition(pos.subPt(pt(0,this.bounds().extent().y)))
+	},
+	
+	onMouseMove: function(evt) {
+		if (evt.mouseButtonPressed) { 
+			var pos = this.localize(evt.mousePoint)
+			if (pos) {
+				this.updateScroll(pos)
+			}
+		}	
+	},
+
+	updateMap: function() {
+		var oldMorphs = this.submorphs.select(function(ea) { return ea.original && (! ea.original.owner) } );
+		oldMorphs.invoke('remove');
+
+		this.setExtent(this.world().getExtent())
+
+		var currentMorphs = this.submorphs.collect(function(ea) { return ea.original});
+		var newMorphs = this.world().submorphs.reject(function(ea) {
+			return currentMorphs.include(ea)  || this.isMetaMorph(ea)
+		}, this);
+
+		newMorphs.each(function(ea) {	
+			m = new MiniMapEntryMorph();
+			m.original= ea
+			this.addMorph(m)
+			// m.ignoreEvents();
+		}, this)
+		
+		this.submorphs.each(function(ea) {
+				if (!ea.original) return;
+				ea.setBounds(ea.original.bounds());
+				ea.applyStyle({borderColor: Color.black, borderWidth: 2})
+			
+				if (ea.original.owner instanceof HandMorph) {
+					ea.setPosition(ea.original.owner.worldPoint(ea.original.getPosition()));
+					ea.applyStyle({borderColor: Color.red, borderWidth: 10})
+				}
+		});	
+		var trans = this.world().getGlobalTransform();
+		var bounds = this.world().windowBounds();
+		var topLeft = bounds.topLeft().matrixTransform(trans);
+		var bottomRight = bounds.bottomRight().matrixTransform(trans);
+
+		this.windowBounds.setBounds(rect(topLeft, bottomRight))
+
+		this.updatePosition();
+	}
+});
+
+
+
+
+
+
+
+
 console.log('loaded Widgets.js');
 
 

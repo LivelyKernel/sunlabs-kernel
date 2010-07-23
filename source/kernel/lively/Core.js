@@ -5537,6 +5537,12 @@ WorldMorph.addMethods({
 					new lively.ide.FileVersionViewer().openForURL(URL.source);
 				});
 			}],
+			["MiniMap", function(evt) {
+				var map = new MiniMapMorph();
+				map.name = 'MiniMap';
+				map.openInWorld();
+				map.startSteppingScripts()
+			}],			
 		];
 
 		if (Config.debugExtras) { var index = -1;
