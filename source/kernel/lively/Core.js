@@ -5304,16 +5304,17 @@ WorldMorph.addMethods({
 		return url;
 	},
 	
-	windowBounds: function() {
+	windowBounds: function () {
 		var canvas = this.canvas();
+		var scale = 1/this.world().getScale();
 		var topLeft = pt(Global.pageXOffset - canvas.offsetLeft, Global.pageYOffset - canvas.offsetTop);
 		var width = Math.min(
-			Global.document.documentElement.clientWidth * 1/this.world().getScale(),
+			Global.document.documentElement.clientWidth * scale,
 			WorldMorph.current().getExtent().x);
 		var height = Math.min(
-			Global.document.documentElement.clientHeight * 1/this.world().getScale(),
+			Global.document.documentElement.clientHeight * scale,
 			WorldMorph.current().getExtent().y)
-		return topLeft.extent(pt(width, height))
+		return topLeft.scaleBy(scale).extent(pt(width, height));
 	},
 	
 	visibleBounds: function() {
