@@ -6334,6 +6334,52 @@ lookTouchy: function(morph) {
 		else
 			return this.submorphs.reject(function(ea) {return ea.isEpimorph}).length != 0;
 	},
+	// enableLayer(ScrollLayer)
+	// disableLayer(ScrollLayer)
+
+	setPosition: function($super, pos) {
+		$super(pos);
+		if (this.submorphs.length > 0)
+			this.scrollDuringDrag()
+	},
+
+	scrollDuringDrag: function(counter) {
+		var subBounds = this.submorphBounds(true);
+		if (! subBounds) return;
+		var tfm = this.getGlobalTransform() // .createInverse()		
+		var r1 = rect(subBounds.topLeft().matrixTransform(tfm), 
+			subBounds.bottomRight().matrixTransform(tfm)) 
+		var r2 = this.world().windowBounds();
+
+		var inter = r1.intersection(r2);
+		var delta1 = r1.topLeft().subPt(inter.topLeft());
+		var delta2 = r1.bottomRight().subPt(inter.bottomRight());
+		var delta = pt(delta1.x || delta2.x, delta1.y || delta2.y);
+
+		counter = counter  || 1;
+		var scrollSpeed = 0.9;
+		var world = this.world();
+		var worldScale = world.getScale();
+		var steps = counter * scrollSpeed * worldScale;
+
+		var animate = false;
+		var scroll = function(delta) {
+			var oldPos = pt(Global.scrollX, Global.scrollY)
+			Global.scrollBy(delta.x, delta.y);
+			var newPos = pt(Global.scrollX, Global.scrollY)
+			var scrollDelta = newPos.subPt(oldPos).scaleBy(1 / worldScale);
+			world.firstHand().moveBy(scrollDelta.scaleBy(1))
+			animate = true;
+		};
+		if (delta.x > 0) scroll(pt(steps,0));
+		if (delta.x < 0) scroll(pt(-steps,0));
+		if (delta.y > 0) scroll(pt(0, steps))
+		if (delta.y < 0) scroll(pt(0, -steps))
+		if (animate) {
+			var self = this;
+			(function(){self.scrollDuringDrag( counter + 1)}).delay()	
+		}
+	}
 });
 
 WorldMorph.addMethods({
