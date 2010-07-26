@@ -415,8 +415,9 @@ Object.subclass('lively.data.Wrapper', {
 		try {
 			return JSON.unserialize(value);
 		} catch (e) {
-			console.log('Error in lively.data.Wrapper.deserializeValueFromNode:');
-			console.log(e + ' was thrown when deserializing: ' + value);
+			console.warn('Error in lively.data.Wrapper.deserializeValueFromNode:');
+			console.warn(e + ' was thrown when deserializing: ' + value);
+			return value;
 		}
 	},
 		
