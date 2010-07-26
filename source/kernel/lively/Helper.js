@@ -639,6 +639,29 @@ Object.subclass('lively.Helper.XMLConverter', {
 	},
 
 });
+Object.extend(Global, {
+
+	// highlight some point on the screen
+	showPt: function(/*pos or x,y, duration, extent*/) {
+		var args = $A(arguments);
+		// pos either specified using point object or two numbers
+		var pos = args[0].constructor == Point ?
+			args.shift() :
+			pt(args.shift(), args.shift());
+		var duration = args.shift();
+		var extent = args.shift() || pt(12,12);
+		
+		
+		var b = new BoxMorph(extent.extentAsRectangle());
+		b.align(b.getCenter(), pos);
+		b.applyStyle({fill: Color.red});
+		b.openInWorld();
+		if (duration) // FIXME use scheduler
+			(function() { b.remove() }).delay(duration);
+	},
+
+
+});
 
 console.log('Helper.js is loaded');
 
