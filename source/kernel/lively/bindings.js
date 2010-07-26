@@ -146,6 +146,7 @@ Object.subclass('AttributeConnection', {
 			else
 				callOrSetTarget(newValue);		
 		} catch(e) {
+			dbgOn(Config.debugConnect)
 			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
 		} finally {
 			this.isActive = false;
