@@ -454,12 +454,12 @@ var Converter = {
 				
 		if (propValue.nodeType) {
 		    switch (propValue.nodeType) {
-		    case document.DOCUMENT_NODE:
-		    case document.DOCUMENT_TYPE_NODE:
-			throw new Error('Cannot store Document/DocumentType'); // to be removed
-		    default:
-			desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
-			desc.appendChild(document.importNode(propValue, true));
+		    	case document.DOCUMENT_NODE:
+		    	case document.DOCUMENT_TYPE_NODE:
+					throw new Error('Cannot store Document/DocumentType'); // to be removed
+		    	default:
+					desc.setAttributeNS(null, "isNode", true); // Replace with DocumentFragment
+					desc.appendChild(document.importNode(propValue, true));
 		    }
 		    return desc;
 		} 
@@ -2155,7 +2155,7 @@ Morph.addMethods({
 
 	reshape: function(partName, newPoint, lastCall) {
 		try {
-			return this.shape.reshape(partName,newPoint,lastCall); 
+			return this.shape.reshape(partName,newPoint,lastCall);
 		} finally {
 			// FIXME: consider converting polyline to polygon when vertices merge.
 			this.adjustForNewBounds();
