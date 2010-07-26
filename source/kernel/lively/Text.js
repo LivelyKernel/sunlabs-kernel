@@ -2175,15 +2175,20 @@ BoxMorph.subclass('TextMorph', {
 		}
 	},
 
-	doMore: function() {
-		if (this.charsReplaced) {
-			this.searchForFind(this.charsReplaced, this.selectionRange[0]);
-			if (this.getSelectionString() != this.charsReplaced) return;
-			var holdChars = this.charsReplaced;	 // Save charsReplaced
-			this.replaceSelectionWith(this.charsTyped); 
-			this.charsReplaced = holdChars ;  // Restore charsReplaced after above
-		}
+	doMore: function() {  // Return of true or false used by doMuchMore
+		if (! this.charsReplaced || this.charsReplaced.length == 0) return false;
+		this.searchForFind(this.charsReplaced, this.selectionRange[0]);
+		if (this.getSelectionString() != this.charsReplaced) return false;
+		var holdChars = this.charsReplaced;	 // Save charsReplaced
+		this.replaceSelectionWith(this.charsTyped); 
+		this.charsReplaced = holdChars ;  // Restore charsReplaced after above
+		return true;
 	},
+doMuchMore: function() {
+		// Stupid slow scheme does N copies - later do it in one streaming pass
+		while (this.doMore()) { }  // Keep repeating the change while possible
+	},
+
 
 	doExchange: function() {
 		var sel1 = this.selectionRange;
@@ -2238,6 +2243,12 @@ BoxMorph.subclass('TextMorph', {
 			});
 		});
 	},
+doBrowse: function () { // Browse the class whose name is selected
+	var browser = new SimpleBrowser();  // should check for valid class name
+	browser.openIn(this.world(), this.world().firstHand().getPosition());
+	browser.getModel().setClassName(this.getSelectionString());
+},
+
 	
 	doInspect: function() {
 		console.log("do inspect")
@@ -2358,16 +2369,16 @@ BoxMorph.subclass('TextMorph', {
 
 	processCommandKeys: function(evt) {	 //: Boolean (was the command processed?)
 		var key = evt.getKeyChar();
-		// console.log('command ' + key);
+		// console.log('command = ' + key + "evt.isShiftDown() = " + evt.isShiftDown());
 
-		// ARRGH FIXME
-		if (key == 'I' && evt.isShiftDown()) {
-			this.doInspect(); return true; // Inspect
-		};
-		if (key == 'F' && evt.isShiftDown()) {
-			this.doSearch(); return true; // (search in system source code), alternative for w
-		};
-
+		// FIXME -- these need to be included in editMenuItems
+		if (evt.isShiftDown()) {  // shifted commands here...
+			switch (key) {
+				case "I": { this.doInspect(true); return true; } // Inspect value of selection
+				case "B": { this.doBrowse(true); return true; } // Browse selected class
+				case "F": { this.doSearch(true); return true; } // Shift-Find alternative for w (search)
+				case "M": { this.doMuchMore(true); return true; } // Repeated replacement
+		};	};
 
 		if (key) key = key.toLowerCase();
 		switch (key) {
@@ -2375,7 +2386,8 @@ BoxMorph.subclass('TextMorph', {
 			case "x": { this.doCut(); return true; } // Cut
 			case "c": { this.doCopy(); return true; } // Copy
 			case "v": { this.doPaste(); return true; } // Paste
-			case "m": { this.doMore(); return true; } // More (repeat replacement)
+			case "m": { if (!evt.isShiftDown()) { this.doMore(); return true; } // More (do another replacement like the last)
+										else {this.doMuchMore(); return true; }}  // MuchMore (repeat same change to end of text)
 			case "e": { this.doExchange(); return true; } // Exchange
 			case "f": { this.doFind(); return true; } // Find
 			case "g": { this.doFindNext(); return true; } // Find aGain

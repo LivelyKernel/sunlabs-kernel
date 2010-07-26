@@ -1873,8 +1873,11 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     methodDictFor: function(className) {
-        if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
-        return this.methodDicts[className];
+		// This is called by the SimpleBrowser;  needs some repair to work when SystemBrowser is running
+		// console.log("className = " + className + ", this.methodDicts = " + this.methodDicts);
+		if (!this.methodDicts) this.methodDicts = {}; 
+		if (!this.methodDicts[className]) this.methodDicts[className] = {}; 
+		return this.methodDicts[className];
     },
 
     getSourceInClassForMethod: function(className, methodName) {

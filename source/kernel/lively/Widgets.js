@@ -1538,7 +1538,7 @@ BoxMorph.subclass("TextListMorph", {
 	},
 
 	onSelectionUpdate: function(selection) {
-		console.log("got selection " + selection);
+		// console.log("got selection " + selection);
 		this.setSelectionToMatch(selection);
 	},
 
