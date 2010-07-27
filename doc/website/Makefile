@@ -6,7 +6,7 @@ style:
 	cd styles; ./generate_style.rb
 
 testupload:
-	rsync -a --progress --exclude '.svn' . quatur.net:website/lively-kernel.org
+	rsync -a --progress --exclude '.svn'  . quatur.net:website/lively-kernel.org
 
 quatur:
 	rsync -a --progress --exclude '.svn' . quatur.net:/var/www/lively
