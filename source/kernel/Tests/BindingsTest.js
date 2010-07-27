@@ -219,7 +219,7 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 
 		// proceed triggered then remove
 		var c = connect(obj1, 'x', obj2, 'y',
-			{updater: function($upd, val) { debugger; $upd(val) }, removeAfterUpdate: true});
+			{updater: function($upd, val) { $upd(val) }, removeAfterUpdate: true});
 		obj1.x = 2
 		this.assertEqual(2, obj2.y, 'b');
 		this.assert(!obj1.attributeConnections || obj1.attributeConnections.length == 0,
@@ -243,24 +243,34 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 
 Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.ConnectionSerializationTest', {
 
-	test01HelperAttributeIsNotSerialized: function() {
-		var textMorph1 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
-		var textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
-		this.worldMorph.addMorph(textMorph1);
-		this.worldMorph.addMorph(textMorph2);
-		connect(textMorph1, 'textString', textMorph2, 'updateTextString');
-		textMorph1.updateTextString('foo');
-		this.assertEqual(textMorph1.textString, textMorph2.textString, 'connect not working');
+	createAndAddMorphs: function() {
+		this.textMorph1 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
+		this.textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'xyz');
+		this.worldMorph.addMorph(this.textMorph1);
+		this.worldMorph.addMorph(this.textMorph2);
+	},
+
+	doSave: function() {
 		var doc = this.exportMorph(this.worldMorph) // WorldMorph is test specific
 		var newWorld = new Importer().loadWorldContents(doc.ownerDocument);
-		var newTextMorph1 = newWorld.submorphs[0];
-		var newTextMorph2 = newWorld.submorphs[1];
+		this.newTextMorph1 = newWorld.submorphs[0];
+		this.newTextMorph2 = newWorld.submorphs[1];
+	},
 
-		this.assertEqual(newTextMorph1.textString, 'foo', 'morph serialization problem');
-		newTextMorph1.updateTextString('bar');
-		this.assertEqual(newTextMorph1.textString, newTextMorph2.textString, 'connect not working after deserialization');
+	test01HelperAttributeIsNotSerialized: function() {
+		this.createAndAddMorphs();
+
+		connect(this.textMorph1, 'textString', this.textMorph2, 'updateTextString');
+		this.textMorph1.updateTextString('foo');
+		this.assertEqual(this.textMorph1.textString, this.textMorph2.textString, 'connect not working');
+
+		this.doSave();
+
+		this.assertEqual(this.newTextMorph1.textString, 'foo', 'morph serialization problem');
+		this.newTextMorph1.updateTextString('bar');
+		this.assertEqual(this.newTextMorph1.textString, this.newTextMorph2.textString, 'connect not working after deserialization');
 		// ensure that serialization has cleaned up
-		var c = newTextMorph1.attributeConnections[0];
+		var c = this.newTextMorph1.attributeConnections[0];
 		var setter1 = c.__lookupSetter__('sourceObj');
 		var setter2 = c.__lookupSetter__('targetObj');
 		this.assert(!setter1, 'serialization cleanup failure 1');
@@ -268,39 +278,48 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.
 	},
 	
 	test02ConverterIsSerialzed: function() {
-		var textMorph1 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
-		var textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
-		this.worldMorph.addMorph(textMorph1);
-		this.worldMorph.addMorph(textMorph2);
-		connect(textMorph1, 'textString', textMorph2, 'updateTextString', {converter: function(v) { return v + 'foo' }});
-		textMorph1.updateTextString('foo');
-		this.assertEqual('foofoo', textMorph2.textString, 'connect not working');
-		var doc = this.exportMorph(this.worldMorph) // WorldMorph is test specific
-		var newWorld = new Importer().loadWorldContents(doc.ownerDocument);
-		var newTextMorph1 = newWorld.submorphs[0];
-		var newTextMorph2 = newWorld.submorphs[1];
-		this.assertEqual(newTextMorph1.textString, 'foo', 'morph serialization problem');
-		newTextMorph1.updateTextString('bar');
-		this.assertEqual('barfoo', newTextMorph2.textString, 'connect not working after deserialization');
+		this.createAndAddMorphs();
+
+		connect(this.textMorph1, 'textString', this.textMorph2, 'updateTextString', {converter: function(v) { return v + 'foo' }});
+		this.textMorph1.updateTextString('foo');
+		this.assertEqual('foofoo', this.textMorph2.textString, 'connect not working');
+
+		this.doSave();
+
+		this.assertEqual(this.newTextMorph1.textString, 'foo', 'morph serialization problem');
+		this.newTextMorph1.updateTextString('bar');
+		this.assertEqual('barfoo', this.newTextMorph2.textString, 'connect not working after deserialization');
 	},
 	
 	test03UpdaterIsSerialzed: function() {
-		var textMorph1 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
-		var textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'xyz');
-		this.worldMorph.addMorph(textMorph1);
-		this.worldMorph.addMorph(textMorph2);
-		connect(textMorph1, 'textString', textMorph2, 'updateTextString',
+		this.createAndAddMorphs();
+
+		connect(this.textMorph1, 'textString', this.textMorph2, 'updateTextString',
 			{updater: function(proceed, newV, oldV) { proceed(oldV + newV) }});
-		textMorph1.updateTextString('foo');
-		this.assertEqual('abcfoo', textMorph2.textString, 'updater not working');
-		var doc = this.exportMorph(this.worldMorph) // WorldMorph is test specific
-		var newWorld = new Importer().loadWorldContents(doc.ownerDocument);
-		var newTextMorph1 = newWorld.submorphs[0];
-		var newTextMorph2 = newWorld.submorphs[1];
-		this.assertEqual(newTextMorph1.textString, 'foo', 'morph serialization problem');
-		newTextMorph1.updateTextString('bar');
-		this.assertEqual('foobar', newTextMorph2.textString, 'connect not working after deserialization');
+		this.textMorph1.updateTextString('foo');
+		this.assertEqual('abcfoo', this.textMorph2.textString, 'updater not working');
+
+		this.doSave();
+
+		this.assertEqual(this.newTextMorph1.textString, 'foo', 'morph serialization problem');
+		this.newTextMorph1.updateTextString('bar');
+		this.assertEqual('foobar', this.newTextMorph2.textString, 'connect not working after deserialization');
 	},
+test04DOMNodeIsSerialized: function() {
+		this.createAndAddMorphs();
+		var nodeBefore = this.dom.importNode(XHTMLNS.create('input'));
+		this.dom.documentElement.appendChild(nodeBefore);
+		connect(this.textMorph1, 'textString', nodeBefore, 'value')
+		this.textMorph1.setTextString('test');
+		this.assertEqual('test', nodeBefore.value, 'node connection not working');
+		this.doSave();
+		this.assert(nodeBefore.getAttribute('id'), 'node hasnt gotten any id assigned');
+		var nodeAfter = this.dom.getElementsByTagName('input')[0];
+		this.assert(nodeAfter, 'cannot find node in DOM')
+		this.textMorph1.setTextString('test2');
+		this.assertEqual('test2', nodeAfter.value, 'connect not working after deserialization');
+	},
+
 
 
 });

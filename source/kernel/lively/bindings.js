@@ -191,22 +191,29 @@ Object.subclass('AttributeConnection', {
 
 AttributeConnection.addMethods({
 	toLiteral: function() {
-		if (!this.sourceObj || !this.sourceObj.id || !this.targetObj || !this.targetObj.id) {
-			console.warn('Cannot serialize objects having no id');
-			return {
-				sourceObj: null,
-				sourceAttrName: this.sourceAttrName,
-				targetObj: null,
-				targetMethodName: this.targetMethodName,
-				converter: this.converter ? this.converter.toString() : null,
-				updater: this.updater ? this.updater.toString() : null,
-				removeAfterUpdate: this.removeAfterUpdate,
-			}; 
-		};
+		var self  = this;
+		function getId(obj) {
+			if (!obj) {
+				console.warn('Cannot correctly serialize connections having undefined source or target objects');
+				return null;
+			}
+			if (obj.id && Object.isFunction(obj.id))
+				return obj.id();
+			if (obj.nodeType && obj.getAttribute) { // is it a real node?
+				var id = obj.getAttribute('id')
+				if (!id) { // create a new id
+					var id = 'NodeForBindings:' + lively.data.Wrapper.prototype.newId();
+					obj.setAttribute('id', id);
+				}
+				return id;
+			}
+			console.warn('Cannot correctly serialize connections having source or target objects that have no id: ' + self);
+			return null
+		}
 		return {
-			sourceObj: this.sourceObj.id(),
+			sourceObj: getId(this.sourceObj),
 			sourceAttrName: this.sourceAttrName,
-			targetObj: this.targetObj.id(),
+			targetObj: getId(this.targetObj),
 			targetMethodName: this.targetMethodName,
 			converter: this.converter ? this.converter.toString() : null,
 			updater: this.updater ? this.updater.toString() : null,
