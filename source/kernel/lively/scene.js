@@ -30,7 +30,7 @@ Global.locateCanvas = function(optNode) { // dirty secret
 
 	var maybeCanvas = optNode
 	while (maybeCanvas && maybeCanvas.getAttribute) {
-		if (maybeCanvas.getAttribute('lively:canvas'))
+		if (maybeCanvas.getAttribute('lively:canvas') || maybeCanvas.getAttribute('id') == 'canvas')
 			return maybeCanvas;
 		maybeCanvas = maybeCanvas.parentNode;
 	}

@@ -1161,7 +1161,7 @@ Object.subclass('Copier', {
 				if (found)
 					wrapper[name] = found; // don't override the original if we could not patch it
 		    }
-			if (!found  && name === 'clip') {
+			if (!found && name === 'clip') {
 				// last hope, not clean
 				var clipRawNode = Global.document.getElementById(ref);
 				if (!clipRawNode)
