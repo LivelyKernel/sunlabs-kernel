@@ -202,7 +202,7 @@ AttributeConnection.addMethods({
 			if (obj.nodeType && obj.getAttribute) { // is it a real node?
 				var id = obj.getAttribute('id')
 				if (!id) { // create a new id
-					var id = 'NodeForBindings:' + lively.data.Wrapper.prototype.newId();
+					var id = 'ElementConnection--' + lively.data.Wrapper.prototype.newId();
 					obj.setAttribute('id', id);
 				}
 				return id;
@@ -235,13 +235,26 @@ Object.extend(AttributeConnection, {
 				removeAfterUpdate: literal.removeAfterUpdate,
 			});
 
-		importer.addPatchSite(con, 'sourceObj', literal.sourceObj);
-		importer.addPatchSite(con, 'targetObj', literal.targetObj);
-
+		// when target/source obj are restored asynchronly
 		new AttributeConnection(con, 'sourceObj', con, 'onSourceAndTargetRestored',
 			{removeAfterUpdate: true}).connect();
 		new AttributeConnection(con, 'targetObj', con, 'onSourceAndTargetRestored',
 			{removeAfterUpdate: true}).connect();
+
+		function restore(id, fieldName) {
+			if (!id) {
+				console.warn('cannot deserialize ' + fieldName + ' when deserilaizing a lively.bindings.connect');
+				return
+			}
+			if (id.split('--')[0] == 'ElementConnection') { // FIXME brittle!!!
+				con[fieldName] = importer.canvas().ownerDocument.getElementById(id);
+				return
+			}
+			importer.addPatchSite(con, fieldName, id);
+		};
+
+		restore(literal.sourceObj, 'sourceObj');
+		restore(literal.targetObj, 'targetObj');
 
 		return con;
 	}

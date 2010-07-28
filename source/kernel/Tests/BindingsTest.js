@@ -316,7 +316,7 @@ test04DOMNodeIsSerialized: function() {
 		this.assert(nodeBefore.getAttribute('id'), 'node hasnt gotten any id assigned');
 		var nodeAfter = this.dom.getElementsByTagName('input')[0];
 		this.assert(nodeAfter, 'cannot find node in DOM')
-		this.textMorph1.setTextString('test2');
+		this.newTextMorph1.setTextString('test2');
 		this.assertEqual('test2', nodeAfter.value, 'connect not working after deserialization');
 	},
 
