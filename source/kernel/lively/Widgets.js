@@ -5333,6 +5333,11 @@ BoxMorph.subclass("MiniMapMorph", {
 
 	style: {fill: Color.lightGray, fillOpacity: 0.9},
 
+	setTargetWorld: function(world) {
+		this.targetWorld = world;
+		connect(this.targetWorld, 'scrollChange', this, 'updatePosition')
+	},
+
 	startSteppingScripts: function() {
         this.startStepping(100, "updateMap"); // once per second
     },
@@ -5360,8 +5365,10 @@ BoxMorph.subclass("MiniMapMorph", {
 	},
 
 	updatePosition: function() {
-			var pos = this.world().windowBounds().bottomLeft();
-			this.setPosition(pos.subPt(pt(0,this.bounds().extent().y)))
+		var world = this.world();
+		if (!world) return;
+		var pos = world.windowBounds().bottomLeft();
+		this.setPosition(pos.subPt(pt(0,this.bounds().extent().y)))
 	},
 	
 	onMouseMove: function(evt) {
@@ -5374,13 +5381,16 @@ BoxMorph.subclass("MiniMapMorph", {
 	},
 
 	updateMap: function() {
+		if (!this.targetWorld)
+			return;
+			
 		var oldMorphs = this.submorphs.select(function(ea) { return ea.original && (! ea.original.owner) } );
 		oldMorphs.invoke('remove');
 
-		this.setExtent(this.world().getExtent())
+		this.setExtent(this.targetWorld.getExtent())
 
 		var currentMorphs = this.submorphs.collect(function(ea) { return ea.original});
-		var newMorphs = this.world().submorphs.reject(function(ea) {
+		var newMorphs = this.targetWorld.submorphs.reject(function(ea) {
 			return currentMorphs.include(ea)  || this.isMetaMorph(ea)
 		}, this);
 
@@ -5401,8 +5411,8 @@ BoxMorph.subclass("MiniMapMorph", {
 					ea.applyStyle({borderColor: Color.red, borderWidth: 10})
 				}
 		});	
-		var trans = this.world().getGlobalTransform();
-		var bounds = this.world().windowBounds();
+		var trans = this.targetWorld.getGlobalTransform();
+		var bounds = this.targetWorld.windowBounds();
 		var topLeft = bounds.topLeft().matrixTransform(trans);
 		var bottomRight = bounds.bottomRight().matrixTransform(trans);
 

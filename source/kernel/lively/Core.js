@@ -4475,12 +4475,13 @@ Morph.subclass("PasteUpMorph", {
 		return $super(ignoreTransients, true);
 	},
 	
-	onMouseWheel: function(evt) {
+	onMouseWheel: function(evt) {		
 		if (!evt.isCommandKey()) return false;
 		evt.preventDefault();
 
-		var oldScale = this.getScale();
 		var wheelDelta = evt.wheelDelta();
+		var oldScale = this.getScale();
+
 		var minScale = 0.1, maxScale = 50;
 		if (oldScale < minScale && wheelDelta < 0) return false;
 		if (oldScale > maxScale && wheelDelta > 0) return false;
@@ -4671,6 +4672,8 @@ PasteUpMorph.subclass("WorldMorph", {
         this.mainLoopFunc = this.doOneCycle.bind(this).logErrors('Main Loop');
         this.mainLoop = Global.setTimeout(this.mainLoopFunc, 30);
         this.worldId = ++WorldMorph.worldCount;
+		var self = this;
+		window.onscroll = function() {signal(self, 'scrollChange')}
 
         return this;
     },
@@ -5551,6 +5554,7 @@ WorldMorph.addMethods({
 				var map = new MiniMapMorph();
 				map.name = 'MiniMap';
 				map.openInWorld();
+				map.setTargetWorld(world);
 				map.startSteppingScripts()
 			}],			
 		];
@@ -6350,8 +6354,6 @@ lookTouchy: function(morph) {
 		else
 			return this.submorphs.reject(function(ea) {return ea.isEpimorph}).length != 0;
 	},
-	// enableLayer(ScrollLayer)
-	// disableLayer(ScrollLayer)
 
 	setPosition: function($super, pos) {
 		$super(pos);
@@ -6376,8 +6378,7 @@ lookTouchy: function(morph) {
 		
 		var scroll = function(delta) {
 			var oldPos = pt(Global.scrollX, Global.scrollY)
-			Global.scrollBy(delta.x, delta.y);
-			var newPos = pt(Global.scrollX, Global.scrollY)
+			Global.scrollBy(delta.x, delta.y);			var newPos = pt(Global.scrollX, Global.scrollY)
 			var scrollDelta = newPos.subPt(oldPos).scaleBy(1 / worldScale);
 			self.moveBy(scrollDelta.scaleBy(1))
 			animate = true;
