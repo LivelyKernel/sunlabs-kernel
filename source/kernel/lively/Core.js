@@ -5364,6 +5364,10 @@ WorldMorph.addMethods({
  *  and load the modules on demand?
  */
 WorldMorph.addMethods({
+	isProtectedWorld: function() {
+		return Global.URL && (URL.source.filename() == "index.xhtml")
+	},
+	
 	morphMenu: function($super, evt) { 
 		var menu = $super(evt);
 		menu.keepOnlyItemsNamed(["inspect", "edit style"]);
@@ -5380,7 +5384,7 @@ WorldMorph.addMethods({
 				if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
 			["publish world as ... ", function() { this.promptAndSaveWorld()}]
 		]);
-		if (Global.URL && (URL.source.filename() != "index.xhtml") ) { // Global. avoids an error if Network.js not loaded
+		if (! this.isProtectedWorld()) { // Global. avoids an error if Network.js not loaded
 			// save but only if it's not the startup world
 			menu.addItem(["save current world to current URL (s)", function() { 
 				menu.remove(); 
@@ -6404,9 +6408,14 @@ WorldMorph.addMethods({
 				return true;
 			}
 			if (key == 's') { // save
-				WorldMorph.current().saveWorld()
+				if (! this.isProtectedWorld()) {
+					this.saveWorld()
+				} else {
+					this.setStatusMessage("Warning: Did not save world, because it is protected!", Color.red, 3)
+				}
 				evt.stop();
 				return true;
+
 			}
 		}
 		return ClipboardHack.tryClipboardAction(evt, this);
