@@ -928,22 +928,28 @@ Object.extend(Exporter, {
 		// FIXME this should go to another place?
 		var systemDictionary = this.addSystemDictionary(newDoc);
 		importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc, systemDictionary));
-		this.stripEpimorphs(newDoc);
-		this.stripIgnoredMorphs(newDoc);
+		var fieldNodes = $A(newDoc.getElementsByTagName('field'));
+		this.stripEpimorphs(fieldNodes);
+		this.stripIgnoredMorphs(fieldNodes);
 		return newDoc;
 	},
 	
-	stripEpimorphs: function(doc) {
-		this.stripMorphsOfFields(doc.getElementsByName("isEpimorph"))
+	stripEpimorphs: function(fieldNodes) {
+		var fields = fieldNodes.select(function(ea) {
+			return ea.getAttribute("name") == 'isEpimorph'})
+		this.stripMorphsOfFields(fields);
 	},
 	
-	stripIgnoredMorphs: function(doc) {
-		this.stripMorphsOfFields(doc.getElementsByName("ignoreWhenCopying")); 
+	stripIgnoredMorphs: function(fieldNodes) {
+		var fields = fieldNodes.select(function(ea) {
+			return ea.getAttribute("name") == 'ignoreWhenCopying'})
+		this.stripMorphsOfFields(fields); 
 	},
 	
 	stripMorphsOfFields: function(fields) {
 		$A(fields).each(function(fieldNode){
 			var morphNode = fieldNode.parentNode;
+			console.log("strip morph: " + morphNode)
 			morphNode.parentNode.removeChild(morphNode)
 		})
 	},
