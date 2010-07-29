@@ -6360,25 +6360,26 @@ lookTouchy: function(morph) {
 	},
 
 	scrollDuringDrag: function(counter) {
-		var wb = this.world().windowBounds();
-		var pos = this.getPosition();
+		var scrollSpeed = 0.3; // should go into config options?
+		var maxSteps = 30;
 
-		counter = counter  || 1;
-		var scrollSpeed = 0.3;
 		var world = this.world();
+		var wb = world.windowBounds();
+		var pos = this.getPosition();
+		counter = counter  || 1;
+
 		var worldScale = world.getScale();
 		var steps = counter * scrollSpeed * worldScale;
-		var maxSteps = 30;
 		steps = Math.min(steps, maxSteps);
 		var animate = false;
+		var self = this;
+		
 		var scroll = function(delta) {
-			// console.log("a " + (pos.y + offset) + " b " + wb.top())
-			// console.log("scroll " + delta)
 			var oldPos = pt(Global.scrollX, Global.scrollY)
 			Global.scrollBy(delta.x, delta.y);
 			var newPos = pt(Global.scrollX, Global.scrollY)
 			var scrollDelta = newPos.subPt(oldPos).scaleBy(1 / worldScale);
-			world.firstHand().moveBy(scrollDelta.scaleBy(1))
+			self.moveBy(scrollDelta.scaleBy(1))
 			animate = true;
 		};
 		var offset = 50
@@ -6387,7 +6388,6 @@ lookTouchy: function(morph) {
 		if (pos.y - offset <  wb.top()) scroll(pt(0, - steps));
 		if (pos.y + offset  >  wb.bottom()) scroll(pt(0, steps))
 		if (animate) {
-			var self = this;
 			(function(){self.scrollDuringDrag( counter + 1)}).delay()	
 		}
 	}
