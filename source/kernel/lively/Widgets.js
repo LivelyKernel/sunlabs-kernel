@@ -5324,11 +5324,9 @@ BoxMorph.subclass("MiniMapMorph", {
 
 	initialize: function($super) {
 		$super(new Rectangle(0,0,300,300));
-		
-		this.setScale(300 / WorldMorph.current().getExtent().x);
-
 		this.windowBounds = new MiniMapWindowMorph();
 		this.addMorph(this.windowBounds);
+		this.setScale(0.1);
 	},
 
 	style: {fill: Color.lightGray, fillOpacity: 0.9},
@@ -5368,7 +5366,9 @@ BoxMorph.subclass("MiniMapMorph", {
 		var world = this.world();
 		if (!world) return;
 		var pos = world.windowBounds().bottomLeft();
-		this.setPosition(pos.subPt(pt(0,this.bounds().extent().y)))
+		var worldExtent = world.getExtent();
+		this.setScale(300 / (Math.max(worldExtent.x, worldExtent.y) * world.getScale()));
+		this.setPosition(pos.subPt(pt(0,this.bounds().extent().y)));
 	},
 	
 	onMouseMove: function(evt) {
