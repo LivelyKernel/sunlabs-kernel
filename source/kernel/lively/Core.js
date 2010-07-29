@@ -4482,11 +4482,16 @@ Morph.subclass("PasteUpMorph", {
 		var wheelDelta = evt.wheelDelta();
 		var oldScale = this.getScale();
 
-		var minScale = 0.1, maxScale = 50;
+		var minScale = 0.2, maxScale = 5;
 		if (oldScale < minScale && wheelDelta < 0) return false;
 		if (oldScale > maxScale && wheelDelta > 0) return false;
 		var scaleDelta = 1 + evt.wheelDelta() / 10000;
-		this.scaleBy(scaleDelta);
+		
+		// this.scaleBy(scaleDelta);
+		var newScale = oldScale * scaleDelta;
+		var newScale = Math.max(Math.min(newScale, maxScale), minScale);
+		console.log("new scale " + newScale)
+		this.setScale(newScale)
 
 		// actually this should be a layoutChanged but implementing
 		// layoutChanged in WorldMorph is expensive since it is always called when a
