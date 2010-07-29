@@ -112,25 +112,26 @@ Object.subclass('LaTeXTypesetter', {
 		
 		sys.puts('Will run pdflatex and bibtex on ' + texFilenameNoExtension);
 		
-		var output = ''
-		runCommandInDir(dirOfTexFile, 'pdflatex', ['-halt-on-error', '-interaction=nonstopmode', texFilename], function(exitCode, stdout, stderr) {
-			if (exitCode != 0) {
-				self.noPDFCreated(pathToPDF, 'pdflatex stdout:\n' + stdout + '\n\n\n\npdflatex stderr:\n' + stderr);
-				return;
-			}
-				
-			runCommandInDir(dirOfTexFile, 'bibtex', [texFilenameNoExtension], function(exitCode, stdout, stderr) {
-				// output += output;
-				runCommandInDir(dirOfTexFile, 'pdflatex', ['-halt-on-error', '-interaction=nonstopmode', texFilename], function(exitCode, stdout, stderr) {					
-					if (exitCode != 0) {
+		function runLatex(cb) {
+			runCommandInDir(
+				dirOfTexFile,
+				'pdflatex',
+				['-halt-on-error', '-interaction=nonstopmode', texFilename],
+				function(exitCode, stdout, stderr) {
+					if (exitCode != 0)
 						self.noPDFCreated(pathToPDF, 'pdflatex stdout:\n' + stdout + '\n\n\n\npdflatex stderr:\n' + stderr);
-						return;
-					}
-					callback && callback(stdout);
+					cb && cb(stdout);
 				});
-			});
-		});
+		}
 		
+		function runBibtex(cb) {
+			runCommandInDir(dirOfTexFile, 'bibtex', [texFilenameNoExtension], function(exitCode, stdout, stderr) {
+				cb && cb(stdout);
+			})
+		}
+		
+		runLatex(runBibtex.curry(runLatex.curry(runLatex.curry(callback))));
+
 	},
 });
 
