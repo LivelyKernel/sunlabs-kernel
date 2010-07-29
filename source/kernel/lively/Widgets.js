@@ -4079,6 +4079,8 @@ Morph.subclass('WindowMorph', {
         tm.replaceItemNamed("remove", ["remove", this, 'initiateShutdown']);
         tm.replaceItemNamed("reset rotation", ["reset rotation", this, 'setRotation', 0]);
         tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
+		if (this.targetMorph.model) tm.replaceItemNamed("show all handles",
+			['inspect model', function() {new SimpleInspector(this.targetMorph.model).open()}.bind(this) ]);
         tm.removeItemNamed("duplicate");
         tm.removeItemNamed("turn fisheye on");
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
