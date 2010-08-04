@@ -1692,6 +1692,27 @@ lively.data.Wrapper.subclass('Morph', {
 		return this; 
 	},
 
+	asLogo: function() {
+		var shapes = [], copier = new Copier(), root = this;
+		this.withAllSubmorphsDo(function() {
+			var s = this.shape.copy(copier)
+			if (this !== root) this.getTransform().applyTo(s.rawNode)
+			shapes.push(s)
+
+			if (!this.textContent) return // FIXME, overwrite in TextMorph
+			var s = new lively.scene.Group(); // text nodes parent needs to be a group or other non-graphical object
+			var textNode = this.textContent.copy(copier).rawNode;
+			s.rawNode.appendChild(textNode)
+			this.getTransform().applyTo(s.rawNode)
+			shapes.push(s);
+		})
+
+		var logo = new Morph(new lively.scene.Group())
+		logo.shape.setContent(shapes)
+		logo.setTransform(root.getTransform())
+		return logo;
+	},
+
 	deserialize: function($super, importer, rawNode) {
 		// FIXME what if id is not unique?
 		$super(importer, rawNode);
@@ -6879,7 +6900,9 @@ BoxMorph.subclass('ContainerMorph', {
 
 	addMorph: function($super, m, isFront) {
 		var ret = $super(m, isFront);
-		this.shape.setBounds(this.submorphBounds(true).outsetByRect(this.padding));
+		var submorphBounds = this.submorphBounds(true);
+		if (submorphBounds)
+			this.shape.setBounds(submorphBounds.outsetByRect(this.padding));
 		return ret;
 	},
 
