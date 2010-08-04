@@ -6940,7 +6940,10 @@ ClipboardHack = {
 	tryClipboardAction: function(evt, target) {
         // Copy and Paste Hack that works in Webkit/Safari
         if (!evt.isMetaDown() && !evt.isCtrlDown()) return false;
-		if (evt.hand.world().currentSelection != target && evt.hand.keyboardFocus != target) return false;
+
+		// Multiworld Code
+		if (evt.hand.world().currentSelection != target && evt.hand.world() != target && evt.hand.keyboardFocus != target) return false;
+
 		this.selectPasteBuffer();
         var buffer = this.ensurePasteBuffer();
         if(!buffer) return false;
