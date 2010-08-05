@@ -293,23 +293,35 @@ Object.subclass('lively.data.Wrapper', {
 	},
 	
 	prepareWrapperPropertyForSerialization: function(prop, propValue, extraNodes, optSystemDictionary) {
-		if (prop === 'owner') 
-		return; // we'll deal manually
-		if (propValue instanceof lively.paint.Gradient || propValue	 instanceof lively.scene.Image) {
+		if (prop === 'owner')  return; // we'll deal manually
+		if (propValue instanceof lively.paint.Gradient || propValue	 instanceof lively.scene.Image)
 			return; // these should sit in defs and be handled by restoreDefs() 
-		}
 
 		//console.log("serializing field name='%s', ref='%s'", prop, m.id(), m.getType());
 		if (!propValue.rawNode) {
 			console.log("wha', no raw node on " + propValue);
-		} else if (propValue.id() != null) {
-			var desc = LivelyNS.create("field", {name: prop, ref: propValue.id()});
-			this.appendHelperNode(desc, extraNodes);;
-			if (prop === "ownerWidget") {
-				// console.log('recursing for field ' + prop);
-				propValue.prepareForSerialization(extraNodes, optSystemDictionary);
-				this.appendHelperNode(propValue.rawNode, extraNodes);
-			}
+			return
+		}
+
+// if (propValue instanceof lively.scene.Group) debugger
+
+		if (!propValue.id()) {
+			// console.log("whooo', no id on " + propValue);
+			return
+		}
+
+		var desc = LivelyNS.create("field", {name: prop, ref: propValue.id()});
+		this.appendHelperNode(desc, extraNodes);
+		
+		// FIXME why are shapes not serialized like any normal object?
+		if (propValue instanceof lively.scene.Group) {
+			propValue.prepareForSerialization(extraNodes, optSystemDictionary);
+		}
+			
+		if (prop === "ownerWidget") {
+			// console.log('recursing for field ' + prop);
+			propValue.prepareForSerialization(extraNodes, optSystemDictionary);
+			this.appendHelperNode(propValue.rawNode, extraNodes);
 		}
 	},
 	
@@ -333,7 +345,7 @@ Object.subclass('lively.data.Wrapper', {
 		// console.log("prepare property " + prop + ": " + optSystemDictionary)
 		if (propValue instanceof Function) {
 			return;
-		} else if (lively.data.Wrapper.isInstance(propValue)) { 
+		} else if (lively.data.Wrapper.isInstance(propValue)) {
 			this.prepareWrapperPropertyForSerialization(prop, propValue, extraNodes, optSystemDictionary)
 		} else if (propValue instanceof Relay) {
 			this.prepareRelayPropertyForSerialization(prop, propValue, extraNodes, optSystemDictionary)
@@ -350,9 +362,7 @@ Object.subclass('lively.data.Wrapper', {
 	reference: function() {
 		// console.log("reference " + this)
 		if (!this.refcount) {
-			if (!this.id()) {
-				this.setId(this.newId());
-			}
+			if (!this.id()) this.setId(this.newId());
 			this.dictionary().appendChild(this.rawNode);
 			this.refcount = 1; 
 			return;
@@ -365,9 +375,8 @@ Object.subclass('lively.data.Wrapper', {
 		// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
 		if (this.refcount === undefined) throw new Error('sorry, undefined');
 		this.refcount --;
-		if (this.refcount == 0) {
-			if (this.rawNode.parentNode) this.dictionary().removeChild(this.rawNode);
-		}
+		if (this.refcount == 0 && this.rawNode.parentNode)
+			this.dictionary().removeChild(this.rawNode);
 	},
 
 	dictionary: function() {
@@ -398,8 +407,7 @@ Object.subclass('lively.data.Wrapper', {
 		var value = node.textContent;
 		if (!value) return null
 		
-		if (value === 'NaN')
-			return	NaN; // JSON doesn't unserializes NaN
+		if (value === 'NaN') return NaN; // JSON doesn't unserializes NaN
 
 		var family = LivelyNS.getAttribute(node, "family");
 		if (family) {
@@ -649,6 +657,8 @@ this.Node.addMethods({
 
 	rawNode: null, // set by subclasses
 
+	doNotSerialize: ['cachedTransforms'],
+	
 	setBounds: function(bounds) { 
 		//copy uses this, so throwing is not nice
     	console.warn('Node: setBounds unsupported on type ' + this.getType());
@@ -880,9 +890,9 @@ this.Node.subclass('lively.scene.Shape', {
 });
 
 
- Object.extend(this.Shape, {
-	 // merge with Import.importWrapperFromNode?
-	 importFromNode: function(importer, node) {
+Object.extend(this.Shape, {
+	// merge with Import.importWrapperFromNode?
+	importFromNode: function(importer, node) {
 		switch (node.localName) {
 			case "ellipse":
 				return new lively.scene.Ellipse(importer, node);
@@ -2178,10 +2188,12 @@ Object.extend(lively.scene.Path, {
 });
 
 this.Shape.subclass('lively.scene.Group', {
+	
 	documentation: 'Grouping of scene objects',
 
 	initialize: function() {
 		this.rawNode = NodeFactory.create("g");
+		this.setId(this.newId()); // id required for serialization
 		this.content = [];
 	},
 
@@ -2198,12 +2210,29 @@ this.translateBy(tx);
 // FIXME deep copy?
 	},
 
-	deserialize: function($super, copier, rawNode) {
-		$super(copier, rawNode);
+	deserialize: function($super, importer, rawNode) {
+		$super(importer, rawNode);
 		this.content = [];
+		
+		// FIXME ugly hack for deserializing Groups
+		var arr = rawNode.getElementsByTagNameNS(Namespace.LIVELY, 'array')[0];
+		if (!arr) return
+		
+		items = $A(arr.getElementsByTagName('item'));
+		for (var i = 0; i < items.length; i++) {
+			var itemNode = items[i];
+			var ref = itemNode.getAttribute('ref');
+			if (!ref) continue
+			var rawNode = document.getElementById(ref); // FIXME, actually just look in childNodes of my rawNode
+			if (!rawNode) continue
+			var shape = lively.scene.Shape.importFromNode(importer, rawNode);
+			if (!shape) continue
+			this.content.push(shape)
+		}
 	},
 
 	add: function(node) {
+		if (!node.id()) node.setId(node.newId());
 		this.rawNode.appendChild(node.rawNode);
 		this.content.push(node);
 	},
@@ -2228,7 +2257,7 @@ this.translateBy(tx);
 
 		for (var i = 0; i < this.content.length; i++) {
 			var item = this.content[i];
-			if (!item.isVisible()) 
+			if (!item || !item.isVisible()) 
 				continue;
 			var itemBounds = item.bounds().translatedBy(disp);
 			subBounds = subBounds == null ? itemBounds : subBounds.union(itemBounds);
