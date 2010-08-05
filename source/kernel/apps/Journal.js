@@ -18,7 +18,7 @@ cop.layerClass(JournalEntryLayer, TextMorph, {
 		this.replaceSelectionWith("")
 	
 		this.owner.relayout();
-		this.owner.adjustToSumorphBounds();
+		this.owner.adjustToSubmorphBounds();
 		morph2.requestKeyboardFocus(evt.hand)		
 		
 		// at a position....
@@ -138,7 +138,7 @@ BoxMorph.subclass('JournalEntryContainer', {
 
 	},
 
-	adjustToSumorphBounds: function() {
+	adjustToSubmorphBounds: function() {
 		var bounds = this.submorphBounds(true);
 		if (!bounds)
 			return;
@@ -211,7 +211,7 @@ Morph.subclass('JournalEntryMorph', {
 		console.log("add morph");
 		var result = $super(m);
 		this.relayout();
-		this.adjustToSumorphBounds();
+		this.adjustToSubmorphBounds();
 		return result
 	},
 
@@ -222,14 +222,14 @@ Morph.subclass('JournalEntryMorph', {
 		if (!m.previousExtent || !m.previousExtent.eqPt(newExtent))	{
 			// console.log("relaout because of " + m )
 			this.relayout();
-			this.adjustToSumorphBounds();
+			this.adjustToSubmorphBounds();
 		}		
 
 		m.previousExtent = newExtent;
 	},
 
 	setupConnections: function() {
-		// connect(this.dateText, 'fullBounds', this, 'adjustToSumorphBounds')
+		// connect(this.dateText, 'fullBounds', this, 'adjustToSubmorphBounds')
 	},
 	
 	ensureDateText: function() {
@@ -271,7 +271,7 @@ Morph.subclass('JournalEntryMorph', {
         return null; 
     },
 
-	adjustToSumorphBounds: function() {
+	adjustToSubmorphBounds: function() {
 		var bounds = this.submorphBounds(true);
 		if (!bounds)
 			return;
