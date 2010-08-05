@@ -287,8 +287,76 @@ Morph.subclass('JournalEntryMorph', {
 			}
 		}
 	},
-
-
 });
+
+
+
+/*
+   Class: FigureMorph
+    
+   A morph containing an image and an editable textual description.
+   
+*/
+BoxMorph.subclass('FigureMorph', {
+
+	padding: new Rectangle(10,10,10,10),
+
+	adjustLayout: function() {
+		this.relayout();
+		this.setExtent(this.submorphBounds().extent().addPt(pt(20,20)));
+	}
+})
+
+// async adjust the the image size when it is loaded
+FigureMorph.asynAsjustImageSize = function(imgSrc, morph) {
+	function getWidthAndHeight() {
+		var newExtent = pt(morph.bounds().width, this.height / this.width * morph.bounds().width)
+		morph.setExtent(newExtent);
+		if (morph.owner.adjustLayout)
+			morph.owner.adjustLayout();
+	    return true;
+	}
+	function loadFailure() {
+	    WorldMorph.current().alert("'" + this.name + "' failed to load.");
+	    return true;
+	}
+	var myImage = new Image();
+	myImage.name = imgSrc;
+	myImage.onload = getWidthAndHeight;
+	myImage.onerror = loadFailure;
+	myImage.src = imgSrc;
+};
+
+
+FigureMorph.createFromFilePath = function(filePath) {
+
+	figure = new FigureMorph(new Rectangle(0,0,100,100));
+	figure.layoutManager = new VerticalLayout();
+	figure.setFill(Color.gray)
+
+	// image
+	var extent = pt(700, 500)
+	var imgMorph = new ImageMorph(pt(0,0).extent(extent), filePath)
+	imgMorph.setExtent(extent)
+	imgMorph.setFill(Color.gray);
+	imgMorph.suppressGrabbing = true
+	imgMorph.suppressHandles = true
+	figure.addMorph(imgMorph);
+	FigureMorph.asynAsjustImageSize(filePath, imgMorph)
+
+	// description
+	fileName = filePath.match(/[^\/]*$/)[0];
+	figureText = new TextMorph(new Rectangle(0,0,650,100), fileName);
+	figureText.suppressGrabbing = true
+	figureText.setFontSize(16) 
+	figureText.applyStyle({borderWidth: 0, fill: null})
+	figure.addMorph(figureText)
+
+	return figure
+}
+
+
+
+
 
 }) // end of module
