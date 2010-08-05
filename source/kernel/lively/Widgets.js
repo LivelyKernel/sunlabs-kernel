@@ -5333,11 +5333,16 @@ BoxMorph.subclass("MiniMapMorph", {
 
 	setTargetWorld: function(world) {
 		this.targetWorld = world;
-		connect(this.targetWorld, 'scrollChange', this, 'updatePosition')
+		connect(this.targetWorld, 'scrollChange', this, 'updatePosition');
+	},
+
+	remove: function($super) {
+		disconnect(this.targetWorld, 'scrollChange', this, 'updatePosition');
+		return $super()
 	},
 
 	startSteppingScripts: function() {
-        this.startStepping(100, "updateMap"); // once per second
+        this.startStepping(1000, "updateMap"); // once per second
     },
 
 	isMetaMorph: function(m) {
@@ -5356,10 +5361,10 @@ BoxMorph.subclass("MiniMapMorph", {
 	},
 
 	updateScroll: function(pos) {
-			// this.world().setStatusMessage("scroll " + pos , Color.black, 3)		
-			var windowExtent = this.world().windowBounds().extent()
-			Global.scrollTo(pos.x - 0.5 * windowExtent.x ,pos.y - 0.5 * windowExtent.y)
-			this.updatePosition();				
+		// this.world().setStatusMessage("scroll " + pos , Color.black, 3)		
+		var windowExtent = this.world().windowBounds().extent()
+		Global.scrollTo(pos.x - 0.5 * windowExtent.x ,pos.y - 0.5 * windowExtent.y)
+		this.updatePosition();				
 	},
 
 	updatePosition: function() {
