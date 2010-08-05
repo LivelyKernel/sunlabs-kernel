@@ -3081,7 +3081,7 @@ Component.subclass('ImageComponent', {
     buildView: function($super, optExtent) {
         $super(optExtent);
 
-        var url = this.getURL() || 'http://livelykernel.sunlabs.com/favicon.ico';
+        var url = this.getURL() || 'http://www.lively-kernel.org/repository/lively-wiki/mouse.png';
         this.morph = new ImageMorph(this.panel.getBoundsAndShrinkIfNecessary(80), url);
 		this.morph.adoptToBoundsLayout = 'layoutRelativeExtent';
         this.morph.openForDragAndDrop = false;
