@@ -2086,7 +2086,9 @@ Morph.subclass("MenuMorph", {
     },
 
     onDeserialize: function() {
-		this.listMorph.relayMouseEvents(this);
+		if (this.listMorph) {
+			this.listMorph.relayMouseEvents(this);
+		}
     },
 
     addItem: function(item, index) {
