@@ -342,8 +342,8 @@ Widget.subclass('SimpleInspector', {
         }
     },
 
-    onInspecteeUpdate: function(inspectee) {
-	this.setPropList(Properties.all(inspectee));
+	onInspecteeUpdate: function(inspectee) {
+		this.setPropList(Properties.own(inspectee).sort());
     },
 
     onPropNameUpdate: function(propName) {
