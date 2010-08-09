@@ -2835,6 +2835,9 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 AnotherSourceDatabase.addMethods({
 
 	createSymbolList: function() {
+		// is a list of names of classes, proto and static methods, objects, and functions defined
+		// in all currently loaded namespaces
+		
 		var allClasses = Global.classes(true)
 		allClasses.length
 		var allClassNames = allClasses.collect(function(klass) { return klass.name /*local name*/ })
