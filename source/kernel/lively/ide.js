@@ -2831,6 +2831,39 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		return root
 	},
 });
+
+AnotherSourceDatabase.addMethods({
+
+	createSymbolList: function() {
+		var allClasses = Global.classes(true)
+		allClasses.length
+		var allClassNames = allClasses.collect(function(klass) { return klass.name /*local name*/ })
+
+		var namespaces = [Global].concat(Global.subNamespaces(true))
+		var namespaceNames = namespaces.pluck('namespaceIdentifier')
+
+		// both proto and static
+		var allMethodNames = allClasses
+			.collect(function(klass) { return klass.localFunctionNames().concat(Functions.own(klass)) })
+			.flatten()
+
+		var functionAndObjectNames = namespaces
+			.collect(function(ns) {
+				var propNames = [];
+				for (var name in ns) {
+					var value = ns[name];
+					if (!value || Class.isClass(value) || value.namespaceIdentifier) continue;
+					propNames.push(name)
+				}
+				return propNames })
+			.flatten();
+
+		var symbolList = allClassNames.concat(namespaceNames).concat(allMethodNames).concat(functionAndObjectNames);
+
+		return symbolList;
+	},
+
+});
  
 Object.extend(lively.ide, {
 	// see also lively.Tools.startSourceControl
