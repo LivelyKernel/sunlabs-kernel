@@ -933,7 +933,8 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 			lively.ide.RefreshCommand,
 			lively.ide.EvaluateCommand,
 			lively.ide.SortCommand,
-			lively.ide.ViewSourceCommand]
+			lively.ide.ViewSourceCommand,
+			lively.ide.ClassHierarchyViewCommand]
 	},
 
 
@@ -2158,6 +2159,39 @@ addMethod: function() {
 		createChange(n1);
 	});
 },
+
+});
+
+lively.ide.BrowserCommand.subclass('lively.ide.ClassHierarchyViewCommand', {
+
+	wantsMenu: Functions.True,
+
+	isActive: function(pane) {
+		return this.browser.selectedNode().isClassNode
+	},
+
+
+	trigger: function() {
+		return [['view hierarchy', this.viewHierarchy.curry(this.browser.selectedNode().target.name).bind(this)]];
+	},
+
+	viewHierarchy: function(klassName) {
+		var w = WorldMorph.current();
+
+		var klass = Class.forName(klassName)
+		if (!klass) {
+			w.alert('Cannot find class ' + klassName)
+			return
+		}
+
+		var list = klass.withAllSortedSubclassesDo(function(kl, idx, level) {
+			var indent = range(1, level).inject('', function(str, idx) { return str + '  ' });
+			return {isListItem: true, string: indent + (kl.type || kl.name), value: kl};
+		});
+		var listPane = newRealListPane(new Rectangle(0,0, 400, 400));
+		listPane.innerMorph().updateList(list)
+		w.addFramedMorph(listPane, klass.type + ' and its subclasses');
+	},
 
 });
 
