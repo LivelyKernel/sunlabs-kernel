@@ -24,6 +24,31 @@ TestCase.subclass('TabCompletionTest', {
 });
 
 cop.create('TabCompletionLayer').refineClass(TextMorph, {
+
+	tabCompletionChoicesForLastWord: function(proceed, lastWord) {
+			var allChoices = 	TabCompletion.allSymbols();
+			return allChoices.select(function(ea){return ea.startsWith(lastWord)});
+	},
+	
+	tabCompletionForLastWord: function(proceed, lastWord, backward) {
+			if (this.tabReplacePrefix !== lastWord) {
+				this.tabReplaceListIndex = 0;
+				this.tabReplacePrefix = lastWord;
+			};
+			if (!this.tabReplaceListIndex || (this.selectionString().length == 0)) {
+				this.tabReplaceListIndex = 0;
+			};
+
+			var choices = this.tabCompletionChoicesForLastWord(lastWord);
+
+			this.tabReplaceListIndex = (this.tabReplaceListIndex) % choices.size();
+			if (this.tabReplaceListIndex < 0) {
+				this.tabReplaceListIndex = this.tabReplaceListIndex + choices.size();
+			}
+			this.tabReplaceListIndex = this.tabReplaceListIndex + (backward ? -1 : 1);
+
+			return choices[this.tabReplaceListIndex];
+	},	
 	
 	onKeyDown: function(proceed, evt) {
 		if (evt.getKeyCode() == Event.KEY_TAB) {
@@ -34,34 +59,19 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			if (word) {
 				var lastWord = this.textString.substring(lastWordRange[0], cursor);
 			}
-			
-			if (cursor >= lastWordRange[0] && (lastWord || (lastChar == ".")) && (lastChar != "\t") && !evt.isAltDown()) {
-			
+			if (cursor >= lastWordRange[0] && lastWord  && (lastChar != "\t") && !evt.isAltDown()) {			
 				var m = lastWord.match(/([A-Za-z0-9]+)$/)
 				if (m) {
-					lastWord = m[1]
+					lastWord = m[1];
 				}
-	
-				if (!this.tabReplacePrefix === lastWord)
-				this.tabReplaceListIndex = 0;
-				this.tabReplacePrefix = lastWord;
-				var allChoices = 	TabCompletion.allSymbols();
-				var choices = allChoices.select(function(ea){return ea.startsWith(lastWord)});
-				if (!this.tabReplaceListIndex)
-					this.tabReplaceListIndex = 0;
-
-				this.tabReplaceListIndex = (this.tabReplaceListIndex) % choices.size();
-				var fullReplace = choices[this.tabReplaceListIndex];
-
+				var fullReplace = this.tabCompletionForLastWord(lastWord, evt.isShiftDown());
 				if (fullReplace) {
 					var replace = fullReplace.substring(lastWord.length, fullReplace.length);
 				};
-				// console.log("replace " + replace + " " + fullReplace + " choices " + choices.length + " word " + word + " lastWorld" + lastWord)
 				if (replace) {
 					this.replaceSelectionfromKeyboard(replace);
 					this.setSelectionRange(cursor, cursor + replace.size());
 				}
-				this.tabReplaceListIndex = this.tabReplaceListIndex + 1;
 			} else {
 				this.replaceSelectionfromKeyboard("\t");
 			}
@@ -72,6 +82,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 	},
 
 });
+
 
 TabCompletionLayer.beGlobal();
 
