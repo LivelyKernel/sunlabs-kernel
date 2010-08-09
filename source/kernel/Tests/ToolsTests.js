@@ -1,4 +1,4 @@
-module('Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'Tests.SerializationTests').toRun(function(thisModule, testModule, toolsModule, ideModule) {
+module('Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'Tests.SerializationTests', 'lively.TabCompletion').toRun(function(thisModule, testModule, toolsModule, ideModule) {
 
 thisModule.createDummyNamespace = function() {
     console.assert(!thisModule['testNS'], 'testNS already existing');
@@ -1745,6 +1745,19 @@ TestCase.subclass('Tests.ToolsTests.MouseEventTest', {
         //keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
 		WorldMorph.current().hands.first().setKeyboardFocus(mouseWatcher);
     }
+});
+
+TestCase.subclass('Tests.ToolsTests.TabCompletionTest', {
+
+	testAllSymbols: function() {
+		this.assert(TabCompletion.allSymbols().length > 1000)
+	},
+	
+	testAllSymbolsAreUnique: function() {
+		var all = TabCompletion.allSymbols(true);
+		var uniq = all.clone().uniq();
+		this.assertEqual(all.length, uniq.length, "not unique");
+	},
 });
 
 }) // end of module
