@@ -775,9 +775,18 @@ var Functions = {
 	all: function Functions$all(object) {
 		var a = [];
 		for (var name in object) {	
-			if (object[name] instanceof Function)
+			if (Object.isFunction(object[name]))
 				a.push(name);
 		} 
+		return a;
+	},
+
+	own: function Functions$own(object) {
+		var a = [];
+		for (var name in object) {	
+			if (object.hasOwnProperty(name) && Object.isFunction(object[name]))
+				a.push(name);
+		}
 		return a;
 	},
 
@@ -798,22 +807,18 @@ var Properties = {
 	all: function Properties$all(object, predicate) {
 		var a = [];
 		for (var name in object) {	
-			if (!(object[name] instanceof Function) && (predicate ? predicate(name, object) : true)) {
-			a.push(name);
-			}
-		} 
+			if (!Object.isFunction(object[name]) && (predicate ? predicate(name, object) : true))
+				a.push(name);
+		}
 		return a;
 	},
 	
 	own: function Properties$own(object) {
 		var a = [];
 		for (var name in object) {	
-			if (object.hasOwnProperty(name)) {
-			var value = object[name];
-			if (!(value instanceof Function))
+			if (object.hasOwnProperty(name) && !Object.isFunction(object[name]))
 				a.push(name);
-			}
-		} 
+		}
 		return a;
 	},
 
@@ -827,7 +832,14 @@ var Properties = {
 				}
 			}
 		}
-	}
+	},
+
+	nameFor: function Properties$nameFor(object, value) {
+		for (var name in object)
+			if (object[name] === value) return name;
+		return undefined
+	},
+
 };
 
 
@@ -865,9 +877,9 @@ Object.subclass('Namespace', {
 	functions: function(recursive) {
 		return this.gather(
 			'functions',
-			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea },
+			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !Class.isClass(ea) && this.requires !== ea },
 			recursive);
-	}
+	},
 	
 });
 
