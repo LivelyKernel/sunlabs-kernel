@@ -331,6 +331,8 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
 
 Object.extend(Function.prototype, {
 
+	defaultCategoryName: 'default category',
+
 	subclass: function(/*... */) {
 		// Main method of the LK class system.
 
@@ -369,22 +371,37 @@ Object.extend(Function.prototype, {
 			if (className) targetScope[shortName] = klass; // otherwise it's anonymous
 		};
 
-		for (var i = 1; i < args.length; i++) {
-			klass.addMethods(args[i] instanceof Function ? (args[i])() : args[i]);
-		}
-		if (!klass.prototype.initialize) {
+		var category = this.defaultCategoryName;
+		for (var i = 1; i < args.length; i++)
+			if (Object.isString(args[i]))
+				category = args[i];
+			else
+				klass.addMethods(category, args[i] instanceof Function ? (args[i])() : args[i]);
+
+		if (!klass.prototype.initialize)
 			klass.prototype.initialize = Functions.Empty;
-		}
 
 		return klass;
 	},
 
-	addMethods: function(source) {
+	addMethods: function(categoryNameOrSource, sourceWhenCategoryNameDefined) {
+		// first parameter can be a category name or the source itself
 		// copy all the methods and properties from {source} into the
 		// prototype property of the receiver, which is intended to be
 		// a class constructor.	 Method arguments named '$super' are treated
 		// specially, see Prototype.js documentation for "Class.create()" for details.
 		// derived from Class.Methods.addMethods() in prototype.js
+
+		// prepare the categories
+		var categoryName = Object.isString(categoryNameOrSource) ? categoryNameOrSource : this.defaultCategoryName;
+		if (!this.categories) this.categories = {};
+		if (!this.categories[categoryName]) this.categories[categoryName] = [];
+		var currentCategoryNames = this.categories[categoryName];
+
+		var source = Object.isString(categoryNameOrSource) ? sourceWhenCategoryNameDefined : categoryNameOrSource;
+		if (!source)
+			throw dbgOn(new Error('no source in addMethods!'));
+
 		var ancestor = this.superclass && this.superclass.prototype;
 		
 		var className = this.type || "Anonymous";
@@ -397,8 +414,9 @@ Object.extend(Function.prototype, {
 			if (getter) this.prototype.__defineGetter__(property, getter);
 			var setter = source.__lookupSetter__(property);
 			if (setter) this.prototype.__defineSetter__(property, setter);
-			if (getter || setter)
-			continue;
+			if (getter || setter) continue;
+
+			currentCategoryNames.push(property);
 
 			var value = source[property];
 			// weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
@@ -428,11 +446,6 @@ Object.extend(Function.prototype, {
 						originalFunction: method
 					});
 				})();
-			}
-			
-			if (Object.isFunction(value)) {
-				
-				
 			}
 			
 			this.prototype[property] = value;
@@ -493,13 +506,18 @@ Object.extend(Function.prototype, {
 		return createSortedSubclassList(this, 0).collect(function(spec, idx) { return func(spec.klass, idx, spec.level) })
 	},
 
-
-	
 	superclasses: function() {
 		if (!this.superclass) return [];
 		if (this.superclass === Object) return [Object];
 		return this.superclass.superclasses().concat([this.superclass]);
-	}
+	},
+
+	categoryNameFor: function(propName) {
+		for (var categoryName in this.categories)
+			if (this.categories[categoryName].include(propName))
+				return categoryName;
+		return null;
+	},
 
 });
 
@@ -877,7 +895,7 @@ Object.subclass('Namespace', {
 	functions: function(recursive) {
 		return this.gather(
 			'functions',
-			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !Class.isClass(ea) && this.requires !== ea },
+			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea },
 			recursive);
 	},
 	
