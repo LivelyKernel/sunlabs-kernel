@@ -842,6 +842,46 @@ test05ParseBeGlobal: function() {
 
 
 });
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.MethodCategoryParseTest', {
+
+	test01ParseAddMethodsWithCategory: function() {
+		this.sut.debugMode = true
+		var src = 'Foo.addMethods(\'categoryA\', { foo: function() { return 23 }, });';
+		this.sut.src = src;
+		var descriptor = this.sut.callOMeta('klassExtensionDef');
+		this.assert(descriptor, 'no descriptor');
+		this.assert('Foo', descriptor.name);
+		this.assertEqual(descriptor.subElements().length, 1);
+		this.assertIdentity(descriptor.startIndex, 0);
+		this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'), 'stopIndex wrong');
+		this.assertDescriptorsAreValid([descriptor]);
+		var methodDescriptor = descriptor.subElements()[0];
+		this.assertEqual('foo', methodDescriptor.name);
+		this.assertEqual('categoryA', methodDescriptor.category);
+    },
+test02ParseSubclassWithCategory: function() {
+		this.sut.debugMode = true
+		var src = 'Object.subclass(\'Foo\', \'categoryA\', { foo: function() { return 23 }, }, \'categoryB\', { foo2: function() { return 42 }, });';
+		this.sut.src = src;
+		var descriptor = this.sut.callOMeta('klassDef');
+		this.assert(descriptor, 'no descriptor');
+		this.assert('Foo', descriptor.name);
+		this.assertEqual(descriptor.subElements().length, 2);
+		this.assertIdentity(descriptor.startIndex, 0);
+		this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'), 'stopIndex wrong');
+		this.assertDescriptorsAreValid([descriptor]);
+
+		var methodDescriptor = descriptor.subElements()[0];
+		this.assertEqual('foo', methodDescriptor.name);
+		this.assertEqual('categoryA', methodDescriptor.category);
+
+		methodDescriptor = descriptor.subElements()[1];
+		this.assertEqual('foo2', methodDescriptor.name);
+		this.assertEqual('categoryB', methodDescriptor.category);
+    },
+
+
+});
 
 thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTest', {
 
