@@ -377,7 +377,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
        	this.setSourceString(node.sourceString());
 		this.updateTitle();
 
-        this.setPane1Menu(this.commandMenuSpec('Pane1').concat(node.menuSpec()));
+        this.setPane1Menu(node.menuSpec().concat(this.commandMenuSpec('Pane1')));
 		this.setPane2Menu(this.commandMenuSpec('Pane2'));
 		this.setPane3Menu(this.commandMenuSpec('Pane3'));
 
@@ -400,7 +400,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.setSourceString(node.sourceString());
 		this.updateTitle();
 
-		this.setPane2Menu(this.commandMenuSpec('Pane2').concat(node.menuSpec()));
+		this.setPane2Menu(node.menuSpec().concat(this.commandMenuSpec('Pane2')));
 		this.setPane3Menu(this.commandMenuSpec('Pane3'));
 
 		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
@@ -421,7 +421,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
         this.setSourceString(node.sourceString());
 		this.updateTitle();
 
-		this.setPane3Menu(this.commandMenuSpec('Pane3').concat(node.menuSpec()));
+		this.setPane3Menu(node.menuSpec().concat(this.commandMenuSpec('Pane3')));
 		this.setPane4Menu(this.commandMenuSpec('Pane4'));
 
 		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
@@ -437,7 +437,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 		this.setSourceString(node.sourceString());
 		this.updateTitle();
 
-		this.setPane4Menu(this.commandMenuSpec('Pane4').concat(node.menuSpec()));
+		this.setPane4Menu(node.menuSpec().concat(this.commandMenuSpec('Pane4')));
 		this.buttonCommands.forEach(function(cmd) { cmd.button.setIsActive(cmd.isActive()) })
     },
 
@@ -558,7 +558,7 @@ Widget.subclass('lively.ide.BasicBrowser', {
 			.select(function(ea) { return ea.wantsMenu() && ea.isActive(pane) })
 			.inject([], function(all, ea) { return all.concat(ea.trigger()) });
 		if (result.length > 0)
-			result.push(['-------']);
+			result.unshift(['-------']);
 		return result;
 	},
 
