@@ -467,8 +467,33 @@ Object.extend(Function.prototype, {
 	},
 	
 	allSubclasses: function() {
-		return Global.classes(true).select(function(ea) { return ea.isSubclassOf(this) }.bind(this));
+		var klass = this;
+		return Global.classes(true).select(function(ea) { return ea.isSubclassOf(klass) });
 	},
+
+	directSubclasses: function() {
+		var klass = this;
+		return Global.classes(true).select(function(ea) { return ea.superclass === klass });
+	},
+
+	withAllSortedSubclassesDo: function(func) {
+		// this method iterates func on all subclasses of klass (including klass)
+		// it is ensured that the klasses are sorted by a) subclass relationship and b) name (not type!)
+		// func gets as parameters: 1) the class 2) index in list 3) level of inheritance
+		// compared to klass (1 for direct subclasses and so on)
+
+		function createSortedSubclassList(klass, level) {
+			var list = klass.directSubclasses()
+				.sortBy(function(ea) { return ea.name.charCodeAt(0) })
+				.collect(function(subclass) { return createSortedSubclassList(subclass, level + 1) })
+				.flatten();
+			return [{klass: klass, level: level}].concat(list)
+		}
+
+		return createSortedSubclassList(this, 0).collect(function(spec, idx) { return func(spec.klass, idx, spec.level) })
+	},
+
+
 	
 	superclasses: function() {
 		if (!this.superclass) return [];
