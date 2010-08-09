@@ -53,6 +53,7 @@ Object.extend(Function.prototype, {
 	
 		for (var i=1; i < args.length; i++) {
 			var methods = args[i];
+			if (Object.isString(methods)) continue; // if it's a category
 			Object.keys(methods).each(function(ea) {
 				var m = ea.match(/([A-Za-z0-9]+)\$([A-Za-z0-9]*)/);
 				if (m) {
