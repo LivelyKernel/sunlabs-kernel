@@ -608,22 +608,25 @@ refresh: function() {
 	
 	runAllTestCases: function() {
 		var testSuite = new TestSuite();
-		var counter = 0;
+		var counter = 1;
 		//all classes from the list
 		testSuite.setTestCases(this.getTestClasses().map(function(ea) {
 		    return Class.forName(ea);
 		}));
 		var self = this;
-		var total = self.resultBar.getExtent().x;
-		var step = self.resultBar.getExtent().x / testSuite.testCaseClasses.length;
-		// Refactor!
+		var max = testSuite.testCaseClasses.length;
+		 self.resultBar.bar.setFill(Color.darkGray);
 		testSuite.showProgress = function(testCase) {
 		    self.setResultText(testCase.constructor.type);
-		    self.resultBar.setExtent(pt(step*counter,  self.resultBar.getExtent().y));
+		 	var progress = counter /  max;   
+			self.resultBar.setValue(progress);
+			// console.log("progress " + progress)
+			self.resultBar.label.setExtent(self.resultBar.getExtent());
+
 		    var failureList = testSuite.result.failureList();
 		    if(failureList.length > 0) {
 		        self.setFailureList(failureList);
-		        self.resultBar.setFill(Color.red);
+		        self.setBarColor(Color.red);
 		    };
 		    counter += 1;
 		};
@@ -670,7 +673,7 @@ refresh: function() {
 			['runButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.6, 0.35, 0.05)],
 			['runAllButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.35, 0.6, 0.35, 0.05)],
 			['refreshButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.7, 0.6, 0.3, 0.05)],
-			['resultBar', function(initialBounds){return new TextMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
+			['resultBar', function(initialBounds){return new ProgressBarMorph(initialBounds)}, new Rectangle(0, 0.65, 1, 0.05)],
 			['failuresList', newTextListPane, new Rectangle(0, 0.7, 1, 0.3)],
 		], panel);
 
@@ -706,8 +709,8 @@ refresh: function() {
 
 		// directly using the morph for setting the color -- 
 		this.resultBar = panel.resultBar;
-		this.resultBar.connectModel(model.newRelay({Text: '-ResultText'}));
-
+		this.resultBar.setValue(0)
+		this.resultBar.label.connectModel(model.newRelay({Text: '-ResultText'}));
 		var failuresList = panel.failuresList;
 		failuresList.connectModel(model.newRelay({List: '-FailureList', Selection: '+Failure'}));
 		// quick hack for building stackList
@@ -726,7 +729,7 @@ refresh: function() {
 		},
 		
 		setBarColor: function(color) {
-		this.resultBar.setFill(color);
+			this.resultBar.bar.setFill(color);
 	},
 	
 	openErrorStackViewer: function(testFailedObj) {
