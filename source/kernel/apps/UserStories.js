@@ -500,10 +500,34 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.TaskMorph', {
 Object.extend(apps.UserStories.TaskMorph, {
 	open: function(ownerOrNothing) { new apps.UserStories.TaskMorph().openCenteredIn(ownerOrNothing) },
 });
+ContainerMorph.subclass('apps.UserStories.IterationMorph', {
+
+	style: {borderWidth: 2, borderColor: Color.tangerine , fill: Color.white, suppressGrabbing: true},
+	defaultExtent: pt(20,20),
+
+	initialize: function($super) {
+		$super(this.defaultExtent.extentAsRectangle());
+		this.shape.setStrokeDashArray("9,7"); // FIXME
+	},
+collapse: function() {
+	this.collapsedMorphs = this.submorphs.reject(function(ea) { return ea.isUserStory })
+	this.collapsedMorphs.invoke('remove');
+},
+uncollapse: function() {
+	if (!this.collapsedMorphs) return
+	this.collapsedMorphs.forEach(function(ea) {
+		this.addMorph(ea)
+	}, this);
+},
+
+
+
+});
 
 Object.extend(Global, {
 	UserStoryMorph: apps.UserStories.UserStoryMorph,
 	TaskMorph: apps.UserStories.TaskMorph,
+	IterationMorph: apps.UserStories.IterationMorph,
 });
 
 

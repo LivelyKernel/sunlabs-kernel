@@ -64,6 +64,21 @@ TestCase.subclass('Tests.UserStoryTest.UserStoryTest', {
 		}	
 
 	},
+test03CollapseAndUncollapseWithIterationMorph: function() {
+		var iteration = new IterationMorph();
+		this.addToTestWorld(iteration);
+		var story = new UserStoryMorph();
+		var task = new TaskMorph();
+		iteration.addMorph(story);
+		iteration.addMorph(task);
+		task.expectedTime = 10; task.actualTime = 12;
+		task.toggleUserStoryConnect(story);
+		iteration.collapse();
+		this.assert(!iteration.submorphs.include(task), 'task still in iteration');
+		iteration.uncollapse();
+		this.assert(iteration.submorphs.include(task), 'task not in iteration after uncollapse');
+	},
+
 
 });
 
