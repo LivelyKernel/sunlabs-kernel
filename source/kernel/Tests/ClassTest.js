@@ -152,4 +152,52 @@ TestCase.subclass('Tests.ClassTest.NamespaceTest', {
     },
 })
 
+TestCase.subclass('Tests.ClassTest.MethodCategoryTest', {
+
+	tearDown: function() {
+		if (Tests.ClassTest.Dummy)
+			delete Tests.ClassTest.Dummy;
+	},
+
+	testAddMethodsWorksWithCategoryString: function() {
+		Object.subclass('Tests.ClassTest.Dummy');
+		Tests.ClassTest.Dummy.addMethods('category1', { foo: function() { return 23 } });
+		Tests.ClassTest.Dummy.addMethods('category1', { baz: 23 });
+		Tests.ClassTest.Dummy.addMethods('category2', { bar: function() { return 42 } });
+
+		var method1 = Tests.ClassTest.Dummy.prototype.foo
+		var method2 = Tests.ClassTest.Dummy.prototype.bar
+		var property1 = Tests.ClassTest.Dummy.prototype.baz
+
+		this.assert(method1, 'foo not there')
+		this.assert(method2, 'bar not there')
+		this.assert(property1, 'baz not there')
+
+		this.assertEquals('category1', Tests.ClassTest.Dummy.categoryNameFor('foo'));
+		this.assertEquals('category1', Tests.ClassTest.Dummy.categoryNameFor('baz'));
+		this.assertEquals('category2', Tests.ClassTest.Dummy.categoryNameFor('bar'));
+	},
+
+	testSubclassWorksWithCategory: function() {
+		Object.subclass('Tests.ClassTest.Dummy',
+			'category1', { foo: function() { return 23 } }, { baz: 23 },
+			'category2', { bar: function() { return 42 } }
+		);
+
+		this.assert(Tests.ClassTest.Dummy, 'class not defined')
+
+		var method1 = Tests.ClassTest.Dummy.prototype.foo
+		var method2 = Tests.ClassTest.Dummy.prototype.bar
+		var property1 = Tests.ClassTest.Dummy.prototype.baz
+
+		this.assert(method1, 'foo not there')
+		this.assert(method2, 'bar not there')
+		this.assert(property1, 'baz not there')
+
+		this.assertEquals('category1', Tests.ClassTest.Dummy.categoryNameFor('foo'));
+		this.assertEquals('category1', Tests.ClassTest.Dummy.categoryNameFor('baz'));
+		this.assertEquals('category2', Tests.ClassTest.Dummy.categoryNameFor('bar'));
+	},
+
+});
 }) // end of module
