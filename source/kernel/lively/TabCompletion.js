@@ -32,26 +32,31 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			var lastWordRange = this.locale.selectWord(this.textString, cursor )
 			var word = this.textString.substring(lastWordRange[0], lastWordRange[1] + 1)
 			if (word) {
-				var lastWord = this.textString.substring(lastWordRange[0], cursor)
+				var lastWord = this.textString.substring(lastWordRange[0], cursor);
 			}
 			
-			if (cursor >= lastWordRange[0] && (lastWord || (lastChar == ".")) && (lastChar != "\t")) {
-				if (lastWord.endsWith(".")) {
-					lastWord = "";
-				};
-				if (!this.tabReplacePrefix == lastWord)
+			if (cursor >= lastWordRange[0] && (lastWord || (lastChar == ".")) && (lastChar != "\t") && !evt.isAltDown()) {
+			
+				var m = lastWord.match(/([A-Za-z0-9]+)$/)
+				if (m) {
+					lastWord = m[1]
+				}
+	
+				if (!this.tabReplacePrefix === lastWord)
 				this.tabReplaceListIndex = 0;
 				this.tabReplacePrefix = lastWord;
 				var allChoices = 	TabCompletion.allSymbols();
 				var choices = allChoices.select(function(ea){return ea.startsWith(lastWord)});
 				if (!this.tabReplaceListIndex)
 					this.tabReplaceListIndex = 0;
-				
+
 				this.tabReplaceListIndex = (this.tabReplaceListIndex) % choices.size();
 				var fullReplace = choices[this.tabReplaceListIndex];
+
 				if (fullReplace) {
 					var replace = fullReplace.substring(lastWord.length, fullReplace.length);
 				};
+				// console.log("replace " + replace + " " + fullReplace + " choices " + choices.length + " word " + word + " lastWorld" + lastWord)
 				if (replace) {
 					this.replaceSelectionfromKeyboard(replace);
 					this.setSelectionRange(cursor, cursor + replace.size());
