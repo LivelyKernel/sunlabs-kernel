@@ -100,17 +100,13 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 		
 		this.bounds = rect(pt(10,10), pt(100,100));
 		this.parentMorph =	Morph.makeRectangle(0,0, 300, 300);
-
-		this.oldImporterCanvasMethod = Importer.prototype.canvas;
-		Importer.prototype.canvas = function() { return this.canvas }.bind(this)
 	},
 	
-	tearDown: function() {
+	tearDown: function($super) {
+		$super();
 		WorldMorph.currentWorld = this.realWorld;
 		this.morphs.each(function(each){ each.remove()})
 		Global.document = this.oldGlobalDocument 
-
-		Importer.prototype.canvas = this.oldImporterCanvasMethod
 	},
 
 	showMyWorld: function(optWorld) {

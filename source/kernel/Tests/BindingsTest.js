@@ -243,6 +243,18 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 
 Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.ConnectionSerializationTest', {
 
+	setUp: function($super) {
+		$super();
+		// FIXME
+		this.oldImporterCanvasMethod = Importer.prototype.canvas;
+		Importer.prototype.canvas = function() { return this.canvas }.bind(this)
+	},
+	
+	tearDown: function($super) {
+		$super();
+		Importer.prototype.canvas = this.oldImporterCanvasMethod
+	},
+	
 	createAndAddMorphs: function() {
 		this.textMorph1 = new TextMorph(new Rectangle(20,400, 100, 30), 'abc');
 		this.textMorph2 = new TextMorph(new Rectangle(20,400, 100, 30), 'xyz');
