@@ -601,9 +601,10 @@ refresh: function() {
 		var testClassName = this.getSelectedTestClass();
 		if (!testClassName) return;
 		var testCase = new (Class.forName(testClassName))();
-
+		this.setBarColor(Color.darkGray);
 		testCase.runAll();
-		this.setResultOf(testCase);		
+		this.resultBar.label.setExtent(this.resultBar.getExtent());
+		this.setResultOf(testCase);
 	},
 	
 	runAllTestCases: function() {
@@ -615,7 +616,7 @@ refresh: function() {
 		}));
 		var self = this;
 		var max = testSuite.testCaseClasses.length;
-		 self.resultBar.bar.setFill(Color.darkGray);
+	 	this.setBarColor(Color.darkGray);
 		testSuite.showProgress = function(testCase) {
 		    self.setResultText(testCase.constructor.type);
 		 	var progress = counter /  max;   
@@ -642,6 +643,7 @@ refresh: function() {
 		this.setResultText(this.testObject.result.shortResult());
 		this.setFailureList(this.testObject.result.failureList());
 		this.setBarColor(this.testObject.result.failureList().length == 0 ? Color.green : Color.red);
+		this.resultBar.setValue(1)
 		console.log(testObject.result.printResult());
 		// updating list with timings
 		this.setTestClasses(this.getTestClasses(),true);
