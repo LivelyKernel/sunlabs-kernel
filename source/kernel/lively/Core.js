@@ -3400,11 +3400,28 @@ Morph.addMethods({
 		menu.open(evt);
     },
 
+	grid: function() {return Config.SnapGrid || pt(10,10)},
+
+	isSnappingToGrid: function() { return Config.isSnappingToGrid},
+
+	snapToGrid: function(pos) {
+		var grid = this.grid();
+		return pt(pos.x - (pos.x % grid.x), pos.y - (pos.y % grid.y))
+	},
+
 	dragMe: function(evt) {
 		var offset = this.getPosition().subPt(this.owner.localize(evt.point()));
+		var self = this;
 		var mouseRelay= {
 			captureMouseEvent: function(e) { 
-				if (e.type == "MouseMove")  this.setPosition(this.owner.localize(e.hand.getPosition()).addPt(offset));
+				if (e.type == "MouseMove")  {
+					var pos = this.owner.localize(e.hand.getPosition()).addPt(offset)
+					if (self.isSnappingToGrid()) {
+						this.setPosition(this.snapToGrid(pos));
+					} else {
+						this.setPosition(pos);
+					};
+				};
 				if (e.type == "MouseDown" || e.type == "MouseUp")  e.hand.setMouseFocus(null); 
 			}.bind(this),
 		};
@@ -5633,6 +5650,8 @@ WorldMorph.addMethods({
 			  function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
 			[(Config.useDebugBackground ? "use normal background" : "use debug background"),
 					  this.toggleDebugBackground],
+			[(Config.isSnappingToGrid ? "[X]": "[]") + " snap to grid",
+						  function(){Config.isSnappingToGrid = !Config.isSnappingToGrid}],
 			["change title",   this, 'askForWorldTitle']
 		];
 	},
