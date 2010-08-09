@@ -230,6 +230,20 @@ var using = (function() {
 
 
 function namespace(spec, context) {
+	var codeDB;
+	if (spec[0] == '$') {
+		codeDB = spec.substring(1, spec.indexOf('.'));
+		spec = spec.substring(spec.indexOf('.') + 1);
+	}
+	var ret = __oldNamespace(spec, context);
+	if (codeDB) {
+		ret.fromDB = codeDB;
+	}
+	return ret;
+};
+
+
+function __oldNamespace(spec, context) {
 	var	 i,N;
 	context = context || Global;
 	spec = spec.valueOf();
@@ -908,13 +922,27 @@ Global.namespaceIdentifier = 'Global';
 Namespace.addMethods({ // module specific, should be a subclass?
 	
 	uri: function() { // FIXME cleanup necessary
-		var id = this.namespaceIdentifier; // something like lively.Core
-		var namespacePrefix;
-		if (id.startsWith('Global.')) namespacePrefix = 'Global.';
-		else throw dbgOn(new Error('unknown namespaceIdentifier'));
-		var url = Config.codeBase + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./g, '/');
-		if (!this.isAnonymous()) url += '.js'; // FIXME not necessary JavaScript?!
-		return url;
+		if (this.fromDB) {
+			var id = this.namespaceIdentifier; // something like lively.Core
+			var namespacePrefix;
+			if (id.startsWith('Global.')) {
+				namespacePrefix = 'Global.';
+				id = id.substring(7);
+			} else
+				throw dbgOn(new Error('unknown namespaceIdentifier'));
+
+			// FIXME: extract to Config.codeBaseDB
+			var url = Config.couchDBURL + '/' + this.fromDB + '/_design/raw_data/_list/javascript/for-module?module=' + id;
+			return url;
+		} else {
+			var id = this.namespaceIdentifier; // something like lively.Core
+			var namespacePrefix;
+			if (id.startsWith('Global.')) namespacePrefix = 'Global.';
+			else throw dbgOn(new Error('unknown namespaceIdentifier'));
+			var url = Config.codeBase + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./g, '/');
+			if (!this.isAnonymous()) url += '.js'; // FIXME not necessary JavaScript?!
+			return url;
+		}
 	},
 	
 	addDependendModule: function(depModule) {

@@ -39,7 +39,10 @@ Object.subclass('ScriptLoader', {
 		if (scripts[0].src && scripts[0].src.endsWith('bootstrap.js'))
 			node = scripts[0].parentNode;
 		if (!node) throw(dbgOn(new Error('Cannot load script ' + url + ' dont know where to append it')));
-		var exactUrl = Config.disableScriptCaching ? url + '?' + new Date().getTime() : url;
+		var exactUrl = url;
+		if (Config.disableScriptCaching) {
+			exactUrl = (exactUrl.indexOf('?') == -1) ? exactUrl + '?' + new Date().getTime() : exactUrl + '&' + new Date().getTime();
+		}
 		var xmlNamespace = node.namespaceURI;
 
 		var script = document.createElementNS(xmlNamespace, 'script');
