@@ -257,10 +257,12 @@ Object.extend(Global, {
     
 })(); 
 
-Object.extend(Global.window, {
+Object.extend(Global, {
+	
 	onerror: function(message, url, code) {
 		console.log('in %s: %s, code %s', url, message, code);
 	},
+	
 	onbeforeunload: function(evt) { 
 		if (Config.askBeforeQuit) {
 			var msg = "Lively Kernel data may be lost if not saved.";
@@ -1207,9 +1209,7 @@ Copier.subclass('Importer', {
 
     verbose: !!Config.verboseImport,
     
-	toString: function() {
-		return "#<Importer>";
-	},
+	toString: function() { return "#<Importer>" },
 
 	initialize: function($super) {
 		$super();
@@ -1218,9 +1218,7 @@ Copier.subclass('Importer', {
 		this.patchSites = [];
 	},
 
-	canvas: function(doc) {
-		return locateCanvas(doc);
-	},
+	canvas: function(doc) { return locateCanvas(doc) },
 
 	getBaseDocument: function() {
 		// FIXME memoize
@@ -1335,8 +1333,6 @@ Copier.subclass('Importer', {
 			console.log("scripts failed: " + er);
 		}
 	},
-
-
 
 	hookupModels: function() {
 		Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {

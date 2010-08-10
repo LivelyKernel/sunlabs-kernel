@@ -1378,7 +1378,13 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		if (this.target) return;
 		this.target = lively.ide.SourceControl.addModule(this.moduleName).ast();
 		this.signalChange();
+
+		this.checkForRedundantClassDefinitions();
 	},
+checkForRedundantClassDefinitions: function() {
+	var childNodes = this.childNodes();
+},
+
     
 	menuSpec: function($super) {
 		var menu = [];
@@ -1493,9 +1499,15 @@ ide.FileFragmentNode.subclass('lively.ide.OMetaRuleNode', {
 lively.ide.FileFragmentNode.subclass('lively.ide.CategorizedClassFragmentNode', {
  
 	isClassNode: true,
-  
+
+	getName: function($super) {
+		return $super() + (this.target.type == 'klassExtensionDef' ? ' (extension)' : '')
+	},
+
 	childNodes: function() {
 		var classFragment = this.target, browser = this.browser, self = this;
+
+		// gather methods and create category nodes
 		var protoFragments = classFragment.subElements().select(function(ea) { return ea.type === 'propertyDef' });
 		if (protoFragments.length == 0) return [];
 		var categoryNodes = protoFragments.inject([], function(nodes, ff) {
@@ -1504,18 +1516,57 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CategorizedClassFragmentNode', 
 			return nodes;
 		});
 
+		// create the all category
 		var allCategoyNode = new lively.ide.AllMethodCategoryFragmentNode(protoFragments[0], browser, self);
 		protoFragments.forEach(function(ff) { allCategoyNode.mergeFileFragment(ff) });
 
 		categoryNodes.unshift(allCategoyNode)
-
-console.log('.............created ' + categoryNodes + ' method category nodes')
-
 		return categoryNodes;
-			// .inject([], )
-			// .sort(function(a,b) { if (!a.name || !b.name) return -999; return a.name.charCodeAt(0)-b.name.charCodeAt(0) })
-			// .collect(function(ea) { return new ide.ClassElemFragmentNode(ea, browser, this) });
 	},
+
+	menuSpec: function($super) {
+		var menu = $super();
+		var fragment = this.target;
+		var index = fragment.name ? fragment.name.lastIndexOf('.') : -1;
+		// don't search for complete namespace name, just its last part
+		var searchName = index === -1 ? fragment.name : fragment.name.substring(index+1);
+		// menu.unshift(['add to current ChangeSet', function() {
+		// 	WorldMorph.current().confirm('Add methods?', function(addMethods) {
+		// 		var cs = ChangeSet.current();
+		// 		var classChange = new 
+		// 	});
+		// }]);
+		menu.unshift(['references', function() {
+			var list = lively.ide.SourceControl
+				.searchFor(searchName)
+				.without(fragment)
+			var title = 'references of' + fragment.name;
+			new ChangeList(title, null, list, searchName).openIn(WorldMorph.current()) }]);
+		return menu;
+	},
+
+	handleDrop: function(nodeDroppedOntoMe) {
+		if (!(nodeDroppedOntoMe instanceof lively.ide.ClassElemFragmentNode))
+			return false;
+		console.log('Adding' + nodeDroppedOntoMe.asString() + ' to ' + this.asString());
+		if (this.target.subElements().length == 0) {
+			console.log('FIXME: adding nodes to empty classes!');
+			return
+		}
+		this.target.subElements().last().addSibling(nodeDroppedOntoMe.target.getSourceCode());
+		return true;
+	},
+
+	evalSource: function(newSource) {
+		try {
+			eval(newSource);
+		} catch (er) {
+			console.log("error evaluating class:" + er);
+			throw(er)
+		}
+		console.log('Successfully evaluated class');
+        return true;
+    },
 
 });
 lively.ide.MultiFileFragmentsNode.subclass('lively.ide.MethodCategoryFragmentNode', {

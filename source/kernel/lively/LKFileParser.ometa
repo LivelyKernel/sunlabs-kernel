@@ -189,7 +189,7 @@ getterOrSetter =
 	(classElemsWithOptionalCategory:defs classElemDefEnd ->defs)+:allDefs
 	-> allDefs.flatten(),
 classElemsWithOptionalCategory =
-	category:cat (classElemsInCategory(cat):defs classElemDefEnd -> defs)+:allDefs
+	spaces category:cat (classElemsInCategory(cat):defs classElemDefEnd -> defs)+:allDefs
 	-> allDefs.flatten(),
 
 category =

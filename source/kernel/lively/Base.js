@@ -357,8 +357,8 @@ Object.extend(Function.prototype, {
 
 		// modified from prototype.js
 	
-		var args = arguments;
-		var className = args[0];
+		var args = $A(arguments);
+		var className = args.shift();
 		var targetScope = Global;
 		var shortName = null;
 		if (className) {
@@ -385,12 +385,8 @@ Object.extend(Function.prototype, {
 			if (className) targetScope[shortName] = klass; // otherwise it's anonymous
 		};
 
-		var category = this.defaultCategoryName;
-		for (var i = 1; i < args.length; i++)
-			if (Object.isString(args[i]))
-				category = args[i];
-			else
-				klass.addMethods(category, args[i] instanceof Function ? (args[i])() : args[i]);
+		// the remaining args should be category strings or source objects
+		this.addMethods.apply(klass, args);
 
 		if (!klass.prototype.initialize)
 			klass.prototype.initialize = Functions.Empty;
@@ -398,8 +394,18 @@ Object.extend(Function.prototype, {
 		return klass;
 	},
 
-	addMethods: function(categoryNameOrSource, sourceWhenCategoryNameDefined) {
-		// first parameter can be a category name or the source itself
+	addMethods: function(/*...*/) {
+
+		var args = arguments;
+		var category = this.defaultCategoryName;
+		for (var i = 0; i < args.length; i++)
+			if (Object.isString(args[i]))
+				category = args[i];
+			else
+				this.addCategorizedMethods(category, args[i] instanceof Function ? (args[i])() : args[i]);
+	},
+addCategorizedMethods: function(categoryName, source) {
+		// first parameter is a category name
 		// copy all the methods and properties from {source} into the
 		// prototype property of the receiver, which is intended to be
 		// a class constructor.	 Method arguments named '$super' are treated
@@ -407,14 +413,12 @@ Object.extend(Function.prototype, {
 		// derived from Class.Methods.addMethods() in prototype.js
 
 		// prepare the categories
-		var categoryName = Object.isString(categoryNameOrSource) ? categoryNameOrSource : this.defaultCategoryName;
 		if (!this.categories) this.categories = {};
 		if (!this.categories[categoryName]) this.categories[categoryName] = [];
 		var currentCategoryNames = this.categories[categoryName];
 
-		var source = Object.isString(categoryNameOrSource) ? sourceWhenCategoryNameDefined : categoryNameOrSource;
 		if (!source)
-			throw dbgOn(new Error('no source in addMethods!'));
+			throw dbgOn(new Error('no source in addCategorizedMethods!'));
 
 		var ancestor = this.superclass && this.superclass.prototype;
 		
@@ -484,6 +488,7 @@ Object.extend(Function.prototype, {
 		
 		return this;
 	},
+
 
 	addProperties: function(spec, recordType) {
 		Class.addMixin(this, recordType.prototype.create(spec).prototype);
