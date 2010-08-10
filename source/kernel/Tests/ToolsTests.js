@@ -108,9 +108,45 @@ testBrowserFourthPane: function() {
 
 
 });
-Tests.ToolsTests.SystemBrowserTests.subclass('Tests.ToolsTests.BrowserNodeTest', {
+Tests.ToolsTests.SystemBrowserTests.subclass('Tests.ToolsTests.BrowserNodeTest',
+'running', {
+	buildCategorySource: function() {
+		// create and parse the source into filefragments
+		src = "\n\Object.subclass('Foo',\n\
+'catA', {\n\
+	m1: function() { return 23 },\n\
+	m2: function() {},\n\
+},\n\
+'catB', {\n\
+	m3: function() { return 42},\n\
+});\n\
+\n\
+Foo.addMethods('catC',{\n\
+	m4: function() {},\n\
+});"
 
-	test01CopFragmentEvaluate: function() {
+		var p = new JsParser()
+		var ffs = p.parseSource(src, {fileName: 'dummySource'})
+		this.klassDef = ffs[1]
+		this.m1 = this.klassDef.subElements()[0];
+		this.m2 = this.klassDef.subElements()[1];
+		this.m3 = this.klassDef.subElements()[2];
+		this.klassExtensionDef = ffs[3]
+		this.m4 = this.klassExtensionDef.subElements()[0];
+
+		this.fileFragment = {
+			name: 'dummyModule',
+			type: 'moduleDef',
+			startIndex: 0,
+			stopIndex: src.length,
+			subElements: function() { return [this.klassDef, this.klassExtensionDef] }.bind(this),
+			getName: function() { return this.name },
+		}
+	},
+},
+'testing', {
+
+	testCopFragmentEvaluate: function() {
 		this.browser.buildView();
 
 		var initialFragment = {
@@ -129,6 +165,31 @@ Tests.ToolsTests.SystemBrowserTests.subclass('Tests.ToolsTests.BrowserNodeTest',
 		withLayers([testLayer], function() {
 			this.assertEquals(23, new klass().m());
 		}.bind(this))		
+	},
+
+	testCreateCategoriesFromClassDef: function() {
+		this.buildCategorySource();
+
+		// now setup the browser
+		var browser = this.browser;
+		
+		var completeFFNode = new lively.ide.CompleteFileFragmentNode(this.fileFragment, browser, null, this.fileFragment.name)
+		this.assertEqual(2, completeFFNode.childNodes().length);
+		var classNode = completeFFNode.childNodes().first();
+
+		this.assertEqual(3, classNode.childNodes().length);
+		this.assertEqual('-- all --', classNode.childNodes()[0].getName());
+		this.assertEqual('catA', classNode.childNodes()[1].getName());
+		this.assertEqual('catB', classNode.childNodes()[2].getName());
+
+		this.assertEqual(3, classNode.childNodes()[0].childNodes().length);
+		this.assertEqual(2, classNode.childNodes()[1].childNodes().length);
+		this.assertEqual(1, classNode.childNodes()[2].childNodes().length);
+		
+		var methodNodes = classNode.childNodes()[1].childNodes()
+		this.assertEqual('m1', methodNodes[0].getName());
+		this.assertEqual('m2', methodNodes[1].getName());
+
 	},
 
 });
@@ -1035,7 +1096,7 @@ Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.ChunkParserTest', {
 
 });
 
-thisModule.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 
 	setUp: function() {
 		/* creates:
@@ -1049,11 +1110,11 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 		propertyDef (proto): m3 (232-253 in foo.js, starting at line 12, 0 subElements)
 		*/
 		var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
-		'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n' +
-		'ClassA.m3 = function() { 123 };\n' +
-		'function abc() { 1+2 };\n' +
-		'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
-		'}); // end of module';
+			'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n' +
+			'ClassA.m3 = function() { 123 };\n' +
+			'function abc() { 1+2 };\n' +
+			'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
+			'}); // end of module';
 		var db = new AnotherSourceDatabase();
 		this.root = db.prepareForMockModule('foo.js', src);
 		this.db = db;
@@ -1071,23 +1132,22 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 		this.root = db.prepareForMockModule('foo2.js', src);
 		this.src = src;
 	},
-setUpAlternateSource2: function() {
-		var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
-		'/*\n' +
-		' * my comment\n' +
-		' */\n'+
-		'\n' +
-		'// ClassA is so important\n' +
-		'// foo bar\n' +
-		'Object.subclass(\'ClassA\', {\n\n' +
-		'\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n\n' +
-		'}); // end of module';
-		this.db = new AnotherSourceDatabase();
-		this.root = this.db.prepareForMockModule('foo.js', src);
-		this.src = src;
-},
 
-
+	setUpAlternateSource2: function() {
+			var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
+			'/*\n' +
+			' * my comment\n' +
+			' */\n'+
+			'\n' +
+			'// ClassA is so important\n' +
+			'// foo bar\n' +
+			'Object.subclass(\'ClassA\', {\n\n' +
+			'\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n\n' +
+			'}); // end of module';
+			this.db = new AnotherSourceDatabase();
+			this.root = this.db.prepareForMockModule('foo.js', src);
+			this.src = src;
+	},
    
 	tearDown: function($super) {
 		$super();
