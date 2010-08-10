@@ -1378,11 +1378,28 @@ ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should
 		if (this.target) return;
 		this.target = lively.ide.SourceControl.addModule(this.moduleName).ast();
 		this.signalChange();
-
-		this.checkForRedundantClassDefinitions();
 	},
 checkForRedundantClassDefinitions: function() {
 	var childNodes = this.childNodes();
+
+	var klassDefs = childNodes
+		.select(function(node) { return node.target && !node.target.getSourceCode().startsWith('Object.extend') && (node.target.type == 'klassDef' || node.target.type == 'klassExtensionDef') })
+		.pluck('target');
+
+	var multiple = klassDefs.inject([], function(multiple, klassDef) {
+		var moreThanOnce = klassDefs.any(function(otherKlassDef) {
+			return klassDef !== otherKlassDef && klassDef.name == otherKlassDef.name;
+		});
+		if (moreThanOnce) multiple.push(klassDef);
+		return multiple;
+	});
+
+	if (multiple.length == 0) return;
+
+	var msg = 'Warning! Multiple klass definitions in module ' + this.moduleName +':';
+	multiple.forEach(function(klassDef) { msg += '\n\t' + klassDef });
+
+	WorldMorph.current().setStatusMessage(msg, Color.blue)
 },
 
     
@@ -1408,6 +1425,9 @@ checkForRedundantClassDefinitions: function() {
 			browser.sourceDatabase().removeFile(node.moduleName);
 			browser.rootNode().removeFile(node.moduleName);
 			browser.allChanged()}]);
+		menu.unshift(['check for redundant klass definitions', function() {
+			node.checkForRedundantClassDefinitions()
+		}]);
 	return menu;
 },
 
