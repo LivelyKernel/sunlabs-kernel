@@ -248,7 +248,7 @@ classElemsInCategory :cat =
 		{name: n, layerName: layerName, subElements: spec.classElems } },
     klassExtensionDef
 	= pos:p basicKlassExt:spec defEnd
-	-> { this._fragment(spec.name + ' (extension)', 'klassExtensionDef', p, this.pos()-1, spec.subElements, {trait: spec.trait}) },
+	-> { this._fragment(spec.name, 'klassExtensionDef', p, this.pos()-1, spec.subElements, {trait: spec.trait}) },
     
     /* 'object' stuff */
     restObjDef = classElems:propsAndMethodDescrs spaces
