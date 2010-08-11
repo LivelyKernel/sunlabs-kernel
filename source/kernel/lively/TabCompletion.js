@@ -2,10 +2,28 @@ module('lively.TabCompletion').requires('cop.Layers', 'lively.TestFramework').to
 
 Object.subclass('TabCompletion');
 Object.extend(TabCompletion, {
+	customSymbols: function() {
+		return [
+			'function(){}', 
+			'for(var i=0; i<10; i++){\n}',
+			'collect(function(ea){ return ea})',
+			'select(function(ea){ return ea})',
+			'reject(function(ea){ return ea})',
+			'inject(0, function(sum, ea){ return sum +1})',
+			'Object.subclass("ClassName", {\n\tm: function(){}\n})', 
+			'cop.create("MyLayer").refineClass(MyClass, {\n})']
+	},
+	choicesForPrefix: function(prefix) {
+			var allChoices = 	this.allSymbols();
+			return allChoices.select(function(ea){return ea.startsWith(prefix)});
+	},
+
 	allSymbols: function(force) { 
-		if (!this.symbolCache || force) {
-			this.symbolCache = lively.ide.startSourceControl().createSymbolList().sort().uniq(true).sort();
+		if (!this.symbolCache || force || !this.lastCacheAccess || (Date.now() - this.lastCacheAccess > 10000)) {
+			// console.log("cache miss")
+			this.symbolCache = lively.ide.startSourceControl().createSymbolList().concat(this.customSymbols()).sort().uniq(true).sort();
 		}
+		this.lastCacheAccess = Date.now()
 		return this.symbolCache;
 	}
 });
@@ -35,18 +53,20 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 				this.tabReplaceListIndex = 0;
 				this.tabReplacePrefix = lastWord;
 			};
-			if (!this.tabReplaceListIndex || (this.selectionString().length == 0)) {
-				this.tabReplaceListIndex = 0;
-			};
 
 			var choices = this.tabCompletionChoicesForLastWord(lastWord);
-
-			this.tabReplaceListIndex = (this.tabReplaceListIndex) % choices.size();
-			if (this.tabReplaceListIndex < 0) {
-				this.tabReplaceListIndex = this.tabReplaceListIndex + choices.size();
+			if ((this.tabReplaceListIndex === undefined) || (this.selectionString().length == 0)) {
+				this.tabReplaceListIndex = 0;
+			} else {
+				this.tabReplaceListIndex = (this.tabReplaceListIndex) % choices.size();
+				if (this.tabReplaceListIndex < 0) {
+					this.tabReplaceListIndex = this.tabReplaceListIndex + choices.size();
+				}
+				this.tabReplaceListIndex = this.tabReplaceListIndex + (backward ? -1 : 1);
 			}
-			this.tabReplaceListIndex = this.tabReplaceListIndex + (backward ? -1 : 1);
 
+
+	
 			return choices[this.tabReplaceListIndex];
 	},	
 	
