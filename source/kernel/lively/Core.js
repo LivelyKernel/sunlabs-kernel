@@ -6959,7 +6959,7 @@ ClipboardHack = {
 			buffer.setAttribute("style","position:fixed;z-index: 5;left:0px; top:0px; width:100px; height:30px;");
 		} else {
 			// the Clipboard buffer needs a minimum width, otherwise it will scroll the page on the first paste
-			buffer.setAttribute("style","position:fixed;z-index: -5;left:0px; top:0px; width:50px; height:1px;");
+			buffer.setAttribute("style","position:fixed;z-index: -5;left:0px; top:0px; width:100px; height:100px;");
 		}
 		buffer.textContent = "NoText";
 		var outerBody = Global.document.body || Global.parent.document.body;

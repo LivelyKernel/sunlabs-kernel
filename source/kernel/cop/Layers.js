@@ -170,6 +170,8 @@ Object.extend(ContextJS, {
 		
 		if (base_obj.constructor) {
 			wrapped_function.displayName = 'wrapped ' + base_obj.constructor.name + "$" + function_name;
+		} else {
+			wrapped_function.displayName = 'wrapped ' + function_name;		
 		};
 		wrapped_function.isLayerAware = true;
 		
