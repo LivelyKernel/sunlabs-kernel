@@ -177,10 +177,6 @@ Object.extend(Color, {
 
 // Color.showWebColorTable()
 
-
-
-
-
 Object.subclass("SyntaxHighlighter", {
 
 })
@@ -239,29 +235,53 @@ Object.extend(SyntaxHighlighter, {
 	}
 })
 
+RunArray.addMethods('SyntaxHighlight', {
+	// does not coerce
+	simpleMergeStyle: function(emph, start, stop) {
+		var newRun = this.slice(start, stop+1).mergeAllStyle(emph);
+		if (start > 0) newRun = this.slice(0, start).concat(newRun);
+		if (stop < this.length()-1) newRun = newRun.concat(this.slice(stop+1, this.length()));
+		return newRun;
+	},
+})
 
-cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
+TextMorph.addMethods('SyntaxHighlight',{
+	// does not compose after edit
+	simpleEmphasizeFromTo: function(emph, from, to) {
+		var txt = new lively.Text.Text(this.textString, this.textStyle);
+		txt.emphasize(emph, from, to);
+		this.textStyle = txt.style;
+	},
 
-	highlightJavaScriptSyntaxFromTo: function(proceed, from, to) {
-		this.emphasizeFromTo({Color: Color.black, style: 'unbold'}, from, to)
+	highlightJavaScriptSyntaxFromTo: function(from, to) {
+		this.simpleEmphasizeFromTo({Color: Color.black, style: 'unbold'}, from, to)
+		var string = this.textString.substring(from,to)
+		// var style = new RunArray([s.length],	[new TextEmphasis({})]);
+		var style = this.textStyle;
+
 		Properties.own(SyntaxHighlighter.JavaScriptRules).each(function(ea) {
-			var r = SyntaxHighlighter.JavaScriptRules[ea];
-			var exp = new RegExp(r.match);
+			var rule = SyntaxHighlighter.JavaScriptRules[ea];
+			// var exp = new RegExp(r.match);
+			var exp = rule.match;
 			var m;
-			var s = this.textString.substring(from,to)
-			while(m = exp.exec(s)) {
-				this.emphasizeFromTo(r.style, from + m.index, from + m.index + m[0].length - 1)
+			while(m = exp.exec(string)) {
+				// this.emphasizeFromTo(rule.style, from + m.index, from + m.index + m[0].length - 1 )
+				style = style.simpleMergeStyle(new TextEmphasis(rule.style), from + m.index, from + m.index + m[0].length - 1) // TODO ckeck "-1"
 			}
 		}, this);
+		// override all other styles... to be refactored
+		// this.textStyle =  this.textStyle.mergeStyle(style, from, to)	
+		this.textStyle = style.coalesce();
+		var replacementHints = {selStart: from, selStop: to, repLength: string.length};
+		this.composeAfterEdits(replacementHints);
 	},
 
 	highlightJavaScriptSyntax: function() {
 		this.highlightJavaScriptSyntaxFromTo(0, this.textString.length);
 	},
 
-
-	delayedSyntaxHighlighting: function(proceed, optFrom, optTo) {
-		console.log("delayedSyntaxHig...." + optFrom + "," + optTo)
+	delayedSyntaxHighlighting: function(optFrom, optTo) {
+		// console.log("delayedSyntaxHig...." + optFrom + "," + optTo)
 		var string = this.textString;
 		var self = this;
 		var from = optFrom || 0;
@@ -270,9 +290,8 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 		this.highlightJavaScriptMinFrom = Math.min(this.highlightJavaScriptMinFrom, from) || from
 		this.highlightJavaScriptMaxTo = Math.max(this.highlightJavaScriptMaxTo, to) || to
 
-		console.log("to " + to)
-		console.log("highlightJavaScriptMaxTo " + this.highlightJavaScriptMaxTo)
-
+		// console.log("to " + to)
+		// console.log("highlightJavaScriptMaxTo " + this.highlightJavaScriptMaxTo)
 
 		var lastHighlightJavaScriptProgress = this.highlightJavaScriptProgress;
 		this.highlightJavaScriptProgress = {last: Date.now()};
@@ -289,8 +308,8 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 				var time = Functions.timeToRun(function() {
 						self.highlightJavaScriptSyntaxFromTo(
 							self.highlightJavaScriptMinFrom, self.highlightJavaScriptMaxTo)});
-				WorldMorph.current().setStatusMessage("delayed hightlight in " + time +"ms " + 
-					self.highlightJavaScriptMinFrom + "," + self.highlightJavaScriptMaxTo, Color.blue, 3)
+				// WorldMorph.current().setStatusMessage("delayed hightlight in " + time +"ms " + 
+				//	self.highlightJavaScriptMinFrom + "," + self.highlightJavaScriptMaxTo, Color.blue, 3)
 				delete self.highlightJavaScriptProgress
 				delete self.highlightJavaScriptMinFrom
 				delete self.highlightJavaScriptMaxTo
@@ -298,42 +317,29 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 		};
 		func(0)
 	},
+})
 
-	replaceSelectionWith: function(proceed, replacement) {
-		var result = proceed(replacement);
-		var cursorPos = t.getCursorPos();
-		this.delayedSyntaxHighlighting(this.textString.lastIndexOf("\n", cursorPos - 1), this.textString.indexOf("\n", cursorPos));
-		return result;	
-	},
+cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 
-	tryBoundEval: function(proceed, str, offset) {
+	// replaceSelectionWith: function(proceed, replacement) {
+	//	var result = proceed(replacement);
+	//	var cursorPos = t.getCursorPos();
+	//	this.delayedSyntaxHighlighting(this.textString.lastIndexOf("\n", cursorPos - 1), this.textString.indexOf("\n", cursorPos));
+	//	return result;	
+	// },
+
+ 	tryBoundEval: function(proceed, str, offset) {
 		var result = proceed(str, offset);
 		this.delayedSyntaxHighlighting(offset,  offset + str.length)	
 		return result
 	},
 
-	doSave: function(proceed) {
-		proceed()
-		// this.delayedSyntaxHighlighting()
-	},
+})
+
+// SyntaxHighlightLayer.beGlobal()
 
 })
 
-cop.create("BenchmarkReplaceTextSelectionLayer").refineClass(TextMorph, {
-	
-	replaceSelectionWith: function(proceed, replacement) {
-		var m = $morph('BenchmarkReplaceTextSelectionResultMorph');
-		var result;
-		var time = Functions.timeToRun(function() {
-			result = proceed(replacement) 
-		}.bind(this))
-		m.setTextString("replace	" + replacement.length + "	"+ time + "ms" + '\n' + m.textString)
-		return result;	
-	}
-
-})
-
-})
 
 
 
