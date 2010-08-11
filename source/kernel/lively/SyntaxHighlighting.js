@@ -212,6 +212,19 @@ Object.extend(SyntaxHighlighter, {
 			  match: /\b(with|while|var|try|throw|switch|return|if|for|finally|else|do|default|continue|const|catch|case|break)\b/g
 			, style: {color: Color.web.navy, style: "bold"}
 		}
+
+		, superclassOrLayer: { 
+			  match: /([A-Z][A-Za-z.]+)(?=\.(subclass|refineClass|addMethods))/g
+			, style: {color: Color.web.navy, style: "bold"}
+		}
+		, methodName: { 
+			  match: /([A-Za-z]+:)(?= function)/g
+			, style: {color: Color.web.orange, style: "bold"}
+		}
+		, lively: { 
+			  match: /\b(subclass|refineClass|addMethods)\b/g
+			, style: {color: Color.web.gray}
+		}
 		, error: { 
 			  match: /\b(URIError|TypeError|SyntaxError|ReferenceError|RangeError|EvalError|Error)\b/g
 			, style: {color: Color.web.coral}
