@@ -341,9 +341,10 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 	//	return result;	
 	// },
 
- 	tryBoundEval: function(proceed, str, offset) {
-		var result = proceed(str, offset);
-		this.delayedSyntaxHighlighting(offset,  offset + str.length)	
+ 	tryBoundEval: function(proceed, str, offset, printIt) {
+		var result = proceed(str, offset, printIt);
+		this.highlightJavaScriptSyntaxFromTo(offset,  offset + str.length);
+		// this.delayedSyntaxHighlighting(offset,  offset + str.length)	
 		return result
 	},
 
@@ -352,9 +353,3 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 // SyntaxHighlightLayer.beGlobal()
 
 })
-
-
-
-
-
-
