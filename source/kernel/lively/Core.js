@@ -4988,7 +4988,8 @@ PasteUpMorph.subclass("WorldMorph",
 'Requirements', {
 	// this.world().showAddWorldRequirementsMenu(pt(100,100))
 	showAddWorldRequirementsMenu: function(pos) {
-		var allAppModules = ChangeSet.current().moduleNamesInNamespace('apps');
+		var allAppModules = ChangeSet.current().moduleNamesInNamespace('apps').concat(
+				ChangeSet.current().moduleNamesInNamespace('lively'))
 		var items = allAppModules.collect(function(ea){ 
 			return [ea, function(){
 				module(ea).load();

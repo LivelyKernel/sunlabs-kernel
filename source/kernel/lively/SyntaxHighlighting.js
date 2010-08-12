@@ -1,4 +1,4 @@
-module('lively.SyntaxHighlighting').requires('cop.Layers', 'lively.TestFramework').toRun(function() {
+module('lively.SyntaxHighlighting').requires('cop.Layers', 'lively.TestFramework', 'lively.ide').toRun(function() {
 
 var rgb = Color.rgb;
 
@@ -179,7 +179,7 @@ Object.extend(Color, {
 
 Object.subclass("SyntaxHighlighter", {
 
-})
+});
 
 Object.extend(SyntaxHighlighter, {
 	JavaScriptRules: {
@@ -198,7 +198,7 @@ Object.extend(SyntaxHighlighter, {
 		}
 		, num: { 
 			  match: /\b[+-]?(?:\d*\.?\d+|\d+\.?\d*)(?:[eE][+-]?\d+)?\b/g
-			, style: {color: Color.web.red}
+			, style: {color: Color.web.blue}
 		}
 		, reg_exp: { 
 			  match: /\/[^\/\\\n]*(?:\\.[^\/\\\n]*)*\/[gim]*/g
@@ -206,7 +206,7 @@ Object.extend(SyntaxHighlighter, {
 		}
 		, brace: { 
 			  match: /[\{\}]/g
-			, style: {color: Color.web.red, style: "bold"}
+			, style: {color: Color.web.green, style: "bold"}
 		}
 		, statement: { 
 			  match: /\b(with|while|var|try|throw|switch|return|if|for|finally|else|do|default|continue|const|catch|case|break)\b/g
@@ -218,8 +218,8 @@ Object.extend(SyntaxHighlighter, {
 			, style: {color: Color.web.navy, style: "bold"}
 		}
 		, methodName: { 
-			  match: /([A-Za-z]+:)(?= function)/g
-			, style: {color: Color.web.orange, style: "bold"}
+			  match: /([A-Za-z0-9_$]+:)/g   // (?= function)
+			, style: {color: Color.web.black, style: "bold"}
 		}
 		, lively: { 
 			  match: /\b(subclass|refineClass|addMethods)\b/g
@@ -246,7 +246,8 @@ Object.extend(SyntaxHighlighter, {
 			, style: {color: Color.web.royalBlue, style: "bold"}
 		}
 	}
-})
+});
+
 
 RunArray.addMethods('SyntaxHighlight', {
 	// does not coerce
@@ -348,8 +349,56 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 		return result
 	},
 
-})
+}).refineClass(lively.ide.BasicBrowser, {
 
-// SyntaxHighlightLayer.beGlobal()
+	hightlightSourcePane: function() {
+		var m= this.panel.sourcePane.innerMorph();
+		if (m.textString.length < 10000) {
+			try {
+				var time = Functions.timeToRun(function(){m.highlightJavaScriptSyntax()});
+				// m.delayedSyntaxHighlighting();
+			} catch (er) {
+				console.log("Error during Syntax Highligthing " + er)
+			}
+			m.setFontFamily('Courier')
+		}
+		// WorldMorph.current().setStatusMessage('Browser Syntax Highligth ' +time+ "ms", Color.blue, 3)
+	},
+
+	onPane2SelectionUpdate: function(proceed, node) {
+		proceed(node);
+		this.hightlightSourcePane()
+    },
+
+	onPane4SelectionUpdate: function(proceed, node) {
+		proceed(node);
+		this.hightlightSourcePane();
+    },
+
+	allChanged: function(proceed, keepUnsavedChanges, changedNode) {
+		proceed(keepUnsavedChanges, changedNode)
+		// this.hightlightSourcePane();
+	},
+
+	onSourceStringUpdate: function(proceed, node) {
+		proceed(node);
+		// this.hightlightSourcePane();
+    },
+
+	buildView: function(proceed, extent) {
+		var morph = proceed(extent)
+		this.panel.sourcePane.innerMorph().setWithLayers([BrowserSyntaxHighlightLayer])
+		return morph
+	}
+});
+
+cop.create('BrowserSyntaxHighlightLayer').refineClass(TextMorph, {
+	doSave: function(proceed) {
+		proceed();
+		this.highlightJavaScriptSyntax()
+	},
+});
+
+SyntaxHighlightLayer.beGlobal()
 
 })
