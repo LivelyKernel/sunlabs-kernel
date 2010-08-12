@@ -5346,7 +5346,11 @@ WorldMorph.addMethods('Menus ', {
 					  this.toggleDebugBackground],
 			[(Config.isSnappingToGrid ? "[X]": "[]") + " snap to grid",
 						  function(){Config.isSnappingToGrid = !Config.isSnappingToGrid}],
-			["change title",   this, 'askForWorldTitle']
+			["change title",   this, 'askForWorldTitle'],
+			["add module requirements...",
+				 function(){this.showAddWorldRequirementsMenu(evt.mousePoint)}],
+			["remove module requirements...",
+				 function(){this.showRemoveWorldRequirementsMenu(evt.mousePoint)}]
 		];
 	},
 	
