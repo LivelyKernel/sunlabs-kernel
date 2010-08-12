@@ -1,51 +1,11 @@
-module('lively.TabCompletion').requires('cop.Layers', 'lively.TestFramework').toRun(function() {
-
-Object.subclass('TabCompletion');
-Object.extend(TabCompletion, {
-	customSymbols: function() {
-		return [
-			'function(){}', 
-			'for(var i=0; i<10; i++){\n}',
-			'collect(function(ea){ return ea})',
-			'select(function(ea){ return ea})',
-			'reject(function(ea){ return ea})',
-			'inject(0, function(sum, ea){ return sum +1})',
-			'Object.subclass("ClassName", {\n\tm: function(){}\n})', 
-			'cop.create("MyLayer").refineClass(MyClass, {\n})']
-	},
-	choicesForPrefix: function(prefix) {
-			var allChoices = 	this.allSymbols();
-			return allChoices.select(function(ea){return ea.startsWith(prefix)});
-	},
-
-	allSymbols: function(force) { 
-		if (!this.symbolCache || force || !this.lastCacheAccess || (Date.now() - this.lastCacheAccess > 10000)) {
-			// console.log("cache miss")
-			this.symbolCache = lively.ide.startSourceControl().createSymbolList().concat(this.customSymbols()).sort().uniq(true).sort();
-		}
-		this.lastCacheAccess = Date.now()
-		return this.symbolCache;
-	}
-});
-
-TestCase.subclass('TabCompletionTest', {
-	testAllSymbols: function() {
-		this.assert(TabCompletion.allSymbols().length > 1000)
-	},
-
-	testAllSymbolsAreUnique: function() {
-		var all = TabCompletion.allSymbols(true);
-		var uniq = all.clone().uniq();
-		this.assertEqual(all.length, uniq.length, "not unique");
-	},
-
-});
-
 cop.create('TabCompletionLayer').refineClass(TextMorph, {
 
 	tabCompletionChoicesForLastWord: function(proceed, lastWord) {
 			var allChoices = 	TabCompletion.allSymbols();
-			return allChoices.select(function(ea){return ea.startsWith(lastWord)});
+			var localCoices = this.textString.match(/([A-za-z0-9\$]+)/g).uniq();
+			var selectedAllChoices = allChoices.select(function(ea){return ea.startsWith(lastWord)});
+			var selectedLocalChoices = localCoices.select(function(ea){return ea.startsWith(lastWord)}); ;
+			return selectedAllChoices.concat(selectedLocalChoices).uniq()
 	},
 	
 	tabCompletionForLastWord: function(proceed, lastWord, backward) {
@@ -55,18 +15,17 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			};
 
 			var choices = this.tabCompletionChoicesForLastWord(lastWord);
-			if ((this.tabReplaceListIndex === undefined) || (this.selectionString().length == 0)) {
+			// || (this.selectionString().length == 0)
+			if (this.tabReplaceListIndex === undefined) {
 				this.tabReplaceListIndex = 0;
 			} else {
+				this.tabReplaceListIndex = this.tabReplaceListIndex + (backward ? -1 : 1);
 				this.tabReplaceListIndex = (this.tabReplaceListIndex) % choices.size();
 				if (this.tabReplaceListIndex < 0) {
 					this.tabReplaceListIndex = this.tabReplaceListIndex + choices.size();
 				}
-				this.tabReplaceListIndex = this.tabReplaceListIndex + (backward ? -1 : 1);
 			}
-
-
-	
+			// console.log("choices: "  + choices + " " + this.tabReplaceListIndex);
 			return choices[this.tabReplaceListIndex];
 	},	
 	
@@ -98,12 +57,8 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			evt.stop();
 			return 
 		}
+		this.tabReplaceListIndex = undefined
 		return proceed(evt)
 	},
 
 });
-
-
-TabCompletionLayer.beGlobal();
-
-})
