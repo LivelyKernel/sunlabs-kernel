@@ -4512,18 +4512,20 @@ PasteUpMorph.subclass("WorldMorph",
 		this.canvas().setAttributeNS(null, "cursor", flag ? "auto" : "none");
 	},
 
-	resizeCanvasToFitWorld: function() {
+	resizeCanvasToFitWorld: function () {
 		var canvas = this.canvas();
 		if (!canvas) return;
 		this.transformChanged();
 		this.fullBounds = null;
-		
-		var w = this.bounds().width, h = this.bounds().height;
-		
+
+		var w = this.bounds().width * this.getScale() , h = this.bounds().height * this.getScale();
+
 		if (canvas.clientWidth != w && canvas.clientHeight != h) {
 			if (canvas.offsetLeft) w += canvas.offsetLeft * this.getScale();
 			if (canvas.offsetTop) h += canvas.offsetTop * this.getScale();
-			basicResize(this, canvas, w, h);
+			canvas.setAttribute("width", w);
+			canvas.setAttribute("height", h);
+
 		}
 	},
 
@@ -6100,7 +6102,7 @@ lookTouchy: function(morph) {
 
 	setPosition: function($super, pos) {
 		$super(pos);
-		if (this.submorphs.length > 0)
+		if (this.hasSubmorphs())
 			this.scrollDuringDrag()
 	},
 
