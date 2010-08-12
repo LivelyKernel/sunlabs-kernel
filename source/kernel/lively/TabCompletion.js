@@ -103,7 +103,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 	
 	checkForPropertyChoicesAt: function(proceed, cursor) {
 			var lastExpression =	this.checkForLastExpression(cursor);
-			console.log("lastExpression: " + lastExpression )
+			// console.log("lastExpression: " + lastExpression )
 			var propertiesChoices;
 			if (lastExpression) {
 				try {
