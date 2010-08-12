@@ -1794,6 +1794,28 @@ m.openInWorld();';
 		cs.addChange(c1);
 		cs.addChange(c2);
 	},
+	
+	testModuleNamesInNamespace: function() {
+		var sut = ChangeSet.fromWorld(this.worldMorph);
+		var list = sut.moduleNamesInNamespace('apps')
+		this.assert(list.length > 0, "nothing founds");
+	},
+
+	testAddAndRemoveWorldRequirement: function() {
+		var sut = ChangeSet.fromWorld(this.worldMorph);
+		var list = sut.getWorldRequirementsList().evaluate();
+		this.assertEqual(list.length, 0, "list is not empty") 
+
+		sut.addWorldRequirement('lively.TestFramework')
+		list = sut.getWorldRequirementsList().evaluate();
+		this.assertEqual(list.length, 1, "add failed") 
+
+		sut.removeWorldRequirement('lively.TestFramework')
+		list = sut.getWorldRequirementsList().evaluate();
+		this.assertEqual(list.length, 0, "remove failed") 
+
+	},
+	
 });
 TestCase.subclass('Tests.ToolsTests.FileVersionViewerTests', {});
 

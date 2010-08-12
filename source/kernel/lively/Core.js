@@ -24,7 +24,7 @@
 /* Code loader. Appends file to DOM. */
 Object.subclass('ScriptLoader', {
 	
-	getScripts: function() { return $A(document.getElementsByTagName('script')) },
+	getScripts: function() { return $A(document.getElementsByTagName('script')); },
 
 	loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
 		if (this.scriptInDOM(url)) {
@@ -1472,9 +1472,41 @@ Object.subclass('MouseHandlerForRelay', {
 
 });
 
+/**
+ * Morph Class 
+ */
+lively.data.Wrapper.subclass('Morph');
+// Functions for change management
+Object.extend(Morph, {
+  	// this static function is needed to bind it during the defintion of some Morph methods
+	onLayoutChange: function(fieldName) { 
+		return function layoutChangeAdvice(/* arguments*/) {
+			var priorExtent = this.innerBounds().extent();
+			this.changed();
+			var args = $A(arguments);
+			var proceed = args.shift();
+			var result = proceed.apply(this, args);
+			this.layoutChanged(priorExtent);
+			this.changed(); 
+			return result;
+		}
+	},
 
-lively.data.Wrapper.subclass('Morph', {
+	fromLiteral: function(literal) {
+		var morph = new Morph(literal.shape);
+		if (literal.submorphs) {
+			if (Object.isArray(literal.submorphs))
+				morph.setSubmorphs(literal.submorphs);
+			else throw new TypeError();
+		}
+		if (literal.transforms) {
+			morph.setTransforms(literal.transforms);
+		}
+		return morph;
+	}
+});
 
+Morph.addMethods('default', {
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
 	doNotSerialize: ['fullBounds'],
@@ -1878,9 +1910,8 @@ lively.data.Wrapper.subclass('Morph', {
 	
 	getName: function() { return this.name },
 	setName: function(str) { this.name = str },
-});
-
-Morph.addMethods({	// tmp copy
+},
+'Style and Canvas',{	// tmp copy
 
 	getStyleClass: function() {
 		return this.styleClass || [];
@@ -1921,9 +1952,8 @@ Morph.addMethods({	// tmp copy
 		else
 		this.rawNode.removeAttributeNS(null, "filter");
 	}
-});
-
-Morph.addMethods({  
+},
+'Widget',{  
 
     getOwnerWidget: function() {
 		if(this.ownerWidget) {
@@ -1934,49 +1964,18 @@ Morph.addMethods({
 		}
 		return undefined;
 	}
-});
-
-// Functions for change management
-Object.extend(Morph, {
-    
-	onLayoutChange: function(fieldName) { 
-		return function layoutChangeAdvice(/* arguments*/) {
-			var priorExtent = this.innerBounds().extent();
-			this.changed();
-			var args = $A(arguments);
-			var proceed = args.shift();
-			var result = proceed.apply(this, args);
-			this.layoutChanged(priorExtent);
-			this.changed(); 
-			return result;
-		}
-	},
-
-	fromLiteral: function(literal) {
-		var morph = new Morph(literal.shape);
-		if (literal.submorphs) {
-			if (Object.isArray(literal.submorphs))
-				morph.setSubmorphs(literal.submorphs);
-			else throw new TypeError();
-		}
-		if (literal.transforms) {
-			morph.setTransforms(literal.transforms);
-		}
-		return morph;
-	}
-
-});
-
-
+},
 // Extend Polylines and polygons to curves
-Morph.addMethods({
+'Curves', {
+	// TODO: where is the difference to Morph.makeCurve?
 	makeCurve: function() {
 		//  Convert a polyline to a curve;  maybe a polygon to a blob  
 		var verts = this.shape.vertices();
 		var isClosed = this.shape instanceof lively.scene.Polygon;
 		// Need closing vertext for closed curves
 		if (verts.length < 2) return;
-		if (isClosed && (!verts[0].eqPt(verts.last()))) verts = verts.concat([verts[0]])
+		if (isClosed && (!verts[0].eqPt(verts.last()))) 
+			verts = verts.concat([verts[0]])
 		var current = verts[0];
 		var ctrl = current;
 		var controlPts = [];
@@ -1987,15 +1986,15 @@ Morph.addMethods({
 			current = verts[i];
 		}
 		// Fix first control point if we have 3 or more verts
-		if (verts.length <= 3) controlPts[1] = verts[1].subPt(verts[2]).addPt(verts[1]);
+		if (verts.length <= 3) 
+			controlPts[1] = verts[1].subPt(verts[2]).addPt(verts[1]);
 		var morph = Morph.makeCurve(verts, controlPts, isClosed)
 		this.world().addMorph(morph);
 		morph.setPosition(this.position());
-}
-});
-
+	}
+},
 // Fill Garbage Collection on Serialization...
-Morph.addMethods({
+'Fill Serialization',{
 	collectAllUsedFills: function(/*$super, */result) {
 		// result = $super(result);
 		var fill = this.getFill();
@@ -2009,10 +2008,9 @@ Morph.addMethods({
 		// do nothing
 		return result
 	}
-});
-
+},
 // Functions for manipulating the visual attributes of Morphs
-Morph.addMethods({
+'Visual Attributes',{
 
 	setFill: function(fill) {
 		this.shape.setFill(fill);
@@ -2068,15 +2066,15 @@ Morph.addMethods({
 
 	getFillOpacity: function() { this.shape.getFillOpacity(); },
 
-    setFillOpacity: function(op) {
-	this.shape.setFillOpacity(op);
-	this.changed(); // FIXME better use specific update
-},
+	setFillOpacity: function(op) {
+		this.shape.setFillOpacity(op);
+		this.changed(); // FIXME better use specific update
+	},
 
-    setStrokeOpacity: function(op) { 
-	this.shape.setStrokeOpacity(op);
-	this.changed(); // FIXME better use specific update
-},
+	setStrokeOpacity: function(op) { 
+		this.shape.setStrokeOpacity(op);
+		this.changed(); // FIXME better use specific update
+	},
 
 	getStrokeOpacity: function() { this.shape.getStrokeOpacity(); },
 
@@ -2194,198 +2192,10 @@ Morph.addMethods({
 		this.adjustForNewBounds();
 	}.wrap(Morph.onLayoutChange('shape')),
 
-});
-
-Object.subclass('LayoutManager', {
-
-    setBounds: function(target, newRect) {
-		// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
-		// This is so that layout management can move things around without triggering redundant or
-		// recursive calls on adjustForNewBounds(q.v.)
-
-		// All calls on morph.setBounds should be converted to two calls as above (or just one if,
-		// eg, only the extent or position is changing).
-
-		// Of course setBounds remains entirely valid as a message to the *shape* object and, 
-		// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
-		// but adjustForNewBounds will only need to be called from setExtent.
-
-		// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
-		// since the caller must do it otherwise.  This would simplify things overall.
-
-		// DI:  Note that there is an inconsistency here, in that we are reading and comparing
-		// the full bounds, yet if we set extent, it only affects the shape (ie, innerBounds)
-	
-		var priorBounds = target.bounds();
-
-		if (!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
-		    target.setPosition(newRect.topLeft());
-		}
-		if (!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
-		    // FIXME some shapes don't support setFromRect
-		    target.shape.setBounds(newRect.extent().extentAsRectangle());
-	 	    target.adjustForNewBounds();
-		}
-    },
-
-	setExtent: function(target, newExtent) {
-		target.setBounds(target.getPosition().extent(newExtent));
-	},
-
-	setPosition: function(target, newPosition) {
-		if (!newPosition)
-			return;
-		var delta = newPosition.subPt(target.getPosition());
-		target.translateBy(delta);
-		return delta;
-	},
-
-    layoutChanged: function(target) {
-	
-    },
-
-    beforeAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
-    },
-
-    afterAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
-    },
-
-    beforeRemoveMorph: function(supermorph, submorph) {
-
-    },
-
-    afterRemoveMorph: function(supermorph, submorph) {
-		// new behavior:
-		supermorph.layoutChanged();
-    },
-
-
-	layout: function(supermorph) {
-		// subclass responsibility
-	},
-
-	leftMarginOf: function(morph) {
-		return morph.margin ? morph.margin.left() : 0;
-	},
-
-	rightMarginOf: function(morph) {
-		return morph.margin ? morph.margin.right() : 0;
-	},
-
-	topMarginOf: function(morph) {
-		return morph.margin ? morph.margin.top() : 0;
-	},
-
-	bottomMarginOf: function(morph) {
-		return morph.margin ? morph.margin.bottom() : 0;
-	},
-
-    rightPaddingOf: function(morph) {
-		return morph.padding ? morph.padding.right() : 0;
-    },
-
-	leftPaddingOf: function(morph) {
-		return morph.padding ? morph.padding.left() : 0;
-	},
-
-	topPaddingOf: function(morph) {
-		return morph.padding ? morph.padding.top() : 0;
-	},
-
-	bottomPaddingOf: function(morph) {
-		return morph.padding ? morph.padding.bottom() : 0;
-	},
-	
-	toLiteral: function() {
-		return {}
-	}
-});
-
-LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
-
-	beforeAddMorph: function(supermorph, submorph, isFront) {
-		if (submorph.isEpimorph) return;
-
-		// runs before submorph is added
-		var dx = this.leftMarginOf(submorph);
-		var dy;
-		var last = supermorph.topSubmorph();
-
-		if (!last) {
-			dx += this.leftPaddingOf(supermorph);
-			dy =  this.topPaddingOf(supermorph);
-			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
-		} else {
-			dx += this.rightMarginOf(last);
-			dy = 0;
-			submorph.align(submorph.bounds().topLeft(), last.bounds().topRight());
-			submorph.translateBy(pt(dx, dy));
-		}
-	},
-	
-	layout: function(supermorph) {
-		var x = this.leftPaddingOf(supermorph);
-		var y =  this.topPaddingOf(supermorph);
-		var submorphs = supermorph.visibleSubmorphs();
-		for(var i=0; i < submorphs.length; i++) {
-			var submorph = submorphs[i];
-			x += this.leftMarginOf(submorph)
-			submorph.align(submorph.bounds().topLeft(), pt(x, y));
-			x += submorph.bounds().width;
-			x += this.rightMarginOf(submorph);
-		}
-	},
-});
-Object.extend(HorizontalLayout, { 
-	fromLiteral: function(literal) { return new this() } 
-})
-
-
-LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
-
-	beforeAddMorph: function(supermorph, submorph, isFront) {
-		if (submorph.isEpimorph) return;
-		// runs before submorph is added
-		var dx;
-		var dy = this.topMarginOf(submorph);
-		var last = supermorph.topSubmorph();
-
-		if (!last) {
-			dx = this.leftPaddingOf(supermorph);
-			dy += this.topPaddingOf(supermorph);
-			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
-		} else {
-			dx = 0;
-			dy += this.bottomMarginOf(last);
-			submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
-			//submorph.translateBy(pt(dx, dy));
-		}
-	},
-
-	layout: function(supermorph) {
-		var x = this.leftPaddingOf(supermorph);
-		var y =  this.topPaddingOf(supermorph);
-		var submorphs = supermorph.visibleSubmorphs();
-		for(var i=0; i < submorphs.length; i++) {
-			var submorph = submorphs[i];
-			y += this.topMarginOf(submorph)
-			submorph.align(submorph.bounds().topLeft(), pt(x, y));
-			y += submorph.bounds().height;
-			y += this.bottomMarginOf(submorph);
-		}
-	},
-
-});
-
-Object.extend(VerticalLayout, { 
-	fromLiteral: function(literal) { return new this() } 
-})
-
-
-
-Morph.addMethods({
+},
+'Layout',{
     
-	layoutManager: new LayoutManager(), // singleton
+	layoutManager: null, // singleton, intialzided later
 
 	// Simple hack until the layout manager can relayout
 	relayout: function() {
@@ -2444,10 +2254,9 @@ Morph.addMethods({
 			throw new Error(pseudomorph + " is not a PseudoMorph");
 	},
 
-});
-
+},
 // Submorph management functions
-Morph.addMethods({ 
+'Submorphs',{ 
 
     addMorph: function(morph) { return this.addMorphFrontOrBack(morph, true) },
 
@@ -2623,10 +2432,9 @@ Morph.addMethods({
 
 	okToDuplicate: Functions.True  // default is OK
 
-});
-
+},
 // Morph bindings to its parent, world, canvas, etc.
-Morph.addMethods({
+'World',{
 
 	world: function() {
 		return this.owner ? this.owner.world() : null;
@@ -2661,8 +2469,9 @@ Morph.addMethods({
 			return "#<inspect error: " + err + ">";
 		}
 	},
-
-    // Morph coordinate transformation functions
+}, 
+// Morph coordinate transformation functions
+'Transform', {
 
     // SVG has transform so renamed to getTransform()
     getTransform: function() {
@@ -2949,9 +2758,8 @@ Morph.addMethods({
 			this.setPosition(towardsPoint.addPt(pt(newX,newY)));
 		}
 	}
-});
-
-Morph.addMethods({     // particle behavior
+},
+'Particle Behavior',{     
 
 	bounceInOwnerBounds: function() {
 		this.bounceInBounds(this.owner.innerBounds());
@@ -2992,10 +2800,8 @@ Morph.addMethods({     // particle behavior
 		this.stepByVelocities();
 		this.bounceInOwnerBounds();
 	}
-});
-
-
-Morph.addMethods({     // help handling
+},
+'Balloon Help', {
 
 	getHelpText: Functions.Null,  // override to supply help text
 
@@ -3027,12 +2833,9 @@ Morph.addMethods({     // help handling
 		delete this.helpBalloonMorph;
 	}
 
-});
-
-
-
+},
 // Morph mouse event handling functions
-Morph.addMethods({
+'MouseEvents', {
 
 	// KP: equivalent of the DOM capture phase
 	// KP: hasFocus is true if the receiver is the hands's focus (?)
@@ -3202,11 +3005,9 @@ Morph.addMethods({
 		return true;
 	}
 
-});
-
-
+},
 // Morph grabbing and menu functionality
-Morph.addMethods({
+'Grabbing and Menus', {
 
 	checkForControlPointNear: function(evt) {
 		if (this.suppressHandles) return false; // disabled
@@ -3610,83 +3411,9 @@ Morph.addMethods({
 		return this.openForDragAndDrop && !(morph instanceof WindowMorph);
 	}
 
-});
-
-Morph.subclass('PseudoMorph', {
-    description: "This hack to make various objects serializable, despite not being morphs",
-    
-	initialize: function($super) {
-		$super(new lively.scene.Group());
-		this.setVisible(false);
-	}
-
-});
-
-// TODO: Is this still used?
-// Deprecated?
-PseudoMorph.subclass('Invocation', {
-
-	initialize: function($super, actor, scriptName, argIfAny) {
-		$super();
-		this.actor = actor;
-		this.scriptName = scriptName;
-		this.argIfAny = argIfAny; // better be primitive
-	},
-
-	exec: function Invocation$exec() {
-		if (!this.actor) {
-			console.warn("no actor on script %s", this);
-			return null;
-		}
-		var func = this.actor[this.scriptName];
-		if (func) {
-			return func.call(this.actor, this.argIfAny);
-		} else {
-			//console.warn("no callback on actor %s", this.actor);
-			return null;
-		}
-	},
-
-});
-
-
-Invocation.subclass('SchedulableAction', {
-
-	documentation: "Description of a periodic action",
-	beVerbose: false,
-
-	initialize: function($super, actor, scriptName, argIfAny, stepTime) {
-		$super(actor, scriptName, argIfAny);
-		this.stepTime = stepTime;
-		this.ticks = 0;
-	},
-
-	toString: function() {
-		return Strings.format("#<SchedulableAction[actor=%s,script=%s,arg=%s,stepTime=%s]>", 
-		this.actor, this.scriptName, this.argIfAny, this.stepTime);
-	},
-
-	stop: function(world) {
-		if (this.beVerbose) console.log("stopped stepping task %s", this);
-		world.stopSteppingFor(this);
-	},
-
-	start: function(world) {
-		if (this.beVerbose) console.log("started stepping task %s", this);
-		world.startSteppingFor(this);
-	},
-
-	equalActorAndName: function(other) {
-		if (!other) 
-			return false;
-		if (this === other) 
-			return true;
-		return (this.actor === other.actor) && (this.scriptName == other.scriptName)
-	}
-});
-
+},
 // Morph stepping/timer functions
-Morph.addMethods({
+'Stepping', {
 
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
 
@@ -3750,11 +3477,10 @@ Morph.addMethods({
 		});
 	}
 
-});
-
+},
 // Morph bounds, coordinates, moving and damage reporting functions
-Morph.addMethods({ 
-    
+'Bounds', { 
+
     // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
 	bounds: function(ignoreTransients, ignoreTransform) {
 		if (this.fullBounds != null) return this.fullBounds;
@@ -3930,10 +3656,8 @@ Morph.addMethods({
 		this.layoutManager.setPosition(this, newPosition);
 	}
 
-});
-
-// Inspectors for Morphs
-Morph.addMethods({
+},
+'Inspectors for Morphs', {
 
 	addSvgInspector: function() {
 		var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
@@ -3961,7 +3685,41 @@ Morph.addMethods({
 			});
 		}
 	}
+},
+'Fabrik',{
+    isContainedIn: function(morph) {
+        if (!this.owner)
+            return false;
+        if (this.owner === morph)
+            return true;
+        else
+            return this.owner.isContainedIn(morph)
+    },
+},
+'Drive a Car Demo', {
+	moveForwardBy: function(amount) {
+		var nose = pt(1,0)
+		var dir = nose.matrixTransformDirection(this.getTransform()).normalized();
+		this.moveBy(dir.scaleBy(amount))
+	},
+
+	// TODO: There is a bug in Safari (the matrix multiplication is the wrong way around)
+	// that is not taken into account here....
+	rotateAround: function(angle, center) {
+		var tfm = new lively.scene.Similitude().toMatrix();
+		tfm = tfm.translate(center.x, center.y);
+		tfm = tfm.rotate(angle)		
+		tfm = tfm.translate( -center.x, -center.y);	
+		var oldTfm = this.getTransform().toMatrix();
+		var newTfm = oldTfm.multiply(tfm);
+		this.setTransform(new lively.scene.Similitude(newTfm));
+	},
+
+	turnBy: function(angle) {
+		this.rotateAround(angle, this.shape.bounds().center())		
+	}
 });
+
 
 
 // Morph factory methods for creating simple morphs easily
@@ -4056,8 +3814,7 @@ Object.extend(Morph, {
 		if (closed) morph.applyStyle({ fill: Color.red, borderWidth: 1, borderColor: Color.black});
 			else morph.applyStyle({ fill: null, borderWidth: 3, borderColor: Color.red});
 		return morph;
-},
-
+	},
 
 	makeHeart: function(position) {
 		var g = lively.scene;
@@ -4078,6 +3835,9 @@ Object.extend(Morph, {
 		return morph
 	}
 });
+
+
+
 
 // View trait
 ViewTrait = {
@@ -4662,15 +4422,16 @@ DisplayThemes['lively'] = using(lively.paint).link({
 })() // initDisplayThemes
 
 
-PasteUpMorph.subclass("WorldMorph", {
-    
+PasteUpMorph.subclass("WorldMorph", 
+'defaults', {
     documentation: "A Morphic world (a visual container of other morphs)",
     fill: Color.primary.blue,
     defaultExtent: pt(1280, 1024),
 	styleClass: ['world'],
 	
     // Default theme for the theme manager    
-
+},
+'initilization', {
 	initialize: function($super, canvas, backgroundImageId) {
 		var bounds = Rectangle.fromElement(canvas);
 		// sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
@@ -4738,6 +4499,8 @@ PasteUpMorph.subclass("WorldMorph", {
 		this.removeRawNode();
 		return this;
 	},
+},
+'private', {
 
 	// called by insertMorph to determine the rawNode after the new inserted morph
 	getInsertPositionFor: function(m, isFront) {
@@ -4832,6 +4595,8 @@ PasteUpMorph.subclass("WorldMorph", {
         window.location && window.location.reload();
     },
 
+},
+'geometry', {
     
     layoutChanged: function() {
 	// do nothing
@@ -4841,10 +4606,16 @@ PasteUpMorph.subclass("WorldMorph", {
 	return false;
     },
     
+
+    moveBy: function(delta) { // don't try to move the world
+    },
+},
+'world', {
+
     world: function() { 
         return this; 
     },
-    
+	
     validatedWorld: function() { 
         return this; 
     },
@@ -4852,11 +4623,22 @@ PasteUpMorph.subclass("WorldMorph", {
     firstHand: function() {
         return this.hands[0];
     },
-    
-    moveBy: function(delta) { // don't try to move the world
+
+    onEnter: function() {},
+    onExit: function() {},
+
+    /**
+     * override b/c of parent treatement
+     */
+    relativize: function(pt) { 
+        return pt;
+        //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
-    
-    //  *** The new truth about ticking scripts ***
+
+},
+'stepping', {
+   
+        //  *** The new truth about ticking scripts ***
     //  A morph may have any number of active scripts
     //  Each is activated by a call such as
     //      this.startStepping(50, "rotateBy", 0.1);
@@ -5040,17 +4822,8 @@ PasteUpMorph.subclass("WorldMorph", {
         list.splice(0, 0, [msTime, action]);
         if (!this.mainLoop) this.kickstartMainLoop();
     },
-
-    onEnter: function() {},
-    onExit: function() {},
-
-    /**
-     * override b/c of parent treatement
-     */
-    relativize: function(pt) { 
-        return pt;
-        //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
-    },
+},
+'dialogs', {
     
 	openURLasText: function(url, title) {
 		// FIXME: This should be moved with other handy services like confirm, notify, etc		
@@ -5108,7 +4881,9 @@ PasteUpMorph.subclass("WorldMorph", {
 		window.setPosition(this.positionForNewMorph(window));
 		return dialog;
 	},
-    
+},
+'new content', {
+   
 	addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
 		var displ = pt(5, 5);
 		return this.addMorphAt(
@@ -5207,117 +4982,35 @@ PasteUpMorph.subclass("WorldMorph", {
 		progressBar.ignoreEvents();
 		return progressBar
 	},
+}, 
+'Requirements', {
+	// this.world().showAddWorldRequirementsMenu(pt(100,100))
+	showAddWorldRequirementsMenu: function(pos) {
+		var allAppModules = ChangeSet.current().moduleNamesInNamespace('apps');
+		var items = allAppModules.collect(function(ea){ 
+			return [ea, function(){
+				module(ea).load();
+				ChangeSet.current().addWorldRequirement(ea);
+				this.alert("load " + ea + " module")}]})
+		var menu = new MenuMorph(items, this.world());
+		menu.openIn(this.world(), pos, false, 
+			"require module for this page");
 
-});
-
-
-Object.subclass('DocLinkConverter', {
-
-	initialize: function(codeBase, toDir) {
-		if (!codeBase.toString().endsWith('/')) codeBase = codeBase.toString() + '/';
-		if (!toDir.toString().endsWith('/')) toDir = toDir.toString() + '/';
-		this.codeBase = new URL(codeBase);
-		this.toDir = new URL(toDir).withRelativePartsResolved();
 	},
-
-	convert: function(doc) {
-		var scripts = $A(doc.getElementsByTagName('script'));
-		if (scripts.length <= 0) {
-			console.warn('could not convert scripts in doc in DocLinkConverter because no scripts found!');
-			return doc;
-		}
-		this.convertLinks(scripts);
-		this.convertAndRemoveCodeBaseDefs(scripts);
-		return doc;
-	},
-
-	convertAndRemoveCodeBaseDefs: function(scripts) {
-		var codeBaseDefs = scripts.select(function(el) {
-			return el.firstChild && el.firstChild.data && el.firstChild.data.startsWith('Config.codeBase=');
-		});
-
-		var codeBaseDef = this.createCodeBaseDef(this.relativeCodeBaseFrom(this.codeBase, this.toDir));
-		
-		if (codeBaseDefs.length == 0) {
-			var script = NodeFactory.create('script');
-			script.setAttribute('name', 'codeBase');
-			script.appendChild(NodeFactory.createCDATA(codeBaseDef));
-
-			var localConfigScript = this.findScriptEndingWith('localconfig.js', scripts);
-			if (localConfigScript) {
-				localConfigScript.parentNode.insertBefore(script, localConfigScript);
-				localConfigScript.parentNode.insertBefore(NodeFactory.createNL(), localConfigScript);
-			}
-			return;
-		}
-
-		if (codeBaseDefs.length >= 1) {
-
-			var cdata = codeBaseDefs[0].firstChild;
-			cdata.data = codeBaseDef;
-		}
-
-		// remove remaining
-		for (var i = 1; i < codeBaseDefs.length; i++)
-			codeBaseDefs[i].parentNode.removeChild(codeBaseDefs[i]);
-	},
-
-	convertLinks: function(scripts) {
-		var links = scripts.select(function(el) { return this.getURLFrom(el) != null }, this);
-		links.forEach(function(el) {
-			var url = this.getURLFrom(el);
-			var newUrl = this.convertPath(url);
-			this.setURLTo(el, newUrl);
-		}, this);
-	},
-
-	convertPath: function(path) {
-		if (path.startsWith('http')) return path;
-		var fn = this.extractFilename(path);
-		var relative = this.relativeLivelyPathFrom(this.codeBase, this.toDir);
-		return relative + fn;
-	},
-
-	relativeCodeBaseFrom: function(codeBase, toDir) {
-		codeBase = new URL(codeBase);
-		toDir = new URL(toDir);
-		var relative = toDir.relativePathFrom(codeBase);
-		if (relative.startsWith('/')) throw dbgOn(new Error('relative looks different than expected'));
-		var levels = relative.split('/').length -1
-		var result = range(1, levels).collect(function() { return '..' }).join('/');
-		if (result.length > 0) result += '/';
-		return result;
-	},
-
-	relativeLivelyPathFrom: function(codeBase, toDir) {
-		return this.relativeCodeBaseFrom(codeBase, toDir) + 'lively/';
-	},
-
-	extractFilename: function(url) {
-		return url.substring(url.lastIndexOf('/') + 1, url.length);
-	},
-
-	createCodeBaseDef: function(relPath) {
-		return Strings.format('Config.codeBase=Config.getDocumentDirectory()+\'%s\'', relPath);
-	},
-
-	findScriptEndingWith: function(str, scripts) {
-		return scripts.detect(function(node) {
-				var url = this.getURLFrom(node);
-				return url && url.endsWith(str)
-			}, this);
-	},
-
-	getURLFrom: function(el) {
-		return el.getAttribute('xlink:href')
-	},
-
-	setURLTo: function(el, url) {
-		el.setAttribute('xlink:href', url)
-	},
-
-});// Give Feedback on Saving
-WorldMorph.addMethods({
+	// this.world().showRemoveWorldRequirementsMenu(pt(100,100))
+	showRemoveWorldRequirementsMenu: function(pos) {
+		var pageModules = ChangeSet.current().getWorldRequirementsList().evaluate() 
+		var items = pageModules.collect(function(ea){ 
+			return [ea, function(){
+				ChangeSet.current().removeWorldRequirement(ea);
+				this.alert("remove " + ea + " module requirement")}]
+		})
+		var menu = new MenuMorph(items, this.world())
+		menu.openIn(this.world(), pos, false, 
+			"remove module requirement for this page");
+	}
+},
+'Feedback and Saving', {
 
 	promptAndSaveWorld: function() {
 		this.prompt("world file (.xhtml)", function(filename) {
@@ -5407,6 +5100,8 @@ WorldMorph.addMethods({
 	},
 });
 
+
+
 /**
  *	WorldMorph Menu 
  *
@@ -5414,7 +5109,7 @@ WorldMorph.addMethods({
  *  or should the menu give an overview of available features 
  *  and load the modules on demand?
  */
-WorldMorph.addMethods({
+WorldMorph.addMethods('Menus ', {
 	isProtectedWorld: function() {
 		return Global.URL && (URL.source.filename() == "index.xhtml")
 	},
@@ -6814,51 +6509,7 @@ LinkMorph.subclass('ExternalLinkMorph', {
     
 });
 
- function interactiveEval(text) {
-    // FIXME for compatibility, load jQuery for some interactive conveniences
-	// ECMAScript 3rd edition, section 12.4: 
-	// “Note that an ExpressionStatement cannot start with an opening curly brace because that might make it ambiguous with a Block.“
-	//text = '(' + text + ')'; // workaround for that issue
-	return eval(text);
- }
 
-// for Fabrik
-Morph.addMethods({
-    isContainedIn: function(morph) {
-        if (!this.owner)
-            return false;
-        if (this.owner === morph)
-            return true;
-        else
-            return this.owner.isContainedIn(morph)
-    },
-});
-
-// For driving a Car... 
-Morph.addMethods({
-
-	moveForwardBy: function(amount) {
-		var nose = pt(1,0)
-		var dir = nose.matrixTransformDirection(this.getTransform()).normalized();
-		this.moveBy(dir.scaleBy(amount))
-	},
-
-	// TODO: There is a bug in Safari (the matrix multiplication is the wrong way around)
-	// that is not taken into account here....
-	rotateAround: function(angle, center) {
-		var tfm = new lively.scene.Similitude().toMatrix();
-		tfm = tfm.translate(center.x, center.y);
-		tfm = tfm.rotate(angle)		
-		tfm = tfm.translate( -center.x, -center.y);	
-		var oldTfm = this.getTransform().toMatrix();
-		var newTfm = oldTfm.multiply(tfm);
-		this.setTransform(new lively.scene.Similitude(newTfm));
-	},
-
-	turnBy: function(angle) {
-		this.rotateAround(angle, this.shape.bounds().center())		
-	}
-})
 
 
 // for Fabrik
@@ -6872,6 +6523,10 @@ HandMorph.addMethods({
         }, this);
     }
 });
+
+/**
+ *  Morpsh for Structuring and Layouting 
+ */
 
 Morph.subclass('BoxMorph', {
 
@@ -6935,12 +6590,12 @@ BoxMorph.subclass('ContainerMorph', {
 			sub.setExtent(sub.getExtent().scaleByPt(scalePt));
 		});
 		this.priorExtent = newExtent;
-	},
-
-    
+	},    
 });
 
-
+/**
+ * Hacks 
+ */
 ClipboardHack = {
 	ensurePasteBuffer: function() {
 		// Return a reference to a text element to serve as our proxy for communication
@@ -7019,6 +6674,7 @@ ClipboardHack = {
 
 }
 
+
 Global.basicResize = function(world, canvas, newWidth, newHeight) {
 	canvas.setAttribute("width", newWidth);
 	canvas.setAttribute("height", newHeight);
@@ -7040,6 +6696,14 @@ window.onresize = function(evt) {
 };
 
 Global.$morph = function getMorphNamedShortcut(name) { return WorldMorph.current().getMorphNamed(name) };
+
+function interactiveEval(text) {
+   // FIXME for compatibility, load jQuery for some interactive conveniences
+	// ECMAScript 3rd edition, section 12.4: 
+	// “Note that an ExpressionStatement cannot start with an opening curly brace because that might make it ambiguous with a Block.“
+	//text = '(' + text + ')'; // workaround for that issue
+	return eval(text);
+}
 
 // Helper method with GUI stuff, so it can't go into Helper.js
 Global.inspect = function(inspectee) {
@@ -7077,5 +6741,382 @@ Object.subclass('ClipboardCopier', {
     },	
 });
 
+
+/**
+ *  Misc
+ */
+
+Object.subclass('DocLinkConverter', {
+
+	initialize: function(codeBase, toDir) {
+		if (!codeBase.toString().endsWith('/')) codeBase = codeBase.toString() + '/';
+		if (!toDir.toString().endsWith('/')) toDir = toDir.toString() + '/';
+		this.codeBase = new URL(codeBase);
+		this.toDir = new URL(toDir).withRelativePartsResolved();
+	},
+
+	convert: function(doc) {
+		var scripts = $A(doc.getElementsByTagName('script'));
+		if (scripts.length <= 0) {
+			console.warn('could not convert scripts in doc in DocLinkConverter because no scripts found!');
+			return doc;
+		}
+		this.convertLinks(scripts);
+		this.convertAndRemoveCodeBaseDefs(scripts);
+		return doc;
+	},
+
+	convertAndRemoveCodeBaseDefs: function(scripts) {
+		var codeBaseDefs = scripts.select(function(el) {
+			return el.firstChild && el.firstChild.data && el.firstChild.data.startsWith('Config.codeBase=');
+		});
+
+		var codeBaseDef = this.createCodeBaseDef(this.relativeCodeBaseFrom(this.codeBase, this.toDir));
+		
+		if (codeBaseDefs.length == 0) {
+			var script = NodeFactory.create('script');
+			script.setAttribute('name', 'codeBase');
+			script.appendChild(NodeFactory.createCDATA(codeBaseDef));
+
+			var localConfigScript = this.findScriptEndingWith('localconfig.js', scripts);
+			if (localConfigScript) {
+				localConfigScript.parentNode.insertBefore(script, localConfigScript);
+				localConfigScript.parentNode.insertBefore(NodeFactory.createNL(), localConfigScript);
+			}
+			return;
+		}
+
+		if (codeBaseDefs.length >= 1) {
+
+			var cdata = codeBaseDefs[0].firstChild;
+			cdata.data = codeBaseDef;
+		}
+
+		// remove remaining
+		for (var i = 1; i < codeBaseDefs.length; i++)
+			codeBaseDefs[i].parentNode.removeChild(codeBaseDefs[i]);
+	},
+
+	convertLinks: function(scripts) {
+		var links = scripts.select(function(el) { return this.getURLFrom(el) != null }, this);
+		links.forEach(function(el) {
+			var url = this.getURLFrom(el);
+			var newUrl = this.convertPath(url);
+			this.setURLTo(el, newUrl);
+		}, this);
+	},
+
+	convertPath: function(path) {
+		if (path.startsWith('http')) return path;
+		var fn = this.extractFilename(path);
+		var relative = this.relativeLivelyPathFrom(this.codeBase, this.toDir);
+		return relative + fn;
+	},
+
+	relativeCodeBaseFrom: function(codeBase, toDir) {
+		codeBase = new URL(codeBase);
+		toDir = new URL(toDir);
+		var relative = toDir.relativePathFrom(codeBase);
+		if (relative.startsWith('/')) throw dbgOn(new Error('relative looks different than expected'));
+		var levels = relative.split('/').length -1
+		var result = range(1, levels).collect(function() { return '..' }).join('/');
+		if (result.length > 0) result += '/';
+		return result;
+	},
+
+	relativeLivelyPathFrom: function(codeBase, toDir) {
+		return this.relativeCodeBaseFrom(codeBase, toDir) + 'lively/';
+	},
+
+	extractFilename: function(url) {
+		return url.substring(url.lastIndexOf('/') + 1, url.length);
+	},
+
+	createCodeBaseDef: function(relPath) {
+		return Strings.format('Config.codeBase=Config.getDocumentDirectory()+\'%s\'', relPath);
+	},
+
+	findScriptEndingWith: function(str, scripts) {
+		return scripts.detect(function(node) {
+				var url = this.getURLFrom(node);
+				return url && url.endsWith(str)
+			}, this);
+	},
+
+	getURLFrom: function(el) {
+		return el.getAttribute('xlink:href')
+	},
+
+	setURLTo: function(el, url) {
+		el.setAttribute('xlink:href', url)
+	},
+
+});
+
+Morph.subclass('PseudoMorph', {
+    description: "This hack to make various objects serializable, despite not being morphs",
+    
+	initialize: function($super) {
+		$super(new lively.scene.Group());
+		this.setVisible(false);
+	}
+
+});
+
+
+PseudoMorph.subclass('Invocation', {
+
+	initialize: function($super, actor, scriptName, argIfAny) {
+		$super();
+		this.actor = actor;
+		this.scriptName = scriptName;
+		this.argIfAny = argIfAny; // better be primitive
+	},
+
+	exec: function Invocation$exec() {
+		if (!this.actor) {
+			console.warn("no actor on script %s", this);
+			return null;
+		}
+		var func = this.actor[this.scriptName];
+		if (func) {
+			return func.call(this.actor, this.argIfAny);
+		} else {
+			//console.warn("no callback on actor %s", this.actor);
+			return null;
+		}
+	},
+
+});
+
+Invocation.subclass('SchedulableAction', {
+
+	documentation: "Description of a periodic action",
+	beVerbose: false,
+
+	initialize: function($super, actor, scriptName, argIfAny, stepTime) {
+		$super(actor, scriptName, argIfAny);
+		this.stepTime = stepTime;
+		this.ticks = 0;
+	},
+
+	toString: function() {
+		return Strings.format("#<SchedulableAction[actor=%s,script=%s,arg=%s,stepTime=%s]>", 
+		this.actor, this.scriptName, this.argIfAny, this.stepTime);
+	},
+
+	stop: function(world) {
+		if (this.beVerbose) console.log("stopped stepping task %s", this);
+		world.stopSteppingFor(this);
+	},
+
+	start: function(world) {
+		if (this.beVerbose) console.log("started stepping task %s", this);
+		world.startSteppingFor(this);
+	},
+
+	equalActorAndName: function(other) {
+		if (!other) 
+			return false;
+		if (this === other) 
+			return true;
+		return (this.actor === other.actor) && (this.scriptName == other.scriptName)
+	}
+});
+
+/**
+ *  Layout Manager 
+ *  TODO: Move into own package
+ *
+ */
+Object.subclass('LayoutManager', {
+
+    setBounds: function(target, newRect) {
+		// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
+		// This is so that layout management can move things around without triggering redundant or
+		// recursive calls on adjustForNewBounds(q.v.)
+
+		// All calls on morph.setBounds should be converted to two calls as above (or just one if,
+		// eg, only the extent or position is changing).
+
+		// Of course setBounds remains entirely valid as a message to the *shape* object and, 
+		// in fact, shape.setBounds() will have to be called from both setPosition and setExtent
+		// but adjustForNewBounds will only need to be called from setExtent.
+
+		// Finally, there is an argument for calling layoutChanged from setPosition and setExtent,
+		// since the caller must do it otherwise.  This would simplify things overall.
+
+		// DI:  Note that there is an inconsistency here, in that we are reading and comparing
+		// the full bounds, yet if we set extent, it only affects the shape (ie, innerBounds)
+	
+		var priorBounds = target.bounds();
+
+		if (!newRect.topLeft().eqPt(priorBounds.topLeft())) {  // Only set position if it changes
+		    target.setPosition(newRect.topLeft());
+		}
+		if (!newRect.extent().eqPt(priorBounds.extent())) {  // Only set extent if it changes
+		    // FIXME some shapes don't support setFromRect
+		    target.shape.setBounds(newRect.extent().extentAsRectangle());
+	 	    target.adjustForNewBounds();
+		}
+    },
+
+	setExtent: function(target, newExtent) {
+		target.setBounds(target.getPosition().extent(newExtent));
+	},
+
+	setPosition: function(target, newPosition) {
+		if (!newPosition)
+			return;
+		var delta = newPosition.subPt(target.getPosition());
+		target.translateBy(delta);
+		return delta;
+	},
+
+    layoutChanged: function(target) {
+	
+    },
+
+    beforeAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
+    },
+
+    afterAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
+    },
+
+    beforeRemoveMorph: function(supermorph, submorph) {
+
+    },
+
+    afterRemoveMorph: function(supermorph, submorph) {
+		// new behavior:
+		supermorph.layoutChanged();
+    },
+
+
+	layout: function(supermorph) {
+		// subclass responsibility
+	},
+
+	leftMarginOf: function(morph) {
+		return morph.margin ? morph.margin.left() : 0;
+	},
+
+	rightMarginOf: function(morph) {
+		return morph.margin ? morph.margin.right() : 0;
+	},
+
+	topMarginOf: function(morph) {
+		return morph.margin ? morph.margin.top() : 0;
+	},
+
+	bottomMarginOf: function(morph) {
+		return morph.margin ? morph.margin.bottom() : 0;
+	},
+
+    rightPaddingOf: function(morph) {
+		return morph.padding ? morph.padding.right() : 0;
+    },
+
+	leftPaddingOf: function(morph) {
+		return morph.padding ? morph.padding.left() : 0;
+	},
+
+	topPaddingOf: function(morph) {
+		return morph.padding ? morph.padding.top() : 0;
+	},
+
+	bottomPaddingOf: function(morph) {
+		return morph.padding ? morph.padding.bottom() : 0;
+	},
+	
+	toLiteral: function() {
+		return {}
+	}
+});
+
+LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
+
+	beforeAddMorph: function(supermorph, submorph, isFront) {
+		if (submorph.isEpimorph) return;
+
+		// runs before submorph is added
+		var dx = this.leftMarginOf(submorph);
+		var dy;
+		var last = supermorph.topSubmorph();
+
+		if (!last) {
+			dx += this.leftPaddingOf(supermorph);
+			dy =  this.topPaddingOf(supermorph);
+			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
+		} else {
+			dx += this.rightMarginOf(last);
+			dy = 0;
+			submorph.align(submorph.bounds().topLeft(), last.bounds().topRight());
+			submorph.translateBy(pt(dx, dy));
+		}
+	},
+	
+	layout: function(supermorph) {
+		var x = this.leftPaddingOf(supermorph);
+		var y =  this.topPaddingOf(supermorph);
+		var submorphs = supermorph.visibleSubmorphs();
+		for(var i=0; i < submorphs.length; i++) {
+			var submorph = submorphs[i];
+			x += this.leftMarginOf(submorph)
+			submorph.align(submorph.bounds().topLeft(), pt(x, y));
+			x += submorph.bounds().width;
+			x += this.rightMarginOf(submorph);
+		}
+	},
+});
+
+Morph.addMethods('default layout manager', {
+	layoutManager: new LayoutManager()
+});
+
+Object.extend(HorizontalLayout, { 
+	fromLiteral: function(literal) { return new this() } 
+})
+
+
+LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
+
+	beforeAddMorph: function(supermorph, submorph, isFront) {
+		if (submorph.isEpimorph) return;
+		// runs before submorph is added
+		var dx;
+		var dy = this.topMarginOf(submorph);
+		var last = supermorph.topSubmorph();
+
+		if (!last) {
+			dx = this.leftPaddingOf(supermorph);
+			dy += this.topPaddingOf(supermorph);
+			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
+		} else {
+			dx = 0;
+			dy += this.bottomMarginOf(last);
+			submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
+			//submorph.translateBy(pt(dx, dy));
+		}
+	},
+
+	layout: function(supermorph) {
+		var x = this.leftPaddingOf(supermorph);
+		var y =  this.topPaddingOf(supermorph);
+		var submorphs = supermorph.visibleSubmorphs();
+		for(var i=0; i < submorphs.length; i++) {
+			var submorph = submorphs[i];
+			y += this.topMarginOf(submorph)
+			submorph.align(submorph.bounds().topLeft(), pt(x, y));
+			y += submorph.bounds().height;
+			y += this.bottomMarginOf(submorph);
+		}
+	},
+
+});
+
+Object.extend(VerticalLayout, { 
+	fromLiteral: function(literal) { return new this() } 
+})
 
 console.log('loaded Core.js');
