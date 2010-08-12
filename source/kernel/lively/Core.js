@@ -5100,10 +5100,7 @@ PasteUpMorph.subclass("WorldMorph",
 			document.title = input;
 		});
 	},
-});
-
-
-
+},
 /**
  *	WorldMorph Menu 
  *
@@ -5111,7 +5108,7 @@ PasteUpMorph.subclass("WorldMorph",
  *  or should the menu give an overview of available features 
  *  and load the modules on demand?
  */
-WorldMorph.addMethods('Menus ', {
+'Menus ', {
 	isProtectedWorld: function() {
 		return Global.URL && (URL.source.filename() == "index.xhtml")
 	},
@@ -5411,7 +5408,173 @@ WorldMorph.addMethods('Menus ', {
 		menu.open(evt);
 	}
  
+},
+'Copy And Paste (Private)',{
+	/* Actions */
+	
+	calcTopLeftOfPoints: function(points) {
+		var min_x;
+		var min_y;
+		points.each(function(ea) {
+			if (!min_x || ea.x < min_x)
+				min_x = ea.x;
+			if (!min_y || ea.y < min_y)
+				min_y = ea.y;
+		});
+		return pt(min_x, min_y)
+	},
+	
+	pastePosition: function() {
+		var pos = this.hands.first().lastMouseDownPoint;
+		if (!pos || pos.eqPt(pt(0,0)))
+			pos = this.hands.first().getPosition();
+		return pos
+	},
+	
+	calcPasteOffsetFrom: function(morphs) {
+		if(morphs.length == 0)
+			return;
+		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
+		return this.pastePosition().subPt(topLeft);
+	},
+	
+	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
+	// TODO refactor
+	pasteFromSource: function(source){
+		var copier = new ClipboardCopier();
+		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);
+		if (morphs.length == 0) {
+			var pos = this.pastePosition();
+			var textMorph = new TextMorph(new Rectangle(pos.x,pos.y,200,100), source);
+			this.addMorph(textMorph);
+			return;
+		}
+		// unpack potential selection morph
+		if(morphs[0] && morphs[0].isSelectionContainer) {
+			morphs = morphs[0].submorphs
+		};
+		var copier = new Copier();
+		var offset = this.calcPasteOffsetFrom(morphs);
+		morphs.each(function(ea) {
+			var copy = ea.copy(copier);
+			this.pasteDestinationMorph().addMorph(copy)
+			if (offset) {
+				copy.moveBy(offset)
+			}	
+		}, this)
+	},
+	
+	copySelectionAsXMLString: function() {
+		if (!this.currentSelection) {
+			console.log("WorldMorph: don't know what to copy")
+			return
+		}
+		var selectedMorphs = this.currentSelection.selectedMorphs
+		if (selectedMorphs.length == 0) {
+			console.log("WorldMorph: selection is empty")
+			return 
+		};
+		
+		var copier = new Copier();
+		var clipboardCopier = new ClipboardCopier();
+		var doc = clipboardCopier.createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		
+		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
+		container.isSelectionContainer = true;
+				
+		selectedMorphs.each(function(ea) {
+			container.addMorph(ea.copy(copier));
+		})
+		copier.finish()
+		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
+		systemDictionary.setAttribute("id", "SystemDictionary");
+		
+		worldNode.appendChild(container.rawNode);
+		var exporter = new Exporter(container);
+		container.dictionary = function() { return systemDictionary}
+		var helpers = exporter.extendForSerialization(systemDictionary);
+		var result = Exporter.stringify(container.rawNode);
+		exporter.removeHelperNodes(helpers);
+		delete container.dictionary
+	
+		return result
+	},
+
+	pasteDestinationMorph: function() {
+		return this;
+	},
+	
+	
+},
+'Keyboard Events',{
+
+	takesKeyboardFocus: Functions.True,
+	
+	onKeyDown: function(evt) {
+		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
+		if (evt.isCommandKey() && !evt.isShiftDown()) {
+			var key = evt.getKeyChar().toLowerCase();
+			if (key == 'b') {
+				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
+				return true;
+			}
+			if (key == 'l') { // (L)ogger
+				new ConsoleWidget().open();
+				return true;
+			}
+			if (key == 'k') { // Workspace
+				this.addTextWindow("Workspace");
+				return true;
+			}
+			if (key == 's') { // save
+				if (! this.isProtectedWorld()) {
+					this.saveWorld()
+				} else {
+					this.setStatusMessage("Warning: Did not save world, because it is protected!", Color.red, 3)
+				}
+				evt.stop();
+				return true;
+
+			}
+		}
+		return ClipboardHack.tryClipboardAction(evt, this);
+	},
+	
+	onKeyPress: function(evt) {
+		// do nothing
+		// console.log("World onKeyPress " + evt + " char: " + evt.getKeyChar())
+		return false;
+	},
+
+	onKeyUp: function(evt) {
+		// do nothing
+		// console.log("World onKeyUp " + evt + " char: " + evt.getKeyChar())
+		return false
+	},
+},
+'Commands',{
+
+	doCopy: function() {
+		var source = this.copySelectionAsXMLString();
+		TextMorph.clipboardString = source;
+	},
+	
+	doPaste: function() {
+		if (TextMorph.clipboardString) {
+			// console.log("paste morphs...")
+			this.pasteFromSource(TextMorph.clipboardString);
+		}
+	},
+	
+	doCut: function() {
+		console.log("cut selection")
+		this.doCopy();
+ 		if (this.currentSelection) 
+			this.currentSelection.remove();
+	},
 })
+
 
 Object.extend(WorldMorph, {    
     worldCount: 0,
@@ -5421,8 +5584,6 @@ Object.extend(WorldMorph, {
     current: function() {
         return WorldMorph.currentWorld;
     }
-
-    
 });
 
 
@@ -5433,8 +5594,8 @@ Object.extend(WorldMorph, {
  * simultaneously, we do not want to use the default system cursor.   
  */ 
 
-Morph.subclass("HandMorph", {
-    
+Morph.subclass("HandMorph", 
+'default properties', {   
     documentation: "Defines a visual representation for the user's cursor.",
     applyDropShadowFilter: !!Config.useDropShadow,
     dropShadowFilter: "url(#DropShadowFilter)",
@@ -5445,6 +5606,8 @@ Morph.subclass("HandMorph", {
     logDnD: Config.logDnD,
     grabHaloLabelStyle: {fontSize: Math.floor((Config.defaultFontSize || 12) *0.85), padding: Rectangle.inset(0)},
 
+},
+'Basic',{
     initialize: function($super, local) {
         $super(new lively.scene.Polygon([pt(0,0), pt(10, 8), pt(4,9), pt(8,16), pt(4,9), pt(0, 12)]));
 		this.applyStyle({fill: local ? Color.primary.blue : Color.primary.red, borderColor: Color.black, borderWidth: 1});
@@ -5479,14 +5642,21 @@ Morph.subclass("HandMorph", {
 		return this.rawNode.getAttribute("id");
 	},
 
+    world: function() {
+        return this.owner;
+    },
+},
+'Looks',{
+
     lookNormal: function(morph) {
         this.shape.setVertices([pt(0,0), pt(10, 8), pt(4,9), pt(8,16), pt(4,9), pt(0, 12)]);
     },
-lookTouchy: function(morph) {
-	// Make the cursor look polygonal to indicate touch events go to pan/zoom
-	var n = 5, r = 10, theta = 2*Math.PI/n;
-	var verts = [0, 1, 2, 3, 4, 0].map(function(i) { return Point.polar(r, i*theta).addXY(20,0) });
-	this.shape.setVertices(verts);
+	
+	lookTouchy: function(morph) {
+		// Make the cursor look polygonal to indicate touch events go to pan/zoom
+		var n = 5, r = 10, theta = 2*Math.PI/n;
+		var verts = [0, 1, 2, 3, 4, 0].map(function(i) { return Point.polar(r, i*theta).addXY(20,0) });
+		this.shape.setVertices(verts);
     },
 
 
@@ -5506,7 +5676,8 @@ lookTouchy: function(morph) {
 		];
 		this.shape.setVertices(verts);
 	},
-
+},
+'Event Registering',{
 	addOrRemoveEvents: function(morphOrNode, eventNames, isRemove) {
 		var node = morphOrNode.rawNode || morphOrNode;
 		var selector = isRemove ? 'removeEventListener' : 'addEventListener';
@@ -5531,6 +5702,8 @@ lookTouchy: function(morph) {
 		this.addOrRemoveEvents(morphOrNode, Event.keyboardEvents, true);
     },
 
+},
+'Focus',{
     resetMouseFocusChanges: function() {
 		var result = this.mouseFocusChanges_;
 		this.mouseFocusChanges_ = 0;
@@ -5560,10 +5733,8 @@ lookTouchy: function(morph) {
         }
     },
     
-    world: function() {
-        return this.owner;
-    },
-
+},
+'Event Handling',{
 	// this is the DOM Event callback
 	handleEvent: function HandMorph$handleEvent(rawEvt) {
 		var evt = new Event(rawEvt);
@@ -5706,7 +5877,8 @@ lookTouchy: function(morph) {
 		this.lastMouseEvent = evt; 
 		return true;
 	},
-	
+},
+'Misc',{	
     checkMouseUpIsInClickTimeSpan: function(mouseUpEvent) {
 		// console.log("checkMouseUpIsInClickTimeSpan " + this.lastMouseDownEvent.timeStamp )
 		if (!this.lastMouseDownEvent || !mouseUpEvent)
@@ -5736,7 +5908,8 @@ lookTouchy: function(morph) {
 			this.layoutChangedCount --;
 		}
     },
-
+},
+'Grabbing',{
 
     showAsGrabbed: function(grabbedMorph) {
 		// At this time, there are three separate hand-effects:
@@ -5959,7 +6132,8 @@ lookTouchy: function(morph) {
 			return true;
 		} else return false;
 	},
-
+},
+'Keyboard Events',{
 	isKeyDown: function(character) {
 		if (!this.keysDown)
 			return false;
@@ -6052,7 +6226,8 @@ lookTouchy: function(morph) {
 		    }
 		}	
     },
-
+},
+'Geometry',{
 	bounds: function($super) {
 		// account for the extra extent of the drop shadow
 		// FIXME drop shadow ...
@@ -6072,6 +6247,13 @@ lookTouchy: function(morph) {
         return Strings.format("%s, a hand carrying %s%s", superString, this.topSubmorph(), extraString);
     },
 
+	setPosition: function($super, pos) {
+		$super(pos);
+		if (this.hasSubmorphs())
+			this.scrollDuringDrag()
+	},
+},
+'Indicator',{
 	removeIndicatorMorph: function() {
 		if (!this.indicatorMorph)
 			return;
@@ -6099,13 +6281,8 @@ lookTouchy: function(morph) {
 		else
 			return this.submorphs.reject(function(ea) {return ea.isEpimorph}).length != 0;
 	},
-
-	setPosition: function($super, pos) {
-		$super(pos);
-		if (this.hasSubmorphs())
-			this.scrollDuringDrag()
-	},
-
+},
+'Scrolling',{
 	scrollDuringDrag: function(counter) {
 		var scrollSpeed = 0.3; // should go into config options?
 		var maxSteps = 30;
@@ -6138,167 +6315,6 @@ lookTouchy: function(morph) {
 		}
 	}
 });
-
-WorldMorph.addMethods({
-
-	takesKeyboardFocus: Functions.True,
-	
-	onKeyDown: function(evt) {
-		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
-		if (evt.isCommandKey() && !evt.isShiftDown()) {
-			var key = evt.getKeyChar().toLowerCase();
-			if (key == 'b') {
-				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
-				return true;
-			}
-			if (key == 'l') { // (L)ogger
-				new ConsoleWidget().open();
-				return true;
-			}
-			if (key == 'k') { // Workspace
-				this.addTextWindow("Workspace");
-				return true;
-			}
-			if (key == 's') { // save
-				if (! this.isProtectedWorld()) {
-					this.saveWorld()
-				} else {
-					this.setStatusMessage("Warning: Did not save world, because it is protected!", Color.red, 3)
-				}
-				evt.stop();
-				return true;
-
-			}
-		}
-		return ClipboardHack.tryClipboardAction(evt, this);
-	},
-	
-	onKeyPress: function(evt) {
-		// do nothing
-		// console.log("World onKeyPress " + evt + " char: " + evt.getKeyChar())
-		return false;
-	},
-
-	onKeyUp: function(evt) {
-		// do nothing
-		// console.log("World onKeyUp " + evt + " char: " + evt.getKeyChar())
-		return false
-	},
-
-	/* Actions */
-	
-	copySelectionAsXMLString: function() {
-		if (!this.currentSelection) {
-			console.log("WorldMorph: don't know what to copy")
-			return
-		}
-		var selectedMorphs = this.currentSelection.selectedMorphs
-		if (selectedMorphs.length == 0) {
-			console.log("WorldMorph: selection is empty")
-			return 
-		};
-		
-		var copier = new Copier();
-		var clipboardCopier = new ClipboardCopier();
-		var doc = clipboardCopier.createBaseDocument();
-		var worldNode = doc.childNodes[0].childNodes[0];
-		
-		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
-		container.isSelectionContainer = true;
-				
-		selectedMorphs.each(function(ea) {
-			container.addMorph(ea.copy(copier));
-		})
-		copier.finish()
-		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
-		systemDictionary.setAttribute("id", "SystemDictionary");
-		
-		worldNode.appendChild(container.rawNode);
-		var exporter = new Exporter(container);
-		container.dictionary = function() { return systemDictionary}
-		var helpers = exporter.extendForSerialization(systemDictionary);
-		var result = Exporter.stringify(container.rawNode);
-		exporter.removeHelperNodes(helpers);
-		delete container.dictionary
-	
-		return result
-	},
-
-	pasteDestinationMorph: function() {
-		return this;
-	},
-
-	doCopy: function() {
-		var source = this.copySelectionAsXMLString();
-		TextMorph.clipboardString = source;
-	},
-	
-	doPaste: function() {
-		if (TextMorph.clipboardString) {
-			// console.log("paste morphs...")
-			this.pasteFromSource(TextMorph.clipboardString);
-		}
-	},
-	
-	calcTopLeftOfPoints: function(points) {
-		var min_x;
-		var min_y;
-		points.each(function(ea) {
-			if (!min_x || ea.x < min_x)
-				min_x = ea.x;
-			if (!min_y || ea.y < min_y)
-				min_y = ea.y;
-		});
-		return pt(min_x, min_y)
-	},
-	
-	pastePosition: function() {
-		var pos = this.hands.first().lastMouseDownPoint;
-		if (!pos || pos.eqPt(pt(0,0)))
-			pos = this.hands.first().getPosition();
-		return pos
-	},
-	
-	calcPasteOffsetFrom: function(morphs) {
-		if(morphs.length == 0)
-			return;
-		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
-		return this.pastePosition().subPt(topLeft);
-	},
-	
-	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
-	// TODO refactor
-	pasteFromSource: function(source){
-		var copier = new ClipboardCopier();
-		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);
-		if (morphs.length == 0) {
-			var pos = this.pastePosition();
-			var textMorph = new TextMorph(new Rectangle(pos.x,pos.y,200,100), source);
-			this.addMorph(textMorph);
-			return;
-		}
-		// unpack potential selection morph
-		if(morphs[0] && morphs[0].isSelectionContainer) {
-			morphs = morphs[0].submorphs
-		};
-		var copier = new Copier();
-		var offset = this.calcPasteOffsetFrom(morphs);
-		morphs.each(function(ea) {
-			var copy = ea.copy(copier);
-			this.pasteDestinationMorph().addMorph(copy)
-			if (offset) {
-				copy.moveBy(offset)
-			}	
-		}, this)
-	},
-
-	doCut: function() {
-		console.log("cut selection")
-		this.doCopy();
- 		if (this.currentSelection) 
-			this.currentSelection.remove();
-	},
-})
 
 Morph.subclass('LinkMorph', {
 
