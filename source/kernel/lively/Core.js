@@ -3718,6 +3718,21 @@ Morph.addMethods('default', {
 	turnBy: function(angle) {
 		this.rotateAround(angle, this.shape.bounds().center())		
 	}
+},	
+'Export',{
+	exportLinkedFile: function(filename) {
+		var url;
+		if (Global["WikiNavigator"] && WikiNavigator.current) {
+			var nav = WikiNavigator.current;
+			url = WikiNavigator.fileNameToURL(filename);
+			nav.interactiveSaveWorld(url);
+		} else {
+			url = WorldMorph.current().saveWorld(filename);
+		}
+		if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
+		return url;
+	}
+
 });
 
 
@@ -4195,22 +4210,7 @@ Model.subclass('SyntheticModel', {
 });
 
 
-Morph.addMethods({
 
-	exportLinkedFile: function(filename) {
-		var url;
-		if (Global["WikiNavigator"] && WikiNavigator.current) {
-			var nav = WikiNavigator.current;
-			url = WikiNavigator.fileNameToURL(filename);
-			nav.interactiveSaveWorld(url);
-		} else {
-			url = WorldMorph.current().saveWorld(filename);
-		}
-		if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
-		return url;
-	}
-
-});
 
 
 // ===========================================================================
@@ -6314,8 +6314,17 @@ Morph.subclass("HandMorph",
 			(function(){self.scrollDuringDrag( counter + 1)}).delay()	
 		}
 	}
+},
+'Fabrik Extension (DEPRICATED)',{
+    changed: function($super, morph) {
+        $super();
+        this.globalPosition = this.getPosition();
+        this.submorphs.forEach(function(ea){
+            // console.log("changed "+ ea);
+            ea.changed("globalPosition", this.getPosition());
+        }, this);
+    }
 });
-
 Morph.subclass('LinkMorph', {
 
     documentation: "two-way hyperlink between two Lively worlds",
@@ -6531,20 +6540,6 @@ LinkMorph.subclass('ExternalLinkMorph', {
     
 });
 
-
-
-
-// for Fabrik
-HandMorph.addMethods({
-    changed: function($super, morph) {
-        $super();
-        this.globalPosition = this.getPosition();
-        this.submorphs.forEach(function(ea){
-            // console.log("changed "+ ea);
-            ea.changed("globalPosition", this.getPosition());
-        }, this);
-    }
-});
 
 /**
  *  Morpsh for Structuring and Layouting 
