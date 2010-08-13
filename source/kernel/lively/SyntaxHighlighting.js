@@ -344,7 +344,9 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 
  	tryBoundEval: function(proceed, str, offset, printIt) {
 		var result = proceed(str, offset, printIt);
-		this.highlightJavaScriptSyntaxFromTo(offset,  offset + str.length);
+		// The syntax highlighting triggers a bug in TextMorph
+		// where newlines are not composed correctly
+		// this.highlightJavaScriptSyntaxFromTo(offset,  offset + str.length);
 		// this.delayedSyntaxHighlighting(offset,  offset + str.length)	
 		return result
 	},
