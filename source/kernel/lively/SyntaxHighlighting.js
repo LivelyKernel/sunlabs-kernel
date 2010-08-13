@@ -351,6 +351,23 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 		return result
 	},
 
+	morphMenu: function(proceed, evt) {
+		var menu = proceed(evt);
+		var enabled = this.getWithLayers().include(BrowserSyntaxHighlightLayer);
+		menu.addItem([(enabled ? "[X]" : "[]") + " Syntax Highlighting", function() {
+			if(!enabled) {
+				this.highlightJavaScriptSyntax();
+				this.setWithLayers(this.getWithLayers().concat([BrowserSyntaxHighlightLayer]))
+			} else {
+				this.emphasizeAll({color: "black", style: 'unbold'})
+				this.setWithLayers(this.getWithLayers().reject(
+					function(ea){return ea === BrowserSyntaxHighlightLayer}))
+			}
+		}])		
+		return menu	
+	}
+
+
 }).refineClass(lively.ide.BasicBrowser, {
 
 	hightlightSourcePane: function() {
