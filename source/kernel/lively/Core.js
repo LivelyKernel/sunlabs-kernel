@@ -1021,6 +1021,8 @@ Object.extend(Exporter, {
 Object.subclass('Copier', {
 	documentation: "context for performing deep copy of objects",
 
+	isCopier: true,
+	
 	wrapperMap: null,
 
 	toString: function() { 
@@ -1207,6 +1209,8 @@ Copier.marker = Object.extend(new Copier(), {
 Copier.subclass('Importer', {
     documentation: "Implementation class for morph de-serialization",
 
+	isImporter: true,
+	
     verbose: !!Config.verboseImport,
     
 	toString: function() { return "#<Importer>" },
@@ -6287,12 +6291,12 @@ Morph.subclass("HandMorph",
 	scrollDuringDrag: function(counter) {
 		var scrollSpeed = 0.3; // should go into config options?
 		var maxSteps = 30;
-
+		
 		var world = this.world();
 		var wb = world.windowBounds();
 		var pos = this.getPosition();
 		counter = counter  || 1;
-
+		
 		var worldScale = world.getScale();
 		var steps = counter * scrollSpeed * worldScale;
 		steps = Math.min(steps, maxSteps);

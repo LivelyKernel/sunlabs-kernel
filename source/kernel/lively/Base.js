@@ -553,9 +553,9 @@ var Class = {
 
 	initializer: function initializer() {
 		// check for the existence of Importer, which may not be defined very early on
-		if (Global.Importer && (arguments[0] instanceof Importer)) {
+		if (arguments[0] && arguments[0].isImporter) {
 			this.deserialize.apply(this, arguments);
-		} else if (Global.Copier && (arguments[0] instanceof Copier)) {
+		} else if (arguments[0] && arguments[0].isCopier) {
 			this.copyFrom.apply(this, arguments);
 		} else if (Global.Restorer && (arguments[0] instanceof Restorer)) {
 			// for WebCards)
