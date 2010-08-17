@@ -3065,7 +3065,8 @@ Object.extend(lively.ide, {
 // ===========================================================================
 // FileFragments, another SourceCodeDescriptor
 // ===========================================================================
-Object.subclass('lively.ide.FileFragment', {
+Object.subclass('lively.ide.FileFragment', 
+'default', {
 
 	initialize: function(name, type, startIndex, stopIndex, fileName, subElems, srcCtrl) {
 		this.name = name;
@@ -3076,6 +3077,7 @@ Object.subclass('lively.ide.FileFragment', {
 		this._subElements = subElems || [];
 		this.sourceControl = srcCtrl;
 	},
+
 	eq: function(other) {
 		if (this == other) return true;
 		if (this.constructor != other.constructor) return false;
@@ -3309,32 +3311,29 @@ Object.subclass('lively.ide.FileFragment', {
 	inspect: function() {
 		try { return this.toString() } catch (err) { return "#<inspect error: " + err + ">" }
 	},
-prevElement: function() {
-	var siblingsAndMe = this.withSiblings();
-	if (!siblingsAndMe) return null;
-	var idx = siblingsAndMe.indexOf(this);
-	return siblingsAndMe[idx - 1];
+
+	prevElement: function() {
+		var siblingsAndMe = this.withSiblings();
+		if (!siblingsAndMe) return null;
+		var idx = siblingsAndMe.indexOf(this);
+		return siblingsAndMe[idx - 1];
+	},
+	withSiblings: function() {
+		var owner = this.findOwnerFragment();
+		if (!owner) return null;
+		return owner.subElements();
+	},
+	getComment: function() {
+		var prev = this.prevElement();
+		if (!prev || prev.type != 'comment') return null;
+		var src = prev.getSourceCode();
+		// if there multiple comments take the last one
+		src = src.split(/\n[\n]+/).last();
+		return src;
+	},
+
 },
-withSiblings: function() {
-	var owner = this.findOwnerFragment();
-	if (!owner) return null;
-	return owner.subElements();
-},
-getComment: function() {
-	var prev = this.prevElement();
-	if (!prev || prev.type != 'comment') return null;
-	var src = prev.getSourceCode();
-	// if there multiple comments take the last one
-	src = src.split(/\n[\n]+/).last();
-	return src;
-},
-
-
-
-
-});
-
-ide.FileFragment.addMethods({
+'browser support', {
 
 	browseIt: function() {
 		var browser = new ide.SystemBrowser();
@@ -3364,9 +3363,8 @@ ide.FileFragment.addMethods({
 		var sibling = newOwner.subElements().detect(function(ea) { return ea.startIndex == this.stopIndex+1 }, this);
 		return sibling;
 	},
-});
-
-ide.FileFragment.addMethods({
+},
+'change compatibility', {
 
 	getName: function() {
 		return this.name;
@@ -3396,6 +3394,8 @@ ide.FileFragment.addMethods({
 	},
 
 });
+
+
 
 ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
 
