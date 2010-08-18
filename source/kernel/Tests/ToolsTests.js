@@ -21,11 +21,15 @@ thisModule.removeDummyNamespace = function() {
 TestCase.subclass('Tests.ToolsTests.SystemBrowserTests', {
 
 	setUp: function() {
-		var browser = new lively.ide.BasicBrowser();
+		var browser = this.createBrowser();
 		var root = this.createMockNode(browser);
 		browser.rootNode = function() { return root };
 		this.browser = browser;
 	},
+createBrowser: function() {
+	return new lively.ide.BasicBrowser();
+},
+
 
 	mockNodeClass: lively.ide.BrowserNode.subclass('Tests.ToolsTests.MockNode', {
 			initialize: function($super, target, browser, c) { $super(target, browser); this.children = c || [] },
@@ -110,9 +114,14 @@ testBrowserFourthPane: function() {
 });
 Tests.ToolsTests.SystemBrowserTests.subclass('Tests.ToolsTests.BrowserNodeTest',
 'running', {
-	buildCategorySource: function() {
+	createBrowser: function() {
+		// FIXME
+		return new lively.ide.SystemBrowser();
+	},
+
+	buildTestSource: function() {
 		// create and parse the source into filefragments
-		src = "\n\Object.subclass('Foo',\n\
+		var src = "\n\Object.subclass('Foo',\n\
 'catA', {\n\
 	m1: function() { return 23 },\n\
 	m2: function() {},\n\
@@ -125,23 +134,23 @@ Foo.addMethods('catC',{\n\
 	m4: function() {},\n\
 });"
 
-		var p = new JsParser()
-		var ffs = p.parseSource(src, {fileName: 'dummySource'})
-		this.klassDef = ffs[1]
+		this.db = new AnotherSourceDatabase();
+		var rootFragment = this.db.prepareForMockModule('dummySource.js', src);
+
+		this.klassDef = rootFragment.subElements()[1]
 		this.m1 = this.klassDef.subElements()[0];
 		this.m2 = this.klassDef.subElements()[1];
 		this.m3 = this.klassDef.subElements()[2];
-		this.klassExtensionDef = ffs[3]
+		this.klassExtensionDef = rootFragment.subElements()[3]
 		this.m4 = this.klassExtensionDef.subElements()[0];
 
-		this.fileFragment = {
-			name: 'dummyModule',
-			type: 'moduleDef',
-			startIndex: 0,
-			stopIndex: src.length,
-			subElements: function() { return [this.klassDef, this.klassExtensionDef] }.bind(this),
-			getName: function() { return this.name },
-		}
+		this.fileFragment = rootFragment;
+
+		// setup browser
+		var completeFFNode = new lively.ide.CompleteFileFragmentNode(
+			this.fileFragment, this.browser, null, this.fileFragment.name)
+		var root = this.createMockNode(this.browser, [completeFFNode]);
+		this.browser.rootNode =  function() { return root };
 	},
 },
 'testing', {
@@ -168,12 +177,10 @@ Foo.addMethods('catC',{\n\
 	},
 
 	testCreateCategoriesFromClassDef: function() {
-		this.buildCategorySource();
-
-		// now setup the browser
+		this.buildTestSource();
 		var browser = this.browser;
 		
-		var completeFFNode = new lively.ide.CompleteFileFragmentNode(this.fileFragment, browser, null, this.fileFragment.name)
+		var completeFFNode = browser.rootNode().childNodes().first();
 		this.assertEqual(2, completeFFNode.childNodes().length);
 		var classNode = completeFFNode.childNodes().first();
 
@@ -191,6 +198,59 @@ Foo.addMethods('catC',{\n\
 		this.assertEqual('m2', methodNodes[1].getName());
 
 	},
+testAddClassCommand: function() {
+		this.buildTestSource();
+		var browser = this.browser;
+		browser.buildView()
+
+		browser.inPaneSelectNodeNamed('Pane1', 'dummySource.js');
+		var commands = browser.commandMenuSpec('Pane2');
+		var commandSpec = commands.detect(function(spec) { return spec[0] == 'add class' });
+		this.assert(commandSpec && Object.isFunction(commandSpec[1]), 'Cannot find add class command');
+
+		var className = 'NewClass';
+		this.answerPromptsDuring(commandSpec[1], [
+			{question: 'super class name', answer: 'Object'},
+			{question: 'class name', answer: className}]);
+
+		var newClassFragment = this.fileFragment.subElements().detect(function(ff) {
+			return ff.getName() == className;
+		});
+
+		this.assert(newClassFragment, 'new class not created');
+		this.assert(newClassFragment.getSourceCode().startsWith('Object.subclass(\'' + className + '\','),
+			'source code of new class is strange');
+
+		// var newNode = browser.selectedNode();
+		// this.assertEquals(newClassFragment, newNode.target, 'browser hasn\'t selected the new class');
+	},
+testAddMethodCommand: function() {
+		this.buildTestSource();
+		var browser = this.browser;
+		browser.buildView()
+
+		browser.inPaneSelectNodeNamed('Pane1', 'dummySource.js');
+		browser.inPaneSelectNodeNamed('Pane2', 'Foo');
+		var commands = browser.commandMenuSpec('Pane4');
+		var commandSpec = commands.detect(function(spec) { return spec[0] == 'add method' });
+		this.assert(commandSpec && Object.isFunction(commandSpec[1]), 'Cannot find add method command');
+
+		var methodName = 'newMethod';
+		this.answerPromptsDuring(commandSpec[1], [{question: 'name', answer: methodName}]);
+
+		var newMethodFragment = this.fileFragment.flattened().detect(function(ff) {
+			return ff.getName() == methodName;
+		});
+
+		this.assert(newMethodFragment, 'new class not created');
+		this.assert(newMethodFragment.getSourceCode().startsWith(methodName + ': function() {'),
+			'source code of new method is strange');
+
+		// var newNode = browser.selectedNode();
+		// this.assertEquals(newMethodFragment, newNode.target, 'browser hasn\'t selected the new method');
+	},
+
+
 
 });
 
@@ -1099,6 +1159,14 @@ Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.ChunkParserTest', {
 Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 
 	setUp: function() {
+		this.jsParser = new JsParser();
+		// we don't want to see alert
+		this.oldAlert = WorldMorph.prototype.alert;
+		WorldMorph.prototype.alert = Functions.Null;
+
+		this.setUpSource();
+	},
+setUpSource: function() {
 		/* creates:
 		moduleDef: foo.js (0-277 in foo.js, starting at line 1, 4 subElements)
 		klassDef: ClassA (55-123 in foo.js, starting at line 2, 1 subElements)
@@ -1109,44 +1177,39 @@ Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 		propertyDef (proto): m2 (209-230 in foo.js, starting at line 11, 0 subElements)
 		propertyDef (proto): m3 (232-253 in foo.js, starting at line 12, 0 subElements)
 		*/
-		var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
+		this.db = new AnotherSourceDatabase();
+		this.src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
 			'Object.subclass(\'ClassA\', {\n\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n' +
 			'ClassA.m3 = function() { 123 };\n' +
 			'function abc() { 1+2 };\n' +
 			'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
 			'}); // end of module';
-		var db = new AnotherSourceDatabase();
-		this.root = db.prepareForMockModule('foo.js', src);
-		this.db = db;
-		this.src = src;
-		this.jsParser = new JsParser();
-		// we don't want to see alert
-		this.oldAlert = WorldMorph.prototype.alert;
-		WorldMorph.prototype.alert = Functions.Null;
-	},
+		this.root = this.db.prepareForMockModule('foo.js', this.src);
+},
+
 
 	setUpAlternateSource: function() {
 	    var src = 'Object.subclass("Dummy1", {});\n'+
 	        'Object.subclass("Dummy", {\ntest1: 1,\ntest2: 2,\n\ntest2: 2,\n});';
-	    var db = this.db;
-		this.root = db.prepareForMockModule('foo2.js', src);
+		this.db = new AnotherSourceDatabase();
+		this.root = this.db.prepareForMockModule('foo2.js', src);
 		this.src = src;
 	},
 
 	setUpAlternateSource2: function() {
-			var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
-			'/*\n' +
-			' * my comment\n' +
-			' */\n'+
-			'\n' +
-			'// ClassA is so important\n' +
-			'// foo bar\n' +
-			'Object.subclass(\'ClassA\', {\n\n' +
-			'\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n\n' +
-			'}); // end of module';
-			this.db = new AnotherSourceDatabase();
-			this.root = this.db.prepareForMockModule('foo.js', src);
-			this.src = src;
+		var src = 'module(\'foo.js\').requires(\'bar.js\').toRun(function() {\n' +
+		'/*\n' +
+		' * my comment\n' +
+		' */\n'+
+		'\n' +
+		'// ClassA is so important\n' +
+		'// foo bar\n' +
+		'Object.subclass(\'ClassA\', {\n\n' +
+		'\tm1: function(a) {\n\t\ta*15;\n\t\t2+3;\n\t},\n});\n\n' +
+		'}); // end of module';
+		this.db = new AnotherSourceDatabase();
+		this.root = this.db.prepareForMockModule('foo.js', src);
+		this.src = src;
 	},
    
 	tearDown: function($super) {
