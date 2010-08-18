@@ -54,31 +54,46 @@ Global.logError = function logError(e) {
     console.log("Error: " + printError(e));
 }
 
-Object.subclass('TestCase', {
+Object.subclass('TestCase',
+'parameters', {
 
     shouldRun: true,
+
+	verbose: Functions.True,
+},
+'initializing', {
     
 	initialize: function(testResult, optTestSelector) {
 		this.result = testResult || new TestResult();
 		this.currentSelector = optTestSelector;
 		this.statusUpdateFunc = null;
-	},
-	
-	verbose: function() {
-	    return true;
-	},
-	
-	log: function(aString) {
-        if (this.verbose())
-            console.log(aString);
-	},
-	
+	},	
+		
 	createTests: function() {
 		return this.allTestSelectors().collect(function(sel) {
 			return new this.constructor(this.result, sel);
 		}, this);
 	},
+
+},
+'accessing', {
+	name: function() { return this.constructor.type },
 	
+	id: function() { return this.name() + '>>' + this.currentSelector },
+
+	allTestSelectors: function() {
+	    return this.constructor.functionNames().select(function(ea) {
+	        return this.constructor.prototype.hasOwnProperty(ea) && ea.startsWith('test');
+	    }, this);
+	},
+
+	toString: function($super) {
+	    return $super() + "(" + this.timeToRun +")"
+	},
+
+},
+'running', {
+
 	runAll: function(statusUpdateFunc) {
 		var tests = this.createTests()
 		var t = Functions.timeToRun(function() {
@@ -90,12 +105,6 @@ Object.subclass('TestCase', {
 		this.result.setTimeToRun(this.name(), t);
 		
 	},
-	
-	name: function() {
-	    return this.constructor.type
-	},
-	
-	id: function() { return this.name() + '>>' + this.currentSelector },
 	
 	setUp: function() {},
 	
@@ -128,7 +137,43 @@ Object.subclass('TestCase', {
             lively.lang.Execution.installStackTracers("uninstall");
 	    return this.result.failed.last();
 	},
+},
+'running (private)', {
+	show: function(string) { this.log(string) },
 
+	running: function() {
+		this.show('Running ' + this.id());
+		this.statusUpdateFunc && this.statusUpdateFunc(this, 'running');
+	},
+
+	success: function() {
+		this.show(this.id()+ ' done', 'color: green;');
+		this.statusUpdateFunc && this.statusUpdateFunc(this, 'success');
+	},
+
+	failure: function(error) {
+		this._errorOccured = true; 
+		var message = error.toString();
+		var file = error.sourceURL || error.fileName;
+		var line = error.line || error.lineNumber;
+		message += ' (' + file + ':' + line + ')';
+		message += ' in ' + this.id();
+		this.show(message , 'color: red;');
+		this.statusUpdateFunc && this.statusUpdateFunc(this, 'failure', message);
+	},
+
+	addAndSignalSuccess: function() {
+		this.result.addSuccess(this.constructor.type, this.currentSelector);
+		this.success();
+	},
+
+	addAndSignalFailure: function(e) {
+		this.result.addFailure(this.constructor.type, this.currentSelector, e);
+		this.failure(e);
+	},
+	
+},
+'assertion', {
     assert: function(bool, msg) {
         if (bool) return;
         msg = " assert failed " + msg ? '(' + msg + ')' : '';
@@ -214,54 +259,43 @@ Object.subclass('TestCase', {
             this.assert(arrayShouldHaveAllItems.include(ea), 'difference at: ' + i + ' ' + msg)
         }, this);
     },
-    
-	allTestSelectors: function() {
-	    return this.constructor.functionNames().select(function(ea) {
-	        return this.constructor.prototype.hasOwnProperty(ea) && ea.startsWith('test');
-	    }, this);
+
+},
+'logging', {
+		log: function(aString) {
+        if (this.verbose())
+            console.log(aString);
 	},
-	
-	toString: function($super) {
-	    return $super() + "(" + this.timeToRun +")"
+},
+'world test support', {
+	answerPromptsDuring: function(func, questionsAndAnswers) {
+		// for providing sunchronous answers when world.prompt is used
+		var oldPrompt = WorldMorph.prototype.prompt;
+		WorldMorph.prototype.prompt = function(msg, cb, defaultInput) {
+			for (var i = 0; i < questionsAndAnswers.length; i++) {
+				var spec = questionsAndAnswers[i];
+				if (new RegExp(spec.question).test(msg)) {
+					console.log('Answering ' + msg + ' with ' + spec.answer);
+					cb && cb(spec.answer);
+					return
+				}
+			}
+			if (defaultInput) {
+				console.log('Answering ' + msg + ' with ' + defaultInput);
+				cb && cb(defaultInput);
+				return;
+			}
+			console.log('Could not answer ' + msg);
+		}
+		
+		try {
+			func();
+		} finally {
+			WorldMorph.prototype.prompt = oldPrompt;
+		}
 	},
-
-	show: function(string) { this.log(string) },
-
-	running: function() {
-		this.show('Running ' + this.id());
-		this.statusUpdateFunc && this.statusUpdateFunc(this, 'running');
-	},
-
-	success: function() {
-		this.show(this.id()+ ' done', 'color: green;');
-		this.statusUpdateFunc && this.statusUpdateFunc(this, 'success');
-	},
-
-	failure: function(error) {
-		this._errorOccured = true; 
-		var message = error.toString();
-		var file = error.sourceURL || error.fileName;
-		var line = error.line || error.lineNumber;
-		message += ' (' + file + ':' + line + ')';
-		message += ' in ' + this.id();
-		this.show(message , 'color: red;');
-		this.statusUpdateFunc && this.statusUpdateFunc(this, 'failure', message);
-	},
-
-	addAndSignalSuccess: function() {
-		this.result.addSuccess(this.constructor.type, this.currentSelector);
-		this.success();
-	},
-
-	addAndSignalFailure: function(e) {
-		this.result.addFailure(this.constructor.type, this.currentSelector, e);
-		this.failure(e);
-	},
-
-
-	
-});
-TestCase.addMethods({
+},
+'event test support', {
 	// event simulation methods
 	// FIXME this does not really belon here?
 
