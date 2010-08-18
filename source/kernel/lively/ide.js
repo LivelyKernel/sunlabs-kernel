@@ -247,12 +247,6 @@ Widget.subclass('lively.ide.BasicBrowser',
 		return this.getPane4Selection() || this.getPane3Selection() || this.getPane2Selection() || this.getPane1Selection();
 	},
 
-	selectNode: function(node) {
-		var paneName = this.paneNameOfNode(node);
-		if (!paneName) return;
-		this.inPaneSelectNodeNamed(paneName, node.asString());
-	},
-
 	allNodes: function() {
 		return this.allPaneNames.collect(function(ea) { return this.nodesInPane(ea) }, this).flatten();
 	},
@@ -294,16 +288,37 @@ Widget.subclass('lively.ide.BasicBrowser',
     },
 
  	inPaneSelectNodeNamed: function(paneName,  nodeName) {
-			var nodes = this['get' + paneName + 'Content']();
-			if (!nodes) return null;
-			var wanted = nodes.detect(function(ea) { return ea && ea.string && ea.string.include(nodeName) });
-			if (!wanted) return null;
-			var list = this.panel[paneName].innerMorph();
-			var i = list.itemList.indexOf(wanted);
-			list.selectLineAt(i, true /*should update*/);
-			return wanted;
+		return this.inPaneSelectNodeMatching(paneName, function(node) {
+			return node && node.asString && node.asString().include(nodeName) });
 	},
-	
+
+	inPaneSelectNodeMatching: function(paneName,  test) {
+		var listItems = this['get' + paneName + 'Content']();
+		if (!listItems) return null;
+		var nodes = listItems.pluck('value');
+		var wanted = nodes.detect(test);
+		if (!wanted) return null;
+		var list = this.panel[paneName].innerMorph();
+		list.setSelection(wanted);
+		return wanted;
+	},
+
+	selectNode: function(node) {
+		return this.selectNodeMatching(function(otherNode) { return node == otherNode });
+		// var paneName = this.paneNameOfNode(node);
+		// if (!paneName) return;
+		// this.inPaneSelectNodeNamed(paneName, node.asString());
+	},
+
+	selectNodeMatching: function(testFunc) {
+	for (var i = 0; i < this.allPaneNames.length; i++) {
+		var paneName = this.allPaneNames[i];
+		var node = this.inPaneSelectNodeMatching(paneName, testFunc);
+		if (node) return node;
+	}
+	return null;
+},
+
     onPane1SelectionUpdate: function(node) {
 
 		this.pane1Selection = node; // for bindings
@@ -813,27 +828,19 @@ Object.subclass('lively.ide.BrowserNode', {
 
 Object.subclass('lively.ide.BrowserCommand', {
 
-	initialize: function(browser) {
-		this.browser = browser;
-	},
+	initialize: function(browser) { this.browser = browser },
 
-	wantsButton: function() {
-		return false;
-	},
+	wantsButton: Functions.False,
 
-	wantsMenu: function() {
-		return false;
-	},
+	wantsMenu: Functions.False,
 
-	isActive: function() {
-		return false;
-	},
+	isActive: Functions.False,
 
-	asString: function() {
-		return 'unnamed command'
-	},
+	asString: function() { return 'unnamed command' },
 
-	trigger: function() {}
+	trigger: function() {},
+
+	world: function() { return WorldMorph.current() },
 
 });
 
@@ -958,7 +965,9 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 			lively.ide.EvaluateCommand,
 			lively.ide.SortCommand,
 			lively.ide.ViewSourceCommand,
-			lively.ide.ClassHierarchyViewCommand]
+			lively.ide.ClassHierarchyViewCommand,
+			lively.ide.AddClassToFileFragmentCommand,
+			lively.ide.AddMethodToFileFragmentCommand]
 	},
 
 
@@ -1265,8 +1274,10 @@ lively.ide.FileFragmentNode.subclass('lively.ide.MultiFileFragmentsNode', {
  
 });
 
-ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should be module node
+lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { // should be module node
  
+	isModuleNode: true,
+
 	maxStringLength: 10000,
 
     initialize: function($super, target, browser, parent, moduleName) {
@@ -2241,7 +2252,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.SaveChangesCommand', {
 	},
 
 });
-ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
+lively.ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
 
 	wantsMenu: Functions.True,
 
@@ -2250,59 +2261,60 @@ ide.BrowserCommand.subclass('lively.ide.ChangeSetMenuCommand', {
 			this.browser instanceof lively.ide.LocalCodeBrowser && pane == 'Pane1';
 	},
 
-
 	trigger: function() {
 		var cmd = this;
 		return [['add class', cmd.addClass.bind(this)], ['add doit', cmd.addDoit.bind(this)]];
 	},
-getChangeSet: function() {
-	if (this.browser.selectionInPane('Pane1') instanceof lively.ide.ChangeSetNode)
-		return this.browser.selectionInPane('Pane1').target;
-	if (this.browser instanceof lively.ide.LocalCodeBrowser)
-		return this.browser.changeSet;
-	throw new Error('Do not know which ChangeSet to choose for command');
-},
 
-addClass: function() {
-	var b = this.browser;
-	var w = WorldMorph.current();
-	var cs = this.getChangeSet();
+	getChangeSet: function() {
+		if (this.browser.selectionInPane('Pane1') instanceof lively.ide.ChangeSetNode)
+			return this.browser.selectionInPane('Pane1').target;
+		if (this.browser instanceof lively.ide.LocalCodeBrowser)
+			return this.browser.changeSet;
+		throw new Error('Do not know which ChangeSet to choose for command');
+	},
 
-	var createChange = function(className, superClassName) {
-		try {
-			var change = ClassChange.create(className, superClassName);
-			cs.addSubElement(change);
-			if (b.evaluate) change.evaluate();
-			b.allChanged();
-		} catch(e) {
-			if (change) change.remove();
-			w.alert('Error when creating class:\n' + e);
+	addClass: function() {
+		var b = this.browser;
+		var w = WorldMorph.current();
+		var cs = this.getChangeSet();
+
+		var createChange = function(className, superClassName) {
+			try {
+				var change = ClassChange.create(className, superClassName);
+				cs.addSubElement(change);
+				if (b.evaluate) change.evaluate();
+				b.allChanged();
+			} catch(e) {
+				if (change) change.remove();
+				w.alert('Error when creating class:\n' + e);
+			}
 		}
-	}
 
-	w.prompt('Enter class name', function(n1) {
-		w.prompt('Enter super class name', function(n2) {
-			createChange(n1, n2);
-		}, 'Object')			
-	});
-},
-addDoit: function() {
-	var b = this.browser;
-	var node = this;
+		w.prompt('Enter class name', function(n1) {
+			w.prompt('Enter super class name', function(n2) {
+				createChange(n1, n2);
+			}, 'Object')			
+		});
+	},
 
-	var createChange = function() {
-		try {
-			var change = DoitChange.create('// empty doit');
-			node.getChangeSet().addSubElement(change);
-			if (b.evaluate) change.evaluate();
-			b.allChanged();
-		} catch(e) {
-			if (change) change.remove();
-			w.alert('Error when creating foit:\n' + e);
+	addDoit: function() {
+		var b = this.browser;
+		var node = this;
+
+		var createChange = function() {
+			try {
+				var change = DoitChange.create('// empty doit');
+				node.getChangeSet().addSubElement(change);
+				if (b.evaluate) change.evaluate();
+				b.allChanged();
+			} catch(e) {
+				if (change) change.remove();
+				w.alert('Error when creating foit:\n' + e);
+			}
 		}
-	}
-	createChange();
-},
+		createChange();
+	},
 
 
 });
@@ -2350,7 +2362,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.ClassHierarchyViewCommand', {
 	wantsMenu: Functions.True,
 
 	isActive: function(pane) {
-		return this.browser.selectedNode().isClassNode
+		return this.browser.selectedNode() && this.browser.selectedNode().isClassNode
 	},
 
 
@@ -2374,6 +2386,98 @@ lively.ide.BrowserCommand.subclass('lively.ide.ClassHierarchyViewCommand', {
 		var listPane = newRealListPane(new Rectangle(0,0, 400, 400));
 		listPane.innerMorph().updateList(list)
 		w.addFramedMorph(listPane, klass.type + ' and its subclasses');
+	},
+
+});
+lively.ide.BrowserCommand.subclass('lively.ide.AddToFileFragmentCommand', {
+
+	documentation: 'Abstract command. It\'s subclasses are supposed to add some kind of source code to another parsed source entity',
+
+	wantsMenu: Functions.True,
+
+	menuName: null,
+	targetPane: null,
+	nodeType: 'not specified',
+
+	isActive: function(pane) {
+		return pane == this.targetPane && this.findSiblingNode() != null;
+	},
+
+	findSiblingNode: function() {
+		var isValid = function(node) {
+			return node && node[this.nodeType] && node.target;
+		}.bind(this);
+		var b = this.browser, node = b.selectedNode();
+		if (isValid(node)) return node;
+		node = b.selectionInPane(this.targetPane);
+		if (isValid(node)) return node;
+		return b.nodesInPane(this.targetPane).reverse().detect(function(node) { return isValid(node) });
+	},
+
+	trigger: function() {
+		var siblingNode = this.findSiblingNode(), self = this;
+		return [[this.menuName, function() {
+			console.log('Doing a ' + self.menuName + ' after ' + siblingNode.asString());
+			self.browser.ensureSourceNotAccidentlyDeleted(function() { self.interactiveAddTo(siblingNode) });	
+		}]]
+	},
+
+	interactiveAddTo: function(siblingNode) {
+		throw new Error('Subclass responsibility')
+	},
+
+	createSource: function(methodName) {
+		throw new Error('Subclass responsibility');
+	},
+createAndAddSource: function(/*siblingNode and other args*/) {
+	var args = $A(arguments);
+	var siblingNode = args.shift();
+	var src = this.createSource.apply(this,args);
+	var newTarget = siblingNode.target.addSibling(src);
+	this.browser.allChanged();
+	if (!newTarget) {
+		console.warn('Cannot select new browser item that was added with ' + this.menuName)
+		return
+	}
+	this.browser.selectNodeMatching(function(node) { return node && node.target == newTarget });
+},
+
+
+});
+lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddClassToFileFragmentCommand', {
+
+	menuName: 'add class',
+	targetPane: 'Pane2',
+	nodeType: 'isClassNode',
+
+	interactiveAddTo: function(siblingNode) {
+		var w = this.world(), b = this.browser, self = this;
+		w.prompt('Enter class name', function(n1) {
+			w.prompt('Enter super class name', function(n2) {
+				self.createAndAddSource(siblingNode, n1, n2);
+			}, 'Object');
+		});
+	},
+
+	createSource: function(className, superClassName) {
+			return Strings.format('%s.subclass(\'%s\',\n\'default category\',{\n\tm1: function() {},\n});',
+				superClassName, className);
+		},
+
+});
+lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddMethodToFileFragmentCommand', {
+
+	menuName: 'add method',
+	targetPane: 'Pane4',
+	nodeType: 'isMemberNode',
+
+	interactiveAddTo: function(siblingNode) {
+		var w = this.world(), b = this.browser, self = this;
+		w.prompt('Enter method name', function(n) { self.createAndAddSource(siblingNode, n) });
+	},
+
+	createSource: function(methodName) {
+		return Strings.format('%s: function() {},', methodName);
 	},
 
 });
