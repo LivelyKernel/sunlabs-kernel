@@ -2460,7 +2460,7 @@ lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddClassToFileFragmentC
 	},
 
 	createSource: function(className, superClassName) {
-			return Strings.format('%s.subclass(\'%s\',\n\'default category\',{\n\tm1: function() {},\n});',
+			return Strings.format('%s.subclass(\'%s\',\n\'default category\', {\n\tm1: function() {},\n});',
 				superClassName, className);
 		},
 
