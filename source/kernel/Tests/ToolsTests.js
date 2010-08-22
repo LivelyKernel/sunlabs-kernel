@@ -198,7 +198,8 @@ Foo.addMethods('catC',{\n\
 		this.assertEqual('m2', methodNodes[1].getName());
 
 	},
-testAddClassCommand: function() {
+
+	testAddClassCommand: function() {
 		this.buildTestSource();
 		var browser = this.browser;
 		browser.buildView()
@@ -224,7 +225,8 @@ testAddClassCommand: function() {
 		// var newNode = browser.selectedNode();
 		// this.assertEquals(newClassFragment, newNode.target, 'browser hasn\'t selected the new class');
 	},
-testAddMethodCommand: function() {
+
+	testAddMethodCommand: function() {
 		this.buildTestSource();
 		var browser = this.browser;
 		browser.buildView()
@@ -978,7 +980,12 @@ Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.MethodCategoryParseTest
 		this.assertDescriptorsAreValid([descriptor]);
 		var methodDescriptor = descriptor.subElements()[0];
 		this.assertEqual('foo', methodDescriptor.name);
-		this.assertEqual('categoryA', methodDescriptor.category);
+
+		this.assertEqual('categoryA', methodDescriptor.category.getName());
+		this.assertEquals(methodDescriptor.category.startIndex, 15);
+		this.assertEquals(methodDescriptor.category.stopIndex, 61);
+		this.assertEquals('\'categoryA\', { foo: function() { return 23 }, }',
+			methodDescriptor.category.getSourceCode());
     },
 test02ParseSubclassWithCategory: function() {
 		this.sut.debugMode = true
@@ -994,12 +1001,29 @@ test02ParseSubclassWithCategory: function() {
 
 		var methodDescriptor = descriptor.subElements()[0];
 		this.assertEqual('foo', methodDescriptor.name);
-		this.assertEqual('categoryA', methodDescriptor.category);
+		this.assertEqual('categoryA', methodDescriptor.category.getName());
 
 		methodDescriptor = descriptor.subElements()[1];
 		this.assertEqual('foo2', methodDescriptor.name);
-		this.assertEqual('categoryB', methodDescriptor.category);
+		this.assertEqual('categoryB', methodDescriptor.category.getName());
     },
+test03RecognizeCategoriesAsFileFragments: function() {
+		this.sut.debugMode = true
+		var src = 'Object.subclass(\'Foo\', \'categoryA\', { m1: function() {},  m2: function() {}, });';
+		this.sut.src = src;
+		var descriptor = this.sut.callOMeta('klassDef');
+		this.assert(descriptor, 'no descriptor');
+		this.assert('Foo', descriptor.name);
+		this.assertEqual(descriptor.subElements().length, 2);
+		this.assertIdentity(descriptor.startIndex, 0);
+		this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'), 'stopIndex wrong');
+		this.assertDescriptorsAreValid([descriptor]);
+
+		this.assertEquals(1, descriptor.categories.length);
+		// var categoryDescriptor = descriptor.categories()[0];
+
+    },
+
 
 
 });
