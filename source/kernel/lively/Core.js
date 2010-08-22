@@ -22,9 +22,8 @@
 
 
 /* Code loader. Appends file to DOM. */
-Object.subclass('ScriptLoader', {
-	
-	getScripts: function() { return $A(document.getElementsByTagName('script')); },
+Object.subclass('ScriptLoader',
+'loading', {
 
 	loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
 		if (this.scriptInDOM(url)) {
@@ -58,13 +57,10 @@ Object.subclass('ScriptLoader', {
 
 		node.appendChild(script);
 	},
-
-	scriptInDOM2: function(url) {
-		return this.getScripts().some(function(e) {
-			return (e.getAttribute('xlink:href') && e.getAttribute('xlink:href') == url) ||
-				(e.getAttribute('src') && e.getAttribute('src') == url)
-		});
-	},
+},
+'private', {
+	
+	getScripts: function() { return $A(document.getElementsByTagName('script')); },
 
 	scriptInDOM: function(url) {
 		if (document.getElementById(url)) return true;
@@ -74,20 +70,32 @@ Object.subclass('ScriptLoader', {
 		return false;
 	},
 
+	removeQueriesAndOtherQuirks: function(url) {
+		return url.split('?').first();
+	},
+	
+	urlRelativeToCodeBase: function(url) {
+		if (!url.startsWith('http')) return url;
+		if (!url.startsWith(this.codeBase())) return url;
+		return url.substring(this.codeBase().length); // cut away codeBase and first slash
+	},
+	
 	scriptElementLinksTo: function(el, url) {
 		if (!el.getAttribute) return false;
 		// FIXME use namespace consistently
 		if (el.getAttribute('id') == url) return true;
-		var link = el.getAttribute('xlink:href') || el.getAttribute('src');
+		var link = el.getAttributeNS(Namespace.XLINK, 'href') || el.getAttribute('src');
 		if (!link) return false;
 		if (url == link) return true;
-		// Hack
-		// FIXME just using the file name does not really work for namespaces
-		// http://bla/test.xhtml?01234 -> test.xhtml?01234 -> test.xhtml
-		var linkName = link.split('/').last().split('?').first();
-		var urlName = url.split('/').last().split('?').first();
-		return linkName == urlName;
+		var linkString = this.urlRelativeToCodeBase(this.removeQueries(url));
+		var urlString = this.urlRelativeToCodeBase(this.removeQueries(link));
+console.log('url: ' + urlString + ' vs element:' + linkString)		
+		return linkString == urlString;
 	},
+codeBase: function() {
+	return Config.codeBase + (Config.codeBase.endsWith('/') ? '' : '/')
+},
+
 	
 }); 
 

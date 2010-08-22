@@ -503,6 +503,28 @@ TestCase.subclass('Tests.CoreTest.DocLinkConversionTest', {
 	},
 
 });
+TestCase.subclass('LoaderTest',
+'running', {
+	setUp: function() {
+		this.sut = Loader;
+	},
+},
+'tests', {
+	testScriptsWithSameBaseNameCanBeLoaded: function() {
+		var sut = Loader;
+		this.assert(sut.scriptInDOM(Config.codeBase + 'lively/Main.js'), 'absolute lively.Main cannot be found');
+		this.assert(sut.scriptInDOM('lively/Main.js'), 'relative lively.Main cannot be found');
+
+		this.assert(!sut.scriptInDOM(Config.codeBase + 'foobarbaz/Main.js'), 'absolute non existing module URL is recognized as loaded');
+		this.assert(!sut.scriptInDOM('foobarbaz/Main.js'), 'relative non existing module URL is recognized as loaded');
+	},
+	// testRelativeURLs: function() {
+		// this.assert(this.sut.scriptInDOM('/lively/foo/../Main.js'), 'cannot reslve relative url for loaded module');
+	// },
+	// testURLWithDoubleSlash: function() {
+		// this.assert(sut.scriptInDOM(Config.codeBase + 'lively//Main.js'));
+	// },
+});
 
 
 
