@@ -70,7 +70,7 @@ Object.subclass('ScriptLoader',
 		return false;
 	},
 
-	removeQueriesAndOtherQuirks: function(url) {
+	removeQueries: function(url) {
 		return url.split('?').first();
 	},
 	
