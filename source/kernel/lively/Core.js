@@ -89,13 +89,12 @@ Object.subclass('ScriptLoader',
 		if (url == link) return true;
 		var linkString = this.urlRelativeToCodeBase(this.removeQueries(url));
 		var urlString = this.urlRelativeToCodeBase(this.removeQueries(link));
-console.log('url: ' + urlString + ' vs element:' + linkString)		
 		return linkString == urlString;
 	},
-codeBase: function() {
-	return Config.codeBase + (Config.codeBase.endsWith('/') ? '' : '/')
-},
 
+	codeBase: function() {
+		return Config.codeBase + (Config.codeBase.endsWith('/') ? '' : '/')
+	},
 	
 }); 
 
