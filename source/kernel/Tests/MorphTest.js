@@ -848,5 +848,48 @@ MorphTestCase.subclass('Tests.MorphTest.MouseEventTest', {
 		this.assert(evtForMorph1WasCaptured, 'not captured in morph1')
 	},
 
+});
+
+
+TestCase.subclass('Tests.Text.RunArrayTest', {
+
+	testSerializeRunArray: function() {
+		var sut = new RunArray();
+		var sut = new RunArray([10], [new TextEmphasis({color: new Color(1,0,0,1)})]);
+		var string = JSON.serialize(sut.toLiteral());
+		var copy= RunArray.fromLiteral(JSON.unserialize(string));
+		this.assert(sut.values[0] instanceof TextEmphasis, "sut TextEmphasis broken");
+		this.assert(copy.values[0] instanceof TextEmphasis, "copy TextEmphasis broken");	
+		this.assert(sut.values[0].color instanceof Color,"sut is no color");
+		this.assert(copy.values[0].color instanceof Color,"copy is no color");
+	
+		this.assertEqualState(sut.values[0], copy.values[0],"wrong values");
+	},
+
+	testSerializeTextEmphasis: function() {
+		var sut = new TextEmphasis({color: Color.green})
+		var string = JSON.serialize(sut)
+	},
+
+	testToLiteral: function() {
+		var sut = new RunArray([10], [new TextEmphasis({color: Color.rgb(255,0,0)})])
+		var string = JSON.serialize(sut.toLiteral());
+		this.assertEqual(string, '{"runs":[10],"values":[{"color":{"r":1,"g":0,"b":0,"a":1}}]}')
+	},
+
+	testFromLiteral: function() {
+		var obj = {runs: [10], values: [{color: {r: 100, g: 0, b: 0, a: 1}}]};
+
+		var sut = RunArray.fromLiteral(obj);
+
+		this.assert(sut.values[0] instanceof TextEmphasis)
+		this.assert(sut.values[0].color instanceof Color, "color is no Color")
+
+	},
+	
 })
+
+
+
+
 }) // end of module

@@ -3149,8 +3149,16 @@ Object.subclass('RunArray', {
 
 Object.extend(RunArray, {
 
-    fromLiteral: function(literal) {
-		return new RunArray(literal.runs, literal.values);
+	fromLiteral: function(obj) {
+		var parsedValues = obj.values.collect(function(ea) {
+			// if it walks like a dug ... make it a dug  
+			if (ea.color && 
+				(ea.color.r !== undefined) && (ea.color.g !== undefined) && (ea.color.b !== undefined)) {
+				return new TextEmphasis({color: Color.fromLiteral(ea.color)});
+			};
+			return ea
+		})
+		return new RunArray(obj.runs, parsedValues);
     },
 
 	test: function(a) {
