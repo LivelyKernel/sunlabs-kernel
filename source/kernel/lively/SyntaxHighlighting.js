@@ -206,20 +206,20 @@ Object.extend(SyntaxHighlighter, {
 		}
 		, brace: { 
 			  match: /[\{\}]/g
-			, style: {color: Color.web.green, style: "bold"}
+			, style: {color: Color.web.green, style: "normal"}
 		}
 		, statement: { 
 			  match: /\b(with|while|var|try|throw|switch|return|if|for|finally|else|do|default|continue|const|catch|case|break)\b/g
-			, style: {color: Color.web.navy, style: "bold"}
+			, style: {color: Color.web.navy, style: "normal"}
 		}
 
 		, superclassOrLayer: { 
 			  match: /([A-Z][A-Za-z.]+)(?=\.(subclass|refineClass|addMethods))/g
-			, style: {color: Color.web.navy, style: "bold"}
+			, style: {color: Color.web.navy, style: "normal"}
 		}
 		, methodName: { 
 			  match: /([A-Za-z0-9_$]+:)/g   // (?= function)
-			, style: {color: Color.web.black, style: "bold"}
+			, style: {color: Color.web.black, style: "normal"}
 		}
 		, lively: { 
 			  match: /\b(subclass|refineClass|addMethods)\b/g
@@ -235,7 +235,7 @@ Object.extend(SyntaxHighlighter, {
 		}
 		, property: { 
 			  match: /\b(undefined|arguments|NaN|Infinity)\b/g
-			, style: {color: Color.web.purple, style: "bold"}
+			, style: {color: Color.web.purple, style: "normal"}
 		}
 		, 'function': { 
 			  match: /\b(parseInt|parseFloat|isNaN|isFinite|eval|encodeURIComponent|encodeURI|decodeURIComponent|decodeURI)\b/g
@@ -243,10 +243,11 @@ Object.extend(SyntaxHighlighter, {
 		}
 		, operator: {
 			  match: /\b(void|typeof|this|new|instanceof|in|function|delete)\b/g
-			, style: {color: Color.web.royalBlue, style: "bold"}
+			, style: {color: Color.web.royalBlue, style: "normal"}
 		}
 	}
 });
+
 
 
 RunArray.addMethods('SyntaxHighlight', {
