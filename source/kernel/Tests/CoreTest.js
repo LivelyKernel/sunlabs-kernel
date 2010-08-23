@@ -508,19 +508,35 @@ TestCase.subclass('LoaderTest',
 	setUp: function() {
 		this.sut = Loader;
 	},
+	getRelativeURLtoMain: function() {
+		return this.sut.getScripts()
+			.collect(function(el) { return el.getAttributeNS(Namespace.XLINK, 'href') })
+			.detect(function(urlString) { return urlString.endsWith('Main.js') })
+	},
+
 },
 'tests', {
-	testScriptsWithSameBaseNameCanBeLoaded: function() {
+	testAbsoluteCanBeLoaded: function() {
 		var sut = Loader;
 		this.assert(sut.scriptInDOM(Config.codeBase + 'lively/Main.js'), 'absolute lively.Main cannot be found');
-		this.assert(sut.scriptInDOM('lively/Main.js'), 'relative lively.Main cannot be found');
+		this.assert(sut.scriptInDOM(Config.codeBase + 'lively/Main.js?123456'), 'absolute lively.Main with query cannot be found');
+		this.assert(sut.scriptInDOM(lively.Main.uri()), 'absolute lively.Main cannot be found 2');
 
 		this.assert(!sut.scriptInDOM(Config.codeBase + 'foobarbaz/Main.js'), 'absolute non existing module URL is recognized as loaded');
-		this.assert(!sut.scriptInDOM('foobarbaz/Main.js'), 'relative non existing module URL is recognized as loaded');
 	},
-	// testRelativeURLs: function() {
-		// this.assert(this.sut.scriptInDOM('/lively/foo/../Main.js'), 'cannot reslve relative url for loaded module');
-	// },
+	testRelativeURLs: function() {
+		var url = this.getRelativeURLtoMain();
+		this.assert(this.sut.scriptInDOM(url), 'cannot reslve relative url for loaded module');
+	},
+	testMakeAbsolute: function() {
+		var expected = URL.codeBase.withFilename('lively/Main.js');
+		var mainURL = this.getRelativeURLtoMain();
+		this.assert(mainURL, 'Cannot setup test because cannot find main url element');
+
+		this.assertEquals(expected, this.sut.makeAbsolute(mainURL));
+		this.assertEquals(expected, this.sut.makeAbsolute(Config.codeBase + 'lively/foo/../Main.js'));
+	},
+
 	// testURLWithDoubleSlash: function() {
 		// this.assert(sut.scriptInDOM(Config.codeBase + 'lively//Main.js'));
 	// },

@@ -60,7 +60,7 @@ Object.subclass('ScriptLoader',
 },
 'private', {
 	
-	getScripts: function() { return $A(document.getElementsByTagName('script')); },
+	getScripts: function() { return $A(document.getElementsByTagName('script')) },
 
 	scriptInDOM: function(url) {
 		if (document.getElementById(url)) return true;
@@ -73,12 +73,25 @@ Object.subclass('ScriptLoader',
 	removeQueries: function(url) {
 		return url.split('?').first();
 	},
-	
-	urlRelativeToCodeBase: function(url) {
-		if (!url.startsWith('http')) return url;
-		if (!url.startsWith(this.codeBase())) return url;
-		return url.substring(this.codeBase().length); // cut away codeBase and first slash
+resolveURLString: function(urlString) {
+		// FIXME duplicated from URL class in lively. Network
+		// actually lively.Core should require lively.Network -- but lively.Network indirectly
+		// lively.Core ====>>> FIX that!!!
+		var result = urlString;
+		// resolve ..
+		do {
+			urlString = result;
+			result = urlString.replace(/\/[^\/]+\/\.\./, '')
+		} while(result != urlString)
+		// foo//bar --> foo/bar
+		result = result.replace(/([^:])[\/]+/g, '$1/')
+		// foo/./bar --> foo/bar
+		result = result.replace(/\/\.\//g, '/')
+		return result
 	},
+
+	
+	
 	
 	scriptElementLinksTo: function(el, url) {
 		if (!el.getAttribute) return false;
@@ -87,14 +100,22 @@ Object.subclass('ScriptLoader',
 		var link = el.getAttributeNS(Namespace.XLINK, 'href') || el.getAttribute('src');
 		if (!link) return false;
 		if (url == link) return true;
-		var linkString = this.urlRelativeToCodeBase(this.removeQueries(url));
-		var urlString = this.urlRelativeToCodeBase(this.removeQueries(link));
+		var linkString = this.makeAbsolute(link)
+		var urlString = this.makeAbsolute(url)
 		return linkString == urlString;
 	},
 
-	codeBase: function() {
-		return Config.codeBase + (Config.codeBase.endsWith('/') ? '' : '/')
+	currentDir: function() {
+		return document.location.href.replace(/\/[^\/]+$/, '') + '/'
 	},
+
+	makeAbsolute: function(urlString) {
+		urlString = this.removeQueries(urlString);
+		if (urlString.startsWith('http'))
+			return this.resolveURLString(urlString);
+		return this.resolveURLString(this.currentDir() + urlString);
+	},
+
 	
 }); 
 
