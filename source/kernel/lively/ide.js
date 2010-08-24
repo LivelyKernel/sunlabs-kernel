@@ -752,6 +752,7 @@ Object.subclass('lively.ide.BrowserNode', {
 		} catch(e) {
 			dbgOn(true)
 			msg += 'Error while saving: ' + e;
+			WorldMorph.current().showErrorDialog(e);
 			errorOccurred = true;
 		}
 
@@ -767,6 +768,8 @@ Object.subclass('lively.ide.BrowserNode', {
 			}
 		} catch(e) {
 			msg += 'Error evaluating ' + e;
+			// TODO don't reference UI directly? 
+			this.browser.panel.sourcePane.innerMorph().showError(e)
 			errorOccurred = true;
 		}
 		var color = errorOccurred ? Color.red : (failureOccurred ? Color.black : Color.green);
@@ -3444,7 +3447,6 @@ Object.subclass('lively.ide.FileFragment',
 		browser.openIn(WorldMorph.current());
 		// FIXME ... subclassing
 		browser.setTargetURL(URL.codeBase.withFilename('lively/'))
-		LastFileFragment = this;
 		var fileName = this.fileName.replace(/.*\//,"")
 		if (this.type === 'klassDef') {
 			browser.inPaneSelectNodeNamed('Pane1', fileName);

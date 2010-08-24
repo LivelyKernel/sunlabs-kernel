@@ -2308,45 +2308,49 @@ doBrowse: function () { // Browse the class whose name is selected
 				this.setSelectionRange(prevSelection, prevSelection + replacement.length);
 			}
 		} catch (e) {
-
-			offset = offset || 0;
-			var msg = "" + e + "\n" + 
-				"Line: " + e.line + "\n" +
-				(e.sourceURL ? ("URL: " + (new URL(e.sourceURL).filename()) + "\n") : "");
-			if (e.stack) {
-				// make the stack fit into status window
-				var prefix = (new URL(Config.codeBase)).withRelativePartsResolved().toString()
-				msg += e.stack.replace(new RegExp(prefix, "g"),"");
-			}
-
-			var world = WorldMorph.current();
-			if (!world) {
-				console.log("Error in " +this.id() + " bound eval: \n" + msg)
-				return
-			};
-
-			world.setStatusMessage(msg, Color.red, 5,
-				function() { require('lively.Helper').toRun(function() {
-					world.showErrorDialog(e)
-				 }) },
-				{fontSize: 12, fillOpacity: 1});
-
-			if (e.expressionEndOffset) {
-				// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
-				this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
-			} else if (e.line) {
-				var lineOffset = this.lineNumberForIndex(offset);
-				// console.log("line: " + e.line + " offset: " + lineOffset)
-				var line = this.lines[e.line + lineOffset - 1]
-				if (line && line.startIndex) {
-					// console.log(" set to  " + line.startIndex)
-					this.setSelectionRange(line.startIndex, line.getStopIndex());
-				}
-			}
-			this.setStatusMessage("" + e, Color.red); 
+			this.showError(e, offset)
 		}	
 		return result;
 	},
+showError: function(e, offset) {
+	offset = offset || 0;
+	var msg = "" + e + "\n" + 
+		"Line: " + e.line + "\n" +
+		(e.sourceURL ? ("URL: " + (new URL(e.sourceURL).filename()) + "\n") : "");
+	if (e.stack) {
+		// make the stack fit into status window
+		var prefix = (new URL(Config.codeBase)).withRelativePartsResolved().toString()
+		msg += e.stack.replace(new RegExp(prefix, "g"),"");
+	}
+
+	var world = WorldMorph.current();
+	if (!world) {
+		console.log("Error in " +this.id() + " bound eval: \n" + msg)
+		return
+	};
+
+	world.setStatusMessage(msg, Color.red, 15,
+		function() { require('lively.Helper').toRun(function() {
+			world.showErrorDialog(e)
+		 }) },
+		{fontSize: 12, fillOpacity: 1});
+
+	if (e.expressionEndOffset) {
+		// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
+		this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
+	} else if (e.line) {
+		var lineOffset = this.lineNumberForIndex(offset);
+		// console.log("line: " + e.line + " offset: " + lineOffset)
+		var line = this.lines[e.line + lineOffset - 1]
+		if (line && line.startIndex) {
+			// console.log(" set to  " + line.startIndex)
+			this.setSelectionRange(line.startIndex, line.getStopIndex());
+		}
+	}
+	this.setStatusMessage("" + e, Color.red); 
+
+},
+
 
 	doHelp: function() {
 		WorldMorph.current().notify("Help is on the way...\n" +
