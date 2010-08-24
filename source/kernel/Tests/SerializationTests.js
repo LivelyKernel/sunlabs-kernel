@@ -801,7 +801,7 @@ TestCase.subclass('Tests.SerializationTests.DomRecordTest', {
 	
 });
 
-Tests.SerializationTests.SerializationBaseTestCase.subclass('ATests.SerializationTests.ExporterTest', {
+Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.SerializationTests.ExporterTest', {
 	
 	testShrinkWrapMorph: function() {
 		var m = Morph.makeRectangle(0,0,10,10);

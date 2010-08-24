@@ -363,6 +363,21 @@ TestCase.subclass('Tests.CoreTest.CopierTest', {
 	},
 	
 });
+TestCase.subclass('Tests.CoreTest.ClipboardCopierTest',
+'default category', {
+	testCopyMorphsAsXMLString: function() {
+
+		var sut = new ClipboardCopier()
+		m1 = Morph.makeRectangle(0,0,100,100).applyStyle({fill: Color.red});
+		m2 = Morph.makeRectangle(0,0,100,100).applyStyle({fill: Color.yellow});
+		m1.other = m2;
+		m2.other = m1;
+		var xmlString = sut.copyMorphsAsXMLString([m1,m2]);
+
+		
+
+	},
+});
 
 
 TestCase.subclass("Tests.CoreTest.CopyMorphTest", {

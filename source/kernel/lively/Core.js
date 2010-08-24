@@ -5446,17 +5446,7 @@ PasteUpMorph.subclass("WorldMorph",
 'Copy And Paste (Private)',{
 	/* Actions */
 	
-	calcTopLeftOfPoints: function(points) {
-		var min_x;
-		var min_y;
-		points.each(function(ea) {
-			if (!min_x || ea.x < min_x)
-				min_x = ea.x;
-			if (!min_y || ea.y < min_y)
-				min_y = ea.y;
-		});
-		return pt(min_x, min_y)
-	},
+	
 	
 	pastePosition: function() {
 		var pos = this.hands.first().lastMouseDownPoint;
@@ -5465,37 +5455,14 @@ PasteUpMorph.subclass("WorldMorph",
 		return pos
 	},
 	
-	calcPasteOffsetFrom: function(morphs) {
-		if(morphs.length == 0)
-			return;
-		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
-		return this.pastePosition().subPt(topLeft);
-	},
+	
 	
 	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
 	// TODO refactor
 	pasteFromSource: function(source){
 		var copier = new ClipboardCopier();
-		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);
-		if (morphs.length == 0) {
-			var pos = this.pastePosition();
-			var textMorph = new TextMorph(new Rectangle(pos.x,pos.y,200,100), source);
-			this.addMorph(textMorph);
-			return;
-		}
-		// unpack potential selection morph
-		if(morphs[0] && morphs[0].isSelectionContainer) {
-			morphs = morphs[0].submorphs
-		};
-		var copier = new Copier();
-		var offset = this.calcPasteOffsetFrom(morphs);
-		morphs.each(function(ea) {
-			var copy = ea.copy(copier);
-			this.pasteDestinationMorph().addMorph(copy)
-			if (offset) {
-				copy.moveBy(offset)
-			}	
-		}, this)
+		copier.pastePosition = this.pastePosition();
+		copier.pasteMorphsFromSource(source, this.pasteDestinationMorph());
 	},
 	
 	copySelectionAsXMLString: function() {
@@ -5508,31 +5475,7 @@ PasteUpMorph.subclass("WorldMorph",
 			console.log("WorldMorph: selection is empty")
 			return 
 		};
-		
-		var copier = new Copier();
-		var clipboardCopier = new ClipboardCopier();
-		var doc = clipboardCopier.createBaseDocument();
-		var worldNode = doc.childNodes[0].childNodes[0];
-		
-		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
-		container.isSelectionContainer = true;
-				
-		selectedMorphs.each(function(ea) {
-			container.addMorph(ea.copy(copier));
-		})
-		copier.finish()
-		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
-		systemDictionary.setAttribute("id", "SystemDictionary");
-		
-		worldNode.appendChild(container.rawNode);
-		var exporter = new Exporter(container);
-		container.dictionary = function() { return systemDictionary}
-		var helpers = exporter.extendForSerialization(systemDictionary);
-		var result = Exporter.stringify(container.rawNode);
-		exporter.removeHelperNodes(helpers);
-		delete container.dictionary
-	
-		return result
+		return  new ClipboardCopier().copyMorphsAsXMLString(selectedMorphs)
 	},
 
 	pasteDestinationMorph: function() {
@@ -6764,6 +6707,8 @@ Global.inspect = function(inspectee) {
 
 Object.subclass('ClipboardCopier', {
 	
+	pastePosition: pt(0,0),
+
 	createBaseDocument: function(source) {
 		return new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?>' +
 			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
@@ -6790,6 +6735,78 @@ Object.subclass('ClipboardCopier', {
 		var world = new Importer().loadWorldContents(xml);
 		return world.submorphs
     },	
+
+	calcTopLeftOfPoints: function(points) {
+		var min_x;
+		var min_y;
+		points.each(function(ea) {
+			if (!min_x || ea.x < min_x)
+				min_x = ea.x;
+			if (!min_y || ea.y < min_y)
+				min_y = ea.y;
+		});
+		return pt(min_x, min_y)
+	},
+
+	
+
+	calcPasteOffsetFrom: function(morphs) {
+		if(morphs.length == 0)
+			return;
+		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
+		return this.pastePosition.subPt(topLeft);
+	},
+
+	copyMorphsAsXMLString: function(morphs) {
+		var copier = new Copier();
+		var doc = this.createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		
+		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
+		container.isSelectionContainer = true;
+				
+		morphs.each(function(ea) {
+			container.addMorph(ea.copy(copier));
+		})
+		copier.finish()
+		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
+		systemDictionary.setAttribute("id", "SystemDictionary");
+		
+		worldNode.appendChild(container.rawNode);
+		var exporter = new Exporter(container);
+		container.dictionary = function() { return systemDictionary}
+		var helpers = exporter.extendForSerialization(systemDictionary);
+		var result = Exporter.stringify(container.rawNode);
+		exporter.removeHelperNodes(helpers);
+		delete container.dictionary
+	
+		return result
+	},
+
+	// cut and past is not identity preserving
+	pasteMorphsFromSource: function(source, pasteDestinationMorph){
+		var morphs = this.loadMorphsWithWorldTrunkFromSource(source);
+		if (morphs.length == 0) {
+			var pos = this.pastePosition();
+			var textMorph = new TextMorph(new Rectangle(pos.x,pos.y,200,100), source);
+			this.addMorph(textMorph);
+			return;
+		}
+		// unpack potential selection morph
+		if(morphs[0] && morphs[0].isSelectionContainer) {
+			morphs = morphs[0].submorphs
+		};
+		var copier = new Copier();
+		var offset = this.calcPasteOffsetFrom(morphs);
+		morphs.each(function(ea) {
+			var copy = ea.copy(copier);
+			pasteDestinationMorph.addMorph(copy)
+			if (offset) {
+				copy.moveBy(offset)
+			}	
+		}, this)
+	},
+
 });
 
 
