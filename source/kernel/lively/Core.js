@@ -4916,6 +4916,36 @@ PasteUpMorph.subclass("WorldMorph",
 		window.setPosition(this.positionForNewMorph(window));
 		return dialog;
 	},
+showErrorDialog: function(error) {
+
+		var pane = this.addTextWindow({
+			content: "",
+			title: "Error", 
+		});
+		if (error.expressionEndOffset && error.expressionBeginOffset && error.sourceURL) {
+			// works under Safari 5
+			var urlString = error.sourceURL;
+			var source = new WebResource(new URL(urlString)).get().content
+
+			var start = source.lastIndexOf("\n\n", error.expressionBeginOffset)
+			var startOffset = error.expressionBeginOffset - start;
+			var stop =  source.indexOf("\n", 
+							source.indexOf("\n", 
+								source.indexOf("\n", error.expressionEndOffset + 1) + 1) + 1)
+
+			var excerpt =  source.slice(start, stop)
+			pane.innerMorph().setTextString(excerpt)
+
+			pane.innerMorph().emphasizeFromTo({color: Color.red}, 
+				startOffset, startOffset + error.expressionEndOffset - error.expressionBeginOffset)
+		} else {
+			pane.innerMorph().setTextString(printObject(error))	
+		}
+		pane.owner.setPosition(this.positionForNewMorph(pane))
+
+		return pane
+	}
+
 },
 'new content', {
    
@@ -5072,8 +5102,18 @@ PasteUpMorph.subclass("WorldMorph",
 		(function() {
 			var oldHand = this.firstHand()
 			this.removeHand(oldHand);
-			var doc = Exporter.shrinkWrapMorph(this.world());
-			this.addHand(oldHand);
+			var doc;
+			var world = this;
+			try {
+				doc = Exporter.shrinkWrapMorph(this.world());
+			
+			} catch(e) {
+				this.setStatusMessage("Save failed due to:\n" + e, Color.red, 10, function() {
+					world.showErrorDialog(e)
+				})
+			} finally {
+				this.addHand(oldHand);
+			}
 			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);			
 			statusMessage.remove();
 			serializeTime = new Date().getTime() - start;

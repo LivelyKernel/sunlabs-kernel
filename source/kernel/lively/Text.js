@@ -2327,8 +2327,10 @@ doBrowse: function () { // Browse the class whose name is selected
 
 			world.setStatusMessage(msg, Color.red, 5,
 				function() { require('lively.Helper').toRun(function() {
-					alert('Ther was an errror\n' + printObject(e)) }) },
+					world.showErrorDialog(e)
+				 }) },
 				{fontSize: 12, fillOpacity: 1});
+
 			if (e.expressionEndOffset) {
 				// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
 				this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
