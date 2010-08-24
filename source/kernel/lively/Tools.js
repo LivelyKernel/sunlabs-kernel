@@ -1777,7 +1777,8 @@ WidgetModel.subclass('ChangeList', {
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['topPane', newListPane, new Rectangle(0, 0, 1, 0.4)],
-            ['bottomPane', newTextPane, new Rectangle(0, 0.4, 1, 0.6)]
+            ['browseButton', ButtonMorph, new Rectangle(0, 0.4, 0.2, 0.05)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
         ]);
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getSelection: "getChangeSelection", getMenu: "getListPaneMenu"});
@@ -1789,11 +1790,21 @@ WidgetModel.subclass('ChangeList', {
 			proceed(evt);
 		}.bind(this));
 
+		panel.browseButton.setLabel('browse');
+		connect(panel.browseButton, 'fire', this, 'browseSelection')
+
         m = panel.bottomPane;
+		m.setFill(Color.white);
+		m.innerMorph().owner.setFill(null);
+		m.innerMorph().setFill(null);
         m.innerMorph().getTextSelection().borderRadius = 0;
         m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString", getMenu: "default"});
         return panel;
     },
+browseSelection: function() {
+	this.selectedItem().browseIt();
+},
+
 
 	lineNoOfItem: function(item) {
 		// helper for handling SourceCodeDescriptors as well as FileFragments... FIXME

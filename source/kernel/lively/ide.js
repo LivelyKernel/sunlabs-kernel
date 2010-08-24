@@ -289,7 +289,7 @@ Widget.subclass('lively.ide.BasicBrowser',
 
  	inPaneSelectNodeNamed: function(paneName,  nodeName) {
 		return this.inPaneSelectNodeMatching(paneName, function(node) {
-			return node && node.asString && node.asString().include(nodeName) });
+			return node && node.asString && node.asString().replace(/ ?\(.*\)/,"").endsWith(nodeName) });
 	},
 
 	inPaneSelectNodeMatching: function(paneName,  test) {
@@ -3443,13 +3443,18 @@ Object.subclass('lively.ide.FileFragment',
 		var browser = new ide.SystemBrowser();
 		browser.openIn(WorldMorph.current());
 		// FIXME ... subclassing
+		browser.setTargetURL(URL.codeBase.withFilename('lively/'))
+		LastFileFragment = this;
+		var fileName = this.fileName.replace(/.*\//,"")
 		if (this.type === 'klassDef') {
-			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
+			browser.inPaneSelectNodeNamed('Pane1', fileName);
 			browser.inPaneSelectNodeNamed('Pane2', this.name);
 		} else if (this.type === 'propertyDef') {
-			browser.inPaneSelectNodeNamed('Pane1', this.fileName);
+			browser.inPaneSelectNodeNamed('Pane1', fileName);
 			browser.inPaneSelectNodeNamed('Pane2', this.className);
-			browser.inPaneSelectNodeNamed('Pane3', this.name);
+			browser.inPaneSelectNodeNamed('Pane3', this.category);
+			browser.inPaneSelectNodeNamed('Pane4', this.name);
+
 		}
 		return browser;
 	},
