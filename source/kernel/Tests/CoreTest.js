@@ -344,11 +344,23 @@ TestCase.subclass('Tests.CoreTest.CopierTest', {
 		this.assert(copy2.other === copy1, "copy2 broken");
 		
 		this.assert(copy1.foreign === objects.foreign, "foreign broken");	
-	}
-	
-	
+	},
 
+	testCopyNullProperty: function() {
+		var sut = new Copier();
+		var original = {p: null};
+		var copy = {};
+		sut.copyProperty("p", copy, original);
+		this.assertIdentity(copy.p, null)
+	},
 	
+	testCopyPointerEvents: function() {
+		var sut = Morph.makeRectangle(0,0,100,100);
+		this.assert(sut.getTrait("pointer-events") !== "none", "sut setup broken")
+		sut.setTrait("pointer-events", "none");
+		var copy = sut.duplicate()
+		this.assertEqual(copy.getTrait("pointer-events"), "none")
+	},
 	
 });
 

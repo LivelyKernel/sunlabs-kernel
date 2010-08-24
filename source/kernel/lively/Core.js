@@ -1143,9 +1143,9 @@ Object.subclass('Copier', {
 		};
 	},
 	
-	copyOrPatchProperty: function(property, object, other) {
+	copyOrPatchProperty: function (property, object, other) {
 		var original = other[property]
-		if (original.id && (original.id instanceof Function)) {
+		if (original && original.id && (original.id instanceof Function)) {
 			this.addPatchSite(object, property, original.id());
 			object[property] = this.lookUpOrTakeOriginal(original)
 		} else {
@@ -1154,15 +1154,15 @@ Object.subclass('Copier', {
 		}		
 	},
 	
-	copyProperty: function(property, object, other) {
+	copyProperty: function (property, object, other) {
 		// console.log("smartCopyProperty " + property + " " + object + " from: " + other)
 	    if ((other[property] instanceof Function) 
 		 	|| ! other.hasOwnProperty(property) 
 		 	|| (other.doNotCopyProperties && other.doNotCopyProperties.include(property)))
 			return; // copy nothing		
 		var original = other[property];
-		if (original) {
-			if (Object.isArray(original)) {
+		if (original !== undefined) {
+			if (original && Object.isArray(original)) {
 				var a = original.clone();
 				for (var i=0; i<a.length; i++) {
 					// var ea = a[i];
@@ -1177,6 +1177,7 @@ Object.subclass('Copier', {
 			};
 		};
 	},
+
 	
 	addPatchSite: function(wrapper, name, ref, optIndex) {
 		this.patchSites.push([wrapper, name, ref, optIndex]);

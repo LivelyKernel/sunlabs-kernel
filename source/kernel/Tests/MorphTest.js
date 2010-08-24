@@ -889,7 +889,19 @@ TestCase.subclass('Tests.Text.RunArrayTest', {
 	
 })
 
+TestCase.subclass('Tests.MorphTest.CopyLabelTest', {
 
+	testCopyLabel: function() {
+		var sut = new TextMorph(new Rectangle(0,0,100,100), "A Label").beLabel();
+		this.assertIdentity(sut.mouseHandler, null, "mouseHandler is not null")
+
+		var copy = sut.duplicate()
+		this.assertEqual(copy.getTrait("pointer-events"), "none")
+		this.assertIdentity(copy.mouseHandler, null, "the 'null' mouseHandler is not copied")
+	},
+
+
+})
 
 
 }) // end of module
