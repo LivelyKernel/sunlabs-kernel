@@ -179,10 +179,16 @@ BoxMorph.subclass('apps.UserStories.UserStoryBaseMorph', {
 		
 	},
 
+},
+'string representation', {
+	stringRepresentation: function() {
+		throw new Error('Subclass responsibility');
+	},
 });
 
 
-apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.UserStoryMorph', {
+apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.UserStoryMorph',
+'default', {
 
 	style: {fill: Color.rgb(255,234,79), fillOpacity: 0.34, suppressGrabbing: true},
 	defaultExtent: pt(420,320),
@@ -297,14 +303,43 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.UserStoryMorph', 
 		});
 	},
 
+},
+'string representation', {
+	stringRepresentation: function(addTasks) {
+		return Strings.format('=== %s ===\n%s\nexpected: %s actual: %s%s',
+			this.titleString(), this.story.innerMorph().textString,
+			this.expectedTime, this.actualTime, addTasks ? this.taskStringRepresentation() : '');
+	},
+taskStringRepresentation: function() {
+	if (!this.tasks || this.tasks.length == 0) return ''
+	return '\n\n' + this.tasks
+		.collect(function(task) { return task.stringRepresentation() })
+		.join('\n')
+},
+
 });
 
 Object.extend(apps.UserStories.UserStoryMorph, {
 	
+	listOfStories: function(optMorphToSearchIn, addTasks) {
+		var stories = this.allUserStoryMorphsOf(optMorphToSearchIn);
+		var str = stories
+			.collect(function(story) { return story.stringRepresentation(addTasks) })
+			.join('\n\n\n')
+		return str;
+	},
+
+	allUserStoryMorphsOf: function(morphToSearchIn) {
+		morphToSearchIn = morphToSearchIn || WorldMorph.current()
+		var allUserStories = morphToSearchIn.submorphs.select(function(ea) {
+			return ea.constructor == apps.UserStories.UserStoryMorph;
+		});
+		return allUserStories;
+	},
+
 	renewAll: function(morphToSearchIn) {
 		// apps.UserStories.UserStoryMorph.renewAll();
-		morphToSearchIn = morphToSearchIn || WorldMorph.current()
-		var allUserStories = morphToSearchIn.submorphs.select(function(ea) { return ea.constructor == apps.UserStories.UserStoryMorph })
+		var allUserStories = this.allUserStoryMorphsOf(morphToSearchIn);
 		allUserStories.forEach(function(ea) {
 			var newS = new apps.UserStories.UserStoryMorph()
 			if (ea.owner) ea.owner.addMorph(newS)
@@ -495,6 +530,13 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.TaskMorph', {
 		$super()
 	},
 
+},
+'string representation', {
+	stringRepresentation: function() {
+		return Strings.format('\t= %s =\n%s\n\texpected: %s actual: %s\n\tdevelopers: %s',
+			this.titleString(), this.taskDescription.innerMorph().textString,
+			this.expectedTime, this.actualTime, this.responsibleList.innerMorph().textString);
+	},
 });
 
 Object.extend(apps.UserStories.TaskMorph, {
