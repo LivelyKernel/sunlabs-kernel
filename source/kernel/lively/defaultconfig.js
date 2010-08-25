@@ -356,7 +356,7 @@ Config.ignoreLoadingErrors = true
 
 Config.touchBeMouse = UserAgent.isTouch
 
-Config.useFlattenedHTMLRenderingLayer = true
+Config.useFlattenedHTMLRenderingLayer = false
 Config.useDelayedHTMLRendering = false
 
 // this part is for the CodeDB extension using CouchDB
