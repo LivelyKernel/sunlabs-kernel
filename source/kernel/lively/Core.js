@@ -22,8 +22,9 @@
 
 
 /* Code loader. Appends file to DOM. */
-Object.subclass('ScriptLoader',
-'loading', {
+Object.subclass('ScriptLoader', {
+	
+	getScripts: function() { return $A(document.getElementsByTagName('script')); },
 
 	loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
 		if (this.scriptInDOM(url)) {
@@ -57,10 +58,13 @@ Object.subclass('ScriptLoader',
 
 		node.appendChild(script);
 	},
-},
-'private', {
-	
-	getScripts: function() { return $A(document.getElementsByTagName('script')) },
+
+	scriptInDOM2: function(url) {
+		return this.getScripts().some(function(e) {
+			return (e.getAttribute('xlink:href') && e.getAttribute('xlink:href') == url) ||
+				(e.getAttribute('src') && e.getAttribute('src') == url)
+		});
+	},
 
 	scriptInDOM: function(url) {
 		if (document.getElementById(url)) return true;
@@ -70,52 +74,20 @@ Object.subclass('ScriptLoader',
 		return false;
 	},
 
-	removeQueries: function(url) {
-		return url.split('?').first();
-	},
-resolveURLString: function(urlString) {
-		// FIXME duplicated from URL class in lively. Network
-		// actually lively.Core should require lively.Network -- but lively.Network indirectly
-		// lively.Core ====>>> FIX that!!!
-		var result = urlString;
-		// resolve ..
-		do {
-			urlString = result;
-			result = urlString.replace(/\/[^\/]+\/\.\./, '')
-		} while(result != urlString)
-		// foo//bar --> foo/bar
-		result = result.replace(/([^:])[\/]+/g, '$1/')
-		// foo/./bar --> foo/bar
-		result = result.replace(/\/\.\//g, '/')
-		return result
-	},
-
-	
-	
-	
 	scriptElementLinksTo: function(el, url) {
 		if (!el.getAttribute) return false;
 		// FIXME use namespace consistently
 		if (el.getAttribute('id') == url) return true;
-		var link = el.getAttributeNS(Namespace.XLINK, 'href') || el.getAttribute('src');
+		var link = el.getAttribute('xlink:href') || el.getAttribute('src');
 		if (!link) return false;
 		if (url == link) return true;
-		var linkString = this.makeAbsolute(link)
-		var urlString = this.makeAbsolute(url)
-		return linkString == urlString;
+		// Hack
+		// FIXME just using the file name does not really work for namespaces
+		// http://bla/test.xhtml?01234 -> test.xhtml?01234 -> test.xhtml
+		var linkName = link.split('/').last().split('?').first();
+		var urlName = url.split('/').last().split('?').first();
+		return linkName == urlName;
 	},
-
-	currentDir: function() {
-		return document.location.href.replace(/\/[^\/]+$/, '') + '/'
-	},
-
-	makeAbsolute: function(urlString) {
-		urlString = this.removeQueries(urlString);
-		if (urlString.startsWith('http'))
-			return this.resolveURLString(urlString);
-		return this.resolveURLString(this.currentDir() + urlString);
-	},
-
 	
 }); 
 
@@ -1049,8 +1021,6 @@ Object.extend(Exporter, {
 Object.subclass('Copier', {
 	documentation: "context for performing deep copy of objects",
 
-	isCopier: true,
-	
 	wrapperMap: null,
 
 	toString: function() { 
@@ -1143,9 +1113,9 @@ Object.subclass('Copier', {
 		};
 	},
 	
-	copyOrPatchProperty: function (property, object, other) {
+	copyOrPatchProperty: function(property, object, other) {
 		var original = other[property]
-		if (original && original.id && (original.id instanceof Function)) {
+		if (original.id && (original.id instanceof Function)) {
 			this.addPatchSite(object, property, original.id());
 			object[property] = this.lookUpOrTakeOriginal(original)
 		} else {
@@ -1154,15 +1124,15 @@ Object.subclass('Copier', {
 		}		
 	},
 	
-	copyProperty: function (property, object, other) {
+	copyProperty: function(property, object, other) {
 		// console.log("smartCopyProperty " + property + " " + object + " from: " + other)
 	    if ((other[property] instanceof Function) 
 		 	|| ! other.hasOwnProperty(property) 
 		 	|| (other.doNotCopyProperties && other.doNotCopyProperties.include(property)))
 			return; // copy nothing		
 		var original = other[property];
-		if (original !== undefined) {
-			if (original && Object.isArray(original)) {
+		if (original) {
+			if (Object.isArray(original)) {
 				var a = original.clone();
 				for (var i=0; i<a.length; i++) {
 					// var ea = a[i];
@@ -1177,7 +1147,6 @@ Object.subclass('Copier', {
 			};
 		};
 	},
-
 	
 	addPatchSite: function(wrapper, name, ref, optIndex) {
 		this.patchSites.push([wrapper, name, ref, optIndex]);
@@ -1238,8 +1207,6 @@ Copier.marker = Object.extend(new Copier(), {
 Copier.subclass('Importer', {
     documentation: "Implementation class for morph de-serialization",
 
-	isImporter: true,
-	
     verbose: !!Config.verboseImport,
     
 	toString: function() { return "#<Importer>" },
@@ -4903,7 +4870,6 @@ PasteUpMorph.subclass("WorldMorph",
 		dialog.setText(defaultInput);
 		dialog.callback = callback;
 		dialog.openIn(this, this.positionForNewMorph(dialog));
-		return dialog
     },
 
 	confirm: function(message, callback) {
@@ -4916,61 +4882,6 @@ PasteUpMorph.subclass("WorldMorph",
 		var window = dialog.openIn(this, pt(0,0));
 		window.setPosition(this.positionForNewMorph(window));
 		return dialog;
-	},
-	showErrorDialog: function(error) {
-		var pane = this.addTextWindow({
-			content: "",
-			title: "Error", 
-		});
-		pane.owner.setPosition(this.positionForNewMorph(pane))
-		LastPane  = pane
-		if (error.expressionEndOffset && error.expressionBeginOffset && error.sourceURL) {
-			// works under Safari 5
-			var urlString = error.sourceURL;
-			var source = new WebResource(new URL(urlString)).get().content
-			this.showErrorDiaglogInWorkspace(source, error.expressionBeginOffset, error.expressionEndOffset, pane)
-			pane.owner.setTitle('Error:' + urlString)
-			return pane
-		}
-
-		if (error.expressionEndOffset && error.expressionBeginOffset && error.sourceId) {
-			var sourceReference = EvalSourceRegistry.current().sourceReference(error.sourceId);
-			if (sourceReference !== undefined) {
-				console.log('error ' + printObject(error))
-				var expressionBeginOffset = error.expressionBeginOffset - sourceReference.evalCodePrefixLength;
-				var expressionEndOffset  = error.expressionEndOffset - sourceReference.evalCodePrefixLength;
-				this.showErrorDiaglogInWorkspace(sourceReference.sourceString, expressionBeginOffset, expressionEndOffset, pane)
-				if (sourceReference.morph) {
-					sourceReference.morph.showError(error, (sourceReference.offset || 0) - sourceReference.evalCodePrefixLength)
-				}
-
-				return pane
-			}
-		} 
-
-		pane.innerMorph().setTextString(printObject(error))	
-		return pane
-	},
-	showErrorDiaglogInWorkspace: function(source, expressionBeginOffset, expressionEndOffset, pane) {
-		// PRIVATE HELPER
-		console.log("begin " + expressionBeginOffset + " end " + expressionEndOffset)
-		var start = source.lastIndexOf("\n\n", expressionBeginOffset)
-		if (start == -1) start = 0;
-		var startOffset = expressionBeginOffset - start;
-		var stop =  source.indexOf("\n", expressionEndOffset + 1);
-		if (stop != -1)	stop =  source.indexOf("\n", stop + 1);
-		if (stop != -1)	stop =  source.indexOf("\n", stop + 1);
-
-		if (stop == -1) stop = source.length;
-
-		console.log("source: " + source + "| " + source.length+" expressionEndOffset: " + expressionEndOffset)
-		var excerpt =  source.slice(start, stop)
-		pane.innerMorph().setTextString(excerpt)
-
-		pane.innerMorph().emphasizeFromTo({color: Color.red}, 
-			startOffset, startOffset + expressionEndOffset - expressionBeginOffset);
-		pane.innerMorph().replaceSelectionWith
-		console.log("found excerpt: " + excerpt + " start: " + start + " stop:" + stop)
 	},
 },
 'new content', {
@@ -5077,8 +4988,7 @@ PasteUpMorph.subclass("WorldMorph",
 'Requirements', {
 	// this.world().showAddWorldRequirementsMenu(pt(100,100))
 	showAddWorldRequirementsMenu: function(pos) {
-		var allAppModules = ChangeSet.current().moduleNamesInNamespace('apps').concat(
-				ChangeSet.current().moduleNamesInNamespace('lively'))
+		var allAppModules = ChangeSet.current().moduleNamesInNamespace('apps');
 		var items = allAppModules.collect(function(ea){ 
 			return [ea, function(){
 				module(ea).load();
@@ -5128,18 +5038,8 @@ PasteUpMorph.subclass("WorldMorph",
 		(function() {
 			var oldHand = this.firstHand()
 			this.removeHand(oldHand);
-			var doc;
-			var world = this;
-			try {
-				doc = Exporter.shrinkWrapMorph(this.world());
-			
-			} catch(e) {
-				this.setStatusMessage("Save failed due to:\n" + e, Color.red, 10, function() {
-					world.showErrorDialog(e)
-				})
-			} finally {
-				this.addHand(oldHand);
-			}
+			var doc = Exporter.shrinkWrapMorph(this.world());
+			this.addHand(oldHand);
 			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);			
 			statusMessage.remove();
 			serializeTime = new Date().getTime() - start;
@@ -5512,7 +5412,17 @@ PasteUpMorph.subclass("WorldMorph",
 'Copy And Paste (Private)',{
 	/* Actions */
 	
-	
+	calcTopLeftOfPoints: function(points) {
+		var min_x;
+		var min_y;
+		points.each(function(ea) {
+			if (!min_x || ea.x < min_x)
+				min_x = ea.x;
+			if (!min_y || ea.y < min_y)
+				min_y = ea.y;
+		});
+		return pt(min_x, min_y)
+	},
 	
 	pastePosition: function() {
 		var pos = this.hands.first().lastMouseDownPoint;
@@ -5521,14 +5431,37 @@ PasteUpMorph.subclass("WorldMorph",
 		return pos
 	},
 	
-	
+	calcPasteOffsetFrom: function(morphs) {
+		if(morphs.length == 0)
+			return;
+		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
+		return this.pastePosition().subPt(topLeft);
+	},
 	
 	// similarities to Fabrik >> pasteComponentFromXMLStringIntoFabrik
 	// TODO refactor
 	pasteFromSource: function(source){
 		var copier = new ClipboardCopier();
-		copier.pastePosition = this.pastePosition();
-		copier.pasteMorphsFromSource(source, this.pasteDestinationMorph());
+		var morphs = copier.loadMorphsWithWorldTrunkFromSource(source);
+		if (morphs.length == 0) {
+			var pos = this.pastePosition();
+			var textMorph = new TextMorph(new Rectangle(pos.x,pos.y,200,100), source);
+			this.addMorph(textMorph);
+			return;
+		}
+		// unpack potential selection morph
+		if(morphs[0] && morphs[0].isSelectionContainer) {
+			morphs = morphs[0].submorphs
+		};
+		var copier = new Copier();
+		var offset = this.calcPasteOffsetFrom(morphs);
+		morphs.each(function(ea) {
+			var copy = ea.copy(copier);
+			this.pasteDestinationMorph().addMorph(copy)
+			if (offset) {
+				copy.moveBy(offset)
+			}	
+		}, this)
 	},
 	
 	copySelectionAsXMLString: function() {
@@ -5541,7 +5474,31 @@ PasteUpMorph.subclass("WorldMorph",
 			console.log("WorldMorph: selection is empty")
 			return 
 		};
-		return  new ClipboardCopier().copyMorphsAsXMLString(selectedMorphs)
+		
+		var copier = new Copier();
+		var clipboardCopier = new ClipboardCopier();
+		var doc = clipboardCopier.createBaseDocument();
+		var worldNode = doc.childNodes[0].childNodes[0];
+		
+		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
+		container.isSelectionContainer = true;
+				
+		selectedMorphs.each(function(ea) {
+			container.addMorph(ea.copy(copier));
+		})
+		copier.finish()
+		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
+		systemDictionary.setAttribute("id", "SystemDictionary");
+		
+		worldNode.appendChild(container.rawNode);
+		var exporter = new Exporter(container);
+		container.dictionary = function() { return systemDictionary}
+		var helpers = exporter.extendForSerialization(systemDictionary);
+		var result = Exporter.stringify(container.rawNode);
+		exporter.removeHelperNodes(helpers);
+		delete container.dictionary
+	
+		return result
 	},
 
 	pasteDestinationMorph: function() {
@@ -5556,24 +5513,8 @@ PasteUpMorph.subclass("WorldMorph",
 	
 	onKeyDown: function(evt) {
 		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
-		var key = evt.getKeyChar().toLowerCase();
-		if (evt.isCommandKey() && evt.isShiftDown()) {
-			if (key == 'f') {
-				var world = this;
-				require('lively.ide').toRun(function(unused, ide) {
-					world.prompt("browse references in source", function(whatToSearch) {
-						ide.startSourceControl().browseReferencesTo(whatToSearch);
-					});
-				})
-				return true;
-			};
-			if (key == 'b') {
-				// for safari where without shift is blocked
-				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
-				return true;
-			}
-		}
 		if (evt.isCommandKey() && !evt.isShiftDown()) {
+			var key = evt.getKeyChar().toLowerCase();
 			if (key == 'b') {
 				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
 				return true;
@@ -6345,12 +6286,12 @@ Morph.subclass("HandMorph",
 	scrollDuringDrag: function(counter) {
 		var scrollSpeed = 0.3; // should go into config options?
 		var maxSteps = 30;
-		
+
 		var world = this.world();
 		var wb = world.windowBounds();
 		var pos = this.getPosition();
 		counter = counter  || 1;
-		
+
 		var worldScale = world.getScale();
 		var steps = counter * scrollSpeed * worldScale;
 		steps = Math.min(steps, maxSteps);
@@ -6789,8 +6730,6 @@ Global.inspect = function(inspectee) {
 
 Object.subclass('ClipboardCopier', {
 	
-	pastePosition: pt(0,0),
-
 	createBaseDocument: function(source) {
 		return new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?>' +
 			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
@@ -6817,78 +6756,6 @@ Object.subclass('ClipboardCopier', {
 		var world = new Importer().loadWorldContents(xml);
 		return world.submorphs
     },	
-
-	calcTopLeftOfPoints: function(points) {
-		var min_x;
-		var min_y;
-		points.each(function(ea) {
-			if (!min_x || ea.x < min_x)
-				min_x = ea.x;
-			if (!min_y || ea.y < min_y)
-				min_y = ea.y;
-		});
-		return pt(min_x, min_y)
-	},
-
-	
-
-	calcPasteOffsetFrom: function(morphs) {
-		if(morphs.length == 0)
-			return;
-		var topLeft = this.calcTopLeftOfPoints(morphs.collect(function(ea) {return ea.getPosition()}))		
-		return this.pastePosition.subPt(topLeft);
-	},
-
-	copyMorphsAsXMLString: function(morphs) {
-		var copier = new Copier();
-		var doc = this.createBaseDocument();
-		var worldNode = doc.childNodes[0].childNodes[0];
-		
-		var container = new Morph.makeRectangle(new Rectangle(0,0,10,10));
-		container.isSelectionContainer = true;
-				
-		morphs.each(function(ea) {
-			container.addMorph(ea.copy(copier));
-		})
-		copier.finish()
-		var systemDictionary =	container.rawNode.appendChild(NodeFactory.create("defs"));
-		systemDictionary.setAttribute("id", "SystemDictionary");
-		
-		worldNode.appendChild(container.rawNode);
-		var exporter = new Exporter(container);
-		container.dictionary = function() { return systemDictionary}
-		var helpers = exporter.extendForSerialization(systemDictionary);
-		var result = Exporter.stringify(container.rawNode);
-		exporter.removeHelperNodes(helpers);
-		delete container.dictionary
-	
-		return result
-	},
-
-	// cut and past is not identity preserving
-	pasteMorphsFromSource: function(source, pasteDestinationMorph){
-		var morphs = this.loadMorphsWithWorldTrunkFromSource(source);
-		if (morphs.length == 0) {
-			var pos = this.pastePosition();
-			var textMorph = new TextMorph(new Rectangle(pos.x,pos.y,200,100), source);
-			this.addMorph(textMorph);
-			return;
-		}
-		// unpack potential selection morph
-		if(morphs[0] && morphs[0].isSelectionContainer) {
-			morphs = morphs[0].submorphs
-		};
-		var copier = new Copier();
-		var offset = this.calcPasteOffsetFrom(morphs);
-		morphs.each(function(ea) {
-			var copy = ea.copy(copier);
-			pasteDestinationMorph.addMorph(copy)
-			if (offset) {
-				copy.moveBy(offset)
-			}	
-		}, this)
-	},
-
 });
 
 
