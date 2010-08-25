@@ -3445,8 +3445,10 @@ Object.subclass('lively.ide.FileFragment',
 		var browser = new ide.SystemBrowser();
 		browser.openIn(WorldMorph.current());
 		// FIXME ... subclassing
-		browser.setTargetURL(URL.codeBase.withFilename('lively/'))
-		var fileName = this.fileName.replace(/.*\//,"")
+		var m = this.fileName.match(/(.*\/)(.+)/)
+		var pathName = m[1];	
+		var fileName = m[2];
+		browser.setTargetURL(URL.codeBase.withFilename(pathName))
 		if (this.type === 'klassDef') {
 			browser.inPaneSelectNodeNamed('Pane1', fileName);
 			browser.inPaneSelectNodeNamed('Pane2', this.name);
