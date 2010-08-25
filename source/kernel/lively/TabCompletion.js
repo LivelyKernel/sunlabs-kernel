@@ -25,12 +25,7 @@ Object.extend(TabCompletion, {
 		}
 		this.lastCacheAccess = Date.now()
 		return this.symbolCache;
-	},
-
-	extractLocalSymbols: function(string) {
-		return string.match(/([A-za-z0-9\$]+)/g).uniq()
-	},
-
+	}
 });
 
 TestCase.subclass('TabCompletionTest', {
@@ -43,40 +38,8 @@ TestCase.subclass('TabCompletionTest', {
 		var uniq = all.clone().uniq();
 		this.assertEqual(all.length, uniq.length, "not unique");
 	},
-	
-	testExtractLocalSymbols: function() {
-		var text = "abc abbc\nabbd\tabbe";
-		var all = TabCompletion.extractLocalSymbols(text)
-		this.assert(all.length == 4, "wrong lenth")
-	}
 
 });
-
-
-TestCase.subclass('TabCompletionLayerTest', {
-
-	createText: function(string) {
-		var sut = new TextMorph(new Rectangle(0,0,100,100), string);
-		sut.setWithLayers([TabCompletionLayer]);
-		return sut
-	},
-
-	testTabCompletionChoicesForLastWord: function() {
-		var string = "\nfunc\nNextLine\n"
-		var sut = this.createText(string);
-		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
-		var coices = sut.tabCompletionChoicesForLastWord("func");
-		this.assert(coices.length > 0);
-	},
-
-	testTabCompletionChoicesForLastWord: function() {
-		var string = "\nfunc\nNextLine\n"
-		var sut = this.createText(string);
-		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
-		// this.assertEqual(sut.tabCompletionForLastWord("func", false), "function");
-	}
-});
-
 
 cop.create('TabCompletionLayer').refineClass(TextMorph, {
 
@@ -88,13 +51,12 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 				return choices.uniq().select(selector);
 			}
 			var allChoices = 	TabCompletion.allSymbols();
-			var localCoices = TabCompletion.extractLocalSymbols(this.textString);
-			localCoices = localCoices.reject(function(ea){return ea == "lastWord"}); // don't match yourself
+			var localCoices = this.textString.match(/([A-za-z0-9\$]+)/g).uniq();
 			var selectedAllChoices = allChoices.select(selector);
 			var selectedLocalChoices = localCoices.select(selector); ;
-			return selectedAllChoices.concat(selectedLocalChoices).uniq().sort()
+			return selectedAllChoices.concat(selectedLocalChoices).uniq()
 	},
-
+	
 	tabCompletionForLastWord: function(proceed, lastWord, backward) {
 			if (this.tabReplacePrefix !== lastWord) {
 				this.tabReplaceListIndex = 0;
@@ -132,9 +94,6 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 				// console.log("exp " + exp + " index " + index)
 				// "hello.".match(/[\n \t]*([A-Za-z0-9]+)\.([A-Za-z0-9]*)$/)
 				// "hello.wo".match(/[\n \t]*([A-Za-z0-9]+)\.([A-Za-z0-9]*)$/)
-				// "bla(hello.wo".match(/[\n \t]*([A-Za-z0-9]+)\.([A-Za-z0-9]*)$/)
-
-
 				var m = exp.match(/[\n \t]*([A-Za-z0-9]+)\.([A-Za-z0-9]*)$/) 
 				if (m) {
 					return m[1]
