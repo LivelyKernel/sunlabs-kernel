@@ -1639,7 +1639,7 @@ WidgetModel.subclass('ChangeList', {
     // during a development session should (;-) be completely well-formed in this regard.
     // Saving a change in a ChangeList browser will only edit the file;  no evaluation is implied
     
-    initialViewExtent: pt(420,450),
+    initialViewExtent: pt(700,450),
     openTriggerVariable: 'getChangeBanners',
 
     initialize: function($super, title, ignored, changes, searchString) {
@@ -1777,11 +1777,15 @@ WidgetModel.subclass('ChangeList', {
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['topPane', newListPane, new Rectangle(0, 0, 1, 0.4)],
-            ['bottomPane', newTextPane, new Rectangle(0, 0.4, 1, 0.6)]
+            ['browseButton', ButtonMorph, new Rectangle(0, 0.4, 0.1, 0.05)],
+            ['loadAllButton', ButtonMorph, new Rectangle(0.1, 0.4, 0.2, 0.05)],
+            ['bottomPane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
         ]);
+		panel.ownerWidget = this;
+		this.panel = panel;
         var m = panel.topPane;
         m.connectModel({model: this, getList: "getChangeBanners", setSelection: "setChangeSelection", getSelection: "getChangeSelection", getMenu: "getListPaneMenu"});
-
+		
 		// adding keyPress actions fot the list
 		// FIXME should be done in another way
 		m.innerMorph().onKeyDown = m.innerMorph().onKeyDown.wrap(function(proceed, evt) {
@@ -1789,11 +1793,50 @@ WidgetModel.subclass('ChangeList', {
 			proceed(evt);
 		}.bind(this));
 
+		panel.browseButton.setLabel('browse');
+		connect(panel.browseButton, 'fire', this, 'browseSelection')
+
+		panel.loadAllButton.setLabel('load default modules');
+		connect(panel.loadAllButton, 'fire', this, 'loadDefaultModules')
+
+
+
         m = panel.bottomPane;
+		m.setFill(Color.white);
+		m.innerMorph().owner.setFill(null);
+		m.innerMorph().setFill(null);
         m.innerMorph().getTextSelection().borderRadius = 0;
         m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString", getMenu: "default"});
+
+		// if (this.getChangeBanners().length > 0) {
+			// this.setChangeSelection(this.getChangeBanners()[0])
+		// };
+ 
         return panel;
     },
+browseSelection: function() {
+	this.selectedItem().browseIt();
+},
+loadDefaultModules: function() {
+
+	var srcCtrl = lively.ide.SourceControl;
+	var progressBar = WorldMorph.current().addProgressBar();
+	var files = srcCtrl.interestingLKFileNames(URL.codeBase.withFilename('lively/'));
+	files = files.concat(srcCtrl.interestingLKFileNames(URL.codeBase.withFilename('apps/')));
+	files = files.concat(srcCtrl.interestingLKFileNames(URL.codeBase.withFilename('Tests/')));
+
+	files = files.select(function(ea){ return ea.endsWith('.js')})
+
+	files.forEachShowingProgress(
+		progressBar,
+		function(ea) { srcCtrl.addModule(ea) },
+		Functions.K, // label func
+		function() { progressBar.remove(); browser.allChanged() }); 
+
+
+},
+
+
 
 	lineNoOfItem: function(item) {
 		// helper for handling SourceCodeDescriptors as well as FileFragments... FIXME
@@ -1904,6 +1947,13 @@ ChangeList.subclass('SourceDatabase', {
         var refs = new ChangeList("References to " + str, null, fullList);
         refs.searchString = str;
         refs.openIn(WorldMorph.current()); 
+
+		// does only work when Morph is in world... 
+		// bug lies somwhere in TextMorph
+		if (refs.getChangeBanners().length > 0) {
+			refs.setChangeSelection(refs.getChangeBanners()[0])
+		};
+
     },
 
     searchFor: function(str) {
@@ -2248,6 +2298,34 @@ Object.extend(CodeMarkupParser, {
 	parser.parse();
     }
 });
+
+Object.subclass("EvalSourceRegistry", {
+	initialize: function() {
+		this.sourceReferences= {};
+	},
+
+	sourceReference: function(sourceId) {
+		return this.sourceReferences[sourceId] 
+	},
+
+	register: function(sourceId, sourceReference) {
+		this.sourceReferences[sourceId] = sourceReference;
+	}
+})
+
+Object.extend(EvalSourceRegistry, {
+	current: function() {
+		// EvalSourceRegistry._current = null
+		// EvalSourceRegistry.current()
+		if (! this._current) this._current = new EvalSourceRegistry();
+		return this._current;
+	}
+})
+
+
+
+
+
 
 }.logCompletion("Tools.js"));
 
