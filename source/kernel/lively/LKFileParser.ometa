@@ -186,30 +186,24 @@ getterOrSetter =
                                     
     /* class stuff */
 	classElems =
-	(categoryDef:defs classElemDefEnd ->defs)+:allDefs
-	-> allDefs.invoke('subElements').flatten(),
-categoryDef =
-	spaces pos:p category:catName 
-	(classElemsInCategory:defs classElemDefEnd -> defs)+:allDefs
-	-> {
-		var classElemDefs = allDefs.flatten();
-		var catDef = this._fragment(catName, 'categoryDef', p, this.pos()-1, classElemDefs);
-		classElemDefs.collect(function(def) { def.category = catDef; return def });
-		catDef
-	},
+	(classElemsWithOptionalCategory:defs classElemDefEnd ->defs)+:allDefs
+	-> allDefs.flatten(),
+classElemsWithOptionalCategory =
+	spaces category:cat (classElemsInCategory(cat):defs classElemDefEnd -> defs)+:allDefs
+	-> allDefs.flatten(),
 
 category =
 	(
-	  categoryName:name spaces ',' -> name
+	categoryName:name spaces ',' -> name.join('')
 	| empty -> { Function.defaultCategoryName }
 	),
 
 categoryName =
-	( fromTo('\'', '\'') | fromTo('"', '"') ):name -> name.join(''),
+	fromTo('\'', '\'') | fromTo('"', '"'),
 
-classElemsInCategory =
+classElemsInCategory :cat =
 	spaces '{' (spaces propertyDef:pD spaces -> pD)*:defs spaces '}'
-	-> defs,
+	-> { defs.collect(function(def) { def.category = cat; return def }) },
 
 	restKlassDef =
 	',' spaces classElems:descriptors										-> { {classElems: descriptors} }
@@ -219,17 +213,16 @@ classElemsInCategory =
 	| spaces																						-> { {classElems: []} },
 	klass 	            = namespaceId,
 	klassName           = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
-    klassDef =
-	pos:p nsFollowedBy("subclass"):sName '(' klassName:kName restKlassDef:spec ')' defEnd
-	-> { spec.classElems.forEach(function(ea) { ea.className = kName });
-	   this._fragment(
-			kName,
-			'klassDef',
-			p,
-			this.pos()-1,
-			spec.classElems,
-			{trait: spec.trait, superclassName: sName})
-	},
+    klassDef = pos:p nsFollowedBy("subclass"):sName '(' klassName:kName restKlassDef:spec ')' defEnd
+				-> { spec.classElems.forEach(function(ea) { ea.className = kName });
+					   this._fragment(
+							kName,
+							'klassDef',
+							p,
+							this.pos()-1,
+							spec.classElems,
+							{trait: spec.trait, superclassName: sName})
+					},
     basicKlassExt =
 	"Object.extend" '(' klass:n restKlassDef:spec token(')')
 	-> {
