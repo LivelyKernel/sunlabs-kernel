@@ -5339,11 +5339,7 @@ BoxMorph.subclass("MiniMapMorph", {
 	},
 
 	remove: function($super) {
-		try {
-			disconnect(this.targetWorld, 'scrollChange', this, 'updatePosition');
-		} catch(er) {
-			console.log("Errror on removing MiniMap: " + er)
-		}
+		disconnect(this.targetWorld, 'scrollChange', this, 'updatePosition');
 		return $super()
 	},
 
