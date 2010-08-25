@@ -553,9 +553,9 @@ var Class = {
 
 	initializer: function initializer() {
 		// check for the existence of Importer, which may not be defined very early on
-		if (arguments[0] && arguments[0].isImporter) {
+		if (Global.Importer && (arguments[0] instanceof Importer)) {
 			this.deserialize.apply(this, arguments);
-		} else if (arguments[0] && arguments[0].isCopier) {
+		} else if (Global.Copier && (arguments[0] instanceof Copier)) {
 			this.copyFrom.apply(this, arguments);
 		} else if (Global.Restorer && (arguments[0] instanceof Restorer)) {
 			// for WebCards)
@@ -1197,19 +1197,6 @@ Object.extend(Function.prototype, {
 			try {
 				return proceed.apply(this, args); 
 			} catch (er) {
-				if (WorldMorph) {
-					var world = WorldMorph.current();
-					var msg = "" + er
-					world.setStatusMessage(msg, Color.red, 15, 
-						function() {
-							require('lively.Helper').toRun(function() {
-								world.showErrorDialog(er)
-							}) 
-						},
-						{fontSize: 12, fillOpacity: 1});
-					throw er;
-				}
-
 				if (prefix) console.warn("ERROR: %s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
 				else console.warn("ERROR: %s %s", er, er.stack || "");
 				logStack();
