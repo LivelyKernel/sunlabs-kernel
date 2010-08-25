@@ -4903,6 +4903,7 @@ PasteUpMorph.subclass("WorldMorph",
 		dialog.setText(defaultInput);
 		dialog.callback = callback;
 		dialog.openIn(this, this.positionForNewMorph(dialog));
+		return dialog
     },
 
 	confirm: function(message, callback) {
@@ -5530,8 +5531,24 @@ showErrorDialog: function(error) {
 	
 	onKeyDown: function(evt) {
 		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
+		var key = evt.getKeyChar().toLowerCase();
+		if (evt.isCommandKey() && evt.isShiftDown()) {
+			if (key == 'f') {
+				var world = this;
+				require('lively.ide').toRun(function(unused, ide) {
+					world.prompt("browse references in source", function(whatToSearch) {
+						ide.startSourceControl().browseReferencesTo(whatToSearch);
+					});
+				})
+				return true;
+			};
+			if (key == 'b') {
+				// for safari where without shift is blocked
+				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
+				return true;
+			}
+		}
 		if (evt.isCommandKey() && !evt.isShiftDown()) {
-			var key = evt.getKeyChar().toLowerCase();
 			if (key == 'b') {
 				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
 				return true;

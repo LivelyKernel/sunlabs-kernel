@@ -1197,6 +1197,19 @@ Object.extend(Function.prototype, {
 			try {
 				return proceed.apply(this, args); 
 			} catch (er) {
+				if (WorldMorph) {
+					var world = WorldMorph.current();
+					var msg = "" + er
+					world.setStatusMessage(msg, Color.red, 15, 
+						function() {
+							require('lively.Helper').toRun(function() {
+								world.showErrorDialog(er)
+							}) 
+						},
+						{fontSize: 12, fillOpacity: 1});
+					throw er;
+				}
+
 				if (prefix) console.warn("ERROR: %s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
 				else console.warn("ERROR: %s %s", er, er.stack || "");
 				logStack();

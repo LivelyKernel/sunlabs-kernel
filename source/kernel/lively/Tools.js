@@ -1639,7 +1639,7 @@ WidgetModel.subclass('ChangeList', {
     // during a development session should (;-) be completely well-formed in this regard.
     // Saving a change in a ChangeList browser will only edit the file;  no evaluation is implied
     
-    initialViewExtent: pt(420,450),
+    initialViewExtent: pt(700,450),
     openTriggerVariable: 'getChangeBanners',
 
     initialize: function($super, title, ignored, changes, searchString) {
@@ -1777,8 +1777,8 @@ WidgetModel.subclass('ChangeList', {
     buildView: function(extent) {
         var panel = PanelMorph.makePanedPanel(extent, [
             ['topPane', newListPane, new Rectangle(0, 0, 1, 0.4)],
-            ['browseButton', ButtonMorph, new Rectangle(0, 0.4, 0.2, 0.05)],
-            ['loadAllButton', ButtonMorph, new Rectangle(0.2, 0.4, 0.4, 0.05)],
+            ['browseButton', ButtonMorph, new Rectangle(0, 0.4, 0.1, 0.05)],
+            ['loadAllButton', ButtonMorph, new Rectangle(0.1, 0.4, 0.2, 0.05)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
         ]);
 		panel.ownerWidget = this;
