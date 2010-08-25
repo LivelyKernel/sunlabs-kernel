@@ -589,24 +589,7 @@ ChangeSet.addMethods({
 			list.push(moduleName);
 		this.getWorldRequirementsList().setDefinition(JSON.serialize(list))
 	},
-
-	removeWorldRequirement: function(moduleName) {
-		var list = this.getWorldRequirementsList().evaluate();
-		if (list.include(moduleName)) {
-			list = list.reject(function(ea){ return ea == moduleName})
-			this.getWorldRequirementsList().setDefinition(JSON.serialize(list))
-		}
-	},
-	moduleNamesInNamespace: function(namespaceName){
-		// ChangeSet.current().moduleNamesInNamespace('apps')
-		var dir = new WebResource(URL.codeBase.withFilename(namespaceName +'/'))
-		var fileNames = dir.getSubElements().subDocuments.collect(function(file) {
-			return file.getURL().filename()
-		}).select(function(ea){return ea.endsWith(".js")});
-		var fullModuleNames = fileNames.collect(function(ea){ 
-			return namespaceName + "." + ea.match(/(.+)\.js/)[1]});
-		return fullModuleNames
-	}
+	
 })
 
 Object.extend(ChangeSet, {
