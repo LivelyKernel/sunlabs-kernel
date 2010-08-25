@@ -2299,5 +2299,33 @@ Object.extend(CodeMarkupParser, {
     }
 });
 
+Object.subclass("EvalSourceRegistry", {
+	initialize: function() {
+		this.sourceReferences= {};
+	},
+
+	sourceReference: function(sourceId) {
+		return this.sourceReferences[sourceId] 
+	},
+
+	register: function(sourceId, sourceReference) {
+		this.sourceReferences[sourceId] = sourceReference;
+	}
+})
+
+Object.extend(EvalSourceRegistry, {
+	current: function() {
+		// EvalSourceRegistry._current = null
+		// EvalSourceRegistry.current()
+		if (! this._current) this._current = new EvalSourceRegistry();
+		return this._current;
+	}
+})
+
+
+
+
+
+
 }.logCompletion("Tools.js"));
 

@@ -752,7 +752,6 @@ Object.subclass('lively.ide.BrowserNode', {
 		} catch(e) {
 			dbgOn(true)
 			msg += 'Error while saving: ' + e;
-			WorldMorph.current().showErrorDialog(e);
 			errorOccurred = true;
 		}
 

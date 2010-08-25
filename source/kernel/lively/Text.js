@@ -2298,8 +2298,17 @@ doBrowse: function () { // Browse the class whose name is selected
 
 	tryBoundEval: function (str, offset, printIt) {
 		var result;
-		try { 
-			result = this.boundEval(str);
+		try {
+			if (EvalSourceRegistry) {
+				var evalCodePrefix = "try{throw new Error()}catch(e){EvalSourceRegistry.LastEvalSourceID=e.sourceId};"
+				result = this.boundEval(evalCodePrefix + str);		
+
+				EvalSourceRegistry.current().register(EvalSourceRegistry.LastEvalSourceID, {
+					sourceString: str, morph: this, offset: offset, evalCodePrefixLength: evalCodePrefix.length})
+			} else {
+				result = this.boundEval(str);		
+			}
+			
 			if (printIt) {
 				this.setNullSelectionAt(this.selectionRange[1] + 1);
 				var prevSelection = this.selectionRange[0];

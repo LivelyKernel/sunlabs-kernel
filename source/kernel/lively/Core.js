@@ -4917,36 +4917,61 @@ PasteUpMorph.subclass("WorldMorph",
 		window.setPosition(this.positionForNewMorph(window));
 		return dialog;
 	},
-showErrorDialog: function(error) {
-
+	showErrorDialog: function(error) {
 		var pane = this.addTextWindow({
 			content: "",
 			title: "Error", 
 		});
+		pane.owner.setPosition(this.positionForNewMorph(pane))
+		LastPane  = pane
 		if (error.expressionEndOffset && error.expressionBeginOffset && error.sourceURL) {
 			// works under Safari 5
 			var urlString = error.sourceURL;
 			var source = new WebResource(new URL(urlString)).get().content
-
-			var start = source.lastIndexOf("\n\n", error.expressionBeginOffset)
-			var startOffset = error.expressionBeginOffset - start;
-			var stop =  source.indexOf("\n", 
-							source.indexOf("\n", 
-								source.indexOf("\n", error.expressionEndOffset + 1) + 1) + 1)
-
-			var excerpt =  source.slice(start, stop)
-			pane.innerMorph().setTextString(excerpt)
-
-			pane.innerMorph().emphasizeFromTo({color: Color.red}, 
-				startOffset, startOffset + error.expressionEndOffset - error.expressionBeginOffset)
-		} else {
-			pane.innerMorph().setTextString(printObject(error))	
+			this.showErrorDiaglogInWorkspace(source, error.expressionBeginOffset, error.expressionEndOffset, pane)
+			pane.owner.setTitle('Error:' + urlString)
+			return pane
 		}
-		pane.owner.setPosition(this.positionForNewMorph(pane))
 
+		if (error.expressionEndOffset && error.expressionBeginOffset && error.sourceId) {
+			var sourceReference = EvalSourceRegistry.current().sourceReference(error.sourceId);
+			if (sourceReference !== undefined) {
+				console.log('error ' + printObject(error))
+				var expressionBeginOffset = error.expressionBeginOffset - sourceReference.evalCodePrefixLength;
+				var expressionEndOffset  = error.expressionEndOffset - sourceReference.evalCodePrefixLength;
+				this.showErrorDiaglogInWorkspace(sourceReference.sourceString, expressionBeginOffset, expressionEndOffset, pane)
+				if (sourceReference.morph) {
+					sourceReference.morph.showError(error, (sourceReference.offset || 0) - sourceReference.evalCodePrefixLength)
+				}
+
+				return pane
+			}
+		} 
+
+		pane.innerMorph().setTextString(printObject(error))	
 		return pane
-	}
+	},
+	showErrorDiaglogInWorkspace: function(source, expressionBeginOffset, expressionEndOffset, pane) {
+		// PRIVATE HELPER
+		console.log("begin " + expressionBeginOffset + " end " + expressionEndOffset)
+		var start = source.lastIndexOf("\n\n", expressionBeginOffset)
+		if (start == -1) start = 0;
+		var startOffset = expressionBeginOffset - start;
+		var stop =  source.indexOf("\n", expressionEndOffset + 1);
+		if (stop != -1)	stop =  source.indexOf("\n", stop + 1);
+		if (stop != -1)	stop =  source.indexOf("\n", stop + 1);
 
+		if (stop == -1) stop = source.length;
+
+		console.log("source: " + source + "| " + source.length+" expressionEndOffset: " + expressionEndOffset)
+		var excerpt =  source.slice(start, stop)
+		pane.innerMorph().setTextString(excerpt)
+
+		pane.innerMorph().emphasizeFromTo({color: Color.red}, 
+			startOffset, startOffset + expressionEndOffset - expressionBeginOffset);
+		pane.innerMorph().replaceSelectionWith
+		console.log("found excerpt: " + excerpt + " start: " + start + " stop:" + stop)
+	},
 },
 'new content', {
    
