@@ -736,7 +736,8 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 	},
 	
 	testCalcTopLeftOfPoints: function() {
-		this.assertEqualState(pt(6,5), this.world.calcTopLeftOfPoints([pt(10,30), pt(20,5), pt(6,17)]))
+		var sut = new ClipboardCopier();
+		this.assertEqualState(pt(6,5), sut.calcTopLeftOfPoints([pt(10,30), pt(20,5), pt(6,17)]))
 	},
 
 	stringToXml: function(xmlString) {
@@ -783,6 +784,20 @@ TestCase.subclass('Tests.SerializationTests.SelectionCopyAndPasteTest', {
 		this.assert(rawFill, "no raw fill found");
 		
 		// this.assert(false);
+	},
+
+	testPasteMorphWithReference: function() {
+		var source = '\
+			<g type="Morph" id="11746:Morph" transform="translate(920,104)">\
+				<rect x="0" y="0" width="100" height="100" stroke-width="1" stroke="rgb(0,0,0)" fill="rgb(255,0,0)"/>\
+				<field name="origin" family="Point"><![CDATA[{"x":0,"y":0}]]></field>\
+				<field name="scalePoint" family="Point"><![CDATA[{"x":1,"y":1}]]></field>\
+				<field name="myself"  ref="11746:Morph"/> \
+			</g>';
+		this.world.pasteFromSource(source);		
+		var morph = this.morph.submorphs[0];
+		this.assert(morph.myself, "no reference")
+		this.assertIdentity(morph, morph.myself, "wrong reference")
 	},
 	
 

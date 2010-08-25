@@ -6886,7 +6886,8 @@ Object.subclass('ClipboardCopier', {
 			if (offset) {
 				copy.moveBy(offset)
 			}	
-		}, this)
+		}, this);
+		copier.finish()
 	},
 
 });
