@@ -2,6 +2,8 @@ var sys = require('sys');
 var http = require('http');
 var livelyServer = require('./livelyServer');
 
+require('./miniprototype')
+
 var port = 8084;
 
 livelyServer.AbstractHandler.subclass('SandboxHandler', {
