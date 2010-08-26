@@ -230,6 +230,20 @@ var using = (function() {
 
 
 function namespace(spec, context) {
+	var codeDB;
+	if (spec[0] == '$') {
+		codeDB = spec.substring(1, spec.indexOf('.'));
+		spec = spec.substring(spec.indexOf('.') + 1);
+	}
+	var ret = __oldNamespace(spec, context);
+	if (codeDB) {
+		ret.fromDB = codeDB;
+	}
+	return ret;
+};
+
+
+function __oldNamespace(spec, context) {
 	var	 i,N;
 	context = context || Global;
 	spec = spec.valueOf();
@@ -295,6 +309,7 @@ function module(moduleName) {
 
 		return {
 			toRun: function(code) {
+				module._codeForDebug = code.getOriginal().toString();
 				code = code.curry(module); // pass in own module name for nested requirements
 				var codeWrapper = function() { // run code with namespace modules as additional parameters
 					code.apply(this, requiredModules);
@@ -330,6 +345,8 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
 
 Object.extend(Function.prototype, {
 
+	defaultCategoryName: 'default category',
+
 	subclass: function(/*... */) {
 		// Main method of the LK class system.
 
@@ -340,8 +357,8 @@ Object.extend(Function.prototype, {
 
 		// modified from prototype.js
 	
-		var args = arguments;
-		var className = args[0];
+		var args = $A(arguments);
+		var className = args.shift();
 		var targetScope = Global;
 		var shortName = null;
 		if (className) {
@@ -368,34 +385,56 @@ Object.extend(Function.prototype, {
 			if (className) targetScope[shortName] = klass; // otherwise it's anonymous
 		};
 
-		for (var i = 1; i < args.length; i++) {
-			klass.addMethods(args[i] instanceof Function ? (args[i])() : args[i]);
-		}
-		if (!klass.prototype.initialize) {
+		// the remaining args should be category strings or source objects
+		this.addMethods.apply(klass, args);
+
+		if (!klass.prototype.initialize)
 			klass.prototype.initialize = Functions.Empty;
-		}
 
 		return klass;
 	},
 
-	addMethods: function(source) {
+	addMethods: function(/*...*/) {
+
+		var args = arguments;
+		var category = this.defaultCategoryName;
+		for (var i = 0; i < args.length; i++)
+			if (Object.isString(args[i]))
+				category = args[i];
+			else
+				this.addCategorizedMethods(category, args[i] instanceof Function ? (args[i])() : args[i]);
+	},
+addCategorizedMethods: function(categoryName, source) {
+		// first parameter is a category name
 		// copy all the methods and properties from {source} into the
 		// prototype property of the receiver, which is intended to be
 		// a class constructor.	 Method arguments named '$super' are treated
 		// specially, see Prototype.js documentation for "Class.create()" for details.
 		// derived from Class.Methods.addMethods() in prototype.js
+
+		// prepare the categories
+		if (!this.categories) this.categories = {};
+		if (!this.categories[categoryName]) this.categories[categoryName] = [];
+		var currentCategoryNames = this.categories[categoryName];
+
+		if (!source)
+			throw dbgOn(new Error('no source in addCategorizedMethods!'));
+
 		var ancestor = this.superclass && this.superclass.prototype;
 		
 		var className = this.type || "Anonymous";
 
 		for (var property in source) {
 
+			if (property == 'constructor') continue;
+			
 			var getter = source.__lookupGetter__(property);
 			if (getter) this.prototype.__defineGetter__(property, getter);
 			var setter = source.__lookupSetter__(property);
 			if (setter) this.prototype.__defineSetter__(property, setter);
-			if (getter || setter)
-			continue;
+			if (getter || setter) continue;
+
+			currentCategoryNames.push(property);
 
 			var value = source[property];
 			// weirdly, RegExps are functions in Safari, so testing for Object.isFunction on
@@ -427,11 +466,6 @@ Object.extend(Function.prototype, {
 				})();
 			}
 			
-			if (Object.isFunction(value)) {
-				
-				
-			}
-			
 			this.prototype[property] = value;
 		
 			if (property === "formals") { // rk FIXME remove this cruft
@@ -455,6 +489,7 @@ Object.extend(Function.prototype, {
 		return this;
 	},
 
+
 	addProperties: function(spec, recordType) {
 		Class.addMixin(this, recordType.prototype.create(spec).prototype);
 	},
@@ -464,14 +499,44 @@ Object.extend(Function.prototype, {
 	},
 	
 	allSubclasses: function() {
-		return Global.classes(true).select(function(ea) { return ea.isSubclassOf(this) }.bind(this));
+		var klass = this;
+		return Global.classes(true).select(function(ea) { return ea.isSubclassOf(klass) });
 	},
-	
+
+	directSubclasses: function() {
+		var klass = this;
+		return Global.classes(true).select(function(ea) { return ea.superclass === klass });
+	},
+
+	withAllSortedSubclassesDo: function(func) {
+		// this method iterates func on all subclasses of klass (including klass)
+		// it is ensured that the klasses are sorted by a) subclass relationship and b) name (not type!)
+		// func gets as parameters: 1) the class 2) index in list 3) level of inheritance
+		// compared to klass (1 for direct subclasses and so on)
+
+		function createSortedSubclassList(klass, level) {
+			var list = klass.directSubclasses()
+				.sortBy(function(ea) { return ea.name.charCodeAt(0) })
+				.collect(function(subclass) { return createSortedSubclassList(subclass, level + 1) })
+				.flatten();
+			return [{klass: klass, level: level}].concat(list)
+		}
+
+		return createSortedSubclassList(this, 0).collect(function(spec, idx) { return func(spec.klass, idx, spec.level) })
+	},
+
 	superclasses: function() {
 		if (!this.superclass) return [];
 		if (this.superclass === Object) return [Object];
 		return this.superclass.superclasses().concat([this.superclass]);
-	}
+	},
+
+	categoryNameFor: function(propName) {
+		for (var categoryName in this.categories)
+			if (this.categories[categoryName].include(propName))
+				return categoryName;
+		return null;
+	},
 
 });
 
@@ -488,9 +553,9 @@ var Class = {
 
 	initializer: function initializer() {
 		// check for the existence of Importer, which may not be defined very early on
-		if (Global.Importer && (arguments[0] instanceof Importer)) {
+		if (arguments[0] && arguments[0].isImporter) {
 			this.deserialize.apply(this, arguments);
-		} else if (Global.Copier && (arguments[0] instanceof Copier)) {
+		} else if (arguments[0] && arguments[0].isCopier) {
 			this.copyFrom.apply(this, arguments);
 		} else if (Global.Restorer && (arguments[0] instanceof Restorer)) {
 			// for WebCards)
@@ -747,9 +812,18 @@ var Functions = {
 	all: function Functions$all(object) {
 		var a = [];
 		for (var name in object) {	
-			if (object[name] instanceof Function)
+			if (Object.isFunction(object[name]))
 				a.push(name);
 		} 
+		return a;
+	},
+
+	own: function Functions$own(object) {
+		var a = [];
+		for (var name in object) {	
+			if (object.hasOwnProperty(name) && Object.isFunction(object[name]))
+				a.push(name);
+		}
 		return a;
 	},
 
@@ -757,7 +831,11 @@ var Functions = {
 		var startTime = (new Date()).getTime(); 
 		func();
 		return new Date().getTime() - startTime;
-	}
+	},
+	
+	notYetImplemented: function Functions$notYetImplemented() {
+		throw new Error('Not yet implemented');
+	},
 };
 	
 var Properties = {
@@ -766,22 +844,18 @@ var Properties = {
 	all: function Properties$all(object, predicate) {
 		var a = [];
 		for (var name in object) {	
-			if (!(object[name] instanceof Function) && (predicate ? predicate(name, object) : true)) {
-			a.push(name);
-			}
-		} 
+			if (!Object.isFunction(object[name]) && (predicate ? predicate(name, object) : true))
+				a.push(name);
+		}
 		return a;
 	},
 	
 	own: function Properties$own(object) {
 		var a = [];
 		for (var name in object) {	
-			if (object.hasOwnProperty(name)) {
-			var value = object[name];
-			if (!(value instanceof Function))
+			if (object.hasOwnProperty(name) && !Object.isFunction(object[name]))
 				a.push(name);
-			}
-		} 
+		}
 		return a;
 	},
 
@@ -795,7 +869,14 @@ var Properties = {
 				}
 			}
 		}
-	}
+	},
+
+	nameFor: function Properties$nameFor(object, value) {
+		for (var name in object)
+			if (object[name] === value) return name;
+		return undefined
+	},
+
 };
 
 
@@ -835,7 +916,7 @@ Object.subclass('Namespace', {
 			'functions',
 			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea },
 			recursive);
-	}
+	},
 	
 });
 
@@ -846,13 +927,27 @@ Global.namespaceIdentifier = 'Global';
 Namespace.addMethods({ // module specific, should be a subclass?
 	
 	uri: function() { // FIXME cleanup necessary
-		var id = this.namespaceIdentifier; // something like lively.Core
-		var namespacePrefix;
-		if (id.startsWith('Global.')) namespacePrefix = 'Global.';
-		else throw dbgOn(new Error('unknown namespaceIdentifier'));
-		var url = Config.codeBase + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./g, '/');
-		if (!this.isAnonymous()) url += '.js'; // FIXME not necessary JavaScript?!
-		return url;
+		if (this.fromDB) {
+			var id = this.namespaceIdentifier; // something like lively.Core
+			var namespacePrefix;
+			if (id.startsWith('Global.')) {
+				namespacePrefix = 'Global.';
+				id = id.substring(7);
+			} else
+				throw dbgOn(new Error('unknown namespaceIdentifier'));
+
+			// FIXME: extract to Config.codeBaseDB
+			var url = Config.couchDBURL + '/' + this.fromDB + '/_design/raw_data/_list/javascript/for-module?module=' + id;
+			return url;
+		} else {
+			var id = this.namespaceIdentifier; // something like lively.Core
+			var namespacePrefix;
+			if (id.startsWith('Global.')) namespacePrefix = 'Global.';
+			else throw dbgOn(new Error('unknown namespaceIdentifier'));
+			var url = Config.codeBase + this.namespaceIdentifier.substr(namespacePrefix.length).replace(/\./g, '/');
+			if (!this.isAnonymous()) url += '.js'; // FIXME not necessary JavaScript?!
+			return url;
+		}
 	},
 	
 	addDependendModule: function(depModule) {
@@ -1102,6 +1197,19 @@ Object.extend(Function.prototype, {
 			try {
 				return proceed.apply(this, args); 
 			} catch (er) {
+				if (WorldMorph) {
+					var world = WorldMorph.current();
+					var msg = "" + er
+					world.setStatusMessage(msg, Color.red, 15, 
+						function() {
+							require('lively.Helper').toRun(function() {
+								world.showErrorDialog(er)
+							}) 
+						},
+						{fontSize: 12, fillOpacity: 1});
+					throw er;
+				}
+
 				if (prefix) console.warn("ERROR: %s.%s(%s): err: %s %s", this, prefix, args,  er, er.stack || "");
 				else console.warn("ERROR: %s %s", er, er.stack || "");
 				logStack();
@@ -2144,19 +2252,23 @@ function rect(location, corner) {
 
 Object.subclass("Color", { 
 
-	documentation: "Fully portable support for RGB colors",
+	documentation: "Fully portable support for RGB colors. A bit of rgba support is also included.",
 
-	initialize: function(r, g, b) {
+	isColor: true,
+
+	initialize: function(r, g, b, a) {
 		this.r = r;
 		this.g = g;
 		this.b = b;
+		if (!a && a !== 0) a = 1;
+		this.a = a;
 	},
 
 	// Mix with another color -- 1.0 is all this, 0.0 is all other
 	mixedWith: function(other, proportion) { 
 		var p = proportion;
 		var q = 1.0 - p;
-		return new Color(this.r*p + other.r*q, this.g*p + other.g*q, this.b*p + other.b*q); 
+		return new Color(this.r*p + other.r*q, this.g*p + other.g*q, this.b*p + other.b*q, this.a*p + other.a*q); 
 	},
 
 	darker: function(recursion) { 
@@ -2173,11 +2285,18 @@ Object.subclass("Color", {
 
 	toString: function() {
 		function floor(x) { return Math.floor(x*255.99) };
-		return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";
+		// 06/10/10 currently no rgba support for SVG - http://code.google.com/p/chromium/issues/detail?id=45435
+		// return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + this.a + ")";
+		return "rgb(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + ")";		
 	},
 
+	toRGBAString: function() {
+		function floor(x) { return Math.floor(x*255.99) };
+		return "rgba(" + floor(this.r) + "," + floor(this.g) + "," + floor(this.b) + "," + this.a + ")";
+	},
+	
 	toTuple: function() {
-		return [this.r, this.g, this.b];
+		return [this.r, this.g, this.b, this.a];
 	},
 	
 	deserialize: function(importer, colorStringOrTuple) {
@@ -2190,7 +2309,21 @@ Object.subclass("Color", {
 		this.r = color.r;
 		this.g = color.g;
 		this.b = color.b;
-	}
+		if (!color.a && color.a !== 0) color.a = 1;
+		this.a = color.a;
+	},
+	
+	grayValue: function() {
+		return (this.r + this.g + this.b) / 3
+	},
+	
+	withA: function(a) { return new Color(this.r, this.g, this.b, a) },
+	
+	equals: function(other) {
+		if(!other) return false;
+		return this.r === other.r && this.g === other.g && this.b === other.b && this.a === other.a;
+	},
+
 });
 
 Object.extend(Color, {
@@ -2253,12 +2386,16 @@ Object.extend(Color, {
 		return new Color(r/255, g/255, b/255);
 	},
 
+	rgba: function(r, g, b, a) {
+		return new Color(r/255, g/255, b/255, a);
+	},
+	
 	fromLiteral: function(spec) {
-		return new Color(spec.r, spec.g, spec.b);
+		return new Color(spec.r, spec.g, spec.b, spec.a);
 	},
 
 	fromTuple: function(tuple) {
-		return new Color(tuple[0], tuple[1], tuple[2]);
+		return new Color(tuple[0], tuple[1], tuple[2], tuple[3]);
 	},
 
 	fromString: function(str) {
@@ -2266,25 +2403,48 @@ Object.extend(Color, {
 		return tuple && Color.fromTuple(tuple);
 	},
 
-	parse: function(str) { 
-		// FIXME this should be much more refined
+	rgbaRegex: new RegExp('\\s*rgba?\\s*\\(\\s*(\\d+)(%?)\\s*,\\s*(\\d+)(%?)\\s*,\\s*(\\d+)(%?)\\s*(?:,\\s*([0-9\\.]+)\\s*)?\\)\\s*'),
+
+	parse: function(str) {
 		// FIXME handle keywords
-		if (!str || str == 'none')
-			return null;
-		var match = str.match("rgb\\((\\d+),(\\d+),(\\d+)\\)");
-		var r,g,b;
-		if (match) { 
-			r = parseInt(match[1])/255;
-			g = parseInt(match[2])/255;
-			b = parseInt(match[3])/255;
-			return [r, g, b];
-		} else if (str.length == 7 && str.charAt(0) == '#') {
-			r = parseInt(str.substring(1,3), 16)/255;
-			g = parseInt(str.substring(3,5), 16)/255;
-			b = parseInt(str.substring(5,7), 16)/255;
-			return [r, g, b];
-		} else return null;
-	}
+		if (!str || str == 'none') return null;
+		return str.startsWith('#') ? this.parseHex(str) : this.parseRGB(str);
+	},
+
+	parseRGB: function(str) {
+		// match string of the form rgb([r],[g],[b]) or rgb([r%],[g%],[b%]), allowing whitespace between all components
+		var match = str.match(this.rgbaRegex);
+		if (match) {
+			var r = parseInt(match[1]) / (match[2] ? 100 : 255);
+			var g = parseInt(match[3]) / (match[4] ? 100 : 255);
+			var b = parseInt(match[5]) / (match[6] ? 100 : 255);
+			var a = match[7] ? parseFloat(match[7]) : 1.0;
+			return [r, g, b, a];
+		} 
+		return null;
+	},
+	
+	parseHex: function(str) {
+		var rHex, gHex, bHex;
+		if (str.length == 7) { // like #CC0000
+			rHex = str.substring(1,3);
+			gHex = str.substring(3,5);
+			bHex = str.substring(5,7);
+		} else if (str.length == 4) { // short form like #C00
+			rHex = str.substring(1,2);
+			rHex += rHex;
+			gHex = str.substring(2,3);
+			gHex += gHex;
+			bHex = str.substring(3,4);
+			bHex += bHex;
+		} else {
+			return null
+		}
+		var r = parseInt(rHex, 16)/255;
+		var g = parseInt(gHex, 16)/255;
+		var b = parseInt(bHex, 16)/255;
+		return [r, g, b];
+	},
 });
 
 
