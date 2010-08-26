@@ -33,20 +33,15 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 		
 
 		sys.puts('Evaluating: ' + source);
-		var result
+
+		var jsonString;
 		try {
-			result = Script.runInNewContext(source, sandboxes[id], 'myfile.js');
+			var result = Script.runInNewContext(source, sandboxes[id], 'myfile.js');
+			jsonString = JSON.stringify({result: result});
 		} catch(e) {
-			result = String(e);
+			jsonString = String(e);
 		}
 
-		try {
-			var jsonString = JSON.stringify({result: result})
-		} catch(e) {
-			this.error(response, 'Cannot serialize ' + result + ' for sending it back to the client');
-			return;
-		}
-		
 				
 		// sys.puts(sys.inspect(sandbox));
 
