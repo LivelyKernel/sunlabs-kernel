@@ -32,8 +32,6 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 
 		
 
-		sys.puts('Evaluating: ' + source);
-
 		var jsonString;
 		try {
 			var result = Script.runInNewContext(source, sandboxes[id], 'myfile.js');
@@ -42,6 +40,7 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			jsonString = String(e);
 		}
 
+		sys.puts('Evaluating: ' + source + ' results in ' + jsonString);
 				
 		// sys.puts(sys.inspect(sandbox));
 
