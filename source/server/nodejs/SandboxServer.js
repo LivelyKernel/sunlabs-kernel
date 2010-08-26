@@ -37,7 +37,7 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			var result = Script.runInNewContext(source, sandboxes[id], 'myfile.js');
 			jsonString = JSON.stringify({result: result});
 		} catch(e) {
-			jsonString = String(e);
+			this.error(response, String(e))
 		}
 
 		sys.puts('...results in ' + jsonString);
