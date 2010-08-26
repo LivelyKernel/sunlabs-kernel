@@ -39,7 +39,15 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 		} catch(e) {
 			result = String(e);
 		}
+
+		try {
+			var jsonString = JSON.stringify({result: result})
+		} catch(e) {
+			this.error(response, 'Cannot serialize ' + result + ' for sending it back to the client');
+			return;
+		}
 		
+				
 		// sys.puts(sys.inspect(sandbox));
 
 		// var self = this;
@@ -66,9 +74,8 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 		// 	response.end(resultURL);
 		// });
 
-		var objectToSend = {result: result};
 		response.writeHead(200, {'Content-Type': 'text/plain'});
-		response.end(JSON.stringify(objectToSend));
+		response.end(jsonString);
 		
 	},
 	
