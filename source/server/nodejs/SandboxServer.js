@@ -30,7 +30,7 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			
 		if (!sandboxes[id]) sandboxes[id] = {};
 
-		
+		sys.puts('Evaluating: ' + source);
 
 		var jsonString;
 		try {
@@ -40,7 +40,7 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			jsonString = String(e);
 		}
 
-		sys.puts('Evaluating: ' + source + ' results in ' + jsonString);
+		sys.puts('...results in ' + jsonString);
 				
 		// sys.puts(sys.inspect(sandbox));
 
