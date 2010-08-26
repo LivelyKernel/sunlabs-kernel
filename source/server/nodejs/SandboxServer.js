@@ -24,7 +24,7 @@ var port = 8084;
 var sandboxes = {};
 
 function setupSandbox() {
-	var sandbox = {require: require, Object: {}, process: process, Script: Script};
+	var sandbox = {require: require, Object: Object, process: process, Script: Script};
 	sandbox.Global = sandbox
 	Script.runInNewContext('sys = require("sys"); require("./miniprototype"); require("./Base")', sandbox);
 	return sandbox;
