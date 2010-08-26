@@ -5,25 +5,30 @@ var Script = process.binding('evals').Script;
 
 var port = 8084;
 
-var sandboxes = {};
-
 
 // experimental
-spawn = require('child_process').spawn
-runCommand = function(command, parameter, callback) {
-	var proc = spawn(command, parameter);
-	var stdout = '';
-	var stderr = '';
-	proc.stdout.addListener('data', function (data) { stdout += data });
-	proc.stderr.addListener('data', function (data) { stderr += data });
-	proc.addListener('exit', function (code) {
-		// sys.puts(command + ' done, exit code: ' + code);
-		callback && callback(code, stdout, stderr);
-	});
-	return proc;
-};
+// spawn = require('child_process').spawn
+// runCommand = function(command, parameter, callback) {
+// 	var proc = spawn(command, parameter);
+// 	var stdout = '';
+// 	var stderr = '';
+// 	proc.stdout.addListener('data', function (data) { stdout += data });
+// 	proc.stderr.addListener('data', function (data) { stderr += data });
+// 	proc.addListener('exit', function (code) {
+// 		// sys.puts(command + ' done, exit code: ' + code);
+// 		callback && callback(code, stdout, stderr);
+// 	});
+// 	return proc;
+// };
 
+var sandboxes = {};
 
+function setupSandbox() {
+	var sandbox = {require: require, Object: {}, process: process, Script: Script};
+	sandbox.Global = sandbox
+	Script.runInNewContext('sys = require("sys"); require("./miniprototype"); require("./Base")', sandbox);
+	return sandbox;
+}
 
 livelyServer.AbstractHandler.subclass('SandboxHandler', {
 	
@@ -46,20 +51,14 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			return
 		}
 			
-		if (!sandboxes[id]) {
-			sandboxes[id] = {require: require, Object: {}, process: process, Script: Script};
-			sandboxes[id].Global = sandboxes[id]
-			Script.runInNewContext('sys = require("sys"); require("./miniprototype"); require("./Base")', sandboxes[id]);
-		}
-			
-		
+		if (!sandboxes[id]) sandboxes[id] = setupSandbox();
 
 		sys.puts('Evaluating: ' + source);
 
 		var jsonString;
 		try {
-			// var result = Script.runInNewContext(source, sandboxes[id]);
-			var result = Script.runInThisContext(source);
+			var result = Script.runInNewContext(source, sandboxes[id]);
+			// var result = Script.runInThisContext(source);
 			if (Object.isFunction(result)) result = result.toString();
 			jsonString = JSON.stringify({result: result});
 		} catch(e) {
