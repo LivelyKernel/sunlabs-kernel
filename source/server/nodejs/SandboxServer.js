@@ -32,7 +32,13 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			
 
 		sys.puts('Evaluating: ' + source);
-		var result = Script.runInNewContext(source, sandboxes[id], 'myfile.js');
+		var result
+		try {
+			result = Script.runInNewContext(source, sandboxes[id], 'myfile.js');
+		} catch(e) {
+			result = String(e);
+		}
+		
 		// sys.puts(sys.inspect(sandbox));
 
 		// var self = this;
