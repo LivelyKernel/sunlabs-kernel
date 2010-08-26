@@ -184,6 +184,58 @@ Object.subclass("SyntaxHighlighter", {
 Object.extend(SyntaxHighlighter, {
 	JavaScriptRules: {
 		// based on http://code.google.com/p/jquery-chili-js/ regex and colors
+		num: { 
+			  match: /\b[+-]?(?:\d*\.?\d+|\d+\.?\d*)(?:[eE][+-]?\d+)?\b/g
+			, style: {color: Color.web.blue}
+		},
+		reg_exp: { 
+			  match: /\/[^\/\\\n]*(?:\\.[^\/\\\n]*)*\/[gim]*/g
+			, style: {color: Color.web.maroon}
+		},
+		brace: { 
+			  match: /[\{\}]/g
+			, style: {color: Color.web.green, style: "normal"}
+		},
+		statement: { 
+			  match: /\b(with|while|var|try|throw|switch|return|if|for|finally|else|do|default|continue|const|catch|case|break)\b/g
+			, style: {color: Color.web.navy, style: "normal"}
+		},
+		object: { 
+			  match: /\b(String|RegExp|Object|Number|Math|Function|Date|Boolean|Array)\b/g
+			, style: {color: Color.web.deeppink}
+		},
+		superclassOrLayer: { 
+			  match: /([A-Za-z.]+)(?=\.(subclass|refineClass|addMethods|extend))/g
+			, style: {color: Color.web.navy, style: "normal"}
+		},
+		methodName: { 
+			  match: /([A-Za-z0-9_$]+:)/g   // (?= function)
+			, style: {color: Color.web.darkred, style: "normal"}
+		},
+		lively: { 
+			  match: /\b(subclass|refineClass|addMethods|extend)\b/g
+			, style: {color: Color.web.gray}
+		},
+		error: { 
+			  match: /\b(URIError|TypeError|SyntaxError|ReferenceError|RangeError|EvalError|Error)\b/g
+			, style: {color: Color.web.coral}
+		},
+		property: { 
+			  match: /\b(undefined|arguments|NaN|Infinity)\b/g
+			, style: {color: Color.web.purple, style: "normal"}
+		},
+		'function': { 
+			  match: /\b(parseInt|parseFloat|isNaN|isFinite|eval|encodeURIComponent|encodeURI|decodeURIComponent|decodeURI)\b/g
+			, style: {color: Color.web.olive}
+		},
+		operator: {
+			  match: /\b(void|typeof|this|new|instanceof|in|function|delete)\b/g
+			, style: {color: Color.web.darkblue, style: "normal"}
+		},
+		string: { 
+			  match: /(?:\'[^\'\\\n]*(?:\\.[^\'\\\n]*)*\')|(?:\"[^\"\\\n]*(?:\\.[^\"\\\n]*)*\")/g
+			, style: {color: Color.web.teal}
+		},
 		ml_comment: { 
 			  match: /\/\*[^*]*\*+(?:[^\/][^*]*\*+)*\//g
 			, style: {color: Color.web.gray}
@@ -191,59 +243,6 @@ Object.extend(SyntaxHighlighter, {
 		, sl_comment: { 
 			  match: /\/\/.*/g
 			, style: {color: Color.web.green}
-		}
-		, string: { 
-			  match: /(?:\'[^\'\\\n]*(?:\\.[^\'\\\n]*)*\')|(?:\"[^\"\\\n]*(?:\\.[^\"\\\n]*)*\")/g
-			, style: {color: Color.web.teal}
-		}
-		, num: { 
-			  match: /\b[+-]?(?:\d*\.?\d+|\d+\.?\d*)(?:[eE][+-]?\d+)?\b/g
-			, style: {color: Color.web.blue}
-		}
-		, reg_exp: { 
-			  match: /\/[^\/\\\n]*(?:\\.[^\/\\\n]*)*\/[gim]*/g
-			, style: {color: Color.web.maroon}
-		}
-		, brace: { 
-			  match: /[\{\}]/g
-			, style: {color: Color.web.green, style: "normal"}
-		}
-		, statement: { 
-			  match: /\b(with|while|var|try|throw|switch|return|if|for|finally|else|do|default|continue|const|catch|case|break)\b/g
-			, style: {color: Color.web.navy, style: "normal"}
-		}
-
-		, superclassOrLayer: { 
-			  match: /([A-Z][A-Za-z.]+)(?=\.(subclass|refineClass|addMethods))/g
-			, style: {color: Color.web.navy, style: "normal"}
-		}
-		, methodName: { 
-			  match: /([A-Za-z0-9_$]+:)/g   // (?= function)
-			, style: {color: Color.web.black, style: "normal"}
-		}
-		, lively: { 
-			  match: /\b(subclass|refineClass|addMethods)\b/g
-			, style: {color: Color.web.gray}
-		}
-		, error: { 
-			  match: /\b(URIError|TypeError|SyntaxError|ReferenceError|RangeError|EvalError|Error)\b/g
-			, style: {color: Color.web.coral}
-		}
-		, object: { 
-			  match: /\b(String|RegExp|Object|Number|Math|Function|Date|Boolean|Array)\b/g
-			, style: {color: Color.web.deepPink}
-		}
-		, property: { 
-			  match: /\b(undefined|arguments|NaN|Infinity)\b/g
-			, style: {color: Color.web.purple, style: "normal"}
-		}
-		, 'function': { 
-			  match: /\b(parseInt|parseFloat|isNaN|isFinite|eval|encodeURIComponent|encodeURI|decodeURIComponent|decodeURI)\b/g
-			, style: {color: Color.web.olive}
-		}
-		, operator: {
-			  match: /\b(void|typeof|this|new|instanceof|in|function|delete)\b/g
-			, style: {color: Color.web.royalBlue, style: "normal"}
 		}
 	}
 });
