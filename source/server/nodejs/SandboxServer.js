@@ -5,6 +5,8 @@ var Script = process.binding('evals').Script;
 
 var port = 8084;
 
+var sandboxes = {};
+
 livelyServer.AbstractHandler.subclass('SandboxHandler', {
 	
 	initialize: function() {
@@ -14,10 +16,23 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 		
 		var json = JSON.parse(content.toString());
 		var source = json.src;
-		var sandbox = {};
+		var id = json.id
+		
+		if (!source) {
+			this.error(response, 'Cannot find field "src" in json');
+			return
+		}
+		
+		if (!id) {
+			this.error(response, 'Cannot find field "id" in json');
+			return
+		}
+			
+		if (!sandboxes[id]) sandboxes[id] = {};
+			
 
 		sys.puts('Evaluating: ' + source);
-		var result = Script.runInNewContext(source, sandbox, 'myfile.js');
+		var result = Script.runInNewContext(source, sandboxes[id], 'myfile.js');
 		// sys.puts(sys.inspect(sandbox));
 
 		// var self = this;
