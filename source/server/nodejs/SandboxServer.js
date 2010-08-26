@@ -28,7 +28,13 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			return
 		}
 			
-		if (!sandboxes[id]) sandboxes[id] = {require: require, Global: {}};
+		if (!sandboxes[id]) {
+			sandboxes[id] = {require: require, Object: {}};
+			sandboxes[id].Global = sandboxes[id]
+			Script.runInNewContext('require("./miniprototype"); require("./Base")', sandboxes[id]);
+		}
+			
+		
 
 		sys.puts('Evaluating: ' + source);
 
