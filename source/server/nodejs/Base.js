@@ -357,8 +357,8 @@ Object.extend(Function.prototype, {
 
 		// modified from prototype.js
 	
-		var args = $A(arguments);
-		var className = args.shift();
+		var args = arguments;
+		var className = args[0];
 		var targetScope = Global;
 		var shortName = null;
 		if (className) {
