@@ -1,6 +1,7 @@
 var sys = require('sys');
 var http = require('http');
 var livelyServer = require('./livelyServer');
+var Script = process.binding('evals').Script;
 
 var port = 8084;
 
@@ -10,7 +11,15 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 	},
 	
 	run: function(request, response, content) {
-		sys.puts('foooooooooooooo')
+		
+		var json = JSON.parse(content.toString());
+		var source = json.src;
+		var sandbox = {};
+
+		sys.puts('Evaluating: ' + source);
+		var result = Script.runInNewContext(source, sandbox, 'myfile.js');
+		// sys.puts(sys.inspect(sandbox));
+
 		// var self = this;
 		// 
 		// var errorHandler = function (err) {
@@ -35,8 +44,9 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 		// 	response.end(resultURL);
 		// });
 
+		var objectToSend = {result: result};
 		response.writeHead(200, {'Content-Type': 'text/plain'});
-		response.end('foo');
+		response.end(JSON.stringify(objectToSend));
 		
 	},
 	
