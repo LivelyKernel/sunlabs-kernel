@@ -18,8 +18,11 @@ Object.subclass('AbstractHandler', {
 		http.createServer(function (request, response) {
 			var handler = new handlerClass();
 			var action = server.actionFromURLString(request.url);
-			sys.puts(action);
+			sys.puts('requesting ' + action);
 			
+			if (!handler[action])
+				sys.puts('...no handler found')
+
 			if (handler[action]) {
 				request.addListener('data', function (content) {
 					handler[action](request, response, content);
