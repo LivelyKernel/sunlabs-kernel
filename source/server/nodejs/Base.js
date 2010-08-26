@@ -297,8 +297,8 @@ function module(moduleName) {
 	}
 	
 	function basicRequire(/*module, requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
-		var args = $A(arguments);	 
-		var module = args.shift();
+		var args = arguments;
+		var className = args[0];
 		var preReqModuleNames = Object.isArray(args[0]) ? args[0] : args; // support modulenames as array and parameterlist
 		var requiredModules = [];
 		for (var i = 0; i < preReqModuleNames.length; i++) {
