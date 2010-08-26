@@ -28,7 +28,7 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 			return
 		}
 			
-		if (!sandboxes[id]) sandboxes[id] = {Global: Global};
+		if (!sandboxes[id]) sandboxes[id] = {Global: global};
 
 		
 
