@@ -2,6 +2,7 @@ var sys = require('sys');
 var http = require('http');
 var livelyServer = require('./livelyServer');
 var Script = process.binding('evals').Script;
+var spawn = require('child_process').spawn
 
 var port = 8084;
 
