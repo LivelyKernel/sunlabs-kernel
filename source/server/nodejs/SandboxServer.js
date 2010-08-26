@@ -2,11 +2,28 @@ var sys = require('sys');
 var http = require('http');
 var livelyServer = require('./livelyServer');
 var Script = process.binding('evals').Script;
-spawn = require('child_process').spawn
 
 var port = 8084;
 
 var sandboxes = {};
+
+
+// experimental
+spawn = require('child_process').spawn
+runCommand = function(command, parameter, callback) {
+	var proc = spawn(command, parameter);
+	var stdout = '';
+	var stderr = '';
+	proc.stdout.addListener('data', function (data) { stdout += data });
+	proc.stderr.addListener('data', function (data) { stderr += data });
+	proc.addListener('exit', function (code) {
+		// sys.puts(command + ' done, exit code: ' + code);
+		callback && callback(code, stdout, stderr);
+	});
+	return proc;
+};
+
+
 
 livelyServer.AbstractHandler.subclass('SandboxHandler', {
 	
