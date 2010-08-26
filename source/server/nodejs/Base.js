@@ -540,7 +540,7 @@ addCategorizedMethods: function(categoryName, source) {
 
 });
 
-var Class = {
+Global.Class = {
 	
 	anonymousCounter: 0,
 	
