@@ -45,8 +45,7 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 	runningServersEnd: function(request, response) {
 		var result = []
 		for (var name in this.serverProcesses)
-			if (this.isRunning(name))
-				result.push({serverName: name, pid: this.getProcess(name).pid});
+			result.push({serverName: name, pid: this.getProcess(name).pid, isRunning: this.isRunning(name)});
 			
 		response.writeHead(200, {'Content-Type': 'text/plain'});
 		response.end(JSON.stringify(result));
