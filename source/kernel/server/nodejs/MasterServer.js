@@ -131,7 +131,7 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 		sys.puts('Stopping ' + serverName);
 		var process = this.getProcess(serverName);
 		process && process.kill(9);
-		delete this.serverProcesses[serverName];
+		// delete this.serverProcesses[serverName];
 	},
 	
 	startServer: function(serverName, path, shouldRestartWhenClosed, timeLastStarted) {
