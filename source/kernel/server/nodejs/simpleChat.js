@@ -1,12 +1,10 @@
 var sys = require('sys');
 var livelyServer = require('./livelyServer')
-var port = 8082;
-
-
-$A = Array.from // fixme
 
 livelyServer.AbstractHandler.subclass('ChatHandler', {
-	
+
+	port: 8082,
+
 	initialize: function($super) {
 		$super()
 		this.registeredResponses = [];
@@ -33,5 +31,4 @@ livelyServer.AbstractHandler.subclass('ChatHandler', {
 	},
 });
 // 
-var handler = new ChatHandler();
-handler.listenOn(port);
+new ChatHandler().listen();

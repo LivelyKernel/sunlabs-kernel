@@ -3,9 +3,9 @@ var http = require('http');
 var livelyServer = require('./livelyServer');
 var PDFCreator = require('./PDFCreator').PDFCreator;
 
-var port = 8083;
-
 livelyServer.AbstractHandler.subclass('LaTeXHandler', {
+
+	port: 8083,
 	
 	initialize: function() {
 		this.logFile = 'LaTeXServer.log';
@@ -82,5 +82,4 @@ livelyServer.AbstractHandler.subclass('LaTeXHandler', {
 	
 });
 
-var handler = new LaTeXHandler();
-handler.listenOn(port);
+new LaTeXHandler().listen();

@@ -1,9 +1,6 @@
 var sys = require('sys');
-var http = require('http');
 var livelyServer = require('./livelyServer');
 var Script = process.binding('evals').Script;
-
-var port = 8084;
 
 
 // experimental
@@ -31,6 +28,8 @@ function setupSandbox() {
 }
 
 livelyServer.AbstractHandler.subclass('SandboxHandler', {
+
+	port: 8084,
 	
 	initialize: function() {
 	},
@@ -100,5 +99,4 @@ livelyServer.AbstractHandler.subclass('SandboxHandler', {
 	
 });
 
-var handler = new SandboxHandler();
-handler.listenOn(port);
+new SandboxHandler().listen();

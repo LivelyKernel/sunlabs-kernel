@@ -4,13 +4,21 @@ var http = require('http');
 require('./miniprototype')
 require('./Base')
 
+global.$A = Array.from // fixme
+// global.Object = Object
 
 Object.subclass('AbstractHandler', {
+
+	port: null,
 
 	actionFromURLString: function(url) {
 		return /^\/(.*)/.exec(url)[1];
 	},
 	
+	listen: function() {
+		this.listenOn(this.port);
+	},
+
 	listenOn: function(port) {
 		var handlerClass = this.constructor;
 		var server = this;
