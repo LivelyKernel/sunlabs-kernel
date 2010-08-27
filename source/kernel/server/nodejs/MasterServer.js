@@ -23,20 +23,35 @@ require('./Base')
 // webR4 = new WebResource('http://localhost:8085/stop')
 // webR4.post(JSON.stringify({serverName: 'simpleChat'}))
 // webR4.content
-
+// 
+// webR5 = new WebResource('http://localhost:8085/runningServers')
+// webR5.get()
+// webR5.content
 
 // This handler allows to control/start/stop other nodejs servers
+var serverProcesses = {};
+
 livelyServer.AbstractHandler.subclass('MasterServerHandler',
 'initializing', {
 	port: 8085,
 		
 	initialize: function($super) {
 		$super()
-		this.serverProcesses = {}
+		this.serverProcesses = serverProcesses;
 	},
 },
 'interface', {
 
+	runningServersEnd: function(request, response) {
+		var result = []
+		for (var name in this.serverProcesses)
+			if (this.isRunning(name))
+				result.push({serverName: name, pid: this.getProcess(name).pid});
+			
+		response.writeHead(200, {'Content-Type': 'text/plain'});
+		response.end(JSON.stringify(result));
+	},
+	
 	stopAllEnd: function(request, response) {
 		for (var name in this.serverProcesses)
 			this.stopServer(name);
@@ -73,19 +88,19 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 			return		
 		}
 		
-		if (json.shouldRestart) this.stopServer(serverName);
-
-		try {
-			var process = this.startServer(serverName, path, json.shouldRestart);
-		} catch(e) {
-			this.error(response, 'Unsuccessfully tried to start ' + serverName + ': ' + e)
-			return;
-		}
-
-		this.serverProcesses[serverName] = process;
+		this.stopServer(serverName);
 		
-		response.writeHead(200, {'Content-Type': 'text/plain'});
-		response.end('started ' + serverName);
+		setTimeout(function() {
+			try {
+				this.startServer(serverName, path, json.shouldRestart);
+			} catch(e) {
+				this.error(response, 'Unsuccessfully tried to start ' + serverName + ': ' + e)
+				return;
+			}
+			response.writeHead(200, {'Content-Type': 'text/plain'});
+			response.end('started ' + serverName);
+		}.bind(this), 500/*ms*/); // wait for kill
+
 	},
 	
 	updateCodeAndRestart: function(request, response, content) {
@@ -105,9 +120,10 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 },
 'private', {
 	
-	getProcess: function(serverName) { this.serverProcesses[serverName] },
+	getProcess: function(serverName) { return this.serverProcesses[serverName] },
 	
 	isRunning: function(serverName) {
+		sys.puts('checking if ' + serverName + ' is running')
 		var process = this.getProcess(serverName);
 		return process && process.pid > 0
 	},
@@ -115,22 +131,32 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 	stopServer: function(serverName) {
 		sys.puts('Stopping ' + serverName);
 		var process = this.getProcess(serverName);
-		process && process.kill();	
+		process && process.kill(9);
+		delete this.serverProcesses[serverName];
 	},
 	
-	startServer: function(serverName, path, shouldRestartWhenClosed) {
-		sys.puts('Starting ' + serverName)
+	startServer: function(serverName, path, shouldRestartWhenClosed, timeLastStarted) {
+		if (this.isRunning(serverName)) throw new Error(serverName + ' still running');
 		var self = this;
-		return exec('node ' + serverName + '.js', {cwd: path},
+		var process = exec('node ' + serverName + '.js', {cwd: path},
 			function (error, stdout, stderr) {
 				sys.puts(serverName + ' stopped');
 			    sys.print('stdout: ' + stdout);
 			    sys.print('stderr: ' + stderr);
 			    if (error !== null) console.log('exec error: ' + error);
 			
-				if (shouldRestartWhenClosed)
-					self.startServer(serverName, path, shouldRestartWhenClosed);
+			
+				if (shouldRestartWhenClosed) {
+					if (timeLastStarted) { // ensure no looping
+						var startedBeforeMS = new Date() - timeLastStarted;
+						if (startedBeforeMS < 300) return // ms
+					}
+					self.startServer(serverName, path, shouldRestartWhenClosed, new Date());
+				}
 			});
+		sys.puts('Starting ' + serverName + ' pid: ' + process.pid)
+		this.serverProcesses[serverName] = process
+		return process;
 	},
 	
 	svnUp: function(path, thenDo) {
