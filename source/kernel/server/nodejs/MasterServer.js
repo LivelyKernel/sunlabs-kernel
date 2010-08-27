@@ -5,6 +5,7 @@ var sys = require('sys'),
 require('./miniprototype')
 require('./Base')
 
+// nohup node MasterServer.js < /dev/null > MasterServer.log 2>&1 &
 
 // webR = new WebResource('http://localhost:8085/ensureRunning')
 // path = '/Users/robertkrahn/SWA/LivelyKernel/lively-kernel.org/svn/source/kernel/server/nodejs'
