@@ -361,7 +361,7 @@ BoxMorph.subclass("ImageMorph", {
 	initialize: function($super, viewPort, url, disableScaling) {
 		$super(viewPort);
 		this.disableScaling = disableScaling; // for compatiblity with depricated usages of image morph
-		this.image = new lively.scene.Image(url, viewPort.width, viewPort.height);
+		this.image = new lively.scene.Image(url, viewPort.width, viewPort.height, true /*use native image extent*/);
 		console.log("making an image from: " + url);
 		if (url) {
 			this.addWrapper(this.image); // otherwise we didn't make a rawNode
@@ -377,11 +377,11 @@ BoxMorph.subclass("ImageMorph", {
 		switch (node.localName) {
 			case "image":
 			case "use":
-			this.image = new lively.scene.Image(importer, node);
-			return true;
+				this.image = new lively.scene.Image(importer, node);
+				return true;
 			default:
-			console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
-			return false;
+				console.log("got unhandled node " + node.localName + ", " + node.namespaceURI + " node " + node);
+				return false;
 		}
 	},
 
@@ -424,10 +424,14 @@ BoxMorph.subclass("ImageMorph", {
 
 	getOpacity: function(op) { return this.image.getOpacity(op); },
 
-	originalImageSize: function(imgSrc) {
+	setOriginalImageSizeWhenLoaded: function(imgSrc) {
 		var newImg = new Image();
 		newImg.src = imgSrc;
-		return pt(newImg.width, newImg.height)
+		newImg.onload = function() {
+			var extent = pt(newImg.width, newImg.height);
+			this.originalExtent = extent;
+			this.setExtent(extent)
+		}.bind(this)
 	},
 	
 	
@@ -466,13 +470,10 @@ BoxMorph.subclass("ImageMorph", {
 	},
 
 	setURL: function(url) {
-		var extent = this.originalImageSize(url);
-		if (extent.eqPt(pt(0,0))) {
-			extent = pt(50,50); // fall back
-		};
-		this.originalExtent = extent;
+		this.originalExtent = pt(50,50);
 		this.image.loadImage(url);
-		this.setExtent(extent);
+		this.setExtent(this.originalExtent);
+		this.setOriginalImageSizeWhenLoaded(url);
 		this.reshape()
 	},
 	

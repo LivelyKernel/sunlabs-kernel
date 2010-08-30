@@ -2327,13 +2327,13 @@ Object.extend(this.Group, {
 	}
 });
 
-this.Node.subclass('lively.scene.Image');
+lively.scene.Node.subclass('lively.scene.Image');
 	
 this.Image.addProperties({ 
 	Opacity: { name: "opacity", from: Number, to: String, byDefault: 1.0}
 }, Config.useStyling ? lively.data.StyleRecord : lively.data.DOMRecord);
 
-this.Image.addMethods({
+lively.scene.Image.addMethods({
 	description: "Primitive wrapper around images",
 
 	initialize: function(url, width, height) {
@@ -2341,7 +2341,7 @@ this.Image.addMethods({
 		if (url.startsWith('#'))
 			this.loadUse(url);
 		else
-		this.loadImage(url, width, height);
+			this.loadImage(url, width, height);
 	},
 
 	deserialize: function($super, importer, rawNode) {
@@ -2416,33 +2416,35 @@ this.Image.addMethods({
 		if (this.rawNode && this.rawNode.localName == "image") {
 			XLinkNS.setHref(this.rawNode, href);
 			return null;
-		} else {
-			var useDesperateSerializationHack = !Config.suppressImageElementSerializationHack;
-			if (useDesperateSerializationHack) {
-				width = width || this.getWidth();
-				height = height || this.getHeight();
-
-				// this desperate measure appears to be necessary to work
-				// around Safari's serialization issues.  Note that
-				// somehow this code has to be used both for normal
-				// loading and loading at deserialization time, otherwise
-				// it'll fail at deserialization
-				var xml = Strings.format('<image xmlns="http://www.w3.org/2000/svg" ' 
-				+ 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
-				+ ' width="%s" height="%s" xlink:href="%s"/>', width, height, href);
-				this.rawNode = new Importer().parse(xml);
-			} else {
-
-				// this should work but doesn't:
-
-				this.rawNode = NodeFactory.createNS(Namespace.SVG, "image");
-				this.rawNode.setAttribute("width", width);
-				this.rawNode.setAttribute("height", height);
-				XLinkNS.setHref(this.rawNode, href);
-			}
-			return this.rawNode;
 		}
-	}
+
+		var useDesperateSerializationHack = !Config.suppressImageElementSerializationHack;
+		if (useDesperateSerializationHack) {
+			width = width || this.getWidth();
+			height = height || this.getHeight();
+
+			// this desperate measure appears to be necessary to work
+			// around Safari's serialization issues.  Note that
+			// somehow this code has to be used both for normal
+			// loading and loading at deserialization time, otherwise
+			// it'll fail at deserialization
+			var xml = Strings.format('<image xmlns="http://www.w3.org/2000/svg" ' 
+			+ 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
+			+ ' width="%s" height="%s" xlink:href="%s" />', width, height, href);
+			this.rawNode = new Importer().parse(xml);
+		} else {
+
+			// this should work but doesn't:
+
+			this.rawNode = NodeFactory.createNS(Namespace.SVG, "image");
+			this.rawNode.setAttribute("width", width);
+			this.rawNode.setAttribute("height", height);
+			XLinkNS.setHref(this.rawNode, href);
+		}
+
+		return this.rawNode;
+	},
+
 });
 
 
