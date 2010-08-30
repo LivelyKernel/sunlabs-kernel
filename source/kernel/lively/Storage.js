@@ -26,7 +26,7 @@
  * Storage.js.  Storage system implementation.
  */
 
-module('lively.Storage').requires().toRun(function(module) {
+module('lively.Storage').requires('lively.Network').toRun(function(module) {
 
 
 BoxMorph.subclass('PackageMorph', {

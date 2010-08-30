@@ -25,7 +25,7 @@
  * Data.js.  Data manipulation (mostly XML).
  */
 
-module('lively.Data').requires().toRun(function(thisModule) {
+module('lively.Data').requires('lively.Network').toRun(function(thisModule) {
 	
 View.subclass('Query',  {
     documentation: "Wrapper around XPath evaluation",
