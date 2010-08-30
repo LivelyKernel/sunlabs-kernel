@@ -1569,7 +1569,7 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CategorizedClassFragmentNode', 
 
 lively.ide.MultiFileFragmentsNode.subclass('lively.ide.MethodCategoryFragmentNode', {
 
-	getName: function() { return this.target.category },
+	getName: function() { return this.target.category.getName() },
 
 	sourceString: function() {
 		return 'not yet supported'
@@ -2713,6 +2713,8 @@ parseNonFile: function(source) {
             d.stopIndex += startPos;
             d.fileName = this.fileName;
 			d.subElements().forEach(function(sub) { sub._owner = d });
+			if (d.categories) // FIXME!!!
+				d.categories.forEach(function(categoryDescr) { categoryDescr.fileName = d.fileName })
         });
         // ----------------
         // this.overheadTime += new Date().getTime() - ms;
@@ -3442,8 +3444,11 @@ Object.subclass('lively.ide.FileFragment',
 	},
 
 	toString: function() {
-		return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
-		this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.startLine(), this.subElements().length);
+		if (this.fileName)
+			return Strings.format('%s: %s (%s-%s in %s, starting at line %s, %s subElements)',
+				this.type, this.name, this.startIndex, this.stopIndex, this.fileName, this.startLine(), this.subElements().length);
+		return Strings.format('%s: %s (%s-%s in NO FILENAME FOUND, %s subElements)',
+				this.type, this.name, this.startIndex, this.stopIndex, this.subElements().length);
 	},
 
 	inspect: function() {
