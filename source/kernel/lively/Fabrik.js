@@ -46,7 +46,7 @@
   * Examples for interactive testing and exploring
   */
 
-module('lively.Fabrik').requires('lively.Helper').toRun(function() {
+module('lively.Fabrik').requires('lively.Helper', 'cop.Layers').toRun(function() {
 
 // logMethod(Morph.prototype, 'onMouseDown');
 
@@ -1129,7 +1129,7 @@ Morph.subclass('lively.Fabrik.ConnectorMorph', {
 
     customizeShapeBehavior: function() {
         
-        this.shape.controlPointProximity = 20;
+        this.shape.controlPointProximity = 10;
         
         // disable first and last control point of polygone 
         this.shape.partNameNear = this.shape.partNameNear.wrap(function(proceed, p) { 
@@ -2323,7 +2323,7 @@ ComponentMorph.subclass('FabrikMorph', {
 		$super(evt);
 		if(this.isCollapsed) return true;
 		
-	    if (evt.isMetaDown() ) { 
+	    if (evt.isAltDown() ) { 
 			this.makeUserFrame(evt);
 		} else {
 			this.makeSelection(evt); 
@@ -2781,8 +2781,16 @@ Component.subclass('TextComponent', {
         return this.panel;
     },
 });
+cop.create('FunctionComponentLayer').refineClass(TextMorph, {
+	getDoitContext: function(proceed) {
+		console.log("get doit context " )		
+
+		return this.getOwnerWidget()},
+});
 
 ComponentMorph.subclass('FunctionComponentMorph', {
+
+	withLayers: [FunctionComponentLayer],
 
 	smartCopyProperties: ['pinHandles', 'panel'],
 
@@ -2817,12 +2825,13 @@ ComponentMorph.subclass('FunctionComponentMorph', {
         var self = this;
 		if (!this.functionBodyMorph)
 			return;
-        this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
-			var forceImplicit = !str.match(/^[ ]*return /);
-            var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval, forceImplicit);
+
+        // this.functionBodyMorph.boundEval = this.functionBodyMorph.boundEval.wrap(function(proceed, str) {
+			// var forceImplicit = !str.match(/^[ ]*return /);
+            // var source = self.component.composeFunction(self.component.formalModel.getFunctionHeader(), str, interactiveEval, forceImplicit);
 			// console.log("eval: " + source)          
-            return eval(source).apply(self.component, self.component.parameterValues());
-        });
+            // return eval(source).apply(self.component, self.component.parameterValues());
+        // });
     },        
 });
 
@@ -2990,7 +2999,16 @@ Component.subclass('FunctionComponent', {
             var result = this.pvtGetFunction().apply(this, parameters);
         } catch(e) {
             dbgOn(true);
-            console.warn("FunctionComponentModel: error " + e + " when executing body" + this.formalModel.getFunctionBody());
+			var msg = "FunctionComponentModel: error " + e + " when executing body" + this.formalModel.getFunctionBody();
+			var world = WorldMorph.current();
+			world.setStatusMessage(msg, Color.red, 15, function(){
+				world.showErrorDialog(e)
+			})
+
+
+            console.log();
+	
+
             return; // don't set any result
         };
         // console.log("Result of function call: " + result);
@@ -3136,8 +3154,14 @@ Component.subclass('TextListComponent', {
     setupListEnhancement: function() {
         this.formalModel.addObserver({onListUpdate: function(newList) {
             if (!this.getSelectionIndex()) return;
-            this.setSelection(this.getList()[this.getSelectionIndex()]);
-        }.bind(this) });        
+			var list = this.getList();
+			if (list) {
+				var listItem = list[this.getSelectionIndex()]
+				if (listItem) {
+					this.setSelection(listItem);
+				}
+			}   
+	    }.bind(this) });        
         this.formalModel.addObserver({onSelectionUpdate: function(sel) {
             var idx;
             this.getList().each(function(ea, i) { if (equals(ea, sel)) idx = i;  });
