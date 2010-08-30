@@ -969,6 +969,7 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 			lively.ide.ViewSourceCommand,
 			lively.ide.ClassHierarchyViewCommand,
 			lively.ide.AddClassToFileFragmentCommand,
+			lively.ide.AddLayerToFileFragmentCommand,
 			lively.ide.AddMethodToFileFragmentCommand]
 	},
 
@@ -2443,6 +2444,13 @@ createAndAddSource: function(/*siblingNode and other args*/) {
 	}
 	this.browser.selectNodeMatching(function(node) { return node && node.target == newTarget });
 },
+selectStringInSourcePane: function(string) {
+	var textMorph =	this.browser.panel.sourcePane.innerMorph();
+	var index  =  textMorph.textString.indexOf(string);
+	textMorph.setSelectionRange(index, index + string.length)
+	textMorph.requestKeyboardFocus(WorldMorph.current().firstHand())
+},
+
 
 
 });
@@ -2454,11 +2462,9 @@ lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddClassToFileFragmentC
 
 	interactiveAddTo: function(siblingNode) {
 		var w = this.world(), b = this.browser, self = this;
-		w.prompt('Enter class name', function(n1) {
-			w.prompt('Enter super class name', function(n2) {
-				self.createAndAddSource(siblingNode, n1, n2);
-			}, 'Object');
-		});
+		var className = 'MyClass'
+		self.createAndAddSource(siblingNode, className, 'Object' );
+		this.selectStringInSourcePane(className);
 	},
 
 	createSource: function(className, superClassName) {
@@ -2466,6 +2472,28 @@ lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddClassToFileFragmentC
 				superClassName, className);
 		},
 
+});
+lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddLayerToFileFragmentCommand', {
+
+	menuName: 'add layer',
+	targetPane: 'Pane2',
+	nodeType: 'isClassNode',
+
+	interactiveAddTo: function(siblingNode) {
+		var w = this.world(), b = this.browser, self = this;
+		var layerName = "MyLayer";
+		self.createAndAddSource(siblingNode, "'" + layerName +"'", "MyClass");
+		this.selectStringInSourcePane(layerName);
+	},
+
+	createSource: function(layerName, className) {
+			return Strings.format('cop.create(%s).refineClass(%s, {\n\tm1: function(proceed, a) {return proceed(a)},\n});', layerName, className);
+		},
+
+});
+Object.subclass('',
+'default category', {
+	m1: function() {},
 });
 lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddMethodToFileFragmentCommand', {
 
@@ -2475,7 +2503,11 @@ lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddMethodToFileFragment
 
 	interactiveAddTo: function(siblingNode) {
 		var w = this.world(), b = this.browser, self = this;
-		w.prompt('Enter method name', function(n) { self.createAndAddSource(siblingNode, n) });
+		var methodName = "newMethod";
+		self.createAndAddSource(siblingNode, methodName);
+		this.selectStringInSourcePane(methodName);
+		LastFragment  = this;
+		LastSubling = siblingNode;
 	},
 
 	createSource: function(methodName) {
