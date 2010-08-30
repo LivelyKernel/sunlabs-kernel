@@ -1642,11 +1642,13 @@ WidgetModel.subclass('ChangeList', {
     initialViewExtent: pt(700,450),
     openTriggerVariable: 'getChangeBanners',
 
-    initialize: function($super, title, ignored, changes, searchString) {
+    initialize: function($super, title, ignored, changes, searchString, optSearchFunc) {
         $super();
         this.title = title;
         this.changeList = changes;
 		this.searchString = searchString;
+		this.searchFunc = optSearchFunc;
+		console.log("openSearchFunc " + optSearchFunc)
     },
     
     getChangeBanners: function() {
@@ -1731,7 +1733,6 @@ WidgetModel.subclass('ChangeList', {
         item.putSourceCode(newString);
         editView.acceptChanges();
 		this.changed('getChangeBanners');
-
         // Now recreate (slow but sure) list from new contents, as things may have changed
         if (this.searchString) return;  // Recreating list is not good for searches
         var oldSelection = this.changeBanner;
@@ -1779,6 +1780,7 @@ WidgetModel.subclass('ChangeList', {
             ['topPane', newListPane, new Rectangle(0, 0, 1, 0.4)],
             ['browseButton', ButtonMorph, new Rectangle(0, 0.4, 0.1, 0.05)],
             ['loadAllButton', ButtonMorph, new Rectangle(0.1, 0.4, 0.2, 0.05)],
+            ['searchAgainButton', ButtonMorph, new Rectangle(0.3, 0.4, 0.2, 0.05)],
             ['bottomPane', newTextPane, new Rectangle(0, 0.45, 1, 0.55)]
         ]);
 		panel.ownerWidget = this;
@@ -1799,6 +1801,8 @@ WidgetModel.subclass('ChangeList', {
 		panel.loadAllButton.setLabel('load default modules');
 		connect(panel.loadAllButton, 'fire', this, 'loadDefaultModules')
 
+		panel.searchAgainButton.setLabel('search again');
+		connect(panel.searchAgainButton, 'fire', this, 'searchAgain')
 
 
         m = panel.bottomPane;
@@ -1817,6 +1821,16 @@ WidgetModel.subclass('ChangeList', {
 browseSelection: function() {
 	this.selectedItem().browseIt();
 },
+searchAgain: function() {
+	if (this.searchFunc) {
+		this.changeList = this.searchFunc();
+		this.changed('getChangeBanners');
+	} else {
+		WorldMorph.current().setStatusMessage("nothing to search again", Color.blue, 10)
+	}
+	
+},
+
 loadDefaultModules: function() {
 
 	var srcCtrl = lively.ide.SourceControl;
@@ -1924,6 +1938,7 @@ ChangeList.subclass('SourceDatabase', {
     },
 
     getSourceInClassForMethod: function(className, methodName) {
+		// searchAgain
         var methodDict = this.methodDictFor(className);
         var descriptor = methodDict[methodName];
         if (!descriptor) return null;
@@ -1939,13 +1954,15 @@ ChangeList.subclass('SourceDatabase', {
     },
 
     browseReferencesTo: function(str) {
-        var fullList = this.searchFor(str);
-        if (fullList.length > 300) {
-            WorldMorph.current().notify(fullList.length.toString() + " references abbreviated to 300.");
-            fullList = fullList.slice(0,299);
-        }
-        var refs = new ChangeList("References to " + str, null, fullList);
-        refs.searchString = str;
+		var searchFunc = function() {
+ 	       var fullList = this.searchFor(str);
+	        if (fullList.length > 300) {
+	            WorldMorph.current().notify(fullList.length.toString() + " references abbreviated to 300.");
+	            fullList = fullList.slice(0,299);
+	        }
+			return fullList
+		}.bind(this);
+        var refs = new ChangeList("References to " + str, null, searchFunc(), str, searchFunc);
         refs.openIn(WorldMorph.current()); 
 
 		// does only work when Morph is in world... 
