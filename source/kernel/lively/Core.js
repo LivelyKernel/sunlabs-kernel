@@ -1379,10 +1379,15 @@ Copier.subclass('Importer', {
 	runDeserializationHooks: function() {
 		Properties.forEachOwn(this.wrapperMap, function each(key, wrapper) {
 			if (wrapper.onDeserialize) {
-				wrapper.onDeserialize();
-			}
+				try {
+					wrapper.onDeserialize();
+				} catch(e) {
+					console.warn('Cannot deserialize ' + wrapper + ': ' + e + '\n' + e.stack)
+				}
+			} 
 			// collect scripts
-			if (wrapper.activeScripts) this.scripts = this.scripts.concat(wrapper.activeScripts);
+			if (wrapper.activeScripts)
+				this.scripts = this.scripts.concat(wrapper.activeScripts);
 		}, this);
 	},
 
