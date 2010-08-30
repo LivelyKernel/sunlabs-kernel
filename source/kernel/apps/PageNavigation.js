@@ -120,6 +120,7 @@ Object.extend(PageNavigation, {
 		if (this._current) return this._current;
 		if (!Config.pageNavigationName || Config.pageNavigationName == 'nothing') {
 			console.warn('Cannot find page navigation instance!');
+			return new PageNavigation(URL.source.getDirectory(), []);
 		}
 
 		var klass = Global[Config.pageNavigationName];
