@@ -212,29 +212,35 @@ classElemsInCategory =
 	-> defs,
 
 	restKlassDef =
-	',' spaces classElems:descriptors										-> { {classElems: descriptors} }
-	| ',' spaces klass:trait ',' spaces classElems:descriptors	-> { {trait: trait, classElems: descriptors} }
-	| ',' klassName:trait																	-> { {trait: trait, classElems: []} }
-	| ',' token('{') spaces token('}')													-> { {classElems: []} }
-	| spaces																						-> { {classElems: []} },
+	',' spaces classElems:descriptors								-> { {classElems: descriptors} }
+	| (',' spaces klass)+:traits ',' spaces classElems:descriptors	-> { {traits: traits, classElems: descriptors} }
+	| (',' spaces klass)+:traits									-> { {traits: traits, classElems: []} }
+	| ',' token('{') spaces token('}')								-> { {classElems: []} }
+	| spaces														-> { {classElems: []} },
 	klass 	            = namespaceId,
 	klassName           = spaces ( '\'' | '"') klass:n ( '\'' | '"') spaces	-> n,
     klassDef =
 	pos:p nsFollowedBy("subclass"):sName '(' klassName:kName restKlassDef:spec ')' defEnd
-	-> { spec.classElems.forEach(function(ea) { ea.className = kName });
-	   this._fragment(
+	-> {
+		var categories = [];
+		spec.classElems.forEach(function(ea) {
+			ea.className = kName;
+			if (ea.category) categories.push(ea.category);
+		});
+		categories = categories.uniq()
+		this._fragment(
 			kName,
 			'klassDef',
 			p,
 			this.pos()-1,
 			spec.classElems,
-			{trait: spec.trait, superclassName: sName})
+			{traits: spec.traits, superclassName: sName, categories: categories})
 	},
     basicKlassExt =
 	"Object.extend" '(' klass:n restKlassDef:spec token(')')
 	-> {
 		spec.classElems.forEach(function(ea) { ea.className = n; ea._isStatic = true });
-		{name: n, trait: spec.trait, subElements: spec.classElems } }
+		{name: n, traits: spec.traits, subElements: spec.classElems } }
 |	(nsFollowedBy("addMethods"):n | nsFollowedBy("addProperties"):n) '(' classElems:clElems spaces ')'
 	-> {
 		clElems.forEach(function(ea) { ea.className = n; ea._isStatic = false });
@@ -255,7 +261,7 @@ classElemsInCategory =
 		{name: n, layerName: layerName, subElements: spec.classElems } },
     klassExtensionDef
 	= pos:p basicKlassExt:spec defEnd
-	-> { this._fragment(spec.name, 'klassExtensionDef', p, this.pos()-1, spec.subElements, {trait: spec.trait}) },
+	-> { this._fragment(spec.name, 'klassExtensionDef', p, this.pos()-1, spec.subElements, {traits: spec.traits}) },
     
     /* 'object' stuff */
     restObjDef = classElems:propsAndMethodDescrs spaces
@@ -288,7 +294,7 @@ copSubElement =
 	| somethingBigRelated:blob -> {name: blob.flatten().join('').replace('\n', ''), subElementSpec: {}}
 	):spec
 	-> { this._fragment(spec.name, 'copSubElement', p, this.pos()-1, spec.subElementSpec.classElems,
-		{trait: spec.subElementSpec.trait, refineSelector: spec.refineSelector}) },
+		{traits: spec.subElementSpec.traits, refineSelector: spec.refineSelector}) },
 copRefinement = 
 	( "refineClass" | "refineObject" ):sel '(' klass:n restKlassDef:spec ')'
 	-> { {name: n, refineSelector: sel, subElementSpec: spec} },
