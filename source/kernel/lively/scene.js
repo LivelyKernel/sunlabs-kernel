@@ -2370,11 +2370,15 @@ lively.scene.Image.addMethods({
 	},
 
 	getWidth: function(optArg) {
-		return lively.data.Length.parse((optArg || this.rawNode).getAttributeNS(null, "width"));
+		var node = optArg || this.rawNode;
+		if (!node) return 0;
+		return lively.data.Length.parse(node.getAttributeNS(null, "width"));
 	},
 
 	getHeight: function(optArg) {
-		return lively.data.Length.parse((optArg || this.rawNode).getAttributeNS(null, "height"));
+		var node = optArg || this.rawNode;
+		if (!node) return 0;
+		return lively.data.Length.parse(node.getAttributeNS(null, "height"));
 	},
 
 	setWidth: function(width) {
