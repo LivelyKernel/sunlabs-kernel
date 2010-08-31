@@ -490,8 +490,8 @@ getPDFURLString: function() {
 
 		// FIXME
 		var generatorURL = URL.source.toString().include('www') ?
-			'http://lively-kernel.org/nodejsLaTeX/createPdf' :
-			'http://www.lively-kernel.org/nodejsLaTeX/createPdf'
+			'http://lively-kernel.org/nodejs/LaTeXServer/createPdf' :
+			'http://www.lively-kernel.org/nodejs/LaTeXServer/createPdf'
 
 		var webR = new WebResource(generatorURL);
 

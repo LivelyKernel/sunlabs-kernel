@@ -352,7 +352,8 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 
 });
 
-BoxMorph.subclass("ImageMorph", {
+BoxMorph.subclass("ImageMorph",
+'initializing', {
 
 	documentation: "Image container",
 	style:{ borderWidth: 0, fill:Color.blue.lighter() },
@@ -369,9 +370,10 @@ BoxMorph.subclass("ImageMorph", {
 		}
 		//this.setExtent(this.getExtent())
 	},
-
-	// FIXME:
-	restoreFromSubnode: function($super, importer, node) /*:Boolean*/ {
+},
+'deserializing', {
+	
+	restoreFromSubnode: function($super, importer, node) /*:Boolean*/ { // FIXME
 		if ($super(importer, node)) return true;
 
 		switch (node.localName) {
@@ -384,7 +386,22 @@ BoxMorph.subclass("ImageMorph", {
 				return false;
 		}
 	},
+},
+'accessing', {
 
+	getURL: function() {
+		return this.image.getURL()
+	},
+
+	setURL: function(url) {
+		this.originalExtent = pt(50,50);
+		this.image.loadImage(url);
+		this.setExtent(this.originalExtent);
+		this.setOriginalImageSizeWhenLoaded(url);
+		this.reshape()
+	},
+},
+'loading', {
 	loadGraphics: function(localURL) {
 		this.setFill(null);
 		var node = this.image.loadUse(localURL);
@@ -413,17 +430,6 @@ BoxMorph.subclass("ImageMorph", {
 		}
 	},
 
-	moveOriginBy: function($super, delta) {
-		$super(delta);
-		if (!this.image) return;
-		this.image.setLengthTrait("x", (this.image.getLengthTrait("x") || 0) - delta.x);
-		this.image.setLengthTrait("y", (this.image.getLengthTrait("y") || 0) - delta.y);
-	},
-
-	setOpacity: function(op) { this.image.setOpacity(op); },
-
-	getOpacity: function(op) { return this.image.getOpacity(op); },
-
 	setOriginalImageSizeWhenLoaded: function(imgSrc) {
 		var newImg = new Image();
 		newImg.src = imgSrc;
@@ -433,7 +439,54 @@ BoxMorph.subclass("ImageMorph", {
 			this.setExtent(extent)
 		}.bind(this)
 	},
-	
+
+},
+'inline image', {
+	convertToBase64: function() {
+	var urlString = this.getURL().toString();
+
+	type = urlString.substring(urlString.lastIndexOf('.') + 1, urlString.length)
+	if (type == 'jpg') type = 'jpeg'
+	if (!['gif', 'jpeg', 'png', 'tiff'].include(type)) type = 'gif'
+
+	if (false && Global.btoa) {
+		// FIXME actually this should work but the encoding result is wrong...
+		// maybe the binary image content is not loaded correctly because of encoding?
+		urlString = URL.makeProxied(urlString)
+		var content = new WebResource(urlString).get(null, 'image/' + type).content
+		
+		var fixedContent = content.replace(/./g, function(m) {
+			return String.fromCharCode(m.charCodeAt(0) & 0xff) });
+		var encoded = btoa(fixedContent)
+		this.setURL('data:image/' + type + ';base64,' + encoded);
+	} else {
+		require('server.nodejs.WebInterface').toRun(function() { // FIXME
+			var encoded = this.encodeOnServer(urlString)
+			if (!encoded || encoded == '')
+				WorldMorph.current().alert('Cannot convert image with url ' + urlString + ' to base64');
+			else
+				this.setURL('data:image/' + type + ';base64,' + encoded);
+		}.bind(this));
+	}
+},
+encodeOnServer: function(urlString) {
+	var cmd = 'curl --silent ' + urlString + ' | openssl base64'
+	var result = new CommandLineServerInterface().beSync().runCommand(cmd).result;
+	return result && result.stdout ? result.stdout : '';
+},
+
+},
+'manipulation', {
+	moveOriginBy: function($super, delta) {
+		$super(delta);
+		if (!this.image) return;
+		this.image.setLengthTrait("x", (this.image.getLengthTrait("x") || 0) - delta.x);
+		this.image.setLengthTrait("y", (this.image.getLengthTrait("y") || 0) - delta.y);
+	},
+
+	setOpacity: function(op) { this.image.setOpacity(op); },
+
+	getOpacity: function(op) { return this.image.getOpacity(op); },	
 	
 	setExtent: function($super, extent) {
 		if (this.image && !this.disableScaling) {
@@ -457,25 +510,6 @@ BoxMorph.subclass("ImageMorph", {
 			this.setPosition(oldPosition)
 		}
  	},
-
-	morphMenu: function($super, evt) {
-		var menu = $super(evt);
-		menu.addLine();
-		menu.addItem(["Edit image src", this.editImageSrc]);
-		return menu;  
-	},
-
-	getURL: function() {
-		return this.image.getURL()
-	},
-
-	setURL: function(url) {
-		this.originalExtent = pt(50,50);
-		this.image.loadImage(url);
-		this.setExtent(this.originalExtent);
-		this.setOriginalImageSizeWhenLoaded(url);
-		this.reshape()
-	},
 	
 	editImageSrc: function() {
 		this.world().prompt(
@@ -483,6 +517,17 @@ BoxMorph.subclass("ImageMorph", {
 			function(input) { this.setURL(input) }.bind(this),
 			this.getURL());
 	},
+},
+'menu', {
+
+	morphMenu: function($super, evt) {
+		var menu = $super(evt);
+		menu.addLine();
+		menu.addItem(["Inline image data", this.convertToBase64]);
+		menu.addItem(["Edit image src", this.editImageSrc]);
+		return menu;  
+	},
+
 });
 
 ButtonMorph.subclass("ImageButtonMorph", {
@@ -1672,7 +1717,63 @@ TextListMorph.subclass("ListMorph", {
     updateList: function($super, newList) {
         $super(newList);
         this.suppressSelectionOnUpdate || this.selectLineAt(this.selectedLineNo);
-    }
+    },
+
+
+	findSubmorphAtPosition: function(pos) {
+		for(var i=0; i< this.submorphs.length; i++) {
+			var m = this.submorphs[i];	
+			if (m.containsPoint(pos)) return m;
+		}
+	},
+	
+	morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
+		// If checkForDnD is false, return the morph to receive this mouse event (or null)
+		// If checkForDnD is true, return the morph to grab from a mouse down event (or null)
+		// If droppingMorph is not null, then check that this is a willing recipient (else null)
+
+		if (this.isEpimorph)
+			return null;
+
+		if (!this.fullContainsWorldPoint(evt.mousePoint)) return null; // not contained anywhere
+		// First check all the submorphs, front first
+
+		// Optimization for Lists
+		var m = this.findSubmorphAtPosition(this.localize(evt.mousePoint));
+		if (m) {
+
+			var hit = m.morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
+			if (hit != null) { 
+				return hit;  // hit a submorph
+			}
+		}
+		
+		// for (var i = this.submorphs.length - 1; i >= 0; i--) {
+			// var hit = this.submorphs[i].morphToGrabOrReceive(evt, droppingMorph, checkForDnD); 
+			// if (hit != null) { 
+				// return hit;  // hit a submorph
+			// }
+		// };		
+// 
+
+		// Check if it's really in this morph (not just fullBounds)
+		if (!this.containsWorldPoint(evt.mousePoint)) return null;
+
+		// If no DnD check, then we have a hit (unless no handler in which case a miss)
+		if (!checkForDnD) return this.mouseHandler ? this : null;
+
+		// On drops, check that this is a willing recipient
+		if (droppingMorph != null) {
+			return this.acceptsDropping(droppingMorph) ? this : null;
+		} else {
+			// On grabs, can't pick up the world or morphs that handle mousedown
+			// DI:  I think the world is adequately checked for now elsewhere
+			// else return (!evt.isCommandKey() && this === this.world()) ? null : this; 
+			return this;
+		}
+
+	},
+
 });
 
 Object.extend(Array.prototype, {

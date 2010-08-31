@@ -1496,18 +1496,18 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CategorizedClassFragmentNode', 
 		var classFragment = this.target, browser = this.browser, self = this;
 
 		// gather methods and create category nodes
-		var protoFragments = classFragment.subElements().select(function(ea) { return ea.type === 'propertyDef' });
-		if (protoFragments.length == 0) return [];
-		var categoryNodes = protoFragments.inject([], function(nodes, ff) {
-			if (nodes.any(function(node) { return node.mergeFileFragment(ff) })) return nodes;
-			nodes.push(new lively.ide.MethodCategoryFragmentNode(ff, browser, self))
-			return nodes;
-		});
 
-		// create the all category
-		categoryNodes.unshift(new lively.ide.AllMethodCategoryFragmentNode(classFragment, browser, self));
-		
-		return categoryNodes;
+		if (classFragment.categories) {
+			var categoryNodes = classFragment.categories.collect(function(ff) {
+				return new lively.ide.MethodCategoryFragmentNode(ff, browser, self);
+			});
+			categoryNodes.unshift(new lively.ide.AllMethodCategoryFragmentNode(classFragment, browser, self));
+			return categoryNodes;
+		}
+		return this.target.subElements().collect(function(ea) {
+			return new lively.ide.ClassElemFragmentNode(ea, browser, this);
+		}, this);
+
 	},
 
 	menuSpec: function($super) {
@@ -1569,7 +1569,7 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CategorizedClassFragmentNode', 
 
 lively.ide.MultiFileFragmentsNode.subclass('lively.ide.MethodCategoryFragmentNode', {
 
-	getName: function() { return this.target.category.getName() },
+	getName: function() { return this.target.getName() },
 
 	sourceString: function() {
 		return 'not yet supported'
@@ -1581,13 +1581,13 @@ lively.ide.MultiFileFragmentsNode.subclass('lively.ide.MethodCategoryFragmentNod
 
 	childNodes: function() {
 		var browser = this.browser;
-		return this.targets.collect(function(ea) { return new lively.ide.ClassElemFragmentNode(ea, browser, this) }, this);
+		return this.target.subElements().collect(function(ea) { return new lively.ide.ClassElemFragmentNode(ea, browser, this) }, this);
 	},
 
 	handleDrop: function(nodeDroppedOntoMe) {
 		if (!(nodeDroppedOntoMe instanceof lively.ide.ClassElemFragmentNode)) return false;
 
-		if (this.targets.length == 0) { // FIXME also empty categories should work!!!
+		if (this.target.subElements().length == 0) { // FIXME also empty categories should work!!!
 			this.statusMessage('Adding to empty categories not yet supported, sorry', Color.red);
 			return
 		}
@@ -1595,7 +1595,7 @@ lively.ide.MultiFileFragmentsNode.subclass('lively.ide.MethodCategoryFragmentNod
 		this.statusMessage('Adding ' + nodeDroppedOntoMe.asString() + ' to ' + this.asString() + ' and removing original', Color.green);
 		var source = nodeDroppedOntoMe.target.getSourceCode();
 		nodeDroppedOntoMe.target.remove();
-		this.targets.last().addSibling(source);
+		this.target.subElements().last().addSibling(source);
 
 		return true;
 	},
@@ -3481,23 +3481,34 @@ Object.subclass('lively.ide.FileFragment',
 	browseIt: function() {
 		var browser = new ide.SystemBrowser();
 		browser.openIn(WorldMorph.current());
-		// FIXME ... subclassing
+
+		// set the correct path
 		var m = this.fileName.match(/(.*\/)(.+)/)
 		var pathName = m[1];	
-		var fileName = m[2];
 		browser.setTargetURL(URL.codeBase.withFilename(pathName))
-		if (this.type === 'klassDef') {
-			browser.inPaneSelectNodeNamed('Pane1', fileName);
-			browser.inPaneSelectNodeNamed('Pane2', this.name);
-		} else if (this.type === 'propertyDef') {
-			browser.inPaneSelectNodeNamed('Pane1', fileName);
-			browser.inPaneSelectNodeNamed('Pane2', this.className);
-			browser.inPaneSelectNodeNamed('Pane3', this.category);
-			browser.inPaneSelectNodeNamed('Pane4', this.name);
 
-		}
+		this.basicBrowseIt(browser);
 		return browser;
 	},
+	basicBrowseIt: function(browser) {
+		// FIXME ... subclassing
+
+		var logicalPath = [];
+		var ff = this;
+		while (ff) {
+			logicalPath.unshift(ff);
+			if (ff.category)
+				logicalPath.unshift(ff.findOwnerFragment() /*for all method category node*/);
+			ff = ff.findOwnerFragment()
+		}
+
+		logicalPath.forEach(function(ea) {
+			debugger
+			browser.selectNodeMatching(function(node) { return node.target == ea })
+		});
+
+},
+
 
 	addSibling: function(newSrc) {
 		if (!this.getSourceCode().endsWith('\n'))

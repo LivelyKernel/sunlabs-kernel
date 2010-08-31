@@ -904,4 +904,35 @@ TestCase.subclass('Tests.MorphTest.CopyLabelTest', {
 })
 
 
+TestCase.subclass('BinarySearchListMorphTest', {
+
+	createList: function() {
+		var listName = "binarySearchListMorphTest_TestMorph"
+		var m = $morph(listName); if (m) m.remove(); 
+		var l = new ListMorph(new Rectangle(0, 0, 100, 100), [])
+		l.name = listName
+
+		l.openInWorld()
+		list = range(0, 20).collect(function(i) { return i.toString() +i+i+i+i })
+		l.updateList(list)
+		l.setPosition(pt(100,100))
+		return l 
+	},
+
+	assertFindIdentitcalMortAt: function(sut, pos) {
+		var item = sut.findSubmorphAtPosition(pos)
+		var realItem = (Morph.prototype.morphToGrabOrReceive.bind(sut))(newFakeMouseEvent(sut.worldPoint(pos)))
+		this.assertIdentity(item, realItem, "morph not found at " + pos)
+	},
+
+	testFindSubmorphAtPositionFirst: function() {
+		var sut = this.createList()
+		this.assertFindIdentitcalMortAt(sut, pt(5,5))
+		this.assertFindIdentitcalMortAt(sut, pt(5,10))
+		this.assertFindIdentitcalMortAt(sut, pt(5,20))
+		this.assertFindIdentitcalMortAt(sut, pt(5,40))
+		this.assertFindIdentitcalMortAt(sut, pt(5,80))
+	},
+		
+})
 }) // end of module

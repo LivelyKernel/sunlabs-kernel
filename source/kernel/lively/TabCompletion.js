@@ -84,10 +84,10 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			var selector = function(ea){return ea.startsWith(lastWord)};
 			var choices = this.checkForPropertyChoicesAt(this.selectionRange[0]);
 			// console.log("choices " + choices)
-			if (choices) {
-				return choices.uniq().select(selector);
-			}
 			var allChoices = 	TabCompletion.allSymbols();
+			if (choices) {
+				allChoices = allChoices.concat(choices.uniq().select(selector)).sort();
+			}
 			var localCoices = TabCompletion.extractLocalSymbols(this.textString);
 			localCoices = localCoices.reject(function(ea){return ea == "lastWord"}); // don't match yourself
 			var selectedAllChoices = allChoices.select(selector);

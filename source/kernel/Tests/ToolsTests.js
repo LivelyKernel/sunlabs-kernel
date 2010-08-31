@@ -111,6 +111,8 @@ testBrowserFourthPane: function() {
 },
 
 
+
+
 });
 Tests.ToolsTests.SystemBrowserTests.subclass('Tests.ToolsTests.BrowserNodeTest',
 'running', {
@@ -251,6 +253,17 @@ Foo.addMethods('catC',{\n\
 		// var newNode = browser.selectedNode();
 		// this.assertEquals(newMethodFragment, newNode.target, 'browser hasn\'t selected the new method');
 	},
+	testBrowseIt: function() {
+		this.buildTestSource();
+		var browser = this.browser;
+		browser.buildView()
+
+		this.m1.basicBrowseIt(browser)	
+
+		this.assertEqual(browser.nodesInPane('Pane4').length, 3);	
+		this.assertIdentity(this.m1, browser.nodesInPane('Pane4')[0].target);
+	},
+
 
 
 
