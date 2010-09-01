@@ -91,6 +91,29 @@ UndoableCommand.subclass("ReplaceTextCommand", {
 	},	
 });
 
+UndoableCommand.subclass("RemoveMorphCommand", {
+	initialize: function(superMorph, subMorph, optIndex) {
+		this.superMorph = superMorph;
+		this.subMorph = subMorph;
+		this.index = optIndex; // position of subMorph in superMorph.submorphs
+	},
+
+	undo: function() {
+		// console.log("undo from " + this.index + " to " + this.newText.size())
+		cop.withoutLayers([UndoLayer], function() {
+			// TODO adding morph at a specific position in submorphs is not supported right now
+			this.superMorph.addMorph(this.subMorph); 
+		}.bind(this))
+	},	
+
+	redo: function() {
+		cop.withoutLayers([UndoLayer], function() {
+			this.subMorph.remove();
+		}.bind(this))
+	},	
+});
+
+
 cop.createLayer("UndoLayer")
 cop.layerClass(UndoLayer, TextMorph, {
 
