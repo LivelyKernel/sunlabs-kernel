@@ -29,7 +29,6 @@ module('cop.Layers').requires().toRun(function(thisModule) {
 var log_layer_code = false;	
 var log = function log(string) { if(log_layer_code) console.log(string); }; 
 
-
 Global.ContextJS = {};
 
 ContextJS.withLogLayerCode = function(func) {
@@ -568,9 +567,75 @@ markNamespaceEntryAsDepricated(cop, "layerClassAndSubclasses", Global,  "layerCl
 
 
 /* Example implementation of a layerable object */
+Object.extend(Global, {LayerableObjectTrait: {}});
+Object.extend(LayerableObjectTrait, {
+	activeLayers: function() {
+		var result = {withLayers: [], withoutLayers: []};	
+		result = this.dynamicLayers(result);
+		result = this.structuralLayers(result)
+		result = this.globalLayers(result)
+		return result.withLayers
+	},	
 
-LayerableObjectTrait = {
-	
+	collectWithLayersIn: function(layers, result) {
+		for(var i=0; i < layers.length; i++) {
+			var ea = layers[i]
+			if ((result.withLayers.indexOf(ea) === -1) && (result.withoutLayers.indexOf(ea) === -1)) {
+				result.withLayers.unshift(ea)
+			}
+		};
+	},
+
+	collectWithoutLayersIn: function(layers, result) {
+		for(var i=0; i < layers.length; i++) {
+			var ea = layers[i]
+			if ((result.withoutLayers.indexOf(ea) === -1)) {
+				result.withoutLayers.push(ea)
+			}
+		};
+	},
+
+	dynamicLayers: function(result) {
+		// optimized version, that does not use closures and recursion
+		var stack = cop.LayerStack;
+		// top down, ignore bottom element
+		for (var j = stack.length - 1; j > 0; j--) { 
+			var current = stack[j];
+			if (current.withLayers) {
+				this.collectWithLayersIn(current.withLayers, result);
+			};
+			if (current.withoutLayers) {
+				this.collectWithoutLayersIn(current.withoutLayers, result);
+			}
+		}
+		return result
+	},
+
+	structuralLayers: function(result) {
+		var allLayers =  result.withLayers;
+		var allWithoutLayers = result.withoutLayers;
+		var obj = this;
+
+		// go ownerchain backward and gather all layer activations and deactivations
+		while(obj) {		
+			// don't use accessor methods because of speed... (not measured yet)
+			if (obj.withLayers) {
+				this.collectWithLayersIn(obj.withLayers, result);
+			};
+			if (obj.withoutLayers) {
+				this.collectWithoutLayersIn(obj.withoutLayers, result);
+			};
+			// recurse, stop if owner is undefined
+			obj = obj.owner
+		}
+		return result;
+	},
+
+	globalLayers: function(result) {
+		this.collectWithLayersIn(cop.GlobalLayers, result);
+		return result
+	},	
+
 	setWithLayers: function(layers) {
 		this.withLayers = layers;
 	},
@@ -591,8 +656,11 @@ LayerableObjectTrait = {
 			return this.withoutLayers;
 		};
 		return [];
-	},
+	},	
+});
 
+
+LookupLayersDepricated = {
 	// FLAG: REWRITE for performance...
 	getActivatedLayers: function LayerableObjectTrait$getActivatedLayers(optCallerList) {
 		var layers = this.getWithLayers();
@@ -616,8 +684,10 @@ LayerableObjectTrait = {
 	},
 	
 	lookupLayersIn: [] // backward  
-	
-};
+
+
+
+}
 
 Object.subclass("LayerableObject", LayerableObjectTrait);
 
@@ -627,4 +697,3 @@ cop.GlobalLayers = [];
 resetLayerStack();
 
 });
-console.log("loaded Layers.js");
