@@ -1,9 +1,6 @@
 module('lively.Connector').requires('cop.Layers', 'lively.Helper', 'lively.LayerableMorphs').toRun(function() {
 
-cop.createLayer("ConnectorMorphLayer");
-cop.createLayer("NodeMorphLayer");
-
-cop.layerClass(NodeMorphLayer, Morph, {
+cop.create('NodeMorphLayer').refineClass(Morph, {
 	
 	isPropertyOnIgnoreList: function(proceed, prop) {
 		if (prop == "delayUpdateConnectors")
@@ -57,7 +54,8 @@ cop.layerClass(NodeMorphLayer, Morph, {
 	}
 });
 
-cop.layerClass(ConnectorMorphLayer, HandleMorph, {
+
+cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 
 	onMouseUp: function(proceed, evt) {
 		var morph = this.findMorphUnderMe();
@@ -132,9 +130,7 @@ cop.layerClass(ConnectorMorphLayer, HandleMorph, {
 			return this.getPosition();
 		return this.owner.getGlobalTransform().transformPoint(this.getPosition());
 	}
-});
-
-cop.layerClass(ConnectorMorphLayer, Morph, {
+}).refineClass(Morph, {
 	
 	setupConnector: function() {
 		var lineColor = Color.black;
@@ -301,14 +297,13 @@ cop.layerClass(ConnectorMorphLayer, Morph, {
 	},
 });
 
-cop.createLayer("FindMorphLayer");
 
 /**
  *  Little Helper Layer to allow TextMorphs to be used as valid connector points
  *  even if they don't want to be dragged or dropped
  *  TODO: seperated the find Morph from event and drag and drop behavior
  */
-cop.layerClass(FindMorphLayer, TextMorph, {
+cop.create("FindMorphLayer").refineClass(TextMorph, {
 	acceptsDropping: function(){
 		return true
 	}
