@@ -80,15 +80,19 @@ Object.subclass("PageNavigation", {
 	ensureNavigationMorph: function() {
 		"PageNavigation.current().ensureNaviationMorph()"
 
-		var oldMorph = this.world().submorphs.detect(function(ea) {
-			return ea instanceof PageNavigationMorph;
-		});
+		var oldMorph = this.findPageNavigationMorph();
 		if (oldMorph) oldMorph.remove();
 		var morph = new PageNavigationMorph();
 		morph.align(morph.bounds().bottomRight(), this.world().bounds().bottomRight());
 		morph.name = 'PageNavigation';
 		this.world().addMorph(morph);
 	},
+findPageNavigationMorph: function() {
+	return this.world().submorphs.detect(function(ea) {
+		return ea instanceof PageNavigationMorph;
+	});
+},
+
 	
 	world: function() {
 		return WorldMorph.current()
