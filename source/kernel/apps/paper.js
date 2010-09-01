@@ -1,6 +1,8 @@
 module('apps.paper').requires('cop.Layers', 'lively.LayerableMorphs').toRun(function() {
 
-BoxMorph.subclass('PaperMorph', {
+
+BoxMorph.subclass('PaperMorph', 
+'intialize', {
 
 	isPaperMorph: true,
 	style: {fill: Color.white, borderWidth: 3, borderColor: Color.gray, suppressGrabbing: true},
@@ -14,14 +16,14 @@ BoxMorph.subclass('PaperMorph', {
 		this.halos = [];
 		this.addHalos();
 	},
-
+}, 'default' ,{
 	contentMorphs: function() {
 		var others = this.halos;
 		others = others.concat(this.submorphs.select(function(m) { return m.isEpimorph }));
 		var morphs = Array.prototype.without.apply(this.submorphs, others);
 		return morphs.sort(function(a, b) { return a.bounds().top() - b.bounds().top() });
 	},
-
+},'helper',{
 	initialInsertPos: function() { return pt(this.margin, 30) },
 
 	bottomInsertPos: function() {
@@ -54,7 +56,7 @@ BoxMorph.subclass('PaperMorph', {
 		this.halos.push(halo);
 		return halo;
 	},
-
+},'text conversion',{
 	addTextMorph: function(string) {
 		var m = new TextMorph(pt(this.getExtent().x - 2*this.margin, 20).extentAsRectangle(), string || '...');
 		m.applyStyle(this.textStyle);
@@ -68,50 +70,67 @@ BoxMorph.subclass('PaperMorph', {
 	openAsText: function() {
 		this.world().addTextWindow(this.asText());
 	},
-asText: function() {
-	return this.contentMorphs().inject('', function(text, m) {
-		if (m.textString) return text + m.textString + '\n'
-		return text
-	});
-},
 
-setFileLocation: function() {
-	this.world().prompt('Where should the contents of this paper morph be stored?', function(input) {
-		this.fileLocation = input;
-	}.bind(this), this.fileLocation || URL.source.withFilename('text.txt').toString())
-},
-save: function() {
-	var w = this.world()
-	if (!this.fileLocation) {
-		w.alert('please set file location of paper morph first');
-		return
-	}
-	try {
-		var url = new URL(this.fileLocation);
-	} catch(e) {
-		w.alert('file location of paper morph not valid');
-		return
-	}
-	var writer = new WebResource(url);
-	lively.bindings.connect(writer, 'status', w, 'setStatusMessage', {
-		updater: function($upd, status) {
-			if (status.isSuccess())
-				$upd('successfully saved', Color.green, 3)
-			else
-				$upd('couldnt save, status code: ' + status.code(), Color.red, 5)
-		}});
-	writer.beAsync().put(this.asText());
-},
-
-});
-
-
-PaperMorph.addMethods({ // Layout logiv
-
+	asText: function() {
+		return this.contentMorphs().inject('', function(text, m) {
+			if (m.textString) return text + m.textString + '\n'
+			return text
+		});
+	},
+},'persistance',{
 	onDeserialize: function() {
 		this.alignHalosHorizontally() // why???
 	},
 
+	setFileLocation: function() {
+		this.world().prompt('Where should the contents of this paper morph be stored?', function(input) {
+			this.fileLocation = input;
+		}.bind(this), this.fileLocation || URL.source.withFilename('text.txt').toString())
+	},
+	save: function() {
+		var w = this.world()
+		if (!this.fileLocation) {
+			w.alert('please set file location of paper morph first');
+			return
+		}
+		try {
+			var url = new URL(this.fileLocation);
+		} catch(e) {
+			w.alert('file location of paper morph not valid');
+			return
+		}
+		var writer = new WebResource(url);
+		lively.bindings.connect(writer, 'status', w, 'setStatusMessage', {
+			updater: function($upd, status) {
+				if (status.isSuccess())
+					$upd('successfully saved', Color.green, 3)
+				else
+					$upd('couldnt save, status code: ' + status.code(), Color.red, 5)
+			}});
+		writer.beAsync().put(this.asText());
+	},
+},'undo',{
+	getUndoHistory: function() {
+		if (!this.undoHistory)
+			this.undoHistory = new UndoHistory();
+		return this.undoHistory
+	},
+},'word counting',{
+	countWords: function() {
+		var words = 0;
+		this.withAllSubmorphsDo(function() {
+			if (this.textString)
+				words += this.textString.split(/\s+/).length
+		})
+		return words
+	},
+
+	countWordsInTextMorph: function(morph) {
+		var words = this.countWords();
+		morph.setTextString(	 new Date() + ': \t' +  words + '\n' + morph.textString)
+	},
+
+},'layout',{
 	reshape: function($super, partName, newPoint, lastCall) {
 		this.layoutChangedCalled = true// FIXME
 		$super(partName, newPoint, lastCall);
@@ -175,22 +194,89 @@ cop.create('PaperMorphLayer')
 		return this.ownerChain().detect(function(ea) { return ea.isPaperMorph });
 	},
 
-	onKeyDown: function($proceed, evt) {
-		if (evt.getKeyCode() == Event.KEY_RETURN && evt.isCommandKey()) {
-			var textMorph =  this.getPaperMorph().addParagraph();
-			textMorph.requestKeyboardFocus(evt.hand);
-			evt.stop()
-			return true;
+	getUndoHistory: function() {
+		// override method in UndoLayer
+		// Since it is globally activated this structurally activated layer should trumph it
+		// This is actually the first time, that the order of the layer composition is important.
+		// This may be because until now I only used layers to refine behavior defined in the base layer 
+		// but not in other layers.
+		return this.getPaperMorph().getUndoHistory()
+	},
+
+
+	splitInOwer: function(proceed, evt) {
+		if(!this.owner)
+			return;
+		var pos = this.getCursorPos();
+		
+		var morph2 = this.duplicate();
+		morph2.setSelectionRange(0, pos);
+		morph2.replaceSelectionWith("")
+		// hackhackhack
+		if (morph2.textString.length == 0)
+			morph2.setTextString(" ");
+
+		this.owner.addMorph(morph2);
+		morph2.moveBy(pt(0,5)); // move it a bit down, because the paper morph sorts the morphs according to their position
+		morph2.setSelectionRange(0, 0);
+
+		this.setSelectionRange(pos, this.textString.size());
+		this.replaceSelectionWith("")
+
+		// hackhackhack
+		if (this.textString.length == 0)
+			this.setTextString(" ");
+
+		morph2.requestKeyboardFocus(evt.hand)		
+		
+		// at a position....
+	},
+
+	jointInOwner: function(proceed, evt) {
+			var morphs = this.getPaperMorph().contentMorphs()
+			var pos = morphs.indexOf(this)
+			if (pos > 0) {
+				var prev = morphs[pos - 1]
+				oldPos = prev.textString.length;
+				prev.setTextString(prev.textString + this.textString);
+				this.remove();
+				prev.setSelectionRange(oldPos, oldPos);
+				prev.requestKeyboardFocus(evt.hand)		
+			}
+	},
+
+	// override the cmd + enter behavior
+	onKeyDown: function(proceed, evt) {
+		// console.log("on key press" + evt)
+		if ((evt.getKeyCode() == 8) && (this.selectionRange[0] == 0)) {
+				this.jointInOwner(evt)
 		};
-		return $proceed(evt);
-	}
+
+		if (evt.isCtrlDown() && (evt.getKeyCode() == 13)) {
+				this.splitInOwer(evt);
+				// console.log("ctrl on key down" + evt)
+			return
+		}
+		return proceed(evt);
+	},
+
+	doSave: function() {
+		this.getPaperMorph().save()
+
+		var m = $morph('WordCounter')
+		if(m) 
+			this.getPaperMorph().countWordsInTextMorph(m);
+
+		this.world().saveWorld()
+	},
+
+
+
 });
 
 PaperMorph.prototype.setWithLayers([PaperMorphLayer])
 
-createLayer('TeXLayer');
 // PaperMorph.prototype.setWithLayers([PaperMorphLayer, TeXLayer])
-enableLayer(TeXLayer)
 
 Object.subclass('LaTeXTextMorphWrapper', {
 // generation logic
@@ -281,16 +367,18 @@ Object.subclass('LaTeXTextMorphWrapper', {
 	},
 
 	instVarNameFor: function(typeName) { return 'is' + typeName },
-converterNameFor: function(typeName) { return '$' + typeName },
+
+	converterNameFor: function(typeName) { return '$' + typeName },
 
 	setterMethodNameFor: function(typeName) { return 'be' + typeName },
-defaultStyle: function() {
-	return LaTeXConverter.prototype.defaultStyle
-},
-styleFor: function(typeName) {
-		return LaTeXConverter.prototype[this.converterNameFor(typeName)].style
+
+	defaultStyle: function() {
+		return LaTeXConverter.prototype.defaultStyle
 	},
 
+	styleFor: function(typeName) {
+		return LaTeXConverter.prototype[this.converterNameFor(typeName)].style
+	},
 	
 	setterMethodFor: function(typeName) {
 		var instVarName = this.instVarNameFor(typeName);
@@ -303,11 +391,11 @@ styleFor: function(typeName) {
 			return this;
 		};
 	},
+
 	addMethodsToLayerClass: function(layer, klass, methods) {
 		layerClass(layer, klass, methods);
 		// klass.addMethods(methods)
 	},
-
 });
 
 Object.extend(LaTeXTextMorphWrapper, {
@@ -322,9 +410,10 @@ Object.extend(LaTeXTextMorphWrapper, {
 	},
 });
 
-
 Object.subclass('LaTeXConverter');
-layerObject(TeXLayer, LaTeXConverter, {
+cop.create('TeXLayer')
+.beGlobal()
+.refineObject(LaTeXConverter, {
 	addMethods: function(proceed, source) {
 		// this ensures that everytime the converter is changed the TextMorph gets updated
 		// with new generated methods
@@ -332,9 +421,24 @@ layerObject(TeXLayer, LaTeXConverter, {
 		LaTeXTextMorphWrapper.wrapTextMorph();
 		return klass
 	},
-});
-LaTeXConverter.addMethods({
+})
+.refineClass(PaperMorph, {
 
+	createLaTeXBody: function() {
+		var converter = new LaTeXConverter();
+		var text = this.contentMorphs().inject('', function(text, m) {
+			return text + converter.convertMorph(m)
+		});
+		return text
+	},
+
+	asText: function(proceed) {
+		return this.createLaTeXBody();
+	},
+
+});
+
+LaTeXConverter.addMethods({
 	$Paragraph: {
 		converter: function(textMorph) { return Strings.format('%s\n\n', textMorph.textString) },
 		style: {fill: null, borderWidth: 0.25, fontSize: 16, suppressHandles: true, suppressGrabbing: true},
@@ -393,21 +497,6 @@ LaTeXConverter.addMethods({
 	},
 });
 
-layerClass(TeXLayer, PaperMorph, {
-
-	createLaTeXBody: function() {
-		var converter = new LaTeXConverter();
-		var text = this.contentMorphs().inject('', function(text, m) {
-			return text + converter.convertMorph(m)
-		});
-		return text
-	},
-
-	asText: function(proceed) {
-		return this.createLaTeXBody();
-	},
-
-});
 
 Widget.subclass('PDFGeneratorClient', {
 
@@ -466,16 +555,17 @@ Widget.subclass('PDFGeneratorClient', {
 
 	getSourceDir: function() { return this.panel.latexSourcesInput.textString },
 	getTexFilePath: function() { return this.panel.texFileInput.textString },
-getPDFURLString: function() {
-	var urlString = this.panel.pdfURLInput.textString;
-	try {
-		new URL(urlString);
-	} catch(e) {
-		// it's a relative url...
-		urlString = URL.source.withFilename(urlString).toString()
-	}
-	return urlString;
-},
+
+	getPDFURLString: function() {
+		var urlString = this.panel.pdfURLInput.textString;
+		try {
+			new URL(urlString);
+		} catch(e) {
+			// it's a relative url...
+			urlString = URL.source.withFilename(urlString).toString()
+		}
+		return urlString;
+	},
 
 	shouldOpenPDF: function() { return this.panel.openPdfCheckbox.state },
 
@@ -517,14 +607,29 @@ getPDFURLString: function() {
 				if (client.shouldOpenPDF()) window.open(content);
 			}});
 	},
-failureMsg: function(msg) {
-	this.panel.world().alert(msg)
-},
+	failureMsg: function(msg) {
+		this.panel.world().alert(msg)
+	},
 
-successMsg: function(msg) {
-	this.panel.world().setStatusMessage(msg, Color.green, 3);
-},
+	successMsg: function(msg) {
+		this.panel.world().setStatusMessage(msg, Color.green, 3);
+	},
 
+});
+
+cop.create('UndoLayer').refineClass(PaperMorph, {
+	removeMorph: function(proceed, morph) {
+		if (!morph.isEpimorph) {
+			var cmd = new RemoveMorphCommand(this, morph, this.submorphs.indexOf(morph));
+			this.getUndoHistory().addCommand(cmd);
+		};
+
+		cop.withoutLayers([UndoLayer], function() {		
+			var result = proceed(morph)
+		});
+
+		return proceed(morph)
+	}
 });
 
 }); // end of module
