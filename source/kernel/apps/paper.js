@@ -232,7 +232,7 @@ cop.create('PaperMorphLayer')
 		// at a position....
 	},
 
-	jointInOwner: function(proceed, evt) {
+	joinInOwner: function(proceed, evt) {
 			var morphs = this.getPaperMorph().contentMorphs()
 			var pos = morphs.indexOf(this)
 			if (pos > 0) {
@@ -248,8 +248,8 @@ cop.create('PaperMorphLayer')
 	// override the cmd + enter behavior
 	onKeyDown: function(proceed, evt) {
 		// console.log("on key press" + evt)
-		if ((evt.getKeyCode() == 8) && (this.selectionRange[0] == 0)) {
-				this.jointInOwner(evt)
+		if ((evt.getKeyCode() == 8) && (this.selectionRange[0] == 0) && (this.selectionRange[1] == -1)) {
+				this.joinInOwner(evt)
 		};
 
 		if (evt.isCtrlDown() && (evt.getKeyCode() == 13)) {
