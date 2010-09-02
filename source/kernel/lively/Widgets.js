@@ -2865,6 +2865,7 @@ BoxMorph.subclass("ScrollPane", {
     
     setScrollPosition: function(scrollPos) { 
 		// this.adjustForNewBounds();
+		scrollPos = Math.max(Math.min(1,scrollPos), 0);
         this.innerMorph().setPosition(pt(this.innerMorph().position().x, -this.slideRoom()*scrollPos )); 
 		if (this.scrollBar)
         	this.getScrollBar().adjustForNewBounds();
