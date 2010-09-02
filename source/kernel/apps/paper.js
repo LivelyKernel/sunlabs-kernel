@@ -1,7 +1,7 @@
-module('apps.paper').requires('cop.Layers', 'lively.LayerableMorphs').toRun(function() {
+module('apps.paper').requires('cop.Layers', 'lively.SyntaxHighlighting', 'lively.LayerableMorphs').toRun(function() {
 
 
-BoxMorph.subclass('PaperMorph', 
+BoxMorph.subclass('ParagraphContainerMorph', 
 'intialize', {
 
 	isPaperMorph: true,
@@ -9,20 +9,16 @@ BoxMorph.subclass('PaperMorph',
 	margin: 5,
 	textMargin: 5,
 	textStyle: {fill: null, borderWidth: 0.25, fontSize: 16, suppressHandles: true, suppressGrabbing: true},
-	haloStyle: {fill: Color.white},
 
-	initialize: function($super, bounds) {
-		$super(bounds || new Rectangle(0,0, 400,500));
-		this.halos = [];
-		this.addHalos();
-	},
 }, 'default' ,{
+
 	contentMorphs: function() {
 		var others = this.halos;
 		others = others.concat(this.submorphs.select(function(m) { return m.isEpimorph }));
 		var morphs = Array.prototype.without.apply(this.submorphs, others);
 		return morphs.sort(function(a, b) { return a.bounds().top() - b.bounds().top() });
 	},
+
 },'helper',{
 	initialInsertPos: function() { return pt(this.margin, 30) },
 
@@ -33,29 +29,6 @@ BoxMorph.subclass('PaperMorph',
 		return m.getPosition().addPt(m.getExtent().withX(0));
 	},
 
-	addHalos: function() {
-		var bounds = new Rectangle(0,0, 50, 20);
-
-		this.createAndAddHalo('order', 'order', bounds);
-		this.createAndAddHalo('addTextMorph', 'add', bounds);
-		this.createAndAddHalo('openAsText', 'as text', bounds);
-		this.createAndAddHalo('setFileLocation', 'set file...', bounds);
-		this.createAndAddHalo('save', 'save', bounds);
-
-		this.alignHalosHorizontally();
-	},
-
-	createAndAddHalo: function(name, label, bounds) {
-		// create and add a button that is added to the halo object with the key name
-		// also connect halo's fire with a method this[name]
-		var halo = new ButtonMorph(bounds);
-		halo.applyStyle(this.haloStyle);
-		halo.setLabel(label);
-		lively.bindings.connect(halo, 'fire', this, name);
-		this.addMorph(halo);
-		this.halos.push(halo);
-		return halo;
-	},
 },'text conversion',{
 	addTextMorph: function(string) {
 		var m = new TextMorph(pt(this.getExtent().x - 2*this.margin, 20).extentAsRectangle(), string || '...');
@@ -78,37 +51,7 @@ BoxMorph.subclass('PaperMorph',
 		});
 	},
 },'persistance',{
-	onDeserialize: function() {
-		this.alignHalosHorizontally() // why???
-	},
-
-	setFileLocation: function() {
-		this.world().prompt('Where should the contents of this paper morph be stored?', function(input) {
-			this.fileLocation = input;
-		}.bind(this), this.fileLocation || URL.source.withFilename('text.txt').toString())
-	},
-	save: function() {
-		var w = this.world()
-		if (!this.fileLocation) {
-			w.alert('please set file location of paper morph first');
-			return
-		}
-		try {
-			var url = new URL(this.fileLocation);
-		} catch(e) {
-			w.alert('file location of paper morph not valid');
-			return
-		}
-		var writer = new WebResource(url);
-		lively.bindings.connect(writer, 'status', w, 'setStatusMessage', {
-			updater: function($upd, status) {
-				if (status.isSuccess())
-					$upd('successfully saved', Color.green, 3)
-				else
-					$upd('couldnt save, status code: ' + status.code(), Color.red, 5)
-			}});
-		writer.beAsync().put(this.asText());
-	},
+	
 },'undo',{
 	getUndoHistory: function() {
 		if (!this.undoHistory)
@@ -136,7 +79,6 @@ BoxMorph.subclass('PaperMorph',
 		$super(partName, newPoint, lastCall);
 		this.alignContentMorphsHorizontally();	
 		this.layoutChangedCalled = false
-		// this.alignHalosHorizontally();
 	},
 
 	layoutChanged: function($super) {
@@ -170,13 +112,6 @@ BoxMorph.subclass('PaperMorph',
 		}, this);
 	},
 
-	alignHalosHorizontally: function() {
-		this.halos.inject(pt(this.margin, 0), function(pos, halo) {
-			halo.align(halo.bounds().topLeft(), pos);
-			halo.setExtent(pt(50,20))
-			return halo.bounds().topRight();
-		});
-	},
 
 	order: function() {
 		// if (this.layoutChangedCalled) return; // FIXME the page does not load with out that???
@@ -185,6 +120,97 @@ BoxMorph.subclass('PaperMorph',
 		this.adjustToSubmorphBounds()	
 	},
 });
+ParagraphContainerMorph.subclass('PaperMorph',
+// new PaperMorph().openInWorld()
+'intialize', {
+	isPaperMorph: true,
+	haloStyle: {fill: Color.white},
+	initialize: function($super, bounds) {
+		$super(bounds || new Rectangle(0,0, 400,500));
+		this.halos = [];
+		this.addHalos();
+	},
+	onDeserialize: function() {
+		this.alignHalosHorizontally() // why???
+	},
+
+},
+'menu', {
+	morphMenu: function($super, evt) {
+		var menu = $super(evt);
+		var self = this;
+		menu.addItem([(this.generateHTML ? "[X]" : "[]") + " generateHTML", 
+			function(){self.generateHTML = ! self.generateHTML}]);
+		return menu;
+	},
+
+},
+'file', {
+	setFileLocation: function() {
+		this.world().prompt('Where should the contents of this paper morph be stored?', function(input) {
+			this.fileLocation = input;
+		}.bind(this), this.fileLocation || URL.source.withFilename('text.txt').toString())
+	},
+
+	save: function() {
+		var w = this.world()
+		if (!this.fileLocation) {
+			w.alert('please set file location of paper morph first');
+			return
+		}
+		try {
+			var url = new URL(this.fileLocation);
+		} catch(e) {
+			w.alert('file location of paper morph not valid');
+			return
+		}
+		var writer = new WebResource(url);
+		lively.bindings.connect(writer, 'status', w, 'setStatusMessage', {
+			updater: function($upd, status) {
+				if (status.isSuccess())
+					$upd('successfully saved', Color.green, 3)
+				else
+					$upd('couldnt save, status code: ' + status.code(), Color.red, 5)
+			}});
+		writer.beAsync().put(this.asText());
+	},
+
+},
+'buttons', {	
+		addHalos: function() {
+		var bounds = new Rectangle(0,0, 50, 20);
+
+		this.createAndAddHalo('order', 'order', bounds);
+		this.createAndAddHalo('addTextMorph', 'add', bounds);
+		this.createAndAddHalo('openAsText', 'as text', bounds);
+		this.createAndAddHalo('setFileLocation', 'set file...', bounds);
+		this.createAndAddHalo('save', 'save', bounds);
+
+		this.alignHalosHorizontally();
+	},
+
+	createAndAddHalo: function(name, label, bounds) {
+		// create and add a button that is added to the halo object with the key name
+		// also connect halo's fire with a method this[name]
+		var halo = new ButtonMorph(bounds);
+		halo.applyStyle(this.haloStyle);
+		halo.setLabel(label);
+		lively.bindings.connect(halo, 'fire', this, name);
+		this.addMorph(halo);
+		this.halos.push(halo);
+		return halo;
+	},
+
+	alignHalosHorizontally: function() {
+		this.halos.inject(pt(this.margin, 0), function(pos, halo) {
+			halo.align(halo.bounds().topLeft(), pos);
+			halo.setExtent(pt(50,20))
+			return halo.bounds().topRight();
+		});
+	},
+
+}
+);
 
 // layers
 
@@ -267,8 +293,12 @@ cop.create('PaperMorphLayer')
 		if(m) 
 			this.getPaperMorph().countWordsInTextMorph(m);
 
-		this.world().saveWorld()
+		this.world().saveWorld();
 	},
+	getHTMLString: function() {
+		return new apps.paper.HTMLCharcterConverter().convert(this.textString)
+	},
+
 
 
 
@@ -339,7 +369,7 @@ Object.subclass('LaTeXTextMorphWrapper', {
 			menu.addItems(wrapper.textMorphMenuItemsFor(this));
 			return menu;
 		};
-		this.addMethodsToLayerClass(TeXLayer, klass, {morphMenu: method});
+		this.addMethodsToLayerClass(PaperMorphLayer, klass, {morphMenu: method});
 	},
 
 	generateConverterRuleMethod: function(klass) {
@@ -425,56 +455,89 @@ cop.create('TeXLayer')
 .refineClass(PaperMorph, {
 
 	createLaTeXBody: function() {
+		return  this.convertMorphs( new LaTeXConverter(), this.contentMorphs())
+	},
+	createHTMLBody: function() {
 		var converter = new LaTeXConverter();
-		var text = this.contentMorphs().inject('', function(text, m) {
+		converter.generateHTML = true;
+		return '<html><head>\n' +
+'<style>\n' +
+'body {font-family: Helvetica}\n' +
+'div.title { font-size: 30}\n' +
+'div.subtitle { font-size: 20}\n' +
+'div.abstract { font-style: italic}\n' +
+'\n</style>\n</head>\n'+
+'<body>\n' + this.convertMorphs(converter, this.contentMorphs()) + '\n</body></html>'
+	},	
+
+	convertMorphs: function(proceed, converter, morphs) {
+		var text = morphs.inject('', function(text, m) {
 			return text + converter.convertMorph(m)
 		});
 		return text
 	},
 
+
+
 	asText: function(proceed) {
-		return this.createLaTeXBody();
+		if (this.generateHTML) {
+			return this.createHTMLBody();
+		} else {
+			return this.createLaTeXBody();
+		}
 	},
 
 });
 
 LaTeXConverter.addMethods({
 	$Paragraph: {
+		html: function(textMorph) { return Strings.format('<p>%s</p>\n', textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('%s\n\n', textMorph.textString) },
 		style: {fill: null, borderWidth: 0.25, fontSize: 16, suppressHandles: true, suppressGrabbing: true},
 	},
 
 	$Title: {
+		html: function(textMorph) { return Strings.format('<div class="title">%s</div>\n',
+			textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('\\title{%s}\n\n', textMorph.textString) },
 		style: {fill: null, borderWidth: 0, fontSize: 24},
 	},
 
 	$SubTitle: {
+		html: function(textMorph) { return Strings.format('<div class="subtitle">%s</div>\n', 
+			textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('\\subtitle{%s}\n\n', textMorph.textString) },
 		style: {fill: null, borderWidth: 0, fontSize: 20},
 	},
 
 	$Abstract: {
+		html: function(textMorph) { return Strings.format('<div class="abstract">\n%s\n</div>\n',
+			 textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('\\begin{abstract}\n%s\n\\end{abstract}\n\n', textMorph.textString) },
-		style: {},
+		style: {borderWidth: 0, textColor: Color.web.darkred},
 	},
 
 	$Section: {
+		html: function(textMorph) { return Strings.format('<h1>%s</h1>\n', textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('\\section{%s}\n', textMorph.textString) },
-		style: {borderWidth: 0, fontSize: 20},
+		style: {borderWidth: 0, fontSize: 20, textColor: Color.blue},
 	},
 
 	$SubSection: {
+		html: function(textMorph) { return Strings.format('<h2>%s</h2>\n', textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('\\subsection{%s}\n', textMorph.textString) },
-		style: {borderWidth: 0},
+		style: {borderWidth: 0, textColor: Color.blue},
 	},
-
+	
 	$SubSubSection: {
+		html: function(textMorph) { return Strings.format('<h3>%s</h3>\n', textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('\\subsubsection{%s}\n', textMorph.textString) },
-		style: {borderWidth: 0},
+		style: {borderWidth: 0, textColor: Color.blue},
 	},
 
 	$Listing: {
+		html: function(textMorph) { return Strings.format('<ul>%s</ul>\n', 
+			textMorph.getHTMLString().replace(/\- /g,"<li>")) },
 		converter: function(textMorph) { return Strings.format('\\begin{lstlisting}%s\n\\end{lstlisting}\n\n', textMorph.textString) },
 		style: {},
 	},
@@ -492,8 +555,49 @@ LaTeXConverter.addMethods({
 			console.warn('no LaTeX rule for ' + morph);
 			return ''
 		}
+		if (this.generateHTML) {
+			return this[rule].html(morph)
+		} else {
+			return this[rule].converter(morph)
+		}
+	},
+});
+Object.subclass('apps.paper.HTMLCharcterConverter',
 
-		return this[rule].converter(morph)
+'default category', {
+	// from http://javascript.jstruebig.de/javascript/76
+	ENTITIES: {34: "quot", 60: "lt", 62: "gt", 38: "amp", 160: "nbsp", 161: "iexcl", 162: "cent", 
+		163: "pound", 164: "curren", 165: "yen", 166: "brvbar", 167: "sect", 168: "uml", 169: "copy", 
+		170: "ordf", 171: "laquo", 172: "not", 173: "shy", 174: "reg", 175: "macr", 176: "deg", 
+		177: "plusmn", 178: "sup2", 179: "sup3", 180: "acute", 181: "micro", 182: "para", 183: "middot", 
+		184: "cedil", 185: "sup1", 186: "ordm", 187: "raquo", 188: "frac14", 189: "frac12", 190: "frac34", 
+		191: "iquest", 192: "Agrave", 193: "Aacute", 194: "Acirc", 195: "Atilde", 196: "Auml", 
+		197: "Aring", 198: "AElig", 199: "Ccedil", 200: "Egrave", 201: "Eacute", 202: "Ecirc", 
+		203: "Euml", 204: "Igrave", 205: "Iacute", 206: "Icirc", 207: "Iuml", 208: "ETH", 209: "Ntilde", 
+		210: "Ograve", 211: "Oacute", 212: "Ocirc", 213: "Otilde", 214: "Ouml", 215: "times", 216: "Oslash", 
+		217: "Ugrave", 218: "Uacute", 219: "Ucirc", 220: "Uuml", 221: "Yacute", 222: "THORN", 223: "szlig", 
+		224: "agrave", 225: "aacute", 226: "acirc", 227: "atilde", 228: "auml", 229: "aring", 230: "aelig", 
+		231: "ccedil", 232: "egrave", 233: "eacute", 234: "ecirc", 235: "euml", 236: "igrave", 
+		237: "iacute", 238: "icirc", 239: "iuml", 240: "eth", 241: "ntilde", 242: "ograve", 243: "oacute", 
+		244: "ocirc", 245: "otilde", 246: "ouml", 247: "divide", 248: "oslash", 249: "ugrave", 
+		250: "uacute", 251: "ucirc", 252: "uuml", 253: "yacute", 254: "thorn", 255: "yuml", 34: "quot", 
+		60: "lt", 62: "gt", 38: "amp"},
+
+	convert: function(txt) {
+		if(!txt) return '';
+		txt = txt.replace(/&/g,"&amp;");
+		var new_text = '';
+		for(var i = 0; i < txt.length; i++) {
+			var c = txt.charCodeAt(i);
+			if(typeof this.ENTITIES[c] != 'undefined') {
+				new_text += '&' + this.ENTITIES[c] + ';';
+			} else if(c < 128) {
+				new_text += String.fromCharCode(c);
+			}else {
+				new_text += '&#' + c +';';
+			}
+		}
+		return new_text.replace(/</g,"&lt;").replace(/>/g,"&gt;");
 	},
 });
 
