@@ -5131,7 +5131,8 @@ PasteUpMorph.subclass("WorldMorph",
 		}
 		var statusMessage = WorldMorph.current().setStatusMessage("serializing....");
 		(function() {
-			var oldHand = this.firstHand()
+			var oldHand = this.firstHand();
+			var oldKeyboardFocus = oldHand.keyboardFocus;
 			this.removeHand(oldHand);
 			var doc;
 			var world = this;
@@ -5144,6 +5145,9 @@ PasteUpMorph.subclass("WorldMorph",
 				})
 			} finally {
 				this.addHand(oldHand);
+				console.log("setting back keyboard focus to" + oldKeyboardFocus)
+				if (oldKeyboardFocus)
+					oldKeyboardFocus.requestKeyboardFocus(oldHand);
 			}
 			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);			
 			statusMessage.remove();
