@@ -295,9 +295,46 @@ cop.create('PaperMorphLayer')
 
 		this.world().saveWorld();
 	},
+
 	getHTMLString: function() {
-		return new apps.paper.HTMLCharcterConverter().convert(this.textString)
+		var converter = new apps.paper.HTMLCharcterConverter()
+		return this.getTextAnnotations().collect(function(ea) {
+			var string  = converter.convert(ea[0]);
+			var annotation  = ea[1];
+			if (!annotation) {
+				return string
+			};
+
+			if (annotation.link) {
+					return "<a href=\"" + annotation.link +"\">" + string + "</a>"
+			};
+
+			if (annotation.style) {
+				if (annotation.style == 'bold') {
+					return "<span class=\"strong\">" + string + "</span>"
+				};
+				if (annotation.style == 'italic') {
+					return "<span class=\"emph\">" + string + "</span>"
+				}; 
+			}
+			// there is an annotation but I don't know what to do with it
+			return string
+		}).join('');
 	},
+
+	getTextAnnotations: function() {
+		var index = 0;
+		if (!this.textStyle)
+			return [[this.textString]]
+		return this.textStyle.runs.collect(function(eaRun, i) {
+			var to = index + eaRun;
+			var r = this.textString.slice(index, to)
+			index = to
+			return [r, this.textStyle.values[i]]
+		}, this)
+	},
+
+
 
 
 
@@ -466,6 +503,8 @@ cop.create('TeXLayer')
 'div.title { font-size: 30}\n' +
 'div.subtitle { font-size: 20}\n' +
 'div.abstract { font-style: italic}\n' +
+'span.strong { font-weight: bold}\n' +
+'span.emph { font-style: italic}\n' +
 '\n</style>\n</head>\n'+
 '<body>\n' + this.convertMorphs(converter, this.contentMorphs()) + '\n</body></html>'
 	},	

@@ -27,5 +27,40 @@ This is pargraph 2.\n\n\
 		},
 
 	});
+TestCase.subclass('PaperLayerTextMorphTest',
+'default category', {
+	testGetHtmlStringBold: function() {
+
+		var sut  = new TextMorph(new Rectangle(0,0,100,100), "Grüß Gott means Hello")
+		sut.emphasizeFromTo({style: 'bold'},0,8)	
+		sut.setWithLayers([PaperMorphLayer])
+		var s = sut.getHTMLString()
+		this.assertEqual(s, "<span class=\"strong\">Gr&uuml;&szlig; Gott</span> means Hello")
+
+
+	},
+	testGetHtmlStringWithItalic: function() {
+		var sut  = new TextMorph(new Rectangle(0,0,100,100), "Grüß Gott means Hello")
+		sut.emphasizeFromTo({style: 'italic'},0,8)	
+		sut.setWithLayers([PaperMorphLayer])
+		var s = sut.getHTMLString()
+		this.assertEqual(s, "<span class=\"emph\">Gr&uuml;&szlig; Gott</span> means Hello")
+
+
+	},
+	testGetTextAnnotations: function() {
+
+		var sut  = new TextMorph(new Rectangle(0,0,100,100), "Grüß Gott means Hello")
+		sut.setWithLayers([PaperMorphLayer])
+		sut.setWithoutLayers([UndoLayer])
+		var a = sut.getTextAnnotations()
+
+		sut.emphasizeFromTo({style: 'bold'},0,8)	
+		var a = sut.getTextAnnotations()
+
+
+	},
+
+});
 
 }) // end of module
