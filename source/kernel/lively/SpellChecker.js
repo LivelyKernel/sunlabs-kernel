@@ -3,20 +3,14 @@ createLayer("SpellCheckerLayer");
 // enableLayer(SpellCheckerLayer);
 
 // disableLayer(SpellCheckerLayer);
-createLayer("NetRquestsAreSyncLayer")
-layerClass(NetRquestsAreSyncLayer, NetRequest, {
-
-	get isSync() {
-		return true;
-	}
-});
 
 Object.subclass("SpellChecker", {
 
-	querySpellCheckService: function(input) {
+	querySpellCheckService: function(input, optLang) {
 		var self = this;
-		var request = new NetRequest({model: this, setStatus: "onResponse"});
-		var url = "http://lively-kernel.org/cgi/send_req.pl?lang=en&hl=en"
+		var lang = optLang || "en";
+	
+		var url = "http://lively-kernel.org/cgi/send_req.pl?lang="+ lang+"&hl=" +lang
 		var post = '<?xml version="1.0" encoding="utf-8" ?> \
 <spellrequest textalreadyclipped="0" ignoredups="0"  ignoredigits="1" ignoreallcaps="1">\
     <text>' +input.asString() +'</text>\
@@ -75,9 +69,13 @@ cop.create('SpellCheckerLayer')
 		return menu
 	},
 
+	getSpellCheckLang: function() {		
+		return this.spellCheckLang || "en"
+	},
+
 	spellCheckAll: function() {
 		var checker = new SpellChecker();
-		var xmlString = checker.querySpellCheckService(this.textString);
+		var xmlString = checker.querySpellCheckService(this.textString, this.getSpellCheckLang());
 		if (!xmlString) {
 			throw new Error('Spell Checking: no response')
 		};
@@ -124,6 +122,20 @@ TestCase.subclass("lively.SpellChecker.SpellCheckerTest", {
 
 		this.assertEqual(result, expected, "wrong xml");	
 	},
+
+	testQuerySpellCheckServiceGerman: function() {
+
+		var self = this;
+		var checker = new SpellChecker();
+		
+		var expected = '<?xml version="1.0" encoding="UTF-8"?><spellresult error="0" clipped="0" charschecked="18"><c o="9" l="4" s="1">kein	Kai	Kamin	Karin	Hain</c><c o="14" l="4" s="1">Text	Axt	Tat	Taft	Takt	Taxi</c></spellresult>'
+	
+		var result = checker.querySpellCheckService("Dies ist kain Taxt", 'de');
+
+		this.assertEqual(result, expected, "wrong xml");	
+	},
+
+
 
 	testExtractSuggestions: function() {
 

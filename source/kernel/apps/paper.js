@@ -1,5 +1,4 @@
-module('apps.paper').requires('cop.Layers', 'lively.SyntaxHighlighting', 'lively.LayerableMorphs').toRun(function() {
-
+module('apps.paper').requires('cop.Layers', 'lively.SyntaxHighlighting', 'lively.LayerableMorphs', 'lively.SpellChecker').toRun(function() {
 
 BoxMorph.subclass('ParagraphContainerMorph', 
 'intialize', {
@@ -133,7 +132,6 @@ ParagraphContainerMorph.subclass('PaperMorph',
 	onDeserialize: function() {
 		this.alignHalosHorizontally() // why???
 	},
-
 },
 'menu', {
 	morphMenu: function($super, evt) {
@@ -340,8 +338,10 @@ cop.create('PaperMorphLayer')
 
 
 });
-
-PaperMorph.prototype.setWithLayers([PaperMorphLayer])
+PaperMorph.addMethods(
+'contextJS', {
+	withLayers: [PaperMorphLayer, SpellCheckerLayer]
+});
 
 // PaperMorph.prototype.setWithLayers([PaperMorphLayer, TeXLayer])
 
