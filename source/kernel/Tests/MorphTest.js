@@ -150,6 +150,35 @@ TestCase.subclass('ListMorphTest', {
     },
 
 });
+TestCase.subclass('DragnDropListTest',
+'default category', {
+	testDropItem: function() {
+		var items = [{isListItem: true, string: 'a', value: 1},
+			{isListItem: true, string: 'b', value: 2},
+			{isListItem: true, string: 'c', value: 3}];
+		var list = new FilterableListMorph(new Rectangle(0,0,100,300), items);
+		var morphName = 'dragAndDropListTestMorph';
+		var m = $morph(morphName); if (m) m.remove(); 
+		list.name = morphName;
+		list.openInWorld();
+		list.setExtent(pt(300,300));
+		list.setWithLayers([DebugLayer])
+		var source = ["1","2","3","4"]	
+
+		var dragWrapper = new DragWrapper(source[2],source, 2, newFakeMouseEvent(pt(5,5)))
+		// var dropee = new TextMorph(new Rectangle(0,0,100,30), "dropee");
+		// dropee.applyStyle({fill: null, borderWidth: 0});
+		// dropee.ignoreEvents();
+		var fakeHand = new HandMorph();
+		fakeHand.setPosition(pt(5,5));
+		fakeHand.addMorph(dragWrapper);
+		dragWrapper.dropMeOnMorph(list);
+
+		this.assertEqual(list.submorphs.length, 4, "wrong submorphs length")
+
+		this.assertEqual(list.itemList.length, 4, "wrong item number")
+},
+});
 TestCase.subclass('FilterableListMorphTest', {
 
 test01FilterDoesNotModifyItems: function() {
