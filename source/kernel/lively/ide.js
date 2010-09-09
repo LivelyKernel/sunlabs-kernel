@@ -117,7 +117,8 @@ Widget.subclass('lively.ide.BasicBrowser',
             morph.connectModel(model.newRelay({List:        ("-" + paneName + "Content"),
                                                Selection:   (      paneName + 'Selection'),
                                                Menu:        ("-" + paneName + "Menu")}), true);
-            morph.withAllSubmorphsDo(function() {            
+            morph.withAllSubmorphsDo(function() {
+				if (this.constructor == SliderMorph) return;
                 this.onMouseOver = function(evt) { browser.showButtons(evt, morph, paneName) };
                 this.onMouseDown = this.onMouseDown.wrap(function(proceed, evt) {
 					browser.showButtons(evt, morph, paneName);
@@ -1977,6 +1978,19 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CopRefineFragmentNode', {
 			return new lively.ide.CopMemberFragmentNode(fileFragment, this.browser, this.target)
 		}, this);
 	},
+
+	evalSource: function(newSource) {
+		try {
+			// eval(newSource);
+		} catch (er) {
+			console.log("error evaluating refine layer:" + er);
+			throw(er)
+		}
+		console.log('Successfully evaluated layer');
+        return true;
+    },
+
+
 
 });
 lively.ide.FileFragmentNode.subclass('lively.ide.CopMemberFragmentNode', {
