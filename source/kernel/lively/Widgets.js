@@ -2743,11 +2743,10 @@ BoxMorph.subclass("ScrollPane", {
 	},
 
 	initializeScrollBar: function() {
-		if (this.showScrollBar) {
-			var morph = new SliderMorph(this.innerBounds().withTopLeft(this.calcClipR().topRight()))
-        	this.scrollBar = this.addMorph(morph);
-			this.scrollBar.connectModel(new (this.ScrollBarFormalRelay)(this));
-		}
+		if (!this.showScrollBar) return
+		var morph = new SliderMorph(this.innerBounds().withTopLeft(this.calcClipR().topRight()))
+       	this.scrollBar = this.addMorph(morph);
+		this.scrollBar.connectModel(new (this.ScrollBarFormalRelay)(this));
 	},
 
 	getScrollBar: function() {
