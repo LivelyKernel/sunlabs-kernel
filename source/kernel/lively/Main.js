@@ -89,7 +89,7 @@ Object.subclass('lively.Main.Loader', {
 		});
 	},
 
-	systemStart: function() {
+	systemStart: function(canvas) {
 		console.group("World loading");
 
 		// -----------------
@@ -100,7 +100,7 @@ Object.subclass('lively.Main.Loader', {
 		// ------------------------
 
 	    var world = null;
-	    var canvas = Global.document.getElementById("canvas");
+	    canvas = canvas || Global.document.getElementById("canvas");
 		var loader = this;
 
 
