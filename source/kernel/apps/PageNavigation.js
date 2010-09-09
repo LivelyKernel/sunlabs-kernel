@@ -1,21 +1,146 @@
 module('apps.PageNavigation').requires('cop.Layers').toRun(function() {
 
-cop.createLayer("PageNavigationLayer");
-cop.enableLayer(PageNavigationLayer);
-
-(function generalSettings() {
-	Config.showWikiNavigator = false
-	Config.resizeScreenToWorldBounds = false
-	cop.createLayer('ResizeWorldLayer')
-	cop.enableLayer(ResizeWorldLayer);
-})();
-
-cop.layerClass(ResizeWorldLayer, WorldMorph, {
-	displayOnCanvas: function(proceed, canvas) {
-		proceed(canvas);
-		basicResize(this, this.canvas(), 1020, 760)
-	}
+Object.extend(Config, {
+	showWikiNavigator: false,
+	resizeScreenToWorldBounds: false,
 });
+
+cop.create("PageNavigationLayer")
+	.beGlobal()
+	.refineClass(WorldMorph, {
+		complexMorphsSubMenuItems: function(proceed, evt) {
+			var menu = proceed(evt);
+			menu.push(["Page Navigation", function(evt) { 
+				var morph = new PageNavigationMorph(evt.point());
+				morph.openInWorld()
+			}])
+			return menu
+		},
+
+		onKeyDown: function(proceed, evt) {
+			if (proceed(evt)) return true;
+			if (!Config.pageNavigationWithKeys) return false;
+			var c = evt.getKeyCode();
+			if (c == Event.KEY_LEFT) {
+				PageNavigation.current().visitPrevPage();
+				return true;
+			}
+			if (c == Event.KEY_RIGHT) {
+				PageNavigation.current().visitNextPage();
+				return  true;
+			}
+			return false;
+		},
+
+		displayOnCanvas: function(proceed, canvas) {
+			proceed(canvas);
+			if (Config.showPageNumber &&
+				PageNavigation.current() &&
+				PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
+					this.ensurePageNumberMorph();
+			else
+				this.removePageNumberMorph();
+		},
+
+		pageNumberMorphName: function() {
+			// FIXME! ContextJS does wrap attributes
+			return 'pageNumber'
+		},
+
+		
+		pageNumberMorph: function() {
+			return $morph(this.pageNumberMorphName());
+		},
+		
+		ensurePageNumberMorph: function() {
+			var no = PageNavigation.current().pageNumber();
+			if (no === 0) return;
+			if (this.pageNumberMorph()) {
+				this.pageNumberMorph().setTextString(no.toString());
+				return;
+			};
+			var morph = new TextMorph(pt(0,0).extent(pt(100,100)), no);
+			morph.name = this.pageNumberMorphName();
+			morph.applyStyle({fill: null, fontSize: 18, borderWidth: 0});
+			morph.ignoreEvents();
+			morph.openInWorld();
+			morph.align(morph.bounds().bottomLeft(), this.bounds().bottomLeft().addPt(pt(10, -10)))
+		},
+		
+		removePageNumberMorph: function() {
+			if (this.pageNumberMorph())
+				this.pageNumberMorph().remove();
+		},
+
+		applyCustomStyles: function() {
+			PageNavigation.current().styleAll();
+		},
+
+		morphMenu: function(proceed, evt) {
+			var menu = proceed(evt);
+			if (!menu) return menu;
+			if (this.pageNumberMorph())
+				menu.addItem(['remove slide number',   this, 'removePageNumberMorph' ]);
+			else
+				menu.addItem(['add slide number',   this, 'ensurePageNumberMorph' ]);
+			menu.addItem(["apply custom styles",   this, 'applyCustomStyles' ]);
+			return menu
+		},
+		
+	})
+	.refineClass(TextMorph, {
+		morphMenu: function(proceed, evt) {
+			var menu = proceed(evt);
+			var self = this;
+			var createFontSizeMenu = function(sizes) {
+				return sizes.collect(function(ea) { 
+					return [String(ea), function() { self.setFontSize(ea)}.bind(this)]
+				})
+			};
+			var createFontFamilyMenu = function(sizes) {
+				return sizes.collect(function(ea) { 
+					return [String(ea), function() { self.setFontFamily(ea)}.bind(this)]
+				})
+			};
+
+			if (menu) {
+				menu.addItem(
+					["style", [
+							["font size", createFontSizeMenu([10,12,14,16,18,20,24,30,40]) ],
+							["font family", createFontFamilyMenu(['Courier', 'Helvetica', 'Times']) ]
+						],
+					])
+			}
+			return menu
+		},
+
+		doLinkThing: function(proceed, evt, link) {
+			// Propagate the current Presentation Name to pages when following links
+			// an alternative way to get that context information is the possibility
+			// of the destination website to ask: document.referrer
+			// to get the URL of the refering website
+			var url = new URL.ensureAbsoluteURL(link);
+			if (Config.pageNavigationName != 'nothing') {
+				var queries = Object.extend(url.getQuery(), {pageNavigationName: Config.pageNavigationName});
+				url = url.withQuery(queries);
+			}
+			proceed(evt, url.toString())
+		},
+
+	});
+
+
+cop.create('ResizeWorldLayer')
+	.beGlobal()
+	.refineClass(WorldMorph, {
+		displayOnCanvas: function(proceed, canvas) {
+			proceed(canvas);
+			basicResize(this, this.canvas(), 1020, 760)
+		}
+	});
+
+
+
 
 Object.subclass("PageNavigation", {
 
@@ -32,7 +157,9 @@ Object.subclass("PageNavigation", {
 	},
 
 	prevPageName: function(){
-		return  this.slides[(this.pageIndex() - 1) % this.slides.length]
+		var i = (this.pageIndex() - 1) % this.slides.length;
+		if (i < 0) i += this.slides.length
+		return  this.slides[i]
 	},
 
 	getURLWithPageNavigation: function(name) {
@@ -113,7 +240,7 @@ findPageNavigationMorph: function() {
 		itemLevel1: { fontSize: 30},
 		itemLevel2: { fontSize: 20},
 	},
-	
+
 });
 
 // PageNavigation.current()
@@ -133,11 +260,19 @@ Object.extend(PageNavigation, {
 			return this._current
 		}
 
+		if (!this.pageNavigations || !Config.pageNavigations) return null;
+
 		// FIXME why store pageNavigations in Config?! pollution!
 		return this.pageNavigations[Config.pageNavigationName] ||
 			Config.pageNavigations[Config.pageNavigationName];
 	},
 
+	loadSlideNamesFromJSON: function(filename) {
+		var res = new WebResource(URL.codeBase.withFilename(filename));
+		var content = res.getContent();
+		return JSON.parse(content);
+	},
+	
 });
 
 
@@ -247,133 +382,6 @@ BoxMorph.subclass("PageNavigationMorph", {
 		PageNavigation.current().visitPrevPage()
 	},
 
-});
-
-cop.layerClass(PageNavigationLayer, WorldMorph, {
-
-	complexMorphsSubMenuItems: function(proceed, evt) {
-		var menu = proceed(evt);
-		menu.push(["Page Navigation", function(evt) { 
-			var morph = new PageNavigationMorph(evt.point());
-			morph.openInWorld()
-		}])
-		return menu
-	},
-
-	onKeyDown: function(proceed, evt) {
-		if (proceed(evt)) return true;
-		if (!Config.pageNavigationWithKeys) return false;
-		var c = evt.getKeyCode();
-		if (c == Event.KEY_LEFT) {
-			PageNavigation.current().visitPrevPage();
-			return true;
-		}
-		if (c == Event.KEY_RIGHT) {
-			PageNavigation.current().visitNextPage();
-			return  true;
-		}
-		return false;
-	},
-
-	displayOnCanvas: function(proceed, canvas) {
-		proceed(canvas);
-		if (Config.showPageNumber &&
-			PageNavigation.current() &&
-			PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
-				this.ensurePageNumberMorph();
-		else
-			this.removePageNumberMorph();
-	},
-
-	pageNumberMorphName: function() {
-		// FIXME! ContextJS does wrap attributes
-		return 'pageNumber'
-	},
-
-	
-	pageNumberMorph: function() {
-		return $morph(this.pageNumberMorphName());
-	},
-	
-	ensurePageNumberMorph: function() {
-		var no = PageNavigation.current().pageNumber().toString();
-		if (this.pageNumberMorph()) {
-			this.pageNumberMorph().setTextString(no);
-			return;
-		};
-		var morph = new TextMorph(pt(0,0).extent(pt(100,100)), no);
-		morph.name = this.pageNumberMorphName();
-		morph.applyStyle({fill: null, fontSize: 18, borderWidth: 0});
-		morph.ignoreEvents();
-		morph.openInWorld();
-		morph.align(morph.bounds().bottomLeft(), this.bounds().bottomLeft().addPt(pt(10, -10)))
-	},
-	
-	removePageNumberMorph: function() {
-		if (this.pageNumberMorph())
-			this.pageNumberMorph().remove();
-	},
-
-	applyCustomStyles: function() {
-		PageNavigation.current().styleAll();
-	},
-
-	morphMenu: function(proceed, evt) {
-		var menu = proceed(evt);
-		if (!menu) return menu;
-		if (this.pageNumberMorph())
-			menu.addItem(['remove slide number',   this, 'removePageNumberMorph' ]);
-		else
-			menu.addItem(['add slide number',   this, 'ensurePageNumberMorph' ]);
-		menu.addItem(["apply custom styles",   this, 'applyCustomStyles' ]);
-		return menu
-	},
-	
-});
-
-cop.layerClass(PageNavigationLayer, TextMorph, {
-
-	morphMenu: function(proceed, evt) {
-		var menu = proceed(evt);
-		var self = this;
-		var createFontSizeMenu = function(sizes) {
-			return sizes.collect(function(ea) { 
-				return [String(ea), function() { self.setFontSize(ea)}.bind(this)]
-			})
-		};
-		var createFontFamilyMenu = function(sizes) {
-			return sizes.collect(function(ea) { 
-				return [String(ea), function() { self.setFontFamily(ea)}.bind(this)]
-			})
-		};
-
-		if (menu) {
-			menu.addItem(
-				["style", [
-						["font size", createFontSizeMenu([10,12,14,16,18,20,24,30,40]) ],
-						["font family", createFontFamilyMenu(['Courier', 'Helvetica', 'Times']) ]
-					],
-				])
-		}
-		return menu
-	},
-
-})
-
-
-// Propagate the current Presentation Name to pages when following links
-// an alternative way to get that context information is the possibility
-// of the destination website to ask: document.referrer
-// to get the URL of the refering website
-cop.layerClass(PageNavigationLayer, TextMorph, {
-	doLinkThing: function(proceed, evt, link) {
-		var url = new URL.ensureAbsoluteURL(link);
-		if (Config.pageNavigationName != 'nothing') {
-			var queries = Object.extend(url.getQuery(), {pageNavigationName: Config.pageNavigationName});
-			url = url.withQuery(queries);
-		}
-		proceed(evt, url.toString())
-	}
 });
 
 
