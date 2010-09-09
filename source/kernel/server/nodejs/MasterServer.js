@@ -1,9 +1,12 @@
-var sys = require('sys'),
-	exec  = require('child_process').exec,
- 	livelyServer = require('./livelyServer');
+var sys = require('sys');
+var exec  = require('child_process').exec;
+var livelyServer = require('./livelyServer');
 
 require('./miniprototype')
 require('./Base')
+
+var serverProcesses = {};
+
 
 // nohup node MasterServer.js < /dev/null > MasterServer.log 2>&1 &
 
@@ -30,8 +33,6 @@ require('./Base')
 // webR5.content
 
 // This handler allows to control/start/stop other nodejs servers
-var serverProcesses = {};
-
 livelyServer.AbstractHandler.subclass('MasterServerHandler',
 'initializing', {
 	port: 8085,
@@ -130,8 +131,12 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 	
 	stopServer: function(serverName) {
 		sys.puts('Stopping ' + serverName);
-		var process = this.getProcess(serverName);
-		process && process.kill(9);
+		try {
+			var process = this.getProcess(serverName);
+			process && process.kill(9);
+		} catch(e) {
+			sys.puts('Cannot stop ' + serverName + ' because ' + e)
+		}
 		// delete this.serverProcesses[serverName];
 	},
 	
