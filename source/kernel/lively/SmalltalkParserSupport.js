@@ -921,7 +921,7 @@ lively.ide.CompleteFileFragmentNode.subclass('StBrowserFileNode', {
 	},
 })
 
-lively.ide.ClassFragmentNode.subclass('StBrowserClassNode', {
+lively.ide.CategorizedClassFragmentNode.subclass('StBrowserClassNode', {
   
   isClassNode: true,
   
@@ -995,6 +995,7 @@ TextMorph.addMethods({
     var result, self = this;
 
     function jsEval() {
+		self.evalSource = str; // For Dan's Demo September 2
       result = self.boundEval(str);
       if (printIt) printResult();
     };
@@ -1015,6 +1016,7 @@ TextMorph.addMethods({
     function stEval() {
       var ast = OMetaSupport.matchAllWithGrammar(SmalltalkParser, 'sequence', str, true);
       console.log('Evaluating: ' + ast.toJavaScript());
+		self.evalSource = ast.toJavaScript(); // For Dan's Demo September 2
       result = ast.eval();
       if (printIt) printResult();
     };
