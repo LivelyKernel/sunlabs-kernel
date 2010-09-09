@@ -26,6 +26,10 @@ ometa LKFileParser <: Parser {
     /* helper productions */
     log :msg -> { console.log(msg); true },
     logPos -> { console.log(this.pos()); true },
+	emptyLine =
+		( space:x ?(x != '\n' && x != '\r') )* nl
+		-> { '\n' },
+	emptyLines = emptyLine*,
     whereAreYou -> {
 	var charsBefore = 120; var charsAfter = 120; var src = this._originalInput.arr;
 	var startIndex = Math.max(0, this.pos() - charsBefore);
@@ -132,7 +136,7 @@ ometa LKFileParser <: Parser {
 	-> { this._fragment(fn, 'functionDef', p, this.pos()-1) },
     
     staticProperty =
-	pos:p
+	pos:p spacesNoNl
 	namespaceIdSplitted:nsArr ?(nsArr.length > 1) spaces '='
 	somethingBigRelated defEnd
 	-> {
@@ -146,7 +150,7 @@ ometa LKFileParser <: Parser {
     
 	/* methods */
     methodModificationDef =
-		pos:p
+		pos:p spacesNoNl
 		nsWith('prototype'):spec spaces '='
 		spaces somethingBigRelated defEnd
 		-> {this._fragment(
@@ -159,28 +163,22 @@ ometa LKFileParser <: Parser {
     
     /* properties */    
     protoDef =
-		stackSize:s pos:p
-		name:pName ':' spaces
+		pos:p spacesNoNl name:pName ':' spaces
 		(basicFunction (somethingBigRelated | empty )
 		| somethingBigRelated
 		) classElemDefEnd
 		-> {
-			if (this.stack.length !== s) {
-				throw new Error(Strings.format(
-					'sth wrong with the stack: %s expected length: %s actual length: %s',
-					this.stack, s, this.stack.length));
-			};
 			this._fragment(pName, 'protoDef', p, this.pos()-1, null, {_isStatic: false})
 		},
 getterOrSetter =
-		pos:p ("get" | "set") spaces name:pName chunk('(', ')') spaces chunk('{', '}') classElemDefEnd
+		pos:p spacesNoNl ("get" | "set") spaces name:pName chunk('(', ')') spaces chunk('{', '}') classElemDefEnd
 		-> {
 			this._fragment(pName, 'protoDef', p, this.pos()-1, null, {_isStatic: false})
 		},
 
 
 	propertyDef =
-		(protoDef | methodModificationDef | staticProperty | getterOrSetter): spec
+		(protoDef | methodModificationDef | staticProperty | getterOrSetter):spec
 		-> {spec.type = 'propertyDef'; spec},
 
                                     
@@ -208,7 +206,7 @@ categoryName =
 	( fromTo('\'', '\'') | fromTo('"', '"') ):name -> name.join(''),
 
 classElemsInCategory =
-	spaces '{' (spaces propertyDef:pD spaces -> pD)*:defs spaces '}'
+	spaces '{' ( emptyLines propertyDef:pD emptyLines -> pD)*:defs spaces '}'
 	-> defs,
 
 	restKlassDef =
