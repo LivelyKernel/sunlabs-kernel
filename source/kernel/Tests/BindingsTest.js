@@ -239,6 +239,92 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 			this.assertEqual(obj3.x, 3, "obj3 update broken");
 			
 	},
+	test22ConnectTwoMethods: function() {
+		var obj1 = {m1: function() { return 3 }};
+		var obj2 = {m2: function(val) { return val + 2 }};
+		connect(obj1, 'm1', obj2, 'm2');
+		var result = obj1.m1();
+		this.assertEqual(5, result, 'method connection not working');
+	},
+	test23ConnectTwoMethodsWithUpdater: function() {
+		var obj1 = {m1: function() { return 3 }};
+		var obj2 = {m2: function(val) { return val + 2 }};
+		connect(obj1, 'm1', obj2, 'm2', {
+			updater: function($proceed, val) {
+				if (val != 3)
+					throw new Error('updater didnt get the correct value');
+				return $proceed(val)
+			}});
+		var result = obj1.m1();
+		this.assertEqual(5, result, 'method connection not working');
+	},
+	test24ConnectTwoMethodsTwice: function() {
+		var obj1 = {m1: function() { return 3 }};
+		var obj2 = {m2: function(val) { return val + 2 }};
+		connect(obj1, 'm1', obj2, 'm2');
+		connect(obj1, 'm1', obj2, 'm2');
+		this.assert(Object.isFunction(obj1.m1), 'wrapping failed');
+		var result = obj1.m1();
+		this.assertEqual(5, result, 'method connection not working');
+	},
+	test25DoubleConnectTwoMethods: function() {
+		var obj1 = {m1: function() { return 3 }};
+		var obj2 = {m2: function(val) { return val + 2 }};
+		var obj3 = {m3: function(val) { return val * 2 }};
+
+		var m1 = obj1.m1;
+
+		var con1 = connect(obj1, 'm1', obj2, 'm2');
+		var con2 = connect(obj1, 'm1', obj3, 'm3');
+
+		var result;
+		result = obj1.m1();
+		this.assertEqual(10, result, 'double method connection not working');
+
+		con1.disconnect();
+		result = obj1.m1();
+		this.assertEqual(6, result, 'double method connection not working');
+
+		con2.disconnect();
+		result = obj1.m1();
+		this.assertEqual(3, result, 'double method connection not working');
+
+		this.assertIdentity(m1, obj1.m1, 'original method was not restored after method connection');
+	},
+	test26TransitiveMethodConnect: function() {
+		var obj1 = {m1: function() { return 3 }};
+		var obj2 = {m2: function(val) { return val + 2 }};
+		var obj3 = {m3: function(val) { return val * 2 }};
+
+		var con1 = connect(obj1, 'm1', obj2, 'm2');
+		var con2 = connect(obj2, 'm2', obj3, 'm3');
+
+		var result = obj1.m1();
+		this.assertEqual(10, result, 'double method connection not working');
+
+		con1.disconnect();
+		this.assertEqual(3, obj1.m1(), 'one method connection not working after disconnect of con1');
+		this.assertEqual(6, obj2.m2(1), 'remaining connection not working');
+
+		con2.disconnect();
+		this.assertEqual(3, obj2.m2(1), 'after con2 disconnect m2');
+		this.assertEqual(2, obj3.m3(1), 'after con2 disconnect m3');
+	},
+	test27ConnectMethodToArribute: function() {
+		var obj1 = {m1: function() { return 3 }};
+		var obj2 = {x: null};
+
+		connect(obj1, 'm1', obj2, 'x');
+
+		var result = obj1.m1();
+		this.assertEqual(3, result, 'connected attribute not set correctly');
+	},
+
+
+
+
+
+
 });
 
 Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.BindingsTest.ConnectionSerializationTest', {
@@ -331,6 +417,23 @@ test04DOMNodeIsSerialized: function() {
 		this.newTextMorph1.setTextString('test2');
 		this.assertEqual('test2', nodeAfter.value, 'connect not working after deserialization');
 	},
+	test05MethodToMethodConnectionIsSerialized: function() {
+		this.createAndAddMorphs();
+
+		connect(this.textMorph1, 'getRichText', this.textMorph2, 'setRichText');
+		this.textMorph1.setTextString('foo');
+		this.textMorph1.getRichText(); // invoke connection
+		this.assertEqual('foo', this.textMorph1.textString, 'connect not working 1');
+		this.assertEqual('foo', this.textMorph2.textString, 'connect not working 2');
+
+		this.doSave();
+
+		this.textMorph1.setTextString('bar');
+		this.textMorph1.getRichText(); // invoke connection
+		this.assertEqual('bar', this.textMorph1.textString, 'connect not working after deserialize 1');
+		this.assertEqual('bar', this.textMorph2.textString, 'connect not working after deserialize 2');
+	},
+
 
 
 

@@ -36,9 +36,16 @@ Object.subclass('AttributeConnection', {
 			existing && existing.disconnect();
 			this.addAttributeConnection();
 		}
+
+		var methodOrValue = this.sourceObj[this.sourceAttrName];
+		if (Object.isFunction(methodOrValue)) {
+			if (!methodOrValue.isWrapped)
+				this.addConnectionWrapper(this.sourceObj, this.sourceAttrName);
+			return this;
+		}
+
 		var setter = this.sourceObj.__lookupSetter__(this.sourceAttrName);
-		if (!setter)
-			this.addSourceObjGetterAndSetter()
+		if (!setter) this.addSourceObjGetterAndSetter()
 		return this;
 	},
 
@@ -91,6 +98,29 @@ Object.subclass('AttributeConnection', {
 		})
 	},
 
+	addConnectionWrapper: function(sourceObj, methodName) {
+		var origMethod = sourceObj[methodName];
+
+		if (!Object.isFunction(origMethod))
+			throw new Error('addConnectionWrapper didnt get a method to wrap')
+
+		sourceObj[this.privateAttrName(methodName)] = origMethod; // save so that it can be restored
+		sourceObj[methodName] = function() {
+			if (sourceObj.attributeConnections === undefined)
+				throw new Error('Sth wrong with sourceObj, has no attributeConnections')
+			var result = origMethod.apply(sourceObj, arguments);
+			for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
+				var c = sourceObj.attributeConnections[i];
+				if (c.getSourceAttrName() === methodName)
+					result = c.update(result);
+			}
+			return result;
+		}
+
+		sourceObj[methodName].isWrapped = true;
+	},
+
+
 	removeSourceObjGetterAndSetter: function() {
 		// delete the getter and setter and the slot were the real value was stored
 		// assign the real value to the old slot
@@ -142,9 +172,9 @@ Object.subclass('AttributeConnection', {
 
 		try {
 			if (this.updater)
-				this.updater.call(this, callOrSetTarget, newValue, oldValue);
+				return this.updater.call(this, callOrSetTarget, newValue, oldValue);
 			else
-				callOrSetTarget(newValue);		
+				return callOrSetTarget(newValue);		
 		} catch(e) {
 			dbgOn(Config.debugConnect)
 			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
