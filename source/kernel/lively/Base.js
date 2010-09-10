@@ -537,7 +537,6 @@ addCategorizedMethods: function(categoryName, source) {
 				return categoryName;
 		return null;
 	},
-
 });
 
 var Class = {
@@ -1284,7 +1283,7 @@ Object.extend(Function.prototype, {
 			return result;
 		};
 		return this.wrap(advice);
-	}
+	},
 	
 });
 

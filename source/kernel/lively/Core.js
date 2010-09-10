@@ -73,7 +73,8 @@ Object.subclass('ScriptLoader',
 	removeQueries: function(url) {
 		return url.split('?').first();
 	},
-resolveURLString: function(urlString) {
+	
+	resolveURLString: function(urlString) {
 		// FIXME duplicated from URL class in lively. Network
 		// actually lively.Core should require lively.Network -- but lively.Network indirectly
 		// lively.Core ====>>> FIX that!!!
@@ -89,10 +90,7 @@ resolveURLString: function(urlString) {
 		result = result.replace(/\/\.\//g, '/')
 		return result
 	},
-
-	
-	
-	
+		
 	scriptElementLinksTo: function(el, url) {
 		if (!el.getAttribute) return false;
 		// FIXME use namespace consistently
@@ -455,11 +453,17 @@ var Converter = {
 
 	// TODO parallels to preparePropertyForSerialization in scene.js
 	// Why to we encodeProperties for Records at runtime and not at serialization time?
-    encodeProperty: function(prop, propValue, isItem) {
+	encodeProperty: function(prop, propValue, isItem) {
 		if (isItem) {
 			var desc = LivelyNS.create("item");
 		} else {
 			var desc = LivelyNS.create("field", {name: prop});
+		}
+		if (propValue instanceof Function) {
+			// console.log("convert function")
+		    desc.setAttributeNS(null, "family", "Function");
+		    desc.appendChild(NodeFactory.createCDATA(JSON.serialize(propValue.toLiteral())));
+		    return desc;
 		}
 		if (Converter.isJSONConformant(propValue) || propValue instanceof Array) { // hope for the best wrt/arrays
 		    // FIXME: deal with arrays of primitives etc?
@@ -1156,6 +1160,12 @@ Object.subclass('Copier', {
 	
 	copyProperty: function (property, object, other) {
 		// console.log("smartCopyProperty " + property + " " + object + " from: " + other)
+
+	    if (other[property] instanceof Function && other[property].isSerializeable) {
+			object[property] = other[property]; // share script
+			return
+		};
+
 	    if ((other[property] instanceof Function) 
 		 	|| ! other.hasOwnProperty(property) 
 		 	|| (other.doNotCopyProperties && other.doNotCopyProperties.include(property)))
@@ -1448,6 +1458,21 @@ Copier.subclass('Importer', {
 		return world;
 	}
 });
+Function.addMethods(
+'serialization', {
+	toLiteral: function() { return {source: ''+ this}},
+});
+Object.extend(Function, {
+	unbind: function(funcOrString) {
+		// unbind closure to make it persitable
+		return eval('(' + funcOrString.toString() + ')') 
+	},
+
+	fromLiteral: function(obj) { 
+		var f = eval('(' +obj.source + ')');
+		f.isSerializeable = true;
+		return f}
+});
 
 Importer.marker = Object.extend(new Importer(), {
     addMapping: Functions.Empty,
@@ -1665,7 +1690,7 @@ Morph.addMethods('default', {
 	copyAttributesFrom: function(copier, other) {
 
 		for (var p in other) {
-			if (other[p] instanceof Function || !other.hasOwnProperty(p) || this.noShallowCopyProperties.include(p))
+			if ((other[p] instanceof Function && !other[p].isSerializeable) || !other.hasOwnProperty(p) || this.noShallowCopyProperties.include(p))
 				continue;
 
 			if (other[p] instanceof Morph) {
@@ -1744,8 +1769,6 @@ Morph.addMethods('default', {
 
 		this.copyAttributesFrom(copier, other); 		
 		this.copyModelFrom(copier, other);
-
-
 
 		this.internalSetShape(other.shape.copy());
 		this.origin = other.origin.copy();
@@ -3769,8 +3792,21 @@ Morph.addMethods('default', {
 		}
 		if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
 		return url;
-	}
+	},
+},
+'Scripts', {
+	addScript: function(funcOrString) {
+		var func = Function.unbind(funcOrString);
+		if (! (func.name))
+			throw Error("function has no name in addScript: " + funcOrString)
+		this.addScriptNamed(func.name, func)
+	},
 
+	addScriptNamed: function(name, funcOrString) {
+		var func = Function.unbind(funcOrString)
+		func.isSerializeable = true;
+		this[name] =  func;
+	},
 });
 
 

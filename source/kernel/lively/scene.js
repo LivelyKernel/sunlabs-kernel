@@ -343,7 +343,7 @@ Object.subclass('lively.data.Wrapper', {
 
 	preparePropertyForSerialization: function(prop, propValue, extraNodes, optSystemDictionary) {
 		// console.log("prepare property " + prop + ": " + optSystemDictionary)
-		if (propValue instanceof Function) {
+		if (propValue instanceof Function && !propValue.isSerializeable) {
 			return;
 		} else if (lively.data.Wrapper.isInstance(propValue)) {
 			this.prepareWrapperPropertyForSerialization(prop, propValue, extraNodes, optSystemDictionary)
