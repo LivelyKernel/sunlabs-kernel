@@ -824,7 +824,6 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 		var doc = Exporter.shrinkWrapMorph(m);
 	},
 	
-	
 	testShrinkWrapMorphWithoutWorld: function() {
 		var m = Morph.makeRectangle(0,0,10,10);
 		var doc = Exporter.shrinkWrapMorph(m);
@@ -841,12 +840,102 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 		this.assert(systemDictionary, "no systemDictionary returned");
 
 	},
+});
+
+TestCase.subclass("ScriptingMorphTest", {
+
+	testAddScript: function() {
+		var m = Morph.makeRectangle(0,0,10,10);
+		m.addScript(function foo() { this.fooWasHere  = true})
+		this.assert(m.foo instanceof Function, "foo is no function")
+		m.foo() 				
+		this.assert(m.fooWasHere , "call to foo was not successful")
+	},
+
+	testAddScriptNamed: function() {
+		var m = Morph.makeRectangle(0,0,10,10);
+		m.addScriptNamed("foo", function() { this.fooWasHere  = true})
+		this.assert(m.foo instanceof Function, "foo is no function")
+		m.foo() 				
+		this.assert(m.fooWasHere , "call to foo was not successful")
+	},
 	
+	testScriptIsSerializeable: function() {
+		var m = Morph.makeRectangle(0,0,10,10);
+		m.addScript(function foo() { this.fooWasHere  = true})
+		this.assert(m.foo.isSerializeable , "foo is not serializeable")
+	},
+
+	testFunctionToLiteral: function() {
+		var f = function() {return 3;};
+		var o = f.toLiteral();
+		this.assertEqual(JSON.stringify(o), '{"source":"function () {return 3;}"}');
+	},
+
+	testFunctionFromLiteral: function() {
+		var source =  '{"source":"function() {return 3;}"}';
+		var o = JSON.parse(source)
+		this.assertEqual(o.source, "function() {return 3;}");
+	},
+
+	testPointInConverterEncodeProperty: function() {
+		var v = pt(3,4);
+		node = Converter.encodeProperty("p", v);
+		Exporter.stringify(node)
+		this.assertEqual(node.getAttribute('family'), 'Point');
+		this.assertEqual(node.textContent,  '{"x":3,"y":4}');
+	},
+
+	testFunctionInConverterEncodeProperty: function() {
+		var f = function(){return 3;};
+		node = Converter.encodeProperty("foo", f);
+		this.assertEqual(node.getAttribute('family'), 'Function');	
+		this.assertEqual(node.textContent, JSON.stringify(f.toLiteral()))
+	},
+
+	testSerializeScripts: function() {
+		var m = Morph.makeRectangle(0,0,10,10);
+		m.addScript(function foo() { this.fooWasHere  = true})
+		var doc = Exporter.shrinkWrapMorph(m);
+		var node = doc.getElementById(m.id());
+
+		field = $A(node.childNodes).detect(function(ea){return ea.getAttribute('name') == 'foo'})
+
+		Exporter.stringify(node)
 	
-	
-	
+		this.assert(field, 'no field node')		
+		this.assertEqual(field.textContent, '{"source":"function foo() { this.fooWasHere  = true;}"}');
+		this.assertEqual(field.getAttribute('family'), 'Function', 'no family (class)');		
+	},
+
+	testDeserializeScripts: function() {
+		var source = 
+			'<g lively:type="Morph" id="1:Morph" xmlns="http://www.w3.org/2000/svg">' + 
+			'	<field name="foo" family="Function">' +
+			'		<![CDATA[{"source":"function foo() { this.fooWasHere  = true;}"}]]>'+
+			'	</field>'+
+			'</g>';
+
+		var c = new ClipboardCopier();
+		var morphs = c.loadMorphsWithWorldTrunkFromSource(source)
+		m = morphs[0]
+		this.assertEqual(morphs.length, 1, "wrong number of morphs") 
+
+		this.assert(m.foo, "no foo")
+		this.assert(m.foo instanceof Function, "foo is no function")
+		this.assertEqual('' + m.foo, "function foo() { this.fooWasHere  = true;}","foo is changed")
+
+	},
+
+	testDuplicateMorphWithScript: function() {
+		var m = Morph.makeRectangle(0,0,10,10);
+		m.addScript(function foo() { this.fooWasHere  = true})
+
+		var d = m.duplicate();
+
+		this.assert(d.foo, "foo did not get duplicated")
+
+	},
 })
-
-
 
 }) // end of module
