@@ -1572,9 +1572,7 @@ lively.ide.MultiFileFragmentsNode.subclass('lively.ide.MethodCategoryFragmentNod
 
 	getName: function() { return this.target.getName() },
 
-	sourceString: function() {
-		return 'not yet supported'
-	},
+	sourceString: lively.ide.FileFragmentNode.prototype.sourceString, // FIXME
 
 	newSource: function(newSource) {
 		this.statusMessage('not yet supported, sorry', Color.red);
@@ -2446,24 +2444,24 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddToFileFragmentCommand', {
 	createSource: function(methodName) {
 		throw new Error('Subclass responsibility');
 	},
-createAndAddSource: function(/*siblingNode and other args*/) {
-	var args = $A(arguments);
-	var siblingNode = args.shift();
-	var src = this.createSource.apply(this,args);
-	var newTarget = siblingNode.target.addSibling(src);
-	this.browser.allChanged();
-	if (!newTarget) {
-		console.warn('Cannot select new browser item that was added with ' + this.menuName)
-		return
-	}
-	this.browser.selectNodeMatching(function(node) { return node && node.target == newTarget });
-},
-selectStringInSourcePane: function(string) {
-	var textMorph =	this.browser.panel.sourcePane.innerMorph();
-	var index  =  textMorph.textString.indexOf(string);
-	textMorph.setSelectionRange(index, index + string.length)
-	textMorph.requestKeyboardFocus(WorldMorph.current().firstHand())
-},
+	createAndAddSource: function(/*siblingNode and other args*/) {
+		var args = $A(arguments);
+		var siblingNode = args.shift();
+		var src = this.createSource.apply(this,args);
+		var newTarget = siblingNode.target.addSibling(src);
+		this.browser.allChanged();
+		if (!newTarget) {
+			console.warn('Cannot select new browser item that was added with ' + this.menuName)
+			return
+		}
+		this.browser.selectNodeMatching(function(node) { return node && node.target == newTarget });
+	},
+	selectStringInSourcePane: function(string) {
+		var textMorph =	this.browser.panel.sourcePane.innerMorph();
+		var index  =  textMorph.textString.indexOf(string);
+		textMorph.setSelectionRange(index, index + string.length)
+		textMorph.requestKeyboardFocus(WorldMorph.current().firstHand())
+	},
 
 
 
@@ -2728,7 +2726,11 @@ parseNonFile: function(source) {
             d.fileName = this.fileName;
 			d.subElements().forEach(function(sub) { sub._owner = d });
 			if (d.categories) // FIXME!!!
-				d.categories.forEach(function(categoryDescr) { categoryDescr.fileName = d.fileName })
+				d.categories.forEach(function(categoryDescr) {
+					categoryDescr.startIndex += startPos;
+					categoryDescr.stopIndex += startPos;
+					categoryDescr.fileName = d.fileName
+				})
         });
         // ----------------
         // this.overheadTime += new Date().getTime() - ms;
@@ -3348,8 +3350,8 @@ Object.subclass('lively.ide.FileFragment',
 		if (newMe && this.startIndex !== newMe.startIndex)
 			throw dbgOn(new Error("Inconsistency when reparsing fragment " + this.name + ' ' + this.type));
 		if (newMe && (this.type == 'completeFileDef' || this.type == 'moduleDef')
-		&& (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
-			this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
+			&& (newMe.type == 'completeFileDef' || newMe.type == 'moduleDef')) {
+				this.type = newMe.type; // Exception to the not-change-type-rule -- better impl via subclassing
 		}
 		if (!newMe || newMe.type !== this.type) {
 			newMe.flattened().forEach(function(ea) { ea.sourceControl = this.sourceControl }, this);
@@ -3358,6 +3360,10 @@ Object.subclass('lively.ide.FileFragment',
 			console.warn(msg);
 			WorldMorph.current().alert(msg);
 			return null;
+		}
+
+		if (this.type === 'klassDef') { // oh boy, that gets ugly... subclassing, really!
+			this.categories = newMe.categories;
 		}
 
 		return newMe;
@@ -3534,7 +3540,7 @@ Object.subclass('lively.ide.FileFragment',
 		var stopIndexInOwner = this.stopIndex - owner.startIndex;
 		var newOwnerSrc = ownerSrc.slice(0, stopIndexInOwner+1) + newSrc + ownerSrc.slice(stopIndexInOwner+1);
 		var newOwner = owner.putSourceCode(newOwnerSrc);
-		var sibling = newOwner.subElements().detect(function(ea) { return ea.startIndex == this.stopIndex+1 }, this);
+		var sibling = newOwner.subElements().detect(function(ea) { return ea.startIndex > this.stopIndex }, this);
 		return sibling;
 	},
 },
