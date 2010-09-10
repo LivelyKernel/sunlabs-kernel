@@ -243,10 +243,10 @@ Change.subclass('ChangeSet', {
 	},
 	
 	findOrCreateDefNodeOfWorld: function(doc) {
-		var defNode = new Query('.//*[@lively:type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc);
+		var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc);
 		if (!defNode) {
 			var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
-			doc : new Query('.//*[@lively:type="WorldMorph"]').manualNSLookup().findFirst(doc);
+			doc : new Query('.//*[@type="WorldMorph"]').manualNSLookup().findFirst(doc);
 			if (!worldNode) dbgOn(true);
 			defNode = NodeFactory.create('defs');
 			worldNode.appendChild(defNode); // null Namespace?

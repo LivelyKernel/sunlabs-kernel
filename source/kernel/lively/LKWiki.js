@@ -1038,7 +1038,7 @@ getNamesOfLinkedWorlds: function(worldProxies) {
 },
 getChangeSet: function() {
 	var doc = this.getDocument();
-	var worldElement = new Query('/descendant::*[@lively:type="WorldMorph"]').manualNSLookup().findFirst(doc);
+	var worldElement = new Query('/descendant::*[@type="WorldMorph"]').manualNSLookup().findFirst(doc);
 	return ChangeSet.fromWorld(worldElement);
 },
 getDocumentOfChangeSet: function(cs) {
