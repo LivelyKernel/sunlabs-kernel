@@ -413,7 +413,7 @@ ButtonMorph.subclass("PrevButtonMorph",{
 			console.log("no cards yet");
 			return;
 		}
-		var dest = Math.max(this.webCardsApp.currentCard.cardNr-1,0);//muss größer 0 sein.
+		var dest = Math.max(this.webCardsApp.currentCard.cardNr-1,0);//muss grš§er 0 sein.
 		console.log("Go to "+dest);
 		this.webCardsApp.go(dest); 
 	}
@@ -2725,6 +2725,8 @@ lively.scene.Text.addMethods({
 
 Object.subclass("Restorer",{
 	
+	isInstanceRestorer: true, // for Class.intializer
+	
 	initialize: function() {
 		this.objectsAndKeyWithRefsToPatch = [];
 		this.id2objMap = {};
@@ -3421,8 +3423,8 @@ cop.layerClassAndSubclasses(FrontMorphLayer, Morph, {
 	isFramed: Functions.False,
 	
 	/*
-	* Entscheidet, ob die Halos tatsächlich gezeigt werden.
-	* War früher isUserMode
+	* Entscheidet, ob die Halos tatsŠchlich gezeigt werden.
+	* War frŸher isUserMode
 	*/
 	isHalloVisible : Functions.True,
 

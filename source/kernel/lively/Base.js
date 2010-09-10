@@ -552,14 +552,15 @@ var Class = {
 	},
 
 	initializer: function initializer() {
-		// check for the existence of Importer, which may not be defined very early on
-		if (arguments[0] && arguments[0].isImporter) {
+		var firstArg = arguments[0];
+		// maybe special initialization required
+		if (firstArg && firstArg.isImporter) {
 			this.deserialize.apply(this, arguments);
-		} else if (arguments[0] && arguments[0].isCopier) {
+		} else if (firstArg && firstArg.isCopier) {
 			this.copyFrom.apply(this, arguments);
-		} else if (Global.Restorer && (arguments[0] instanceof Restorer)) {
-			// for WebCards)
-			//Do nothing
+		} else if (firstArg && firstArg.isInstanceRestorer) {
+			// just do nothing
+			// for WebCards and other JSON-based dersialization logic
 		} else {
 			// if this.initialize is undefined then prolly the constructor was called without 'new'
 			this.initialize.apply(this, arguments); 
