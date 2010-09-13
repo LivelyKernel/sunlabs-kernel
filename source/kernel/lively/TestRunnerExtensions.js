@@ -4,18 +4,16 @@
  */
 module('lively.TestRunnerExtensions').requires('lively.Helper', 'cop.Layers', 'lively.TestFramework').toRun(function() {
 	
-cop.create("TimeEachTestLayer");
-
-TimeEachTestLayer.refineClass(TestCase, {
+cop.create("TimeEachTestLayer")
+.refineClass(TestCase, {
 	runTest: function(proceed, selector) {
 		var start = (new Date()).getTime();	
 		proceed(selector);
 		var time = (new Date()).getTime() - start;
 		this.result.setTimeOfTestRun(this.currentSelector, time)
 	},
-});
-
-TimeEachTestLayer.refineClass(TestResult, {
+})
+.refineClass(TestResult, {
 
 	setTimeOfTestRun: function(proceed, selector, time) {
 		if (!this.timeOfTestRuns)
@@ -31,9 +29,8 @@ TimeEachTestLayer.refineClass(TestResult, {
 		}).sort(function(a, b) {return a[0] - b[0]});
 		return sortedTimes.collect(function(ea) {return ea.join("\t")}).join("\n")
 	}
-});
-
-TimeEachTestLayer.refineClass(TestRunner, {
+})
+.refineClass(TestRunner, {
 	setResultOf: function(proceed, testObject) {
 		proceed(testObject);
 		var msg = "TestRun: " + testObject.constructor.type + "\n" +
@@ -42,11 +39,9 @@ TimeEachTestLayer.refineClass(TestRunner, {
 	},
 })
 
-cop.create("TimeTestLayer");
-TimeTestLayer.beGlobal();
-
-TimeTestLayer.refineClass(TestRunner, {
-	
+cop.create("TimeTestLayer")
+.beGlobal()
+.refineClass(TestRunner, {	
 	layersForTestRun: function() {
 		var layers = [TimeEachTestLayer];
 		if (Config.profileTestRuns)
@@ -59,20 +54,10 @@ TimeTestLayer.refineClass(TestRunner, {
 			proceed()
 		})
 	}
-})
+});
 
-
-TimeTestLayer.refineClass(TestRunner, {
-
-	runSelectedTestCase: function(proceed) {
-		cop.withLayers( [TimeEachTestLayer], function() {
-			proceed()
-		})
-	}
-})
-
-cop.create("ProfileEachTestLayer");
-ProfileEachTestLayer.refineClass(TestCase, {
+cop.create("ProfileEachTestLayer")
+.refineClass(TestCase, {
 	runTest: function(proceed, selector) {
 		var profileName = "profile "  + this.currentSelector 
 		console.profile(profileName);
@@ -80,19 +65,16 @@ ProfileEachTestLayer.refineClass(TestCase, {
 		console.profileEnd(profileName);
 	},
 });
-
 Config.profileTestRuns = true;
 
-
-cop.createLayer("DebugTestCaseLayer");
-cop.layerClass(DebugTestCaseLayer, TestCase, {
+cop.create("DebugTestCaseLayer")
+.beGlobal()
+.refineClass(TestCase, {
 	assert: function(proceed, bool, msg) {
 		if (!bool)
 			debugger
 		proceed(bool, msg)
 	}
-})
-cop.enableLayer(DebugTestCaseLayer)
-
+});
 
 });

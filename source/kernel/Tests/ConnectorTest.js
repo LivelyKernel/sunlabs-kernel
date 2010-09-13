@@ -102,7 +102,7 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
 
 	testLayerActivation: function() {
 		this.assertEqual(this.sut.owner, this.line, " Handle has no owner")
-		this.assertEqual(this.sut.getActivatedLayers()[0], ConnectorMorphLayer)
+		this.assert(this.sut.activeLayers().include(ConnectorMorphLayer))
 	},	
 
 	testGetGlobalPosition: function() {	
@@ -122,7 +122,7 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
 	testConnectToMorph: function() {
 		this.sut.connectToMorph(this.newMorph);
 		this.assert(this.line.endMorph, "no end morph");
-		this.assertEqual(this.line.endMorph.getActivatedLayers().length, 1, 
+		this.assertEqual(this.line.endMorph.getWithLayers().length, 1, 
 			"morph is not in connection layers");
 
 		this.assert(this.line.endMorph.connectorMorphs.include(this.line), 
