@@ -1970,7 +1970,7 @@ Morph.addMethods('default', {
 	},
 	
 	getName: function() { return this.name },
-	setName: function(str) { this.name = str },
+	setName: function(str) { this.name = str; return name },
 },
 'Style and Canvas',{	// tmp copy
 
@@ -1988,6 +1988,7 @@ Morph.addMethods('default', {
 			attr = String(value);
 		}
 		this.rawNode.setAttribute("class", attr);
+		return value;
 	},
 
 	canvas: function() {
@@ -2076,6 +2077,7 @@ Morph.addMethods('default', {
 	setFill: function(fill) {
 		this.shape.setFill(fill);
 		this.changed();
+		return fill;
 	},
 
 	getFill: function() {
@@ -2085,6 +2087,7 @@ Morph.addMethods('default', {
 	setBorderColor: function(newColor) {
 		this.shape.setStroke(newColor);
 		// this.changed();
+		return newColor
 	},
 
 	getBorderColor: function() {
@@ -2106,6 +2109,7 @@ Morph.addMethods('default', {
 		if (oldWidth > newWidth) this.changed();
 		this.shape.setStrokeWidth(newWidth); 
 		if (newWidth > oldWidth) this.changed();
+		return newWidth
 	},
 
 	getBorderWidth: function() {
@@ -2115,6 +2119,7 @@ Morph.addMethods('default', {
  	setBorderRadius: function(r) {//jd
     	this.shape.roundEdgesBy(r);
 		this.changed();
+		return r
     },
 
  	getBorderRadius: function() {
@@ -2130,22 +2135,24 @@ Morph.addMethods('default', {
 	setFillOpacity: function(op) {
 		this.shape.setFillOpacity(op);
 		this.changed(); // FIXME better use specific update
+		return op;
 	},
 
 	setStrokeOpacity: function(op) { 
 		this.shape.setStrokeOpacity(op);
 		this.changed(); // FIXME better use specific update
+		return op;
 	},
 
 	getStrokeOpacity: function() { this.shape.getStrokeOpacity(); },
 
-    setLineJoin: function(joinType) { this.shape.setLineJoin(joinType); },
+    setLineJoin: function(joinType) { this.shape.setLineJoin(joinType); return joinType },
 
-	getLineJoin: function() { this.shape.getLineJoin(); }, 
+	getLineJoin: function() { return this.shape.getLineJoin() }, 
 
-    setLineCap: function(capType) { this.shape.setLineCap(capType); },
+    setLineCap: function(capType) { this.shape.setLineCap(capType); return capType },
 
- 	getLineCap: function() { this.shape.getLineCap(); },
+ 	getLineCap: function() { this.shape.getLineCap() },
 
 	applyStyle: function(specs) { // note: use reflection instead?
 		for (var i = 0; i < arguments.length; i++) {
@@ -2236,6 +2243,7 @@ Morph.addMethods('default', {
 
 	setShape: function(newShape) {
 		this.internalSetShape(newShape);
+		return newShape;
 	}.wrap(Morph.onLayoutChange('shape')),
 
 	reshape: function(partName, newPoint, lastCall) {
@@ -2251,6 +2259,7 @@ Morph.addMethods('default', {
 		// particular to polygons
 		this.shape.setVertices(newVerts);
 		this.adjustForNewBounds();
+		return newVerts;
 	}.wrap(Morph.onLayoutChange('shape')),
 
 },
@@ -2268,10 +2277,12 @@ Morph.addMethods('default', {
 	setBounds: function(newRect) {
 		if (!newRect) return;
 		this.layoutManager.setBounds(this, newRect);
+		return newRect;
 	}.wrap(Morph.onLayoutChange('shape')),
 
 	setExtent: function(newExtent) {
 		this.layoutManager.setExtent(this, newExtent);
+		return newExtent;
 	},
 
 	getExtent: function(newRect) { return this.shape.bounds().extent() },
@@ -3715,6 +3726,7 @@ Morph.addMethods('default', {
 
 	setPosition: function(newPosition) {
 		this.layoutManager.setPosition(this, newPosition);
+		return newPosition;
 	}
 
 },
@@ -6355,6 +6367,7 @@ Morph.subclass("HandMorph",
 		$super(pos);
 		if (this.hasSubmorphs())
 			this.scrollDuringDrag()
+		return pos;
 	},
 },
 'Indicator',{

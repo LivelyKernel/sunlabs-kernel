@@ -2965,7 +2965,7 @@ ScrollPane.subclass("PreviewPane", {
 	guessPositionOfPreview: function(card){
 		var point = this.whereToPutNewCard(card);
 		var whiteOfRest = this.getPosition().x; 
-		var newY = point.y-this.getSlideRoom()*this.getScrollPosition();
+		var newY = point.y-this.getSlideRoom()*this.getVerticalScrollPosition();
 		var guesPoint  = pt(point.x+whiteOfRest,newY);
 		return guesPoint;
 	},

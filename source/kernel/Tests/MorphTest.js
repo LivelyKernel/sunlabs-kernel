@@ -368,18 +368,18 @@ TestCase.subclass('ScrollPaneTest', {
 
 	testDisableScrollBar: function() {
 		var scrollPane = Global.newTextListPane(new Rectangle(0,0,100,100));
-		var scrollBar = scrollPane.scrollBar;
-		scrollPane.disableScrollBar();
+		var scrollBar = scrollPane.getVerticalScrollBar();
+		scrollPane.disableScrollBars();
 		this.assert(!scrollBar.owner, "scrollBar is still open");
-		this.assert(!scrollPane.scrollBar, "scrollBar is still referenced");
+		this.assert(!scrollPane.verticalScrollBar, "scrollBar is still referenced");
     },
 
 	testEnableScrollBar: function() {
 		var scrollPane = Global.newTextListPane(new Rectangle(0,0,100,100));
-		scrollPane.disableScrollBar();
-		scrollPane.enableScrollBar();
-		this.assert(scrollPane.scrollBar, "scrollBar is not referenced");
-		this.assert(scrollPane.scrollBar.owner, "scrollBar is not open");
+		scrollPane.disableScrollBars();
+		scrollPane.addVerticalScrollBar();
+		this.assert(scrollPane.getVerticalScrollBar(), "scrollBar is not referenced");
+		this.assert(scrollPane.getVerticalScrollBar().owner, "scrollBar is not open");
     },
 
 });
@@ -412,6 +412,51 @@ testExtractExtent: function() {
 	this.assertEqual(result.x, 425);
 	this.assertEqual(result.y, 344);
 },
+
+});
+TestCase.subclass('NewListMorphTest',
+'default category', {
+	setUp: function($super) {
+		$super();
+        this.list = new NewListMorph(new Rectangle(80,80,50,20));
+	},
+
+	testAddItem: function() {
+		var item1 = 'First test item';
+		var item2 = 'Second test item';
+
+		this.assertIncludesAll([], this.list.getList(), 'the list of the NewListMorph was not empty at the beginning');
+
+		this.list.addItem(item1);
+		this.assertIncludesAll([item1], this.list.getList(), 'a new list item was not properly add to the NewListMorph');
+		this.assertEquals(1, this.list.submorphs.length, 'the representation of a new list item was not properly added to the NewListMorph');
+
+		this.list.addItem(item2);
+		this.assertIncludesAll([item1, item2], this.list.getList(), 'a new list item was not properly add to the NewListMorph');
+		this.assertEquals(2, this.list.submorphs.length, 'the representation of a new list item was not properly added to the NewListMorph');
+	},
+
+	testSetList: function() {
+		var item1 = 'First test item';
+		var item2 = 'Second test item';
+
+		this.assertIncludesAll([], this.list.getList(), 'the list of the NewListMorph was not empty at the beginning');
+
+		this.list.setList([item1, item2]);
+		this.assertIncludesAll([item1, item2], this.list.getList(), 'a new list was not properly set to the NewListMorph');
+		this.assertEquals(2, this.list.submorphs.length, 'the representation of a new list was not properly created for the NewListMorph');
+	},
+
+	testToMorphConversion: function() {
+		var textItem = 'Test item';
+		var morphItem = Morph.makeRectangle(0, 0, 10, 10);
+
+		var morph = this.list.convertToMorph(textItem);
+		this.assertEquals(true, (morph instanceof Morph), 'text list item was not converted to a morph');
+
+		morph = this.list.convertToMorph(morphItem);
+		this.assertEquals(true, (morph instanceof Morph), 'morph list item was not "converted" to a morph');
+	},
 
 });
 TestCase.subclass('NodeMorphTest', {

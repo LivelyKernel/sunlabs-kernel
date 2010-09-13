@@ -103,7 +103,7 @@ Widget.subclass('WikiWidget', {
       yPos += ea.getExtent().y;
       }, this)
 
-      box.owner.owner.getScrollBar().applyStyle({fill: Color.white, borderWidth: 0});
+      box.owner.owner.getVerticalScrollBar().applyStyle({fill: Color.white, borderWidth: 0});
     },
     getBody: function() { return this.panel.body },
     onEditContentUpdate: function(newContent) {
@@ -136,8 +136,8 @@ Widget.subclass('WikiWidget', {
       var m = new ScrollPane(innerMorph, bounds);
       m.closeDnD();
       innerMorph.closeDnD();
-      m.getScrollBar().slider.applyStyle({fill: Color.gray.lighter(), borderWidth: 0.2});
-      m.getScrollBar().applyStyle({fill: Color.white, borderWidth: 0});
+      m.getVerticalScrollBar().slider.applyStyle({fill: Color.gray.lighter(), borderWidth: 0.2});
+      m.getVerticalScrollBar().applyStyle({fill: Color.white, borderWidth: 0});
       return m;
     },
 

@@ -711,10 +711,10 @@ var Class = {
 			switch (prop) {
 				case "constructor": case "initialize": case "deserialize": case "copyFrom": 
 				case "toString": case "definition": case "description":
-				break;
+					break;
 				default:
-				if (cls.prototype[prop] === undefined) // do not override existing values!
-				spec[prop] = value;
+					if (cls.prototype[prop] === undefined) // do not override existing values!
+						spec[prop] = value;
 			}
 		}
 		cls.addMethods(spec);

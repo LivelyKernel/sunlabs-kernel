@@ -144,7 +144,7 @@ BoxMorph.subclass('apps.UserStories.UserStoryBaseMorph', {
 		t.withAllSubmorphsDo(function() { this.suppressGrabbing = true })
 		t.innerMorph().useChangeClue = false
 		t.innerMorph().noEval = true
-		t.scrollBar.setBorderWidth(0);
+		t.getVerticalScrollBar().setBorderWidth(0);
 		this[name] = t
 		return t;
 	},

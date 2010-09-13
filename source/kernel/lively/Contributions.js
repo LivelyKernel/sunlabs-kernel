@@ -512,7 +512,7 @@ Model.subclass('MessengerWidget', {
     setForegroundResponse: function(text) {
         this.setChatText(parent.id + ": " + this.getIMText()); // add the current line immediately
         this.setIMText(""); // yes yes.. so its a little laggy to add the current line and delete it...
-        this.textpanel.setScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
+        this.textpanel.setVerticalScrollPosition(1);//this.textpanel.innerMorph().bounds().height);
     },
     
     send: function() {
@@ -535,7 +535,7 @@ Model.subclass('MessengerWidget', {
                 var text = response.substring(0, end);
             }
             this.parseResponse(text);
-            this.textpanel.setScrollPosition(1);
+            this.textpanel.setVerticalScrollPosition(1);
         } catch (e) { console.log('got error %s', e); }
         // start polling for new events
         parent.load();

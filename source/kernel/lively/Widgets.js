@@ -1652,6 +1652,8 @@ TextListMorph.subclass("ListMorph", {
 
     documentation: 'Can handle list items, not only strings. {isListItem: true, string: string, value: object, onDrag: function, onDrop: function}',
     connections: ['itemList', 'selection', 'selectedLineNo'],
+	focusHaloBorderWidth: 0, // dont show focus
+	
     initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
         $super(initialBounds, itemList, optPadding, optTextStyle)
         this.suppressSelectionOnUpdate = suppressSelectionOnUpdate;
@@ -2010,9 +2012,10 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 		return menu;
 	},
 	// FIXME cleanup the two methods below
-	selectLineAt: function(lineNo, shouldUpdateModel) {  
+	 selectLineAt: function(lineNo, shouldUpdateModel) {  
         if (this.selectedLineNo in this.submorphs) { 
             this.submorphs[this.selectedLineNo].setFill(this.savedFill);
+            this.submorphs[this.selectedLineNo].setTextColor(this.savedTextColor);
         }
 
         this.selectedLineNo = lineNo;
@@ -2021,7 +2024,14 @@ DragnDropListMorph.subclass('FilterableListMorph', {
         if (lineNo in this.submorphs) {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill();
-            item.setFill(TextSelectionMorph.prototype.style.fill);
+            this.savedTextColor = item.getTextColor();
+
+            // item.setFill(TextSelectionMorph.prototype.style.fill);
+			// TODO factor this out
+			item.setFill(Color.primary.blue);
+			item.setTextColor(Color.gray.lighter(2));
+
+
             selectionContent = /*****/this.filteredItemList()/*changed for filter*/[lineNo];
             if (selectionContent.isListItem) {
 				selectionContent = selectionContent.value;
@@ -2030,6 +2040,7 @@ DragnDropListMorph.subclass('FilterableListMorph', {
         }
         shouldUpdateModel && this.setSelection(selectionContent, true);
     },
+
 	onSelectionUpdate: function($super, selection) {
 		if (!selection) {
 			this.selectLineAt(-1);
@@ -2704,90 +2715,223 @@ BoxMorph.subclass("SliderMorph", {
 
 });
 
-BoxMorph.subclass("ScrollPane", {
-
-    description: "A scrolling container",
-    style: { borderWidth: 2, fill: null},
-    scrollBarWidth: 14,
-    ScrollBarFormalRelay: Relay.create({Value: "ScrollPosition", SliderExtent: "-VisibleExtent"}), // a class for relays
-
+BoxMorph.subclass('ScrollPane',
+'settings', {
+	description: "A scrolling container",
+	style: { borderWidth: 1, fill: null},
+	scrollBarWidth: 14,
 	openForDragAndDrop: false,
+},
+'initializing', {
+	initialize: function($super, morphToClip, initialBounds) {
+		$super(initialBounds);
 
-    initialize: function($super, morphToClip, initialBounds) {
-        $super(initialBounds);
+		this.clipMorph = this.addMorph(new ClipMorph(this.calcClipR()));
+		if (morphToClip) this.addInnerMorph(morphToClip);
 
-		var clipR = this.calcClipR();
-        morphToClip.shape.setBounds(clipR); // FIXME what if the targetmorph should be bigger than the clipmorph?
-        // Make a clipMorph with the content (morphToClip) embedded in it
-        this.clipMorph = this.addMorph(new ClipMorph(clipR));    
-        //this.clipMorph.shape.setFill(morphToClip.shape.getFill());
-	this.clipMorph.setFill(morphToClip.getFill());
-        morphToClip.setBorderWidth(0);
-        morphToClip.setPosition(clipR.topLeft());
-        this.clipMorph.addMorph(morphToClip);
-	
-	
-		this.showScrollBar = true;
-       	this.initializeScrollBar();
-	
+		this.addVerticalScrollBar();
+		// this.addHorizontalScrollBar();
+
         // suppress handles throughout
-        [this, this.clipMorph, morphToClip, this.scrollBar].forEach(function(m) {m.suppressHandles = true});
-        // alert('inner morph is ' + this.innerMorph());
-	
-        return this;
+        [this, this.clipMorph, morphToClip].forEach(function(m) {m.suppressHandles = true});
     },
 
-	calcClipR: function() {
-		var bnds = this.innerBounds();
-		return bnds.withWidth(bnds.width - this.scrollBarWidth+1).insetBy(1);
-	},
+    onDeserialize: function() {
+		this.adjustForNewBounds();
+    },
 
-	initializeScrollBar: function() {
-		if (!this.showScrollBar) return
-		var morph = new SliderMorph(this.innerBounds().withTopLeft(this.calcClipR().topRight()))
-       	this.scrollBar = this.addMorph(morph);
-		this.scrollBar.connectModel(new (this.ScrollBarFormalRelay)(this));
-	},
+	addVerticalScrollBar: function() {
+		this.verticalScrollBar = this.addMorph(new SliderMorph(new Rectangle(0,0,0,0)));
+		this.verticalScrollBar.setBounds(this.calcVerticalScrollBarBounds());
+		this.verticalScrollBar.applyStyle({borderWidth: 0, suppressHandles: true});
+		lively.bindings.connect(this.verticalScrollBar, 'value', this, 'setVerticalScrollPosition');
+		lively.bindings.connect(this, 'setVerticalScrollPosition', this.verticalScrollBar, 'setValue');
+		lively.bindings.connect(this.verticalScrollBar, 'getSliderExtent', this, 'getVisibleExtent');
+		this.adjustForNewBounds();
 
-	getScrollBar: function() {
-		if (!this.scrollBar) {
-			this.initializeScrollBar();
-		};
-		return this.scrollBar
 	},
 	
-	disableScrollBar: function() {
-		if (this.scrollBar) {
-			this.scrollBar.remove();
-			this.showScrollBar = false;
-			delete this.scrollBar;
-			this.adjustForNewBounds();
-		}
-	},
-
-	enableScrollBar: function() {
-		this.showScrollBar = true;
-		this.initializeScrollBar();
-	},
-
-    onDeserialize: function() { // FIXME duplication between here and initialize
-        if (this.scrollBar && this.ScrollBarFormalRelay) 
-	    	this.scrollBar.formalModel = new (this.ScrollBarFormalRelay)(this);
-        if (this.menuButton)
-            this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+	addHorizontalScrollBar: function() {
+		this.horizontalScrollBar = this.addMorph(new SliderMorph(new Rectangle(0,0,0,0)));
+		this.horizontalScrollBar.setBounds(this.calcHorizontalScrollBarBounds());
+		this.horizontalScrollBar.applyStyle({borderWidth: 0, suppressHandles: true});
+		lively.bindings.connect(this.horizontalScrollBar, 'value', this, 'setHorizontalScrollPosition');
+		lively.bindings.connect(this, 'setHorizontalScrollPosition', this.horizontalScrollBar, 'setValue');
+		lively.bindings.connect(this.horizontalScrollBar, 'getSliderExtent', this, 'getVisibleExtent');
 		this.adjustForNewBounds();
+	},
+
+	addMenuButton: function() {
+		if (this.menuButton) return;
+
+		var w = this.scrollBarWidth;
+		this.menuButton = this.addMorph(Morph.makeRectangle(0, 0, w, w));
+		this.menuButton.applyStyle({fill: Color.white, suppressHandles: true})
+		// Make it look like 4 tiny lines of text (doesn't work yet...)
+		var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
+		for (var i = 1; i <= 4; i++) {
+			var line = new lively.scene.Polyline([p0.addXY(0, i*2), p0.addXY([6, 2, 4, 6][i-1], i*2)]);
+			line.setStroke(Color.black);
+			line.setStrokeWidth(1);
+			this.menuButton.addMorph(new Morph(line)).ignoreEvents();
+		}
+
+		if (this.verticalScrollBar) {
+			this.menuButton.setPosition(this.verticalScrollBar.getPosition());
+			this.menuButton.setFill(this.verticalScrollBar.getFill());
+			var scrollBarBounds = this.verticalScrollBar.bounds();
+			this.verticalScrollBar.setBounds(scrollBarBounds.withTopLeft(scrollBarBounds.topLeft().addXY(0, w)));
+		}
+
+		// lively.bindings.connect(this.menuButton, 'fire', this, 'menuButtonPressed');
+		this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
+	},
+},
+'accessing', {
+
+	addInnerMorph: function(morph) {
+		var clipR = this.calcClipR()
+		morph.setPosition(clipR.topLeft());
+		this.clipMorph.setFill(morph.getFill());
+// lively.bindings.connect(morph, 'setFill', this.clipMorph, 'setFill')
+		morph.setBorderWidth(0);
+		this.clipMorph.addMorph(morph);
+	},
+
+    innerMorph: function() {
+        return this.clipMorph.innerMorph();
     },
 
     submorphBounds: function() {
 		// a little optimization 
 		// FIXME: epimorphs should be included
-		if (this.clipMorph)
-			return this.clipMorph.bounds();
+		return this.clipMorph && this.clipMorph.bounds();
+    },
+	calcVerticalScrollBarBounds: function() {
+		// FIXME this method assumes that this.verticalScrollBar is non-null
+		return this.innerBounds().withTopLeft(this.calcClipR().topRight().addXY(-1, 0));
+	},
+	calcHorizontalScrollBarBounds: function() {
+		// FIXME this method assumes that this.verticalScrollBar is non-null
+		return this.calcClipR().bottomLeft().extent(pt(this.calcClipR().width, this.scrollBarWidth));
+	},
+
+	calcClipR: function() {
+		var bnds = this.innerBounds();
+		return bnds
+			.withWidth(bnds.width - (this.verticalScrollBar ? this.scrollBarWidth -2 : 0))
+			.withHeight(bnds.height - (this.horizontalScrollBar ? this.scrollBarWidth - 2 : 0))
+			.insetBy(1);
+	},
+
+	getVerticalScrollBar: function() {
+		if (!this.verticalScrollBar)
+			this.addVerticalScrollBar();
+		return this.verticalScrollBar
+	},
+	getHorizontalScrollBar: function() {
+		if (!this.horizontalScrollBar)
+			this.addHorizontalScrollBar();
+		return this.horizontalScrollBar
+	},
+
+	disableVerticalScrollBar: function() {
+		if (!this.verticalScrollBar) return
+		this.verticalScrollBar.remove();
+		delete this.verticalScrollBar;
+		this.adjustForNewBounds();
+	},
+	disableHorizontalScrollBar: function() {
+		if (!this.horizontalScrollBar) return
+		this.horizontalScrollBar.remove();
+		delete this.horizontalScrollBar;
+		this.adjustForNewBounds();
+	},
+
+	enableScrollBars: function() {
+		this.initializeVerticalScrollBar();
+		this.initializeHorizontalScrollBar();
+	},
+	disableScrollBars: function() {
+		this.disableHorizontalScrollBar();
+		this.disableVerticalScrollBar();
+	},
+
+    getVisibleExtent: function(scrollPos) {
+        return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
     },
 
-    innerMorph: function() {
-        return this.clipMorph.innerMorph();
+},
+'scrolling', {
+
+	slideRoomExtent: function() {
+		// slide on y axis +5 otherwise scrolling looks strange
+		return this.innerMorph().bounds().extent().subPt(this.getExtent().addXY(
+			this.verticalScrollBar ? -this.scrollBarWidth : 0,
+			-5 + (this.horizontalScrollBar ? -this.scrollBarWidth : 0)));
+	},
+
+	getVerticalScrollPosition: function() {
+		var slideRoom = this.slideRoomExtent().y;
+		// note that inner morph may have exactly the same size as outer morph so slideRoom may be zero
+		return slideRoom && -this.innerMorph().position().y / slideRoom;
+	},
+
+	getHorizontalScrollPosition: function() {
+		var slideRoom = this.slideRoomExtent().x;
+		// note that inner morph may have exactly the same size as outer morph so slideRoom may be zero
+		return slideRoom && -this.innerMorph().position().x / slideRoom;
+	},
+
+	setVerticalScrollPosition: function(scrollPos) {
+		scrollPos = Math.max(Math.min(1,scrollPos), 0);
+		var slide = Math.max(0, this.slideRoomExtent().y) * scrollPos * -1;
+		this.innerMorph().setPosition(pt(this.innerMorph().position().x, slide)); 
+		if (this.verticalScrollBar)
+			this.getVerticalScrollBar().adjustForNewBounds();
+		return scrollPos;
+	},
+
+	setHorizontalScrollPosition: function(scrollPos) {
+		scrollPos = Math.max(Math.min(1,scrollPos), 0);
+		var slide = Math.max(0, this.slideRoomExtent().x) * scrollPos * -1;
+		this.innerMorph().setPosition(pt(slide, this.innerMorph().position().y)); 
+		if (this.verticalScrollBar)
+			this.getVerticalScrollBar().adjustForNewBounds();
+		return scrollPos;
+	},
+
+    scrollToTop: function() {
+        this.setVerticalScrollPosition(0);
     },
+
+	scrollToBottom: function() {
+		this.setVerticalScrollPosition(1);
+	},
+
+	scrollRectIntoView: function(r) {
+		// FIXME!!! currently only works for vertical scrolling!!!
+		var im = this.innerMorph();
+		if (!r || !im) return;
+		var bnds = this.innerBounds();
+		var yToView = r.y + im.getPosition().y;  // scroll down if above top
+		if (yToView < bnds.y) {
+			im.moveBy(pt(0, bnds.y - yToView));
+			if (this.verticalScrollBar)
+				this.verticalScrollBar.adjustForNewBounds();
+			return;
+		}
+		var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
+		var tweak = 5;  // otherwise it doesnt scroll up enough to look good
+		if (yToView > bnds.maxY() - tweak) {
+			im.moveBy(pt(0, bnds.maxY() - tweak - yToView))
+			if (this.verticalScrollBar)
+				this.verticalScrollBar.adjustForNewBounds();
+		}
+	},
+
+},
+'old model -- deprecated', {
 
     connectModel: function(plugSpec, optFlag) { // connection is mapped to innerMorph
         this.innerMorph().connectModel(plugSpec, optFlag);
@@ -2809,30 +2953,9 @@ BoxMorph.subclass("ScrollPane", {
     updateView: function(aspect, source) {
         return this.innerMorph().updateView(aspect, source);
     },
-    
-    addMenuButton: function() {
-        if (this.menuButton) return;
 
-        var w = this.scrollBarWidth;
-        this.menuButton = this.addMorph(Morph.makeRectangle(0, 0, w, w));
-        this.menuButton.setFill(Color.white);
-        // Make it look like 4 tiny lines of text (doesn't work yet...)
-        var p0 = this.menuButton.innerBounds().topLeft().addXY(2, 2);
-        for (var i = 1; i <= 4; i++) {
-	    var line = new lively.scene.Polyline([p0.addXY(0, i*2), p0.addXY([6, 2, 4, 6][i-1], i*2)]);
-	    line.setStroke(Color.black);
-	    line.setStrokeWidth(1);
-            this.menuButton.addMorph(new Morph(line)).ignoreEvents();
-        }
-	
-        if (this.scrollBar) {
-            this.menuButton.setPosition(this.getScrollBar().getPosition());
-            this.menuButton.setFill(this.getScrollBar().getFill());
-            this.getScrollBar().setBounds(this.getScrollBar().bounds().withTopLeft(
-            	this.getScrollBar().bounds().topLeft().addXY(0, w)));
-        }
-        this.menuButton.relayMouseEvents(this, {onMouseDown: "menuButtonPressed"});
-    },
+},    
+'user interface', {
 
     menuButtonPressed: function(evt, button) {
 		//console.log("menuButtonPressed")
@@ -2850,119 +2973,77 @@ BoxMorph.subclass("ScrollPane", {
 		}
         menu.openIn(this.world(), evt.mousePoint, false); 
     },
+},  
+'layouting', {
+    
+	adjustForNewBounds: function ($super) {
+		// Compute new bounds for clipMorph and scrollBar
+		$super();
+		if (!this.clipMorph) return;
+		var bnds = this.innerBounds();    	
+		// FIXME:
+		var clipR = this.verticalScrollBar || this.horizontalScrollBar ? this.calcClipR() : bnds.insetBy(1);
+		this.clipMorph.setExtent(clipR.extent());
 
-	slideRoom: function() {
-		// 10 is a offset that works with the default font size... I think this may be font size related
-		return this.innerMorph().bounds().height - this.bounds().height + 10;
+		var verticalBarBnds = this.calcVerticalScrollBarBounds(),
+			horizontalBarBnds = this.calcHorizontalScrollBarBounds();
+		if (this.menuButton) {
+			var w = this.scrollBarWidth;
+			this.menuButton.setPosition(verticalBarBnds.topLeft());
+			this.menuButton.setBounds(verticalBarBnds.topLeft().extent(pt(w, w)));
+			verticalBarBnds = verticalBarBnds.withTopLeft(verticalBarBnds.topLeft().addXY(0, w));
+		}
+		if (this.verticalScrollBar)
+			this.getVerticalScrollBar().setBounds(verticalBarBnds);
+		if (this.horizontalScrollBar)
+			this.getHorizontalScrollBar().setBounds(horizontalBarBnds);
 	},
 
-    getScrollPosition: function() {         
-        var slideRoom = this.slideRoom();
-		// note that inner morph may have exactly the same size as outer morph so slideRoom may be zero
-        return slideRoom && -this.innerMorph().position().y/slideRoom; 
-    },
-    
-    setScrollPosition: function(scrollPos) { 
-		// this.adjustForNewBounds();
-		scrollPos = Math.max(Math.min(1,scrollPos), 0);
-        this.innerMorph().setPosition(pt(this.innerMorph().position().x, -this.slideRoom()*scrollPos )); 
-		if (this.scrollBar)
-        	this.getScrollBar().adjustForNewBounds();
+},
+'debugging', {
 
-    },
-
-    getVisibleExtent: function(scrollPos) {
-        return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
-    },
-    
-    scrollToTop: function() {
-        this.setScrollPosition(0);
-		if (this.scrollBar)
-        	this.getScrollBar().adjustForNewBounds(); 
-    },
-
-    scrollToBottom: function() {
-        this.setScrollPosition(1);
-		if (this.scrollBar)
-        	this.getScrollBar().adjustForNewBounds(); 
-    },
-
-    scrollRectIntoView: function(r) {
-        var im = this.innerMorph();
-        if (!r || !im) return;
-        var bnds = this.innerBounds();
-		var yToView = r.y + im.getPosition().y;  // scroll down if above top
-        if (yToView < bnds.y) {
-            im.moveBy(pt(0, bnds.y - yToView));
-			if (this.scrollBar)
-            	this.getScrollBar().adjustForNewBounds();
-            return;
-        }
-        var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
-        var tweak = 5;  // otherwise it doesnt scroll up enough to look good
-        if (yToView > bnds.maxY() - tweak) {
-            im.moveBy(pt(0, bnds.maxY() - tweak - yToView))
-            if (this.scrollBar)
-				this.getScrollBar().adjustForNewBounds();
-        }
-    },
-    
-    adjustForNewBounds: function ($super) {
-        // Compute new bounds for clipMorph and scrollBar
-        $super();
-        if (!this.clipMorph) return;
-        var bnds = this.innerBounds();    	
-  		var clipR = bnds.insetBy(1);
-		if (this.scrollBar) {
-			clipR = this.calcClipR();
-		};
-        this.clipMorph.setExtent(clipR.extent());
-        
-		this.innerMorph().setExtent(clipR.extent());
-		// WebCards commented this out: //this destroyes the content. i don't like that (Julius)
-		//this.innerMorph().setExtent(clipR.extent()); 
-		
-        var barBnds = bnds.withTopLeft(clipR.topRight());
-        if (this.menuButton) {
-            var w = this.scrollBarWidth;
-            this.menuButton.setPosition(barBnds.topLeft());
-            //this.menuButton.setBounds(barBnds.topLeft().extent(pt(w, w)));
-            barBnds = barBnds.withTopLeft(barBnds.topLeft().addXY(0, w));
-        }
-		if (this.scrollBar)
-        	this.getScrollBar().setBounds(barBnds);
-    },
+	addSomeMorph: function() {
+		var inner  = this.innerMorph()
+		var m = Morph.makeRectangle(inner.getExtent().extentAsRectangle().randomPoint().extent(pt(50,50)));
+		m.setFill(Color.random())
+		inner.addMorph(m)
+	},
 
 });
 
-Global.newListPane = function(initialBounds) {
-    return new ScrollPane(new CheapListMorph(initialBounds,["-----"]), initialBounds); 
-};
+Object.extend(Global, { // helper functions
 
-Global.newTextListPane = function(initialBounds) {
-    return new ScrollPane(new TextListMorph(initialBounds, ["-----"]), initialBounds); 
-};
+	newListPane: function(initialBounds) {
+    	return new ScrollPane(new CheapListMorph(initialBounds,["-----"]), initialBounds); 
+	},
 
-Global.newRealListPane = function(initialBounds, suppressSelectionOnUpdate) {
-    return new ScrollPane(new ListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
-};
+	newTextListPane: function(initialBounds) {
+	    return new ScrollPane(new TextListMorph(initialBounds, ["-----"]), initialBounds); 
+	},
 
-Global.newDragnDropListPane = function(initialBounds, suppressSelectionOnUpdate) {
-    return new ScrollPane(new FilterableListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
-};
+	newRealListPane: function(initialBounds, suppressSelectionOnUpdate) {
+	    return new ScrollPane(new ListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
+	},
 
-Global.newTextPane = function(initialBounds, defaultText) {
-	var useChangeClue = true;
-    return new ScrollPane(new TextMorph(initialBounds, defaultText, useChangeClue), initialBounds); 
-};
+	newDragnDropListPane: function(initialBounds, suppressSelectionOnUpdate) {
+	    return new ScrollPane(new FilterableListMorph(initialBounds, ["-----"], null, null, suppressSelectionOnUpdate), initialBounds); 
+	},
 
-Global.newPrintPane = function(initialBounds, defaultText) {
-    return new ScrollPane(new PrintMorph(initialBounds, defaultText), initialBounds); 
-};
+	newTextPane: function(initialBounds, defaultText) {
+		var useChangeClue = true;
+	    return new ScrollPane(new TextMorph(initialBounds, defaultText, useChangeClue), initialBounds); 
+	},
 
-Global.newXenoPane = function(initialBounds) {
-    return new ScrollPane(new XenoMorph(initialBounds.withHeight(1000)), initialBounds);
-}
+	newPrintPane: function(initialBounds, defaultText) {
+	    return new ScrollPane(new PrintMorph(initialBounds, defaultText), initialBounds); 
+	},
+
+	newXenoPane: function(initialBounds) {
+	    return new ScrollPane(new XenoMorph(initialBounds.withHeight(1000)), initialBounds);
+	},
+	
+});
+
 
 // ===========================================================================
 // Utility widgets
@@ -3099,6 +3180,193 @@ BoxMorph.subclass('XenoMorph', {
 		//this.foRawNode.height = bounds.height;
     }
 
+});
+BoxMorph.subclass('BucketListMorph',
+'initialization', {
+	initialize: function($super, rect) {
+		$super(rect);
+
+		this.setFill(Color.white);
+		this.setBorderColor(Color.black);
+		this.setBorderWidth(1.0);
+		this.layoutManager = new VerticalLayout();
+
+		this.selectedIndex = -1;
+		this.selectedItem = [];
+	},
+},
+'default category', {
+	setList: function(list) {
+		if (this.list) {
+//			this.removeItem();
+			this.list = [];
+		}
+		list.map(this.addItem, this);
+	},
+
+	getList: function() {
+		if (!this.list) {
+			this.list = [];
+		}
+		return this.list;
+	},
+
+	addItem: function(item) {
+		if (!this.list) {
+			this.list = [];
+		}
+		this.list = this.list.concat(item);
+		this.addMorph(this.convertToListItem(this.convertToMorph(item)));
+	},
+
+	removeItem: function(item) {
+		var itemDetector = function(ea) { return ea == item };
+		var itemMorph = this.convertToMorph(item);
+
+		if (this.list.detect(detector)) {
+			this.list.reject(detector);
+			this.submorphs.invoke(function(ea) {
+				return ea == itemMorph;
+			});
+			this.relayout();
+		}
+	},
+
+	convertToListItem: function(itemMorph) {
+		var bounds = itemMorph.bounds().withWidth(this.getExtent().x);
+		if (!(itemMorph instanceof TextMorph)) {
+			bounds = bounds.expandBy(1.5);
+		}
+		var bucket = new BucketListItemMorph(bounds);
+		bucket.addMorph(itemMorph);
+		itemMorph.setPosition(pt(1.5,1.5));
+
+		itemMorph.ignoreEvents();
+		itemMorph.suppressHandles = true;
+		itemMorph.acceptInput = false;
+		itemMorph.suppressGrabbing = true;
+		itemMorph.focusHaloBorderWidth = 0;
+		itemMorph.drawSelection = Functions.Empty; // TODO does not serialize
+
+		return bucket;
+	},
+
+	convertToMorph: function(item) {
+		if (item instanceof Morph) {
+			return item;
+		}
+
+		var morph = new TextMorph(new Rectangle(0, 0, this.getExtent().x, 50), item.string || item.toString());
+		morph.setBorderWidth(0);
+		morph.padding = rect(pt(0,0), pt(0,0));
+		return morph;
+	},
+
+	handlesMouseDown: Functions.True,
+
+	onMouseDown: function(evt) {
+		this.setSelection([]);
+	},
+
+	onMouseMove: function(evt) {
+	},
+
+	takesKeyboardFocus: Functions.True,
+
+	setHasKeyboardFocus: function(newSetting) { 
+		this.hasKeyboardFocus = newSetting;
+		return newSetting;
+	},
+
+	onKeyPress: Functions.Empty,
+
+	onKeyDown: function(evt) {
+		console.log('' + evt);
+	},
+
+	getListItems: function() {
+		return this.submorphs.filter(function(ea) {
+			return ea instanceof BucketListItemMorph;
+		});
+	},
+
+	setSelection: function(indices) {
+		if (this.selectedItems && (this.selectedItems.length != 0)) {
+			this.selectedItems.map(function(ea) {
+				ea.deselectItem();
+			});
+		}
+		this.selectedItems = [];
+
+		var items = this.getListItems();
+
+		if (!(indices instanceof Array)) {
+			indices = [indices];
+		}
+
+		if (indices.length == 0) {
+			this.selectedIndex = -1;
+			return;
+		}
+
+		indices.each(function(index) {
+			this.selectedItems = this.selectedItems.concat(items[index]);
+			console.log('selected item: ' + index);
+		}, this);
+		this.selectedIndex = indices[0];
+	},
+
+	getSelectedItems: function() {
+		return [].concat(this.selectedItems);
+	},
+});
+BoxMorph.subclass('BucketListItemMorph',
+'initialization', {
+	initialize: function($super, initialBounds) {
+		$super(initialBounds);
+
+		this.setFill(TextSelectionMorph.prototype.style.fill);
+		this.setFillOpacity(0.0);
+		this.suppressHandles = true;
+		this.acceptInput = false;
+		this.suppressGrabbing = true;
+		this.focusHaloBorderWidth = 0;
+		this.drawSelection = Functions.Empty; // TODO does not serialize
+	},
+},
+'default category', {
+	handlesMouseDown: Functions.True,
+
+	onMouseDown: function(evt) {
+		var list = this.owner;
+		var selItems = list.getSelectedItems();
+
+		if ((selItems.length == 1) && (selItems[0] == this)) {
+			return;
+		}
+
+		var index = list.getListItems().indexOf(this);
+		this.selectItem();
+		list.setSelection(index);
+	},
+
+	onMouseMove: function(evt) {
+	},
+
+	selectItem: function() {
+		this.setFillOpacity(1.0);
+	},
+
+	deselectItem: function() {
+		this.setFillOpacity(0.0);
+	},
+
+	innerMorph: function() {
+		if (this.submorphs.length > 0) {
+			return this.submorphs[0];
+		}
+		return null;
+	},
 });
 
 XenoMorph.subclass('VideoMorph', {

@@ -503,10 +503,11 @@ PanelMorph.subclass('SquiggleMorph', {
     style: { 
 	borderWidth: 2, 
 	fill: using(lively.paint).link({$:"LinearGradient", 
-					stops: [{$:"Stop", offset: 0, color: Color.white},
-						{$:"Stop", offset: 1, color: Color.primary.blue.lighter()}], 
-					vector: lively.paint.LinearGradient.NorthSouth
-				       })
+		stops: [
+			{$:"Stop", offset: 0, color: Color.white},
+			{$:"Stop", offset: 1, color: Color.primary.blue.lighter()}], 
+		vector: lively.paint.LinearGradient.NorthSouth
+	       })
     },
     
     penStyle: {

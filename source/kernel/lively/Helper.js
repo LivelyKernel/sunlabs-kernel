@@ -641,6 +641,13 @@ Object.subclass('lively.Helper.XMLConverter', {
 });
 Object.extend(Global, {
 
+	showThenHide: function(morph, duration) {
+		duration = duration || 3;
+		morph.openInWorld();
+		if (duration) // FIXME use scheduler
+			(function() { morph.remove() }).delay(duration);
+	},
+
 	// highlight some point on the screen
 	showPt: function(/*pos or x,y, duration, extent*/) {
 		var args = $A(arguments);
@@ -655,9 +662,16 @@ Object.extend(Global, {
 		var b = new BoxMorph(extent.extentAsRectangle());
 		b.align(b.getCenter(), pos);
 		b.applyStyle({fill: Color.red});
-		b.openInWorld();
-		if (duration) // FIXME use scheduler
-			(function() { b.remove() }).delay(duration);
+		
+		showThenHide(b, duration);
+		return b;
+	},
+	
+	showRect: function(rect, duration) {
+		var b = new BoxMorph(rect);
+		b.applyStyle({borderColor: Color.red, borderWidth: 2, fill: null});
+		showThenHide(b, duration);
+		return b
 	},
 
 

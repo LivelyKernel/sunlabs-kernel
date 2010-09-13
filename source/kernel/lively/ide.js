@@ -449,7 +449,7 @@ Widget.subclass('lively.ide.BasicBrowser',
        var oldN3 = this.getPane3Selection();
 	var oldN4 = this.getPane4Selection();
 
-	var sourcePos = this.panel.sourcePane.getScrollPosition();
+	var sourcePos = this.panel.sourcePane.getVerticalScrollPosition();
 
 	var src = keepUnsavedChanges &&
 					this.hasUnsavedChanges() &&
@@ -477,14 +477,14 @@ Widget.subclass('lively.ide.BasicBrowser',
 	revertStateOfPane('Pane4', oldN4);
 
 	if (!src) {
-		this.panel.sourcePane.setScrollPosition(sourcePos);
+		this.panel.sourcePane.setVerticalScrollPosition(sourcePos);
 		return;
 	}
 
 	//this.setSourceString(src);
 	var text = this.panel.sourcePane.innerMorph();
 	text.setTextString(src.toString())
-	this.panel.sourcePane.setScrollPosition(sourcePos);
+	this.panel.sourcePane.setVerticalScrollPosition(sourcePos);
 	// text.changed()
 	text.showChangeClue(); // FIXME
 },

@@ -798,7 +798,7 @@ lively.Text.WrapStyle = Class.makeEnum([
 Morph.subclass('TextSelectionMorph', {
 
 	documentation: "Visual representation of the text selection",
-	style: {fill: Color.primary.green, borderWidth: 0, borderRadius: 1},
+	style: {fill: Color.primary.blue, borderWidth: 0, borderRadius: 1},
 	isEpimorph: true,
 	
 	initialize: function($super) {
@@ -1761,8 +1761,8 @@ BoxMorph.subclass('TextMorph', {
 			return $super(evt);
 
 		var scrollPane = this.owner.owner;
-		var slideRoom = scrollPane.slideRoom();
-		var scrollPos = scrollPane.getScrollPosition();
+		var slideRoom = scrollPane.slideRoomExtent().y;
+		var scrollPos = scrollPane.getVerticalScrollPosition();
 
 		var offset = -1 * evt.wheelDelta() / 10;
 		var newScrollPos = (slideRoom * scrollPos + offset) / slideRoom;
@@ -1773,7 +1773,7 @@ BoxMorph.subclass('TextMorph', {
 		if (newScrollPos > 1 )
 			 newScrollPos = 1;
 
-		scrollPane.setScrollPosition(newScrollPos)
+		scrollPane.setVerticalScrollPosition(newScrollPos)
 
 		evt.stop();
 		return true;
@@ -2783,8 +2783,8 @@ TextMorph.addMethods({
 		var sp = this.enclosingScrollPane();
 		if (!sp) return
 		// is the scrollbar to low to see the text contents?
-		if (sp.slideRoom() <= 0) sp.scrollToTop()
-		sp.setScrollPosition(sp.getScrollPosition());
+		if (sp.slideRoomExtent().y <= 0) sp.scrollToTop()
+		sp.setVerticalScrollPosition(sp.getVerticalScrollPosition());
 	},
 	
 	scrollSelectionIntoView: function() { 

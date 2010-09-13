@@ -1580,7 +1580,7 @@ BoxMorph.subclass('ComponentMorph', {
     addTextPane: function() {
         var minHeight = 70;
         var morph = newTextPane(this.getBoundsAndShrinkIfNecessary(minHeight), "------");
-		morph.disableScrollBar();
+		morph.disableScrollBars();
 
 		morph.adoptToBoundsLayout = 'layoutRelativeExtent';
 		// FIXME closure assignment does not serialize
@@ -2535,13 +2535,13 @@ ComponentMorph.subclass('FabrikMorph', {
 	/* Maintance Helper Scripts */
 	disableAllScrollBars: function() {
 		this.submorphs.each(function(cm){ cm.submorphs.each(function(ea){
-			if (ea.disableScrollBar) ea.disableScrollBar()
+			if (ea.disableScrollBars) ea.disableScrollBars()
 		})})
 	},
 
 	enableAllScrollBars: function() {
 		this.submorphs.each(function(cm){ cm.submorphs.each(function(ea){
-			if (ea.enableScrollBar) ea.enableScrollBar()
+			if (ea.addVerticalScrollBar) ea.addVerticalScrollBar()
 		})})
 	}
 });
