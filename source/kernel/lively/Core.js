@@ -4581,8 +4581,8 @@ PasteUpMorph.subclass("WorldMorph",
 	},
     
 	remove: function() {
-		if (!this.rawNode.parentNode) return null;  // already removed
 		this.hands.clone().forEach(function(hand) { this.removeHand(hand) }, this);
+		if (!this.rawNode.parentNode) return null;  // already removed
 		this.stopStepping();
 		this.removeRawNode();
 		return this;
