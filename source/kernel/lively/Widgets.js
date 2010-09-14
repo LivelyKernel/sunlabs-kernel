@@ -3997,135 +3997,140 @@ Widget.subclass('XenoBrowserWidget', {
 // ===========================================================================
 
 
-BoxMorph.subclass("TitleBarMorph", {
+BoxMorph.subclass("TitleBarMorph", 
 
-    documentation: "Title bar for WindowMorphs",
+'properties', {
 
-    controlSpacing: 3,
-    barHeight: 22,
-    shortBarHeight: 15,
-    style: {borderWidth: 0, fill: null},
-    labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), 
-		  fill: lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
-						     new lively.paint.Stop(1, Color.gray)])
-		},
-    
-    initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
-	if (optSuppressControls)  {  // for dialog boxes
-	  this.suppressControls = true;
-	  this.barHeight = this.shortBarHeight;
-  }
-	var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
+	documentation: "Title bar for WindowMorphs",
+
+	controlSpacing: 3,
+	barHeight: 22,
+	shortBarHeight: 15,
+	style: {borderWidth: 0, fill: null},
+
+	labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), 
+
+	fill: lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
+		new lively.paint.Stop(1, Color.gray)])
+	},
+},'intitialize', {	
+	initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
+		if (optSuppressControls)  {  // for dialog boxes
+			this.suppressControls = true;
+			this.barHeight = this.shortBarHeight;
+		}
+		var bounds = new Rectangle(0, 0, windowWidth, this.barHeight);
 	
-        $super(bounds);
+		$super(bounds);
 	
-	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
-	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
-	// bounds will be adjusted in adjustForNewBounds()
-	var contentMorph = Morph.makeRectangle(bounds);
-	this.addMorph(new ClipMorph(bounds)).addMorph(contentMorph);
-	contentMorph.linkToStyles(["titleBar"]);
-	this.ignoreEvents();
-	contentMorph.ignoreEvents();
-	contentMorph.owner.ignoreEvents();
-	this.contentMorph = contentMorph;
+		// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
+		// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
+		// bounds will be adjusted in adjustForNewBounds()
+		var contentMorph = Morph.makeRectangle(bounds);
+		this.addMorph(new ClipMorph(bounds)).addMorph(contentMorph);
+		contentMorph.linkToStyles(["titleBar"]);
+		this.ignoreEvents();
+		contentMorph.ignoreEvents();
+		contentMorph.owner.ignoreEvents();
+		this.contentMorph = contentMorph;
 	
-        this.windowMorph = windowMorph;
-
-	    
-        // Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
-        var label;
-        if (headline instanceof TextMorph) {
-	    label = headline;
-        } else if (headline != null) { // String
-	    // wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
-	    var width = headline.length * 8; 
-	    label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
-        }
-        label.applyStyle(this.labelStyle);
-        this.label = this.addMorph(label);
-	if (!this.suppressControls) {
-            var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
-            this.closeButton =  this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange));
-	    this.menuButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue));
-            this.collapseButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow));
-	    this.connectButtons(windowMorph);
-	} 
-        this.adjustForNewBounds();  // This will align the buttons and label properly
-        return this;
-    },
-    
-    connectButtons: function(w) {
-      if (this.suppressControls) return;
-	this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
-	this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
-	this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
-    },
-
-    
-    onDeserialize: function() {
-        this.connectButtons(this.windowMorph);
-    },
-
-    acceptsDropping: function(morph) {
-        //console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
-        return morph instanceof WindowControlMorph; // not used yet... how about text...
-    },
-
-    highlight: function(trueForLight) {
-	var gfx = lively.paint;
-	this.label.setFill(trueForLight ? new gfx.LinearGradient([new gfx.Stop(0, Color.white), 
-								  new gfx.Stop(1, Color.lightGray)]) : null);
-    },
-
-    okToBeGrabbedBy: function(evt) {
-        var oldTop = this.world().topSubmorph();
-	if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
-        return this.windowMorph;
-    },
-
-    adjustForNewBounds: function($super) {
-	var innerBounds = this.innerBounds();
-	var sp = this.controlSpacing;
-        $super();
-        var loc = this.innerBounds().topLeft().addXY(sp, sp);
-        var l0 = loc;
-        var dx = pt(this.barHeight - sp, 0);
-        if (this.menuButton) { 
-	    this.menuButton.setPosition(loc);  
-	    loc = loc.addPt(dx); 
-	}
-        if (this.label) {
-            this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
-            if (this.label.bounds().topLeft().x < loc.x) {
-                this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-3));
-            }
-        }
-	if (this.closeButton) { 
-	    loc = this.innerBounds().topRight().addXY(-sp - this.closeButton.shape.bounds().width, sp);
-	    this.closeButton.setPosition(loc);  
-	    loc = loc.subPt(dx); 
-	}
-        if (this.collapseButton) { 
-	    this.collapseButton.setPosition(loc);  
-	    //loc = loc.subPt(dx); 
-	}
+		this.windowMorph = windowMorph;
+		
+		// Note: Layout of submorphs happens in adjustForNewBounds (q.v.)
+		var label;
+		if (headline instanceof TextMorph) {
+			label = headline;
+		} else if (headline != null) { // String
+			// wild guess headlineString.length * 2 *  font.getCharWidth(' ') + 2;
+			var width = headline.length * 8; 
+			label = new TextMorph(new Rectangle(0, 0, width, this.barHeight), headline).beLabel();
+		}
+		label.applyStyle(this.labelStyle);
+		this.label = this.addMorph(label);
+		if (!this.suppressControls) {
+			var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
+			this.closeButton =  this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange));
+			this.menuButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue));
+			this.collapseButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow));
+			this.connectButtons(windowMorph);
+		} 
+		this.adjustForNewBounds();  // This will align the buttons and label properly
+		return this;
+	},
 	
+	connectButtons: function(w) {
+		if (this.suppressControls) return;
+		this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
+		this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
+		this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
+	},
 	
-	var style = this.styleNamed("titleBar");
-	var w = style.borderWidth;
-	var r = style.borderRadius;
-	this.contentMorph.setBounds(new Rectangle(w/2, w/2, innerBounds.width, this.barHeight + r));
-	var clip = this.contentMorph.owner;
-	clip.setBounds(innerBounds.insetByRect(Rectangle.inset(-w/2, -w/2, -w/2, 0)));
-    },
+	onDeserialize: function() {
+		this.connectButtons(this.windowMorph);
+	},
+
+	okToDuplicate: Functions.False
+
+}, 'event handling',{
+	okToBeGrabbedBy: function(evt) {
+		var oldTop = this.world().topSubmorph();
+		if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
+		return this.windowMorph;
+	},
+
+	acceptsDropping: function(morph) {
+		//console.log('accept drop from %s of %s, %s', this, morph, morph instanceof WindowControlMorph);
+		return morph instanceof WindowControlMorph; // not used yet... how about text...
+	},
+
+}, 'layout',{
+	adjustForNewBounds: function($super) {
+		var innerBounds = this.innerBounds();
+		var sp = this.controlSpacing;
+		$super();
+		var loc = this.innerBounds().topLeft().addXY(sp, sp);
+		var l0 = loc;
+		var dx = pt(this.barHeight - sp, 0);
+		if (this.menuButton) { 
+			this.menuButton.setPosition(loc);  
+			loc = loc.addPt(dx); 
+		}
+		if (this.label) {
+			this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
+			if (this.label.bounds().topLeft().x < loc.x) {
+				this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-3));
+			}
+		}
+		if (this.closeButton) { 
+			loc = this.innerBounds().topRight().addXY(-sp - this.closeButton.shape.bounds().width, sp);
+			this.closeButton.setPosition(loc);  
+			loc = loc.subPt(dx); 
+		}
+		if (this.collapseButton) { 
+			this.collapseButton.setPosition(loc);  
+			//loc = loc.subPt(dx); 
+		};
+		
+		var style = this.styleNamed("titleBar");
+		var w = style.borderWidth;
+		var r = style.borderRadius;
+		this.contentMorph.setBounds(new Rectangle(w/2, w/2, innerBounds.width, this.barHeight + r));
+		var clip = this.contentMorph.owner;
+		clip.setBounds(innerBounds.insetByRect(Rectangle.inset(-w/2, -w/2, -w/2, 0)));
+	},
+},'window', {
+
+	highlight: function(trueForLight) {
+		var gfx = lively.paint;
+		this.label.setFill(trueForLight ? new gfx.LinearGradient([new gfx.Stop(0, Color.white), 
+			new gfx.Stop(1, Color.lightGray)]) : null);
+	},
 	
 	setTitle: function(string) {
 		this.label.setTextString(string);
 		this.adjustForNewBounds();  // This will align the buttons and label properly
 	},
 
-    okToDuplicate: Functions.False
 
 });
 
@@ -4274,28 +4279,28 @@ Morph.subclass('WindowMorph', {
         $super(new lively.scene.Rectangle(bounds));
         var titleBar = this.makeTitleBar(headline, bounds.width, optSuppressControls);
         var titleHeight = titleBar.bounds().height;
-	this.setBounds(bounds.withHeight(bounds.height + titleHeight));
+		this.setBounds(bounds.withHeight(bounds.height + titleHeight));
         this.targetMorph = this.addMorph(targetMorph);
         this.titleBar = this.addMorph(titleBar);
         this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
         targetMorph.setPosition(this.contentOffset);
         this.closeAllToDnD();
-	this.collapsedTransform = null;
-	this.collapsedExtent = null;
+		this.collapsedTransform = null;
+		this.collapsedExtent = null;
         this.expandedTransform = null;
-	this.expandedExtent = null;
-	this.ignoreEventsOnExpand = false;
-	if (Config.useStatusBar) this.statusBar = this.addMorph(new StatusBarMorph(this.titleBar));
+		this.expandedExtent = null;
+		this.ignoreEventsOnExpand = false;
+		if (Config.useStatusBar) this.statusBar = this.addMorph(new StatusBarMorph(this.titleBar));
         // this.adjustForNewBounds();
         return this;
     },
 
     shadowCopy: function(hand) {
-	// For now just make a rectangle, later add top rounding
-	var copy = Morph.makeRectangle(this.getPosition().extent(this.getExtent()));
-	copy.applyStyle({fill: Color.black, fillOpacity: 0.3, strokeOpacity: 0.3, borderRadius: 8});
-	copy.pvtSetTransform(this.getTransform());
-	return copy;
+		// For now just make a rectangle, later add top rounding
+		var copy = Morph.makeRectangle(this.getPosition().extent(this.getExtent()));
+		copy.applyStyle({fill: Color.black, fillOpacity: 0.3, strokeOpacity: 0.3, borderRadius: 8});
+		copy.pvtSetTransform(this.getTransform());
+		return copy;
     },
 
     toString: function($super) {
@@ -4305,14 +4310,20 @@ Morph.subclass('WindowMorph', {
 
     restorePersistentState: function($super, importer) {
         $super(importer);
-	// remove the following:
+		// remove the following:
         //this.contentOffset = pt(0, this.titleBar.bounds().height);
     },
+
+}, 'window bar', {
     
     makeTitleBar: function(headline, width, optSuppressControls) {
         // Overridden in TabbedPanelMorph
         return new TitleBarMorph(headline, width, this, optSuppressControls);
     },
+
+	setTitle: function(string) {
+		this.titleBar.setTitle(string);
+	},
 
     windowContent: function() { return this.targetMorph; },
     
@@ -4325,20 +4336,20 @@ Morph.subclass('WindowMorph', {
     collapse: function() { 
         if (this.isCollapsed()) return;
         this.expandedTransform = this.getTransform();
-	this.expandedExtent = this.getExtent();
-	this.expandedPosition = this.position();
-	this.ignoreEventsOnExpand = this.targetMorph.areEventsIgnored();
-	this.targetMorph.ignoreEvents(); // unconditionally
-	this.targetMorph.setVisible(false);
-	var finCollapse = function () {
-		this.setTransform(this.collapsedTransform  || this.expandedTransform);
+		this.expandedExtent = this.getExtent();
+		this.expandedPosition = this.position();
+		this.ignoreEventsOnExpand = this.targetMorph.areEventsIgnored();
+		this.targetMorph.ignoreEvents(); // unconditionally
+		this.targetMorph.setVisible(false);
+		var finCollapse = function () {
+			this.setTransform(this.collapsedTransform  || this.expandedTransform);
         	this.state = 'collapsed';  // Set it now so setExtent works right
         	if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
-		this.shape.setBounds(this.titleBar.bounds());
-		this.layoutChanged();
+			this.shape.setBounds(this.titleBar.bounds());
+			this.layoutChanged();
         	this.titleBar.highlight(false);
-	}.bind(this);
-	if(this.collapsedPosition && this.collapsedPosition.dist(this.position()) > 100)
+		}.bind(this);
+		if(this.collapsedPosition && this.collapsedPosition.dist(this.position()) > 100)
 			this.animatedInterpolateTo(this.collapsedPosition, 5, 50, finCollapse);
 		else finCollapse();
     },
@@ -4347,23 +4358,23 @@ Morph.subclass('WindowMorph', {
         if (!this.isCollapsed()) return;
         this.collapsedTransform = this.getTransform();
         this.collapsedExtent = this.innerBounds().extent();
-	this.collapsedPosition = this.position();
+		this.collapsedPosition = this.position();
         var finExpand = function () {	
-		this.setTransform(this.expandedTransform); 
-		this.targetMorph.setVisible(true);
-		// enable events if they weren't disabled in expanded form
-		if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
-        	this.state = 'expanded';  // Set it now so setExtent works right
-		if (this.expandedExtent) {
-			this.setExtent(this.expandedExtent);
-			this.shape.setBounds(this.expandedExtent.extentAsRectangle());
-		}
-		this.world().addMorphFront(this);  // Bring this window forward if it wasn't already
-		this.layoutChanged();
-        	this.takeHighlight();
-	}.bind(this);
-	if(this.expandedPosition && this.expandedPosition.dist(this.position()) > 100)
-			this.animatedInterpolateTo(this.expandedPosition, 5, 50, finExpand);
+			this.setTransform(this.expandedTransform); 
+			this.targetMorph.setVisible(true);
+			// enable events if they weren't disabled in expanded form
+			if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
+	        	this.state = 'expanded';  // Set it now so setExtent works right
+			if (this.expandedExtent) {
+				this.setExtent(this.expandedExtent);
+				this.shape.setBounds(this.expandedExtent.extentAsRectangle());
+			}
+			this.world().addMorphFront(this);  // Bring this window forward if it wasn't already
+			this.layoutChanged();
+	        	this.takeHighlight();
+		}.bind(this);
+		if(this.expandedPosition && this.expandedPosition.dist(this.position()) > 100)
+				this.animatedInterpolateTo(this.expandedPosition, 5, 50, finExpand);
 		else finExpand();
     },
 
@@ -4376,6 +4387,8 @@ Morph.subclass('WindowMorph', {
     getCollapseHelp: function() { return this.isCollapsed() ? "Expand" : "Collapse"; },
 
     contentIsVisible: function() { return !this.isCollapsed(); },
+}, 'event handling', {
+
 
     // Following methods promote windows on first click----------------
     morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
@@ -4393,7 +4406,7 @@ Morph.subclass('WindowMorph', {
         if (this === this.world().topSubmorph()) return false;  // already on top
         if (this.isCollapsed()) return false;  // collapsed labels OK from below
         if (this.titleBar.fullContainsWorldPoint(evt.point())) return false;  // labels OK from below
-        return true;  // it's in my content area
+		return true;  // it's in my content area
     },
 
     // Next four methods hold onto control until mouseUp brings the window forward.
@@ -4411,8 +4424,9 @@ Morph.subclass('WindowMorph', {
         var oldTop = this.world().topSubmorph();
         this.world().addMorphFront(this);
         evt.hand.setMouseFocus(null);
-	if(this.targetMorph.takesKeyboardFocus()) evt.hand.setKeyboardFocus(this.targetMorph);
-        return true;
+		if(this.targetMorph.takesKeyboardFocus()) 
+			evt.hand.setKeyboardFocus(this.targetMorph);
+		return true;
     },
 
     captureMouseEvent: function($super, evt, hasFocus) {
@@ -4427,12 +4441,14 @@ Morph.subclass('WindowMorph', {
         return this; 
     },
 
+}, 'window', {
+
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
         var oldTop = this.world().topWindow();
-	if (!oldTop.titleBar) return; // may be too early when in deserialization
-        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
-        this.titleBar.highlight(true);
+		if (!oldTop.titleBar) return; // may be too early when in deserialization
+	        if (oldTop instanceof WindowMorph) oldTop.titleBar.highlight(false);
+	        this.titleBar.highlight(true);
     },
     // End of window promotion methods----------------
 
@@ -4457,12 +4473,12 @@ Morph.subclass('WindowMorph', {
         tm.removeItemNamed("turn fisheye on");
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
-
+}, 'layout', {
     reshape: function($super, partName, newPoint, lastCall) {
-	// Minimum size for reshap should probably be a protoype var
-	var r = this.innerBounds().withPartNamed(partName, newPoint);
-	var maxPoint = r.withExtent(r.extent().maxPt(pt(100,120))).partNamed(partName);
-	return $super(partName, maxPoint, lastCall);
+		// Minimum size for reshap should probably be a protoype var
+		var r = this.innerBounds().withPartNamed(partName, newPoint);
+		var maxPoint = r.withExtent(r.extent().maxPt(pt(100,120))).partNamed(partName);
+		return $super(partName, maxPoint, lastCall);
     },
 
     adjustForNewBounds: function ($super) {
@@ -4474,19 +4490,14 @@ Morph.subclass('WindowMorph', {
         var newHeight = bnds.height;
         this.titleBar.setExtent(pt(newWidth, titleHeight));
         this.titleBar.setPosition(bnds.topLeft());
-	if (this.statusBar) {  // DI: this doesn't track reframing...
-	    this.statusBar.setPosition(pt(0, this.isCollapsed() ? titleHeight : bnds.height));
-	    this.statusBar.setExtent(pt(newWidth, this.statusBar.innerBounds().height));
-	}
+		if (this.statusBar) {  // DI: this doesn't track reframing...
+		    this.statusBar.setPosition(pt(0, this.isCollapsed() ? titleHeight : bnds.height));
+		    this.statusBar.setExtent(pt(newWidth, this.statusBar.innerBounds().height));
+		}
         if (this.isCollapsed()) return;
         this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
     },
-
-	setTitle: function(string) {
-		this.titleBar.setTitle(string);
-	}
-
 });
    
 // every morph should be able to get his window
