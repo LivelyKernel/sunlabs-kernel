@@ -73,8 +73,7 @@ Object.subclass('ScriptLoader',
 	removeQueries: function(url) {
 		return url.split('?').first();
 	},
-	
-	resolveURLString: function(urlString) {
+resolveURLString: function(urlString) {
 		// FIXME duplicated from URL class in lively. Network
 		// actually lively.Core should require lively.Network -- but lively.Network indirectly
 		// lively.Core ====>>> FIX that!!!
@@ -90,7 +89,10 @@ Object.subclass('ScriptLoader',
 		result = result.replace(/\/\.\//g, '/')
 		return result
 	},
-		
+
+	
+	
+	
 	scriptElementLinksTo: function(el, url) {
 		if (!el.getAttribute) return false;
 		// FIXME use namespace consistently
@@ -2130,7 +2132,7 @@ Morph.addMethods('default', {
 		this.setBorderRadius(r);
 	},
 
-	getFillOpacity: function() { this.shape.getFillOpacity(); },
+	getFillOpacity: function() { return this.shape.getFillOpacity(); },
 
 	setFillOpacity: function(op) {
 		this.shape.setFillOpacity(op);
@@ -2144,7 +2146,7 @@ Morph.addMethods('default', {
 		return op;
 	},
 
-	getStrokeOpacity: function() { this.shape.getStrokeOpacity(); },
+	getStrokeOpacity: function() { return this.shape.getStrokeOpacity() },
 
     setLineJoin: function(joinType) { this.shape.setLineJoin(joinType); return joinType },
 
@@ -2152,7 +2154,7 @@ Morph.addMethods('default', {
 
     setLineCap: function(capType) { this.shape.setLineCap(capType); return capType },
 
- 	getLineCap: function() { this.shape.getLineCap() },
+ 	getLineCap: function() { return this.shape.getLineCap() },
 
 	applyStyle: function(specs) { // note: use reflection instead?
 		for (var i = 0; i < arguments.length; i++) {
