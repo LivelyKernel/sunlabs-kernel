@@ -26,7 +26,7 @@
  * that will be included in the system when it starts. 
  */
 
-module('lively.Examples').requires().toRun(function(thisModule) {
+module('lively.Examples').requires('lively.Network').toRun(function(thisModule) {
 
 // ===========================================================================
 // Widget (panel) Tester Demo
