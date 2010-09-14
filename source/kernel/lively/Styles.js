@@ -25,7 +25,7 @@ module('lively.Styles').requires('lively.Widgets').toRun(function() {
 if (!Global.DisplayThemes)
 	Global.DisplayThemes = {};
 	
-DisplayThemes['primitive'] = using(lively.paint).link({ 
+Object.extend(DisplayThemes, {primitive: using(lively.paint).link({ 
  	// Primitive look and feel -- flat fills and no rounding or translucency
 	styleName: 'primitive',
 	titleBar: {
@@ -83,9 +83,10 @@ DisplayThemes['primitive'] = using(lively.paint).link({
 	world: {
 		fill: Color.white,
 	}
-});
+}),
 
-DisplayThemes['turquoise'] = using(lively.paint).link({ 
+
+turquoise: using(lively.paint).link({ 
 	// Like turquoise, black and silver jewelry, [or other artistic style]
 	styleName: 'turquoise',
 	titleBar: { 
@@ -148,9 +149,9 @@ DisplayThemes['turquoise'] = using(lively.paint).link({
 	world: {
 		fill: Color.white,
 	}
-})
+}),
 
-DisplayThemes['hpi'] = using(lively.paint).link({
+hpi:  using(lively.paint).link({
 	styleName: 'hpi',
 	raisedBorder: { // conenience grouping
 		//borderWidth: 2,
@@ -165,8 +166,10 @@ DisplayThemes['hpi'] = using(lively.paint).link({
 		borderWidth: 2, 
 		bordercolor: Color.darkGray,
 		fill: {$:"LinearGradient", 
-			stops: [{$:"Stop", offset: 0.0, color: Color.gray.mixedWith(Color.black, 0.8)},
-					{$:"Stop", offset: 1.0, color: Color.gray.lighter()}], 
+			stops: [
+					{$:"Stop", offset: 0.0, color: Color.gray.mixedWith(Color.black, 0.9)},
+					{$:"Stop", offset: 0.6, color: Color.gray.mixedWith(Color.white, 0.5)},
+					{$:"Stop", offset: 1.0, color: Color.gray.mixedWith(Color.black, 0.9)}], 
 			vector: lively.paint.LinearGradient.SouthNorth 
 		}
 	},
@@ -174,17 +177,21 @@ DisplayThemes['hpi'] = using(lively.paint).link({
 		borderColor: Color.darkGray, 
 		borderWidth: 1, 
 		fill: {$: "LinearGradient", 
-			stops: [{$:"Stop", offset: 0, color: Color.gray.lighter(2)},
-					{$:"Stop", offset: 1, color: Color.gray}]
+			stops: [
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
+				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.5)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}]
 		}
 	},
 	button: { 
 		borderColor: Color.neutral.gray, 
-		borderWidth: 0.4, 
-		borderRadius: 6,
+		borderWidth: 0.6, 
+		borderRadius: 5,
 		fill: {$:"LinearGradient", 
-			stops: [{$:"Stop", offset:0, color:Color.gray.mixedWith(Color.black, 0.7)}, 
-					{$:"Stop", offset:1, color: Color.gray.lighter()}],
+			stops: [
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
+				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.5)}, 
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
 			vector: lively.paint.LinearGradient.SouthNorth }
 	},
 	widgetPanel: { 
@@ -197,8 +204,9 @@ DisplayThemes['hpi'] = using(lively.paint).link({
 	clock: { 
 		borderColor: Color.black, borderWidth: 4,
 		fill: {$:"RadialGradient", 
-			stops: [{$:"Stop", offset: 0, color:Color.gray.lighter(2)}, 
-					{$:"Stop", offset: 1, color:Color.gray.lighter()} ]}
+			stops: [
+				{$:"Stop", offset: 0, color:Color.gray.lighter(2)}, 
+				{$:"Stop", offset: 1, color:Color.gray.lighter()} ]}
 	},
 	panel: {
 		fill: Color.gray.lighter(2), 
@@ -232,6 +240,7 @@ DisplayThemes['hpi'] = using(lively.paint).link({
 	}
 })
 
+});
 
 
 });
