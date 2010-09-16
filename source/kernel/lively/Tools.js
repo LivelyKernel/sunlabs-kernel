@@ -435,13 +435,17 @@ Widget.subclass('ColumnInspector',
 			setRoot: {dir: '<-', name: 'rootObj', options: {
 				converter: function(obj) { return new InspectorNode('', obj) }}},
 			selection: {dir: '->', name: 'inspectee', options: {
-				converter: function(node) { return node.object }}},
+				converter: function(node) { 
+					// if (!node) return "inspectee has no node?"
+					return node.object }}},
 		});
 
 		// set title
 		panel.listPane.plugTo(panel, {
 			selection: {dir: '->', name: 'setTitle', options: {
-				converter: function(node) {return node.object ? node.object.toString() : String(node.object)}}},
+				converter: function(node) {	
+					// if (!node) return "no node?";
+					return node.object ? node.object.toString() : String(node.object)}}},
 		});
 
 		// source pane
@@ -486,7 +490,9 @@ ChainedListMorphNode.subclass('InspectorNode',
 		if (Object.isString(this.object)) return [];
 		var props = Properties.own(this.object)
 		if (this.object.__proto__) props.push('__proto__');
-		return props.collect(function(key) { return new InspectorNode(key, this.object[key]) }, this);
+		return props
+			.sort()
+			.collect(function(key) { return new InspectorNode(key, this.object[key]) }, this);
 	},
 });
 Object.extend(lively.Tools, {
