@@ -39,7 +39,7 @@
 // ===========================================================================
 
 
-module('lively.Widgets').requires('lively.Text').toRun(function(thisModule, text) {
+module('lively.Widgets', 'lively.Styles').requires('lively.Text').toRun(function(thisModule, text) {
 
 
 BoxMorph.subclass('ButtonMorph', {
@@ -1086,8 +1086,12 @@ BoxMorph.subclass('PanelMorph', {
 		if (aspect == plug.getVisible || aspect == 'all') {
 			this.onVisibleUpdate(this.getModelValue('getVisible', true));
 		}
-	}
+	},
 
+	setTitle: function(title) {
+		if (!this.owner || !this.owner.setTitle) return;
+		this.owner.setTitle(title);
+	},
 });
 
 Object.extend(PanelMorph, {
@@ -2012,7 +2016,7 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 		return menu;
 	},
 	// FIXME cleanup the two methods below
-	 selectLineAt: function(lineNo, shouldUpdateModel) {  
+	 selectLineAt: function(lineNo, shouldUpdateModel) {
         if (this.selectedLineNo in this.submorphs) { 
             this.submorphs[this.selectedLineNo].setFill(this.savedFill);
             this.submorphs[this.selectedLineNo].setTextColor(this.savedTextColor);
@@ -2031,14 +2035,14 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 			item.setFill(Color.primary.blue);
 			item.setTextColor(Color.gray.lighter(2));
 
-
             selectionContent = /*****/this.filteredItemList()/*changed for filter*/[lineNo];
-            if (selectionContent.isListItem) {
+            if (selectionContent.isListItem)
 				selectionContent = selectionContent.value;
-			}
+
             this.scrollItemIntoView(item);
         }
         shouldUpdateModel && this.setSelection(selectionContent, true);
+		this.selection = selectionContent; // for connect
     },
 
 	onSelectionUpdate: function($super, selection) {
@@ -2462,17 +2466,18 @@ BoxMorph.subclass("SliderMorph", {
 	initialize: function($super, initialBounds, scaleIfAny) {
 		$super(initialBounds);
 
+
 		this.setValue(0);
 		this.setSliderExtent(0.1);
 		
 		this.valueScale = (scaleIfAny === undefined) ? 1.0 : scaleIfAny;
 		var slider = Morph.makeRectangle(0, 0, this.mss, this.mss);
 		this.slider = this.addMorph(slider);
-		this.slider.linkToStyles(['slider']);
+
 		this.setupMouseEventRelays();
 
 		this.adjustForNewBounds();
-		this.adjustFill();
+		this.setupFill();
 		
 		return this;
 	},
@@ -2548,7 +2553,8 @@ BoxMorph.subclass("SliderMorph", {
 		// need to call adjust to update graphics, but only after slider exists
 		if (this.slider) {
 			this.adjustForNewBounds(); 
-			this.adjustFill();
+			// this.adjustFill();
+
 		}
 	},
 	
@@ -2580,26 +2586,21 @@ BoxMorph.subclass("SliderMorph", {
 		this.slider.setBounds(bnds.topLeft().addPt(topLeft).extent(sliderExt));
 
 		//this.slider.shapeRoundEdgesBy((this.vertical() ? sliderExt.x : sliderExt.y)/2);
-		this.slider.shapeRoundEdgesBy(Math.min(sliderExt.x, sliderExt.y)/2);
+		// this.slider.shapeRoundEdgesBy(Math.min(sliderExt.x, sliderExt.y)/2);
 	},
 
 	adjustFill: function() {
-		var fill = this.slider.getFill();
-		var gfx = lively.paint;
-		if (fill instanceof lively.paint.LinearGradient) {
-			var direction = this.vertical() ? gfx.LinearGradient.EastWest : gfx.LinearGradient.NorthSouth;
-			var baseColor = fill.stops[0].color();
-			this.setFill(new gfx.LinearGradient([new gfx.Stop(0, baseColor, 1), 
-							 new gfx.Stop(0.5, baseColor.lighter(2)),
-							 new gfx.Stop(1, baseColor)], direction));
-			// FIXME: just flip the gradient
-			this.slider.setFill(
-				new gfx.LinearGradient([ new gfx.Stop(0, baseColor),
-				new gfx.Stop(1, fill.stops[1].color())], direction));
-			this.setBorderWidth(this.slider.getBorderWidth());
-		} else if (fill) {
-			this.setFill(fill.lighter());
-		}		
+
+	},
+
+	setupFill: function() {
+		if (this.vertical()) {
+			this.slider.linkToStyles(['slider']);
+			this.linkToStyles(['slider_background']);		
+		} else {
+			this.slider.linkToStyles(['slider_horizontal']);
+			this.linkToStyles(['slider_background_horizontal']);		
+		}
 	},
 	
 	sliderPressed: function(evt, slider) {
@@ -2715,6 +2716,9 @@ BoxMorph.subclass("SliderMorph", {
 
 });
 
+
+
+
 BoxMorph.subclass('ScrollPane',
 'settings', {
 	description: "A scrolling container",
@@ -2741,23 +2745,26 @@ BoxMorph.subclass('ScrollPane',
     },
 
 	addVerticalScrollBar: function() {
-		this.verticalScrollBar = this.addMorph(new SliderMorph(new Rectangle(0,0,0,0)));
+		this.verticalScrollBar = this.addMorph(new SliderMorph(new Rectangle(0,0,5,10)));
 		this.verticalScrollBar.setBounds(this.calcVerticalScrollBarBounds());
-		this.verticalScrollBar.applyStyle({borderWidth: 0, suppressHandles: true});
-		lively.bindings.connect(this.verticalScrollBar, 'value', this, 'setVerticalScrollPosition');
-		lively.bindings.connect(this, 'setVerticalScrollPosition', this.verticalScrollBar, 'setValue');
-		lively.bindings.connect(this.verticalScrollBar, 'getSliderExtent', this, 'getVisibleExtent');
+		this.verticalScrollBar.applyStyle({suppressHandles: true});
+		this.verticalScrollBar.plugTo(this, {
+			value: '->setVerticalScrollPosition',
+			setValue: '<-setVerticalScrollPosition',
+			getSliderExtent: '->getVerticalVisibleExtent',
+		});
 		this.adjustForNewBounds();
-
 	},
 	
 	addHorizontalScrollBar: function() {
-		this.horizontalScrollBar = this.addMorph(new SliderMorph(new Rectangle(0,0,0,0)));
+		this.horizontalScrollBar = this.addMorph(new SliderMorph(new Rectangle(0,0,10,5)));
 		this.horizontalScrollBar.setBounds(this.calcHorizontalScrollBarBounds());
-		this.horizontalScrollBar.applyStyle({borderWidth: 0, suppressHandles: true});
-		lively.bindings.connect(this.horizontalScrollBar, 'value', this, 'setHorizontalScrollPosition');
-		lively.bindings.connect(this, 'setHorizontalScrollPosition', this.horizontalScrollBar, 'setValue');
-		lively.bindings.connect(this.horizontalScrollBar, 'getSliderExtent', this, 'getVisibleExtent');
+		this.horizontalScrollBar.applyStyle({ suppressHandles: true});
+		this.horizontalScrollBar.plugTo(this, {
+			value: '->setHorizontalScrollPosition',
+			setValue: '<-setHorizontalScrollPosition',
+			getSliderExtent: '->getHorizontalVisibleExtent',
+		});
 		this.adjustForNewBounds();
 	},
 
@@ -2849,17 +2856,23 @@ BoxMorph.subclass('ScrollPane',
 	},
 
 	enableScrollBars: function() {
-		this.initializeVerticalScrollBar();
-		this.initializeHorizontalScrollBar();
+		this.adVerticalScrollBar();
+		this.addHorizontalScrollBar();
 	},
 	disableScrollBars: function() {
 		this.disableHorizontalScrollBar();
 		this.disableVerticalScrollBar();
 	},
 
-    getVisibleExtent: function(scrollPos) {
+
+    getVerticalVisibleExtent: function(scrollPos) {
         return Math.min(1, this.bounds().height / Math.max(10, this.innerMorph().bounds().height)); 
     },
+    getHorizontalVisibleExtent: function(scrollPos) {
+        return Math.min(1, this.bounds().width / Math.max(10, this.innerMorph().bounds().width)); 
+    },
+
+
 
 },
 'scrolling', {
@@ -2984,6 +2997,8 @@ BoxMorph.subclass('ScrollPane',
 		// FIXME:
 		var clipR = this.verticalScrollBar || this.horizontalScrollBar ? this.calcClipR() : bnds.insetBy(1);
 		this.clipMorph.setExtent(clipR.extent());
+
+		this.innerMorph().setExtent(clipR.extent());
 
 		var verticalBarBnds = this.calcVerticalScrollBarBounds(),
 			horizontalBarBnds = this.calcHorizontalScrollBarBounds();
@@ -3127,8 +3142,20 @@ BoxMorph.subclass("ColorPickerMorph", {
             var selectedColor = this.colorMap(relp.x,relp.y,rh2,wheel);
             this.setColor(selectedColor);
         } 
-    }
-    
+    },
+
+	openGrayons: function() {
+		var grayons = new CrayonColorChooserMorph();
+		this.world().addFramedMorph(grayons, 'Choose Color', undefined, false)	
+
+		connect(grayons, 'selectedColor', this, 'setColor');
+	},
+	
+	morphMenu: function($super, evt) {
+		var m = $super(evt);
+		m.addItem(["grayons", this.openGrayons], 0)
+		return m
+	}    
 });
 
 BoxMorph.subclass('XenoMorph', {
@@ -4007,11 +4034,9 @@ BoxMorph.subclass("TitleBarMorph",
 	barHeight: 22,
 	shortBarHeight: 15,
 	style: {borderWidth: 0, fill: null},
-
-	labelStyle: { borderRadius: 8, padding: Rectangle.inset(6, 2), 
-
-	fill: lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
-		new lively.paint.Stop(1, Color.gray)])
+	labelStyle: { 
+		borderRadius: 8, 
+		padding: Rectangle.inset(6, 2), 
 	},
 },'intitialize', {	
 	initialize: function($super, headline, windowWidth, windowMorph, optSuppressControls) {
@@ -4049,9 +4074,16 @@ BoxMorph.subclass("TitleBarMorph",
 		this.label = this.addMorph(label);
 		if (!this.suppressControls) {
 			var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
+
 			this.closeButton =  this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange));
+			this.closeButton.linkToStyles('titleBar_closeButton');
 			this.menuButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue));
-			this.collapseButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow));
+			this.menuButton.linkToStyles('titleBar_menuButton');
+
+			this.collapseButton = this.addMorph(
+				new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow));
+			this.collapseButton.linkToStyles('titleBar_collapseButton');
+
 			this.connectButtons(windowMorph);
 		} 
 		this.adjustForNewBounds();  // This will align the buttons and label properly
@@ -4121,9 +4153,12 @@ BoxMorph.subclass("TitleBarMorph",
 },'window', {
 
 	highlight: function(trueForLight) {
-		var gfx = lively.paint;
-		this.label.setFill(trueForLight ? new gfx.LinearGradient([new gfx.Stop(0, Color.white), 
-			new gfx.Stop(1, Color.lightGray)]) : null);
+		if (trueForLight) {
+			this.label.linkToStyles(['titleBar_label_highlight']);
+		} else {
+			this.label.linkToStyles(['titleBar_label']);
+		} 
+
 	},
 	
 	setTitle: function(string) {
@@ -4194,8 +4229,8 @@ Morph.subclass("WindowControlMorph", {
 		$super(new lively.scene.Ellipse(rect.insetBy(inset)));
 		var gfx = lively.paint;
 		this.setFill(new gfx.RadialGradient([new gfx.Stop(0, color.lighter(2)),
-		new gfx.Stop(0.5, color),
-		new gfx.Stop(1, color.darker())], this.focus));
+			new gfx.Stop(0.5, color),
+			new gfx.Stop(1, color.darker())], this.focus));
 		return this;
 	},
 
@@ -4208,24 +4243,24 @@ Morph.subclass("WindowControlMorph", {
     },
 
 	onMouseOver: function($super, evt) {
-		if (this.getFill() instanceof lively.paint.Gradient) {
-			var prevColor = this.getFill().stops[1].color();
-			var gfx = lively.paint;
-			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, Color.white), 
-			new gfx.Stop(0.5, prevColor),
-			new gfx.Stop(1, prevColor.darker())], this.focus));
-		}
+		// if (this.getFill() instanceof lively.paint.Gradient) {
+			// var prevColor = this.getFill().stops[1].color();
+			// var gfx = lively.paint;
+			// this.setFill(new gfx.RadialGradient([new gfx.Stop(0, Color.white), 
+			// new gfx.Stop(0.5, prevColor),
+			// new gfx.Stop(1, prevColor.darker())], this.focus));
+		// }
 		$super(evt);
 	},
     
 	onMouseOut: function($super, evt) {
-		if (this.getFill() instanceof lively.paint.Gradient) {
-			var prevColor = this.getFill().stops[1].color();
-			var gfx = lively.paint;
-			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, prevColor.lighter(2)),
-			new gfx.Stop(0.5, prevColor),
-			new gfx.Stop(1, prevColor.darker())], this.focus));
-		}
+		// if (this.getFill() instanceof lively.paint.Gradient) {
+			// var prevColor = this.getFill().stops[1].color();
+			// var gfx = lively.paint;
+			// this.setFill(new gfx.RadialGradient([new gfx.Stop(0, prevColor.lighter(2)),
+			// new gfx.Stop(0.5, prevColor),
+			// new gfx.Stop(1, prevColor.darker())], this.focus));
+		// }
 		$super(evt);
 	},
     
@@ -4468,7 +4503,7 @@ Morph.subclass('WindowMorph', {
         tm.replaceItemNamed("reset rotation", ["reset rotation", this, 'setRotation', 0]);
         tm.replaceItemNamed("reset scaling", ["reset scaling", this, 'setScale', 1]);
 		if (this.targetMorph.model) tm.replaceItemNamed("show all handles",
-			['inspect model', function() {new SimpleInspector(this.targetMorph.model).open()}.bind(this) ]);
+			['inspect model', function() { lively.Tools.inspect(this.targetMorph.model) }.bind(this) ]);
         tm.removeItemNamed("duplicate");
         tm.removeItemNamed("turn fisheye on");
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
@@ -5812,6 +5847,131 @@ BoxMorph.subclass("MiniMapMorph", {
 
 		this.updatePosition();
 	}
+});
+ContainerMorph.subclass('ChainedListMorph',
+'documentation', {
+	connections: ['selection'],
+},
+'initializing', {
+
+	initialize: function($super, bounds, numberOfListInPane) {
+		$super(bounds);
+		this.numberOfListInPane = numberOfListInPane || 1;
+		this.lists = [];
+
+		// scroll pane setup
+		this.scrollPane = this.addMorph(new ScrollPane(new BoxMorph(bounds), bounds));
+		this.scrollPane.applyStyle({fill: Color.white});
+		this.scrollPane.innerMorph().applyStyle({fill: Color.white});
+		this.scrollPane.disableVerticalScrollBar();
+		this.scrollPane.addHorizontalScrollBar()
+
+		// create default empty lists
+		range(1, this.numberOfListInPane).forEach(function() { this.addList() }, this);
+	},
+
+},
+'list handling', {
+
+	getList: function(idx) { return this.lists[idx] },
+	getFirstList: function() {  return this.getList(0)  },
+
+	getLastList: function() { return this.getList(this.lists.length - 1) },
+	getNextList: function(listPane) {
+		return this.getList(this.lists.indexOf(listPane) + 1);
+	},
+
+	ensureNextList: function(listPane) {
+		if (!listPane) return this.getFirstList();
+		return this.getNextList(listPane) || this.addList();
+	},
+
+	addList: function() {
+		var pos = this.getLastList() ? this.getLastList().bounds().topRight() : pt(0,0);
+		var pane = newDragnDropListPane(this.listBounds().translatedBy(pos));
+		pane.innerMorph().plugTo(this, {
+			selection: {dir: '->', name: 'listSelected', options: {
+				updater: function($upd, sel) { return $upd(sel, this.sourceObj.owner.owner) }}}, // FIXME
+			remove: '->listRemoved',
+		});
+		this.lists.push(pane);
+		this.scrollPane.innerMorph().addMorph(pane);
+		this.adjustForNewBounds();
+		return pane
+	},
+
+	removeList: function() {
+		var list = this.getLastList();
+		if (!list) return;
+		this.lists = this.lists.without(list);
+		lively.bindings.disconnectAll(list);
+		list.remove();
+		this.adjustForNewBounds()
+	},
+
+	removeAllAfter: function(listPane) {
+		while (this.getLastList() && listPane != this.getLastList())
+			this.removeList();
+	},
+
+
+	setRoot: function(rootObj) {
+		this.listSelected(rootObj, null);
+	},
+
+	listSelected: function(sel, listPane) {
+		lively.bindings.signal(this, 'selection', sel);
+		if (!sel) return;
+		var childNodes = Object.isFunction(sel.childNodes) ? sel.childNodes() : sel.childNodes;
+		if (!childNodes) return
+		var listItems = childNodes.collect(function(node) {
+			return {isListItem: true, string: node.asString(), value: node};
+		});
+		var nextListPane = this.ensureNextList(listPane);
+		nextListPane.innerMorph().selectLineAt(-1);
+		nextListPane.innerMorph().updateList(listItems);
+		this.removeAllAfter(nextListPane);
+		this.scrollListIntoView(listPane);
+	},
+
+	scrollListIntoView: function(listPane) {
+		if (!listPane) return;
+		var listBounds = listPane.bounds();
+		var scrollBounds = this.scrollBounds();
+		var scrollTo = listBounds.left() / scrollBounds.width;
+		this.scrollPane.setHorizontalScrollPosition(scrollTo);
+	},
+
+},
+'layouting', {
+	adjustForNewBounds: function ($super) {
+		$super();
+		var bnds = this.scrollBounds();
+		var bounds = this.listBounds();
+		this.lists.inject(pt(0,0), function(pos, listPane) {
+			listPane.setBounds(bounds.translatedBy(pos));
+			return listPane.bounds().topRight();
+		})
+		
+	},
+
+	scrollBounds: function() {
+		return this.scrollPane.calcClipR()
+	},
+
+	listBounds: function() {
+		var bounds = this.scrollBounds();
+		return bounds.withWidth(bounds.width / this.numberOfListInPane);
+	},
+
+});
+Object.subclass('ChainedListMorphNode',
+'documentation', {
+	documentation: 'Element used by chained list morph'
+},
+'interface', {
+	childNodes: function() { return [] },
+	asString: function() { return 'overwrite me' },
 });
 
 

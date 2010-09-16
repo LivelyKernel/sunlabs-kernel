@@ -177,7 +177,8 @@ Object.subclass('AttributeConnection', {
 				return callOrSetTarget(newValue);		
 		} catch(e) {
 			dbgOn(Config.debugConnect)
-			console.warn('Error when trying to update ' + this + ' with value ' + newValue + ':\n' + e);
+			console.warn('Error when trying to update ' + this + ' with value '
+				+ newValue + ':\n' + e + '\n' + e.stack);
 		} finally {
 			this.isActive = false;
 		}
@@ -334,6 +335,33 @@ Object.extend(Global, {
 	disconnectAll: lively.bindings.disconnectAll,
 	signal: lively.bindings.signal,
 	updateAttributeConnection: lively.bindings.signal,
+});
+Morph.addMethods('plugs', {
+
+	plugTo: function(model, connectSpec) {
+		// experimental protocol
+		// This message preserves the model-view "plug" API of MVC's pluggable views,
+		// while using the "direct connect" form of change notification
+		var view = this;
+
+		function parseStringSpec(stringSpec) {
+			var parsed = stringSpec.match(/(<?->?)(.*)/);
+			return {dir: parsed[1], name: parsed[2]};
+		};
+
+		Properties.forEachOwn(connectSpec, function (viewProp, spec) {
+			if (Object.isString(spec)) spec = parseStringSpec(spec);
+			var dir = spec.dir || '->',
+				options = spec.options || {};
+			if (dir == "->" || dir == "<->")
+				lively.bindings.connect(view, viewProp, model, spec.name, options)
+			if (dir == "<-" || dir == "<->")
+				lively.bindings.connect(model, spec.name, view, viewProp, options)
+		});
+
+		return this;
+    },
+
 });
 	
 }); // end of module

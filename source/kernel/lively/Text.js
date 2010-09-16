@@ -2260,7 +2260,7 @@ doBrowse: function () { // Browse the class whose name is selected
 		};
 		if (inspectee) {
 			try {
-				new SimpleInspector(inspectee).openIn(this.world(), this.world().hands.first().getPosition())
+				lively.Tools.inspect(inspectee);
 			} catch(e) {
 				this.setStatusMessage("could not open inspector on " + inspectee);
 				console.log("Error during opending an inspector:"+ e);

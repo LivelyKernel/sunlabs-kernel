@@ -26,7 +26,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-module('lively.Tools').requires('lively.Text', 'lively.bindings').toRun(function(module, text) {
+module('lively.Tools').requires('lively.Text', 'lively.bindings', 'lively.Widgets').toRun(function(module, text) {
 
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
@@ -413,6 +413,88 @@ Object.extend(SimpleInspector, {
     	new SimpleInspector(object).openIn(WorldMorph.current(), pt(200,10))
 	}
 });
+Widget.subclass('ColumnInspector',
+'settings', {
+	viewTitle: 'Inspector',
+	initialViewExtent: pt(500, 300),
+	defaultText: 'doits here have this === selected inspectee',
+},
+'view', {
+	buildView: function(extent) {
+		function chainedLists(bounds) {
+			return new ChainedListMorph(bounds, 2);
+		}
+		var panel = PanelMorph.makePanedPanel(extent, [
+			['listPane', chainedLists, new Rectangle(0, 0, 1, 0.48)],
+			['resizer', function(bnds){return new HorizontalDivider(bnds)}, new Rectangle(0, 0.48, 1, 0.02)],
+			['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+		]);
+
+		// list content and list selection 
+		panel.listPane.plugTo(this, {
+			setRoot: {dir: '<-', name: 'rootObj', options: {
+				converter: function(obj) { return new InspectorNode('', obj) }}},
+			selection: {dir: '->', name: 'inspectee', options: {
+				converter: function(node) { return node.object }}},
+		});
+
+		// set title
+		panel.listPane.plugTo(panel, {
+			selection: {dir: '->', name: 'setTitle', options: {
+				converter: function(node) {return node.object ? node.object.toString() : String(node.object)}}},
+		});
+
+		// source pane
+		panel.sourcePane.innerMorph().plugTo(this, { getDoitContext: '->doitContext' });
+		panel.sourcePane.innerMorph().setTextString(this.defaultText);
+
+		// resizer setup
+		panel.resizer.addScalingAbove(panel.listPane);
+		panel.resizer.addScalingBelow(panel.sourcePane)
+
+		panel.ownerWidget = this; // For serialization
+		return panel;
+	},
+
+},
+'inspecting', {
+	inspect: function(obj) {
+		this.rootObj = obj; // rest is connect magic
+	},
+	doitContext: function() {
+		return this.inspectee || this.rootObj
+	},
+});
+Object.extend(ColumnInspector, {
+	inspect: function(obj) {
+		var i = new ColumnInspector();
+		i.open();
+		i.inspect(obj);
+		return i;
+	},
+});
+ChainedListMorphNode.subclass('InspectorNode',
+'initializing', {
+	initialize: function(name, obj) {
+		this.name = name;
+		this.object = obj;
+	},
+},
+'interface', {
+	asString: function() { return String(this.name) },
+	childNodes: function() {
+		if (Object.isString(this.object)) return [];
+		var props = Properties.own(this.object)
+		if (this.object.__proto__) props.push('__proto__');
+		return props.collect(function(key) { return new InspectorNode(key, this.object[key]) }, this);
+	},
+});
+Object.extend(lively.Tools, {
+	inspect: function(obj) { return ColumnInspector.inspect(obj) },
+});
+Object.extend(Global, {
+	inspect: lively.Tools.inspect,
+});
 
 // ===========================================================================
 // Style Editor Panel
@@ -615,7 +697,7 @@ Widget.subclass('StylePanel', {
 		panel.morphMenu = function(evt) { 
 			var menu = Class.getPrototype(this).morphMenu.call(this, evt);
 			menu.addLine();
-			menu.addItem(['inspect model', new SimpleInspector(panel.getModel()), "openIn", this.world()]);
+			menu.addItem(['inspect model', lively.Tools.inspect(panel.getModel()), "openIn", this.world()]);
 			return menu;
 		}
 		panel.priorExtent = panel.innerBounds().extent();

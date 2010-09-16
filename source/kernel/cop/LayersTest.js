@@ -1370,9 +1370,27 @@ TestCase.subclass('cop.tests.LayerObjectActivationTest', {
 			return
 		};
 		this.assert(false, "no error was thrown")
-	}
+	},
 
 
+	testAddWithLayerTest: function() {
+		this.o.addWithLayer(DummyLayer);
+		this.assert(this.o.withLayers.length, 1, "add failed")
+		this.o.addWithLayer(DummyLayer);
+		this.assert(this.o.withLayers.length, 1, "second add failed")
+		this.o.addWithLayer(DummyLayer2);
+		this.assert(this.o.withLayers.length, 2, "third add failed")
+	
+	},
+
+	testRemoveWithLayerTest: function() {
+		this.o.setWithLayers([DummyLayer, DummyLayer2]);
+		this.o.removeWithLayer(DummyLayer);
+		this.assert(this.o.withLayers.length, 1, "remove failed")
+		this.o.removeWithLayer(DummyLayer);
+		this.assert(this.o.withLayers.length, 1, "remove failed")
+	
+	},
 	
 });
 

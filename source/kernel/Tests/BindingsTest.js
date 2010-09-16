@@ -593,6 +593,41 @@ TestCase.subclass('Tests.BindingsTest.BindingsDuplicateTest', {
 	},
 
 });
+TestCase.subclass('Tests.BindingsTest.PlugTest',
+'running', {
+	setUp: function($super) {
+		$super();
+		this.morph = Morph.makeRectangle(new Rectangle(0,0, 100, 100));
+	},
+},
+'testing', {
+	test01PlugMorphToModel: function() {
+		var morph = this.morph, model = {
+			positionMorph: function(pos) { return pos },
+			someProperty: 3,
+		};
+		morph.someProperty = null;
+		morph.plugTo(model, {
+			setPosition: "<-positionMorph",
+			rotation: "->rotationOfMorph",
+			someProperty: {dir: '<->', name: 'someProperty', options: {converter: function(x) { return x+1 }}},
+		});
+		this.assertEqual(pt(0,0), morph.getPosition(), 'initial pos')
+		this.assertEqual(null, model.rotationOfMorph, 'initial rotationOfMorph')
+		this.assertEqual(null, morph.someProperty, 'initial someProperty')
+
+		model.someProperty = 5;
+		this.assertEqual(6, morph.someProperty, 'some property set by model')
+		morph.someProperty = 6;
+		this.assertEqual(7, model.someProperty, 'some property set by morph')
+
+		morph.setRotation(0.1);
+		this.assertEqual(0.1, model.rotationOfMorph, 'rotationOfMorph')
+
+		model.positionMorph(pt(10,10));
+		this.assertEqual(pt(10,10), morph.getPosition(), 'positionOfMorph')
+	},
+});
 
 
 }); // end of module

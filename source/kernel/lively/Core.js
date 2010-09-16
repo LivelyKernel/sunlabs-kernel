@@ -73,7 +73,8 @@ Object.subclass('ScriptLoader',
 	removeQueries: function(url) {
 		return url.split('?').first();
 	},
-resolveURLString: function(urlString) {
+	
+	resolveURLString: function(urlString) {
 		// FIXME duplicated from URL class in lively. Network
 		// actually lively.Core should require lively.Network -- but lively.Network indirectly
 		// lively.Core ====>>> FIX that!!!
@@ -89,10 +90,7 @@ resolveURLString: function(urlString) {
 		result = result.replace(/\/\.\//g, '/')
 		return result
 	},
-
-	
-	
-	
+		
 	scriptElementLinksTo: function(el, url) {
 		if (!el.getAttribute) return false;
 		// FIXME use namespace consistently
@@ -847,6 +845,11 @@ Object.extend(Event, {
 
 	// not in prototype.js:
 	KEY_SPACEBAR: 32,
+	KEY_SHIFT:    16,
+	KEY_CTRL:     17,
+	KEY_ALT:      18,
+	KEY_CMD:      91,
+
 	
 	prepareEventSystem: function(canvas) {
 		if (!canvas) return;
@@ -2205,7 +2208,7 @@ Morph.addMethods('default', {
 		if (this.owner) return this.owner.styleNamed(name);
 		var world = WorldMorph.current();
 		if (world && (this !== world)) return world.styleNamed(name);
-		return DisplayThemes.lively[name]; // FIXME for onDeserialize, when no world exists yet
+		return DisplayThemes[Config.defaultDisplayTheme || "lively"][name]; // FIXME for onDeserialize, when no world exists yet
 	},
 
 	linkToStyles: function(styleClassList, optSupressApplication) {
@@ -3167,7 +3170,7 @@ Morph.addMethods('default', {
 			[((this.hasHandles()) ? "hide" : "show") + " all handles", function(evt) {
 				if (this.hasHandles()) this.removeAllHandlesExcept(null);
 					else this.addAllHandles(evt) }.bind(this) ],		
-			["inspect", function(evt) { new SimpleInspector(this).openIn(this.world())}],
+			["inspect", function(evt) { lively.Tools.inspect(this) }],
 			["show class in browser", function(evt) { var browser = new SimpleBrowser(this);
 				browser.openIn(this.world(), evt.point());
 				browser.getModel().setClassName(this.getType());}]
@@ -4418,7 +4421,17 @@ Morph.subclass("PasteUpMorph", {
 
     
 });
-
+Object.subclass('Styles');
+Object.extend(Styles, {
+	titleBarButtonGradient: function(color) {
+		var gfx = lively.paint;
+		return new gfx.RadialGradient([
+				new gfx.Stop(0, color.lighter(2)),
+				new gfx.Stop(0.5, color),
+				new gfx.Stop(1, color.darker())],
+			pt(0.4, 0.2))
+	}
+});
 (function initDisplayThemes() {
 namespace('lively.Text');
 
@@ -4430,8 +4443,9 @@ DisplayThemes['lively'] = using(lively.paint).link({
 	raisedBorder: { // conenience grouping
 		//borderWidth: 2,
 		borderColor: {$:"LinearGradient", 
-			stops: [{$:"Stop", offset: 0, color: Color.lightGray}, 
-					{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
+			stops: [
+				{$:"Stop", offset: 0, color: Color.lightGray}, 
+				{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
 			vector: lively.paint.LinearGradient.SouthEast
 		}
 	},
@@ -4446,14 +4460,70 @@ DisplayThemes['lively'] = using(lively.paint).link({
 			vector: lively.paint.LinearGradient.SouthNorth 
 		}
 	},
+
+	titleBar_closeButton: {
+		fill: Styles.titleBarButtonGradient(Color.primary.orange)
+	},
+
+	titleBar_menuButton: {
+		fill: Styles.titleBarButtonGradient(Color.primary.blue),
+	},
+
+	titleBar_collapseButton: {
+		fill: Styles.titleBarButtonGradient(Color.primary.yellow),
+	},
+
 	slider: { 
-		borderColor: Color.black, 
+		borderColor: Color.darkGray, 
 		borderWidth: 1, 
+		borderRadius: 6,
 		fill: {$: "LinearGradient", 
-			stops: [{$:"Stop", offset: 0, color: Color.primary.blue.lighter(2)},
-					{$:"Stop", offset: 1, color: Color.primary.blue}]
+			stops: [
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
+				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
+			vector: lively.paint.LinearGradient.SouthNorth
 		}
 	},
+
+	slider_background: { 
+		borderColor: Color.gray, 
+		borderWidth: 1, 
+		strokeOpacity: 1,
+		fill: {$: "LinearGradient", 
+			stops: [
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.4)},
+				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.2)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.4)}],
+			vector: lively.paint.LinearGradient.EastWest
+		}
+	},
+
+	slider_horizontal: { 
+		borderColor: Color.darkGray, 
+		borderWidth: 1, 
+		borderRadius: 6,
+		fill: {$: "LinearGradient", 
+			stops: [
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
+				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
+			vector: lively.paint.LinearGradient.EastWest
+		}
+	},
+
+	slider_background_horizontal: { 
+		borderColor: Color.darkGray, 
+		borderWidth: 1, 
+		fill: {$: "LinearGradient", 
+			stops: [
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.4)},
+				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.2)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.4)}],
+			vector: lively.paint.LinearGradient.NorthSouth
+		}
+	},
+
 	button: { 
 		borderColor: Color.neutral.gray, 
 		borderWidth: 0.3, borderRadius: 4,
@@ -4549,13 +4619,17 @@ PasteUpMorph.subclass("WorldMorph",
 
     initializeTransientState: function($super) {
         $super();
+
         this.hands = [];
-		
+
+				
 		var theme = DisplayThemes[Config.defaultDisplayTheme];
 		if (!theme)
 			console.log('ERROR: could not find Theme ' + Config.defaultDisplayTheme)
 		this.displayTheme = theme; // set display them without applying it
-		
+		console.log('WorldMorph: updated display theme ')
+
+
 		this.withAllSubmorphsDo( function() { this.layoutChanged(); });  // Force installation of transforms
 
         this.scheduledActions = [];  // an array of schedulableActions to be evaluated
@@ -4581,8 +4655,8 @@ PasteUpMorph.subclass("WorldMorph",
 	},
     
 	remove: function() {
-		this.hands.clone().forEach(function(hand) { this.removeHand(hand) }, this);
 		if (!this.rawNode.parentNode) return null;  // already removed
+		this.hands.clone().forEach(function(hand) { this.removeHand(hand) }, this);
 		this.stopStepping();
 		this.removeRawNode();
 		return this;
@@ -4804,7 +4878,7 @@ PasteUpMorph.subclass("WorldMorph",
     inspectScheduledActions: function() {
         // inspect an array of all the actions in the scheduler.  Note this
         // is not the same as scheduledActions which is an array of tuples with times
-        new SimpleInspector(this.scheduledActions.map(function(each) { return each[1]; })).open();
+        lively.Tools.inspect(this.scheduledActions.map(function(each) { return each[1]; }));
     },
 
     doOneCycle: function WorldMorph$doOneCycle(world) {
@@ -5132,13 +5206,21 @@ PasteUpMorph.subclass("WorldMorph",
 'Requirements', {
 	// this.world().showAddWorldRequirementsMenu(pt(100,100))
 	showAddWorldRequirementsMenu: function(pos) {
-		var allAppModules = ChangeSet.current().moduleNamesInNamespace('apps').concat(
-				ChangeSet.current().moduleNamesInNamespace('lively'))
-		var items = allAppModules.collect(function(ea){ 
-			return [ea, function(){
-				module(ea).load();
-				ChangeSet.current().addWorldRequirement(ea);
-				this.alert("load " + ea + " module")}]})
+			var ignoreModules =  "lively.Widgets lively.WikiWidget lively.Data lively.Base lively.defaultconfig  lively.CanvasExpt lively.obsolete lively.Helper lively.miniprototype lively.demofx lively.Text lively.EmuDom lively.Core lively.bindings lively.rhino-compat lively.Tools lively.localconfig  lively.Main  lively.Network  lively.scene lively.simpleMain lively.ChangeSet lively.ide".split(" ")
+
+			var items = ['apps', 'lively', 'Tests'].collect(function(eaDir) {
+			return [eaDir, ChangeSet.current()
+				.moduleNamesInNamespace(eaDir)
+				.reject(function(ea) { return ignoreModules.include(ea) })
+				.collect(function(ea){ 
+					return [ea, function(){
+						module(ea).load();
+						ChangeSet.current().addWorldRequirement(ea);
+						this.alert("load " + ea + " module")}
+				]}
+			)]
+		});
+
 		var menu = new MenuMorph(items, this.world());
 		menu.openIn(this.world(), pos, false, 
 			"require module for this page");
@@ -6840,12 +6922,6 @@ function interactiveEval(text) {
 	//text = '(' + text + ')'; // workaround for that issue
 	return eval(text);
 }
-
-// Helper method with GUI stuff, so it can't go into Helper.js
-Global.inspect = function(inspectee) {
-	var world = WorldMorph.current();
-	new SimpleInspector(inspectee).openIn(world, world.hands.first().getPosition());
-};
 
 Object.subclass('ClipboardCopier', {
 	

@@ -200,6 +200,28 @@ Foo.addMethods('catC',{\n\
 		this.assertEqual('m2', methodNodes[1].getName());
 
 	},
+	testCreateCategoriesFromAddMethodDef: function() {
+		this.buildTestSource();
+		var browser = this.browser;
+		// browser.buildView()
+
+		var completeFFNode = browser.rootNode().childNodes().first();
+		this.assertEqual(2, completeFFNode.childNodes().length);
+		var addMethodNode = completeFFNode.childNodes()[1];
+
+		this.assertEqual(2, addMethodNode.childNodes().length);
+		this.assertEqual('-- all --', addMethodNode.childNodes()[0].getName());
+		this.assertEqual('catC', addMethodNode.childNodes()[1].getName());
+
+		// category childs
+		this.assertEqual(1, addMethodNode.childNodes()[0].childNodes().length);
+		this.assertEqual(1, addMethodNode.childNodes()[1].childNodes().length);
+		
+		var methodNodes = addMethodNode.childNodes()[1].childNodes()
+		this.assertEqual('m4', methodNodes[0].getName());
+
+	},
+
 
 	testAddClassCommand: function() {
 		this.buildTestSource();
@@ -909,7 +931,7 @@ testParseKlassWithTwoTraits: function() {
 
 Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.JsParserTest3', {
 
-	shouldRun: true,
+	shouldRun: false,
 	
 	documentation: 'Tests which directly access LK files. Tests are quite brittle because they will fail when th eline numbers of the used files change.',
     
@@ -1029,6 +1051,8 @@ Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.MethodCategoryParseTest
 		this.assertEquals(methodDescriptor.category.stopIndex, 61);
 		// this.assertEquals('\'categoryA\', { foo: function() { return 23 }, }',
 			// methodDescriptor.category.getSourceCode());
+
+		this.assertEquals(1, descriptor.categories.length);
     },
 test02ParseSubclassWithCategory: function() {
 		this.sut.debugMode = true

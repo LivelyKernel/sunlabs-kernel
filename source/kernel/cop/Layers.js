@@ -640,6 +640,21 @@ Object.extend(LayerableObjectTrait, {
 		this.withLayers = layers;
 	},
 
+	addWithLayer: function(layer) {
+		var layers = this.getWithLayers(); 
+		if (layers.include(layer))
+			return;
+		layers.push(layer);
+		this.setWithLayers(layers)
+	},
+
+	removeWithLayer: function(layer) {
+		var layers = this.getWithLayers(); 
+		if (!layers.include(layer))
+			return;
+		this.setWithLayers(layers.reject(function(ea) {return ea === layer}))
+	},
+
 	setWithoutLayers: function(layers) {
 		this.withoutLayers = layers;
 	},
