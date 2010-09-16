@@ -53,6 +53,8 @@ BoxMorph.subclass('ButtonMorph', {
     formals: ["Value", "IsActive"],
 	connections: ['value', 'isActive', 'fire'],
 
+	focusHaloBorderWidth: 0,
+
 	openForDragAndDrop: false,
 
     // A ButtonMorph is the simplest widget
@@ -1017,6 +1019,8 @@ BoxMorph.subclass("SelectionMorph", {
 BoxMorph.subclass('PanelMorph', {
 
     documentation: "a panel",
+
+	focusHaloBorderWidth: 0,
 
     initialize: function($super, extent/*:Point*/) {
         $super(extent.extentAsRectangle());
@@ -3852,9 +3856,13 @@ Dialog.subclass('PromptDialog', {
 
 		panel.inputLine = panel.addMorph(new TextMorph(r, "").beInputLine());
 
+
 		panel.inputLine.connectModel({model: this, getText: "getInput", setText: "setInput"});
 		// FIXME is this necessary
-		if (this.getInput()) panel.inputLine.updateTextString(this.getInput());
+		if (this.getInput()) {
+			panel.inputLine.updateTextString(this.getInput());
+			panel.inputLine.setSelectionRange(0,this.getInput().length); 
+		};
 
 		var indent = extent.x - 2*70 - 3*this.inset;
 		r = new Rectangle(r.x + indent, r.maxY() + this.inset, 70, 30);
