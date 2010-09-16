@@ -47,10 +47,10 @@ Widget.subclass('lively.ide.BasicBrowser',
 	initialViewExtent: pt(820, 550),
 
 	panelSpec: [
-			['locationPane', newTextPane, new Rectangle(0, 0, 0.8, 0.05)],
-			['codeBaseDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.8, 0, 0.12, 0.05)],
-			['localDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.92, 0, 0.08, 0.05)],
-			['Pane1', newDragnDropListPane, new Rectangle(0, 0.05, 0.25, 0.32)],
+			['locationPane', newTextPane, new Rectangle(0, 0, 0.8, 0.04)],
+			['codeBaseDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.8, 0, 0.12, 0.04)],
+			['localDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.92, 0, 0.08, 0.04)],
+			['Pane1', newDragnDropListPane, new Rectangle(0, 0.05, 0.25, 0.35)],
 			['Pane2', newDragnDropListPane, new Rectangle(0.25, 0.05, 0.25, 0.35)],
 			['Pane3', newDragnDropListPane, new Rectangle(0.5, 0.05, 0.25, 0.35)],
 			['Pane4', newDragnDropListPane, new Rectangle(0.75, 0.05, 0.25, 0.35)],
@@ -119,12 +119,9 @@ Widget.subclass('lively.ide.BasicBrowser',
                                                Menu:        ("-" + paneName + "Menu")}), true);
             morph.withAllSubmorphsDo(function() {
 				if (this.constructor == SliderMorph) return;
-                this.onMouseOver = function(evt) { browser.showButtons(evt, morph, paneName) };
                 this.onMouseDown = this.onMouseDown.wrap(function(proceed, evt) {
-					browser.showButtons(evt, morph, paneName);
 					browser.ensureSourceNotAccidentlyDeleted(proceed.curry(evt));
                 });
-                this.onMouseOut = function(evt) { browser.hideButtons(evt, morph, paneName) };
             })
         }
  
@@ -328,10 +325,8 @@ Widget.subclass('lively.ide.BasicBrowser',
 		
         this.setPane2Selection(null, true);
         this.setPane2Content([this.emptyText]);
-        if (!node) {
-            this.hideButtons(null, this.panel.Pane1, 'Pane1')
-            return
-        };
+        if (!node) return
+
 		this.setPane2Content(this.childsFilteredAndAsListItems(node, this.getPane1Filters()));
        	this.setSourceString(node.sourceString());
 		this.updateTitle();
@@ -353,10 +348,8 @@ Widget.subclass('lively.ide.BasicBrowser',
 	
         this.setPane3Selection(null);
         this.setPane3Content([this.emptyText]);        
-        if (!node) {
-            this.hideButtons(null, this.panel.Pane2, 'Pane2')
-            return
-        }
+        if (!node) return
+
         this.setPane3Content(this.childsFilteredAndAsListItems(node, this.getPane2Filters()));
         this.setSourceString(node.sourceString());
 		this.updateTitle();
@@ -376,10 +369,8 @@ Widget.subclass('lively.ide.BasicBrowser',
 	
         this.setPane4Selection(null);
         this.setPane4Content([this.emptyText]);        
-        if (!node) {
-            this.hideButtons(null, this.panel.Pane3, 'Pane3')
-            return
-        }
+        if (!node) return;
+
         this.setPane4Content(this.childsFilteredAndAsListItems(node, this.getPane3Filters()));
         this.setSourceString(node.sourceString());
 		this.updateTitle();
@@ -395,10 +386,8 @@ Widget.subclass('lively.ide.BasicBrowser',
 	onPane4SelectionUpdate: function(node) {
 		this.pane4Selection = node; // for bindings
 
-		if (!node) {
-			this.hideButtons(null, this.panel.Pane3, 'Pane3')
-			return
-		}
+		if (!node) return;
+
 		this.setSourceString(node.sourceString());
 		this.updateTitle();
 
@@ -521,57 +510,6 @@ Widget.subclass('lively.ide.BasicBrowser',
 
 },
 'browser related', {
-    showButtons: function(evt, pane, paneName) {
-        var browser = this;
-        var node = browser['get' + paneName + 'Selection']();
-        if (!node) return;
- 
-        var btnSpecs = node.buttonSpecs();
-        if (btnSpecs.length === 0) return;
- 
-        // get or create the buttons
-        var offsetX = pane.bounds().left();
-        var height = 15;
-        var width = (pane.getExtent().x) / btnSpecs.length
-        var y = pane.bounds().bottom() /*- height*/;
- 
-        panel = pane.owner;
- 
-        var btns = range(0, btnSpecs.length-1).collect(function(i) {
-            var existingBtn = panel.submorphs.detect(function(subM) { return subM.label && subM.label.textString === btnSpecs[i].label })
-            return existingBtn ? existingBtn : new ButtonMorph(new Rectangle(offsetX + i*width, y, width, height));
-        })
- 
-        // configure the buttons
-        btnSpecs.each(function(ea, i) {
-            var btnSetValueWrapper = {action: function(value) {
-                // if (value) return
-                ea.action.apply(browser['get' + paneName + 'Selection']());
-                btns.without(btns[i]).each(function(ea) { ea.changeAppearanceFor(false) });
-                browser['set' + paneName + 'Selection'](browser['get' + paneName + 'Selection'](), true);
-            }};
-            btns[i].connectModel({model: btnSetValueWrapper, setValue: 'action'});
-            btns[i].toggle = true;
-            btns[i].setLabel(ea.label);
-            btns[i]['is' + paneName + 'BrowserButton'] = true;
-            panel.addMorph(btns[i]);
-
-			// resize/move buttons using the divider, rest of it is in setupResizers
-			browser.panel.midResizer.addFixed(btns[i]);
-        })
-    },
- 
-    hideButtons: function(evt, morph, paneName, force) {
-        if (evt && morph.shape.containsPoint(morph.localize(evt.point()))) return;
-        if (!force && this['get' + paneName + 'Selection']() !== null) return;
-        var btnHolder = morph.owner;
-        var btns = btnHolder.submorphs.select(function(ea) { return ea['is' + paneName + 'BrowserButton'] });
-        //btns.each(function(ea) { ea.remove() })
-        // var btns = morph.submorphs.select(function(ea) { return ea.isBrowserButton });
-        // if (btns.any(function(ea) { return ea.shape.containsPoint(ea.localize(evt.point())) }))
-        //     return
-        // btns.each(function(ea) { ea.remove() })
-    },
 
     installFilter: function(filter, paneName) {
 		var getter = 'get' + paneName + 'Filters';
@@ -634,6 +572,9 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 	openForDragAndDrop: false,
 	
 	onDeserialize: function($super) {
+		console.log('on derserialize browser with '  + Config.defaultDisplayTheme )
+
+
 		var widget = new this.ownerWidget.constructor();
 		if (widget instanceof lively.ide.WikiCodeBrowser) return; // FIXME deserialize wiki browser
 		var selection = this.getSelectionSpec();
@@ -785,11 +726,7 @@ Object.subclass('lively.ide.BrowserNode', {
     saveSource: function(newSource, sourceControl) {
         return false;
     },
- 
-    buttonSpecs: function() {
-        return []
-    },
- 
+  
     menuSpec: function() {
         return [];
     },
@@ -884,7 +821,12 @@ lively.ide.NodeFilter.subclass('lively.ide.NodeTypeFilter', {
 
 Object.extend(lively.ide.NodeTypeFilter, {
 	defaultInstance: function() {
-		return new lively.ide.NodeTypeFilter(['isClassNode', 'isGrammarNode', 'isChangeNode']);
+		return new lively.ide.NodeTypeFilter([
+			'isClassNode',
+			'isGrammarNode',
+			'isChangeNode',
+			'isFunctionNode',
+			'isObjectNode']);
 	},
 });
 
@@ -1310,23 +1252,7 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
 			.collect(function(ff) { return new (typeToClass(ff.type))(ff, browser) });
 
     },
- 
-    buttonSpecs: function() {
-		var b = this.browser;
-		var pane = b.paneNameOfNode(this);
-		if (!pane) return [];
-		var f = b['get'+pane+'Filters']().detect(function(ea) { return ea.isNodeTypeFilter });
-		if (!f) {
-			f = lively.ide.NodeTypeFilter.defaultInstance();
-			b.installFilter(f, pane);
-			console.log('installing filter.......');
-		}
-		var configFilter = function(attrs) {f.attributes = attrs}
-        return [{label: 'classes', action: configFilter.curry(['isClassNode', 'isGrammarNode', 'isChangeNode'])},
-                    {label: 'functions', action: configFilter.curry(['isFunctionNode'])},
-                    {label: 'objects', action: configFilter.curry(['isObjectNode'])}];
-    },
-    
+     
     sourceString: function($super) {
 		this.loadModule();
         //if (!this.target) return '';
@@ -1348,28 +1274,29 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
 		this.target = lively.ide.SourceControl.addModule(this.moduleName).ast();
 		this.signalChange();
 	},
-checkForRedundantClassDefinitions: function() {
-	var childNodes = this.childNodes();
 
-	var klassDefs = childNodes
-		.select(function(node) { return node.target && !node.target.getSourceCode().startsWith('Object.extend') && (node.target.type == 'klassDef' || node.target.type == 'klassExtensionDef') })
-		.pluck('target');
+	checkForRedundantClassDefinitions: function() {
+		var childNodes = this.childNodes();
 
-	var multiple = klassDefs.inject([], function(multiple, klassDef) {
-		var moreThanOnce = klassDefs.any(function(otherKlassDef) {
-			return klassDef !== otherKlassDef && klassDef.name == otherKlassDef.name;
+		var klassDefs = childNodes
+			.select(function(node) { return node.target && !node.target.getSourceCode().startsWith('Object.extend') && (node.target.type == 'klassDef' || node.target.type == 'klassExtensionDef') })
+			.pluck('target');
+
+		var multiple = klassDefs.inject([], function(multiple, klassDef) {
+			var moreThanOnce = klassDefs.any(function(otherKlassDef) {
+				return klassDef !== otherKlassDef && klassDef.name == otherKlassDef.name;
+			});
+			if (moreThanOnce) multiple.push(klassDef);
+			return multiple;
 		});
-		if (moreThanOnce) multiple.push(klassDef);
-		return multiple;
-	});
 
-	if (multiple.length == 0) return;
+		if (multiple.length == 0) return;
 
-	var msg = 'Warning! Multiple klass definitions in module ' + this.moduleName +':';
-	multiple.forEach(function(klassDef) { msg += '\n\t' + klassDef });
+		var msg = 'Warning! Multiple klass definitions in module ' + this.moduleName +':';
+		multiple.forEach(function(klassDef) { msg += '\n\t' + klassDef });
 
-	WorldMorph.current().setStatusMessage(msg, Color.blue)
-},
+		WorldMorph.current().setStatusMessage(msg, Color.blue)
+	},
 
     
 	menuSpec: function($super) {
@@ -1633,7 +1560,11 @@ lively.ide.FileFragmentNode.subclass('lively.ide.AllMethodCategoryFragmentNode',
 lively.ide.FileFragmentNode.subclass('lively.ide.ObjectFragmentNode', {
 
 	isObjectNode: true,
-	
+
+	asString: function($super) {
+		return $super() + ' (object)'
+	},
+
     childNodes: function() {
         if (!this.target.subElements()) return [];
         // FIXME duplication with ClassFragmentNode
@@ -1736,10 +1667,14 @@ ide.FileFragmentNode.subclass('lively.ide.ClassElemFragmentNode', {
 	
 });
  
-ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
+lively.ide.FileFragmentNode.subclass('lively.ide.FunctionFragmentNode', {
 
 	isFunctionNode: true,
-	
+
+	asString: function($super) {
+		return $super() + ' (function)'
+	},
+
 	menuSpec: ide.ClassElemFragmentNode.prototype.menuSpec, // FIXME
 
 });
@@ -1902,19 +1837,19 @@ ide.ChangeNode.subclass('lively.ide.ChangeSetDoitNode', {
 	},
 	
 });
-ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
+lively.ide.ChangeSetNode.subclass('lively.ide.RemoteChangeSetNode', {
 
 	initialize: function($super, target, browser, parent, worldProxy) {
 		// target will become a ChangeSet when world is loaded but can now be undefined
         $super(target, browser, parent);
         this.worldProxy = worldProxy;
     },
-childNodes: function($super) {
+
+	childNodes: function($super) {
 		if (!this.target)
 			this.worldProxyFetchChangeSet();
 		return $super();
 	},
-
 
     sourceString: function($super) {
 		if (!this.target)
@@ -1925,9 +1860,8 @@ childNodes: function($super) {
     asString: function() {
 		return this.worldProxy.localName() + (this.target == null ? ' (not loaded)' :  '');
 	},
-buttonSpecs: function() { return [] },
 
-menuSpec: function($super) {
+	menuSpec: function($super) {
 		var spec = [];
 		var node = this;
 		spec.push(['push changes back', function() {
@@ -1936,14 +1870,14 @@ menuSpec: function($super) {
 		return $super().concat(spec);
 	},
 
-
 	worldProxyFetchChangeSet: function() {
 		this.target = this.worldProxy.getChangeSet();
 		this.signalChange();
 	},
-pushChangesBack: function() {
-	this.worldProxy.writeChangeSet(this.target);
-},
+
+	pushChangesBack: function() {
+		this.worldProxy.writeChangeSet(this.target);
+	},
 
 });
 lively.ide.FileFragmentNode.subclass('lively.ide.CopFragmentNode', {
@@ -3010,6 +2944,14 @@ Object.extend(lively.ide.ModuleWrapper, {
 // ===========================================================================
 SourceDatabase.subclass('AnotherSourceDatabase', {
     
+	doNotSerialize: ['registeredBrowsers'],
+	isPropertyOnIgnoreList: lively.data.Wrapper.prototype.isPropertyOnIgnoreList,
+	isPropertyOnIgnoreListInClassHierarchy: function (prop, klass) {
+		if (klass === Object)
+			return false;
+		return (klass.prototype.doNotSerialize && klass.prototype.doNotSerialize.include(prop)) || this.isPropertyOnIgnoreListInClassHierarchy(prop, klass.superclass);
+	},
+
 	initialize: function($super) {
 		this.editHistory = {};
 		this.modules = {};
