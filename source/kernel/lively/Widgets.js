@@ -2804,6 +2804,7 @@ BoxMorph.subclass('ScrollPane',
 		var clipR = this.calcClipR()
 		morph.setPosition(clipR.topLeft());
 		this.clipMorph.setFill(morph.getFill());
+
 // lively.bindings.connect(morph, 'setFill', this.clipMorph, 'setFill')
 		morph.setBorderWidth(0);
 		this.clipMorph.addMorph(morph);

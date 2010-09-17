@@ -294,7 +294,7 @@ hpi:  using(lively.paint).link({
 				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
 				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
 				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
-			vector: lively.paint.LinearGradient.SouthNorth
+			vector: lively.paint.LinearGradient.EastWest
 		}
 	},
 
@@ -313,20 +313,20 @@ hpi:  using(lively.paint).link({
 
 	slider_horizontal: { 
 		borderColor: Color.darkGray, 
-		borderWidth: 1, 
+		borderWidth: 1,
 		borderRadius: 6,
 		fill: {$: "LinearGradient", 
 			stops: [
 				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
 				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
 				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
-			vector: lively.paint.LinearGradient.EastWest
+			vector: lively.paint.LinearGradient.NorthSouth
 		}
 	},
 
 	slider_background_horizontal: { 
 		borderColor: Color.darkGray, 
-		borderWidth: 1, 
+		borderWidth: 1,
 		fill: {$: "LinearGradient", 
 			stops: [
 				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.4)},
@@ -392,9 +392,36 @@ hpi:  using(lively.paint).link({
 		fill: Color.white, 
 	},
 
-	codePane: {
-		//fontFamily: 'Courier'
-		fontColor: Color.red,
+	focusHalo: {
+		fill: null, 
+		borderColor: Color.gray.darker(),
+		strokeOpacity: 0.5
+	},
+
+	Browser_codePane: {
+		fill: Color.white,		
+	},
+
+	Browser_codePaneText: {
+		fill: Color.white,
+		focusHaloBorderWidth: 1,
+		focusHaloBorderWidth: 0.5,
+	},
+
+	Browser_locationInput: {
+		fill: Color.white,		
+	},
+
+	Browser_resizer: {
+		fill: Color.gray.lighter(2),		
+	},
+
+	Browser_commentPane: {
+		fill: Color.white,		
+	},
+
+	Browser_commentPaneText: {
+		fill: Color.white,		
 	},
 
 	noOp: (function(){

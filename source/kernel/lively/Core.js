@@ -90,7 +90,10 @@ Object.subclass('ScriptLoader',
 		result = result.replace(/\/\.\//g, '/')
 		return result
 	},
-		
+
+	
+	
+	
 	scriptElementLinksTo: function(el, url) {
 		if (!el.getAttribute) return false;
 		// FIXME use namespace consistently
@@ -1586,7 +1589,7 @@ Morph.addMethods('default', {
 
     style: {},
 
-    focusHaloBorderWidth: 4,
+    focusHaloBorderWidth: 2,
 
     fishEye: false,        // defines if fisheye effect is used
     fisheyeScale: 1.0,     // set the default scaling to 1.0
@@ -2178,6 +2181,9 @@ Morph.addMethods('default', {
 			}
 			if (spec.suppressGrabbing !== undefined) this.suppressGrabbing = spec.suppressGrabbing;
 			if (spec.suppressHandles !== undefined) this.suppressHandles = spec.suppressHandles;
+
+			if (spec.focusHaloBorderWidth !== undefined) this.focusHaloBorderWidth = spec.focusHaloBorderWidth;
+			if (spec.focusHaloInset !== undefined) this.focusHaloInset = spec.focusHaloInset;
 		}
 		return this;
 	},
@@ -3057,7 +3063,7 @@ Morph.addMethods('default', {
 		return true;
 	},
 
-	focusHaloInset: 2,
+	focusHaloInset: 1,
 
 	focusStyle: {
 		fill: null, 
@@ -3075,7 +3081,10 @@ Morph.addMethods('default', {
 		this.focusHalo.name = "FocusHalo";
 		this.focusHalo.isEpimorph = true;  // Do this before adding the halo
 		this.addMorph(this.focusHalo);
+		// old
 		this.focusHalo.applyStyle(this.focusStyle);
+		// new
+		this.focusHalo.linkToStyles(["focusHalo"]);
 		this.focusHalo.setBorderWidth(this.focusHaloBorderWidth);
 		this.focusHalo.setLineJoin(lively.scene.LineJoins.Round);
 		this.focusHalo.ignoreEvents();
