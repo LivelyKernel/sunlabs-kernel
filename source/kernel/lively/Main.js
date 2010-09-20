@@ -91,7 +91,7 @@ Object.subclass('lively.Main.Loader', {
 
 	systemStart: function(canvas) {
 		console.group("World loading");
-
+		this.displayLoading();
 		// -----------------
 		this.configPatches();
 		this.debuggingExtras();
@@ -125,6 +125,8 @@ Object.subclass('lively.Main.Loader', {
 			            console.log("world is " + world);
 						changes && changes.evaluateInitializer();
 
+						loader.onFinishLoading();
+
 			            if (Config.showWikiNavigator) loader.showWikiNavigator();
 
 						console.groupEnd("World loading");
@@ -147,10 +149,37 @@ Object.subclass('lively.Main.Loader', {
 				if (!Config.skipAllExamples)
 					new lively.Main.ExampleLoader().populateWorldWithExamples(world);
 
+				loader.onFinishLoading();
+
 			})
 	    }
 
 	},
+onFinishLoading: function() {
+	WorldMorph.current().hideHostMouseCursor();
+	var loadingDiv = document.getElementById("loadingDisplay");
+	if (loadingDiv) {
+		loadingDiv.parentNode.removeChild(loadingDiv)
+	}
+},
+displayLoading: function() {
+	var div = document.createElement("div");
+	div.setAttribute("id","loadingDisplay");
+	div.textContent = "Loading...";
+
+	div.setAttribute("style",
+		"font-size: 20pt;" +
+		"color: darkgray;" +
+		"font-family: sans-serif;" +
+		"position:fixed; " +
+		"z-index: 400; " +
+		"right:0px; top:1px;"+
+		"width:150px; height:40px;" );
+
+	document.body.appendChild(div)
+},
+
+
 });
 
 

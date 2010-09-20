@@ -274,7 +274,7 @@ hpi:  using(lively.paint).link({
 
 
 	titleBar_closeButton: {
-		fill: Styles.titleBarButtonGradient(Color.primary.orange)
+		fill: Styles.titleBarButtonGradient(Color.rgb(230, 50,50)) // Color.primary.orange
 	},
 
 	titleBar_menuButton: {
@@ -282,18 +282,21 @@ hpi:  using(lively.paint).link({
 	},
 
 	titleBar_collapseButton: {
-		fill: Styles.titleBarButtonGradient(Color.primary.yellow),
-	},
+		fill: Styles.titleBarButtonGradient(Color.rgb(255,215,102) ), // Color.primary.yellow  
+ 	},
 
 	slider: { 
-		borderColor: Color.darkGray, 
+		borderColor: new Color(0.4,0.4, 0.4), 
+		borderOpacity: 1, 	
 		borderWidth: 1, 
 		borderRadius: 6,
 		fill: {$: "LinearGradient", 
 			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.gray.darker(), 0.3)},
+				{$:"Stop", offset: 0.3, color: Color.gray.mixedWith(Color.white, 0.2)},
+				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.1)},
+				{$:"Stop", offset: 0.6, color: Color.gray.mixedWith(Color.white, 0.5)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
 			vector: lively.paint.LinearGradient.EastWest
 		}
 	},
@@ -302,11 +305,12 @@ hpi:  using(lively.paint).link({
 		borderColor: Color.gray, 
 		borderWidth: 1, 
 		strokeOpacity: 1,
+		borderRadius: 6,
 		fill: {$: "LinearGradient", 
 			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.4)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.2)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.4)}],
+				{$:"Stop", offset: 0,    color: Color.gray},
+				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.3)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
 			vector: lively.paint.LinearGradient.EastWest
 		}
 	},
@@ -317,9 +321,11 @@ hpi:  using(lively.paint).link({
 		borderRadius: 6,
 		fill: {$: "LinearGradient", 
 			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
+				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.gray.darker(), 0.3)},
+				{$:"Stop", offset: 0.3, color: Color.gray.mixedWith(Color.white, 0.2)},
+				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.1)},
+				{$:"Stop", offset: 0.6, color: Color.gray.mixedWith(Color.white, 0.5)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
 			vector: lively.paint.LinearGradient.NorthSouth
 		}
 	},
@@ -327,11 +333,12 @@ hpi:  using(lively.paint).link({
 	slider_background_horizontal: { 
 		borderColor: Color.darkGray, 
 		borderWidth: 1,
+		borderRadius: 6,
 		fill: {$: "LinearGradient", 
 			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.4)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.2)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.4)}],
+				{$:"Stop", offset: 0,    color: Color.gray},
+				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.3)},
+				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
 			vector: lively.paint.LinearGradient.NorthSouth
 		}
 	},

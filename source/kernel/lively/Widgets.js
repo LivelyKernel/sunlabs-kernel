@@ -2907,6 +2907,7 @@ BoxMorph.subclass('ScrollPane',
 		this.innerMorph().setPosition(pt(this.innerMorph().position().x, slide)); 
 		if (this.verticalScrollBar)
 			this.getVerticalScrollBar().adjustForNewBounds();
+		this.updateScrollBarSliders();
 		return scrollPos;
 	},
 
@@ -2916,6 +2917,7 @@ BoxMorph.subclass('ScrollPane',
 		this.innerMorph().setPosition(pt(slide, this.innerMorph().position().y)); 
 		if (this.verticalScrollBar)
 			this.getVerticalScrollBar().adjustForNewBounds();
+		this.updateScrollBarSliders();
 		return scrollPos;
 	},
 
@@ -3013,11 +3015,27 @@ BoxMorph.subclass('ScrollPane',
 			this.menuButton.setBounds(verticalBarBnds.topLeft().extent(pt(w, w)));
 			verticalBarBnds = verticalBarBnds.withTopLeft(verticalBarBnds.topLeft().addXY(0, w));
 		}
-		if (this.verticalScrollBar)
-			this.getVerticalScrollBar().setBounds(verticalBarBnds);
-		if (this.horizontalScrollBar)
-			this.getHorizontalScrollBar().setBounds(horizontalBarBnds);
+		if (this.verticalScrollBar) {
+			var scrollBar = this.getVerticalScrollBar();
+			scrollBar.setBounds(verticalBarBnds);
+		};
+		if (this.horizontalScrollBar) {
+			var scrollBar = this.getHorizontalScrollBar();
+			scrollBar.setBounds(horizontalBarBnds);
+		};
+		this.updateScrollBarSliders();
 	},
+updateScrollBarSliders: function() {
+	if (this.verticalScrollBar) {
+		var scrollBar = this.getVerticalScrollBar();
+		scrollBar.slider.setVisible(this.getVerticalVisibleExtent() < 1);
+	};
+	if (this.horizontalScrollBar) {
+		var scrollBar = this.getHorizontalScrollBar();
+		scrollBar.slider.setVisible(this.getHorizontalVisibleExtent() < 1);
+	}
+},
+
 
 },
 'debugging', {

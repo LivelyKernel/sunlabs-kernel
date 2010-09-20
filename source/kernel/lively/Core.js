@@ -4807,6 +4807,13 @@ PasteUpMorph.subclass("WorldMorph",
         return pt;
         //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
+hideHostMouseCursor: function() {
+
+	var	path = new URL(Config.codeBase).withFilename('media/nocursor.gif').withRelativePartsResolved().pathname
+	document.body.style.cursor = 'url("' + path + '"), none';
+
+},
+
 
 },
 'stepping', {

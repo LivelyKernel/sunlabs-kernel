@@ -48,15 +48,19 @@ Widget.subclass('lively.ide.BasicBrowser',
 
 	panelSpec: [
 			['locationPane', newTextPane, new Rectangle(0, 0, 0.8, 0.04)],
-			['codeBaseDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.8, 0, 0.12, 0.04)],
-			['localDirBtn', function(bnds) { return new ButtonMorph(bnds) }, new Rectangle(0.92, 0, 0.08, 0.04)],
+			['codeBaseDirBtn', function(bnds) { 
+					return new ButtonMorph(bnds) }, new Rectangle(0.8, 0, 0.12, 0.04)],
+			['localDirBtn', function(bnds) { 
+					return new ButtonMorph(bnds) }, new Rectangle(0.92, 0, 0.08, 0.04)],
 			['Pane1', newDragnDropListPane, new Rectangle(0, 0.05, 0.25, 0.35)],
 			['Pane2', newDragnDropListPane, new Rectangle(0.25, 0.05, 0.25, 0.35)],
 			['Pane3', newDragnDropListPane, new Rectangle(0.5, 0.05, 0.25, 0.35)],
 			['Pane4', newDragnDropListPane, new Rectangle(0.75, 0.05, 0.25, 0.35)],
-			['midResizer', function(bnds) { return new HorizontalDivider(bnds) }, new Rectangle(0, 0.44, 1, 0.01)],
+			['midResizer', function(bnds) { 
+					return new HorizontalDivider(bnds) }, new Rectangle(0, 0.44, 1, 0.01)],
 			['sourcePane', newTextPane, new Rectangle(0, 0.45, 1, 0.49)],
-			['bottomResizer', function(bnds) { return new HorizontalDivider(bnds) }, new Rectangle(0, 0.94, 1, 0.01)],
+			['bottomResizer', function(bnds) { 
+					return new HorizontalDivider(bnds) }, new Rectangle(0, 0.94, 1, 0.01)],
 			['commentPane', newTextPane, new Rectangle(0, 0.95, 1, 0.05)]
 		],
 
@@ -134,6 +138,10 @@ Widget.subclass('lively.ide.BasicBrowser',
 		this.buildCommandButtons(panel);
  		this.setupResizers(panel);
 
+		panel.commentPane.linkToStyles(["Browser_commentPane"])
+		panel.commentPane.innerMorph().linkToStyles(["Browser_commentPaneText"])
+		panel.commentPane.clipMorph.setFill(null);
+
 		panel.ownerWidget = this;
         return panel;
     },
@@ -142,6 +150,10 @@ Widget.subclass('lively.ide.BasicBrowser',
 		this.sourceInput().maxSafeSize = 2e6;
 		// this.sourceInput().styleClass = ['codePane'];
 		this.panel.sourcePane.connectModel(this.getModel().newRelay({Text: "SourceString"}));
+		
+		this.panel.sourcePane.linkToStyles(["Browser_codePane"])
+		this.panel.sourcePane.innerMorph().linkToStyles(["Browser_codePaneText"])
+		this.panel.sourcePane.clipMorph.setFill(null);
 
 		// lively.bindings.connect(this, 'sourceString', this.panel.sourcePane.innerMorph(), 'setTextString');
 		// lively.bindings.connect(this.panel.sourcePane.innerMorph(), 'savedTextString', this, 'setSourceString');
@@ -153,6 +165,7 @@ Widget.subclass('lively.ide.BasicBrowser',
 		if (!this.locationInput()) return;
 		this.locationInput().beInputLine();
 		this.locationInput().noEval = true;
+		this.locationInput().linkToStyles(["Browser_locationInput"])
 	},
 	
 	setupResizers: function() {
@@ -176,6 +189,9 @@ Widget.subclass('lively.ide.BasicBrowser',
 		// bottom resizer divides code and comment pane
 		panel.bottomResizer.addScalingAbove(panel.sourcePane)
 		panel.bottomResizer.addScalingBelow(panel.commentPane)
+
+		panel.bottomResizer.linkToStyles(["Browser_resizer"]);
+		panel.midResizer.linkToStyles(["Browser_resizer"]);
 	},
 	
 	buildCommandButtons: function(morph) {
@@ -2944,14 +2960,6 @@ Object.extend(lively.ide.ModuleWrapper, {
 // ===========================================================================
 SourceDatabase.subclass('AnotherSourceDatabase', {
     
-	doNotSerialize: ['registeredBrowsers'],
-	isPropertyOnIgnoreList: lively.data.Wrapper.prototype.isPropertyOnIgnoreList,
-	isPropertyOnIgnoreListInClassHierarchy: function (prop, klass) {
-		if (klass === Object)
-			return false;
-		return (klass.prototype.doNotSerialize && klass.prototype.doNotSerialize.include(prop)) || this.isPropertyOnIgnoreListInClassHierarchy(prop, klass.superclass);
-	},
-
 	initialize: function($super) {
 		this.editHistory = {};
 		this.modules = {};
