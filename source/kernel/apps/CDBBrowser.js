@@ -1,4 +1,4 @@
-module('apps.CDBBrowser').requires('lively.ide', 'apps.CDB').toRun(function() {
+module('apps.CDBBrowser').requires('cop.Layers', 'lively.ide', 'apps.CDB').toRun(function() {
 
 Object.subclass('CodeDBObjectWrapper', {
 
@@ -932,15 +932,5 @@ lively.ide.BrowserCommand.subclass('CodeDBNewModuleCommand', {
 	},
 	
 });
-
-// connect(WorldMorph.prototype, 'toolSubMenuItems', {
-// 	extendToolMenu: function(menu) {
-// 		menu.splice(3, 0, ["CodeDB Repository Browser ", function(evt) {
-// 			var cdb = new CodeDBRepositoryBrowser();
-// 			cdb.openIn(WorldMorph.current());
-// 		}]);
-// 		return menu;
-// 	}
-// }, 'extendToolMenu');
 
 }) // end of module
