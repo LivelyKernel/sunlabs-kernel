@@ -73,8 +73,7 @@ Object.subclass('ScriptLoader',
 	removeQueries: function(url) {
 		return url.split('?').first();
 	},
-	
-	resolveURLString: function(urlString) {
+resolveURLString: function(urlString) {
 		// FIXME duplicated from URL class in lively. Network
 		// actually lively.Core should require lively.Network -- but lively.Network indirectly
 		// lively.Core ====>>> FIX that!!!
@@ -2368,6 +2367,8 @@ Morph.addMethods('default', {
 		this.layoutManager.afterAddMorph(this, m, isFront);
 		m.changed();
 		m.layoutChanged();
+		if (Config.ChromeSVGRenderingHotfix)
+			(function() { m.transformChanged() }).delay(0);
 		this.layoutChanged();
 		return m;
 	},
@@ -5329,19 +5330,17 @@ hideHostMouseCursor: function() {
 	},
 
 	ensureStatusMessageContainer: function() {
-		if (!this._statusMessageContainer) {
+		if (!this._statusMessageContainer || ! this._statusMessageContainer.owner) {
 			this._statusMessageContainer = new StatusMessageContainer();
+			this._statusMessageContainer.setName("statusMorphContainer");
 			this.addMorph(this._statusMessageContainer);
-			this._statusMessageContainer.startUpdate();		
+			this._statusMessageContainer.startUpdate();
 		};
 		return this._statusMessageContainer
 	},
 
 	setStatusMessage: function(msg, color, delay, callback, optStyle, messageKind) {
 		var container = this.ensureStatusMessageContainer();
-		container.align(container.bounds().topRight(), this.visibleBounds().topRight());
-		container.name = "statusMorphContainer";
-		container.bringToFront();
 		return container.addStatusMessage(msg, color, delay, callback, optStyle, messageKind);
 	},	
 

@@ -89,6 +89,10 @@ BoxMorph.subclass('CrayonColorItemMorph', {
 		this.owner.selectedColor = this.getFill();
 	},
 	onMouseMove: function(evt) {},
+
+	getHelpText: function() {
+		return this.helpText;
+	}	
 })
 
 BoxMorph.subclass('CrayonColorChooserMorph', {
@@ -108,7 +112,8 @@ BoxMorph.subclass('CrayonColorChooserMorph', {
 				// var morph = new TextMorph(new Rectangle(x, y, w,h), name)
 				var morph = new CrayonColorItemMorph(new Rectangle(x,y,w,h));
 
-				morph.setFill(CrayonColors[name])
+				morph.setFill(CrayonColors[name]);
+				morph.helpText = name;
 				self.addMorph(morph);
 				morph.setPosition(pt(x,y));
 				x += w;
@@ -124,11 +129,36 @@ Object.extend(Styles, {
 	titleBarButtonGradient: function(color) {
 		var gfx = lively.paint;
 		return new gfx.RadialGradient([
-				new gfx.Stop(0, color.lighter(2)),
+				new gfx.Stop(0, color.mixedWith(Color.white, 0.3)),
 				new gfx.Stop(0.5, color),
-				new gfx.Stop(1, color.darker())],
+				new gfx.Stop(1, color.mixedWith(Color.black, 0.6))],
 			pt(0.4, 0.2))
-	}
+	},
+
+	sliderGradient: function(color, fillDirection) {
+		var gfx = lively.paint;
+		color = color || Color.gray;
+		fillDirection = fillDirection || 'EastWest';
+		return new gfx.LinearGradient([
+				new gfx.Stop(0,   color.mixedWith(Color.white, 0.4)),
+				new gfx.Stop(0.5, color.mixedWith(Color.white, 0.8)),
+				new gfx.Stop(1,   color.mixedWith(Color.black, 0.9))],
+			lively.paint.LinearGradient[fillDirection])
+	
+	},
+
+	sliderBackgroundGradient: function(color, fillDirection) {
+		var gfx = lively.paint;
+		color = color || Color.gray;
+		fillDirection = fillDirection || 'EastWest';
+		return new gfx.LinearGradient([
+				new gfx.Stop(0,   color),
+				new gfx.Stop(0.4, color.mixedWith(Color.white, 0.3)),
+				new gfx.Stop(1, color.mixedWith(Color.white, 0.2))],
+			lively.paint.LinearGradient[fillDirection])
+	
+	},
+
 })
 
 
@@ -150,7 +180,7 @@ Object.extend(DisplayThemes, {primitive: using(lively.paint).link({
 	},
 
 	titleBar_menuButton: {
-		fill: Color.primary.blue,
+		fill: Color.green,
 	},
 
 	titleBar_collapseButton: {
@@ -250,6 +280,7 @@ hpi:  using(lively.paint).link({
 			vector: lively.paint.LinearGradient.SouthEast
 		}
 	},
+
 	titleBar: { 
 		borderRadius: 8, 
 		borderWidth: 2, 
@@ -272,16 +303,35 @@ hpi:  using(lively.paint).link({
 		fillOpacity: 0.5,
 	},
 
+	titleBar_button_label: {
+		textColor: new Color(0.5,0.5,0.5,0.5),
+
+// CrayonColors.cayenne.copy(),
+		fontStyle: 'bold',
+	},
 
 	titleBar_closeButton: {
-		fill: Styles.titleBarButtonGradient(Color.rgb(230, 50,50)) // Color.primary.orange
+		fill: Styles.titleBarButtonGradient(Color.gray)
 	},
 
 	titleBar_menuButton: {
-		fill: Styles.titleBarButtonGradient(Color.primary.blue),
+		fill: Styles.titleBarButtonGradient(Color.gray),
 	},
 
 	titleBar_collapseButton: {
+		fill: Styles.titleBarButtonGradient(Color.gray), 
+ 	},
+
+	titleBar_closeButton_highlight: {
+		fill: Styles.titleBarButtonGradient(CrayonColors.cayenne) 
+		// Color.primary.orange // Color.red.mixedWith(Color.gray, 0.8)
+	},
+
+	titleBar_menuButton_highlight: {
+		fill: Styles.titleBarButtonGradient(Color.green.mixedWith(Color.black, 0.65)),
+	},
+
+	titleBar_collapseButton_highlight: {
 		fill: Styles.titleBarButtonGradient(Color.rgb(255,215,102) ), // Color.primary.yellow  
  	},
 
@@ -290,57 +340,30 @@ hpi:  using(lively.paint).link({
 		borderOpacity: 1, 	
 		borderWidth: 1, 
 		borderRadius: 6,
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.gray.darker(), 0.3)},
-				{$:"Stop", offset: 0.3, color: Color.gray.mixedWith(Color.white, 0.2)},
-				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.1)},
-				{$:"Stop", offset: 0.6, color: Color.gray.mixedWith(Color.white, 0.5)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
-			vector: lively.paint.LinearGradient.EastWest
-		}
+		fill: Styles.sliderGradient(Color.primary.blue.mixedWith(Color.gray, 0.8), 'EastWest')
 	},
+
 
 	slider_background: { 
 		borderColor: Color.gray, 
 		borderWidth: 1, 
 		strokeOpacity: 1,
 		borderRadius: 6,
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray},
-				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.3)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
-			vector: lively.paint.LinearGradient.EastWest
-		}
+		fill: Styles.sliderBackgroundGradient(Color.gray, 'EastWest'),	
 	},
 
 	slider_horizontal: { 
 		borderColor: Color.darkGray, 
 		borderWidth: 1,
 		borderRadius: 6,
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.gray.darker(), 0.3)},
-				{$:"Stop", offset: 0.3, color: Color.gray.mixedWith(Color.white, 0.2)},
-				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.1)},
-				{$:"Stop", offset: 0.6, color: Color.gray.mixedWith(Color.white, 0.5)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
-			vector: lively.paint.LinearGradient.NorthSouth
-		}
+		fill: Styles.sliderGradient(Color.primary.blue.mixedWith(Color.gray, 0.8), "NorthSouth")
 	},
 
 	slider_background_horizontal: { 
 		borderColor: Color.darkGray, 
 		borderWidth: 1,
 		borderRadius: 6,
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray},
-				{$:"Stop", offset: 0.4, color: Color.gray.mixedWith(Color.white, 0.3)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.2)}],
-			vector: lively.paint.LinearGradient.NorthSouth
-		}
+		fill: Styles.sliderBackgroundGradient(Color.gray, "NorthSouth")
 	},
 
 	button: { 

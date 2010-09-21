@@ -963,6 +963,7 @@ BoxMorph.subclass('TextMorph', {
 
 	initialize: function($super, rect, textString, useChangeClue) {
 		this.textString = textString || "";
+		this.savedTextString = this.textString;
 		// rk 4/16/09 added two lines below as a bugfix for searching code with alt+w
 		// in rev 2764 a changed call was added to setFill which causes an error
 		this.selectionRange = [0, -1]; // null or a pair of indices into textString
@@ -1047,6 +1048,9 @@ BoxMorph.subclass('TextMorph', {
 		}
 		if (spec.textColor !== undefined) {
 			this.setTextColor(spec.textColor);
+		}
+		if (spec.fontStyle !== undefined) {
+			this.emphasizeAll({style: spec.fontStyle});
 		}
 		return this;
 	},

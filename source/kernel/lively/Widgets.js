@@ -3079,6 +3079,8 @@ Object.extend(Global, { // helper functions
 	newXenoPane: function(initialBounds) {
 	    return new ScrollPane(new XenoMorph(initialBounds.withHeight(1000)), initialBounds);
 	},
+	newButton: function(initialBounds) { return new ButtonMorph(initialBounds) },
+
 	
 });
 
@@ -4102,13 +4104,15 @@ BoxMorph.subclass("TitleBarMorph",
 		if (!this.suppressControls) {
 			var cell = new Rectangle(0, 0, this.barHeight, this.barHeight);
 
-			this.closeButton =  this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.orange));
+			this.closeButton =  this.addMorph(
+				new WindowControlMorph(cell, this.controlSpacing, undefined, "X", pt(-4,-6)));
 			this.closeButton.linkToStyles('titleBar_closeButton');
-			this.menuButton = this.addMorph(new WindowControlMorph(cell, this.controlSpacing, Color.primary.blue));
+			this.menuButton = this.addMorph(
+				new WindowControlMorph(cell, this.controlSpacing, undefined, "M", pt(-5,-6)));
 			this.menuButton.linkToStyles('titleBar_menuButton');
 
 			this.collapseButton = this.addMorph(
-				new WindowControlMorph(cell, this.controlSpacing, Color.primary.yellow));
+				new WindowControlMorph(cell, this.controlSpacing, undefined, "–", pt(-3,-6)));
 			this.collapseButton.linkToStyles('titleBar_collapseButton');
 
 			this.connectButtons(windowMorph);
@@ -4182,9 +4186,19 @@ BoxMorph.subclass("TitleBarMorph",
 	highlight: function(trueForLight) {
 		if (trueForLight) {
 			this.label.linkToStyles(['titleBar_label_highlight']);
+			if (this.closeButton) this.closeButton.linkToStyles('titleBar_closeButton_highlight');
+			if (this.menuButton) this.menuButton.linkToStyles('titleBar_menuButton_highlight');
+			if (this.collapseButton) this.collapseButton.linkToStyles('titleBar_collapseButton_highlight');
+
 		} else {
 			this.label.linkToStyles(['titleBar_label']);
+			if (this.closeButton) this.closeButton.linkToStyles('titleBar_closeButton');
+			if (this.menuButton) this.menuButton.linkToStyles('titleBar_menuButton');
+			if (this.collapseButton) this.collapseButton.linkToStyles('titleBar_collapseButton');
 		} 
+
+
+
 
 	},
 	
@@ -4193,7 +4207,15 @@ BoxMorph.subclass("TitleBarMorph",
 		this.adjustForNewBounds();  // This will align the buttons and label properly
 	},
 
+	hightlightAllButtons: function(trueForShow) {
+		([this.closeButton, this.menuButton, this.collapseButton])
+			.select(function(ea){return ea.label})
+			.collect(function(ea) {return ea.label})
+			.invoke('setVisible', trueForShow)
+	},
 
+
+    
 });
 
 BoxMorph.subclass("TitleTabMorph", {
@@ -4252,12 +4274,23 @@ Morph.subclass("WindowControlMorph", {
     focus: pt(0.4, 0.2),
     formals: ["-HelpText", "-Trigger"],
     
-	initialize: function($super, rect, inset, color) {
+	initialize: function($super, rect, inset, color, labelString, labelOffset) {
 		$super(new lively.scene.Ellipse(rect.insetBy(inset)));
-		var gfx = lively.paint;
-		this.setFill(new gfx.RadialGradient([new gfx.Stop(0, color.lighter(2)),
-			new gfx.Stop(0.5, color),
-			new gfx.Stop(1, color.darker())], this.focus));
+		if (color) {
+			// depricated 
+			var gfx = lively.paint;
+			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, color.lighter(2)),
+				new gfx.Stop(0.5, color),
+				new gfx.Stop(1, color.darker())], this.focus));
+		};
+  		if (labelString) {
+			this.label = new TextMorph(new Rectangle(0,0,20,20), labelString).beLabel();
+			this.label.linkToStyles('titleBar_button_label');
+			this.addMorph(this.label);
+			labelOffset = labelOffset || pt(-5,-5);
+			this.label.setPosition(labelOffset);
+			this.label.setVisible(false);
+		};
 		return this;
 	},
 
@@ -4270,6 +4303,11 @@ Morph.subclass("WindowControlMorph", {
     },
 
 	onMouseOver: function($super, evt) {
+
+		// this.world().setStatusMessage("over " + this, Color.green, 5)
+		if (this.owner && this.owner.hightlightAllButtons ) {
+			this.owner.hightlightAllButtons(true)
+		}
 		// if (this.getFill() instanceof lively.paint.Gradient) {
 			// var prevColor = this.getFill().stops[1].color();
 			// var gfx = lively.paint;
@@ -4281,6 +4319,12 @@ Morph.subclass("WindowControlMorph", {
 	},
     
 	onMouseOut: function($super, evt) {
+
+		// this.world().setStatusMessage("out " + this, Color.green, 5)
+		if (this.owner && this.owner.hightlightAllButtons ) {
+			this.owner.hightlightAllButtons(false)
+		}
+
 		// if (this.getFill() instanceof lively.paint.Gradient) {
 			// var prevColor = this.getFill().stops[1].color();
 			// var gfx = lively.paint;
@@ -5456,14 +5500,15 @@ BoxMorph.subclass('HorizontalDivider', {
 });
 
 
-BoxMorph.subclass("StatusMessageContainer", {
+BoxMorph.subclass("StatusMessageContainer",
+'settings', {
  	defaultExtent: pt(400,30),
-
 	suppressGrabbing: true,
 	suppressHandles: true,
 	openForDragAndDrop: false,
-	
 	layoutManager: new VerticalLayout(),
+},
+'initializing', {
 
 	initialize: function($super) {
 		$super(this.defaultExtent.extentAsRectangle());
@@ -5481,7 +5526,8 @@ BoxMorph.subclass("StatusMessageContainer", {
 		this.dismissAllButton.applyStyle({fill: Color.lightGray, borderWidth: 0})
 		connect(this.dismissAllButton, "fire", this, "dismissAll");
 	},
-
+},
+'actions', {
 	dismissAll: function() {
 		this.submorphs.clone().each(function(ea) {
 			ea.remove()
@@ -5490,7 +5536,12 @@ BoxMorph.subclass("StatusMessageContainer", {
 
 	startUpdate: function() {
 		// don't use the script morphs
-		this.world().startSteppingFor(new SchedulableAction(this, 'updateMessages', undefined, 1000))
+		var world = this.world() || WorldMorph.current();
+		if (!world) {
+			console.log("WARNING StatusMessageContainer found no world");
+			return
+		}
+		world.startSteppingFor(new SchedulableAction(this, 'updateMessages', undefined, 1000))
 	},
 
 	showDismissAllButton: function() {
@@ -5581,9 +5632,13 @@ BoxMorph.subclass("StatusMessageContainer", {
 		statusMorph.ignoreEvents();
 		
 		this.addMorph(statusMorph);
-		if (delay) {
+		if (delay)
 			statusMorph.removeAtTime = new Date().getTime() + (delay * 1000);
-		};
+
+		if (this.world()) {
+			this.align(this.bounds().topRight(), this.world().visibleBounds().topRight());
+			this.bringToFront();
+		}
 		
 		this.startUpdate(); // actually not needed but to be sure....
 		

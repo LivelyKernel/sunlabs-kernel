@@ -1401,6 +1401,19 @@ WebResource.addMethods({
 		this.subCollections = result.select(function(ea) { return ea.isCollection() });
 		this.subDocuments = result.select(function(ea) { return !ea.isCollection() });
 	},
+	statusMessage: function(successMsg, failureMessage, onlyOnce) {
+		this.successMsg = successMsg;
+		this.failureMessage = failureMessage;
+		lively.bindings.connect(this, 'status', WorldMorph.current(), 'setStatusMessage', {
+			updater: function($upd, status) {
+				if (status.isSuccess()) $upd(this.sourceObj.successMsg || '', Color.green, 4)
+				else $upd((this.sourceObj.failureMessage || '') + ' (code ' + status.code() + ')', Color.red, 6)
+			},
+			removeAfterUpdate: onlyOnce
+		});
+		return this
+	},
+
 
 
 

@@ -545,11 +545,9 @@ Object.subclass("CDB.RevisionHistory", CDB.Logger.prototype, {
 	
 });
 
-Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
-	
-	/**************************************************
-	 Public Properties
-	 **************************************************/
+Object.subclass("CDB.CodeObject", CDB.Logger.prototype, 
+
+'public properties ', {
 
 	// code object name
 	name: null,
@@ -560,10 +558,7 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 	// code object revision
 	revision: null,
 
-
-	/**************************************************
-	 Private Properties
-	 **************************************************/
+}, 'private properties', {
 	
 	// the repository this code object belongs to
 	repository: null,
@@ -577,10 +572,7 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 	// the revision history of this code object
 	revisionHistory: null,
 
-
-	/**************************************************
-	 Public Functions
-	 **************************************************/
+}, 'public functions', {
 
 	initialize: function(name) {
 
@@ -631,7 +623,8 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 		}
 
 		var objQName = this.getUnprefixedDocumentName();
-		var historyQName = this.repository.constants.RevisionHistoryPrefix + this.repository.constants.CodeObjectDelimiter + objQName;
+		var historyQName = this.repository.constants.RevisionHistoryPrefix 
+			+ this.repository.constants.CodeObjectDelimiter + objQName;
 
 		this.debug('Saving: ' + objQName);
 		this.createNewRevision(true);
@@ -642,7 +635,7 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 			this.repository.cache[objQName] = this;
 			this.repository.cache[historyQName] = this.revisionHistory;
 		}
-},
+	},
 
 	isDraft: function() {
 		return this.revision && this.revision.status == 'draft';
@@ -655,9 +648,7 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 	},
 	
 
-	/**************************************************
-	 Private Functions
-	 **************************************************/
+}, 'private functions', {
 
 	addToRepository: function(rep) {
 			this.repository = rep;
@@ -666,11 +657,14 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 	checkConsistency: function() {
 
 		if (this.persistent && this.action == 1) {
-			throw new CDB.ConsistencyException('Code Object "' + this.name + '" (' + this.constructor.type + ') is already persistent and cannot be added again');
+			throw new CDB.ConsistencyException('Code Object "' + this.name 
+				+ '" (' + this.constructor.type + ') is already persistent and cannot be added again');
 		}
 
-		if (!this.persistent && this.action != 1 && (null == this.revisionHistory || this.revisionHistory.currentRevision == 0)) {
-			throw new CDB.ConsistencyException('Code Object "' + this.name + '" (' + this.constructor.type + ') is not persistent and can only be added');
+		if (!this.persistent && this.action != 1 && (null == this.revisionHistory 
+			|| this.revisionHistory.currentRevision == 0)) {
+			throw new CDB.ConsistencyException('Code Object "' + this.name 
+					+ '" (' + this.constructor.type + ') is not persistent and can only be added');
 		}
 
 		var historyQName = this.repository.constants.RevisionHistoryPrefix;
@@ -680,11 +674,14 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 		var docObj = this.repository.db.open(historyQName);
 
 		if (this.persistent && docObj == null) {
-			throw new CDB.ConsistencyException('Code Object "' + this.name + '" (' + this.constructor.type + ') claims to be persistent but it is not present in the database');
+			throw new CDB.ConsistencyException('Code Object "' + this.name 
+					+ '" (' + this.constructor.type + ') claims to be persistent but it is not present in the database');
 		}
 
-		if (!this.persistent && docObj != null && docObj.currentRevision > 0 &&  docObj.revisionHistory[docObj.currentRevision - 1].status == 'active') {
-			throw new CDB.ConsistencyException('You are trying to add code object "' + this.name + '" (' + this.constructor.type + ') but there is already an active revision in the database');
+		if (!this.persistent && docObj != null && docObj.currentRevision > 0 
+			&&  docObj.revisionHistory[docObj.currentRevision - 1].status == 'active') {
+			throw new CDB.ConsistencyException('You are trying to add code object "' + this.name 
+				+ '" (' + this.constructor.type + ') but there is already an active revision in the database');
 		}
 
 		if (!this.persistent && docObj != null) {
@@ -762,7 +759,8 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 
 		// save revision as separate document
 		docObj._id = this.repository.constants.RevisionPrefix + this.repository.constants.CodeObjectDelimiter;
-		docObj._id += this.revision.number + this.repository.constants.CodeObjectDelimiter + this.getUnprefixedDocumentName();
+		docObj._id += this.revision.number + this.repository.constants.CodeObjectDelimiter 
+			+ this.getUnprefixedDocumentName();
 
 		this.debug('Persisting ' + JSON.serialize(docObj._id));
 		var dbResponse = this.repository.db.save(docObj);
@@ -794,7 +792,8 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 		this.debug('Persisting ' + JSON.serialize(this.revisionHistory.documentObject._id));
 	
 		if (this.revisionHistory.documentObject._rev) {
-			this.debug('Last known CouchDB revision of Code Object revision history: ' + this.revisionHistory.documentObject._rev);
+			this.debug('Last known CouchDB revision of Code Object revision history: ' 
+				+ this.revisionHistory.documentObject._rev);
 		}
 
 		var dbResponse = this.repository.db.save(this.revisionHistory.documentObject);
@@ -809,11 +808,13 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype, {
 	makeActiveRevision: function() {
 
 		if (!this.revisionHistory) {
-			throw new CDB.ConsistencyException('Code object ' + JSON.serialize(this.getUnprefixedDocumentName()) + ' was never saved');
+			throw new CDB.ConsistencyException('Code object ' + JSON.serialize(this.getUnprefixedDocumentName())
+				 + ' was never saved');
 		}
 
 		// no need to change anything if there was never a draft status
-		if (this.revisionHistory.currentRevision != null && this.revisionHistory.getLastRevision().status == 'active') return;
+		if (this.revisionHistory.currentRevision != null 
+			&& this.revisionHistory.getLastRevision().status == 'active') return;
 
 		var rev = this.revisionHistory.getLastRevision();
 		
