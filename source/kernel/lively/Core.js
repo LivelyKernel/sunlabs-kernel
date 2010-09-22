@@ -141,150 +141,6 @@ Object.extend(Global, {
 // ===========================================================================
 
 // console handling
-(function() { 
-    
-    // from firebug lite
-    function escapeHTML(value) {
-		return value;
-	
-		function replaceChars(ch) {
-			switch (ch) {
-				case "<": return "&lt;";
-				case ">": return "&gt;";
-				case "&": return "&amp;";
-				case "'": return "&#39;";
-				case '"': return "&quot;";
-			}
-			return "?";
-		}
-	
-		return String(value).replace(/[<>&"']/g, replaceChars); //KP: this comment to workaround a bug in my Emacs's javascript mode " ])
-    }
-    
-	function LogWindow() {
-		this.win = (function() { 
-			var win = Global.window.open("", "log", "scrollbars,width=900,height=300"); 
-			win.title = "Lively Kernel Log";
-			win.document.write("<pre>"); 
-			return win; 
-		})();
-
-		this.log = function(msg) {
-			if (!this.win) return;
-			this.win.document.writeln(escapeHTML(msg));
-		}
-	};
-    
-    var platformConsole = Global.window.console || ( Global.window.parent && Global.window.parent.console); 
-    if (!platformConsole) {
-		if (!Config.disableNoConsoleWarning) {
-			window.alert && window.alert('no console! console output disabled');
-		};
-		platformConsole = { log: function(msg) { } } // do nothing as a last resort
-    }
-    
-	if (Global.console && Global.console.firebug !== undefined) return; // Firebug doesn't like to be overwritten
-	
- 	// rebind to something that has all the calls, and forwards ti consumers...
-	Global.console = {
-	    
-		platformConsole: platformConsole,
-		
-		// forwarding Fierbug functions...
-		// from: http://getfirebug.com/logging
-		// http://michaelsync.net/2007/09/09/firebug-tutorial-logging-profiling-and-commandline-part-i
-		profile:  function profile() {
-			if (platformConsole.profile)
-				platformConsole.profile.apply(platformConsole, arguments)
-		},
-
-		profileEnd: function profileEnd() {
-			if (platformConsole.profileEnd)
-				platformConsole.profileEnd.apply(platformConsole, arguments)
-		},
-
-		time: function time() {
-			if (platformConsole.time)
-				platformConsole.time.apply(platformConsole, arguments)
-		},
-
-		timeEnd: function timeEnd() {
-			if (platformConsole.timeEnd)
-				platformConsole.timeEnd.apply(platformConsole, arguments)
-		},
-		
-		trace: function trace() {
-			if (platformConsole.trace)
-				platformConsole.trace.apply(platformConsole, arguments)
-		},
-		
-		
-		// Nested grouping
-		group: function group() {
-			if (platformConsole.group)
-				platformConsole.group.apply(platformConsole, arguments)
-		},
-
-		groupEnd: function groupEnd() {
-			if (platformConsole.groupEnd)
-				platformConsole.groupEnd.apply(platformConsole, arguments)
-		},
-		
-		// Object inspection
-		dir: function dir() {
-			if (platformConsole.dir)
-				platformConsole.dir.apply(platformConsole, arguments)
-		},
-		// end forwarding Fierbug functions
-		
-	    consumers: [ platformConsole], // new LogWindow() ],
-	    
-		warn: function warn() {
-			var args = $A(arguments);
-			this.consumers.forEach(function(c) { 
-				if (c.warn) c.warn.apply(c, args); 
-				else c.log("Warn: " + Strings.formatFromArray(args));
-			});
-		},
-	    
-		info: function info() {
-			var args = $A(arguments);
-			this.consumers.forEach(function(c) { 
-				if (c.info) c.info.apply(c, args); 
-				else c.log("Info: " + Strings.formatFromArray(args));
-			});
-		},
-	    
-		log: function log() {
-			this.consumers.invoke('log', Strings.formatFromArray($A(arguments)));
-		},
-	    
-		assert: function assert(expr, msg) {
-			if (!expr) this.log("assert failed:" + msg);
-		}
-	}
-	
-	// WebCards
-	// if(UserAgent.isChrome){//Google Chrome dose not support multiple Params for logging
-	// 	var orignalWarn = platformConsole.warn;
-	// 	platformConsole.warn = function(){
-	// 		orignalWarn.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
-	// 	};
-	// 	
-	// 	var orignalInfo = platformConsole.info;
-	// 	platformConsole.info = function(){
-	// 		orignalInfo.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
-	// 	};
-	// 	
-	// 	var orignalLog = platformConsole.log;
-	// 	platformConsole.log = function(){
-	// 		orignalLog.apply(platformConsole,[Strings.formatFromArray($A(arguments))]);
-	// 	};
-	// }
-	
-    
-})(); 
-
 Object.extend(Global, {
 	
 	onerror: function(message, url, code) {
@@ -303,7 +159,7 @@ Object.extend(Global, {
 });
 
 
-(function() { // override config options with options from the query part of the URL
+(function configFromURL() { // override config options with options from the query part of the URL
 
     // may have security implications ...
     var query = Global.document.documentURI.split('?')[1];
@@ -661,7 +517,7 @@ console.log("Loaded basic DOM manipulation code");
   * refer to, e.g., David Flanagan's book (JavaScript: The Definitive Guide).
   */
 
-(function() {
+(function setupEvent() {
 var tmp = Event; // note we're rebinding the name Event to point to a different class 
 
 Object.subclass('Event', {
