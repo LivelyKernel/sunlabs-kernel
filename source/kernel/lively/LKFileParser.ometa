@@ -163,7 +163,7 @@ ometa LKFileParser <: Parser {
     
     /* properties */    
     protoDef =
-		pos:p spacesNoNl name:pName ':' spaces
+		pos:p spacesNoNl name:pName spaces ':' spaces
 		(basicFunction (somethingBigRelated | empty )
 		| somethingBigRelated
 		) classElemDefEnd
@@ -259,7 +259,21 @@ classElemsInCategory =
 		{name: n, layerName: layerName, subElements: spec.classElems } },
     klassExtensionDef
 	= pos:p basicKlassExt:spec defEnd
-	-> { this._fragment(spec.name, 'klassExtensionDef', p, this.pos()-1, spec.subElements, {traits: spec.traits}) },
+	-> {
+		// FIXME duplication with klassDef!!!
+		var categories = [];
+		spec.subElements.forEach(function(ea) {
+			ea.className = spec.name;
+			if (ea.category) categories.push(ea.category);
+		});
+		categories = categories.uniq()
+		this._fragment(
+			spec.name,
+			'klassExtensionDef',
+			p, this.pos()-1,
+			spec.subElements,
+			{traits: spec.traits, categories: categories})
+	},
     
     /* 'object' stuff */
     restObjDef = classElems:propsAndMethodDescrs spaces
