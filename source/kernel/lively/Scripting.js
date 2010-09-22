@@ -47,7 +47,11 @@ cop.create('ScriptingLayer')
 	},
 
 	morphMenu: function(proceed, evt) {
-		var menu = proceed(evt);
+		var menu;
+		// TOTO remove this workaround ContextJS issue (morphMenu is overriden in TextMorph and called with $super) 
+		withoutLayers([ScriptingLayer], function() {
+			menu= proceed(evt);
+		});
 		menu.addItem(["Scripting", [
 			["startSteppingScripts", this.startSteppingScripts],		
 			["layers", [
@@ -58,5 +62,100 @@ cop.create('ScriptingLayer')
 	}
 });
 
+Morph.addMethods({
+	showNameField: function() {
+		this.removeNameField();
+		var nameField = new TextMorph(new Rectangle(0,-15,100,20), this.name);
+		this.addMorph(nameField);
+		nameField.beLabel();
+		nameField.applyStyle({fill: null, borderWidth: 0, textColor: Color.gray.darker(), fontSize: 10})
+		nameField.isNameField = true;
+		connect(this, 'name', nameField, 'setTextString')
+	},
+
+	removeNameField: function() {
+		this.submorphs.select(function(ea) {return ea.isNameField}).invoke('remove')
+	},
+
+	isShowingNameField: function() {
+		return this.submorphs.detect(function(ea) {return ea.isNameField}) !== undefined
+	}
+})
+
+
+cop.create('DisplayMorphNameLayer').refineClass(Morph, {
+	subMenuPropertiesItems: function (proceed, evt) {
+		var name, func; 
+		var self = this;
+		if(this.isShowingNameField() ) {
+			name = "[X] show name field" ;
+			func = function() {self.removeNameField()}
+		} else {
+			name = "[] show name field" ;
+			func = function() {self.showNameField()}
+
+		}
+		return proceed(evt).concat([[name, func]])
+	}
+}).beGlobal()
+
+cop.create('CopyCheapListMorphLayer').refineClass(CheapListMorph, {
+	morphMenu: function(proceed, evt){
+		var menu = proceed(evt);
+		var self = this;
+		menu.addItem(["duplicate as TextMorph", function() {
+			evt.hand.addMorph(new TextMorph(new Rectangle(0,0,500,300), self.textString))
+		}])
+
+		return menu
+	}
+})
+CopyCheapListMorphLayer.beGlobal()
+
+Object.subclass('StyleCopier', {})
+
+Morph.addMethods({
+	getCustomStyle: function() {
+		return {fill: this.getFill()}
+	},
+	applyCustomStyle: function(style) {
+		this.applyStyle(style)
+	}
+})
+
+TextMorph.addMethods({
+	getCustomStyle: function() {
+		return {fill: this.getFill(), fontSize: this.getFontSize(), fontFamily: this.getFontFamily()}
+	},
+	applyCustomStyle: function($super, style) {
+		$super(style);
+		if (style.fontFamily)
+			this.setFontFamily(style.fontFamily)
+	}
+})
+
+cop.create('StyleLayer').refineClass(TextMorph, {
+	morphMenu: function(proceed, evt) {
+		var menu = proceed(evt);
+		var self = this;
+		menu.addItem(["copy style", function() {StyleCopier.copyFromMorph(self)}])
+		menu.addItem(["paste style", function(){StyleCopier.pasteToMorph(self)}])
+		return menu
+	}
+})
+
+StyleCopier.copyFromMorph = function(morph) {
+	var style = morph.getCustomStyle();
+	// WorldMorph.current().setStatusMessage('copy style ' + printObject(style))
+	StyleCopier.StyleClipboard = style;
+}
+
+StyleCopier.pasteToMorph = function(morph) {
+	var style = StyleCopier.StyleClipboard 
+	if (style) {
+		// WorldMorph.current().setStatusMessage('apply style ' + printObject(style))
+		morph.applyCustomStyle(style);
+	}
+}
 
 }) // end of module

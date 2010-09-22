@@ -25,7 +25,7 @@
 Object.subclass('ScriptLoader',
 'loading', {
 
-	loadJs: function(url, onLoadCb, embedSerializable/*currently not used*/) {
+	loadJs: function(url, onLoadCb) {
 		if (this.scriptInDOM(url)) {
 			console.log('script ' + url + ' already loaded');
 			return
@@ -2531,9 +2531,15 @@ Morph.addMethods('default', {
 		return this.owner.validatedWorld();
 	},
 
-	openInWorld: function(loc) {
+	openInWorld: function(loc, optName) {
         WorldMorph.current().addMorph(this);
         loc && this.setPosition(loc);
+		if (optName) {
+			var oldMorph = $morph(optName);
+			if (oldMorph)
+				oldMorph.remove();
+			this.name = optName;
+		}
     },
 	
 	toString: function() {
@@ -4808,12 +4814,11 @@ PasteUpMorph.subclass("WorldMorph",
         return pt;
         //return pt.matrixTransform(this.rawNode.parentNode.getTransformToElement(this.rawNode)); 
     },
-hideHostMouseCursor: function() {
-
-	var	path = new URL(Config.codeBase).withFilename('media/nocursor.gif').withRelativePartsResolved().pathname
-	document.body.style.cursor = 'url("' + path + '"), none';
-
-},
+	hideHostMouseCursor: function() {
+		if (!Config.hideSystemCursor) return;
+		var	path = URL.codeBase.withFilename('media/nocursor.gif').pathname
+		document.body.style.cursor = 'url("' + path + '"), none';
+	},
 
 
 },
@@ -5228,6 +5233,7 @@ hideHostMouseCursor: function() {
 			var items = ['apps', 'lively', 'Tests'].collect(function(eaDir) {
 			return [eaDir, ChangeSet.current()
 				.moduleNamesInNamespace(eaDir)
+				.sort()
 				.reject(function(ea) { return ignoreModules.include(ea) })
 				.collect(function(ea){ 
 					return [ea, function(){
@@ -5246,7 +5252,9 @@ hideHostMouseCursor: function() {
 	// this.world().showRemoveWorldRequirementsMenu(pt(100,100))
 	showRemoveWorldRequirementsMenu: function(pos) {
 		var pageModules = ChangeSet.current().getWorldRequirementsList().evaluate() 
-		var items = pageModules.collect(function(ea){ 
+		var items = pageModules
+			.sort()
+			.collect(function(ea){ 
 			return [ea, function(){
 				ChangeSet.current().removeWorldRequirement(ea);
 				this.alert("remove " + ea + " module requirement")}]
@@ -7146,11 +7154,14 @@ Object.subclass('DocLinkConverter', {
 	},
 
 	getURLFrom: function(el) {
-		return el.getAttribute('xlink:href')
+		return el.getAttribute('xlink:href') || el.getAttribute('src')
 	},
 
 	setURLTo: function(el, url) {
-		el.setAttribute('xlink:href', url)
+		if (el.getAttribute('xlink:href'))
+			el.setAttribute('xlink:href', url)
+		else
+			el.setAttribute('src', url)
 	},
 
 });

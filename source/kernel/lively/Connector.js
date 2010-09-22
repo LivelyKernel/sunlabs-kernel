@@ -251,12 +251,7 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 		this.setVertices(v);
 	},
 	
-	localize: function(proceed, p) {
-		if (!this.world())
-			return p;
-		else
-			return proceed(p)
-	},
+
 
 	setGlobalStartPos: function(proceed, p) {
 		// console.log("set start pos " + p);

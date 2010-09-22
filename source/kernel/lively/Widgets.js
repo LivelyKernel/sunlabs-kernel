@@ -1332,8 +1332,9 @@ TextMorph.subclass("CheapListMorph", {
 
 });
 
-BoxMorph.subclass("TextListMorph", {
+BoxMorph.subclass("TextListMorph", 
 
+'properties', {
 	documentation: "A list that uses TextMorphs to display individual items",
 	style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
 	formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
@@ -1341,19 +1342,20 @@ BoxMorph.subclass("TextListMorph", {
 	highlightItemsOnMove: false,
 
 	layoutManager: new VerticalLayout(), // singleton is OK
-	
+}, 'initializing',{	
 	initialize: function($super, initialBounds, itemList, optPadding, optTextStyle) {
 		// itemList is an array of strings
 		this.baseWidth = initialBounds.width;
-		var height = Math.max(initialBounds.height, itemList.length * TextMorph.prototype.fontSize);
+		this.textStyle = optTextStyle;
+	
+		var height = Math.max(initialBounds.height, itemList.length * this.getItemFontSize());
 		initialBounds = initialBounds.withHeight(height);
 		if (optPadding) this.padding = optPadding;
 		$super(initialBounds);
 		this.itemList = itemList;
 		this.selectedLineNo = -1;
 		this.selection = null; // for connect
-		this.textStyle = optTextStyle;
-		this.generateSubmorphs(itemList);
+			this.generateSubmorphs(itemList);
 	
 		if (Config.selfConnect) { // self connect logic, not really needed 
 			var model = Record.newNodeInstance({List: [], Selection: null, Capacity: this.defaultCapacity, 
@@ -1381,30 +1383,9 @@ BoxMorph.subclass("TextListMorph", {
 		}
 		this.layoutChanged();
 	},
+}, 'mouse events',{	
 
 	handlesMouseDown: Functions.True,
-
-	generateSubmorphs: function(itemList) {
-		var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle();
-		for (var i = 0; i < itemList.length; i++)  {
-			var m = new TextMorph(rect, itemList[i]).beListItem();
-			if (this.textStyle) m.applyStyle(this.textStyle);
-			this.addMorph(m);
-			m.relayMouseEvents(this);
-		}
-		// FIXME: border doesn't belong here, doesn't take into account padding.
-		var borderBounds = this.bounds();//.expandBy(this.getBorderWidth()/2);
-		var delta = 2; // FIXME FIXME
-		var newBounds = new Rectangle(delta, 0, borderBounds.width - delta, borderBounds.height + this.padding.bottom());
-		this.shape.setBounds(newBounds);
-	},
-
-	adjustForNewBounds: function($super) {
-		$super();
-		// FIXME: go through all the submorphs adjust?
-		// Really, just fold into the layout logic, when in place
-		this.baseWidth = this.bounds().width;
-	},
 
 	takesKeyboardFocus: Functions.True,
 
@@ -1432,6 +1413,7 @@ BoxMorph.subclass("TextListMorph", {
 		console.log("wheel event " + evt + "," + evt.wheelDelta() + " on " + this); // no break
 	},
 
+}, 'selection',{	
 	highlightItem: function(evt, index, updateModel) {
 		if (index >= 0) {
 			this.selectLineAt(index, updateModel);
@@ -1442,6 +1424,7 @@ BoxMorph.subclass("TextListMorph", {
 		return false;
 	},
 
+}, 'keyboard events',{	
     onKeyPress: Functions.Empty,
 
     onKeyDown: function(evt) {
@@ -1487,6 +1470,7 @@ BoxMorph.subclass("TextListMorph", {
     selectLineAt: function(lineNo, shouldUpdateModel) {  
         if (this.selectedLineNo in this.submorphs) { 
             this.submorphs[this.selectedLineNo].setFill(this.savedFill);
+            this.submorphs[this.selectedLineNo].setTextColor(this.savedTextColor);
         }
 
         this.selectedLineNo = lineNo;
@@ -1495,7 +1479,11 @@ BoxMorph.subclass("TextListMorph", {
         if (lineNo in this.submorphs) {
             var item = this.submorphs[lineNo];
             this.savedFill = item.getFill(); 
-            item.setFill(TextSelectionMorph.prototype.style.fill);
+            this.savedTextColor = item.getTextColor();
+
+            item.setFill(Color.primary.blue); // TODO move to named style
+			item.setTextColor(Color.gray.lighter(2));
+
             selectionContent = item.textString;
             this.scrollItemIntoView(item);
         }
@@ -1560,7 +1548,7 @@ BoxMorph.subclass("TextListMorph", {
 
     
     updateList: function(newList) {
-	if(!newList || newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
+		if(!newList || newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
         var priorItem = this.getSelection();
         this.itemList = newList;
         this.removeAllMorphs();
@@ -1579,6 +1567,8 @@ BoxMorph.subclass("TextListMorph", {
         }
         return false;
     },
+
+}, 'update functions',{	
 
 	onListUpdate: function(list) {
 		this.updateList(list);
@@ -1605,7 +1595,38 @@ BoxMorph.subclass("TextListMorph", {
             this.updateList(list);
         } 
     },
+
+}, 'private ',{	
     
+	getItemFontSize: function() {
+		if (this.textStyle &&	this.textStyle.fontSize) {
+			return this.textStyle.fontSize
+		};
+		return TextMorph.prototype.fontSize
+	},
+
+	generateSubmorphs: function(itemList) {
+		var rect = pt(this.baseWidth, this.getItemFontSize()).extentAsRectangle();
+		for (var i = 0; i < itemList.length; i++)  {
+			var m = new TextMorph(rect, itemList[i]).beListItem();
+			if (this.textStyle) m.applyStyle(this.textStyle);
+			this.addMorph(m);
+			m.relayMouseEvents(this);
+		}
+		// FIXME: border doesn't belong here, doesn't take into account padding.
+		var borderBounds = this.bounds();//.expandBy(this.getBorderWidth()/2);
+		var delta = 2; // FIXME FIXME
+		var newBounds = new Rectangle(delta, 0, borderBounds.width - delta, borderBounds.height + this.padding.bottom());
+		this.shape.setBounds(newBounds);
+	},
+
+	adjustForNewBounds: function($super) {
+		$super();
+		// FIXME: go through all the submorphs adjust?
+		// Really, just fold into the layout logic, when in place
+		this.baseWidth = this.bounds().width;
+	},
+
 	updateView: function(aspect, controller) {
 		var c = this.modelPlug;
 		if (!c) return;
@@ -1658,7 +1679,8 @@ BoxMorph.subclass("TextListMorph", {
 // it should be the other way round...
 TextListMorph.subclass("ListMorph", {
 
-    documentation: 'Can handle list items, not only strings. {isListItem: true, string: string, value: object, onDrag: function, onDrop: function}',
+    documentation: 'Can handle list items, not only strings. '
+		+ '{isListItem: true, string: string, value: object, onDrag: function, onDrop: function}',
     connections: ['itemList', 'selection', 'selectedLineNo'],
 	focusHaloBorderWidth: 0, // dont show focus
 	
@@ -1670,7 +1692,8 @@ TextListMorph.subclass("ListMorph", {
     generateListItem: function(value, rect) {
         if (this.itemPrinter)
             value = this.itemPrinter(value);
-        return new TextMorph(rect, value.string /*fix for Fabrik XMLStringArray, use itemPrinter*/ || value.toString()).beListItem();
+        return new TextMorph(rect, value.string /*fix for Fabrik XMLStringArray, use itemPrinter*/ 
+			|| value.toString()).beListItem();
     },
 
     generateSubmorphs: function(itemList) {
@@ -1959,31 +1982,41 @@ Morph.addMethods({
 });
 
 DragnDropListMorph.subclass('FilterableListMorph', {
+
 	defaultFilter: /.*/i,
+
 	filter: /.*/i,
+
 	initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
         $super(initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate);
 		this.clearFilter();
     },
+
 	getFilter: function() { return this.filter },
+
 	setFilter: function(regexp) {
 		this.filter = regexp;
 		this.updateList(this.itemList);
 	},
+
 	clearFilter: function() {
 		this.setFilter(this.defaultFilter)
 	},
+
 	applyFilter: function(items) {
 		return items.select(function(item) {
 			return this.filter.test(item.string);
 		}, this);
 	},
+
 	filteredItemList: function() {
 		return this.applyFilter(this.itemList);
 	},
+
 	generateSubmorphs: function($super, itemList) {
 		$super(this.applyFilter(this.itemList))
 	},
+
 	onKeyDown: function($super, evt) {
 		if ($super(evt)) return true;
 		if (evt.isAltDown() && evt.getKeyChar() == 'F') {
@@ -1993,6 +2026,7 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 		};
 		return false
 	},
+
 	showFilterDialog: function(evt) {
 		var w = this.world();
 		var regexString = this.filter.toString();
@@ -2009,11 +2043,13 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 
 		w.prompt('Edit Filter', acceptRegex, regexString);
 	},
+
 	morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
 		// force to get the menu
 		if (evt.isRightMouseButtonDown()) return this;
 		return $super(evt, droppingMorph, checkForDnD);
 	},
+
 	morphMenu: function($super, evt) {
 		var menu = $super(evt);
 		menu.addItem(['set filter...', this.showFilterDialog], 0);
@@ -2143,39 +2179,43 @@ MenuItem.subclass("SubMenuItem", {
     }
 });
 
-Morph.subclass("MenuMorph", {
+Morph.subclass("MenuMorph", 
 
-    listStyle: { 
-        borderColor: Color.blue,
-        borderWidth: 0.5,
-        fill: Color.blue.lighter(5),
-        borderRadius: 4, 
-        fillOpacity: 0.9, 
-        wrapStyle: text.WrapStyle.Shrink
-    },
 
-    textStyle: {
-        textColor: Color.blue
-    },
+'style properties', {
+	listStyle: { 
+		borderColor: Color.darkGray,
+		borderWidth: 1,
+		fill: Color.white,
+		borderRadius: 6, 
+		fillOpacity: 1, 
+		wrapStyle: lively.Text.WrapStyle.Shrink
+	},
 
-    labelStyle: {
-        padding: Rectangle.inset(3),
+	textStyle: {
+		textColor: Color.black,
+		fontSize: 12,
+	},
+
+	labelStyle: {
+		padding: Rectangle.inset(3),
 		borderWidth: 1, 
-        borderRadius: 4, 
-        fillOpacity: 0.9, 
-        wrapStyle: text.WrapStyle.Shrink
-    },
+		borderRadius: 6, 
+		fillOpacity: 1, 
+		fontSize: 16,
+		wrapStyle: lively.Text.WrapStyle.Shrink
+	},
 
-    suppressHandles: true,
-    focusHaloBorderWidth: 0,
-    
-    initialize: function($super, items, targetMorph, ownerMenu) {
-        // items is an array of menuItems, each of which is an array of the form
-        // 	[itemName, target, functionName, parameterIfAny]
-        // At mouseUp, the item will be executed as follows:
-        // 	target.function(parameterOrNull,event,menuItem)
-        // The last item is seldom used, but it allows the caller to put
-        // additional data at the end of the menuItem, where the receiver can find it.
+	suppressHandles: true,
+	focusHaloBorderWidth: 0,
+},'intialize',{	
+	initialize: function($super, items, targetMorph, ownerMenu) {
+		// items is an array of menuItems, each of which is an array of the form
+		// 	[itemName, target, functionName, parameterIfAny]
+		// At mouseUp, the item will be executed as follows:
+		// 	target.function(parameterOrNull,event,menuItem)
+		// The last item is seldom used, but it allows the caller to put
+		// additional data at the end of the menuItem, where the receiver can find it.
 
 		// Note that an alternative form of item is supported, as:
 		// 	[itemName, itemFunction]
@@ -2188,272 +2228,275 @@ Morph.subclass("MenuMorph", {
 		//	then that array is the specification for a subMenu,
 		//	and, the itemName will appear followed by '...'
 
-        // The optional parameter lineList is an array of indices into items.
-        // It will cause a line to be displayed below each item so indexed
-    
-        // It is intended that a menu can also be created incrementally
-        // with calls of the form...
-        //     var menu = MenuMorph([]);
-        //     menu.addItem(nextItem);  // May be several of these
-        //     menu.addLine();          // interspersed with these
-        //     menu.openIn(world,location,stayUp,captionIfAny);
+		// The optional parameter lineList is an array of indices into items.
+		// It will cause a line to be displayed below each item so indexed
 	
-        $super(new lively.scene.Rectangle(pt(0, 0).extentAsRectangle()));
-        this.items = items.map(function(item) { return this.addPseudoMorph(this.checkItem(item)) }, this);
-        this.targetMorph = targetMorph || this;
-        this.listMorph = null;
-        this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
-        this.ownerMenu = ownerMenu;
-    },
+		// It is intended that a menu can also be created incrementally
+		// with calls of the form...
+		//	 var menu = MenuMorph([]);
+		//	 menu.addItem(nextItem);  // May be several of these
+		//	 menu.addLine();		  // interspersed with these
+		//	 menu.openIn(world,location,stayUp,captionIfAny);
+	
+		$super(new lively.scene.Rectangle(pt(0, 0).extentAsRectangle()));
+		this.items = items.map(function(item) { return this.addPseudoMorph(this.checkItem(item)) }, this);
+		this.targetMorph = targetMorph || this;
+		this.listMorph = null;
+		this.applyStyle({fill: null, borderWidth: 0, fillOpacity: 0});
+		this.ownerMenu = ownerMenu;
+	},
 
-    onDeserialize: function() {
+	onDeserialize: function() {
 		if (this.listMorph) {
 			this.listMorph.relayMouseEvents(this);
 		}
-    },
+	},
 
-    addItem: function(item, index) {
-        var item = this.addPseudoMorph(this.checkItem(item));
-        if (!index && (index != 0)) { this.items.push(item); return }
-        if (index > this.items.length || index < 0) throw dbgOn(new Error('Strange index'));
-        var parts = this.items.partition(function(ea, i) { return i < index });
-        parts[0].push(item);
-        this.items = parts[0].concat(parts[1]);
-    },
+},'menu',{	
+	addItem: function(item, index) {
+		var item = this.addPseudoMorph(this.checkItem(item));
+		if (!index && (index != 0)) { this.items.push(item); return }
+		if (index > this.items.length || index < 0) throw dbgOn(new Error('Strange index'));
+		var parts = this.items.partition(function(ea, i) { return i < index });
+		parts[0].push(item);
+		this.items = parts[0].concat(parts[1]);
+	},
 
-    checkItem: function(item) {
+	checkItem: function(item) {
 		if (Object.isString(item)) throw dbgOn(new Error(
 			'Menu item specification should be an array, not just a string'));
 		return Object.isArray(item[1]) ?
-        	new SubMenuItem(item[0], item[1], item[2], item[3]) :
+			new SubMenuItem(item[0], item[1], item[2], item[3]) :
 			new MenuItem(item[0], item[1], item[2], item[3]); 
-    },
+	},
 
-    addItems: function(items) {
+	addItems: function(items) {
 		items.forEach( function(item) { this.addItem(item); }.bind(this));
-    },
+	},
 
-    getRawItems: function() {
+	getRawItems: function() {
 		return this.items  // Private protocol for pie-menu access
-    },
+	},
 
-    addRawItem: function(item) {
+	addRawItem: function(item) {
 		this.items.push(this.addPseudoMorph(item));  // Private protocol for pie-menu access
-    },
+	},
 
-    addLine: function(item) { // Not yet supported
-        // The idea is for this to add a real line on top of the text
-        this.items.push(this.addPseudoMorph(new MenuItem('-----')));
-    },
+	addLine: function(item) { // Not yet supported
+		// The idea is for this to add a real line on top of the text
+		this.items.push(this.addPseudoMorph(new MenuItem('-----')));
+	},
 
-    addSubmenuItem: function(item) {
+	addSubmenuItem: function(item) {
 		// FIXME: Isn't this now just equivalent to addItem?
-        var item = new SubMenuItem(item[0], item[1], item[2], item[3]);
-        this.items.push(this.addPseudoMorph(item));
-    },
-    
-    removeItemNamed: function(itemName) {
-        // May not remove all if some have same name
-        // Does not yet fix up the lines array
-        for (var i = 0; i < this.items.length; i++)
-            if (this.items[i].name == itemName) {
+		var item = new SubMenuItem(item[0], item[1], item[2], item[3]);
+		this.items.push(this.addPseudoMorph(item));
+	},
+	
+	removeItemNamed: function(itemName) {
+		// May not remove all if some have same name
+		// Does not yet fix up the lines array
+		for (var i = 0; i < this.items.length; i++)
+			if (this.items[i].name == itemName) {
 		this.items[i].remove();
-                this.items.splice(i,1);
-	    }
-    },
+				this.items.splice(i,1);
+		}
+	},
 
-    replaceItemNamed: function(itemName, newItem) {
-        for (var i = 0; i < this.items.length; i++)
-            if (this.items[i].name == itemName)
-                this.items[i] = this.addPseudoMorph(new MenuItem(newItem[0], newItem[1], newItem[2], newItem[3]));
-    },
+	replaceItemNamed: function(itemName, newItem) {
+		for (var i = 0; i < this.items.length; i++)
+			if (this.items[i].name == itemName)
+				this.items[i] = this.addPseudoMorph(new MenuItem(newItem[0], newItem[1], newItem[2], newItem[3]));
+	},
 
-    removeItemsNamed: function(nameList) {
-        nameList.forEach(function(n) { this.removeItemNamed(n); }, this);
-    },
+	removeItemsNamed: function(nameList) {
+		nameList.forEach(function(n) { this.removeItemNamed(n); }, this);
+	},
 
-    keepOnlyItemsNamed: function(nameList) {
-        var rejects = [];
-        this.items.forEach(function(item) { if (nameList.indexOf(item.name) < 0) rejects.push(item.name)});
-        this.removeItemsNamed(rejects);
-    },
+	keepOnlyItemsNamed: function(nameList) {
+		var rejects = [];
+		this.items.forEach(function(item) { if (nameList.indexOf(item.name) < 0) rejects.push(item.name)});
+		this.removeItemsNamed(rejects);
+	},
 
-    estimateListWidth: function(proto) {
+	estimateListWidth: function(proto) {
 		// estimate with based on some prototypical TextMorph object
 		// lame but let's wait to do the right thing until the layout business is complete
 		var maxWidth = 0;
 		for (var i = 0; i < this.items.length; i++)
-		    if (this.items[i].name.length > maxWidth) maxWidth = this.items[i].name.length;
+			if (this.items[i].name.length > maxWidth) maxWidth = this.items[i].name.length;
 		var protoPadding = Rectangle.inset(6, 4);
 		return maxWidth*proto.fontSize/2 + protoPadding.left() + protoPadding.right();
-    },
+	},
 
-    openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
-        if (this.items.length == 0) return;
+},'morphic',{	
+	openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
+		if (this.items.length == 0) return;
 
-        // Note: on a mouseDown invocation (as from a menu button),
-        // mouseFocus should be set immediately before or after this call
-        this.stayUp = remainOnScreen; // set true to keep on screen
+		// Note: on a mouseDown invocation (as from a menu button),
+		// mouseFocus should be set immediately before or after this call
+		this.stayUp = remainOnScreen; // set true to keep on screen
 
-        parentMorph.addMorphAt(this, loc);
-	
+		parentMorph.addMorphAt(this, loc);
+		var padding =  Rectangle.inset(0, this.listStyle.borderRadius/2);
+		// var padding = null;
 		var textList = this.items.pluck('name');
-        this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
-					   textList, Rectangle.inset(0, this.listStyle.borderRadius/2), this.textStyle);
+		this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
+					   textList, padding, this.textStyle);
 	
 		var menu = this;
 		this.listMorph.onKeyDown = function(evt) {
-	    	var result = Class.getPrototype(this).onKeyDown.call(this, evt);
-		    switch (evt.getKeyCode()) {
-		    	case Event.KEY_ESC: {
+			var result = Class.getPrototype(this).onKeyDown.call(this, evt);
+			switch (evt.getKeyCode()) {
+				case Event.KEY_ESC: {
 					if (!menu.stayUp) menu.removeOnEvent(evt);
 						evt.stop();
 					return true;
 				}
-		    	case Event.KEY_RETURN: {
+				case Event.KEY_RETURN: {
 					if (menu.invokeItemAtIndex(evt, this.selectedLineNo)) 
-			    		evt.stop();
+						evt.stop();
 					return true;
-	    		}
-	    	}
+				}
+			}
 		};
 
-        this.listMorph.applyStyle(this.listStyle);
-        this.listMorph.suppressHandles = true;
-        this.listMorph.focusHaloBorderWidth = 0;
-        this.listMorph.highlightItemsOnMove = true;
-        this.addMorph(this.listMorph);
+		this.listMorph.applyStyle(this.listStyle);
+		this.listMorph.suppressHandles = true;
+		this.listMorph.focusHaloBorderWidth = 0;
+		this.listMorph.highlightItemsOnMove = true;
+		this.addMorph(this.listMorph);
 
-        this.label = null;
-        if (captionIfAny) { // Still under construction
-            var label = TextMorph.makeLabel(captionIfAny, this.labelStyle);
-            label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
-            this.label = this.addMorph(label);
-	    	this.label.setFill(new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
+		this.label = null;
+		if (captionIfAny) { // Still under construction
+			var label = TextMorph.makeLabel(captionIfAny, this.labelStyle);
+			label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
+			this.label = this.addMorph(label);
+			this.label.setFill(new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
 								new lively.paint.Stop(1, Color.gray)]));
-        }
+		}
 
-        // If menu and/or caption is off screen, move it back so it is visible
-        var menuRect = this.bounds();  //includes caption if any
+		// If menu and/or caption is off screen, move it back so it is visible
+		var menuRect = this.bounds();  //includes caption if any
 		var bounds = (this.world() || WorldMorph.current()).visibleBounds();
 		var visibleRect = menuRect.intersection(bounds);
-        var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
-        delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
-        if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
+		var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
+		delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
+		if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
 
-        this.listMorph.relayMouseEvents(this);
-        // Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
-        if (!remainOnScreen) {
-	    var hand = parentMorph.world().firstHand();
-	    hand.setMouseFocus(this);
-            hand.setKeyboardFocus(this.listMorph);
-        }
-    },
-    
-    selectedItemIndex: function(evt) {
-        var target = this.listMorph.morphToReceiveEvent(evt);
-        var index = this.listMorph.submorphs.indexOf(target);
-        if (index === -1) return null;
-        return index;
-    },
-    
-    submenuItems: function() {
-        return this.items.select(function(ea) { return ea.isSubMenuItem });
-    },
-    
-    handOverMenu: function(hand) {
-        return this.listMorph.bounds().containsPoint(this.localize(hand.getPosition()));
-    },
-    
-    setMouseFocus: function(evt) {
-        evt.hand.setMouseFocus(this);
-        evt.hand.setKeyboardFocus(this.listMorph);    
-    },
+		this.listMorph.relayMouseEvents(this);
+		// Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
+		if (!remainOnScreen) {
+		var hand = parentMorph.world().firstHand();
+		hand.setMouseFocus(this);
+			hand.setKeyboardFocus(this.listMorph);
+		}
+	},
+	
+	selectedItemIndex: function(evt) {
+		var target = this.listMorph.morphToReceiveEvent(evt);
+		var index = this.listMorph.submorphs.indexOf(target);
+		if (index === -1) return null;
+		return index;
+	},
+	
+	submenuItems: function() {
+		return this.items.select(function(ea) { return ea.isSubMenuItem });
+	},
+	
+	handOverMenu: function(hand) {
+		return this.listMorph.bounds().containsPoint(this.localize(hand.getPosition()));
+	},
+	
+	setMouseFocus: function(evt) {
+		evt.hand.setMouseFocus(this);
+		evt.hand.setKeyboardFocus(this.listMorph);	
+	},
 
-    setMouseFocusOverSubmenu: function(evt) {
+	setMouseFocusOverSubmenu: function(evt) {
 		// Return true iff the mouse is in a submenu
-        var submenuItem = this.submenuItems().detect(function(ea) { return ea.menu && ea.menu.handOverMenu(evt.hand) }) ;
-        if (!submenuItem) return false;
-        submenuItem.menu.setMouseFocus(evt);
+		var submenuItem = this.submenuItems().detect(function(ea) { return ea.menu && ea.menu.handOverMenu(evt.hand) }) ;
+		if (!submenuItem) return false;
+		submenuItem.menu.setMouseFocus(evt);
 		return true;
-    },
-    
-    setMouseFocusOverOwnerMenu: function(evt) {
-        if (this.ownerMenu && this.ownerMenu.handOverMenu(evt.hand))
-            this.ownerMenu.setMouseFocus(evt);
-    },
-    
-    setMouseFocusOverOwnerMenuOrSubMenu: function(evt) {
-        this.setMouseFocusOverOwnerMenu(evt);
-        this.setMouseFocusOverSubmenu(evt);
-    },
-        
-    removeOnEvent: function(evt) {
-        this.submenuItems().invoke('closeMenu');
-        this.remove();
-        this.ownerMenu && this.ownerMenu.removeOnEvent(evt);
-        if (evt.hand.mouseFocus === this) evt.hand.setMouseFocus(null);
-    },
-
-    onMouseUp: function(evt) {
+	},
+	
+	setMouseFocusOverOwnerMenu: function(evt) {
+		if (this.ownerMenu && this.ownerMenu.handOverMenu(evt.hand))
+			this.ownerMenu.setMouseFocus(evt);
+	},
+	
+	setMouseFocusOverOwnerMenuOrSubMenu: function(evt) {
+		this.setMouseFocusOverOwnerMenu(evt);
+		this.setMouseFocusOverSubmenu(evt);
+	},
+		
+	removeOnEvent: function(evt) {
+		this.submenuItems().invoke('closeMenu');
+		this.remove();
+		this.ownerMenu && this.ownerMenu.removeOnEvent(evt);
+		if (evt.hand.mouseFocus === this) evt.hand.setMouseFocus(null);
+	},
+},'mouse events',{	
+	onMouseUp: function(evt) {
 		if (evt.hand.checkMouseUpIsInClickTimeSpan(evt)) {
 			this.setMouseFocus(evt);
 			return true; // do nothing on a click...
 		}
 	
 		if (!this.invokeItemAtIndex(evt, this.selectedItemIndex(evt)) && !this.stayUp)
-	    	this.setMouseFocus(evt); // moved away, don't lose the focus
-    },
+			this.setMouseFocus(evt); // moved away, don't lose the focus
+	},
 
-    onMouseDown: function(evt) {
-        if (this.selectedItemIndex(evt) === null && !this.stayUp)
-            this.removeOnEvent(evt);
-    },
+	onMouseDown: function(evt) {
+		if (this.selectedItemIndex(evt) === null && !this.stayUp)
+			this.removeOnEvent(evt);
+	},
 
-    onMouseMove: function(evt) {
-        this.setMouseFocus(evt);
+	onMouseMove: function(evt) {
+		this.setMouseFocus(evt);
 		if (!this.handOverMenu(evt.hand)) {
 			if (this.stayUp) evt.hand.setMouseFocus(null);
 			if (this.setMouseFocusOverSubmenu(evt)) return;
 			this.listMorph.highlightItem(evt, -1, false);
 			this.setMouseFocusOverOwnerMenu(evt);
-			return;    
+			return;	
 			}
 
-        var index = this.selectedItemIndex(evt);
-        if (index === null) return;
-        this.listMorph.highlightItem(evt, index, false);
-        
-        var item = this.items[index];
+		var index = this.selectedItemIndex(evt);
+		if (index === null) return;
+		this.listMorph.highlightItem(evt, index, false);
+		
+		var item = this.items[index];
 		this.submenuItems().without(item).invoke('closeMenu');
-        if (! item.isSubMenuItem) return;
+		if (! item.isSubMenuItem) return;
 		if (! item.menu) item.showMenu(evt, this);
 			else if (item.menu.handOverMenu(evt.hand)) item.menu.setMouseFocus(evt);
-        
-    },
-    
-    // is not called
-    onMouseOut: function(evt) {
-        console.log("mouse moved away ....");
-        this.setMouseFocusOverSubmenu(evt);
-        if (this.stayUp) return;
-        this.removeOnEvent(evt);
-    },
-    
-    invokeItemAtIndex: function(evt, index) {
+		
+	},
+	
+	// is not called
+	onMouseOut: function(evt) {
+		console.log("mouse moved away ....");
+		this.setMouseFocusOverSubmenu(evt);
+		if (this.stayUp) return;
+		this.removeOnEvent(evt);
+	},
+},'private functions',{		
+	invokeItemAtIndex: function(evt, index) {
 		if (index === null) return false;
-	        try {
-		    this.invokeItem(evt, this.items[index]);
-	        } finally {
-		    if (!this.stayUp) this.removeOnEvent(evt);
-	        }
+			try {
+			this.invokeItem(evt, this.items[index]);
+			} finally {
+			if (!this.stayUp) this.removeOnEvent(evt);
+			}
 		return true;
-    },
-    
-    invokeItem: function invokeItem(evt, item) {
-        if (!item) return;
+	},
+	
+	invokeItem: function invokeItem(evt, item) {
+		if (!item) return;
 		item.invoke(evt, this.targetMorph);
-    }
+	}
 
 });
 
