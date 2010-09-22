@@ -21,7 +21,7 @@
  */
 
 
-module('lively.LKWiki').requires().toRun(function(ownModule) {
+module('lively.LKWiki').requires('lively.Network', 'lively.Data').toRun(function(ownModule) {
 
 URL.common.localWiki = URL.proxy.withFilename('wiki/');
 
