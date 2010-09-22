@@ -323,7 +323,8 @@ Object.extend(Config, {
 	modulesOnWorldLoad: ['lively.TouchSupport'], // evaluated before ChangeSet initializer
 	codeBase: Config.getDocumentDirectory(),
 	disableScriptCaching: false,
-	defaultDisplayTheme: 'lively'
+	defaultDisplayTheme: 'lively',
+	hideSystemCursor: true,
 });
 
 Config.onWindowResizeUpdateWorldBounds = true;
