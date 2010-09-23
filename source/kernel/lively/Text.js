@@ -890,6 +890,7 @@ BoxMorph.subclass('TextMorph', {
 	backgroundColor: Color.veryLightGray,
 	style: { borderWidth: 1, borderColor: Color.black},
 	padding: Rectangle.inset(6, 4),
+	autoAdjustPadding: true, // setFontSize adjusts padding
 	wrap: lively.Text.WrapStyle.Normal,
 
 	maxSafeSize: 20000, 
@@ -1141,8 +1142,13 @@ BoxMorph.subclass('TextMorph', {
 
 	beListItem: function() {
 		// specify padding, otherwise selection will overlap
-		this.applyStyleDeferred({borderWidth: 0, fill: null, wrapStyle: lively.Text.WrapStyle.None, padding: Rectangle.inset(4, 0)});
+		this.applyStyleDeferred({
+			borderWidth: 0, 
+			fill: null, 
+			wrapStyle: lively.Text.WrapStyle.None, 
+			padding: Rectangle.inset(4, 0)});
 		this.ignoreEvents();
+		this.autoAdjustPadding = false;
 		this.suppressHandles = true;
 		this.acceptInput = false;
 		this.suppressGrabbing = true;
@@ -2757,7 +2763,9 @@ TextMorph.addMethods({
 			return;
 		this.fontSize = newSize;
 		this.font = lively.Text.Font.forFamily(this.fontFamily, newSize);
-		this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
+		if (this.autoAdjustPadding) {
+			this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
+		};
 		this.layoutChanged();
 		this.changed();
 	},

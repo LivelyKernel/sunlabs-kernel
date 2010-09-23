@@ -318,6 +318,36 @@ TestCase.subclass('TextMorphTest', {
 		m.fitText();
 	},
 
+	testSetFontSizeDoesNotChangePadding: function() {
+		var textMorph = new TextMorph(new Rectangle(0,0,100,100), "Hello");
+		textMorph.autoAdjustPadding = false,
+	
+		var padding = Rectangle.inset(0, 0)
+		textMorph.padding = padding;
+	
+		textMorph.openInWorld(pt(100,200), "testTextMorph")
+	
+		this.assertIdentity(textMorph.padding, padding, "padding changed before")
+		textMorph.setFontSize(13);
+		this.assertIdentity(textMorph.padding, padding, "padding changed after setFontSize")
+	},
+
+
+	testSetTestFontSizeDoesChangePaddingIfRequested: function() {
+		var textMorph = new TextMorph(new Rectangle(0,0,100,100), "Hello");
+		textMorph.autoAdjustPadding = true,
+		
+		var padding = Rectangle.inset(0, 0)
+		textMorph.padding = padding;
+	
+		textMorph.openInWorld(pt(100,200), "testTextMorph")
+	
+		this.assertIdentity(textMorph.padding, padding, "padding changed before")
+		textMorph.setFontSize(13);
+		this.assert(textMorph.padding !== padding, "padding did not changed after setFontSize")
+	},
+
+
     tearDown: function() {
 		if (this.dontRemove) {
 			this.m.requestKeyboardFocus(WorldMorph.current().firstHand());

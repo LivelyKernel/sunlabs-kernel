@@ -2181,7 +2181,6 @@ MenuItem.subclass("SubMenuItem", {
 
 Morph.subclass("MenuMorph", 
 
-
 'style properties', {
 	listStyle: { 
 		borderColor: Color.darkGray,
@@ -2341,9 +2340,13 @@ Morph.subclass("MenuMorph",
 		var padding =  Rectangle.inset(0, this.listStyle.borderRadius/2);
 		// var padding = null;
 		var textList = this.items.pluck('name');
-		this.listMorph = new TextListMorph(pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
-					   textList, padding, this.textStyle);
-	
+
+		// TODO get rid of this.textStyle
+		var textStyle = this.styleNamed('menu_items') || this.textStyle;
+		this.listMorph = new TextListMorph(
+			pt(this.estimateListWidth(TextMorph.prototype), 0).extentAsRectangle(), 
+			textList, padding, textStyle);
+
 		var menu = this;
 		this.listMorph.onKeyDown = function(evt) {
 			var result = Class.getPrototype(this).onKeyDown.call(this, evt);
@@ -2361,7 +2364,11 @@ Morph.subclass("MenuMorph",
 			}
 		};
 
+		// TODO depricated ...
 		this.listMorph.applyStyle(this.listStyle);
+	
+		this.listMorph.linkToStyles('menu_list');
+
 		this.listMorph.suppressHandles = true;
 		this.listMorph.focusHaloBorderWidth = 0;
 		this.listMorph.highlightItemsOnMove = true;

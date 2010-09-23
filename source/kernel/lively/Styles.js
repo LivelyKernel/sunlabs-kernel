@@ -372,9 +372,9 @@ hpi:  using(lively.paint).link({
 		borderRadius: 5,
 		fill: {$:"LinearGradient", 
 			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
+				{$:"Stop", offset: 0,   color: Color.gray.mixedWith(Color.white, 0.9)},
 				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.5)}, 
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
+				{$:"Stop", offset: 1,   color: Color.gray.mixedWith(Color.white, 0.9)}],
 			vector: lively.paint.LinearGradient.SouthNorth }
 	},
 
@@ -384,6 +384,15 @@ hpi:  using(lively.paint).link({
 		borderRadius: 16,
 		fill: Color.gray.lighter(), 
 		opacity: 0.4
+	},
+	
+	menu_items: {
+		fontSize: 14,
+		textColor: CrayonColors.lead,
+	},
+
+	menu_list: {
+		fill: CrayonColors.snow,
 	},
 
 	clock: { 
