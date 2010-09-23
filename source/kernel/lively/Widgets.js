@@ -39,8 +39,7 @@
 // ===========================================================================
 
 
-module('lively.Widgets', 'lively.Styles').requires('lively.Text').toRun(function(thisModule, text) {
-
+module('lively.Widgets').requires('lively.Text', 'lively.Styles').toRun(function(thisModule, text) {
 
 BoxMorph.subclass('ButtonMorph', {
     

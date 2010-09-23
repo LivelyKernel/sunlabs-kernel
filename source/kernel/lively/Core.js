@@ -129,12 +129,12 @@ Object.extend(Global, {
     modules
         .select(function(ea) { return ea.hasPendingRequirements() })
         .forEach(function(ea) {
-			var msg = Strings.format('%s has unloaded requirements: %s\n%s',
-				ea.uri(), ea.pendingRequirementNames(), ea._codeForDebug);
+			var msg = Strings.format('%s has unloaded requirements: %s',
+				ea.uri(), ea.pendingRequirementNames());
 			console.warn(msg); 
 		 });
     console.log('Module load check done. ' + modules.length + ' modules loaded.');
-}).delay(5);
+}).delay(8);
 
 // ===========================================================================
 // Error/warning console (browser dependent)
@@ -4304,153 +4304,9 @@ Object.extend(Styles, {
 			pt(0.4, 0.2))
 	}
 });
-(function initDisplayThemes() {
-namespace('lively.Text');
 
 if (!Global.DisplayThemes)
 	Global.DisplayThemes = {};
-
-DisplayThemes['lively'] = using(lively.paint).link({
-	styleName: 'lively',
-	raisedBorder: { // conenience grouping
-		//borderWidth: 2,
-		borderColor: {$:"LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0, color: Color.lightGray}, 
-				{$:"Stop", offset: 1, color: Color.darkGray.darker(3)}],
-			vector: lively.paint.LinearGradient.SouthEast
-		}
-	},
-	titleBar: { 
-		borderRadius: 8, 
-		borderWidth: 2, 
-		bordercolor: Color.black,
-		fill: {$:"LinearGradient", 
-			stops: [{$:"Stop", offset: 0.0, color: Color.primary.blue.lighter()},
-					{$:"Stop", offset: 0.5, color: Color.primary.blue},
-					{$:"Stop", offset: 1.0, color: Color.primary.blue.lighter(2)}], 
-			vector: lively.paint.LinearGradient.SouthNorth 
-		}
-	},
-
-	titleBar_closeButton: {
-		fill: Styles.titleBarButtonGradient(Color.primary.orange)
-	},
-
-	titleBar_menuButton: {
-		fill: Styles.titleBarButtonGradient(Color.primary.blue),
-	},
-
-	titleBar_collapseButton: {
-		fill: Styles.titleBarButtonGradient(Color.primary.yellow),
-	},
-
-	slider: { 
-		borderColor: Color.darkGray, 
-		borderWidth: 1, 
-		borderRadius: 6,
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
-			vector: lively.paint.LinearGradient.SouthNorth
-		}
-	},
-
-	slider_background: { 
-		borderColor: Color.gray, 
-		borderWidth: 1, 
-		strokeOpacity: 1,
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.4)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.2)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.4)}],
-			vector: lively.paint.LinearGradient.EastWest
-		}
-	},
-
-	slider_horizontal: { 
-		borderColor: Color.darkGray, 
-		borderWidth: 1, 
-		borderRadius: 6,
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.9)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.6)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.9)}],
-			vector: lively.paint.LinearGradient.EastWest
-		}
-	},
-
-	slider_background_horizontal: { 
-		borderColor: Color.darkGray, 
-		borderWidth: 1, 
-		fill: {$: "LinearGradient", 
-			stops: [
-				{$:"Stop", offset: 0,    color: Color.gray.mixedWith(Color.white, 0.4)},
-				{$:"Stop", offset: 0.5, color: Color.gray.mixedWith(Color.white, 0.2)},
-				{$:"Stop", offset: 1,    color: Color.gray.mixedWith(Color.white, 0.4)}],
-			vector: lively.paint.LinearGradient.NorthSouth
-		}
-	},
-
-	button: { 
-		borderColor: Color.neutral.gray, 
-		borderWidth: 0.3, borderRadius: 4,
-		fill: {$:"LinearGradient", 
-			stops: [{$:"Stop", offset:0, color:Color.darkGray}, 
-					{$:"Stop", offset:1, color: Color.darkGray.lighter(2)}],
-			vector: lively.paint.LinearGradient.SouthNorth }
-	},
-	widgetPanel: { 
-		borderColor: Color.blue, 
-		borderWidth: 4, 
-		borderRadius: 16,
-		fill: Color.blue.lighter(), opacity: 0.4
-	},
-	clock: { 
-		borderColor: Color.black, borderWidth: 4,
-		fill: {$:"RadialGradient", 
-			stops: [{$:"Stop", offset: 0, color:Color.primary.blue.lighter(2)}, 
-					{$:"Stop", offset: 1, color:Color.primary.blue.lighter()} ]}
-	},
-	panel: {
-		fill: Color.primary.blue.lighter(2), 
-		borderWidth: 2, 
-		borderColor: Color.black
-	},
-	link: {
-		borderColor: Color.green, 
-		borderWidth: 1, 
-		fill: Color.blue
-	},
-	helpText: { 
-		borderRadius: 15, 
-		fill: Color.primary.yellow.lighter(3), 
-		fillOpacity: .8
-	},
-	fabrik: {
-		borderColor: Color.gray.darker(), 
-		borderWidth: 1.0 , 
-		borderRadius: 2,
-		fill: Color.gray, 
-		opacity: 1
-	},
-	world: {
-		fill: {	$:"LinearGradient", 
-			stops: [{$:"Stop", offset: 0.00, color: Color.primary.blue.lighter()},
-					{$:"Stop", offset: 0.25, color: Color.primary.blue},
-					{$:"Stop", offset: 0.50, color: Color.primary.blue.lighter()},
-					{$:"Stop", offset: 0.75, color: Color.primary.blue},
-					{$:"Stop", offset: 1.00, color: Color.primary.blue} ]}
-
-	}
-})
-
-})() // initDisplayThemes
-
 
 PasteUpMorph.subclass("WorldMorph", 
 'defaults', {
