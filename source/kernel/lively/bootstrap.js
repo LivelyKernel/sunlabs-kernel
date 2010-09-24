@@ -309,8 +309,8 @@ var LivelyLoader = {
 
 };
 LoadingScreen = {
-	width: function() { return document.width || document.documentElement.clientWidth || 800 },
-	height: function() { return document.height || document.documentElement.clientHeight || 800 },
+	width: function() { return document.documentElement.clientWidth || 800 },
+	height: function() { return document.documentElement.clientHeight || 800 },
 
 	id : 'loadingScreen',
 	consoleId : 'loadingConsole',
@@ -319,7 +319,6 @@ LoadingScreen = {
 		var div1 = document.createElement('div')
 		div1.setAttribute('id', this.id);
 		div1.setAttribute('style', "position: fixed; left: 0px; top: 0px; background-color: rgba(100,100,100,0.7); overflow: auto");
-
 		div1.style.width = this.width() + 'px'
 		div1.style.height = this.height() + 'px'
 
@@ -327,40 +326,48 @@ LoadingScreen = {
 	},
 
 	buildLoadingLogo: function() {
-		var logo = document.createElement('div')
-		logo.setAttribute('style', "position: fixed; margin-left:auto; margin-right:auto; width: 80px; height: 105px; background-color: white; background-repeat:no-repeat;  background-position:center top");
+		var logoAndText = document.createElement('div')
+		logoAndText.setAttribute('style', "position: fixed; margin-left:auto; margin-right:auto; width: 80px; height: 108px; background-color: white;");
 
-		var logoText = document.createElement('div')
-		logoText.setAttribute('style', "text-align:center; padding-top: 80px; font-family: sans-serif; font-size: large; color: gray")
-		logoText.textContent = 'Loading';
+		var logo = document.createElement('img')
+		logo.setAttribute('style', "width: 80px; height: 80px;");
 
-		logo.style['top'] = (this.height() / 2 - 100) + 'px'
-		logo.style['left'] = (this.width() / 2 - 40) + 'px'
-		logo.style['background-image'] = 'url(' + LivelyLoader.codeBase + 'loading.gif)';
+		var text = document.createElement('div')
+		text.setAttribute('style', "text-align:center; font-family: sans-serif; font-size: large; color: gray")
+		text.textContent = 'Loading';
 
-		logo.appendChild(logoText);
+		logoAndText.style['top'] = (this.height() / 2 - 100) + 'px'
+		logoAndText.style['left'] = (this.width() / 2 - 40) + 'px'
+		logo.src = LivelyLoader.codeBase + 'loading.gif';
 
-		return logo;
+		logoAndText.appendChild(logo);
+		logoAndText.appendChild(text);
+
+		return logoAndText;
 	},
 
 	buildConsole: function() {
 		var console = document.createElement('pre');
 		console.setAttribute('id', this.consoleId);
-		console.setAttribute('style', "position: absolute; top: 0px; font-family: monospace; font-size: small; padding-bottom: 20px;");
+		console.setAttribute('style', "position: absolute; top: 0px; font-family: monospace; color: rgb(0,255,64); font-size: medium; padding-bottom: 20px;");
 
-		function addLine(str, color) {
-			color = color || 'rgb(0,255,64)';
+		function addLine(str, style) {
+			style = style || ''
 			// console.appendChild(document.createElement('br'));
 			var line = document.createElement('div');
 			line.appendChild(document.createCDATASection(str));
-			line.setAttribute('style', 'color: ' + color + ';');
+			line.setAttribute('style', style);
 			console.appendChild(line);
 			if (console.parentNode && line.scrollIntoViewIfNeeded)
 				line.scrollIntoViewIfNeeded()
 		}
 		console.log = function(msg) { addLine(msg) };
-		console.warn = function(msg) { addLine(msg, 'yellow') };
-		console.error = function(msg) { addLine(msg, 'red') };
+		console.warn = function(msg) { addLine(msg, 'color: yellow;') };
+		console.error = function(msg) {
+			debugger
+			if (!console.parentNode) LoadingScreen.toggleConsole();
+			addLine(msg, 'color: red; font-size: large;');
+		};
 
 		window.console.addConsumer(console)
 
@@ -532,7 +539,7 @@ var EmbededLoader = {
 };
 
 (function startWorld() {
-	window.addEventListener('load', function() {
+	window.addEventListener('DOMContentLoaded', function() {
 		if (EmbededLoader.embedLively()) return;
 		if (LivelyLoader.startSVGWorld()) return;
 		if (LivelyLoader.startHTMLWorld()) return;

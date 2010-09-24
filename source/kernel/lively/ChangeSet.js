@@ -324,16 +324,21 @@ Change.subclass('ClassChange', {
 	},
 
 	evaluate: function() {
-		var superClassName = this.getSuperclassName();
-		if (!Class.forName(superClassName))
-			throw new Error('Could not find class ' + superClassName);
-		var className = this.getName();
-		if (Class.forName(className))
-			console.warn('Class ' + className + ' already defined! Evaluating class change regardless');
-		var src = Strings.format('%s.subclass(\'%s\')', superClassName, className);
-		var klass = eval(src);
-		this.getStaticChanges().concat(this.getProtoChanges()).forEach(function(ea) { ea.evaluate() });
-		return klass;
+		try {
+			var superClassName = this.getSuperclassName();
+			if (!Class.forName(superClassName))
+				throw new Error('Could not find class ' + superClassName);
+			var className = this.getName();
+			if (Class.forName(className))
+				console.warn('Class ' + className + ' already defined! Evaluating class change regardless');
+			var src = Strings.format('%s.subclass(\'%s\')', superClassName, className);
+			var klass = eval(src);
+			this.getStaticChanges().concat(this.getProtoChanges()).forEach(function(ea) { ea.evaluate() });
+			return klass;
+		} catch(e) {
+			console.error(e);
+			throw e;
+		}
 	},
 	
 	asJs: function() {
@@ -366,12 +371,17 @@ Change.subclass('ProtoChange', {
 	isProtoChange: true,
 
 	evaluate: function() {
-		var className = this.getClassName();
-		var klass = Class.forName(className);
-		if (!klass) new Error('Could not find class of proto change ' + this.getName());
-		var src = Strings.format('%s.addMethods({%s: %s})', className, this.getName(), this.getDefinition());
-		eval(src);
-		return klass.prototype[this.getName()];
+		try {
+			var className = this.getClassName();
+			var klass = Class.forName(className);
+			if (!klass) new Error('Could not find class of proto change ' + this.getName());
+			var src = Strings.format('%s.addMethods({%s: %s})', className, this.getName(), this.getDefinition());
+			eval(src);
+			return klass.prototype[this.getName()];
+		} catch(e) {
+			console.error(e);
+			throw e;
+		}
 	},
 
 	getClassName: function() {
@@ -413,12 +423,17 @@ Change.subclass('StaticChange', {
 	},
 
 	evaluate: function() {
-		var className = this.getClassName();
-		var klass = Class.forName(className);
-		if (!klass) throw dbgOn(new Error('Could not find class of static change' + this.getName()));
-		var src = Strings.format('Object.extend(%s, {%s: %s})', className, this.getName(), this.getDefinition());
-		eval(src);
-		return klass[this.getName()];
+		try {
+			var className = this.getClassName();
+			var klass = Class.forName(className);
+			if (!klass) throw dbgOn(new Error('Could not find class of static change' + this.getName()));
+			var src = Strings.format('Object.extend(%s, {%s: %s})', className, this.getName(), this.getDefinition());		
+			eval(src);
+			return klass[this.getName()];
+		} catch(e) {
+			console.error(e);
+			throw e;
+		}
 	},
 	
 	asJs: function() { // FIXME duplication with ProtoChange
@@ -450,12 +465,11 @@ Change.subclass('DoitChange', {
 	isDoitChange: true,
 
 	evaluate: function() {
-		var result;
 		try {
-			result = eval(this.getDefinition())
+			var result = eval(this.getDefinition())
 		} catch(e) {
 			dbgOn(true);
-			console.log('Error evaluating ' + this.getName() + ': ' + e);
+			console.error('DoitChange error: ' + this.getName() + ': ' + e);
 			return undefined;
 		}
 		return result;
@@ -577,7 +591,7 @@ ChangeSet.addMethods({
 	
 	evaluateWorldRequirements: function() {
 		var list = this.getWorldRequirementsList().evaluate();
-		if (list) {
+		if (Object.isArray(list)) {
 			Config.modulesBeforeWorldLoad = Config.modulesBeforeWorldLoad.concat(list);
 		}
 	},
