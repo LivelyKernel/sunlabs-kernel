@@ -86,14 +86,20 @@ Object.extend(CrayonColors, {
 BoxMorph.subclass('CrayonColorItemMorph', {
 	handlesMouseDown: Functions.True,
 	onMouseDown: function(evt) {
+		if (!this.owner)
+			return;
+
+		this.owner.requestKeyboardFocus(evt.hand);
 		this.owner.selectedColor = this.getFill();
 	},
-	onMouseMove: function(evt) {},
+	onMouseMove: function(evt) {
+		// 
+	},
 
 	getHelpText: function() {
 		return this.helpText;
 	}	
-})
+});
 
 BoxMorph.subclass('CrayonColorChooserMorph', {
 	initialize: function($super, bounds) {
@@ -122,7 +128,141 @@ BoxMorph.subclass('CrayonColorChooserMorph', {
 			x = 0;
 		})
 	},
+
+	takesKeyboardFocus: Functions.True,
+	setHasKeyboardFocus: function(newSetting) { 
+		if(!newSetting) {
+			this.remove();
+		};
+		this.hasKeyboardFocus = newSetting;
+		return newSetting;
+	},
+	handlesMouseDown: Functions.True,
+	onMouseDown: function(evt) {
+		this.requestKeyboardFocus(evt.hand);
+		// do nothingd
+	},
+	onMouseMove: function() {
+		// do nothing
+	}
+
+});
+
+Morph.addMethods({
+	getCustomStyle: function() {
+		return {
+			fill: this.getFill(),
+			fillOpacity: this.getFillOpacity(),
+			borderColor: this.getBorderColor(),
+			borderRadius: this.getBorderRadius(),
+			borderWidth: this.getBorderWidth(),
+			strokeOpacity: this.getStrokeOpacity(),
+		}
+	},
+	applyCustomStyle: function(style) {
+		this.applyStyle(style)
+	}
 })
+
+TextMorph.addMethods({
+	getCustomStyle: function($super) {
+		var superStyle = $super();
+		Object.extend(superStyle, {
+			textColor: this.getTextColor(),
+			fontSize: this.getFontSize(), 
+			fontFamily: this.getFontFamily(),
+		})
+		return superStyle
+	},
+	applyCustomStyle: function($super, style) {
+		$super(style);
+		if (style.fontFamily)
+			this.setFontFamily(style.fontFamily)
+	}
+})
+
+Object.subclass('StyleCopier', {
+	copyFromMorph: function(morph) {
+		var style = morph.getCustomStyle();
+		// WorldMorph.current().setStatusMessage('copy style ' + printObject(style))
+		StyleCopier.StyleClipboard = style;
+	},
+
+	pasteToMorph: function(morph) {
+		var style = StyleCopier.StyleClipboard 
+		if (style) {
+			// WorldMorph.current().setStatusMessage('apply style ' + printObject(style))
+			morph.applyCustomStyle(style);
+		}
+	}
+})
+
+Object.subclass('StyleEditor', {
+
+	showCrayonColorsSetter: function(target, setterName, pos, optName) {
+		var chooserMorph = new CrayonColorChooserMorph();
+		chooserMorph.label = new TextMorph(new Rectangle(0,-25, 100, 0), setterName).beLabel();
+		chooserMorph.label.linkToStyles('menu_items');
+		chooserMorph.label.linkToStyles('menu_list');
+		chooserMorph.addMorph(chooserMorph.label)
+		chooserMorph.openInWorld(pos, optName);
+		connect(chooserMorph, 'selectedColor', target, setterName)
+		return chooserMorph;
+	},
+	
+
+	showCrayonColorsSetterMenuItem: function(target, name, setter, evt) {
+		return [name, function() {
+			this.showCrayonColorsSetter(target, setter, evt.mousePoint, 'menuColorChooser')
+				.requestKeyboardFocus(evt.hand);
+		}.bind(this)]
+	},
+
+	createFontSizeMenu: function(target, sizes) {
+		return sizes.collect(function(ea) { 
+			return [String(ea), function() { target.setFontSize(ea)}.bind(this)]
+		})
+	},
+
+	createFontFamilyMenu: function(target, sizes) {
+		return sizes.collect(function(ea) { 
+			return [String(ea), function() { target.setFontFamily(ea)}.bind(this)]
+		})
+	},
+
+
+	fontMenuItems: function(target, evt) {
+		var self = this;
+		return [	
+			["setFontSize", self.createFontSizeMenu(target,
+				[10,12,14,16,18,20,24,30,40]) ],
+			["setFontFamily", self.createFontFamilyMenu(target, 
+				['Courier', 'Helvetica', 'Times']) ]
+		],
+	},	
+
+	styleEditorMenuItems: function(target, evt) {
+		// Fills		
+		var spec = ['setBorderColor', 'setFill', 'setTextColor'];
+		var self = this;
+		var items = spec
+			.select(function(ea) {
+				return target[ea] && (target[ea] instanceof Function)})
+			.collect(function(ea) {
+				return self.showCrayonColorsSetterMenuItem(target, ea, ea, evt) })
+
+		// Font 
+		if (target.setFontSize && target.setFontFamily) {
+			items = items.concat(self.fontMenuItems(target, evt))
+		};
+
+		// Copy and Paste Style
+		items.push(["copy style", function() {new StyleCopier().copyFromMorph(target)}])
+		items.push(["paste style", function(){new StyleCopier().pasteToMorph(target)}])
+
+		return items
+	}
+});
 
 Object.subclass('Styles');
 Object.extend(Styles, {

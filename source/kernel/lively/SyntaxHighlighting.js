@@ -351,14 +351,13 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 		return result
 	},
 
-	morphMenu: function(proceed, evt) {
-		var menu;
-		// TOTO remove this workaround ContextJS issue (morphMenu is overriden in TextMorph and called with $super) 
+	subMenuStyleItems: function(proceed, evt) {
+		var items;
 		withoutLayers([SyntaxHighlightLayer], function() {
-			menu= proceed(evt);
+			items= proceed(evt);
 		});
 		var enabled = this.getWithLayers().include(BrowserSyntaxHighlightLayer);
-		menu.addItem([(enabled ? "[X]" : "[]") + " Syntax Highlighting", function() {
+		items.push([(enabled ? "[X]" : "[]") + " Syntax Highlighting", function() {
 			if(!enabled) {
 				this.highlightJavaScriptSyntax();
 				this.setWithLayers(this.getWithLayers().concat([BrowserSyntaxHighlightLayer]))
@@ -368,7 +367,7 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 					function(ea){return ea === BrowserSyntaxHighlightLayer}))
 			}
 		}])		
-		return menu	
+		return items
 	}
 
 

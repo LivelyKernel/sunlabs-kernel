@@ -1249,30 +1249,7 @@ BoxMorph.subclass('TextMorph', {
 				}]];
 	},
 
-	morphMenu: function($super, evt) {
-		var menu = $super(evt);
-		var self = this;
-		var createFontSizeMenu = function(sizes) {
-			return sizes.collect(function(ea) { 
-				return [String(ea), function() { self.setFontSize(ea)}.bind(this)]
-			})
-		};
-		var createFontFamilyMenu = function(sizes) {
-			return sizes.collect(function(ea) { 
-				return [String(ea), function() { self.setFontFamily(ea)}.bind(this)]
-			})
-		};
 
-		if (menu) {
-			menu.addItem(
-				["style", [
-						["font size", createFontSizeMenu([10,12,14,16,18,20,24,30,40]) ],
-						["font family", createFontFamilyMenu(['Courier', 'Helvetica', 'Times']) ]
-					],
-				])
-		}
-		return menu
-	},
 
 	// TextMorph composition functions
 	textTopLeft: function() { 

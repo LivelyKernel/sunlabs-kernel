@@ -3099,9 +3099,20 @@ Morph.addMethods('default', {
 			["publish packaged ...", function() { this.world().prompt('publish as (.xhtml)', this.exportLinkedFile.bind(this)); }] 
 		]
 	},
+
+
+	subMenuStyleItems: function(evt) {
+		return new StyleEditor().styleEditorMenuItems(this, evt);
+	},
+
+
+
+
+
 	
 	subMenuItems: function(evt) {
 		return [
+			['Style', this.subMenuStyleItems(evt)],
 			['Properties', this.subMenuPropertiesItems(evt)],
 			['Window and World', this.subMenuWindowItems(evt)]
 		]
@@ -4942,7 +4953,10 @@ PasteUpMorph.subclass("WorldMorph",
 	showAddWorldRequirementsMenu: function(pos) {
 			var ignoreModules =  "lively.Widgets lively.WikiWidget lively.Data lively.Base lively.defaultconfig  lively.CanvasExpt lively.obsolete lively.Helper lively.miniprototype lively.demofx lively.Text lively.EmuDom lively.Core lively.bindings lively.rhino-compat lively.Tools lively.localconfig  lively.Main  lively.Network  lively.scene lively.simpleMain lively.ChangeSet lively.ide".split(" ")
 
-			var items = ['apps', 'lively', 'Tests'].collect(function(eaDir) {
+			var items = ['apps', 'lively', 'Tests', 'draft']
+				.select(function(ea){
+					return new WebResource(new URL(Config.codeBase).withFilename(ea)).exists()})
+				.collect(function(eaDir) {
 			return [eaDir, ChangeSet.current()
 				.moduleNamesInNamespace(eaDir)
 				.sort()
