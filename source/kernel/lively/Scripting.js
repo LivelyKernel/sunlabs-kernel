@@ -112,50 +112,7 @@ cop.create('CopyCheapListMorphLayer').refineClass(CheapListMorph, {
 })
 CopyCheapListMorphLayer.beGlobal()
 
-Object.subclass('StyleCopier', {})
 
-Morph.addMethods({
-	getCustomStyle: function() {
-		return {fill: this.getFill()}
-	},
-	applyCustomStyle: function(style) {
-		this.applyStyle(style)
-	}
-})
 
-TextMorph.addMethods({
-	getCustomStyle: function() {
-		return {fill: this.getFill(), fontSize: this.getFontSize(), fontFamily: this.getFontFamily()}
-	},
-	applyCustomStyle: function($super, style) {
-		$super(style);
-		if (style.fontFamily)
-			this.setFontFamily(style.fontFamily)
-	}
-})
-
-cop.create('StyleLayer').refineClass(TextMorph, {
-	morphMenu: function(proceed, evt) {
-		var menu = proceed(evt);
-		var self = this;
-		menu.addItem(["copy style", function() {StyleCopier.copyFromMorph(self)}])
-		menu.addItem(["paste style", function(){StyleCopier.pasteToMorph(self)}])
-		return menu
-	}
-})
-
-StyleCopier.copyFromMorph = function(morph) {
-	var style = morph.getCustomStyle();
-	// WorldMorph.current().setStatusMessage('copy style ' + printObject(style))
-	StyleCopier.StyleClipboard = style;
-}
-
-StyleCopier.pasteToMorph = function(morph) {
-	var style = StyleCopier.StyleClipboard 
-	if (style) {
-		// WorldMorph.current().setStatusMessage('apply style ' + printObject(style))
-		morph.applyCustomStyle(style);
-	}
-}
 
 }) // end of module
