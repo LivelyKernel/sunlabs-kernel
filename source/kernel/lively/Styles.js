@@ -98,7 +98,7 @@ BoxMorph.subclass('CrayonColorItemMorph', {
 
 	getHelpText: function() {
 		return this.helpText;
-	}	
+	},
 });
 
 BoxMorph.subclass('CrayonColorChooserMorph', {
@@ -144,8 +144,7 @@ BoxMorph.subclass('CrayonColorChooserMorph', {
 	},
 	onMouseMove: function() {
 		// do nothing
-	}
-
+	},
 });
 
 Morph.addMethods({
@@ -161,7 +160,7 @@ Morph.addMethods({
 	},
 	applyCustomStyle: function(style) {
 		this.applyStyle(style)
-	}
+	},
 })
 
 TextMorph.addMethods({
@@ -178,7 +177,7 @@ TextMorph.addMethods({
 		$super(style);
 		if (style.fontFamily)
 			this.setFontFamily(style.fontFamily)
-	}
+	},
 })
 
 Object.subclass('StyleCopier', {
@@ -238,7 +237,7 @@ Object.subclass('StyleEditor', {
 				[10,12,14,16,18,20,24,30,40]) ],
 			["setFontFamily", self.createFontFamilyMenu(target, 
 				['Courier', 'Helvetica', 'Times']) ]
-		],
+		]
 	},	
 
 	styleEditorMenuItems: function(target, evt) {
@@ -261,7 +260,7 @@ Object.subclass('StyleEditor', {
 		items.push(["paste style", function(){new StyleCopier().pasteToMorph(target)}])
 
 		return items
-	}
+	},
 });
 
 Object.subclass('Styles');
