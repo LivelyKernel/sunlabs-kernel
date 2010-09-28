@@ -490,9 +490,9 @@ ChainedListMorphNode.subclass('InspectorNode',
 		if (Object.isString(this.object)) return [];
 		var props = Properties.own(this.object)
 		if (this.object.__proto__) props.push('__proto__');
-		return props
+		return [new InspectorNode('this', this.object)].concat(props
 			.sort()
-			.collect(function(key) { return new InspectorNode(key, this.object[key]) }, this);
+			.collect(function(key) { return new InspectorNode(key, this.object[key]) }, this));
 	},
 });
 Object.extend(lively.Tools, {
