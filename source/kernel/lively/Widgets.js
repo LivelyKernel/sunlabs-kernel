@@ -2003,6 +2003,7 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 	},
 
 	applyFilter: function(items) {
+		if (!this.filter) return items;
 		return items.select(function(item) {
 			return this.filter.test(item.string);
 		}, this);
