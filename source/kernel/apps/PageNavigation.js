@@ -8,8 +8,8 @@ Object.extend(Config, {
 cop.create("PageNavigationLayer")
 	.beGlobal()
 	.refineClass(WorldMorph, {
-		complexMorphsSubMenuItems: function(proceed, evt) {
-			var menu = proceed(evt);
+		complexMorphsSubMenuItems: function(evt) {
+			var menu = cop.proceed(evt);
 			menu.push(["Page Navigation", function(evt) { 
 				var morph = new PageNavigationMorph(evt.point());
 				morph.openInWorld()
@@ -17,8 +17,8 @@ cop.create("PageNavigationLayer")
 			return menu
 		},
 
-		onKeyDown: function(proceed, evt) {
-			if (proceed(evt)) return true;
+		onKeyDown: function(evt) {
+			if (cop.proceed(evt)) return true;
 			if (!Config.pageNavigationWithKeys) return false;
 			var c = evt.getKeyCode();
 			if (c == Event.KEY_LEFT) {
@@ -32,8 +32,8 @@ cop.create("PageNavigationLayer")
 			return false;
 		},
 
-		displayOnCanvas: function(proceed, canvas) {
-			proceed(canvas);
+		displayOnCanvas: function(canvas) {
+			cop.proceed(canvas);
 			if (Config.showPageNumber &&
 				PageNavigation.current() &&
 				PageNavigation.current().pageNumber() != 1 /*dont show for first*/)
@@ -76,8 +76,8 @@ cop.create("PageNavigationLayer")
 			PageNavigation.current().styleAll();
 		},
 
-		morphMenu: function(proceed, evt) {
-			var menu = proceed(evt);
+		morphMenu: function(evt) {
+			var menu = cop.proceed(evt);
 			if (!menu) return menu;
 			if (this.pageNumberMorph())
 				menu.addItem(['remove slide number',   this, 'removePageNumberMorph' ]);
@@ -89,8 +89,8 @@ cop.create("PageNavigationLayer")
 		
 	})
 	.refineClass(TextMorph, {
-		morphMenu: function(proceed, evt) {
-			var menu = proceed(evt);
+		morphMenu: function(evt) {
+			var menu = cop.proceed(evt);
 			var self = this;
 			var createFontSizeMenu = function(sizes) {
 				return sizes.collect(function(ea) { 
@@ -114,7 +114,7 @@ cop.create("PageNavigationLayer")
 			return menu
 		},
 
-		doLinkThing: function(proceed, evt, link) {
+		doLinkThing: function(evt, link) {
 			// Propagate the current Presentation Name to pages when following links
 			// an alternative way to get that context information is the possibility
 			// of the destination website to ask: document.referrer
@@ -124,7 +124,7 @@ cop.create("PageNavigationLayer")
 				var queries = Object.extend(url.getQuery(), {pageNavigationName: Config.pageNavigationName});
 				url = url.withQuery(queries);
 			}
-			proceed(evt, url.toString())
+			cop.proceed(evt, url.toString())
 		},
 
 	});
@@ -133,8 +133,8 @@ cop.create("PageNavigationLayer")
 cop.create('ResizeWorldLayer')
 	.beGlobal()
 	.refineClass(WorldMorph, {
-		displayOnCanvas: function(proceed, canvas) {
-			proceed(canvas);
+		displayOnCanvas: function(canvas) {
+			cop.proceed(canvas);
 			basicResize(this, this.canvas(), 1020, 760)
 		}
 	});

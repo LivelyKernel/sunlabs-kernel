@@ -3,7 +3,7 @@ module('apps.Journal').requires('cop.Layers', 'apps.DateFormat').toRun(function(
 cop.createLayer('JournalEntryLayer')
 
 cop.layerClass(JournalEntryLayer, TextMorph, {
-	splitInOwer: function(proceed, evt) {
+	splitInOwer: function(evt) {
 		if(!this.owner)
 			return;
 		var pos = this.getCursorPos();
@@ -31,7 +31,7 @@ cop.layerClass(JournalEntryLayer, TextMorph, {
 				console.log("ctrl on key down" + evt)
 			return
 		}
-		return proceed(evt);
+		return cop.proceed(evt);
 	},
 	
 	doSave: function() {

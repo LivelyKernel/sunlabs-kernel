@@ -25,10 +25,9 @@ Object.extend(Global, {
 	
 });
 
-cop.createLayer('UserStoryLayer');
-cop.layerClass(UserStoryLayer, WorldMorph, {
-	toolSubMenuItems: function(proceed, evt) {
-		var menuItems = proceed(evt);
+cop.create('UserStoryLayer').refineClass(WorldMorph, {
+	toolSubMenuItems: function(evt) {
+		var menuItems = cop.proceed(evt);
 		menuItems.push(["User Sory controls", function(evt) {
 			var w = WorldMorph.current();
 			
@@ -310,12 +309,13 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.UserStoryMorph',
 			this.titleString(), this.story.innerMorph().textString,
 			this.expectedTime, this.actualTime, addTasks ? this.taskStringRepresentation() : '');
 	},
-taskStringRepresentation: function() {
-	if (!this.tasks || this.tasks.length == 0) return ''
-	return '\n\n' + this.tasks
-		.collect(function(task) { return task.stringRepresentation() })
-		.join('\n')
-},
+
+	taskStringRepresentation: function() {
+		if (!this.tasks || this.tasks.length == 0) return ''
+		return '\n\n' + this.tasks
+			.collect(function(task) { return task.stringRepresentation() })
+			.join('\n')
+	},
 
 });
 
@@ -530,8 +530,7 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.TaskMorph', {
 		$super()
 	},
 
-},
-'string representation', {
+}, 'string representation', {
 	stringRepresentation: function() {
 		return Strings.format('\t= %s =\n%s\n\texpected: %s actual: %s\n\tdevelopers: %s',
 			this.titleString(), this.taskDescription.innerMorph().textString,
@@ -542,6 +541,7 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.TaskMorph', {
 Object.extend(apps.UserStories.TaskMorph, {
 	open: function(ownerOrNothing) { new apps.UserStories.TaskMorph().openCenteredIn(ownerOrNothing) },
 });
+
 ContainerMorph.subclass('apps.UserStories.IterationMorph', {
 
 	style: {borderWidth: 2, borderColor: Color.tangerine , fill: Color.white, suppressGrabbing: true},
@@ -551,19 +551,18 @@ ContainerMorph.subclass('apps.UserStories.IterationMorph', {
 		$super(this.defaultExtent.extentAsRectangle());
 		this.shape.setStrokeDashArray("9,7"); // FIXME
 	},
-collapse: function() {
-	this.collapsedMorphs = this.submorphs.reject(function(ea) { return ea.isUserStory })
-	this.collapsedMorphs.invoke('remove');
-},
-uncollapse: function() {
-	if (!this.collapsedMorphs) return
-	this.collapsedMorphs.forEach(function(ea) {
-		this.addMorph(ea)
-	}, this);
-},
 
-
-
+	collapse: function() {
+		this.collapsedMorphs = this.submorphs.reject(function(ea) { return ea.isUserStory })
+		this.collapsedMorphs.invoke('remove');
+	},
+	
+	uncollapse: function() {
+		if (!this.collapsedMorphs) return
+		this.collapsedMorphs.forEach(function(ea) {
+			this.addMorph(ea)
+		}, this);
+	},
 });
 
 Object.extend(Global, {

@@ -935,8 +935,8 @@ lively.ide.BrowserCommand.subclass('CodeDBNewModuleCommand', {
 cop.create('CDBBrowserLayer')
 	.beGlobal()
 	.refineClass(WorldMorph, {
-		toolSubMenuItems: function(proceed, evt) {
-			var menu = proceed(evt);
+		toolSubMenuItems: function(evt) {
+			var menu = cop.proceed(evt);
 			menu.push(["CodeDB repository browser", function(evt) {
 				var cdb = new CodeDBRepositoryBrowser();
 				cdb.openIn(WorldMorph.current());

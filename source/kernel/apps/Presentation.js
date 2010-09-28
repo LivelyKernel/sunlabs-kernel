@@ -96,7 +96,7 @@ Widget.subclass('PresentationManager', 'default category', {
 
 cop.create('ExtListMorphLayer').refineClass(ListMorph, {
 
-	generateListItem: function(proceed, value, rect) {
+	generateListItem: function(value, rect) {
 		if (value instanceof Morph) {
 			var r = value.bounds().withWidth(rect.width);
 			var box;
@@ -146,7 +146,7 @@ cop.create('ExtListMorphLayer').refineClass(ListMorph, {
 			return box;
 		}
 
-		return proceed(value, rect);
+		return cop.proceed(value, rect);
 	},
 
 });

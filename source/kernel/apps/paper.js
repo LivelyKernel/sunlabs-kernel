@@ -228,7 +228,7 @@ cop.create('PaperMorphLayer')
 	},
 
 
-	splitInOwer: function(proceed, evt) {
+	splitInOwer: function(evt) {
 		if(!this.owner)
 			return;
 		var pos = this.getCursorPos();
@@ -256,7 +256,7 @@ cop.create('PaperMorphLayer')
 		// at a position....
 	},
 
-	joinInOwner: function(proceed, evt) {
+	joinInOwner: function(evt) {
 			var morphs = this.getPaperMorph().contentMorphs()
 			var pos = morphs.indexOf(this)
 			if (pos > 0) {
@@ -270,7 +270,7 @@ cop.create('PaperMorphLayer')
 	},
 
 	// override the cmd + enter behavior
-	onKeyDown: function(proceed, evt) {
+	onKeyDown: function(evt) {
 		// console.log("on key press" + evt)
 		if ((evt.getKeyCode() == 8) && (this.selectionRange[0] == 0) && (this.selectionRange[1] == -1)) {
 				this.joinInOwner(evt)
@@ -281,7 +281,7 @@ cop.create('PaperMorphLayer')
 				// console.log("ctrl on key down" + evt)
 			return
 		}
-		return proceed(evt);
+		return cop.proceed(evt);
 	},
 
 	doSave: function() {
@@ -349,8 +349,8 @@ Object.subclass('LaTeXTextMorphWrapper', {
 // generation logic
 // when generating LaTeX support inside TextMorph something like this will be the result:
 /*layerClass(TeXLayer, TextMorph, {
-	morphMenu: function(proceed, evt) { 
-		var self = this; var menu = proceed(evt); menu.addLine();
+	morphMenu: function(evt) { 
+		var self = this; var menu = cop.proceed(evt); menu.addLine();
 		menu.addItems([
 			["be paper title", function() { self.bePaperTitle() }],
 			["be paper section", function() { self.bePaperSection() }],
@@ -401,8 +401,8 @@ Object.subclass('LaTeXTextMorphWrapper', {
 	generateMorphMenuFor: function(klass) {
 		var types = this.textMorphTypes();
 		var wrapper = this;
-		var method = function(proceed, evt) {  // inside here this is bound to TextMorph not wrapper
-			var menu = proceed(evt); menu.addLine();
+		var method = function(evt) {  // inside here this is bound to TextMorph not wrapper
+			var menu = cop.proceed(evt); menu.addLine();
 			menu.addItems(wrapper.textMorphMenuItemsFor(this));
 			return menu;
 		};
@@ -481,10 +481,10 @@ Object.subclass('LaTeXConverter');
 cop.create('TeXLayer')
 .beGlobal()
 .refineObject(LaTeXConverter, {
-	addMethods: function(proceed, source) {
+	addMethods: function(source) {
 		// this ensures that everytime the converter is changed the TextMorph gets updated
 		// with new generated methods
-		var klass = proceed(source);
+		var klass = cop.proceed(source);
 		LaTeXTextMorphWrapper.wrapTextMorph();
 		return klass
 	},
@@ -509,7 +509,7 @@ cop.create('TeXLayer')
 '<body>\n' + this.convertMorphs(converter, this.contentMorphs()) + '\n</body></html>'
 	},	
 
-	convertMorphs: function(proceed, converter, morphs) {
+	convertMorphs: function(converter, morphs) {
 		var text = morphs.inject('', function(text, m) {
 			return text + converter.convertMorph(m)
 		});
@@ -761,17 +761,17 @@ Widget.subclass('PDFGeneratorClient', {
 });
 
 cop.create('UndoLayer').refineClass(PaperMorph, {
-	removeMorph: function(proceed, morph) {
+	removeMorph: function(morph) {
 		if (!morph.isEpimorph) {
 			var cmd = new RemoveMorphCommand(this, morph, this.submorphs.indexOf(morph));
 			this.getUndoHistory().addCommand(cmd);
 		};
-
+		var result;
 		cop.withoutLayers([UndoLayer], function() {		
-			var result = proceed(morph)
+			result = cop.proceed(morph)
 		});
 
-		return proceed(morph)
+		return result
 	}
 });
 
