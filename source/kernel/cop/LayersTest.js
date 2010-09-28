@@ -42,11 +42,11 @@ Object.subclass('cop.example.Person', {
 		return "Name: " + this.name;
 	},
 	
-	AddressLayer$print: function(proceed) {
+	AddressLayer$print: function() {
 		return cop.proceed() + "; Address: " + this.address;
 	},
 	
-	EmploymentLayer$print: function(proceed) {
+	EmploymentLayer$print: function() {
 		return cop.proceed() + "; [Employer] " + this.employer.print();
 	},
 	
@@ -74,7 +74,7 @@ Object.subclass('cop.example.Employer', {
 });
 
 cop.layerClass(AddressLayer, cop.example.Employer, {
-	print: function(proceed) {
+	print: function() {
 		return cop.proceed() + "; Address: " + this.address;
 	}
 });
@@ -97,13 +97,13 @@ Object.subclass('cop.example.DummyClass', {
 		// console.log("execute default f(" + a, ", " + b + ")");
 		return 0; 
 	},
-	DummyLayer$f: function(proceed, a, n) {
+	DummyLayer$f: function(a, n) {
 		this.execution.push("ld.f");
 		//console.log("execute dummy layer f(" + a, ", " + b + ")");
 		return cop.proceed() + 100;
 	},
 	
-	DummyLayer2$f: function(proceed, a, n) {
+	DummyLayer2$f: function(a, n) {
 		this.execution.push("ld2.f");
 		return cop.proceed() + 1000;
 	},
@@ -126,11 +126,11 @@ Object.subclass('cop.example.DummyClass', {
 		// console.log("h");
 		return 2;
 	},
-	DummyLayer$h: function(proceed) {
+	DummyLayer$h: function() {
 		// console.log("D$h old(" + cop.proceed() +")");
 		return 3;
 	},
-	DummyLayer3$h: function(proceed) {
+	DummyLayer3$h: function() {
 		// console.log("D3$h old(" + cop.proceed() +")");
 		return 4;
 	},
@@ -152,7 +152,7 @@ Object.subclass('cop.example.DummyClass', {
 		return "m2";	
 	},
 
-	DummyLayer$m2: function(proceed) {
+	DummyLayer$m2: function() {
 		return "D$m2," + cop.proceed();	
 	},
 
@@ -161,7 +161,7 @@ Object.subclass('cop.example.DummyClass', {
 		return "base";
 	},
 	
-	DummyLayer$newFoo: function(proceed) {
+	DummyLayer$newFoo: function() {
 		return "newFoo";
 	},
 	
@@ -185,11 +185,11 @@ cop.example.DummyClass.subclass('cop.example.DummySubclass', {
 		return 10;
 	},
 
-	DummyLayer$m1: function(proceed) {
+	DummyLayer$m1: function() {
 		return cop.proceed() + 1;
 	},	
 	
-	DummyLayer$fooo: function(proceed) {
+	DummyLayer$fooo: function() {
 		var proc =  cop.proceed();
 		return proc+"-layer-"+this.newFoo();	
 	},
@@ -206,7 +206,7 @@ cop.example.DummyClass.subclass('cop.example.DummySubclass', {
 
 cop.example.DummyClass.subclass('cop.example.SecondDummySubclass', {
 	
-	DummyLayer$m1: function(proceed) {
+	DummyLayer$m1: function() {
 		return cop.proceed() + 100;
 	},
 
@@ -299,7 +299,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 	makeLayer1: function() {
 		this.layer1 = {};
 		cop.layerObject(this.layer1, this.object1, {
-			f: function(proceed, a, b) {
+			f: function(a, b) {
 				currentTest.execution.push("l1.f");
 				console.log("execute layer1 function for f");
 				return cop.proceed(a, b) + a;
@@ -311,12 +311,12 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 	makeLayer2: function() {
 		this.layer2 = {};
 		cop.layerObject(this.layer2, this.object1, {
-			f: function(proceed, a, b) {
+			f: function(a, b) {
 				currentTest.execution.push("l2.f");
 				// console.log("execute layer2 function for f");
 				return cop.proceed(a, b) + b; 
 			},
-			g: function(proceed) {
+			g: function() {
 				currentTest.execution.push("l2.g");
 				// console.log("execute default g");
 				return cop.proceed() + " World";
@@ -333,7 +333,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 	makeLayer3: function() {
 		this.layer3 = {};
 		cop.layerObject(this.layer3, this.object1, {
-			f: function(proceed, a, b) {
+			f: function(a, b) {
 				currentTest.execution.push("l3.f");
 				// console.log("execute layer3 function for f");
 				return cop.proceed() * 10; 
@@ -431,7 +431,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 	testLayerClass: function() {
 		var layer1 = {};
 		cop.layerClass(layer1, cop.example.DummyClass, {
-			f: function(proceed, a, b) {
+			f: function(a, b) {
 				this.execution.push("l1.f");
 				// console.log("execute layer1 function for f");
 				return cop.proceed() + a; 
@@ -470,7 +470,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer1 = {};
 		this.makeObject1();
 		cop.layerObject(layer1, this.object1, {
-			f: function(proceed, a, b) {
+			f: function(a, b) {
 				currentTest.execution.push("l1.f");
 				// console.log("execute layer1 function for f");
 				return cop.proceed() + a; 
@@ -518,12 +518,12 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var object1 = {f: function() {return 0}, g: function() {}};
 		var layer1 = {};
 		
-		layerMethod(layer1, object1, "f", function(proceed){
+		layerMethod(layer1, object1, "f", function(){
 			return cop.proceed() + 1});
 			
 		this.assert(getLayerDefinitionForObject(layer1, object1).f, "f did not get stored");	
 		
-		layerMethod(layer1, object1, "g", function(proceed){});
+		layerMethod(layer1, object1, "g", function(){});
 	
 		this.assert(getLayerDefinitionForObject(layer1, object1).f, "f did not get stored");	
 		this.assert(getLayerDefinitionForObject(layer1, object1).g, "g did not get stored");	
@@ -599,7 +599,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer1 = {}
 		this.makeObject1();
 		cop.layerObject(layer1, this.object1, {
-			f: function(proceed) {
+			f: function() {
 				throw {testError: true}
 			},
 		});
@@ -618,7 +618,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer1 = {};
 		this.makeObject1();
 		cop.layerObject(layer1, this.object1, {
-			f: function(proceed) {
+			f: function() {
 				throw {testError: true};
 			},
 		});
@@ -664,7 +664,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var testCase = this;
 		var result = false;
 		cop.layerObject(layer1, this.object1, {
-			f: function(proceed) {
+			f: function() {
 				result = thisObject === this;
 			},
 		});
@@ -784,7 +784,7 @@ TestCase.subclass('cop.LayersTest.AdaptArgumentsInLayer', {
 	testAdaptArgumentsInLayer: function() {
 		var o = {say: function(a) {return "Say: " +a}};
 		var l = {toString: function() {return "L"}};
-		cop.layerObject(l,o, { say: function(proceed, a) {return cop.proceed(a + " World") + "!"}})
+		cop.layerObject(l,o, { say: function(a) {return cop.proceed(a + " World") + "!"}})
 		this.assertEqual(o.say("Hello"), "Say: Hello", "test is broken");	
 		cop.withLayers([l], function() {
 			console.group("SayHello");
@@ -852,7 +852,7 @@ cop.LayersTest.LayerTestCase.subclass('cop.LayersTest.LayerSubclassingTest', {
 		});
 	
 		cop.layerClassAndSubclasses(this.dummyLayer(), this.dummyClass(), {
-			m1: function(proceed) {return "L$m1,"+proceed()}
+			m1: function() {return "L$m1,"+cop.proceed()}
 		});
 		
 		this.assert(this.dummySubclass().prototype.m1.isLayerAware,  "overriden m1 is not layer aware")
@@ -881,7 +881,7 @@ cop.LayersTest.LayerTestCase.subclass('cop.LayersTest.LayerSubclassingTest', {
 		});
 	
 		cop.layerClassAndSubclasses(this.dummyLayer(), this.dummyClass(), {
-			m1: function(proceed) {return "L$m1a "+proceed() + " L$m1b" }
+			m1: function() {return "L$m1a "+cop.proceed() + " L$m1b" }
 		});
 		
 		var o = new (this.dummyClass())();
@@ -907,11 +907,11 @@ cop.LayersTest.LayerTestCase.subclass('cop.LayersTest.LayerSubclassingTest', {
 		});
 	
 		cop.layerClassAndSubclasses(this.dummyLayer(), this.dummyClass(), {
-			m1: function(proceed) {return "L$m1,"+proceed()}
+			m1: function() {return "L$m1,"+cop.proceed()}
 		});
 
 		cop.layerClassAndSubclasses(this.dummyLayer2(), this.dummySubclass(), {
-			m1: function(proceed) {return "L$m1,"+proceed()}
+			m1: function() {return "L$m1,"+cop.proceed()}
 		});
 				
 		var s = new (this.dummySubclass())();
@@ -930,7 +930,7 @@ LayerExamples = {
 	
 		cop.create("LogPostionLayer");
 		cop.layerClass(LogPostionLayer, Morph, {
-			setPosition: function(proceed, pos) { 
+			setPosition: function(pos) { 
 				console.log(this + "setPosition(" + pos +")")
 				return cop.proceed(pos);
 			}
@@ -1251,7 +1251,7 @@ LayerableObject.subclass("DummyLayerableObject", {
 		return 3
 	},
 		
-	DummyLayer$f: function(proceed) {
+	DummyLayer$f: function() {
 		return 4
 	},
 
@@ -1263,7 +1263,7 @@ LayerableObject.subclass("DummyLayerableObject", {
 		return this.myObject.k();
 	},
 	
-	DummyLayer$thisRef: function(proceed) {
+	DummyLayer$thisRef: function() {
 		return this
 	}
 });
@@ -1281,7 +1281,7 @@ LayerableObject.subclass("DummyOtherObject", {
 		return 5
 	},
 	
-	DummyLayer$k: function(proceed) {
+	DummyLayer$k: function() {
 		cop.proceed();
 		this.count_dummy_k = this.count_dummy_k + 1;
 		return 7
@@ -1644,7 +1644,7 @@ TestCase.subclass('cop.LayersTest.CopProceedTest', {
 
 	testDepricatedProceedInArgumebnts: function() {
 		cop.create('CopDepricatedProceedLayer').refineClass(CopProceedTestClass, {
-			m: function(proceed, a) {
+			m: function(a) {
 				return cop.proceed(a) * 2
 			}
 		});

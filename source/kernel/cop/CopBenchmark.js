@@ -157,50 +157,50 @@ Object.subclass('cop.benchmark.BenchClass', {
 		this.counter_00++;
 	},
 
-	L1$countWithLayers: function(proceed) {	
+	L1$countWithLayers: function() {	
 		this.counter_01++;
 		cop.proceed()
 	},
 	
-	L2$countWithLayers: function(proceed) {	
+	L2$countWithLayers: function() {	
 		this.counter_02++;
 		cop.proceed()
 	},
 	
-	L3$countWithLayers: function(proceed) {	
+	L3$countWithLayers: function() {	
 		this.counter_03++;
 		cop.proceed()
 	},
 	
-	L4$countWithLayers: function(proceed) {	
+	L4$countWithLayers: function() {	
 		this.counter_04++;
 		cop.proceed()
 	},
 	
-	L5$countWithLayers: function(proceed) {	
+	L5$countWithLayers: function() {	
 		this.counter_05++;
 		cop.proceed()
 	},
 	
-	L6$countWithLayers: function(proceed) {	
+	L6$countWithLayers: function() {	
 		this.counter_06++;
 		cop.proceed()
 	},
 	
-	L7$countWithLayers: function(proceed) {	
+	L7$countWithLayers: function() {	
 		this.counter_07++;
 		cop.proceed()
 	},
 	
-	L8$countWithLayers: function(proceed) {	
+	L8$countWithLayers: function() {	
 		this.counter_08++;
 		cop.proceed()
 	},
-	L9$countWithLayers: function(proceed) {	
+	L9$countWithLayers: function() {	
 		this.counter_09++;
 		cop.proceed()
 	},
-	L10$countWithLayers: function(proceed) {	
+	L10$countWithLayers: function() {	
 		this.counter_10++;
 		cop.proceed()
 	}
@@ -1051,7 +1051,7 @@ addWrapperBenchmarks = function() {
 
 	var o4 = new cop.benchmark.WrappBenchTest();
 	o4.m1 = o4.m1.wrap(function(proceed) {
-		cop.proceed();
+		proceed();
 		this.counter_02++;		
 	});
 

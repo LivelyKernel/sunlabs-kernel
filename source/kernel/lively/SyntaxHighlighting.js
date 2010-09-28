@@ -335,15 +335,15 @@ TextMorph.addMethods('SyntaxHighlight',{
 
 cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 
-	// replaceSelectionWith: function(proceed, replacement) {
-	//	var result = proceed(replacement);
+	// replaceSelectionWith: function(replacement) {
+	//	var result = cop.proceed(replacement);
 	//	var cursorPos = t.getCursorPos();
 	//	this.delayedSyntaxHighlighting(this.textString.lastIndexOf("\n", cursorPos - 1), this.textString.indexOf("\n", cursorPos));
 	//	return result;	
 	// },
 
- 	tryBoundEval: function(proceed, str, offset, printIt) {
-		var result = proceed(str, offset, printIt);
+ 	tryBoundEval: function(str, offset, printIt) {
+		var result = cop.proceed(str, offset, printIt);
 		// The syntax highlighting triggers a bug in TextMorph
 		// where newlines are not composed correctly
 		// this.highlightJavaScriptSyntaxFromTo(offset,  offset + str.length);
@@ -351,10 +351,10 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 		return result
 	},
 
-	subMenuStyleItems: function(proceed, evt) {
+	subMenuStyleItems: function(evt) {
 		var items;
 		withoutLayers([SyntaxHighlightLayer], function() {
-			items= proceed(evt);
+			items= cop.proceed(evt);
 		});
 		var enabled = this.getWithLayers().include(BrowserSyntaxHighlightLayer);
 		items.push([(enabled ? "[X]" : "[]") + " Syntax Highlighting", function() {
@@ -387,36 +387,36 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 		// WorldMorph.current().setStatusMessage('Browser Syntax Highligth ' +time+ "ms", Color.blue, 3)
 	},
 
-	onPane2SelectionUpdate: function(proceed, node) {
-		proceed(node);
+	onPane2SelectionUpdate: function(node) {
+		cop.proceed(node);
 		this.hightlightSourcePane()
     },
 
-	onPane4SelectionUpdate: function(proceed, node) {
-		proceed(node);
+	onPane4SelectionUpdate: function(node) {
+		cop.proceed(node);
 		this.hightlightSourcePane();
     },
 
-	allChanged: function(proceed, keepUnsavedChanges, changedNode) {
-		proceed(keepUnsavedChanges, changedNode)
+	allChanged: function(keepUnsavedChanges, changedNode) {
+		cop.proceed(keepUnsavedChanges, changedNode)
 		// this.hightlightSourcePane();
 	},
 
-	onSourceStringUpdate: function(proceed, node) {
-		proceed(node);
+	onSourceStringUpdate: function(node) {
+		cop.proceed(node);
 		// this.hightlightSourcePane();
     },
 
-	buildView: function(proceed, extent) {
-		var morph = proceed(extent)
+	buildView: function(extent) {
+		var morph = cop.proceed(extent)
 		this.panel.sourcePane.innerMorph().setWithLayers([BrowserSyntaxHighlightLayer])
 		return morph
 	}
 });
 
 cop.create('BrowserSyntaxHighlightLayer').refineClass(TextMorph, {
-	doSave: function(proceed) {
-		proceed();
+	doSave: function() {
+		cop.proceed();
 		this.highlightJavaScriptSyntax()
 	},
 });

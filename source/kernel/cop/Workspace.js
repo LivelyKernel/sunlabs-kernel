@@ -28,7 +28,7 @@ cop.create('WorkspaceLayer')
 			this.evalOnWorldLoad = ! this.evalOnWorldLoad; 
 		},
 
-		morphMenu: function(proceed, evt) {
+		morphMenu: function(evt) {
 			var menu = cop.proceed(evt);
 			if (menu) {
 				menu.addItem([
@@ -38,7 +38,7 @@ cop.create('WorkspaceLayer')
 			return menu;
 		},
 
-		onDeserialize: function(proceed) {
+		onDeserialize: function() {
 			cop.proceed();
 			if (this.evalOnWorldLoad) {
 				// console.log("eval workspace is " + this.evalOnWorldLoad + ":"+ this.textString );
@@ -77,7 +77,7 @@ cop.create('WorkspaceControlLayer')
 			});	
 		},
 
-		morphMenu: function(proceed, evt) {
+		morphMenu: function(evt) {
 			var menu = cop.proceed(evt);
 			if (menu) {
 				menu.addItem([
@@ -93,7 +93,7 @@ cop.create('WorkspaceControlLayer')
 		}
 		
 	}).refineClass(WorldMorph, {
-		onKeyDown: function(proceed, evt) {
+		onKeyDown: function(evt) {
 			var key = evt.getKeyChar() && evt.getKeyChar().toLowerCase();
 			if (key && evt.isCommandKey() && !evt.isShiftDown()) {
 				if (key == 'k') { 
@@ -104,7 +104,7 @@ cop.create('WorkspaceControlLayer')
 			return cop.proceed(evt);
 		},
 	
-		toolSubMenuItems: function(proceed, evt) {
+		toolSubMenuItems: function(evt) {
 			var menu = cop.proceed(evt);
 			menu.push(["Workspace (k) ", function(evt) {
 				WorldMorph.current().addWorkspace()
@@ -112,7 +112,7 @@ cop.create('WorkspaceControlLayer')
 			return menu;
 		},
 
-		addWorkspace: function(proceed, initialText) {
+		addWorkspace: function(initialText) {
 			initialText = initialText || "Editable text";
 			var pane = WorldMorph.current().addTextWindow({content: initialText}); 
 			pane.owner.setTitle("Workspace");
