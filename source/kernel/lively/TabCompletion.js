@@ -80,7 +80,7 @@ TestCase.subclass('TabCompletionLayerTest', {
 
 cop.create('TabCompletionLayer').refineClass(TextMorph, {
 
-	tabCompletionChoicesForLastWord: function(proceed, lastWord) {
+	tabCompletionChoicesForLastWord: function(lastWord) {
 			var selector = function(ea){return ea.startsWith(lastWord)};
 			var choices = this.checkForPropertyChoicesAt(this.selectionRange[0]);
 			// console.log("choices " + choices)
@@ -95,7 +95,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			return selectedAllChoices.concat(selectedLocalChoices).uniq().sort()
 	},
 
-	tabCompletionForLastWord: function(proceed, lastWord, backward) {
+	tabCompletionForLastWord: function(lastWord, backward) {
 			if (this.tabReplacePrefix !== lastWord) {
 				this.tabReplaceListIndex = 0;
 				this.tabReplacePrefix = lastWord;
@@ -116,7 +116,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			return choices[this.tabReplaceListIndex];
 	},	
 
-	allPropertiesOf: function (proceed, object) {
+	allPropertiesOf: function (object) {
 		if (typeof object !== 'object') throw new TypeError('not an object');
 		var names = []; // check behavior wrt arrays
 		for (var name in object) {
@@ -125,7 +125,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 		return names;
 	},
 
-	checkForLastExpression: function(proceed, cursor) {
+	checkForLastExpression: function(cursor) {
 			var index = this.textString.lastIndexOf("\n", cursor -1);
 			if (index !== -1) {
 				var exp =  this.textString.substring(index, cursor );
@@ -142,7 +142,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			}
 	},
 	
-	checkForPropertyChoicesAt: function(proceed, cursor) {
+	checkForPropertyChoicesAt: function(cursor) {
 			var lastExpression =	this.checkForLastExpression(cursor);
 			// console.log("lastExpression: " + lastExpression )
 			var propertiesChoices;
@@ -155,7 +155,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			}
 	},
 	
-	onKeyDown: function(proceed, evt) {
+	onKeyDown: function(evt) {
 		if (evt.getKeyCode() == Event.KEY_TAB) {
 			var cursor = this.selectionRange[0];
 			var lastChar = this.textString.substring(cursor - 1, cursor);
@@ -192,7 +192,7 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 			return 
 		}
 		this.tabReplaceListIndex = undefined
-		return proceed(evt)
+		return cop.proceed(evt)
 	},
 
 });

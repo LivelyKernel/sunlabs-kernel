@@ -72,7 +72,7 @@ Object.extend(SpellChecker, {
 cop.create('SpellCheckerLayer')
 .refineClass(TextMorph, {
 
-	correctWithSuggestion: function(proceed, offset, length, suggestion) {
+	correctWithSuggestion: function(offset, length, suggestion) {
 		console.log("correct from " + offset + " to " + 
 			offset + length +" with: " + suggestion);		
 		this.setSelectionRange(offset, offset + length);
@@ -80,14 +80,14 @@ cop.create('SpellCheckerLayer')
 		this.emphasizeFromTo({color: null, spellchecksuggestions: null }, offset, offset + suggestion.length)
 	},
 	
-	ignoreWordWhileSpellChecking: function(proceed, word) {
+	ignoreWordWhileSpellChecking: function(word) {
 		SpellChecker.addIgnoreWord(word, this.getSpellCheckLang());
 
 	},
 
-	morphMenu: function(proceed, evt) {
+	morphMenu: function(evt) {
 		var spellCheck = this.spellCheckUnderMouse(evt);
-		var menu = proceed(evt);
+		var menu = cop.proceed(evt);
 		var self = this;
 		if (menu && spellCheck ) {
 			menu.addItem(["-----", function(){ }], 0 );
@@ -155,7 +155,7 @@ cop.create('SpellCheckerLayer')
 		this.composeAfterEdits()
 	},
  
-	spellCheckUnderMouse: function(proceed, evt) {	 
+	spellCheckUnderMouse: function(evt) {	 
 		if (!this.textStyle) return null;
 		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
 		var style = this.textStyle.valueAt(charIx);

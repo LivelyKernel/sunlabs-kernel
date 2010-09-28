@@ -123,31 +123,31 @@ cop.layerClass(UndoLayer, TextMorph, {
 		return this.undoHistory
 	},
 
-	processCommandKeys: function(proceed, evt) {
+	processCommandKeys: function(evt) {
 		var key = evt.getKeyChar();
 		if (key) key = key.toLowerCase();
 		if (key == 'z' && evt.isShiftDown()) {
 			this.doRedo(); return true;
 		};
-		return proceed(evt)
+		return cop.proceed(evt)
 	},
 
-	doRedo: function(proceed) {
+	doRedo: function() {
 		var undoHistory = this.getUndoHistory();
 		if (undoHistory) {
 			return undoHistory.redo()
 		}
 	},
 
-	doUndo: function(proceed) {
+	doUndo: function() {
 		var undoHistory = this.getUndoHistory();
 		if (undoHistory) {
 			return undoHistory.undo()
 		} else {
-			return proceed()
+			return cop.proceed()
 		}
 	},
-	textSliceFromTo: function(proceed, from, to) {
+	textSliceFromTo: function(from, to) {
 		var string =  this.textString.substring(from, to + 1);
 		if (this.textStyle) {
 			var style = this.textStyle.slice(from, to + 1);
@@ -155,7 +155,7 @@ cop.layerClass(UndoLayer, TextMorph, {
 		return new lively.Text.Text(string, style);
 	},	
 
-	replaceSelectionWith: function(proceed, replacement) {
+	replaceSelectionWith: function(replacement) {
 		var undoHistory = this.getUndoHistory();
 		if (undoHistory) {
 			var from = this.selectionRange[0];
@@ -165,15 +165,15 @@ cop.layerClass(UndoLayer, TextMorph, {
 			undoHistory.addCommand(cmd);
 		};
 		cop.withoutLayers([UndoLayer], function(){
-			return proceed(replacement);
+			return cop.proceed(replacement);
 		})
 	},
 
-	emphasizeFromTo: function(proceed, emph, from, to) {
+	emphasizeFromTo: function(emph, from, to) {
 		var undoHistory = this.getUndoHistory();
 		var oldText = this.textSliceFromTo(from, to);
 		cop.withoutLayers([UndoLayer], function(){
-			proceed(emph, from, to);
+			cop.proceed(emph, from, to);
 		})
 		var newText = this.textSliceFromTo(from, to);
 		if (undoHistory) {
@@ -183,7 +183,7 @@ cop.layerClass(UndoLayer, TextMorph, {
 		}
  	},
 
-	setTextString: function(proceed, string) {
+	setTextString: function(string) {
 		var undoHistory = this.getUndoHistory();
 		if (undoHistory) {
 			var from = 0;
@@ -193,7 +193,7 @@ cop.layerClass(UndoLayer, TextMorph, {
 			undoHistory.addCommand(cmd);
 		};
 		cop.withoutLayers([UndoLayer], function(){
-			proceed(string);
+			cop.proceed(string);
 		})
  	},
 });
