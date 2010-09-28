@@ -2,14 +2,14 @@ module('lively.Connector').requires('cop.Layers', 'lively.Helper', 'lively.Layer
 
 cop.create('NodeMorphLayer').refineClass(Morph, {
 	
-	isPropertyOnIgnoreList: function(proceed, prop) {
+	isPropertyOnIgnoreList: function(prop) {
 		if (prop == "delayUpdateConnectors")
 			return true;
-		return proceed(prop)
+		return cop.proceed(prop)
 	},
 	
-	changed: function(proceed, part) {
-		proceed(part);
+	changed: function(part) {
+		cop.proceed(part);
 		this.triggerUpdateConnectors();	 
 	},
 
@@ -39,7 +39,7 @@ cop.create('NodeMorphLayer').refineClass(Morph, {
 		}
 	},
 
-	connectLineMorph: function(proceed, line) {
+	connectLineMorph: function(line) {
 		// console.log("connect line morph " + line);
 		if(!this.connectorMorphs)
 			this.connectorMorphs = [];
@@ -47,7 +47,7 @@ cop.create('NodeMorphLayer').refineClass(Morph, {
 			this.connectorMorphs.push(line); 
 	},
 
-	deconnectLineMorph: function(proceed, line) {
+	deconnectLineMorph: function(line) {
 		if(!this.connectorMorphs)
 			return;
 		this.connectorMorphs = this.connectorMorphs.reject(function(ea){return ea === line;});
@@ -57,19 +57,19 @@ cop.create('NodeMorphLayer').refineClass(Morph, {
 
 cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 
-	onMouseUp: function(proceed, evt) {
+	onMouseUp: function(evt) {
 		var morph = this.findMorphUnderMe();
 		var line = this.owner;
 		// console.log("handle mouse up on " + morph)
 		this.connectToMorph(morph);		
-		var result = proceed(evt);
+		var result = cop.proceed(evt);
 		line.updateConnection();
 		// RESEARCH: the layer is not active any more... because the proceed set owner to nil
 		return result;
 	},
 
-	onMouseMove: function(proceed, evt) {
-		var result = proceed(evt);
+	onMouseMove: function(evt) {
+		var result = cop.proceed(evt);
 		// Fabrik connectors intercepted the setVertices in the shape
 		// but instance wrappers are fragile but shapes have no "owner" references
 		if (this.owner)
@@ -77,7 +77,7 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 		return result;
 	},
 
-	connectToMorph: function(proceed, newMorph) {
+	connectToMorph: function(newMorph) {
 		if (newMorph)
 			newMorph.setWithLayers([NodeMorphLayer]);
 		if (this.isStartHandle()) {
@@ -139,8 +139,8 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 		this.updateArrow()
 	},
 
-	setVertices: function(proceed, verts) {
-  		proceed(verts);
+	setVertices: function(verts) {
+  		cop.proceed(verts);
 		this.updateArrow();
 	},
 
@@ -225,10 +225,10 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 			line.setGlobalEndPos(pt(x4, y4));
 	},
 
-	makeHandle: function(proceed, position, partName, evt) {
+	makeHandle: function(position, partName, evt) {
 		if (partName < 0)
 			return null; // no ellipses...
-		return proceed(position, partName, evt);
+		return cop.proceed(position, partName, evt);
 	},
 
 	getStartPos: function() { 
@@ -239,13 +239,13 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 		return this.shape.vertices().last();
 	},
 	
-	setStartPos: function(proceed, p) {
+	setStartPos: function(p) {
 		var v = this.shape.vertices(); 
 		v[0] = p; 
 		this.setVertices(v);
 	},
 	
-	setEndPos: function(proceed, p) {
+	setEndPos: function(p) {
 		var v = this.shape.vertices(); 
 		v[v.length-1] = p; 
 		this.setVertices(v);
@@ -253,28 +253,28 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 	
 
 
-	setGlobalStartPos: function(proceed, p) {
+	setGlobalStartPos: function(p) {
 		// console.log("set start pos " + p);
 		
 		this.setStartPos(this.localize(p));
 	},
 
-	setGlobalEndPos: function(proceed, p) {
+	setGlobalEndPos: function(p) {
 		// console.log("line " + this + " set end pos " + p );
 		
 		this.setEndPos(this.localize(p));
 		
 	},
 
-	getGlobalStartPos: function(proceed, p) {
+	getGlobalStartPos: function(p) {
 		return this.worldPoint(this.getStartPos());
 	},
 
-	getGlobalEndPos: function(proceed, p) {
+	getGlobalEndPos: function(p) {
 		return this.worldPoint(this.getEndPos());
 	},
 	
-	connectMorphs: function(proceed, startMorph, endMorph) {
+	connectMorphs: function(startMorph, endMorph) {
 		startMorph.setWithLayers([NodeMorphLayer]);
 		endMorph.setWithLayers([NodeMorphLayer]);
 		

@@ -46,11 +46,11 @@ cop.create('ScriptingLayer')
 			return list
 	},
 
-	morphMenu: function(proceed, evt) {
+	morphMenu: function(evt) {
 		var menu;
 		// TOTO remove this workaround ContextJS issue (morphMenu is overriden in TextMorph and called with $super) 
 		withoutLayers([ScriptingLayer], function() {
-			menu= proceed(evt);
+			menu= cop.proceed(evt);
 		});
 		menu.addItem(["Scripting", [
 			["startSteppingScripts", this.startSteppingScripts],		
@@ -84,7 +84,7 @@ Morph.addMethods({
 
 
 cop.create('DisplayMorphNameLayer').refineClass(Morph, {
-	subMenuPropertiesItems: function (proceed, evt) {
+	subMenuPropertiesItems: function(evt) {
 		var name, func; 
 		var self = this;
 		if(this.isShowingNameField() ) {
@@ -95,13 +95,13 @@ cop.create('DisplayMorphNameLayer').refineClass(Morph, {
 			func = function() {self.showNameField()}
 
 		}
-		return proceed(evt).concat([[name, func]])
+		return cop.proceed(evt).concat([[name, func]])
 	}
 }).beGlobal()
 
 cop.create('CopyCheapListMorphLayer').refineClass(CheapListMorph, {
-	morphMenu: function(proceed, evt){
-		var menu = proceed(evt);
+	morphMenu: function(evt){
+		var menu = cop.proceed(evt);
 		var self = this;
 		menu.addItem(["duplicate as TextMorph", function() {
 			evt.hand.addMorph(new TextMorph(new Rectangle(0,0,500,300), self.textString))

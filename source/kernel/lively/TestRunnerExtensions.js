@@ -6,16 +6,16 @@ module('lively.TestRunnerExtensions').requires('lively.Helper', 'cop.Layers', 'l
 	
 cop.create("TimeEachTestLayer")
 .refineClass(TestCase, {
-	runTest: function(proceed, selector) {
+	runTest: function(selector) {
 		var start = (new Date()).getTime();	
-		proceed(selector);
+		cop.proceed(selector);
 		var time = (new Date()).getTime() - start;
 		this.result.setTimeOfTestRun(this.currentSelector, time)
 	},
 })
 .refineClass(TestResult, {
 
-	setTimeOfTestRun: function(proceed, selector, time) {
+	setTimeOfTestRun: function(selector, time) {
 		if (!this.timeOfTestRuns)
 			this.timeOfTestRuns = {};
 		this.timeOfTestRuns[selector] = time;
@@ -31,8 +31,8 @@ cop.create("TimeEachTestLayer")
 	}
 })
 .refineClass(TestRunner, {
-	setResultOf: function(proceed, testObject) {
-		proceed(testObject);
+	setResultOf: function(testObject) {
+		cop.proceed(testObject);
 		var msg = "TestRun: " + testObject.constructor.type + "\n" +
 			testObject.result.getSortedTimesOfTestRuns();
 		WorldMorph.current().setStatusMessage(msg, Color.blue, 10);
@@ -49,19 +49,19 @@ cop.create("TimeTestLayer")
 		return layers
 	},
 
-	runSelectedTestCase: function(proceed) {
+	runSelectedTestCase: function() {
 		cop.withLayers(this.layersForTestRun(), function() {
-			proceed()
+			cop.proceed()
 		})
 	}
 });
 
 cop.create("ProfileEachTestLayer")
 .refineClass(TestCase, {
-	runTest: function(proceed, selector) {
+	runTest: function(selector) {
 		var profileName = "profile "  + this.currentSelector 
 		console.profile(profileName);
-		proceed(selector);
+		cop.proceed(selector);
 		console.profileEnd(profileName);
 	},
 });
@@ -70,10 +70,10 @@ Config.profileTestRuns = true;
 cop.create("DebugTestCaseLayer")
 .beGlobal()
 .refineClass(TestCase, {
-	assert: function(proceed, bool, msg) {
+	assert: function(bool, msg) {
 		if (!bool)
 			debugger
-		proceed(bool, msg)
+		cop.proceed(bool, msg)
 	}
 });
 

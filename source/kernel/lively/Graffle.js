@@ -2,12 +2,11 @@
 
 module('lively.Graffle').requires(['cop.Layers', 'lively.Connector', 'lively.LayerableMorphs']).toRun(function() {
 	
-cop.createLayer("GraffleLayer");
-cop.enableLayer(GraffleLayer);
+cop.create("GraffleLayer")
+.beGlobal()
+.refineClass(PasteUpMorph, {
 
-cop.layerClass(GraffleLayer, PasteUpMorph, {
-
-	addMorhWithHandleToWorld: function(proceed, morph) {
+	addMorhWithHandleToWorld: function(morph) {
 		this.world().addMorph(morph);
 		var hand = this.world().hands[0]; 
 		var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, hand, morph, "bottomRight");
@@ -17,7 +16,7 @@ cop.layerClass(GraffleLayer, PasteUpMorph, {
 		hand.setMouseFocus(handle);
 	},
 
-	makeSelection: function(proceed, evt) {
+	makeSelection: function(evt) {
 		// console.log("make graffle selection");
 		if (this.world().currentSelection != null) this.world().currentSelection.removeOnlyIt();
 		if (evt.hand.isKeyDown("S")) {
@@ -37,22 +36,21 @@ cop.layerClass(GraffleLayer, PasteUpMorph, {
 			handle.onMouseDown(evt);
 			return;
 		}
-		return proceed(evt)
+		return cop.proceed(evt)
 	}
-});
-
-cop.layerClass(GraffleLayer, WorldMorph, {
-	onKeyPress: function(proceed, evt) {
+})
+.refineClass(WorldMorph, {
+	onKeyPress: function(evt) {
 		var map = {S: "shape", C: "connect", T: "text"};
 		var mode = map[evt.getKeyChar().toUpperCase()];				
 		if (mode)
 			evt.hand.ensureIndicatorMorph().setTextString(mode);
-		return proceed(evt) 
+		return cop.proceed(evt) 
 	},
 
-	onKeyUp: function(proceed, evt) {
+	onKeyUp: function(evt) {
 		evt.hand.ensureIndicatorMorph().setTextString("")
-		return proceed(evt)
+		return cop.proceed(evt)
 	},
 });
 

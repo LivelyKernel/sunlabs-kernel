@@ -46,10 +46,11 @@ Event.addMethods({
 });
 
 // overwrite default behavior
-cop.createLayer('TouchSupportLayer')
-cop.layerClass(TouchSupportLayer, HandMorph, {
+cop.create('TouchSupportLayer')
+.beGlobal()
+.refineClass(HandMorph, {
 
-	handleEvent: function(proceed, rawEvt) {
+	handleEvent: function(rawEvt) {
 		
 		if (false) { // not yet
 			var evt = new Event(rawEvt);
@@ -62,7 +63,7 @@ cop.layerClass(TouchSupportLayer, HandMorph, {
 		}
 		
 		// do default event dispatch
-		var evt = proceed(rawEvt);
+		var evt = cop.proceed(rawEvt);
 
 		if (!evt.isTouchEvent()) return
 
@@ -82,10 +83,6 @@ cop.layerClass(TouchSupportLayer, HandMorph, {
 	},
 
 });
-
-cop.enableLayer(TouchSupportLayer)
-
-
 
 Morph.addMethods({
 	// not used yet
