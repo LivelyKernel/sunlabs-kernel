@@ -327,6 +327,13 @@ Object.extend(lively.bindings, {
 		}
 	},
 
+	callWhenNotNull: function(sourceObj, sourceProp, targetObj, targetSelector) {
+		// ensure that sourceObj[sourceProp] is not null, then run targetObj[targetProp]()
+		if (sourceObj[sourceProp])
+			targetObj[targetSelector](sourceObj[sourceProp])
+		else
+			lively.bindings.connect(sourceObj, sourceProp, targetObj, targetSelector)
+	},
 })
 
 Object.extend(Global, {
