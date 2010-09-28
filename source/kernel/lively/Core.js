@@ -54,7 +54,9 @@ Object.subclass('ScriptLoader',
 			script.setAttributeNS(null, 'src', exactUrl);
 
 		script.setAttributeNS(null, 'onload', onLoadCb);
-
+		
+		script.onreadystatechange = function(state) { debugger }
+		
 		node.appendChild(script);
 	},
 },
@@ -120,7 +122,7 @@ resolveURLString: function(urlString) {
 }); 
 
 Object.extend(Global, {
-	Loader: new ScriptLoader(),
+	Loader: JSLoader, //new ScriptLoader(),
 });
 
 // test which checks if all modules are loaded
@@ -4542,6 +4544,10 @@ PasteUpMorph.subclass("WorldMorph",
 		var	path = URL.codeBase.withFilename('media/nocursor.gif').pathname
 		document.body.style.cursor = 'url("' + path + '"), none';
 	},
+	showHostMouseCursor: function() {
+		document.body.style.cursor = 'default'
+	},
+
 
 
 },
@@ -5010,7 +5016,7 @@ PasteUpMorph.subclass("WorldMorph",
 		var serializeTime;
 		var onFinished = function() {
 			var time = new Date().getTime() - start;
-			self.setStatusMessage("world saved to " + optURLOrPath + " in " + time + "ms \n(" + serializeTime + "ms serialization)", Color.green, 3)
+			self.setStatusMessage("world saved to " + url + " in " + time + "ms \n(" + serializeTime + "ms serialization)", Color.green, 3)
 		}
 		var statusMessage = WorldMorph.current().setStatusMessage("serializing....");
 		(function() {
