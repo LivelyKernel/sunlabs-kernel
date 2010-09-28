@@ -1780,6 +1780,10 @@ BoxMorph.subclass('TextMorph', {
 		evt.hand.lookNormal();
 		evt.hand.setMouseFocus(null);
 		evt.stop();	 // else weird things happen when return from this link by browser back button
+		if (link.startsWith('mailto')) { // FIXME
+			Global.document.location.href = link;
+			return
+		}
 		var url = URL.ensureAbsoluteURL(link);
 		// add require to LKWiki.js here
 		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
