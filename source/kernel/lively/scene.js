@@ -861,7 +861,7 @@ this.Node.addMethods({
 // in a fully portable fashion.
 
 
-this.Node.subclass('lively.scene.Shape', {
+lively.scene.Node.subclass('lively.scene.Shape', {
 
 	shouldIgnorePointerEvents: false,
 	controlPointProximity: 10,
@@ -931,12 +931,12 @@ Object.extend(this.Shape, {
 	}
 });
 
-Object.extend(this,	 { 
+Object.extend(lively.scene,	 { 
 	LineJoins: Class.makeEnum(["Miter", "Round", "Bevel" ]), // note that values become attribute values
 	LineCaps:  Class.makeEnum(["Butt",	"Round", "Square"])	 // likewise	
 });
 
-this.Shape.subclass('lively.scene.Rectangle', {
+lively.scene.Shape.subclass('lively.scene.Rectangle', {
 
 	documentation: "Rectangle shape",
 
@@ -1023,7 +1023,7 @@ this.Shape.subclass('lively.scene.Rectangle', {
 });
 
 
-Object.extend(this.Rectangle, {
+Object.extend(lively.scene.Rectangle, {
 	fromLiteral: function(literal) {
 		var x = literal.x || 0.0;
 		var y = literal.y || 0.0;
