@@ -877,7 +877,8 @@ Object.subclass('lively.Text.ChunkStream', {
 });
 
 
-BoxMorph.subclass('TextMorph', {
+BoxMorph.subclass('TextMorph',
+'settings', {
 	
 	documentation: "Container for Text",
 	doNotSerialize: ['charsTyped', 'charsReplaced', 'delayedComposition', 'focusHalo', 'lastFindLoc', 'lines', 'priorSelection', 'previousSelection', 
@@ -906,14 +907,16 @@ BoxMorph.subclass('TextMorph', {
 	hasKeyboardFocus: false,
 	useChangeClue: false,
 
-	formals: {
+	formals: { // deprecated
 		Text: { byDefault: ""},
 		Selection: { byDefault: ""},
 		History: {byDefault: "----"},
 		HistoryCursor: {byDefault: 0},
 		DoitContext: {byDefault: null}
 	},
-	
+},
+'initializing', {
+
 	initializeTransientState: function($super) {
 		$super();
 		this.selectionRange = [0, -1]; // null or a pair of indices into textString
@@ -997,7 +1000,9 @@ BoxMorph.subclass('TextMorph', {
 		if (this.useChangeClue && !this.changeClue)
 			this.addChangeClue(true);
 	},
-	
+
+},
+'testing', {
 	acceptsDropping: function() {
 		// using text morphs as containers feels extremly weired, especially when the fill 
 		// and bounds are not visible like in the wiki
@@ -1006,15 +1011,29 @@ BoxMorph.subclass('TextMorph', {
 		// morphs for a class diagram. I think we should turn it on by default and provide
 		// an easy to reach menu option to disable it
 		return false
-	}, 
+	},
+
+	showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
+
+	hasUnsavedChanges: function() {
+		// FIXME just another hack...
+		return this.submorphs.include(this.changeClue);
+	},
 	
+},
+'morphic', {
+
 	remove: function($super) {
 		var hand = this.world() && this.world().firstHand();
 		if (hand && hand.keyboardFocus === this)
 			this.relinquishKeyboardFocus(hand);
 		return $super();
 	},
-	
+
+},
+
+'accessing', {
+
 	bounds: function($super, ignoreTransients, hasBeenRendered) {
 		// tag: newText
 		if (this.fullBounds != null) return this.fullBounds;
@@ -1037,6 +1056,60 @@ BoxMorph.subclass('TextMorph', {
 	getTextColor: function() {
 		return this.textColor;
 	},
+	
+	getTextSelection: function() {
+		if (!this.textSelection) this.initializeTextSelection();
+		return this.textSelection
+	},
+
+
+	getFontFamily: function() { return this.font.getFamily() },
+	
+	setFontFamily: function(familyName) {
+		this.fontFamily = familyName;
+		this.font = lively.Text.Font.forFamily(this.fontFamily, this.fontSize);
+		this.layoutChanged();
+		this.changed();
+	},
+	
+	getFontSize: function() { return this.fontSize; },
+
+	setFontSize: function(newSize) {
+		if (newSize == this.fontSize && this.font)	// make sure this.font is inited
+			return;
+		this.fontSize = newSize;
+		this.font = lively.Text.Font.forFamily(this.fontFamily, newSize);
+		if (this.autoAdjustPadding) {
+			this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
+		};
+		this.layoutChanged();
+		this.changed();
+	},
+
+	setTextString: function(replacement, replacementHints) {
+		replacement = this.pvtReplaceBadControlCharactersInString(replacement);
+		if (Object.isString(replacement)) replacement = String(replacement); // rk ??? Why call String()
+		if (this.autoAccept) this.setText(replacement);
+		this.pvtUpdateTextString(replacement, replacementHints);
+	},
+	
+	updateTextString: function(newStr) {
+		this.pvtUpdateTextString(newStr);
+		this.resetScrollPane(); 
+	},
+
+	onTextUpdate: function(string) {
+		this.updateTextString(string);
+		this.textBeforeChanges = string;
+		this.hideChangeClue();
+	},
+
+	onSelectionUpdate: function(string) {
+		this.searchForFind(string, 0);
+	},
+
+},
+'styling', {
 
 	applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
 		$super(spec);
@@ -1094,7 +1167,11 @@ BoxMorph.subclass('TextMorph', {
 			this.wrap = style;
 		}
 	},	
-	
+
+},
+
+'command line support', {
+
 	nextHistoryEntry: function() {
 		var history = this.getHistory();
 		if (!history || history.length == 0) return "";
@@ -1122,6 +1199,14 @@ BoxMorph.subclass('TextMorph', {
 		this.setHistory(history);
 		this.setHistoryCursor(history.length);
 	},
+	onHistoryCursorUpdate: Functions.Empty,
+
+	onHistoryCursorUpdate: Functions.Empty,
+
+	onHistoryUpdate: Functions.Empty,
+
+},
+'modes', {
 
 	beLabel: function(styleMods) {
 		// Note default style is applied first, then any additional specified
@@ -1200,7 +1285,8 @@ BoxMorph.subclass('TextMorph', {
 		this.openForDragAndDrop = false; // so it won't interfere with mouseovers
 		return this;
 	},
-
+},
+'menu', {
 	subMenuItems: function($super, evt) {
 		var items = $super(evt);
 		items.unshift(["Text functions" , this.editMenuItems(evt)]);
@@ -1248,10 +1334,1011 @@ BoxMorph.subclass('TextMorph', {
 					}.bind(this));
 				}]];
 	},
+},
+'status message', {
+	setStatusMessage: function(msg, color, delay) {
+		console.log("status: " + msg)
+		if (!this._statusMorph) {
+			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
+			this._statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 1})
+		}
+		var statusMorph = this._statusMorph;
+		statusMorph.textString = msg;
+		this.world().addMorph(statusMorph);
+		statusMorph.setTextColor(color || Color.black);
+		statusMorph.ignoreEvents();
+		try { // rk 7/8/10 why is this in try/catch?
+			var bounds = this.getCharBounds(this.selectionRange[0]);
+			var pos = bounds ? bounds.bottomLeft() : pt(0, 20);
+			statusMorph.setPosition(this.worldPoint(pos));
+		} catch(e) {
+			statusMorph.centerAt(this.worldPoint(this.innerBounds().center()));
+			console.log("problems: " + e)
+		};
+		(function() { statusMorph.remove() }).delay(delay || 4);
+	},
+},
+'scrolling', {
+	resetScrollPane: function() {
+		var sp = this.enclosingScrollPane();
+		if (!sp) return
+		// is the scrollbar to low to see the text contents?
+		if (sp.slideRoomExtent().y <= 0) sp.scrollToTop()
+		sp.setVerticalScrollPosition(sp.getVerticalScrollPosition());
+	},
+	
+	scrollSelectionIntoView: function() { 
+		var sp = this.enclosingScrollPane();
+		if (! sp) return;
+		var selRect = this.getCharBounds(this.selectionRange[this.hasNullSelection() ? 0 : 1]);
+		sp.scrollRectIntoView(selRect); 
+	},
+	
+	enclosingScrollPane: function() { 
+		// Need a cleaner way to do this
+		if (! (this.owner instanceof ClipMorph)) return null;
+		var sp = this.owner.owner;
+		if (! (sp instanceof ScrollPane)) return null;
+		return sp;
+	},
+
+},
+'text selection functions', {
+
+	startSelection: function(charIx) {	
+		// We hit a character, so start a selection...
+		// console.log('start selection @' + charIx);
+		this.priorSelection = this.selectionRange;
+		this.selectionPivot = charIx;
+		this.setNullSelectionAt(charIx);
+
+		// KP: was this.world().worldState.keyboardFocus = this; but that's an implicitly defined prop in Transmorph, bug?
+		// KP: the following instead??
+		// this.world().firstHand().setKeyboardFocus(this);
+	},
+
+	extendSelectionEvt: function(evt) { 
+		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+		// console.log('extend selection @' + charIx);
+		if (charIx < 0) return;
+		this.setSelectionRange(this.selectionPivot, charIx); 
+	},
+	
+	selectionString: function() { // Deprecated
+		return this.getSelectionString(); 
+	},
+	
+	getSelectionString: function() {
+		return this.textString.substring(this.selectionRange[0], this.selectionRange[1] + 1); 
+	},
+	
+	getSelectionText: function() {
+		return this.textStyle ? 
+		this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
+		: new lively.Text.Text(this.getSelectionString());
+	},
+
+	replaceSelectionWith: function(replacement) { 
+		if (!this.acceptInput) return;
+		var strStyle = this.textStyle;
+		var repStyle = replacement.style;
+		var oldLength = this.textString.length;
+
+		if (!this.typingHasBegun) { // save info for 'More' command
+			this.charsReplaced = this.getSelectionString();
+			this.lastFindLoc = this.selectionRange[0] + replacement.length;
+		}
+
+		var selStart = this.selectionRange[0];	// JS substring convention: [1,2] means str[1] alone
+		var selStop = this.selectionRange[1];
+		var repLength = replacement.asString().length;
+		var replacementHints = {selStart: selStart, selStop: selStop, repLength: repLength};
+		if (this.textString.length == 0) replacementHints = null;  // replacement logic fails in this case
+
+		// Splice the style array if any	
+		if (strStyle || repStyle) { 
+			if (!strStyle) strStyle = new RunArray([oldLength],	 [new TextEmphasis({})]);
+			if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
+			var beforeStyle = strStyle.slice(0, selStart);
+			var afterStyle = strStyle.slice(selStop+1, oldLength);
+			this.textStyle = beforeStyle.concat(repStyle).concat(afterStyle);
+		}		
+		if (this.textStyle && this.textStyle.values.all(function(ea) {return !ea})) this.textStyle = null;
+
+		// Splice the textString
+		var before = this.textString.substring(0,selStart); 
+		var after = this.textString.substring(selStop+1, oldLength);
+		this.setTextString(before.concat(replacement.asString(),after), replacementHints);
+
+		if(selStart == -1 && selStop == -1) {  // FixMe -- this shouldn't happen
+			this.setSelectionRange(0,0); // symptom fix of typing into a "very empty" string
+		};
+
+		// Compute new selection, and display
+		var selectionIndex = this.selectionRange[0] + replacement.length;
+		this.startSelection(selectionIndex); 
+
+		this.showChangeClue();		
+	},
+
+	setNullSelectionAt: function(charIx) { 
+		this.setSelectionRange(charIx, charIx); 
+	},
+	
+	hasNullSelection: function() { 
+		return this.selectionRange[1] < this.selectionRange[0]; 
+	},
+
+	setSelectionRange: function(piv, ext) { 
+		// console.log("setSelectionRange(" + piv + ", " + ext, ")")
+		this.selectionRange = (ext >= piv) ? [piv, ext - 1] : [ext, piv - 1];
+		this.setSelection(this.getSelectionString());
+		this.drawSelection(); 
+		this.typingHasBegun = false;  // New selection starts new typing
+	},
+
+	extendSelection: function(charIx) {
+		if (charIx < 0) return;
+		this.setSelectionRange(this.selectionPivot, charIx);
+	},
+
+	getCursorPos: function() {
+		if (this.hasNullSelection())
+			return this.selectionRange[0];
+		if (this.selectionPivot === this.selectionRange[1]+1)
+			return this.selectionRange[0]; // selection expands left
+		if (this.selectionPivot === this.selectionRange[0])
+			return this.selectionRange[1]+1; // selection expands right
+		if (this.selectionPivot < this.selectionRange[1]+1 && this.selectionPivot > this.selectionRange[0])
+			return this.selectionRange[0]; // selection pivot in middle of sel
+		// console.log('Can\'t find current position in text');
+		return this.selectionRange[0];
+	},
+
+},
+'rich text' , {
+
+	// FIXME integrate into model of TextMorph
+	setRichText: function(text) {
+		if (!(text instanceof lively.Text.Text)) throw dbgOn(new Error('Not text'));
+		this.textStyle = text.style;
+		this.setTextString(text.string);
+	},
+	
+	getRichText: function() {
+		return new lively.Text.Text(this.textString, this.textStyle); 
+	},
+},
+'mouse events', {
+
+	handlesMouseDown: function(evt) {
+		// Do selecting if click is in selectable area
+		if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) return false;
+		var selectableArea = this.openForDragAndDrop ? this.innerBounds() : this.shape.bounds();
+		return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
+	},
+
+	onMouseDown: function(evt) {
+		var link = this.linkUnderMouse(evt);
+		if (link && !evt.isCtrlDown()) { // there has to be a way to edit links!
+			console.log("follow link " + link)
+			this.doLinkThing(evt, link);
+			return true;
+		}
+		this.isSelecting = true;
+		if (evt.isShiftDown()) {
+			if (this.hasNullSelection())
+				this.selectionPivot = this.selectionRange[0];
+			this.extendSelectionEvt(evt);
+		} else {
+			var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+			this.startSelection(charIx);
+		}
+		this.requestKeyboardFocus(evt.hand);
+		// ClipboardHack.selectPasteBuffer();
+		return true; 
+	},
+	
+	onMouseMove: function($super, evt) { 
+		// console.log("mouse move " + evt.mousePoint)
+		if (this.isSelecting) return this.extendSelectionEvt(evt);
+		var link = this.linkUnderMouse(evt);
+		// TODO refactor ito into HandleMorph
+		// but this is a good place to evalutate what a mouse indicators should look like..
+		if (link && this.containsPoint(evt.mousePoint)) { // there is onMouseMove after the onMouseOut
+			if (evt.isCtrlDown()) {
+				if (evt.hand.indicator != "edit") {
+					evt.hand.indicator = "edit";
+					evt.hand.lookNormal();
+					evt.hand.removeIndicatorMorph();
+					var morph = evt.hand.ensureIndicatorMorph();
+					morph.setTextString("edit");
+					morph.setTextColor(Color.red);
+				}
+			} else {
+				if (evt.hand.indicator != link) {
+					evt.hand.indicator = link;
+					evt.hand.lookLinky();
+					evt.hand.removeIndicatorMorph();
+					var morph = evt.hand.ensureIndicatorMorph();
+					morph.setTextString(link);
+					morph.setExtent(pt(300,20));
+					morph.setTextColor(Color.blue);
+				}
+			}
+		} else {
+			evt.hand.lookNormal();
+			evt.hand.removeIndicatorMorph();
+			evt.hand.indicator = undefined;			
+		};
+		return $super(evt);		   
+	},
+
+	onMouseOut: function($super, evt) {
+		$super(evt);
+		// console.log("mouse out " + evt.mousePoint)
+		evt.hand.lookNormal();
+		evt.hand.removeIndicatorMorph();
+		evt.hand.indicator = undefined;
+	},
+
+	onMouseWheel: function($super, evt) {
+		
+		if (!this.owner || !this.owner.owner || ! (this.owner.owner instanceof ScrollPane) )
+			return $super(evt);
+
+		var scrollPane = this.owner.owner;
+		var slideRoom = scrollPane.slideRoomExtent().y;
+		var scrollPos = scrollPane.getVerticalScrollPosition();
+
+		var offset = -1 * evt.wheelDelta() / 10;
+		var newScrollPos = (slideRoom * scrollPos + offset) / slideRoom;
+
+		if (newScrollPos < 0 )
+			 newScrollPos = 0;
+
+		if (newScrollPos > 1 )
+			 newScrollPos = 1;
+
+		scrollPane.setVerticalScrollPosition(newScrollPos)
+
+		evt.stop();
+		return true;
+	},
+
+	linkUnderMouse: function(evt) {	 
+		// Return null or a link encoded in the text
+		if (!this.textStyle) return null;
+		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
+		return this.textStyle.valueAt(charIx).link;		  
+	},
+	
+	doLinkThing: function(evt, link) { 
+		// Later this should set a flag like isSelecting, so that we can highlight the 
+		// link during mouseDown and then act on mouseUp.
+		// For now, we just act on mouseDown
+		evt.hand.lookNormal();
+		evt.hand.setMouseFocus(null);
+		evt.stop();	 // else weird things happen when return from this link by browser back button
+		if (link.startsWith('mailto')) { // FIXME
+			Global.document.location.href = link;
+			return
+		}
+		var url = URL.ensureAbsoluteURL(link);
+		// add require to LKWiki.js here
+		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
+		var isExternalLink = url.hostname != document.location.hostname;
+		var openInNewWindow = evt.isMetaDown();
+
+		var followLink = function (answer) {
+			Config.askBeforeQuit = false;
+			if (!isExternalLink) {
+				var queries = Object.extend(url.getQuery(), {date: new Date().getTime()});
+				url = url.withQuery(queries);
+			}
+			if (openInNewWindow)
+				Global.window.open(url.toString());
+			else
+				Global.window.location.assign(url.toString());
+		};
+		
+		if (!Config.confirmNavigation) 
+			return followLink();
+		
+		if (wikiNav && wikiNav.isActive() && !isExternalLink)
+			wikiNav.askToSaveAndNavigateToUrl(this.world(), openInNewWindow);
+		else
+			this.world().confirm("Please confirm link to " + url.toString(), followLink);
+	},	
+
+	onMouseUp: function(evt) {
+		this.isSelecting = false;
+
+		// If not a repeated null selection then done after saving previous selection
+		if ( (this.selectionRange[1] != this.selectionRange[0] - 1) ||
+		(this.priorSelection[1] != this.priorSelection[0] - 1) ||
+		(this.selectionRange[0] != this.priorSelection[0]) ) {
+			this.previousSelection = this.priorSelection;
+			ClipboardHack.invokeKeyboard();
+			return;
+		}
+
+		// It is a null selection, repeated in the same place -- select word or range
+		if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
+			this.setSelectionRange(0, this.textString.length); 
+		} else {
+			this.selectionRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
+		}
+
+		this.setSelection(this.getSelectionString());
+		this.drawSelection(); 
+			ClipboardHack.invokeKeyboard(); // FIXME iPad
+	},
+	
+},
+'keyboard events', {
+
+	// TextMorph keyboard event functions
+	takesKeyboardFocus: Functions.True,			// unlike, eg, cheapMenus
+	
+	setHasKeyboardFocus: function(newSetting) { 
+		this.hasKeyboardFocus = newSetting;
+		return newSetting;
+	},
+	
+	onFocus: function($super, hand) { 
+		$super(hand);
+		this.drawSelection();
+	},
+
+	onBlur: function($super, hand) {
+		$super(hand);
+		if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
+	},
+
+	onKeyDown: function(evt) {
+		if (!this.acceptInput) return;
+
+		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
+		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
+		// FIXME, other place Widgets, SelectionMorph>>reshape
+		// ClipboardHack.selectPasteBuffer();
+		
+		var selecting = evt.isShiftDown();
+		var selectionStopped = !this.hasNullSelection() && !selecting;
+		var pos = this.getCursorPos(); // is selectionRange[0] or selectionRange[1], depends on selectionPivot
+		var wordRange = evt.isMetaDown() ? this.locale.selectWord(this.textString, pos) : null;
+
+		var textMorph = this;
+		var moveCursor = function(newPos) {
+			if (selecting) textMorph.extendSelection(newPos);
+			else textMorph.startSelection(newPos);
+			evt.stop();
+			return true;
+		};
+		
+		switch (evt.getKeyCode()) {
+			case Event.KEY_HOME: {
+				// go to the beginning of the line
+				var line = this.lines[this.lineNumberForIndex(pos)] || this.lines.last(); //FIXME
+				return moveCursor(line.startIndex);
+			}
+			case Event.KEY_END: {
+				// go to the end of the line
+				var line = this.lines[this.lineNumberForIndex(pos)] || this.lines.last(); //FIXME
+				var idx = line === this.lines.last() ? line.getStopIndex() + 1 : line.getStopIndex(); // FIXME!!!
+				return moveCursor(idx);
+			}
+			case Event.KEY_PAGEUP: {
+				// go to start
+				return moveCursor(0);
+			}
+			case Event.KEY_PAGEDOWN: {
+				// go to start
+				return moveCursor(this.textString.length);
+			}
+			case Event.KEY_LEFT: {
+				if (selectionStopped) // if a selection exists but but selecting off -> jump to the beginning of the selection
+					return moveCursor(this.selectionRange[0]);
+				var newPos = evt.isMetaDown() && wordRange[0] != pos ? wordRange[0] : pos-1;
+				newPos = Math.max(newPos, 0);
+				return moveCursor(newPos);
+			} 
+			case Event.KEY_RIGHT: {
+				if (selectionStopped) // if a selection exists but selecting off -> jump to the end of the selection
+					return moveCursor(this.selectionRange[1]+1);
+				newPos = evt.isMetaDown() && wordRange[1]+1 != pos ? wordRange[1]+1 : pos + 1;
+				newPos = Math.min(this.textString.length, newPos);
+				return moveCursor(newPos);
+			}
+			case Event.KEY_UP: {
+				var lineNo = this.lineNumberForIndex(Math.min(pos, this.textString.length-1));
+				if (lineNo <= 0) { // cannot move up
+					evt.stop();
+					return true;
+				}
+				var line = this.lines[lineNo];
+				var lineIndex = pos - line.startIndex;
+				var newLine = this.lines[lineNo - 1];
+				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
+				return moveCursor(newPos);
+			}
+			case Event.KEY_DOWN: {
+				var lineNo = this.lineNumberForIndex(pos);
+				if (lineNo >= this.lines.length - 1) { // cannot move down
+					evt.stop();
+					return true;
+				}
+				var line = this.lines[lineNo];
+				if (!line) {
+						console.log('TextMorph finds no line ???');
+						evt.stop();
+						return true
+				}
+				var lineIndex = pos	 - line.startIndex;
+				var newLine = this.lines[lineNo + 1];
+				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
+				return moveCursor(newPos);
+			}
+			case Event.KEY_TAB: {
+				this.replaceSelectionfromKeyboard("\t");
+				evt.stop();
+				return true;
+			}
+			case Event.KEY_BACKSPACE: {
+				// Backspace deletes current selection or prev character
+				if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
+				this.replaceSelectionfromKeyboard("");
+				if (this.charsTyped.length > 0)
+					this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
+				evt.stop(); // do not use for browser navigation
+				return true;
+			}
+			case Event.KEY_DELETE: {	// Delete deletes current selection or current character
+				if (this.hasNullSelection())
+					this.selectionRange[1] = Math.min(this.textString.length, this.selectionRange[1]+1);
+				this.replaceSelectionfromKeyboard("");
+				if (this.charsTyped.length > 0)
+					this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
+				evt.stop(); // do not use for browser navigation
+				return true;
+			}			
+			case Event.KEY_RETURN: {
+				this.replaceSelectionfromKeyboard("\n");
+				evt.stop();
+				return true;
+			}
+			case Event.KEY_ESC: {
+				this.relinquishKeyboardFocus(this.world().firstHand());
+				return true;
+			}
+		}
+
+		
+		if (ClipboardHack.tryClipboardAction(evt, this)) {
+			return true;
+		}
+
+		if (evt.isCommandKey() ) {
+			if (this.processCommandKeys(evt)) {
+				evt.stop();
+				return true;
+			}
+		}
+
+		return false		
+	},
+	 
+	onKeyPress: function(evt) {
+		if (!this.acceptInput)
+			return true;
+
+		// Opera fix: evt.stop in onKeyPress does not seem to work
+		var c = evt.getKeyCode()
+		if (c === Event.KEY_BACKSPACE || c === Event.KEY_RETURN || c === Event.KEY_TAB) {
+			evt.stop();
+			return true;
+		}
+			
+		
+		if (!evt.isMetaDown()) {
+			this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
+			evt.stop(); // done
+			return true;
+		}
+		
+		return false;
+	},
+	
+	replaceSelectionfromKeyboard: function(replacement) {
+		if (!this.acceptInput) return;		  
+
+		if (this.typingHasBegun)  this.charsTyped += replacement;
+			else  this.charsTyped = replacement;
+
+		this.replaceSelectionWith(replacement);
+		// Note:  typingHasBegun will get reset here by replaceSelection
+
+		this.typingHasBegun = true;	 // For undo and select-all commands		
+	},
+	
+	modifySelectedLines: function(modifyFunc) {
+		// this function calls modifyFunc on each line that is selected
+		// modifyFunc can somehow change the line
+		// the selection grows/shrinks with the modifications
+		var lines = this.getSelectionString().split('\n')
+		// remember old sel because replace sets null selection
+		var start = this.selectionRange[0], end = this.selectionRange[1]+1, addToSel = 0;
+		for (var i = 0; i < lines.length; i++) {
+			var result = modifyFunc(lines[i], i);
+			var lengthDiff = result.length - lines[i].length;
+			addToSel += lengthDiff;
+			lines[i] = result;
+		}
+		var replacement = lines.join('\n');
+		this.replaceSelectionWith(replacement);
+		this.setSelectionRange(start, end + addToSel);
+	},
+	
+	doCut: function() {
+		TextMorph.clipboardString = this.getSelectionString(); 
+		this.replaceSelectionWith("");
+	},
+
+	doCopy: function() {
+		TextMorph.clipboardString = this.getSelectionString(); 
+	},
+
+	doPaste: function() {
+		if (TextMorph.clipboardString) {
+			var cleanString = TextMorph.clipboardString.replace(/\r\n/g, "\n");
+			this.replaceSelectionfromKeyboard(cleanString);
+		}
+	},
+	
+	doSelectAll: function(fromKeyboard) {
+		if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
+			this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
+		} else { // Select All
+			this.setSelectionRange(0, this.textString.length); 
+		}
+	},
+
+	doMore: function() {  // Return of true or false used by doMuchMore
+		if (! this.charsReplaced || this.charsReplaced.length == 0) return false;
+		this.searchForFind(this.charsReplaced, this.selectionRange[0]);
+		if (this.getSelectionString() != this.charsReplaced) return false;
+		var holdChars = this.charsReplaced;	 // Save charsReplaced
+		this.replaceSelectionWith(this.charsTyped); 
+		this.charsReplaced = holdChars ;  // Restore charsReplaced after above
+		return true;
+	},
+
+	doMuchMore: function() {
+		// Stupid slow scheme does N copies - later do it in one streaming pass
+		while (this.doMore()) { }  // Keep repeating the change while possible
+	},
 
 
+	doExchange: function() {
+		var sel1 = this.selectionRange;
+		var sel2 = this.previousSelection;
 
-	// TextMorph composition functions
+		var d = 1;	// direction current selection will move
+		if (sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
+		if (sel1[1] >= sel2[0]) return; // ranges must not overlap
+
+		var fullText = (this.textStyle) ? this.getRichText() : this.textString;
+		var txt1 = fullText.substring(sel1[0], sel1[1]+1);
+		var txt2 = fullText.substring(sel2[0], sel2[1]+1);
+		var between = fullText.substring(sel1[1]+1, sel2[0]);
+
+		var d1 = (txt2.size() + between.size());  // amount to move sel1
+		var d2 = (txt1.size() + between.size());  // amount to move sel2
+		var newSel = [sel1[0]+d1, sel1[1]+d1];
+		var newPrev = [sel2[0]-d2, sel2[1]-d2];
+		if (d < 0) { var t = newSel;  newSel = newPrev;	 newPrev = t; }
+		var replacement = txt2.concat(between.concat(txt1));
+		this.setSelectionRange(sel1[0], sel2[1]+1);	 // select range including both selections
+		this.replaceSelectionWith(replacement);	 // replace by swapped text
+		this.setSelectionRange(newSel[0], newSel[1]+1);
+		this.previousSelection = newPrev;
+		this.undoSelectionRange = d>0 ? sel1 : sel2;
+	},
+
+	doFind: function() {
+		this.world() && this.world().prompt("Enter the text you wish to find...", 
+			function(response) {
+				return this.searchForFind(response, this.selectionRange[1]);
+			}.bind(this),
+			this.lastSearchString);
+	},
+
+	doFindNext: function() {
+		if (this.lastSearchString)
+		this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
+	},
+	
+	doSearch: function() {
+		var whatToSearch = this.getSelectionString();
+		if (lively.ide.SourceControl) {
+			lively.ide.SourceControl.browseReferencesTo(whatToSearch);
+			return;
+		};
+		var msg = 'No SourceControl available.\nStart SourceControl?';
+		WorldMorph.current().confirm(msg, function(answer) {
+			if (!answer) return;
+			require('lively.ide').toRun(function(unused, ide) {
+				ide.startSourceControl().browseReferencesTo(whatToSearch);
+			});
+		});
+	},
+
+	doBrowse: function () { // Browse the class whose name is selected
+		var browser = new SimpleBrowser();  // should check for valid class name
+		browser.openIn(this.world(), this.world().firstHand().getPosition());
+		browser.getModel().setClassName(this.getSelectionString());
+	},
+	
+	doInspect: function() {
+		console.log("do inspect")
+		var s = this.pvtStringAndOffsetToEval();
+		try {
+			var inspectee = this.tryBoundEval(s.str, s.offset);
+		} catch (e) {
+			console.log("eval error in doInspect " + e)
+		};
+		if (inspectee) {
+			try {
+				lively.Tools.inspect(inspectee);
+			} catch(e) {
+				this.setStatusMessage("could not open inspector on " + inspectee);
+				console.log("Error during opending an inspector:"+ e);
+			}
+		}
+	},
+	
+	pvtStringAndOffsetToEval: function() {
+		var strToEval = this.getSelectionString(); 
+		var offset = this.selectionRange[0];
+		if (strToEval.length == 0) {
+			strToEval = this.pvtCurrentLineString();
+			offset = this.pvtCurrentLine().startIndex;
+		}
+		return {str: strToEval, offset: offset}
+	},
+	
+	doDoit: function() {
+		var s = this.pvtStringAndOffsetToEval();
+		this.tryBoundEval(s.str, s.offset);
+	},
+
+	// eval selection or current line if selection is emtpy
+	doPrintit: function() {
+		var s = this.pvtStringAndOffsetToEval();
+		this.tryBoundEval(s.str, s.offset, true);
+		// this.replaceSelectionWith(" " + result);
+		// this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
+	},
+
+	doSave: function() {
+		this.saveContents(this.textString); 
+		this.hideChangeClue();
+	},
+
+	tryBoundEval: function (str, offset, printIt) {
+		var result;
+		try {
+			if (EvalSourceRegistry) {
+				var evalCodePrefix = "try{throw new Error()}catch(e){EvalSourceRegistry.LastEvalSourceID=e.sourceId};"
+				result = this.boundEval(evalCodePrefix + str);		
+
+				EvalSourceRegistry.current().register(EvalSourceRegistry.LastEvalSourceID, {
+					sourceString: str, morph: this, offset: offset, evalCodePrefixLength: evalCodePrefix.length})
+			} else {
+				result = this.boundEval(str);		
+			}
+			
+			if (printIt) {
+				this.setNullSelectionAt(this.selectionRange[1] + 1);
+				var prevSelection = this.selectionRange[0];
+				var replacement = " " + result
+				this.replaceSelectionWith(replacement);
+				this.setSelectionRange(prevSelection, prevSelection + replacement.length);
+			}
+		} catch (e) {
+			this.showError(e, offset)
+		}	
+		return result;
+	},
+
+	showError: function(e, offset) {
+		offset = offset || 0;
+		var msg = "" + e + "\n" + 
+			"Line: " + e.line + "\n" +
+			(e.sourceURL ? ("URL: " + (new URL(e.sourceURL).filename()) + "\n") : "");
+		if (e.stack) {
+			// make the stack fit into status window
+			var prefix = (new URL(Config.codeBase)).withRelativePartsResolved().toString()
+			msg += e.stack.replace(new RegExp(prefix, "g"),"");
+		}
+
+		var world = WorldMorph.current();
+		if (!world) {
+			console.log("Error in " +this.id() + " bound eval: \n" + msg)
+			return
+		};
+
+		world.setStatusMessage(msg, Color.red, 15,
+			function() { require('lively.Helper').toRun(function() {
+				world.showErrorDialog(e)
+			 }) },
+			{fontSize: 12, fillOpacity: 1});
+
+		if (e.expressionEndOffset) {
+			// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
+			this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
+		} else if (e.line) {
+			var lineOffset = this.lineNumberForIndex(offset);
+			// console.log("line: " + e.line + " offset: " + lineOffset)
+			var line = this.lines[e.line + lineOffset - 1]
+			if (line && line.startIndex) {
+				// console.log(" set to  " + line.startIndex)
+				this.setSelectionRange(line.startIndex, line.getStopIndex());
+			}
+		}
+		this.setStatusMessage("" + e, Color.red); 
+
+	},
+
+	doHelp: function() {
+		WorldMorph.current().notify("Help is on the way...\n" +
+		"...but not today.");
+	},
+
+	doUndo: function() {
+		if (this.undoTextString) {
+			var t = this.selectionRange;
+			this.selectionRange = this.undoSelectionRange;
+			this.undoSelectionRange = t;
+			t = this.textString;
+			this.setTextString(this.undoTextString);
+			this.undoTextString = t;
+		}
+		if (this.undoTextStyle) {
+			t = this.textStyle;
+			this.textStyle = this.undoTextStyle;
+			this.undoTextStyle = t;
+		}
+	},
+
+	processCommandKeys: function(evt) {	 //: Boolean (was the command processed?)
+		var key = evt.getKeyChar();
+		// console.log('command = ' + key + "evt.isShiftDown() = " + evt.isShiftDown());
+
+		// FIXME -- these need to be included in editMenuItems
+		if (evt.isShiftDown()) {  // shifted commands here...
+			switch (key) {
+				case "I": { this.doInspect(true); return true; } // Inspect value of selection
+				case "B": { this.doBrowse(true); return true; } // Browse selected class
+				case "F": { this.doSearch(true); return true; } // Shift-Find alternative for w (search)
+				case "M": { this.doMuchMore(true); return true; } // Repeated replacement
+		};	};
+
+		if (key) key = key.toLowerCase();
+		switch (key) {
+			case "a": { this.doSelectAll(true); return true; } // SelectAll
+			case "x": { this.doCut(); return true; } // Cut
+			case "c": { this.doCopy(); return true; } // Copy
+			case "v": { this.doPaste(); return true; } // Paste
+			case "m": { if (!evt.isShiftDown()) { this.doMore(); return true; } // More (do another replacement like the last)
+										else {this.doMuchMore(); return true; }}  // MuchMore (repeat same change to end of text)
+			case "e": { this.doExchange(); return true; } // Exchange
+			case "f": { this.doFind(); return true; } // Find
+			case "g": { this.doFindNext(); return true; } // Find aGain
+			case "w": { this.doSearch(); return true; } // Where (search in system source code)
+			case "d": { this.doDoit(); return true; } // Doit
+			case "p": { this.doPrintit(); return true; } // Printit
+			case "s": { this.doSave(); return true; } // Save
+
+			// Typeface
+			case "b": { this.emphasizeBoldItalic({style: 'bold'}); return true; }
+			case "i": { this.emphasizeBoldItalic({style: 'italic'}); return true; }
+
+			// Font Size
+			// rk: prevents curly/square brackets on german keyboards
+			// case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
+			// case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
+			// case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
+			// case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
+			// case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
+
+			// Text Alignment
+			case "l": { this.emphasizeSelection({align: 'left'}); return true; }
+			case "r": { this.emphasizeSelection({align: 'right'}); return true; }
+			case "h": { this.emphasizeSelection({align: 'center'}); return true; }
+			case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
+
+			case "u": { this.linkifySelection(evt); return true; }	// add link attribute
+			case "o": { this.colorSelection(evt); return true; }  // a bit of local color
+
+			case "z": { this.doUndo(); return true; }  // Undo
+		}
+
+		switch(evt.getKeyCode()) {
+			// Font Size
+			case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 0.8).roundTo(1)))}); return true; }
+			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 1.2).roundTo(1)))}); return true; }
+			// indent/outdent selection
+			case 221/*cmd+]*/: { this.indentSelection(); evt.stop(); return true }
+			case 219/*cmd+]*/: { this.outdentSelection(); evt.stop(); return true }
+			// comment/uncoment selection
+			case 191 /*cmd+/*/: { this.addOrRemoveComment(); return true }
+		}
+
+		return false;
+	},
+
+	detectTextStyleInRange: function(range, styleName) {
+		return this.textStyle.slice(range[0], range[1]).values.detect(function(ea){return ea[styleName]});
+	},
+
+	linkifySelection: function(evt) {
+		var oldLink = ""
+		if (this.textStyle) {
+			var linkStyle = this.detectTextStyleInRange(this.selectionRange, 'link');
+			if (linkStyle) oldLink = linkStyle.link;
+		};
+		this.world().prompt("Enter the link...",
+			function(response) {
+				/*if (!response.startsWith('http://'))
+					response = URL.source.notSvnVersioned().withFilename(response).toString();*/
+				this.emphasizeSelection({color: "blue", link: response});
+			}.bind(this), oldLink);
+	},
+
+	colorSelection: function(evt) {
+		var colors = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'gray', 'white'];
+		var items = colors.map( function(c) {return [c, this, "setSelectionColor", c] }.bind(this));
+		new MenuMorph(items, this).openIn(this.world(), evt.hand.position(), false, "Choose a color for this selection");
+	},
+
+	setSelectionColor: function(c, evt) {
+		// Color parameter can be a string like 'red' or an actual color
+		var color = c;
+		if (c == 'brown') color = Color.orange.darker();
+		if (c == 'violet') color = Color.magenta;
+		if (c == 'gray') color = Color.darkGray;
+		this.emphasizeSelection( {color: color} );
+		this.requestKeyboardFocus(evt.hand);
+	},
+	
+	indentSelection: function() {
+		var tab = '\t';
+		this.modifySelectedLines(function(line) { return line.length == 0 ? line : tab + line });
+	},
+	
+	outdentSelection: function() {
+		var tab = '\t', space = ' ';
+		this.modifySelectedLines(function(line) {
+			return (line.startsWith(space) || line.startsWith(tab)) ? line.substring(1,line.length) : line
+		});
+	},
+	
+	addOrRemoveComment: function() {
+		var commentRegex = /^(\s*)(\/\/\s*)(.*)/;
+		var spacesRegex = /^(\s*)(.*)/;
+		var noSelection = this.hasNullSelection();
+
+		if (noSelection) { // select the current line
+			var line = this.pvtCurrentLine();
+			this.startSelection(line.startIndex);
+			this.extendSelection(line.getStopIndex());
+		}
+
+		this.modifySelectedLines(function(line) {
+			var commented = commentRegex.test(line);
+			if (commented)
+				return line.replace(commentRegex, '$1$3')
+			return line.replace(spacesRegex, '$1// $2')
+		});
+	},
+	
+	pvtCurrentLine: function() {
+		var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
+		if (lineNumber == -1) lineNumber = 0; 
+		return this.lines[lineNumber];
+	},
+
+	pvtCurrentLineString: function() {
+		var line = this.pvtCurrentLine();
+		return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));		 
+	},
+
+	saveContents: function(contentString) {
+		this.savedTextString = contentString;
+		if (!this.modelPlug && !this.formalModel && !this.noEval) {
+			this.tryBoundEval(contentString);
+			this.world().changed(); 
+			return; // Hack for browser demo
+		} else if (!this.autoAccept) {
+			this.setText(contentString, true);
+	   }
+	},
+
+	acceptChanges: function() {	   
+		this.textBeforeChanges = this.textString; 
+	},
+	
+	boundEval: function(str) {	  
+		// Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
+		var ctx = this.getDoitContext() || this;
+		return (interactiveEval.bind(ctx))(str);
+	},
+	
+	addOrRemoveBrackets: function(bracketIndex) {
+		var left = this.locale.charSet.leftBrackets[bracketIndex];
+		var right = this.locale.charSet.rightBrackets[bracketIndex];
+		
+		if (bracketIndex == 0) { left = "/*"; right = "*/"; }
+	
+		var i1 = this.selectionRange[0];
+		var i2 = this.selectionRange[1];
+		
+		if (i1 - left.length >= 0 && this.textString.substring(i1-left.length,i1) == left &&
+			i2 + right.length < this.textString.length && this.textString.substring(i2+1,i2+right.length+1) == right) {
+			// selection was already in brackets -- remove them
+			var before = this.textString.substring(0,i1-left.length);
+			var replacement = this.textString.substring(i1,i2+1);
+			var after = this.textString.substring(i2+right.length+1,this.textString.length);
+			this.setTextString(before.concat(replacement,after));
+			this.setSelectionRange(before.length,before.length+replacement.length); 
+		} else { // enclose selection in brackets
+			var before = this.textString.substring(0,i1);
+			var replacement = this.textString.substring(i1,i2+1);
+			var after = this.textString.substring(i2+1,this.textString.length); 
+			this.setTextString(before.concat(left,replacement,right,after));
+			this.setSelectionRange(before.length+left.length,before.length+left.length+replacement.length); 
+		}
+	},
+
+},
+'searching', {
+
+	searchForFind: function(str, start) {
+		this.requestKeyboardFocus(this.world().firstHand());
+		var i1 = this.textString.indexOf(str, start);
+		if (i1 < 0) i1 = this.textString.indexOf(str, 0); // wrap
+		if (i1 >= 0) this.setSelectionRange(i1, i1+str.length);
+		else this.setNullSelectionAt(0);
+		this.lastSearchString = str;
+		this.lastFindLoc = i1;
+	},
+	
+},
+'change clue', {
+	addChangeClue: function(useChangeClue) {
+		if (!useChangeClue) return;
+		this.changeClue = Morph.makeRectangle(1,1,5,5);
+		this.changeClue.setBorderWidth(0);
+		this.changeClue.setFill(Color.red);
+		this.changeClue.ignoreEvents();
+		this.changeClue.ignoreWhenCopying = true;
+	},
+
+	showChangeClue: function() {
+		if (!this.changeClue) return;
+		this.addMorph(this.changeClue);
+	},
+
+	hideChangeClue: function() {
+		if (!this.changeClue) return;
+		this.changeClue.remove();
+	},
+	
+},
+'composition functions', {
+
 	textTopLeft: function() { 
 		if (!(this.padding instanceof Rectangle)) console.log('padding is ' + this.padding);
 		return this.shape.bounds().topLeft().addPt(this.padding.topLeft()); 
@@ -1551,11 +2638,9 @@ BoxMorph.subclass('TextMorph', {
 
 	},
 
-	showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
-	
-	getTextSelection: function() {
-		if (!this.textSelection) this.initializeTextSelection();
-		return this.textSelection
+	undrawSelection: function() {
+		if (!this.textSelection) return
+		this.textSelection.undraw(); 
 	},
 	
 	removeTextSelection: function() {
@@ -1569,10 +2654,6 @@ BoxMorph.subclass('TextMorph', {
 		return TextSelectionMorph.prototype.style
 	},
 
-	undrawSelection: function() {
-		if (!this.textSelection) return
-		this.textSelection.undraw(); 
-	},
 
 	drawSelection: function(noScroll) { // should really be called buildSelection now
 		if (!this.showsSelectionWithoutFocus() && this.takesKeyboardFocus() && !this.hasKeyboardFocus)
@@ -1669,921 +2750,9 @@ BoxMorph.subclass('TextMorph', {
 		}
 		return charIx;
 	},
-	
-	// TextMorph mouse event functions 
-	handlesMouseDown: function(evt) {
-		// Do selecting if click is in selectable area
-		if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) return false;
-		var selectableArea = this.openForDragAndDrop ? this.innerBounds() : this.shape.bounds();
-		return selectableArea.containsPoint(this.localize(evt.mousePoint)); 
-	},
-
-	onMouseDown: function(evt) {
-		var link = this.linkUnderMouse(evt);
-		if (link && !evt.isCtrlDown()) { // there has to be a way to edit links!
-			console.log("follow link " + link)
-			this.doLinkThing(evt, link);
-			return true;
-		}
-		this.isSelecting = true;
-		if (evt.isShiftDown()) {
-			if (this.hasNullSelection())
-				this.selectionPivot = this.selectionRange[0];
-			this.extendSelectionEvt(evt);
-		} else {
-			var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-			this.startSelection(charIx);
-		}
-		this.requestKeyboardFocus(evt.hand);
-		// ClipboardHack.selectPasteBuffer();
-		return true; 
-	},
-	
-	onMouseMove: function($super, evt) { 
-		// console.log("mouse move " + evt.mousePoint)
-		if (this.isSelecting) return this.extendSelectionEvt(evt);
-		var link = this.linkUnderMouse(evt);
-		// TODO refactor ito into HandleMorph
-		// but this is a good place to evalutate what a mouse indicators should look like..
-		if (link && this.containsPoint(evt.mousePoint)) { // there is onMouseMove after the onMouseOut
-			if (evt.isCtrlDown()) {
-				if (evt.hand.indicator != "edit") {
-					evt.hand.indicator = "edit";
-					evt.hand.lookNormal();
-					evt.hand.removeIndicatorMorph();
-					var morph = evt.hand.ensureIndicatorMorph();
-					morph.setTextString("edit");
-					morph.setTextColor(Color.red);
-				}
-			} else {
-				if (evt.hand.indicator != link) {
-					evt.hand.indicator = link;
-					evt.hand.lookLinky();
-					evt.hand.removeIndicatorMorph();
-					var morph = evt.hand.ensureIndicatorMorph();
-					morph.setTextString(link);
-					morph.setExtent(pt(300,20));
-					morph.setTextColor(Color.blue);
-				}
-			}
-		} else {
-			evt.hand.lookNormal();
-			evt.hand.removeIndicatorMorph();
-			evt.hand.indicator = undefined;			
-		};
-		return $super(evt);		   
-	},
-
-	onMouseOut: function($super, evt) {
-		$super(evt);
-		// console.log("mouse out " + evt.mousePoint)
-		evt.hand.lookNormal();
-		evt.hand.removeIndicatorMorph();
-		evt.hand.indicator = undefined;
-	},
-
-	onMouseWheel: function($super, evt) {
-		
-		if (!this.owner || !this.owner.owner || ! (this.owner.owner instanceof ScrollPane) )
-			return $super(evt);
-
-		var scrollPane = this.owner.owner;
-		var slideRoom = scrollPane.slideRoomExtent().y;
-		var scrollPos = scrollPane.getVerticalScrollPosition();
-
-		var offset = -1 * evt.wheelDelta() / 10;
-		var newScrollPos = (slideRoom * scrollPos + offset) / slideRoom;
-
-		if (newScrollPos < 0 )
-			 newScrollPos = 0;
-
-		if (newScrollPos > 1 )
-			 newScrollPos = 1;
-
-		scrollPane.setVerticalScrollPosition(newScrollPos)
-
-		evt.stop();
-		return true;
-	},
-
-	linkUnderMouse: function(evt) {	 
-		// Return null or a link encoded in the text
-		if (!this.textStyle) return null;
-		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-		return this.textStyle.valueAt(charIx).link;		  
-	},
-	
-	doLinkThing: function(evt, link) { 
-		// Later this should set a flag like isSelecting, so that we can highlight the 
-		// link during mouseDown and then act on mouseUp.
-		// For now, we just act on mouseDown
-		evt.hand.lookNormal();
-		evt.hand.setMouseFocus(null);
-		evt.stop();	 // else weird things happen when return from this link by browser back button
-		if (link.startsWith('mailto')) { // FIXME
-			Global.document.location.href = link;
-			return
-		}
-		var url = URL.ensureAbsoluteURL(link);
-		// add require to LKWiki.js here
-		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
-		var isExternalLink = url.hostname != document.location.hostname;
-		var openInNewWindow = evt.isMetaDown();
-
-		var followLink = function (answer) {
-			Config.askBeforeQuit = false;
-			if (!isExternalLink) {
-				var queries = Object.extend(url.getQuery(), {date: new Date().getTime()});
-				url = url.withQuery(queries);
-			}
-			if (openInNewWindow)
-				Global.window.open(url.toString());
-			else
-				Global.window.location.assign(url.toString());
-		};
-		
-		if (!Config.confirmNavigation) 
-			return followLink();
-		
-		if (wikiNav && wikiNav.isActive() && !isExternalLink)
-			wikiNav.askToSaveAndNavigateToUrl(this.world(), openInNewWindow);
-		else
-			this.world().confirm("Please confirm link to " + url.toString(), followLink);
-	},	
-
-	onMouseUp: function(evt) {
-		this.isSelecting = false;
-
-		// If not a repeated null selection then done after saving previous selection
-		if ( (this.selectionRange[1] != this.selectionRange[0] - 1) ||
-		(this.priorSelection[1] != this.priorSelection[0] - 1) ||
-		(this.selectionRange[0] != this.priorSelection[0]) ) {
-			this.previousSelection = this.priorSelection;
-			ClipboardHack.invokeKeyboard();
-			return;
-		}
-
-		// It is a null selection, repeated in the same place -- select word or range
-		if (this.selectionRange[0] == 0 || this.selectionRange[0] == this.textString.length) {
-			this.setSelectionRange(0, this.textString.length); 
-		} else {
-			this.selectionRange = this.locale.selectWord(this.textString, this.selectionRange[0]);
-		}
-
-		this.setSelection(this.getSelectionString());
-		this.drawSelection(); 
-			ClipboardHack.invokeKeyboard(); // FIXME iPad
-	},
-	
-	// TextMorph text selection functions
-
-	startSelection: function(charIx) {	
-		// We hit a character, so start a selection...
-		// console.log('start selection @' + charIx);
-		this.priorSelection = this.selectionRange;
-		this.selectionPivot = charIx;
-		this.setNullSelectionAt(charIx);
-
-		// KP: was this.world().worldState.keyboardFocus = this; but that's an implicitly defined prop in Transmorph, bug?
-		// KP: the following instead??
-		// this.world().firstHand().setKeyboardFocus(this);
-	},
-
-	extendSelectionEvt: function(evt) { 
-		var charIx = this.charOfPoint(this.localize(evt.mousePoint));
-		// console.log('extend selection @' + charIx);
-		if (charIx < 0) return;
-		this.setSelectionRange(this.selectionPivot, charIx); 
-	},
-	
-	selectionString: function() { // Deprecated
-		return this.getSelectionString(); 
-	},
-	
-	getSelectionString: function() {
-		return this.textString.substring(this.selectionRange[0], this.selectionRange[1] + 1); 
-	},
-	
-	getSelectionText: function() {
-		return this.textStyle ? 
-		this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
-		: new lively.Text.Text(this.getSelectionString());
-	},
-
-	// FIXME integrate into model of TextMorph
-	setRichText: function(text) {
-		if (!(text instanceof lively.Text.Text)) throw dbgOn(new Error('Not text'));
-		this.textStyle = text.style;
-		this.setTextString(text.string);
-	},
-	
-	getRichText: function() {
-		return new lively.Text.Text(this.textString, this.textStyle); 
-	},
-
-	replaceSelectionWith: function(replacement) { 
-		if (!this.acceptInput) return;
-		var strStyle = this.textStyle;
-		var repStyle = replacement.style;
-		var oldLength = this.textString.length;
-
-		if (!this.typingHasBegun) { // save info for 'More' command
-			this.charsReplaced = this.getSelectionString();
-			this.lastFindLoc = this.selectionRange[0] + replacement.length;
-		}
-
-		var selStart = this.selectionRange[0];	// JS substring convention: [1,2] means str[1] alone
-		var selStop = this.selectionRange[1];
-		var repLength = replacement.asString().length;
-		var replacementHints = {selStart: selStart, selStop: selStop, repLength: repLength};
-		if (this.textString.length == 0) replacementHints = null;  // replacement logic fails in this case
-
-		// Splice the style array if any	
-		if (strStyle || repStyle) { 
-			if (!strStyle) strStyle = new RunArray([oldLength],	 [new TextEmphasis({})]);
-			if (!repStyle) repStyle = new RunArray([replacement.length], [strStyle.valueAt(Math.max(0, this.selectionRange[0]-1))]);
-			var beforeStyle = strStyle.slice(0, selStart);
-			var afterStyle = strStyle.slice(selStop+1, oldLength);
-			this.textStyle = beforeStyle.concat(repStyle).concat(afterStyle);
-		}		
-		if (this.textStyle && this.textStyle.values.all(function(ea) {return !ea})) this.textStyle = null;
-
-		// Splice the textString
-		var before = this.textString.substring(0,selStart); 
-		var after = this.textString.substring(selStop+1, oldLength);
-		this.setTextString(before.concat(replacement.asString(),after), replacementHints);
-
-		if(selStart == -1 && selStop == -1) {  // FixMe -- this shouldn't happen
-			this.setSelectionRange(0,0); // symptom fix of typing into a "very empty" string
-		};
-
-		// Compute new selection, and display
-		var selectionIndex = this.selectionRange[0] + replacement.length;
-		this.startSelection(selectionIndex); 
-
-		this.showChangeClue();		
-	},
-
-	setNullSelectionAt: function(charIx) { 
-		this.setSelectionRange(charIx, charIx); 
-	},
-	
-	hasNullSelection: function() { 
-		return this.selectionRange[1] < this.selectionRange[0]; 
-	},
-
-	setSelectionRange: function(piv, ext) { 
-		// console.log("setSelectionRange(" + piv + ", " + ext, ")")
-		this.selectionRange = (ext >= piv) ? [piv, ext - 1] : [ext, piv - 1];
-		this.setSelection(this.getSelectionString());
-		this.drawSelection(); 
-	this.typingHasBegun = false;  // New selection starts new typing
-	},
-
-	// TextMorph keyboard event functions
-	takesKeyboardFocus: Functions.True,			// unlike, eg, cheapMenus
-	
-	setHasKeyboardFocus: function(newSetting) { 
-		this.hasKeyboardFocus = newSetting;
-		return newSetting;
-	},
-	
-	onFocus: function($super, hand) { 
-		$super(hand);
-		this.drawSelection();
-	},
-
-	onBlur: function($super, hand) {
-		$super(hand);
-		if (!this.showsSelectionWithoutFocus()) this.undrawSelection();
-	},
-
-	onKeyDown: function(evt) {
-		if (!this.acceptInput) return;
-
-		// rk: With Mac OS 10.6 it's not sufficient to set the selection of the textarea
-		// when doing tryClipboardAction. Hack of the hack for now: always set selection 
-		// FIXME, other place Widgets, SelectionMorph>>reshape
-		// ClipboardHack.selectPasteBuffer();
-		
-		var selecting = evt.isShiftDown();
-		var selectionStopped = !this.hasNullSelection() && !selecting;
-		var pos = this.getCursorPos(); // is selectionRange[0] or selectionRange[1], depends on selectionPivot
-		var wordRange = evt.isMetaDown() ? this.locale.selectWord(this.textString, pos) : null;
-
-		var textMorph = this;
-		var moveCursor = function(newPos) {
-			if (selecting) textMorph.extendSelection(newPos);
-			else textMorph.startSelection(newPos);
-			evt.stop();
-			return true;
-		};
-		
-		switch (evt.getKeyCode()) {
-			case Event.KEY_HOME: {
-				// go to the beginning of the line
-				var line = this.lines[this.lineNumberForIndex(pos)] || this.lines.last(); //FIXME
-				return moveCursor(line.startIndex);
-			}
-			case Event.KEY_END: {
-				// go to the end of the line
-				var line = this.lines[this.lineNumberForIndex(pos)] || this.lines.last(); //FIXME
-				var idx = line === this.lines.last() ? line.getStopIndex() + 1 : line.getStopIndex(); // FIXME!!!
-				return moveCursor(idx);
-			}
-			case Event.KEY_PAGEUP: {
-				// go to start
-				return moveCursor(0);
-			}
-			case Event.KEY_PAGEDOWN: {
-				// go to start
-				return moveCursor(this.textString.length);
-			}
-			case Event.KEY_LEFT: {
-				if (selectionStopped) // if a selection exists but but selecting off -> jump to the beginning of the selection
-					return moveCursor(this.selectionRange[0]);
-				var newPos = evt.isMetaDown() && wordRange[0] != pos ? wordRange[0] : pos-1;
-				newPos = Math.max(newPos, 0);
-				return moveCursor(newPos);
-			} 
-			case Event.KEY_RIGHT: {
-				if (selectionStopped) // if a selection exists but selecting off -> jump to the end of the selection
-					return moveCursor(this.selectionRange[1]+1);
-				newPos = evt.isMetaDown() && wordRange[1]+1 != pos ? wordRange[1]+1 : pos + 1;
-				newPos = Math.min(this.textString.length, newPos);
-				return moveCursor(newPos);
-			}
-			case Event.KEY_UP: {
-				var lineNo = this.lineNumberForIndex(Math.min(pos, this.textString.length-1));
-				if (lineNo <= 0) { // cannot move up
-					evt.stop();
-					return true;
-				}
-				var line = this.lines[lineNo];
-				var lineIndex = pos - line.startIndex;
-				var newLine = this.lines[lineNo - 1];
-				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
-				return moveCursor(newPos);
-			}
-			case Event.KEY_DOWN: {
-				var lineNo = this.lineNumberForIndex(pos);
-				if (lineNo >= this.lines.length - 1) { // cannot move down
-					evt.stop();
-					return true;
-				}
-				var line = this.lines[lineNo];
-				if (!line) {
-						console.log('TextMorph finds no line ???');
-						evt.stop();
-						return true
-				}
-				var lineIndex = pos	 - line.startIndex;
-				var newLine = this.lines[lineNo + 1];
-				var newPos = Math.min(newLine.startIndex + lineIndex, newLine.getStopIndex());
-				return moveCursor(newPos);
-			}
-			case Event.KEY_TAB: {
-				this.replaceSelectionfromKeyboard("\t");
-				evt.stop();
-				return true;
-			}
-			case Event.KEY_BACKSPACE: {
-				// Backspace deletes current selection or prev character
-				if (this.hasNullSelection()) this.selectionRange[0] = Math.max(-1, this.selectionRange[0]-1);
-				this.replaceSelectionfromKeyboard("");
-				if (this.charsTyped.length > 0)
-					this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
-				evt.stop(); // do not use for browser navigation
-				return true;
-			}
-			case Event.KEY_DELETE: {	// Delete deletes current selection or current character
-				if (this.hasNullSelection())
-					this.selectionRange[1] = Math.min(this.textString.length, this.selectionRange[1]+1);
-				this.replaceSelectionfromKeyboard("");
-				if (this.charsTyped.length > 0)
-					this.charsTyped = this.charsTyped.substring(0, this.charsTyped.length-1); 
-				evt.stop(); // do not use for browser navigation
-				return true;
-			}			
-			case Event.KEY_RETURN: {
-				this.replaceSelectionfromKeyboard("\n");
-				evt.stop();
-				return true;
-			}
-			case Event.KEY_ESC: {
-				this.relinquishKeyboardFocus(this.world().firstHand());
-				return true;
-			}
-		}
-
-		
-		if (ClipboardHack.tryClipboardAction(evt, this)) {
-			return true;
-		}
-
-		if (evt.isCommandKey() ) {
-			if (this.processCommandKeys(evt)) {
-				evt.stop();
-				return true;
-			}
-		}
-
-		return false		
-	},
-	 
-	onKeyPress: function(evt) {
-		if (!this.acceptInput)
-			return true;
-
-		// Opera fix: evt.stop in onKeyPress does not seem to work
-		var c = evt.getKeyCode()
-		if (c === Event.KEY_BACKSPACE || c === Event.KEY_RETURN || c === Event.KEY_TAB) {
-			evt.stop();
-			return true;
-		}
-			
-		
-		if (!evt.isMetaDown()) {
-			this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
-			evt.stop(); // done
-			return true;
-		}
-		
-		return false;
-	},
-	
-	replaceSelectionfromKeyboard: function(replacement) {
-		if (!this.acceptInput) return;		  
-
-		if (this.typingHasBegun)  this.charsTyped += replacement;
-			else  this.charsTyped = replacement;
-
-		this.replaceSelectionWith(replacement);
-		// Note:  typingHasBegun will get reset here by replaceSelection
-
-		this.typingHasBegun = true;	 // For undo and select-all commands		
-	},
-	
-	modifySelectedLines: function(modifyFunc) {
-		// this function calls modifyFunc on each line that is selected
-		// modifyFunc can somehow change the line
-		// the selection grows/shrinks with the modifications
-		var lines = this.getSelectionString().split('\n')
-		// remember old sel because replace sets null selection
-		var start = this.selectionRange[0], end = this.selectionRange[1]+1, addToSel = 0;
-		for (var i = 0; i < lines.length; i++) {
-			var result = modifyFunc(lines[i], i);
-			var lengthDiff = result.length - lines[i].length;
-			addToSel += lengthDiff;
-			lines[i] = result;
-		}
-		var replacement = lines.join('\n');
-		this.replaceSelectionWith(replacement);
-		this.setSelectionRange(start, end + addToSel);
-	},
-	
-	doCut: function() {
-		TextMorph.clipboardString = this.getSelectionString(); 
-		this.replaceSelectionWith("");
-	},
-
-	doCopy: function() {
-		TextMorph.clipboardString = this.getSelectionString(); 
-	},
-
-	doPaste: function() {
-		if (TextMorph.clipboardString) {
-			var cleanString = TextMorph.clipboardString.replace(/\r\n/g, "\n");
-			this.replaceSelectionfromKeyboard(cleanString);
-		}
-	},
-	
-	doSelectAll: function(fromKeyboard) {
-		if (fromKeyboard && this.typingHasBegun) { // Select chars just typed
-			this.setSelectionRange(this.selectionRange[0] - this.charsTyped.length, this.selectionRange[0]);
-		} else { // Select All
-			this.setSelectionRange(0, this.textString.length); 
-		}
-	},
-
-	doMore: function() {  // Return of true or false used by doMuchMore
-		if (! this.charsReplaced || this.charsReplaced.length == 0) return false;
-		this.searchForFind(this.charsReplaced, this.selectionRange[0]);
-		if (this.getSelectionString() != this.charsReplaced) return false;
-		var holdChars = this.charsReplaced;	 // Save charsReplaced
-		this.replaceSelectionWith(this.charsTyped); 
-		this.charsReplaced = holdChars ;  // Restore charsReplaced after above
-		return true;
-	},
-doMuchMore: function() {
-		// Stupid slow scheme does N copies - later do it in one streaming pass
-		while (this.doMore()) { }  // Keep repeating the change while possible
-	},
-
-
-	doExchange: function() {
-		var sel1 = this.selectionRange;
-		var sel2 = this.previousSelection;
-
-		var d = 1;	// direction current selection will move
-		if (sel1[0] > sel2[0]) {var t = sel1; sel1 = sel2; sel2 = t; d = -1} // swap so sel1 is first
-		if (sel1[1] >= sel2[0]) return; // ranges must not overlap
-
-		var fullText = (this.textStyle) ? this.getRichText() : this.textString;
-		var txt1 = fullText.substring(sel1[0], sel1[1]+1);
-		var txt2 = fullText.substring(sel2[0], sel2[1]+1);
-		var between = fullText.substring(sel1[1]+1, sel2[0]);
-
-		var d1 = (txt2.size() + between.size());  // amount to move sel1
-		var d2 = (txt1.size() + between.size());  // amount to move sel2
-		var newSel = [sel1[0]+d1, sel1[1]+d1];
-		var newPrev = [sel2[0]-d2, sel2[1]-d2];
-		if (d < 0) { var t = newSel;  newSel = newPrev;	 newPrev = t; }
-		var replacement = txt2.concat(between.concat(txt1));
-		this.setSelectionRange(sel1[0], sel2[1]+1);	 // select range including both selections
-		this.replaceSelectionWith(replacement);	 // replace by swapped text
-		this.setSelectionRange(newSel[0], newSel[1]+1);
-		this.previousSelection = newPrev;
-		this.undoSelectionRange = d>0 ? sel1 : sel2;
-	},
-
-	doFind: function() {
-		this.world() && this.world().prompt("Enter the text you wish to find...", 
-			function(response) {
-				return this.searchForFind(response, this.selectionRange[1]);
-			}.bind(this),
-			this.lastSearchString);
-	},
-
-	doFindNext: function() {
-		if (this.lastSearchString)
-		this.searchForFind(this.lastSearchString, this.lastFindLoc + this.lastSearchString.length);
-	},
-	
-	doSearch: function() {
-		var whatToSearch = this.getSelectionString();
-		if (lively.ide.SourceControl) {
-			lively.ide.SourceControl.browseReferencesTo(whatToSearch);
-			return;
-		};
-		var msg = 'No SourceControl available.\nStart SourceControl?';
-		WorldMorph.current().confirm(msg, function(answer) {
-			if (!answer) return;
-			require('lively.ide').toRun(function(unused, ide) {
-				ide.startSourceControl().browseReferencesTo(whatToSearch);
-			});
-		});
-	},
-doBrowse: function () { // Browse the class whose name is selected
-	var browser = new SimpleBrowser();  // should check for valid class name
-	browser.openIn(this.world(), this.world().firstHand().getPosition());
-	browser.getModel().setClassName(this.getSelectionString());
-},
-
-	
-	doInspect: function() {
-		console.log("do inspect")
-		var s = this.pvtStringAndOffsetToEval();
-		try {
-			var inspectee = this.tryBoundEval(s.str, s.offset);
-		} catch (e) {
-			console.log("eval error in doInspect " + e)
-		};
-		if (inspectee) {
-			try {
-				lively.Tools.inspect(inspectee);
-			} catch(e) {
-				this.setStatusMessage("could not open inspector on " + inspectee);
-				console.log("Error during opending an inspector:"+ e);
-			}
-		}
-	},
-	
-	pvtStringAndOffsetToEval: function() {
-		var strToEval = this.getSelectionString(); 
-		var offset = this.selectionRange[0];
-		if (strToEval.length == 0) {
-			strToEval = this.pvtCurrentLineString();
-			offset = this.pvtCurrentLine().startIndex;
-		}
-		return {str: strToEval, offset: offset}
-	},
-	
-	doDoit: function() {
-		var s = this.pvtStringAndOffsetToEval();
-		this.tryBoundEval(s.str, s.offset);
-	},
-
-	// eval selection or current line if selection is emtpy
-	doPrintit: function() {
-		var s = this.pvtStringAndOffsetToEval();
-		this.tryBoundEval(s.str, s.offset, true);
-		// this.replaceSelectionWith(" " + result);
-		// this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
-	},
-
-	doSave: function() {
-		this.saveContents(this.textString); 
-		this.hideChangeClue();
-	},
-
-	tryBoundEval: function (str, offset, printIt) {
-		var result;
-		try {
-			if (EvalSourceRegistry) {
-				var evalCodePrefix = "try{throw new Error()}catch(e){EvalSourceRegistry.LastEvalSourceID=e.sourceId};"
-				result = this.boundEval(evalCodePrefix + str);		
-
-				EvalSourceRegistry.current().register(EvalSourceRegistry.LastEvalSourceID, {
-					sourceString: str, morph: this, offset: offset, evalCodePrefixLength: evalCodePrefix.length})
-			} else {
-				result = this.boundEval(str);		
-			}
-			
-			if (printIt) {
-				this.setNullSelectionAt(this.selectionRange[1] + 1);
-				var prevSelection = this.selectionRange[0];
-				var replacement = " " + result
-				this.replaceSelectionWith(replacement);
-				this.setSelectionRange(prevSelection, prevSelection + replacement.length);
-			}
-		} catch (e) {
-			this.showError(e, offset)
-		}	
-		return result;
-	},
-showError: function(e, offset) {
-	offset = offset || 0;
-	var msg = "" + e + "\n" + 
-		"Line: " + e.line + "\n" +
-		(e.sourceURL ? ("URL: " + (new URL(e.sourceURL).filename()) + "\n") : "");
-	if (e.stack) {
-		// make the stack fit into status window
-		var prefix = (new URL(Config.codeBase)).withRelativePartsResolved().toString()
-		msg += e.stack.replace(new RegExp(prefix, "g"),"");
-	}
-
-	var world = WorldMorph.current();
-	if (!world) {
-		console.log("Error in " +this.id() + " bound eval: \n" + msg)
-		return
-	};
-
-	world.setStatusMessage(msg, Color.red, 15,
-		function() { require('lively.Helper').toRun(function() {
-			world.showErrorDialog(e)
-		 }) },
-		{fontSize: 12, fillOpacity: 1});
-
-	if (e.expressionEndOffset) {
-		// console.log("e.expressionBeginOffset " + e.expressionBeginOffset + "  offset=" + offset)
-		this.setSelectionRange(e.expressionBeginOffset + offset, e.expressionEndOffset + offset);
-	} else if (e.line) {
-		var lineOffset = this.lineNumberForIndex(offset);
-		// console.log("line: " + e.line + " offset: " + lineOffset)
-		var line = this.lines[e.line + lineOffset - 1]
-		if (line && line.startIndex) {
-			// console.log(" set to  " + line.startIndex)
-			this.setSelectionRange(line.startIndex, line.getStopIndex());
-		}
-	}
-	this.setStatusMessage("" + e, Color.red); 
 
 },
-
-
-	doHelp: function() {
-		WorldMorph.current().notify("Help is on the way...\n" +
-		"...but not today.");
-	},
-
-	doUndo: function() {
-		if (this.undoTextString) {
-			var t = this.selectionRange;
-			this.selectionRange = this.undoSelectionRange;
-			this.undoSelectionRange = t;
-			t = this.textString;
-			this.setTextString(this.undoTextString);
-			this.undoTextString = t;
-		}
-		if (this.undoTextStyle) {
-			t = this.textStyle;
-			this.textStyle = this.undoTextStyle;
-			this.undoTextStyle = t;
-		}
-	},
-
-	processCommandKeys: function(evt) {	 //: Boolean (was the command processed?)
-		var key = evt.getKeyChar();
-		// console.log('command = ' + key + "evt.isShiftDown() = " + evt.isShiftDown());
-
-		// FIXME -- these need to be included in editMenuItems
-		if (evt.isShiftDown()) {  // shifted commands here...
-			switch (key) {
-				case "I": { this.doInspect(true); return true; } // Inspect value of selection
-				case "B": { this.doBrowse(true); return true; } // Browse selected class
-				case "F": { this.doSearch(true); return true; } // Shift-Find alternative for w (search)
-				case "M": { this.doMuchMore(true); return true; } // Repeated replacement
-		};	};
-
-		if (key) key = key.toLowerCase();
-		switch (key) {
-			case "a": { this.doSelectAll(true); return true; } // SelectAll
-			case "x": { this.doCut(); return true; } // Cut
-			case "c": { this.doCopy(); return true; } // Copy
-			case "v": { this.doPaste(); return true; } // Paste
-			case "m": { if (!evt.isShiftDown()) { this.doMore(); return true; } // More (do another replacement like the last)
-										else {this.doMuchMore(); return true; }}  // MuchMore (repeat same change to end of text)
-			case "e": { this.doExchange(); return true; } // Exchange
-			case "f": { this.doFind(); return true; } // Find
-			case "g": { this.doFindNext(); return true; } // Find aGain
-			case "w": { this.doSearch(); return true; } // Where (search in system source code)
-			case "d": { this.doDoit(); return true; } // Doit
-			case "p": { this.doPrintit(); return true; } // Printit
-			case "s": { this.doSave(); return true; } // Save
-
-			// Typeface
-			case "b": { this.emphasizeBoldItalic({style: 'bold'}); return true; }
-			case "i": { this.emphasizeBoldItalic({style: 'italic'}); return true; }
-
-			// Font Size
-			// rk: prevents curly/square brackets on german keyboards
-			// case "4": { this.emphasizeSelection({size: (this.fontSize*0.8).roundTo(1)}); return true; }
-			// case "5": { this.emphasizeSelection({size: (this.fontSize*1).roundTo(1)}); return true; }
-			// case "6": { this.emphasizeSelection({size: (this.fontSize*1.2).roundTo(1)}); return true; }
-			// case "7": { this.emphasizeSelection({size: (this.fontSize*1.5).roundTo(1)}); return true; }
-			// case "8": { this.emphasizeSelection({size: (this.fontSize*2.0).roundTo(1)}); return true; }
-
-			// Text Alignment
-			case "l": { this.emphasizeSelection({align: 'left'}); return true; }
-			case "r": { this.emphasizeSelection({align: 'right'}); return true; }
-			case "h": { this.emphasizeSelection({align: 'center'}); return true; }
-			case "j": { this.emphasizeSelection({align: 'justify'}); return true; }
-
-			case "u": { this.linkifySelection(evt); return true; }	// add link attribute
-			case "o": { this.colorSelection(evt); return true; }  // a bit of local color
-
-			case "z": { this.doUndo(); return true; }  // Undo
-		}
-
-		switch(evt.getKeyCode()) {
-			// Font Size
-			case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 0.8).roundTo(1)))}); return true; }
-			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 1.2).roundTo(1)))}); return true; }
-			// indent/outdent selection
-			case 221/*cmd+]*/: { this.indentSelection(); evt.stop(); return true }
-			case 219/*cmd+]*/: { this.outdentSelection(); evt.stop(); return true }
-			// comment/uncoment selection
-			case 191 /*cmd+/*/: { this.addOrRemoveComment(); return true }
-		}
-
-		return false;
-	},
-
-	detectTextStyleInRange: function(range, styleName) {
-		return this.textStyle.slice(range[0], range[1]).values.detect(function(ea){return ea[styleName]});
-	},
-
-	linkifySelection: function(evt) {
-		var oldLink = ""
-		if (this.textStyle) {
-			var linkStyle = this.detectTextStyleInRange(this.selectionRange, 'link');
-			if (linkStyle) oldLink = linkStyle.link;
-		};
-		this.world().prompt("Enter the link...",
-			function(response) {
-				/*if (!response.startsWith('http://'))
-					response = URL.source.notSvnVersioned().withFilename(response).toString();*/
-				this.emphasizeSelection({color: "blue", link: response});
-			}.bind(this), oldLink);
-	},
-
-	colorSelection: function(evt) {
-		var colors = ['black', 'brown', 'red', 'orange', 'yellow', 'green', 'blue', 'violet', 'gray', 'white'];
-		var items = colors.map( function(c) {return [c, this, "setSelectionColor", c] }.bind(this));
-		new MenuMorph(items, this).openIn(this.world(), evt.hand.position(), false, "Choose a color for this selection");
-	},
-
-	setSelectionColor: function(c, evt) {
-		// Color parameter can be a string like 'red' or an actual color
-		var color = c;
-		if (c == 'brown') color = Color.orange.darker();
-		if (c == 'violet') color = Color.magenta;
-		if (c == 'gray') color = Color.darkGray;
-		this.emphasizeSelection( {color: color} );
-		this.requestKeyboardFocus(evt.hand);
-	},
-	
-	indentSelection: function() {
-		var tab = '\t';
-		this.modifySelectedLines(function(line) { return line.length == 0 ? line : tab + line });
-	},
-	
-	outdentSelection: function() {
-		var tab = '\t', space = ' ';
-		this.modifySelectedLines(function(line) {
-			return (line.startsWith(space) || line.startsWith(tab)) ? line.substring(1,line.length) : line
-		});
-	},
-	
-	addOrRemoveComment: function() {
-		var commentRegex = /^(\s*)(\/\/\s*)(.*)/;
-		var spacesRegex = /^(\s*)(.*)/;
-		var noSelection = this.hasNullSelection();
-
-		if (noSelection) { // select the current line
-			var line = this.pvtCurrentLine();
-			this.startSelection(line.startIndex);
-			this.extendSelection(line.getStopIndex());
-		}
-
-		this.modifySelectedLines(function(line) {
-			var commented = commentRegex.test(line);
-			if (commented)
-				return line.replace(commentRegex, '$1$3')
-			return line.replace(spacesRegex, '$1// $2')
-		});
-	},
-	
-	pvtCurrentLine: function() {
-		var lineNumber =  this.lineNumberForIndex(this.selectionRange[1]);
-		if (lineNumber == -1) lineNumber = 0; 
-		return this.lines[lineNumber];
-	},
-
-	pvtCurrentLineString: function() {
-		var line = this.pvtCurrentLine();
-		return String(this.textString.substring(line.startIndex, line.getStopIndex() + 1));		 
-	},
-	
-	// setFill: function(fill) {
-	//    this.shape.setFill(fill);
-	// },
-});
-
-TextMorph.addMethods({
-	
-	extendSelection: function(charIx) {
-		if (charIx < 0) return;
-		this.setSelectionRange(this.selectionPivot, charIx);
-	},
-
-	getCursorPos: function() {
-		if (this.hasNullSelection())
-			return this.selectionRange[0];
-		if (this.selectionPivot === this.selectionRange[1]+1)
-			return this.selectionRange[0]; // selection expands left
-		if (this.selectionPivot === this.selectionRange[0])
-			return this.selectionRange[1]+1; // selection expands right
-		if (this.selectionPivot < this.selectionRange[1]+1 && this.selectionPivot > this.selectionRange[0])
-			return this.selectionRange[0]; // selection pivot in middle of sel
-		// console.log('Can\'t find current position in text');
-		return this.selectionRange[0];
-	},
-
-});
-
-Object.extend(TextMorph, {
-	
-	fromLiteral: function(literal) {
-		var morph = new TextMorph(new Rectangle(0,0,0,0), literal.content || "");
-		literal.textColor && morph.setTextColor(literal.textColor);
-		literal.label && morph.beLabel();
-		return morph;
-	}
-
-
-});
-	
-TextMorph.addMethods({ // change clue additions
-
-	addChangeClue: function(useChangeClue) {
-		if (!useChangeClue) return;
-		this.changeClue = Morph.makeRectangle(1,1,5,5);
-		this.changeClue.setBorderWidth(0);
-		this.changeClue.setFill(Color.red);
-		this.changeClue.ignoreEvents();
-		this.changeClue.ignoreWhenCopying = true;
-	},
-
-	showChangeClue: function() {
-		if (!this.changeClue) return;
-		this.addMorph(this.changeClue);
-	},
-
-	hideChangeClue: function() {
-		if (!this.changeClue) return;
-		this.changeClue.remove();
-	},
-
-	hasUnsavedChanges: function() {
-		// FIXME just another hack...
-		return this.submorphs.include(this.changeClue);
-	},
-});
-
-// TextMorph accessor functions
-TextMorph.addMethods({
+'text emphasis', {
 
 	emphasizeSelection: function(emph) {
 		if (this.hasNullSelection()) return;
@@ -2611,6 +2780,8 @@ TextMorph.addMethods({
 		this.composeAfterEdits();
 	},
 
+},
+'private', {
 	pvtUpdateTextString: function(replacement, replacementHints) {
 		// tag: newText
 		// Note:  -delayComposition- is now ignored everyhere
@@ -2651,106 +2822,14 @@ TextMorph.addMethods({
 		this.changed();	 // will cause bounds to be called, and hence re-rendering
 		if (oneLiner) this.bounds();  // Force a redisplay
 	},
-	
-	setStatusMessage: function(msg, color, delay) {
-		console.log("status: " + msg)
-		if (!this._statusMorph) {
-			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
-			this._statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 1})
-		}
-		var statusMorph = this._statusMorph;
-		statusMorph.textString = msg;
-		this.world().addMorph(statusMorph);
-		statusMorph.setTextColor(color || Color.black);
-		statusMorph.ignoreEvents();
-		try { // rk 7/8/10 why is this in try/catch?
-			var bounds = this.getCharBounds(this.selectionRange[0]);
-			var pos = bounds ? bounds.bottomLeft() : pt(0, 20);
-			statusMorph.setPosition(this.worldPoint(pos));
-		} catch(e) {
-			statusMorph.centerAt(this.worldPoint(this.innerBounds().center()));
-			console.log("problems: " + e)
-		};
-		(function() { statusMorph.remove() }).delay(delay || 4);
-	},
-	
+
 	pvtPositionInString: function(lines, line, linePos) {
 		var pos = 0;
 		for (var i = 0; i < (line - 1); i++)
 			pos = pos + lines[i].length + 1
 		return pos + linePos
 	},
-		
-	saveContents: function(contentString) {
-		this.savedTextString = contentString;
-		if (!this.modelPlug && !this.formalModel && !this.noEval) {
-			this.tryBoundEval(contentString);
-			this.world().changed(); 
-			return; // Hack for browser demo
-		} else if (!this.autoAccept) {
-			this.setText(contentString, true);
-	   }
-	},
 
-	acceptChanges: function() {	   
-		this.textBeforeChanges = this.textString; 
-	},
-	
-	boundEval: function(str) {	  
-		// Evaluate the string argument in a context in which "this" may be supplied by the modelPlug
-		var ctx = this.getDoitContext() || this;
-		return (interactiveEval.bind(ctx))(str);
-	},
-	
-	addOrRemoveBrackets: function(bracketIndex) {
-		var left = this.locale.charSet.leftBrackets[bracketIndex];
-		var right = this.locale.charSet.rightBrackets[bracketIndex];
-		
-		if (bracketIndex == 0) { left = "/*"; right = "*/"; }
-	
-		var i1 = this.selectionRange[0];
-		var i2 = this.selectionRange[1];
-		
-		if (i1 - left.length >= 0 && this.textString.substring(i1-left.length,i1) == left &&
-			i2 + right.length < this.textString.length && this.textString.substring(i2+1,i2+right.length+1) == right) {
-			// selection was already in brackets -- remove them
-			var before = this.textString.substring(0,i1-left.length);
-			var replacement = this.textString.substring(i1,i2+1);
-			var after = this.textString.substring(i2+right.length+1,this.textString.length);
-			this.setTextString(before.concat(replacement,after));
-			this.setSelectionRange(before.length,before.length+replacement.length); 
-		} else { // enclose selection in brackets
-			var before = this.textString.substring(0,i1);
-			var replacement = this.textString.substring(i1,i2+1);
-			var after = this.textString.substring(i2+1,this.textString.length); 
-			this.setTextString(before.concat(left,replacement,right,after));
-			this.setSelectionRange(before.length+left.length,before.length+left.length+replacement.length); 
-		}
-	},
-	
-	getFontFamily: function() { return this.font.getFamily() },
-	
-	setFontFamily: function(familyName) {
-		this.fontFamily = familyName;
-		this.font = lively.Text.Font.forFamily(this.fontFamily, this.fontSize);
-		this.layoutChanged();
-		this.changed();
-	},
-	
-	getFontSize: function() { return this.fontSize; },
-
-	setFontSize: function(newSize) {
-		if (newSize == this.fontSize && this.font)	// make sure this.font is inited
-			return;
-		this.fontSize = newSize;
-		this.font = lively.Text.Font.forFamily(this.fontFamily, newSize);
-		if (this.autoAdjustPadding) {
-			this.padding = Rectangle.inset(newSize/2 + 2, newSize/3);
-		};
-		this.layoutChanged();
-		this.changed();
-	},
-	
 	pvtReplaceBadControlCharactersInString: function(string) {
 		var allowedControlCharacters = "\n\t\r"
 		return $A(string).collect(function(ea) {
@@ -2760,51 +2839,8 @@ TextMorph.addMethods({
 		}).join('')
 	},
 
-	setTextString: function(replacement, replacementHints) {
-		replacement = this.pvtReplaceBadControlCharactersInString(replacement);
-		if (Object.isString(replacement)) replacement = String(replacement); // rk ??? Why call String()
-		if (this.autoAccept) this.setText(replacement);
-		this.pvtUpdateTextString(replacement, replacementHints);
-	},
-	
-	updateTextString: function(newStr) {
-		this.pvtUpdateTextString(newStr);
-		this.resetScrollPane(); 
-	},
-	
-	resetScrollPane: function() {
-		var sp = this.enclosingScrollPane();
-		if (!sp) return
-		// is the scrollbar to low to see the text contents?
-		if (sp.slideRoomExtent().y <= 0) sp.scrollToTop()
-		sp.setVerticalScrollPosition(sp.getVerticalScrollPosition());
-	},
-	
-	scrollSelectionIntoView: function() { 
-		var sp = this.enclosingScrollPane();
-		if (! sp) return;
-		var selRect = this.getCharBounds(this.selectionRange[this.hasNullSelection() ? 0 : 1]);
-		sp.scrollRectIntoView(selRect); 
-	},
-	
-	enclosingScrollPane: function() { 
-		// Need a cleaner way to do this
-		if (! (this.owner instanceof ClipMorph)) return null;
-		var sp = this.owner.owner;
-		if (! (sp instanceof ScrollPane)) return null;
-		return sp;
-	},
-
-	onTextUpdate: function(string) {
-		this.updateTextString(string);
-		this.textBeforeChanges = string;
-		this.hideChangeClue();
-	},
-
-	onSelectionUpdate: function(string) {
-		this.searchForFind(string, 0);
-	},
-	
+},
+'old model -- deprecated', {
 	updateView: function(aspect, controller) {
 		var p = this.modelPlug;
 		if (!p) return;
@@ -2815,30 +2851,27 @@ TextMorph.addMethods({
 			this.onSelectionUpdate(this.getSelection());
 		}
 	},
-	
-	onHistoryCursorUpdate: Functions.Empty,
-
-	onHistoryUpdate: Functions.Empty,
-
-	searchForFind: function(str, start) {
-		this.requestKeyboardFocus(this.world().firstHand());
-		var i1 = this.textString.indexOf(str, start);
-		if (i1 < 0) i1 = this.textString.indexOf(str, 0); // wrap
-		if (i1 >= 0) this.setSelectionRange(i1, i1+str.length);
-		else this.setNullSelectionAt(0);
-		this.lastSearchString = str;
-		this.lastFindLoc = i1;
-	},
-	
 });
 
 Object.extend(TextMorph, {
+	
+	fromLiteral: function(literal) {
+		var morph = new TextMorph(new Rectangle(0,0,0,0), literal.content || "");
+		literal.textColor && morph.setTextColor(literal.textColor);
+		literal.label && morph.beLabel();
+		return morph;
+	},
+
 	makeLabel: function(labelString, styleIfAny) {
 		var label = new TextMorph(new Rectangle(0,0,200,100), labelString);
 		label.beLabel(styleIfAny);
 		return label;
 	},
+
 });
+	
+
+// TextMorph accessor functions
 
 TextMorph.subclass('PrintMorph', {
     documentation: "TextMorph that converts its model value to string using toString(), and from a string using eval()",
@@ -3270,11 +3303,4 @@ Object.subclass('TextEmphasis', {
 	}
 });
 
-
-
-}.logCompletion("Text.js"));
-
-
-
-
-
+}.logCompletion("Text.js")); // end of module

@@ -1241,11 +1241,11 @@ Object.extend(Function.prototype, {
 			try {
 				var result = proceed.apply(this, args);
 			} catch (er) {
-				console.warn('failed to load %s: %s', module, er);
+				console.warn('failed to load ' + module +': ' + er);
 				lively.lang.Execution.showStack();
 				throw er;
 			}
-			console.log('completed %s', module);
+			console.log('completed ' + module);
 			return result;
 		}
 

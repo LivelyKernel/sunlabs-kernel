@@ -2986,17 +2986,17 @@ BoxMorph.subclass('ScrollPane',
 		var bnds = this.innerBounds();
 		var yToView = r.y + im.getPosition().y;  // scroll down if above top
 		if (yToView < bnds.y) {
-			im.moveBy(pt(0, bnds.y - yToView));
-			if (this.verticalScrollBar)
-				this.verticalScrollBar.adjustForNewBounds();
+			var delta = yToView - bnds.y,
+				normalizedDelta = delta / this.slideRoomExtent().y;
+			this.setVerticalScrollPosition(this.getVerticalScrollPosition() + normalizedDelta)
 			return;
 		}
 		var yToView = r.y + r.height + im.getPosition().y;  // scroll up if below bottom
 		var tweak = 5;  // otherwise it doesnt scroll up enough to look good
-		if (yToView > bnds.maxY() - tweak) {
-			im.moveBy(pt(0, bnds.maxY() - tweak - yToView))
-			if (this.verticalScrollBar)
-				this.verticalScrollBar.adjustForNewBounds();
+		if (yToView > bnds.maxY() + tweak) {
+			var delta = yToView - bnds.maxY() + tweak,
+				normalizedDelta = delta / this.slideRoomExtent().y;
+			this.setVerticalScrollPosition(this.getVerticalScrollPosition() + normalizedDelta);
 		}
 	},
 
