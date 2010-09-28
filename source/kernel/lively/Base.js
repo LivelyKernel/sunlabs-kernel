@@ -885,13 +885,15 @@ var Properties = {
 
 
 // bootstrap namespaces
-Object.subclass('Namespace', {
+Object.subclass('Namespace',
+'initializing', {
 
 	initialize: function(context, nsName) {
 		this.namespaceIdentifier = context.namespaceIdentifier + '.' + nsName;
 		this.createTime = new Date();
 	},
-		
+},
+'accessing', {
 	gather: function(selector, condition, recursive) {
 		var result = Object.values(this).select(function(ea) { return condition.call(this, ea) }, this);
 		if (!recursive) return result;
