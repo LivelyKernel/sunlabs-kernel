@@ -85,8 +85,8 @@ var JSLoader = {
 		else
 			script.setAttributeNS(null, 'src', exactUrl);
 
-		if (onLoadCb)
-			script.onload = onLoadCb
+		script.addEventListener('load', onLoadCb);
+		script.setAttributeNS(null, 'async', true);
 
 		parentNode.appendChild(script);
 	},
@@ -160,7 +160,9 @@ var JSLoader = {
 		return this.dirOfURL(document.location.href.toString());
 	},
 
-	dirOfURL: function(url) { return url.substring(0, url.lastIndexOf('/') + 1) },
+	dirOfURL: function(url) {
+		return this.removeQueries(url).substring(0, url.lastIndexOf('/') + 1)
+	},
 
 	makeAbsolute: function(urlString) {
 		urlString = this.removeQueries(urlString);
@@ -314,6 +316,8 @@ LoadingScreen = {
 
 	id : 'loadingScreen',
 	consoleId : 'loadingConsole',
+	logoId: 'loadingLogo',
+	brokenWorldMsgId: 'loadingBrokenWorldMsg',
 
 	buildBackground: function() {
 		var div1 = document.createElement('div')
@@ -327,6 +331,7 @@ LoadingScreen = {
 
 	buildLoadingLogo: function() {
 		var logoAndText = document.createElement('div')
+		logoAndText.setAttribute('id', this.logoId);
 		logoAndText.setAttribute('style', "position: fixed; margin-left:auto; margin-right:auto; width: 80px; height: 108px; background-color: white;");
 
 		var logo = document.createElement('img')
@@ -343,11 +348,44 @@ LoadingScreen = {
 		logoAndText.appendChild(logo);
 		logoAndText.appendChild(text);
 
+		this.logo = logoAndText;
+
 		return logoAndText;
 	},
 
+	buildBrokenWorldMessage: function() {
+		var el = document.createElement('div'),
+			text1 = document.createTextNode('An error occurred. If the world does not load you can visit '),
+			text2 = document.createTextNode(' for help.'),
+			link = document.createElement('a'),
+			repairURL = LivelyLoader.codeBase + 'BrokenWorldRepairSite.xhtml?brokenWorldURL=' + document.location.href;
+
+		el.setAttribute('id', this.brokenWorldMsgId);
+		el.setAttribute('style', "position: fixed; margin-left:auto; margin-right:auto; padding: 5px; background-color: white; font-family: Arial,times; color: red; font-size: large-x;");
+
+		el.style['top'] = (this.height() / 2 - 70) + 'px'
+		el.style['left'] = (this.width() / 2 - 290) + 'px'
+
+		link.style.color = 'red';
+		link.setAttribute('href', repairURL);
+		link.setAttribute('target', '_blank');
+		link.textContent = 'the repair page';
+
+		el.appendChild(text1);
+		el.appendChild(link);
+		el.appendChild(text2);
+
+		return el;
+	},
+
+	ensureBrokenWorldMessage: function() {
+		this.removeElement(this.logo);
+		if (!document.getElementById(this.brokenWorldMsgId))
+			 document.getElementById(this.id).appendChild(this.buildBrokenWorldMessage());
+	},
+
 	buildConsole: function() {
-		var console = document.createElement('pre');
+		var console = document.createElement('pre'), self = this;
 		console.setAttribute('id', this.consoleId);
 		console.setAttribute('style', "position: absolute; top: 0px; font-family: monospace; color: rgb(0,255,64); font-size: medium; padding-bottom: 20px;");
 
@@ -364,9 +402,9 @@ LoadingScreen = {
 		console.log = function(msg) { addLine(msg) };
 		console.warn = function(msg) { addLine(msg, 'color: yellow;') };
 		console.error = function(msg) {
-			debugger
-			if (!console.parentNode) LoadingScreen.toggleConsole();
+			if (!console.parentNode) self.toggleConsole();
 			addLine(msg, 'color: red; font-size: large;');
+			self.ensureBrokenWorldMessage();
 		};
 
 		window.console.addConsumer(console)
@@ -374,6 +412,7 @@ LoadingScreen = {
 		this.console = console
 		return console;
 	},
+
 	removeConsole: function() {
 		var console = this.console;
 		if (!console) return;
