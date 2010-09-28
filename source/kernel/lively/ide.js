@@ -284,7 +284,10 @@ Widget.subclass('lively.ide.BasicBrowser',
 	},
 	
 	paneNameOfNode: function(node) {
-    	return this.allPaneNames.detect(function(ea) { return this.nodesInPane(ea).include(node) }, this);
+    	return this.allPaneNames.detect(function(pane) {
+			// FIXME quality
+			return this.nodesInPane(pane).any(function(otherNode) { return otherNode.target == node.target })
+		}, this);
 	},
 
 	selectionInPane: function(pane) {
@@ -501,7 +504,10 @@ Widget.subclass('lively.ide.BasicBrowser',
  
 	textChanged: function(node) {
 		// be careful -- this can lead to overwritten source code
-		this.selectNode(node);
+		var pane = this.paneNameOfNode(node);
+		if (!pane) return;
+		this.inPaneSelectNodeNamed(pane, ''); // unselect
+		this.inPaneSelectNodeMatching(pane, function(other) { return other.target == node.target });
 		// this.setSourceString(node.sourceString());
 	},
     
@@ -3540,17 +3546,22 @@ ide.FileFragment.subclass('lively.ide.ParseErrorFileFragment', {
         return this.fileString
     },
 });
-Widget.subclass('lively.ide.FileVersionViewer', {
+Widget.subclass('lively.ide.FileVersionViewer',
+'settings', {
 	
 	viewTitle: "Version Viewer",
     initialViewExtent: pt(450, 250),
 
+},
+'initializing', {
+
 	buildView: function(extent) {
 		var panel = PanelMorph.makePanedPanel(extent, [
 			['urlPane', newTextPane, new Rectangle(0, 0, 1, 0.1)],
-			['versionList', newDragnDropListPane, new Rectangle(0, 0.1, 1, 0.8)],
-			['revertButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0, 0.9, 0.5, 0.1)],
-			['openButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.5, 0.9, 0.5, 0.1)],
+			['versionList', newRealListPane, new Rectangle(0, 0.1, 1, 0.8)],
+			['revertButton', newButton, new Rectangle(0, 0.9, 0.33, 0.1)],
+			['openButton', newButton, new Rectangle(0.33, 0.9, 0.33, 0.1)],
+			['visitButton', newButton, new Rectangle(0.66, 0.9, 0.34, 0.1)],
 		]);
 
 		var m;
@@ -3558,80 +3569,97 @@ Widget.subclass('lively.ide.FileVersionViewer', {
 		m = panel.urlPane.innerMorph();
 		m.beInputLine();
 		m.noEval = true;
-		lively.bindings.connect(m, 'savedTextString', this, 'setTarget');
+		m.plugTo(this, {savedTextString: '->setTarget'});
 
 		m = panel.revertButton;
-		lively.bindings.connect(m, 'fire', this, 'revert')
 		m.setLabel('revert');
+		m.plugTo(this, {fire: '->revert'});
 
 		m = panel.openButton;
-		lively.bindings.connect(m, 'fire', this, 'showVersion')
 		m.setLabel('show');
+		m.plugTo(this, {fire: '->showVersion'});
+
+		m = panel.visitButton;
+		m.setLabel('visit');
+		m.plugTo(this, {fire: '->visitVersion'});
 
 		m= panel.versionList.innerMorph();
 		m.dragEnabled = false;
-		m.connectModel(Record.newPlainInstance({List: [], Selection: null})); // FIXME
+		// m.connectModel(Record.newPlainInstance({List: [], Selection: null})); // FIXME
 		
 		this.panel = panel;
 		return panel;
 	},
-openForURL: function(url) {
-	this.open();
-	this.setTarget(url);
-	return this;
 },
+'actions', {
+	openForURL: function(url) {
+		this.open();
+		this.setTarget(url);
+		return this;
+	},
 
 
-setTarget: function(url) {
-	try { this.url = new URL(url) } catch(e) {
-		return;
-	} finally {
-		this.panel.urlPane.innerMorph().setTextString(this.url.toString());
-	}
+	setTarget: function(url) {
+		try { this.url = new URL(url) } catch(e) {
+			return;
+		} finally {
+			this.panel.urlPane.innerMorph().setTextString(this.url.toString());
+		}
 
-	var versionList = this.panel.versionList.innerMorph();
-	versionList.updateList(['loading']);
-	var res = new WebResource(url);
-	lively.bindings.connect(res, 'versions', versionList, 'updateList',
-		{converter: function(list) { return list.asListItemArray() }});
-	res.beAsync().getVersions();
-},
+		var versionList = this.panel.versionList.innerMorph();
+		versionList.updateList(['loading']);
+		var res = new WebResource(url);
+		lively.bindings.connect(res, 'versions', versionList, 'updateList',
+			{converter: function(list) { return list ? list.asListItemArray() : [] }});
+		res.beAsync().getVersions();
+	},
 
-fetchSelectedVersionAndDo: function(doBlock) {
-	// get the revision and create a WebResource for this.url
-	// then let doBlock configure that WebResource. In the end
-	// GET the version of this.url
-	if (!this.url) return;
-	var sel = this.panel.versionList.innerMorph().getSelection();
-	if (!sel) return;
-	var rev = sel.rev;
-	var resForGet = new WebResource(this.url).beAsync();
-	doBlock.call(this, resForGet);
-	resForGet.get(rev);
-},
+	fetchSelectedVersionAndDo: function(doBlock) {
+		// get the revision and create a WebResource for this.url
+		// then let doBlock configure that WebResource. In the end
+		// GET the version of this.url
+		if (!this.url) return;
+		var sel = this.panel.versionList.innerMorph().selection;
+		if (!sel) return;
+		var rev = sel.rev;
+		var resForGet = new WebResource(this.url).beAsync();
+		doBlock.call(this, resForGet);
+		resForGet.get(rev);
+	},
+	selectedURL: function() {
+		var sel = this.panel.versionList.innerMorph().selection;
+		if (!sel) return null;
+		var rev = sel.rev;
+		versionedURL = new WebResource(this.url).createResource().createVersionURLString(rev);
+		return versionedURL
+	},
 
-showVersion: function() {
-	this.fetchSelectedVersionAndDo(function(resForGet) {
-		lively.bindings.connect(resForGet, 'content', WorldMorph.current(), 'addTextWindow');
-	});
-},
 
-revert: function() {
-	this.fetchSelectedVersionAndDo(function(resForGet) {
-		var resForPut = new WebResource(this.url).beAsync(); // using two to know when status of put
-		lively.bindings.connect(resForGet, 'content', resForPut, 'put');
-		lively.bindings.connect(resForPut, 'status', this, 'revertDone');
-	});
-},
-revertDone: function (status) {
-	var w = WorldMorph.current();
-	if (status.code() < 400)
-		w.setStatusMessage('Successfully reverted ' + this.url, Color.green, 3);
-	else
-		w.setStatusMessage('Could not revert ' + this.url + ': ' + status, Color.red, 5);
-	this.setTarget(this.url); // update list
-},
+	showVersion: function() {
+		this.fetchSelectedVersionAndDo(function(resForGet) {
+			lively.bindings.connect(resForGet, 'content', WorldMorph.current(), 'addTextWindow');
+		});
+	},
+	visitVersion: function() {
+		Global.open(this.selectedURL())
+	},
 
+
+	revert: function() {
+		this.fetchSelectedVersionAndDo(function(resForGet) {
+			var resForPut = new WebResource(this.url).beAsync(); // using two to know when status of put
+			lively.bindings.connect(resForGet, 'content', resForPut, 'put');
+			lively.bindings.connect(resForPut, 'status', this, 'revertDone');
+		});
+	},
+	revertDone: function (status) {
+		var w = WorldMorph.current();
+		if (status.code() < 400)
+			w.setStatusMessage('Successfully reverted ' + this.url, Color.green, 3);
+		else
+			w.setStatusMessage('Could not revert ' + this.url + ': ' + status, Color.red, 5);
+		this.setTarget(this.url); // update list
+	},
 });
 
 });
