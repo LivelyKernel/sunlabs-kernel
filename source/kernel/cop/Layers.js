@@ -663,6 +663,7 @@ Object.extend(ContextJS, {
 
 Object.extend(cop, {
 	proceed: function(/* arguments */) {
+		// COP Proceed Function
 		var composition = ContextJS.effectiveLayerCompositionStack.last();
 		if (!composition) {
 			console.log('ContextJS: no composition to proceed (stack is empty) ')
@@ -680,12 +681,15 @@ Object.extend(cop, {
 		} else {
 			try {
 				composition.partialMethodIndex  = index - 1;
-				if (partialMethod.toString().match(/function ?\(\$?proceed/)) {	
+				if (partialMethod.toString().match(/^[\t ]*function ?\(\$?proceed/)) {	
 					var args = $A(arguments);
 					args.unshift(cop.proceed);
 					var msg = "proceed in arguments list in " + composition.functionName
 					if (Config.throwErrorOnDepricated) throw new Error("DEPRICATED ERROR: " + msg);
-					if (Config.logDepricated) console.log("DEPRICATED WARNING: " + msg);
+					if (Config.logDepricated) {
+						// console.log("source: " + partialMethod.toString())
+						console.log("DEPRICATED WARNING: " + msg);
+					}
 					var result = partialMethod.apply(composition.object, args);
 				} else {
 					var result = partialMethod.apply(composition.object, arguments);
