@@ -943,10 +943,14 @@ Resource.subclass('SVNResource', {
 
 	withBaselineUriDo: function(rev, doFunc) {
 		var tempUrl = this.getURL();
-		this.setURL(this.repoUrl + '/!svn/bc/' + rev + '/' + this.getLocalUrl());
+		this.setURL(this.createVersionURLString(rev));
 		doFunc();
 		this.setURL(tempUrl);
 	},
+	createVersionURLString: function(rev) {
+		return this.repoUrl + '/!svn/bc/' + rev + '/' + this.getLocalUrl();
+	},
+
 });
 
 Object.subclass('SVNVersionInfo', {
