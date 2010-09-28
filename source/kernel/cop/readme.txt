@@ -7,9 +7,7 @@
 Morph.addMethods(LayerableObjectTrait);
 Morph.prototype.activateLayersFrom = ["owner"];
 
-cop.createLayer("TokyoTimeLayer");
-
-cop.layerClass(TokyoTimeLayer, ClockMorph, {
+cop.create('TokyoTimeLayer').refineClass(ClockMorph, {
  	get timeZoneOffset() {
  		return  8;
  	}
@@ -17,6 +15,6 @@ cop.layerClass(TokyoTimeLayer, ClockMorph, {
 
 // Refactorings
 
-(^\t*)createLayer\( -> $1cop.createLayer\(
+(^\t*)createLayer\( -> $1cop.create\(
 (^\t*)layerClassAndSubclasses\( -> $1cop.layerClassAndSubclasses\(
 

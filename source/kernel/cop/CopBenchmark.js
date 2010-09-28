@@ -51,16 +51,16 @@ benchmakeBlock = function(name, unrolledOps, func) {
 	CopBenchmark.printEachResult(result);
 }
 
-cop.createLayer("L1");
-cop.createLayer("L2");
-cop.createLayer("L3");
-cop.createLayer("L4");
-cop.createLayer("L5");
-cop.createLayer("L6");
-cop.createLayer("L7");
-cop.createLayer("L8");
-cop.createLayer("L9");
-cop.createLayer("L10");
+cop.create("L1");
+cop.create("L2");
+cop.create("L3");
+cop.create("L4");
+cop.create("L5");
+cop.create("L6");
+cop.create("L7");
+cop.create("L8");
+cop.create("L9");
+cop.create("L10");
 
 
 Object.subclass('cop.benchmark.BenchClass', {
@@ -159,50 +159,50 @@ Object.subclass('cop.benchmark.BenchClass', {
 
 	L1$countWithLayers: function(proceed) {	
 		this.counter_01++;
-		proceed()
+		cop.proceed()
 	},
 	
 	L2$countWithLayers: function(proceed) {	
 		this.counter_02++;
-		proceed()
+		cop.proceed()
 	},
 	
 	L3$countWithLayers: function(proceed) {	
 		this.counter_03++;
-		proceed()
+		cop.proceed()
 	},
 	
 	L4$countWithLayers: function(proceed) {	
 		this.counter_04++;
-		proceed()
+		cop.proceed()
 	},
 	
 	L5$countWithLayers: function(proceed) {	
 		this.counter_05++;
-		proceed()
+		cop.proceed()
 	},
 	
 	L6$countWithLayers: function(proceed) {	
 		this.counter_06++;
-		proceed()
+		cop.proceed()
 	},
 	
 	L7$countWithLayers: function(proceed) {	
 		this.counter_07++;
-		proceed()
+		cop.proceed()
 	},
 	
 	L8$countWithLayers: function(proceed) {	
 		this.counter_08++;
-		proceed()
+		cop.proceed()
 	},
 	L9$countWithLayers: function(proceed) {	
 		this.counter_09++;
-		proceed()
+		cop.proceed()
 	},
 	L10$countWithLayers: function(proceed) {	
 		this.counter_10++;
-		proceed()
+		cop.proceed()
 	}
 });
 
@@ -1051,7 +1051,7 @@ addWrapperBenchmarks = function() {
 
 	var o4 = new cop.benchmark.WrappBenchTest();
 	o4.m1 = o4.m1.wrap(function(proceed) {
-		proceed();
+		cop.proceed();
 		this.counter_02++;		
 	});
 

@@ -26,6 +26,8 @@
 
 module('cop.Layers').requires().toRun(function(thisModule) {
 
+/* Private Helpers for Development */
+
 var log_layer_code = false;	
 var log = function log(string) { if(log_layer_code) console.log(string); }; 
 
@@ -41,192 +43,10 @@ ContextJS.withLogLayerCode = function(func) {
 	}	
 };
 
-/*
- * extend the subclassing behavior of Lively Kernel to allow fo Layer-In-Class constructs  
- */	
-Object.extend(Function.prototype, { 
-	subclass: Object.subclass.wrap(function(proceed) {
-		var args = $A(arguments);
-		args.shift();
-		var layeredMethods = [];
-	
-		for (var i=1; i < args.length; i++) {
-			var methods = args[i];
-			if (Object.isString(methods)) continue; // if it's a category
-			Object.keys(methods).each(function(ea) {
-				var m = ea.match(/([A-Za-z0-9]+)\$([A-Za-z0-9]*)/);
-				if (m) {
-					var getter = methods.__lookupGetter__(m[0]);
-					var setter = methods.__lookupSetter__(m[0]);
-					layeredMethods.push({layerName: m[1], methodName: m[2], methodBody: methods[ea], 
-						getterMethod: getter, setterMethod: setter});
-					delete methods[ea];
-				};
-			});
-		};
-		var klass =  proceed.apply(this, args);
-		layeredMethods.each(function(ea){
-			// log("layer property " + ea.methodName + " in " + ea.layerName);
-			var layer = Global[ea.layerName];
-			if (!layer) throw new Error("could not find layer: " + ea.layerName);
-			if (ea.getterMethod || ea.setterMethod) {
-				if (ea.getterMethod) {
-					layerGetterMethod(layer, klass.prototype, ea.methodName, ea.getterMethod);
-				};
-				if (ea.setterMethod) {
-					layerSetterMethod(layer, klass.prototype, ea.methodName, ea.setterMethod);
-				};
-				makePropertyLayerAware(klass.prototype, ea.methodName);
-			} else {
-				// log("layer method " + ea.methodName + " in " + ea.layerName);
-				layerMethod(layer, klass.prototype, ea.methodName, ea.methodBody);
-			}
-		});
-		return klass;
-	})
-});
 
 /*
- * Private Helper Methods
+ * Private Methods
  */
-var lookupLayeredFunctionForObject = function Layers$lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType, n) {
-	if (!layer) return undefined;
-	// we have to look for layers defintions for self, self.prototype, ... there may be layered methods 
-	// in a subclass of "obj"			
-	var layered_function, layer_definition_for_object = getLayerDefinitionForObject(layer, self);
-	if (layer_definition_for_object) {
-		// log("  found layer definitions for object");
-		// TODO: optional proceed goes here....
-		if (methodType == 'getter') {
-			layered_function = layer_definition_for_object.__lookupGetter__(function_name);
-		} else if (methodType == 'setter'){
-			layered_function = layer_definition_for_object.__lookupSetter__(function_name);
-		} else {
-			layered_function = layer_definition_for_object[function_name];
-		}
-	}
-	if (!layered_function) {
-		// try the superclass hierachy
-		// log("look for superclass of: " + self.constructor)
-		var superclass = self.constructor.superclass;
-		if (superclass) {
-			foundClass = superclass;
-			// log("layered function is not found in this partial method, lookup for my prototype?")
-			return lookupLayeredFunctionForObject(superclass.prototype, layer, obj, function_name, methodType);
-		} else {
-			// log("obj has not prototype")
-		}
-	}
-	return layered_function;
-};
-
-var executeWithLayers = function ContextJS$executeWithLayers(base_function, self, layers, index, obj, function_name, args, methodType) {
-	// log("executeWithLayers(" + layers + ", " + obj + ", " + function_name+")");
-	if (index < layers.length) {
-		var layer = layers[layers.length - index - 1];
-		var layered_function = lookupLayeredFunctionForObject(self, layer, obj, function_name, methodType);
-		if (layered_function) {
-			// log("  found layered function: " + layered_function);
-			var new_proceed = function executeWithLayers_new_proceed() {
-				var new_arguments = $A(arguments);
-				new_arguments.unshift(null);
-				// log("new_proceed " + new_arguments)
-				// var new_arguments = args; // arguments can not be overridden...				
-				return executeWithLayers(base_function, self, layers, index + 1, obj, function_name, new_arguments, methodType);
-			};
-			args[0] = new_proceed;
-			return layered_function.apply(self, args);	
-		}
-		
-		return executeWithLayers(base_function, self, layers, index + 1, obj, function_name, args, methodType);
-	};
-	// log("execute base method");
-	args.shift(); // remove proceed argument
-	return base_function.apply(self, args);
-};
-
-Object.extend(ContextJS, {
-
-	makeFunctionLayerAware: function(base_obj, function_name) {
-		if (!base_obj) throw new Error("can't layer an non existent object");
-
-		var base_function = base_obj[function_name];
-		if (!base_function) {
-			// console.log("WARNING can't layer an non existent function" + function_name +" , so do nothing")
-			// return;
-			base_function = Functions.Null;
-		};
-		if (base_function.isLayerAware) {
-			// nothing to do
-			return;
-		};
-		// log("ContextJS.makeFunctionLayerAware: " + base_obj );
-		var wrapped_function = function() {
-			var args = $A(arguments);
-			args.unshift(null); // empty proceed argument (performance optimisation uglyness)
-			return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
-		};
-		
-		if (base_obj.constructor) {
-			wrapped_function.displayName = 'wrapped ' + base_obj.constructor.name + "$" + function_name;
-		} else {
-			wrapped_function.displayName = 'wrapped ' + function_name;		
-		};
-		wrapped_function.isLayerAware = true;
-		
-		// For wrapped_function.getOriginal()
-		wrapped_function.originalFunction = base_function;
-		
-		base_obj[function_name] = wrapped_function;
-	}
-});
-
-/* because getters, setters and normal methods are differently read and written, there
-   are three paths, that are principally the same but differ in some methodnames... */
-Global.makePropertyLayerAware = function(base_obj, property) {
-	if (!base_obj) throw new Error("can't layer an non existent object");
-
-    
-	var getter = base_obj.__lookupGetter__(property);
-	var layered_property = "__layered_" + property +"__";
-
-	if (!getter) {
-		// does not work when dealing with classes and instances...
-		base_obj[layered_property] = base_obj[property]; // take over old value
-		getter = function() {
-			// return base_obj[layered_property]
-			return this[layered_property];
-		};		
-		base_obj.__defineGetter__(property, getter);
-	}; 
-	if (!getter.isLayerAware) {
-		var wrapped_getter =  function() {
-			return executeWithLayers(getter, this, computerLayersFor(this), 0, base_obj, property, [null], 'getter');
-		}; 
-		wrapped_getter.displayName = "layered get " + (base_obj.constructor ? (base_obj.constructor.type + "$"): "") + property ;
-		wrapped_getter.isLayerAware = true;
-		base_obj.__defineGetter__(property, wrapped_getter);
-	} 
-	var setter = base_obj.__lookupSetter__(property);
-	if (!setter) {
-		setter = function(value, value2) {
-			// log(this.toString() + " set " + property +" to " +value );
-			//base_obj[layered_property] = value
-			this[layered_property] = value;
-		};
-		base_obj.__defineSetter__(property, setter);
-	};
-	if (!setter.isLayerAware) {
-		var wrapped_setter = function ContextJS$makeFunctionLayerAwareWrappedSetter() {
-			var args = $A(arguments);
-			args.unshift(null);
-			return executeWithLayers(setter, this, computerLayersFor(this), 0, base_obj, property, args, 'setter');
-		};
-		wrapped_setter.displayName = "layered set " + (base_obj.constructor ? (base_obj.constructor.type + "$"): "") +  property;	
-		wrapped_setter.isLayerAware = true;
-		base_obj.__defineSetter__(property, wrapped_setter);
-	}
-};
 
 Global.getLayerDefinitionForObject = function Layers$getLayerDefinitionForObject(layer, object) {
 	// log("getLayerDefinitionForObject(" + layer + "," + object +")")
@@ -278,7 +98,7 @@ Global.layerProperty = function(layer, object,  property, defs) {
 		layerSetterMethod(layer, object,  property, setter);
 	};
 	if (getter || setter) {
-		makePropertyLayerAware(object, property);
+		ContextJS.makePropertyLayerAware(object, property);
 	} else {		
 		layerMethod(layer, object,  property, defs[property]);
 	};
@@ -290,7 +110,7 @@ layerPropertyWithShadow = function(layer, object, property) {
 	defs.__defineGetter__(property, function(proceed){
 		if(this[selector] === undefined && proceed) {
 			// fallback / procceed on property lookup if layer does not define it own state
-			return proceed();
+			return cop.proceed();
 		} else {
 			return this[selector];
 		}});
@@ -429,7 +249,7 @@ Object.subclass("Layer", {
 Object.extend(Layer, {
 	fromLiteral: function(literal) {
 		// console.log("Deserializing Layer Activation from: " + literal.name)
-		return cop.createLayer(literal.name, false);
+		return cop.create(literal.name, false);
 	}
 });
 
@@ -439,7 +259,10 @@ Object.extend(Layer, {
 /* Layer Definition */
 
 // creates a named global layer
-cop.createLayer = function(name, silent) {
+cop.create = function(name, silent) {
+	if( silent === undefined) {
+		silent = true; // default
+	}
 	if (Global[name]) {
 		if (!silent)
 			console.log("Layer "+ name + " is already there");
@@ -450,12 +273,14 @@ cop.createLayer = function(name, silent) {
 	return layer;
 };
 
+// Depricated Syntax Alternative: 
 cop.layer = function(name) {
-	return cop.createLayer(name, true);
+	console.log("SyntaxDepricated: cop.create(... use cop.create(")
+	return cop.create(name, true);
 };
 
-cop.create = function(name) {
-	return cop.createLayer(name, false);
+cop.createLayer = function(name) {
+	return cop.create(name, false);
 };
 
 // Layering objects may be a garbage collection problem, because the layers keep strong reference to the objects
@@ -489,7 +314,7 @@ cop.layerClassAndSubclasses = function(layer, classObject, defs) {
 					ContextJS.makeFunctionLayerAware(obj, eaFunctionName);
 				} else {
 					// to be tested...
-					// makePropertyLayerAware(eaClass.prototype, m1)
+					// ContextJS.makePropertyLayerAware(eaClass.prototype, m1)
 				}
 			};
 		});
@@ -564,6 +389,7 @@ markNamespaceEntryAsDepricated(cop, "createLayer", Global,  "createLayer");
 markNamespaceEntryAsDepricated(cop, "layerObject", Global,  "layerObject");
 markNamespaceEntryAsDepricated(cop, "layerClass", Global,  "layerClass");
 markNamespaceEntryAsDepricated(cop, "layerClassAndSubclasses", Global,  "layerClassAndSubclasses");
+
 
 
 /* Example implementation of a layerable object */
@@ -674,7 +500,6 @@ Object.extend(LayerableObjectTrait, {
 	},	
 });
 
-
 LookupLayersDepricated = {
 	// FLAG: REWRITE for performance...
 	getActivatedLayers: function LayerableObjectTrait$getActivatedLayers(optCallerList) {
@@ -706,9 +531,225 @@ LookupLayersDepricated = {
 
 Object.subclass("LayerableObject", LayerableObjectTrait);
 
+// New Code
+
+Object.subclass('COPError', {
+	initialize: function(msg) {
+		this.msg = msg
+	},
+
+	toString: function() {
+		return "COP Error: " + this.msg
+	}
+
+});
+
+Object.subclass("cop.PartialLayerComposition", {
+	initialize: function(obj,  prototypeObject, functionName, baseFunction, methodType) {
+		this.partialMethods = [baseFunction].concat(computerLayersFor(obj)
+			.collect(function(ea) {return ContextJS.lookupLayeredFunctionForObject(obj, ea, functionName, methodType)})
+			.select(function(ea) {return ea}));
+
+		this.object = obj;
+		this.prototypeObject = prototypeObject;
+		this.functionName = functionName;
+	}
+})
+
+Object.extend(ContextJS, {
+
+	effectiveLayerCompositionStack: [],
+
+	lookupLayeredFunctionForObject: function(self, layer, function_name, methodType, n) {
+		if (!layer) return undefined;
+		// we have to look for layers defintions for self, self.prototype, ... there may be layered methods 
+		// in a subclass of "obj"			
+		var layered_function, layer_definition_for_object = getLayerDefinitionForObject(layer, self);
+		if (layer_definition_for_object) {
+			// log("  found layer definitions for object");
+			// TODO: optional proceed goes here....
+			if (methodType == 'getter') {
+				layered_function = layer_definition_for_object.__lookupGetter__(function_name);
+			} else if (methodType == 'setter'){
+				layered_function = layer_definition_for_object.__lookupSetter__(function_name);
+			} else {
+				layered_function = layer_definition_for_object[function_name];
+			}
+		}
+		if (!layered_function) {
+			// try the superclass hierachy
+			// log("look for superclass of: " + self.constructor)
+			var superclass = self.constructor.superclass;
+			if (superclass) {
+				foundClass = superclass;
+				// log("layered function is not found in this partial method, lookup for my prototype?")
+				return ContextJS.lookupLayeredFunctionForObject(superclass.prototype, layer, function_name, methodType);
+			} else {
+				// log("obj has not prototype")
+			}
+		}
+		return layered_function;
+	},
+
+	pvtMakeFunctionOrPropertyLayerAware:  function(base_obj, function_name, base_function, methodType) {
+		if (!base_function.isLayerAware) {
+			var wrapped_function = function() {
+				var composition = new cop.PartialLayerComposition(this, base_obj, function_name, base_function, methodType);
+				ContextJS.effectiveLayerCompositionStack.push(composition);
+				var result ;
+				try {
+					result = cop.proceed.apply(this, arguments);
+					// return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
+				} finally {
+					ContextJS.effectiveLayerCompositionStack.pop()
+				};
+				return result
+			};
+			wrapped_function.isLayerAware = true;
+		
+			// For wrapped_function.getOriginal()
+			wrapped_function.originalFunction = base_function;
+
+			if (methodType == "getter") {
+				base_obj.__defineGetter__(function_name, wrapped_function);
+			} else if (methodType == "setter") {
+				base_obj.__defineSetter__(function_name, wrapped_function);
+			} else { 
+				base_obj[function_name] = wrapped_function;
+			}
+		}
+	},
+
+	makeFunctionLayerAware: function(base_obj, function_name) {
+			if (!base_obj) throw new Error("can't layer an non existent object");
+
+			/* ensure base function */	
+			var base_function = base_obj[function_name];
+			if (!base_function) {
+				// console.log("WARNING can't layer an non existent function" + function_name +" , so do nothing")
+				// return;
+				base_function = Functions.Null;
+			};
+			ContextJS.pvtMakeFunctionOrPropertyLayerAware(base_obj, function_name, base_function)
+	},
+
+	makePropertyLayerAware: function(base_obj, property) {
+		if (!base_obj) throw new Error("can't layer an non existent object");
+
+		/* ensure base getter and setter */	    
+		var getter = base_obj.__lookupGetter__(property);
+		var layered_property = "__layered_" + property +"__";
+		if (!getter) {
+			// does not work when dealing with classes and instances...
+			base_obj[layered_property] = base_obj[property]; // take over old value
+			getter = function() {
+				return this[layered_property];
+			};		
+			base_obj.__defineGetter__(property, getter);
+		}; 
+		var setter = base_obj.__lookupSetter__(property);
+		if (!setter) {
+			setter = function(value, value2) {
+				this[layered_property] = value;
+			};
+			base_obj.__defineSetter__(property, setter);
+		};
+
+		ContextJS.pvtMakeFunctionOrPropertyLayerAware(base_obj, property, getter, 'getter');
+		ContextJS.pvtMakeFunctionOrPropertyLayerAware(base_obj, property, setter, 'setter');
+	}
+});
+
+
+Object.extend(cop, {
+	proceed: function(/* arguments */) {
+		var composition = ContextJS.effectiveLayerCompositionStack.last();
+		if (!composition) {
+			console.log('ContextJS: no composition to proceed (stack is empty) ')
+			return
+		};
+		
+		// TODO use index instead of shifiting?
+		if (composition.partialMethodIndex == undefined)
+			composition.partialMethodIndex = composition.partialMethods.length - 1;
+		
+		var index = composition.partialMethodIndex;
+		var partialMethod = composition.partialMethods[index];		
+		if (!partialMethod) {
+			if (!partialMethod) throw new COPError('no partialMethod to proceed')
+		} else {
+			try {
+				composition.partialMethodIndex  = index - 1;
+				if (partialMethod.toString().match(/function ?\(\$?proceed/)) {	
+					var args = $A(arguments);
+					args.unshift(cop.proceed);
+					var msg = "proceed in arguments list in " + composition.functionName
+					if (Config.throwErrorOnDepricated) throw new Error("DEPRICATED ERROR: " + msg);
+					if (Config.logDepricated) console.log("DEPRICATED WARNING: " + msg);
+					var result = partialMethod.apply(composition.object, args);
+				} else {
+					var result = partialMethod.apply(composition.object, arguments);
+				}
+
+			} finally {
+				composition.partialMethodIndex = index	
+			}
+			return result
+		}
+	}
+})
+
+
 // Static Initialize
 cop.GlobalLayers = [];
-
 resetLayerStack();
+
+
+// Syntactic Sugar: Layer in Class
+
+/*
+ * extend the subclassing behavior of Lively Kernel to allow fo Layer-In-Class constructs  
+ */	
+Object.extend(Function.prototype, { 
+	subclass: Object.subclass.wrap(function(proceed) {
+		var args = $A(arguments);
+		args.shift();
+		var layeredMethods = [];
+	
+		for (var i=1; i < args.length; i++) {
+			var methods = args[i];
+			if (Object.isString(methods)) continue; // if it's a category
+			Object.keys(methods).each(function(ea) {
+				var m = ea.match(/([A-Za-z0-9]+)\$([A-Za-z0-9]*)/);
+				if (m) {
+					var getter = methods.__lookupGetter__(m[0]);
+					var setter = methods.__lookupSetter__(m[0]);
+					layeredMethods.push({layerName: m[1], methodName: m[2], methodBody: methods[ea], 
+						getterMethod: getter, setterMethod: setter});
+					delete methods[ea];
+				};
+			});
+		};
+		var klass =  proceed.apply(this, args);
+		layeredMethods.each(function(ea){
+			// log("layer property " + ea.methodName + " in " + ea.layerName);
+			var layer = Global[ea.layerName];
+			if (!layer) throw new Error("could not find layer: " + ea.layerName);
+			if (ea.getterMethod || ea.setterMethod) {
+				if (ea.getterMethod) {
+					layerGetterMethod(layer, klass.prototype, ea.methodName, ea.getterMethod);
+				};
+				if (ea.setterMethod) {
+					layerSetterMethod(layer, klass.prototype, ea.methodName, ea.setterMethod);
+				};
+				ContextJS.makePropertyLayerAware(klass.prototype, ea.methodName);
+			} else {
+				// log("layer method " + ea.methodName + " in " + ea.layerName);
+				layerMethod(layer, klass.prototype, ea.methodName, ea.methodBody);
+			}
+		});
+		return klass;
+	})
+});
 
 });

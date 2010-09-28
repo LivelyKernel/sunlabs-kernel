@@ -29,7 +29,7 @@ cop.create('WorkspaceLayer')
 		},
 
 		morphMenu: function(proceed, evt) {
-			var menu = proceed(evt);
+			var menu = cop.proceed(evt);
 			if (menu) {
 				menu.addItem([
 					(this.evalOnWorldLoad ? "disable" : "enable") + " eval on world load",   this, 
@@ -39,7 +39,7 @@ cop.create('WorkspaceLayer')
 		},
 
 		onDeserialize: function(proceed) {
-			proceed();
+			cop.proceed();
 			if (this.evalOnWorldLoad) {
 				// console.log("eval workspace is " + this.evalOnWorldLoad + ":"+ this.textString );
 				this.tryBoundEval(this.textString);
@@ -53,7 +53,7 @@ cop.create('WorkspaceControlLayer')
 	.refineClass(WindowMorph, {
 
 		isWorkspaceLayerEnabled: function() {
-				l3 = cop.layer('WorkspaceControlLayer2');
+				l3 = cop.create('WorkspaceControlLayer2');
 				var layers = this.getWithLayers();
 				return layers && layers.include(WorkspaceLayer);
 		},
@@ -78,7 +78,7 @@ cop.create('WorkspaceControlLayer')
 		},
 
 		morphMenu: function(proceed, evt) {
-			var menu = proceed(evt);
+			var menu = cop.proceed(evt);
 			if (menu) {
 				menu.addItem([
 					"change title",   this, 
@@ -101,11 +101,11 @@ cop.create('WorkspaceControlLayer')
 					return true;
 				}
 			}
-			return proceed(evt);
+			return cop.proceed(evt);
 		},
 	
 		toolSubMenuItems: function(proceed, evt) {
-			var menu = proceed(evt);
+			var menu = cop.proceed(evt);
 			menu.push(["Workspace (k) ", function(evt) {
 				WorldMorph.current().addWorkspace()
 			}]);

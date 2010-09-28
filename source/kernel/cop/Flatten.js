@@ -91,9 +91,9 @@ Object.subclass('MethodManipulator', {
 
 		originalSrc = '(' + originalSrc + ')';
 		proceedVarName = proceedVarName.replace('$', '\\$')
-		// replace the calls with args, this means something like "$proceed(args)"
+		// replace the calls with args, this means something like "cop.proceed(args)"
 		layerSrc = layerSrc.replace(new RegExp(proceedVarName + '\\(([^\\)]+)\\)'), originalSrc + '.call(this, $1)');
-		// replace the calls without args, this means something like "$proceed()"
+		// replace the calls without args, this means something like "cop.proceed()"
 		layerSrc = layerSrc.replace(new RegExp(proceedVarName + '\\(\s*\\)'), originalSrc + '.call(this)');
 		// replace the proceeds that are not normally activated
 		layerSrc = layerSrc.replace(proceedVarName, originalSrc);
