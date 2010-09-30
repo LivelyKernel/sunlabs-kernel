@@ -27,6 +27,13 @@ CopBenchmark = {};
 CopBenchmark.MAXSIZE = 1000000000
 CopBenchmark.TARGETTIME = 100
 
+extendString = function(s, length) {
+	while(s.length < length) {
+		s = s + " ";
+	}
+	return s
+}
+
 benchmakeBlock = function(name, unrolledOps, func) {
 	var MAXSIZE = CopBenchmark.MAXSIZE || 100000000;
 	var TARGETTIME = CopBenchmark.TARGETTIME || 1000; // 1000
@@ -46,7 +53,7 @@ benchmakeBlock = function(name, unrolledOps, func) {
 		ops = (unrolledOps * size);
 		size *= 2;
 	};
-	var result = name +"	" + ops + "	" + time + "	" + Math.round(ops / time) + "\n"
+	var result = extendString(name, 40) +"	" + ops + "	" + time + "	" + Math.round(ops / time) + "\n"
 	CopBenchmark.result = CopBenchmark.result.concat(result);
 	CopBenchmark.printEachResult(result);
 }
@@ -1177,38 +1184,39 @@ addWrapperBenchmarks = function() {
 	])
 };
 
-CopBenchmark.printEachResult = function(result) {
-	console.log(result);
-};
+Object.extend(CopBenchmark, {
+	printEachResult: function(result) {
+		console.log(result);
+	},
 
-CopBenchmark.printResults = function() {
-	console.log("Results:");
-	console.log(CopBenchmark.result);
-};
+	printResults:  function() {
+		console.log("Results:");
+		console.log(CopBenchmark.result);
+	},
 
-CopBenchmark.runDelayed = function runDelayed() {
-    var benchmark = CopBenchmark.benchnarksToRun.shift();
-    if (!benchmark) {
-		CopBenchmark.printResults();
-      	return
-    };
-	// console.log("run " + benchmark.name)
-	benchmark.run(benchmark.name)
-	Global.setTimeout(runDelayed, 10);
-};
+	runDelayed: function runDelayed() {
+	    var benchmark = CopBenchmark.benchnarksToRun.shift();
+	    if (!benchmark) {
+			CopBenchmark.printResults();
+	      	return
+	    };
+		// console.log("run " + benchmark.name)
+		benchmark.run(benchmark.name)
+		Global.setTimeout(runDelayed, 10);
+	},
 
-CopBenchmark.runBenchmark = function runDelayed() {
-	CopBenchmark.result= "name	ops	time	ops / time\n";
-	CopBenchmark.benchnarksToRun = [];
-	addLayerBenchmarks0();
-	addLayerBenchmarks1();
-	addLayerBenchmarks2();
-	addLayerBenchmarks3();
-	addLayerBenchmarks4();
-	addWrapperBenchmarks();
-	CopBenchmark.runDelayed();
-};
-
+	runBenchmark:  function runDelayed() {
+		CopBenchmark.result= "name	ops	time	ops / time\n";
+		CopBenchmark.benchnarksToRun = [];
+		addLayerBenchmarks0();
+		addLayerBenchmarks1();
+		addLayerBenchmarks2();
+		addLayerBenchmarks3();
+		addLayerBenchmarks4();
+		addWrapperBenchmarks();
+		CopBenchmark.runDelayed();
+	}
+})
 
 
 });

@@ -681,7 +681,7 @@ Object.extend(cop, {
 		} else {
 			try {
 				composition.partialMethodIndex  = index - 1;
-				if (partialMethod.toString().match(/^[\t ]*function ?\(\$?proceed/)) {	
+				if (!Config.ignoredepricatedProceed && partialMethod.toString().match(/^[\t ]*function ?\(\$?proceed/)) {	
 					var args = $A(arguments);
 					args.unshift(cop.proceed);
 					var msg = "proceed in arguments list in " + composition.functionName
