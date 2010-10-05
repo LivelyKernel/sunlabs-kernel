@@ -27,17 +27,6 @@
 
 module('lively.Main').requires().toRun(function() {
 
-Object.extend(Global, {
-	onload: function main() { // window.onload
-		// the delay here is a workaround to give FF 2.0 the time to update
-		// the DOM to reflect the geometry of objects on the screen, which is
-		// needed to figure out font geometry. Apparently the update happens
-		// after control returns to the caller of JS
-		function main() { new lively.Main.Loader().systemStart() };
-		main.logCompletion("main").delay(Config.mainDelay);
-		// alternative? window.addEventListener("DOMContentLoaded", main, false);
-	},	
-});
 
 Object.subclass('lively.Main.Loader',
 'properties', {
@@ -194,7 +183,7 @@ Object.subclass('lively.Main.Loader',
 	},
 
 	createNewWorld: function(canvas) {
-		var world,
+		var world, loader = this,
 			requirements = Config.modulesBeforeChanges
 				.concat(Config.modulesBeforeWorldLoad)
 				.concat(Config.modulesOnWorldLoad);

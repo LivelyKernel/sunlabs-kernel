@@ -1059,7 +1059,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	
 	beAnonymous: function() {
 		this._isAnonymous = true;
-		// this.sourceModule = lively.data.Namespace.current();
+		this.sourceModuleName = lively.lang.Namespace.current().namespaceIdentifier;
 		return this;
 	},
 
@@ -1072,6 +1072,11 @@ Namespace.addMethods({ // module specific, should be a subclass?
 		if (m !== this)
 			throw new Error('Wrong module: ' + this.namespaceIdentifier +
 				' instead of expected ' + m.namespaceIdentifier )
+	},
+	
+	toString: function() {
+			return 'namespace(' + this.namespaceIdentifier +
+				(this.isAnonymous() ? ' loaded by ' + this.sourceModuleName : '') + ')'
 	},
 });
 
