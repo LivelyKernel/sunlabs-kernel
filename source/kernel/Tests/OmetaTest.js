@@ -1,6 +1,6 @@
 module('Tests.OmetaTest').requires('lively.TestFramework', 'lively.Helper', 'lively.Ometa').toRun(function() {
 
-TestCase.subclass('TextTest', {
+TestCase.subclass('Tests.OmetaTest.TextTest', {
 
     styleOfIncludes: function(spec, style) {
         var names = Object.keys(spec).select(function(ea) { return spec.hasOwnProperty(ea) });
@@ -28,7 +28,7 @@ TestCase.subclass('TextTest', {
 });
 
 
-TestCase.subclass('OmetaTest', {
+TestCase.subclass('Tests.OmetaTest.OmetaTest', {
                         
     testBSOMetaJSParser: function() {
         var s = "3+ 4";

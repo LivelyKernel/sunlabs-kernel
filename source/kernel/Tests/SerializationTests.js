@@ -69,7 +69,8 @@ Widget.subclass('DummyWidget', {
 
 
 
-TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
+TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase',
+'ruuning', {
 
 	runTest: function($super, selector) {
 		cop.withLayers([SerializationTestLayer], function() {
@@ -93,7 +94,10 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 		this.canvas = this.dom.documentElement;
 		this.worldMorph = new WorldMorph(this.canvas);
 		var dict = NodeFactory.create("defs");
-		this.worldMorph.dictionary = function() {return dict};
+		this.canvas.appendChild(dict);
+		this.oldDictFunc = lively.data.Wrapper.prototype.dictionary;
+		lively.data.Wrapper.prototype.dictionary = function() { return dict };
+		WorldMorph.currentWorld = this.worldMorph;
 
 		this.canvas.appendChild(this.worldMorph.rawNode);
 		this.morphs = [];
@@ -104,10 +108,13 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase', {
 	
 	tearDown: function($super) {
 		$super();
+		lively.data.Wrapper.prototype.dictionary = this.oldDictFunc;
 		WorldMorph.currentWorld = this.realWorld;
 		this.morphs.each(function(each){ each.remove()})
 		Global.document = this.oldGlobalDocument 
 	},
+},
+'helper', {
 
 	showMyWorld: function(optWorld) {
 		if (optWorld) {
@@ -842,28 +849,37 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 	},
 });
 
-TestCase.subclass("ScriptingMorphTest", {
+TestCase.subclass("ScriptingMorphTest",
+'testing', {
+
+	testFunctionAsScript: function() { // FIXME does not belong here
+		var obj = {n: 2}
+		var script = (function foo(i) { return this.n += i }).asScriptOf(obj);
+		this.assertEquals(3, obj.foo(1));
+		// isSerializable is the "API"
+		this.assert(script.isSerializable, 'not serializable');
+	},
 
 	testAddScript: function() {
 		var m = Morph.makeRectangle(0,0,10,10);
 		m.addScript(function foo() { this.fooWasHere  = true})
-		this.assert(m.foo instanceof Function, "foo is no function")
+		this.assert(Object.isFunction(m.foo), "foo is no function")
 		m.foo() 				
 		this.assert(m.fooWasHere , "call to foo was not successful")
 	},
 
 	testAddScriptNamed: function() {
 		var m = Morph.makeRectangle(0,0,10,10);
-		m.addScriptNamed("foo", function() { this.fooWasHere  = true})
+		m.addScript(function() { this.fooWasHere  = true}, "foo")
 		this.assert(m.foo instanceof Function, "foo is no function")
 		m.foo() 				
 		this.assert(m.fooWasHere , "call to foo was not successful")
 	},
 	
-	testScriptIsSerializeable: function() {
+	testScriptIsSerializable: function() {
 		var m = Morph.makeRectangle(0,0,10,10);
 		m.addScript(function foo() { this.fooWasHere  = true})
-		this.assert(m.foo.isSerializeable , "foo is not serializeable")
+		this.assert(m.foo.isSerializable , "foo is not serializable")
 	},
 
 	testFunctionToLiteral: function() {
@@ -895,7 +911,8 @@ TestCase.subclass("ScriptingMorphTest", {
 
 	testSerializeScripts: function() {
 		var m = Morph.makeRectangle(0,0,10,10);
-		m.addScript(function foo() { this.fooWasHere  = true})
+		var script = m.addScript(function foo() { this.fooWasHere  = true }),
+			expectedSource = Strings.format('{"source":"%s"}', script.toString());
 		var doc = Exporter.shrinkWrapMorph(m);
 		var node = doc.getElementById(m.id());
 
@@ -903,8 +920,8 @@ TestCase.subclass("ScriptingMorphTest", {
 
 		Exporter.stringify(node)
 	
-		this.assert(field, 'no field node')		
-		this.assertEqual(field.textContent, '{"source":"function foo() { this.fooWasHere  = true;}"}');
+		this.assert(field, 'no field node');
+		this.assertEqual(field.textContent, expectedSource);
 		this.assertEqual(field.getAttribute('family'), 'Function', 'no family (class)');		
 	},
 
@@ -917,9 +934,9 @@ TestCase.subclass("ScriptingMorphTest", {
 			'</g>';
 
 		var c = new ClipboardCopier();
-		var morphs = c.loadMorphsWithWorldTrunkFromSource(source)
-		m = morphs[0]
-		this.assertEqual(morphs.length, 1, "wrong number of morphs") 
+		var morphs = c.loadMorphsWithWorldTrunkFromSource(source);
+		this.assertEqual(morphs.length, 1, "wrong number of morphs");
+		var m = morphs[0];
 
 		this.assert(m.foo, "no foo")
 		this.assert(m.foo instanceof Function, "foo is no function")

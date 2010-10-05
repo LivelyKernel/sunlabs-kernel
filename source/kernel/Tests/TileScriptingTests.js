@@ -219,7 +219,7 @@ TestCase.subclass('Tests.TileScriptingTests.NumberTileTest', {
     }
 });
 
-TestCase.subclass('LayoutTests', {
+TestCase.subclass('Tests.TileScriptingTests.LayoutTests', {
     
     setUp: function() {
         this.baseMorph = Morph.makeRectangle(new Rectangle(0,0,50,200));
