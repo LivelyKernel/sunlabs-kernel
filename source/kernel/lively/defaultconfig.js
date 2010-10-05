@@ -363,3 +363,4 @@ Config.useDelayedHTMLRendering = false
 // this part is for the CodeDB extension using CouchDB
 Config.couchDBURL = document.location.protocol + '//' + document.location.host + '/couchdb';
 Config.defaultCodeDB = 'code_db';
+Config.wikiRepoUrl = null;
