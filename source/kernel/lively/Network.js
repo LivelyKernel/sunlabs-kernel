@@ -1157,7 +1157,7 @@ Object.subclass('WebResource', {
 		if (contentType)
 			resource.contentType = contentType;
 		resource.isShowingProgress = this.isShowingProgress;
-		resource.fetch(true, null, rev);
+		resource.fetch(true, this.requestHeaders, rev);
 		return resource.getContentText();
 	},
 
@@ -1168,7 +1168,7 @@ Object.subclass('WebResource', {
 			Record.newPlainInstance({URL: this.getURL().toString(), ContentDocument: null}));
 		if (contentType)
 			resource.contentType = contentType;
-		resource.fetch(true, null, rev);
+		resource.fetch(true, this.requestHeaders, rev);
 		return resource.getContentDocument();
 	},
 
@@ -1176,7 +1176,7 @@ Object.subclass('WebResource', {
 	setContent: function(content, contentType) {
 		var resource = new Resource(Record.newPlainInstance({URL: this.getURL().toString()}));
 		if (contentType) resource.contentType = contentType;
-		resource.store(content, this.isSync());
+		resource.store(content, this.isSync(), this.requestHeaders);
 	},
 
 	// deprecated
@@ -1250,7 +1250,13 @@ WebResource.addMethods({
 		this.contentDocument = null;
 		this.isExisting = null;
 		this.subResources = null;
+		this.requestHeaders = null;
 	},
+	setRequestHeaders: function(headers) {
+		this.requestHeaders = headers;
+		return this;
+	},
+
 
 	createResource: function() {
 		var self = this;
@@ -1304,6 +1310,8 @@ WebResource.addMethods({
 		});
 		if (this.isSync())
 			request.beSync();
+		if (this.requestHeaders)
+			request.requestHeaders = this.requestHeaders;
 		return request;
 	},
 
@@ -1311,7 +1319,7 @@ WebResource.addMethods({
 		var resource = this.createResource();
 		if (contentType)
 			resource.contentType = contentType;
-		resource.fetch(this.isSync(), null, rev);
+		resource.fetch(this.isSync(), this.requestHeaders, rev);
 		return this
 	},
 
@@ -1323,7 +1331,7 @@ WebResource.addMethods({
 		var resource = this.createResource();
 		if (contentType)
 			resource.contentType = contentType;
-		resource.store(content, this.isSync());
+		resource.store(content, this.isSync(), this.requestHeaders);
 		return this;
 	},
 
@@ -1376,7 +1384,7 @@ WebResource.addMethods({
 				return this;
 			}
 		}
-		res.fetchMetadata(this.isSync(), null, startRev, endRev, null);
+		res.fetchMetadata(this.isSync(), this.requestHeaders, startRev, endRev, null);
 		return this;
 	},
 
