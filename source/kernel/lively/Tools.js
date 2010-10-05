@@ -445,7 +445,7 @@ Widget.subclass('ColumnInspector',
 			selection: {dir: '->', name: 'setTitle', options: {
 				converter: function(node) {	
 					// if (!node) return "no node?";
-					return node.object ? node.object.toString() : String(node.object)}}},
+					return node.object ? node.object.toString().truncate(40) : String(node.object)}}},
 		});
 
 		// source pane
