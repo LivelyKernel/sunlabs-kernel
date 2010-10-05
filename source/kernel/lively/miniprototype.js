@@ -270,15 +270,11 @@ var Enumerable = {
   },
 
   detect: function detect(iterator, context) {
-    iterator = iterator.bind(context);
-    var result;
-    this.each(function(value, index) {
-      if (iterator(value, index)) {
-        result = value;
-        throw $break;
-      }
-    });
-    return result;
+	for (var i = 0; i < this.length; i++) {
+		var value = this[i];
+		if (iterator.call(context, value, i))
+			return value;
+	}
   },
 
   findAll: function findAll(iterator, context) {
