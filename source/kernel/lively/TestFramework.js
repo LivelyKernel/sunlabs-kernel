@@ -565,9 +565,12 @@ Object.subclass('TestResult', {
 	
 	failureList: function() {
 		var result = this.failed.collect(function(ea) {
-			return ea.toString() + ' in ' + this.getFileNameFromError(ea.err) + 
-	            (ea.err.line ? ' ( Line '+ ea.err.line + ')' : "");
-		}, this);
+			return Strings.format('%s in %s %s\n\t%s',
+				ea.toString(),
+				this.getFileNameFromError(ea.err),
+				(ea.err.line ? ' ( Line '+ ea.err.line + ')' : ""),
+				(ea.err.stack ? ' ( Stack '+ ea.err.stack + ')' : ""))
+			}, this);
 		return result
 	},
 	

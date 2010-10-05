@@ -17,7 +17,7 @@ TestCase.subclass('DummyTestCase3', { testRedTest1: function() { this.assert(fal
  * @class TestTestCase
  * Tests the TestCase class
  */
-TestCase.subclass('TestTestCase', {
+TestCase.subclass('Tests.TestFrameworkTests.TestCaseTest', {
 	setUp: function() {
 		this.setUpWasRun = true;
 	},
@@ -155,7 +155,7 @@ TestCase.subclass('TestTestCase', {
 /**
  * @class TestResultTest
  */
-TestCase.subclass('TestResultTest', {
+TestCase.subclass('Tests.TestFrameworkTests.TestResultTest', {
 	setUp: function() {
         this.dummyTestCase = new DummyTestCase();
 	},
@@ -213,7 +213,7 @@ TestCase.subclass('TestResultTest', {
 //  }
 // });
 
-TestCase.subclass('RememberStackTest', {
+TestCase.subclass('Tests.TestFrameworkTests.RememberStackTest', {
 	
 	shouldRun: false,
 	
@@ -312,7 +312,7 @@ TestCase.subclass('RememberStackTest', {
 });
 
 
-TestCase.subclass('ErrorStackViewerTest', {
+TestCase.subclass('Tests.TestFrameworkTests.ErrorStackViewerTest', {
 	
 	shouldRun: false,
 	
@@ -383,7 +383,7 @@ function dummyRecurse(a) {
 } //stackTestFunctions
 
 
-TestCase.subclass('NativeStackTest', {
+TestCase.subclass('Tests.TestFrameworkTests.NativeStackTest', {
     
     shouldRun: true,
     
@@ -403,41 +403,41 @@ TestCase.subclass('NativeStackTest', {
 });
 
 
-AsyncTestCase.subclass('AsyncTestCaseTest', {
+AsyncTestCase.subclass('Tests.TestFrameworkTests.AsyncTestCaseTest', {
     // Tests if
     //   - synchronous tests are run before asynchronous tests
     //   - asynchronous tests are run only when earlier tests
     //     (both sync adn async) are marked as done
 
-runAll: function($super, statusUpdateFunc) {
-	// yeah, it's ugly
-	Global.test1Called = false;
-	Global.test2AsyncCalled = false;
-	Global.test3Called = false;
+	runAll: function($super, statusUpdateFunc) {
+		// yeah, it's ugly
+		Global.test1Called = false;
+		Global.test2AsyncCalled = false;
+		Global.test3Called = false;
 
-	$super(statusUpdateFunc);
-},
+		$super(statusUpdateFunc);
+	},
 
-tearDown: function() {
-	this.tearDownCalled = true
-},
-
-  
+	tearDown: function() {
+		this.tearDownCalled = true
+	},
+	  
     test1: function() {
-	Global.test1Called = true;
-	this.assert(!Global.test2AsyncCalled, 'test2Async already called');
-	this.done();
-},
+		Global.test1Called = true;
+		this.assert(!Global.test2AsyncCalled, 'test2Async already called');
+		this.done();
+	},
     
     test2Async: function() {
-	this.delay(function() {
-		Global.test2AsyncCalled = true;
-		this.assert(Global.test1Called, 'test1 was not called');
-		this.assert(!Global.test3Called, 'test3 was already called');
-		this.assert(!this.tearDownCalled, 'tearDown was already called');
-		this.done();
-	}, 800);
+		this.delay(function() {
+			Global.test2AsyncCalled = true;
+			this.assert(Global.test1Called, 'test1 was not called');
+			this.assert(!Global.test3Called, 'test3 was already called');
+			this.assert(!this.tearDownCalled, 'tearDown was already called');
+			this.done();
+		}, 800);
 	},
+
     test3: function() {
       Global.test3Called = true;
       this.assert(Global.test2AsyncCalled, 'test2AsyncCalled was not called');
