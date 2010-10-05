@@ -1282,6 +1282,8 @@ BoxMorph.subclass('TextMorph',
 		this.linkToStyles(['helpText']);
 		this.setWrapStyle(lively.Text.WrapStyle.Shrink);
 		this.openForDragAndDrop = false; // so it won't interfere with mouseovers
+		this.isBalloonMorph = true;
+		this.isEpimorph = true;
 		return this;
 	},
 },
