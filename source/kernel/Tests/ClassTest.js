@@ -218,4 +218,67 @@ testAddMethodsWithMultipleCategories: function() {
 	},
 
 });
+TestCase.subclass('Tests.ClassTest.ModuleRelatedClassTests',
+'running', {
+	setUp: function($super) {
+		$super();
+		this.createdClasses = [];
+	},
+	tearDown: function($super) {
+		$super();
+		this.createdClasses.forEach(function(klass) {
+			var ns = Class.namespaceFor(klass.type || klass.name);
+			delete ns[klass.name];
+		})
+	},
+},
+'helper', {
+	createModule: function(/*name, callback, ...*/) {
+		var args = $A(arguments),
+			name = args.shift();
+		module(name).requires().toRun(function() {
+			args.forEach(function(callback) { callback() });
+		});
+	},
+	createDummyClass: function(no) {
+		var klass = Object.subclass('Tests.ClassTest.DummyClass' + no);
+		this.createdClasses.push(klass);
+		return klass
+	},
+	getDummyClass: function(no) {
+		return Tests.ClassTest['DummyClass' + no];
+	},
+},
+'testing', {
+	testClassKnowsItsModule: function() {
+		var moduleName = 'Tests.ClassTest.DummyModule1';
+		this.createModule(moduleName, this.createDummyClass.curry(1));
+		var klass = this.getDummyClass(1);
+		this.assertEquals(module(moduleName).namespaceIdentifier, klass.sourceModule.namespaceIdentifier);
+	},
+	testReEvaluationDoesNotChangeSourceModule: function() {
+		var moduleName = 'Tests.ClassTest.DummyModule1';
+		this.createModule(moduleName, this.createDummyClass.curry(1));
+		var klass = this.createDummyClass(1);
+		this.assertEquals(module(moduleName).namespaceIdentifier, klass.sourceModule.namespaceIdentifier);
+	},
+	testNestedModuleDefs: function() {
+		var moduleName1 = 'Tests.ClassTest.DummyModule1',
+			moduleName2 = 'Tests.ClassTest.DummyModule2';
+		this.createModule(moduleName1,
+			this.createModule.curry(moduleName2, this.createDummyClass.curry(2)),
+			this.createDummyClass.curry(1));
+		var klass1 = this.getDummyClass(1),
+			klass2 = this.getDummyClass(2);
+		this.assertEquals(module(moduleName2).namespaceIdentifier, klass2.sourceModule.namespaceIdentifier);
+		this.assertEquals(module(moduleName1).namespaceIdentifier, klass1.sourceModule.namespaceIdentifier);
+	},
+	testGlobalCanBeRequired: function() {
+		require('Global').toRun(function() { this.works = true }.bind(this))
+		this.assert(this.works);
+	},
+
+
+
+});
 }) // end of module

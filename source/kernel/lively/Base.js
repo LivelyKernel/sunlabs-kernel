@@ -312,10 +312,13 @@ function module(moduleName) {
 				code = code.curry(module); // pass in own module name for nested requirements
 				var codeWrapper = function() { // run code with namespace modules as additional parameters
 					try {
+						module.activate();
 						code.apply(this, requiredModules);
 					} catch(e) {
 						console.error('Error while loading ' + moduleName + ': ' + e);
 						dbgOn(true);
+					} finally {
+						module.deactivate();
 					}
 				}
 				module.addOnloadCallback(codeWrapper);
@@ -361,10 +364,11 @@ Object.extend(Function.prototype, {
 
 		// modified from prototype.js
 	
-		var args = $A(arguments);
-		var className = args.shift();
-		var targetScope = Global;
-		var shortName = null;
+		var args = $A(arguments),
+			className = args.shift(),
+			targetScope = Global,
+			shortName = null;
+
 		if (className) {
 			targetScope = Class.namespaceFor(className);
 			shortName = Class.unqualifiedNameFor(className);
@@ -387,6 +391,10 @@ Object.extend(Function.prototype, {
 			klass.prototype.constructor.type = className; // KP: .name would be better but js ignores .name on anonymous functions
 			klass.prototype.constructor.displayName = className; // for debugging, because name can not be assigned
 			if (className) targetScope[shortName] = klass; // otherwise it's anonymous
+
+			// remember the module that contains the class def
+			if (Global.lively && lively.lang && lively.lang.Namespace)
+				klass.sourceModule = lively.lang.Namespace.current();
 		};
 
 		// the remaining args should be category strings or source objects
@@ -920,7 +928,7 @@ Object.subclass('Namespace',
 	functions: function(recursive) {
 		return this.gather(
 			'functions',
-			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea },
+			function(ea) { return ea && !Class.isClass(ea) && Object.isFunction(ea) && !ea.declaredClass && this.requires !== ea && ea.getOriginal() === ea },
 			recursive);
 	},
 	
@@ -928,7 +936,10 @@ Object.subclass('Namespace',
 
 // let Glabal act like a namespace itself
 Object.extend(Global, Namespace.prototype);
-Global.namespaceIdentifier = 'Global';
+Object.extend(Global, {
+	namespaceIdentifier: 'Global',
+	isLoaded: Functions.True,
+});
 
 Namespace.addMethods({ // module specific, should be a subclass?
 	
@@ -1048,9 +1059,25 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	
 	beAnonymous: function() {
 		this._isAnonymous = true;
+		// this.sourceModule = lively.data.Namespace.current();
 		return this;
-	}
-	
+	},
+
+	activate: function() {
+		this.constructor.namespaceStack.push(this);
+	},
+
+	deactivate: function() {
+		var m = this.constructor.namespaceStack.pop();
+		if (m !== this)
+			throw new Error('Wrong module: ' + this.namespaceIdentifier +
+				' instead of expected ' + m.namespaceIdentifier )
+	},
+});
+
+Object.extend(Namespace, {
+	namespaceStack: [Global],
+	current: function() { return this.namespaceStack.last() },
 });
 
 (function moveNamespaceClassToLivelyLang() {
