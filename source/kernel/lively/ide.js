@@ -77,13 +77,6 @@ Widget.subclass('lively.ide.BasicBrowser',
 	initialize: function($super) {
 		$super();
 		var panes = this.allPaneNames;
-		// create empty onUpdate functions
-		panes.forEach(function(ea) {
-			this['on' + ea + 'MenuUpdate'] = Functions.Null;
-			this['on' + ea + 'FiltersUpdate'] = Functions.Null;
-		}, this);
-		this.onStatusMessageUpdate = Functions.Null;
-		this.onRootFiltersUpdate = Functions.Null;
 
 		//create a model and relay for connecting the additional components later on
 		var model = Record.newPlainInstance((function(){
@@ -236,6 +229,11 @@ Widget.subclass('lively.ide.BasicBrowser',
 		this.mySourceControl().unregisterBrowser(this);
     },
 
+},
+'testing', {
+    hasUnsavedChanges: function() {
+        return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
+    },
 },
 'accessing', {
 
@@ -426,10 +424,6 @@ Widget.subclass('lively.ide.BasicBrowser',
 		this.nodeChanged(this.selectedNode());
 	},
 
-    hasUnsavedChanges: function() {
-        return this.panel.sourcePane.innerMorph().hasUnsavedChanges();
-    },
-
 	onPane1ContentUpdate: function() {
 	},
 
@@ -445,57 +439,69 @@ Widget.subclass('lively.ide.BasicBrowser',
 
 	onPane4ContentUpdate: function(items, source) {
 	},
-	    
+
+	onPane1MenuUpdate: Functions.Null,
+	onPane2MenuUpdate: Functions.Null,
+	onPane3MenuUpdate: Functions.Null,
+	onPane4MenuUpdate: Functions.Null,
+	onPane1FiltersUpdate: Functions.Null,
+	onPane2FiltersUpdate: Functions.Null,
+	onPane3FiltersUpdate: Functions.Null,
+	onPane4FiltersUpdate: Functions.Null,
+	onStatusMessageUpdate: Functions.Null,
+	onRootFiltersUpdate: Functions.Null,
+
 	allChanged: function(keepUnsavedChanges, changedNode) {
-	// optimization: if no node looks like the changed node in my browser do nothing
-	if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
-		return;
+		// optimization: if no node looks like the changed node in my browser do nothing
+		if (changedNode && this.allNodes().every(function(ea) {return !changedNode.hasSimilarTarget(ea)}))
+			return;
 
-	// FIXME remove duplication
-       var oldN1 = this.getPane1Selection();
-       var oldN2 = this.getPane2Selection();
-       var oldN3 = this.getPane3Selection();
-	var oldN4 = this.getPane4Selection();
+		// FIXME remove duplication
+		var oldN1 = this.getPane1Selection();
+		var oldN2 = this.getPane2Selection();
+		var oldN3 = this.getPane3Selection();
+		var oldN4 = this.getPane4Selection();
 
-	var sourcePos = this.panel.sourcePane.getVerticalScrollPosition();
+		var sourcePos = this.panel.sourcePane.getVerticalScrollPosition();
 
-	var src = keepUnsavedChanges &&
+		var src = keepUnsavedChanges &&
 					this.hasUnsavedChanges() &&
 					this.panel.sourcePane.innerMorph().textString;
 
-	if (this.hasUnsavedChanges())
-		this.setSourceString(this.emptyText);
-				
-	var revertStateOfPane = function(paneName, oldNode) {
-		if (!oldNode) return;
-		var nodes = this.nodesInPane(paneName);
-		var newNode = nodes.detect(function(ea) {
-		    return ea && ea.target && (ea.target == oldNode.target || (ea.target.eq && ea.target.eq(oldNode.target)))
-		});
-		if (!newNode)
-			newNode = nodes.detect(function(ea) {return ea && ea.asString() === oldNode.asString()});
-           this['set' + paneName + 'Selection'](newNode, true);
-	}.bind(this);
+		if (this.hasUnsavedChanges())
+			this.setSourceString(this.emptyText);
+
+		var revertStateOfPane = function(paneName, oldNode) {
+			if (!oldNode) return;
+			var nodes = this.nodesInPane(paneName);
+			var newNode = nodes.detect(function(ea) {
+			    return ea && ea.target &&
+					(ea.target == oldNode.target || (ea.target.eq && ea.target.eq(oldNode.target)))
+			});
+			if (!newNode)
+				newNode = nodes.detect(function(ea) {return ea && ea.asString() === oldNode.asString()});
+	           this['set' + paneName + 'Selection'](newNode, true);
+		}.bind(this);
 	
-	this.start(); // select rootNode and generate new subnodes
+		this.start(); // select rootNode and generate new subnodes
 
-	revertStateOfPane('Pane1', oldN1);
-	revertStateOfPane('Pane2', oldN2);
-	revertStateOfPane('Pane3', oldN3);
-	revertStateOfPane('Pane4', oldN4);
+		revertStateOfPane('Pane1', oldN1);
+		revertStateOfPane('Pane2', oldN2);
+		revertStateOfPane('Pane3', oldN3);
+		revertStateOfPane('Pane4', oldN4);
 
-	if (!src) {
+		if (!src) {
+			this.panel.sourcePane.setVerticalScrollPosition(sourcePos);
+			return;
+		}
+
+		//this.setSourceString(src);
+		var text = this.panel.sourcePane.innerMorph();
+		text.setTextString(src.toString())
 		this.panel.sourcePane.setVerticalScrollPosition(sourcePos);
-		return;
-	}
-
-	//this.setSourceString(src);
-	var text = this.panel.sourcePane.innerMorph();
-	text.setTextString(src.toString())
-	this.panel.sourcePane.setVerticalScrollPosition(sourcePos);
-	// text.changed()
-	text.showChangeClue(); // FIXME
-},
+		// text.changed()
+		text.showChangeClue(); // FIXME
+	},
 
     nodeChanged: function(node) {
         // currently update everything, this isn't really necessary
@@ -701,13 +707,14 @@ Object.subclass('lively.ide.BrowserNode', {
 	},
 
 	newSource: function(newSource) {
-		var errorOccurred = false;
-		var failureOccurred = false;
-		var msg = 'Saving ' + this.target.getName() + '...\n';
+		var errorOccurred = false,
+			failureOccurred = false,
+			msg = 'Saving ' + this.target.getName() + '...\n',
+			srcCtrl = this.target.getSourceControl ? this.target.getSourceControl() : lively.ide.SourceControl;
 
 		// save source
 		try {
-			if (this.saveSource(newSource, lively.ide.SourceControl)) {
+			if (this.saveSource(newSource, srcCtrl)) {
 				msg += 'Successfully saved';
 			} else {
 				msg += 'Couldn\'t save';
@@ -1929,18 +1936,18 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CopRefineFragmentNode', {
 
 	childNodes: function() {
 		return this.target.subElements().collect(function(fileFragment) {
-			return new lively.ide.CopMemberFragmentNode(fileFragment, this.browser, this.target)
+			return new lively.ide.CopMemberFragmentNode(fileFragment, this.browser, this)
 		}, this);
 	},
 
 	evalSource: function(newSource) {
+		var source = Strings.format('cop.create("%s")%s', this.parent.getName(), newSource);
 		try {
-			// eval(newSource);
+			eval(source);
 		} catch (er) {
-			console.log("error evaluating refine layer:" + er);
-			throw(er)
+			this.statusMessage('Could not eval ' + this.asString() + ' because ' + e, Color.red, 5)
 		}
-		console.log('Successfully evaluated layer');
+		this.statusMessage('Successfully evaled ' + this.asString(), Color.green, 3)
         return true;
     },
 
@@ -1949,7 +1956,12 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CopRefineFragmentNode', {
 });
 lively.ide.FileFragmentNode.subclass('lively.ide.CopMemberFragmentNode', {
 
-
+    isMemberNode: true,
+	
+	evalSource: function(newSource) {
+		this.parent.evalSource(this.parent.sourceString());
+		return true;
+	},
 
 });
 

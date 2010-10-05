@@ -154,22 +154,34 @@ Foo.addMethods('catC',{\n\
 		var root = this.createMockNode(this.browser, [completeFFNode]);
 		this.browser.rootNode =  function() { return root };
 	},
+	buildCopTestSource: function() {
+		// create and parse the source into filefragments
+		var src = "cop.create(\"testLayer\")"
+
+		this.db = new AnotherSourceDatabase();
+		var rootFragment = this.db.prepareForMockModule('dummyCopSource.js', src);
+
+		this.fileFragment = rootFragment;
+
+		// setup browser
+		var completeFFNode = new lively.ide.CompleteFileFragmentNode(
+			this.fileFragment, this.browser, null, this.fileFragment.name)
+		var root = this.createMockNode(this.browser, [completeFFNode]);
+
+		this.copNode = completeFFNode.childNodes()[0];
+
+		this.browser.rootNode =  function() { return root };
+	},
+
+
+
 },
 'testing', {
 
-	testCopFragmentEvaluate: function() {
+	testCopFragmentWholeLayerEvaluate: function() {
 		this.browser.buildView();
-
-		var initialFragment = {
-			name: 'testLayer',
-			type: 'copDef',
-			startIndex: 0,
-			stopIndex: 24,
-			subElements: function() { return [] },
-			getName: function() { return this.name },
-		};
-
-		var node = new lively.ide.CopFragmentNode(initialFragment, this.browser, null);
+		this.buildCopTestSource();
+		var node = this.copNode;
 		var klass = Object.subclass('CopBrowserNodeDummy');
 		var src = 'cop.create("testLayer").refineClass(CopBrowserNodeDummy, { m: function() { return 23 } });'
 		node.newSource(src);
@@ -177,6 +189,35 @@ Foo.addMethods('catC',{\n\
 			this.assertEquals(23, new klass().m());
 		}.bind(this))		
 	},
+	testCopFragmentPartialClassEvaluate: function() {
+		this.browser.buildView();
+		this.buildCopTestSource();
+		var node = this.copNode;
+		var klass = Object.subclass('CopBrowserNodeDummy');
+		var src = 'cop.create("testLayer").refineClass(CopBrowserNodeDummy, { m: function() { return 23 } });'
+		node.newSource(src);
+		this.assertEquals(1, node.childNodes().length);
+		var klassNode = node.childNodes()[0];
+		klassNode.newSource('.refineClass(CopBrowserNodeDummy, { m: function() { return 42 } })')
+		withLayers([testLayer], function() {
+			this.assertEquals(42, new klass().m(), 'klass not did not evaluate');
+		}.bind(this))		
+	},
+	testCopFragmentMethodEvaluate: function() {
+		this.browser.buildView();
+		this.buildCopTestSource();
+		var node = this.copNode;
+		var klass = Object.subclass('CopBrowserNodeDummy');
+		var src = 'cop.create("testLayer").refineClass(CopBrowserNodeDummy, {\nm: function() { return 23 }\n});'
+		node.newSource(src);
+		var methodNode = node.childNodes()[0].childNodes()[0];
+		methodNode.newSource('m: function() { return 42 }')
+		withLayers([testLayer], function() {
+			this.assertEquals(42, new klass().m(), 'method not did not evaluate');
+		}.bind(this))		
+	},
+
+
 
 	testCreateCategoriesFromClassDef: function() {
 		this.buildTestSource();
@@ -1655,7 +1696,7 @@ TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 
 	testLoadPenLkml: function() {
 		delete Global['Pen'];
-		ChangeSet.fromFile('Pen.lkml').evaluate();
+		ChangeSet.fromFile('Tests/testRessources/Pen.lkml').evaluate();
 		this.assert(Global['Pen']);
 	},
 
@@ -2028,12 +2069,42 @@ TestCase.subclass('Tests.ToolsTests.TabCompletionTest', {
 	testAllSymbols: function() {
 		this.assert(TabCompletion.allSymbols().length > 1000)
 	},
-	
+
 	testAllSymbolsAreUnique: function() {
 		var all = TabCompletion.allSymbols(true);
 		var uniq = all.clone().uniq();
 		this.assertEqual(all.length, uniq.length, "not unique");
 	},
+	
+	testExtractLocalSymbols: function() {
+		var text = "abc abbc\nabbd\tabbe";
+		var all = TabCompletion.extractLocalSymbols(text)
+		this.assert(all.length == 4, "wrong lenth")
+	}
+
+});
+TestCase.subclass('Tests.ToolsTests.TabCompletionLayerTest', {
+
+	createText: function(string) {
+		var sut = new TextMorph(new Rectangle(0,0,100,100), string);
+		sut.setWithLayers([TabCompletionLayer]);
+		return sut
+	},
+
+	testTabCompletionChoicesForLastWord: function() {
+		var string = "\nfunc\nNextLine\n"
+		var sut = this.createText(string);
+		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
+		var coices = sut.tabCompletionChoicesForLastWord("func");
+		this.assert(coices.length > 0);
+	},
+
+	testTabCompletionChoicesForLastWord: function() {
+		var string = "\nfunc\nNextLine\n"
+		var sut = this.createText(string);
+		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
+		// this.assertEqual(sut.tabCompletionForLastWord("func", false), "function");
+	}
 });
 
 }) // end of module
