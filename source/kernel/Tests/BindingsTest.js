@@ -577,9 +577,9 @@ TestCase.subclass('Tests.BindingsTest.BindingsDuplicateTest', {
 	},
 
 	testUpdaterIsCopied: function() {
-		this.assert(this.sut.attributeConnections[1].updater, "no update in fillConnection");
+		this.assert(this.sut.attributeConnections[1].getUpdater(), "no update in fillConnection");
 		var copy = this.sut.duplicate();
-		this.assert(copy.attributeConnections[1].updater, "no update in fillConnection copy");
+		this.assert(copy.attributeConnections[1].getUpdater(), "no update in fillConnection copy");
 	},
 	
 	testCopyPlainObjects: function() {
@@ -587,9 +587,9 @@ TestCase.subclass('Tests.BindingsTest.BindingsDuplicateTest', {
 		var o2 = {y: null};
 		var sut = lively.bindings.connect(o1, 'x', o2, 'y');
 		
-		this.assert(this.sut.attributeConnections[1].updater, "no update in fillConnection");
+		this.assert(this.sut.attributeConnections[1].getUpdater(), "no update in fillConnection");
 		var copy = this.sut.duplicate();
-		this.assert(copy.attributeConnections[1].updater, "no update in fillConnection copy");
+		this.assert(copy.attributeConnections[1].getUpdater(), "no update in fillConnection copy");
 	},
 
 });

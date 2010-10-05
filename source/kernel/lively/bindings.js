@@ -1,6 +1,7 @@
 module('lively.bindings').requires().toRun(function() {
 
-Object.subclass('AttributeConnection', {
+Object.subclass('AttributeConnection',
+'initializing', {
 
 	initialize: function(source, sourceProp, target, targetProp, spec) {
 		this.sourceObj = source;
@@ -12,10 +13,21 @@ Object.subclass('AttributeConnection', {
 			// when converter function references objects from its environment we can't
 			// serialize it. To fail as early as possible we will serialize the converter
 			// already here
-			this.converter = spec.converter ? eval('(' + spec.converter.toString() + ')') : null
-			this.updater = spec.updater ? eval('(' + spec.updater.toString() + ')') : null
+			this.converterString = spec.converter ? spec.converter.toString() : null;
+			this.updaterString = spec.updater ? spec.updater.toString() : null;
 		}
 	},
+
+	onSourceAndTargetRestored: function() {
+		if (this.sourceObj && this.targetObj) this.connect();
+	},
+
+	copy: function(copier) {
+		return AttributeConnection.fromLiteral(this.toLiteral(), copier);
+	},
+
+},
+'accessing', {
 
 	getTargetObj: function() { return this.targetObj },
 
@@ -24,8 +36,29 @@ Object.subclass('AttributeConnection', {
 	getSourceAttrName: function() { return this.sourceAttrName },
 
 	getTargetMethodName: function() { return this.targetMethodName },
+	getConverter: function() {
+		if (!this.converterString) return null;
+		if (!this.converter) {
+			this.converter = eval('(' + this.converterString + ')');
+		}
+		return this.converter;
+	},
+	getUpdater: function() {
+		if (!this.updaterString) return null;
+		if (!this.updater) {
+			this.updater = eval('(' + this.updaterString + ')');
+		}
+		return this.updater;
+	},
 
 	privateAttrName: function(attrName) { return '$$' + attrName },
+
+	activate: function() { this.isActive = true },
+
+	deactivate: function() { this.isActive = false },
+
+},
+'connecting', {
 
 	connect: function() {
 		var existing = this.getExistingConnection()
@@ -62,6 +95,49 @@ Object.subclass('AttributeConnection', {
 			this.removeSourceObjGetterAndSetter();
 	},
 
+	update: function(newValue, oldValue) {
+		// This method is optimized for Safari and Chrome. See Tests.BindingsTest.BindingsProfiler
+		// and http://lively-kernel.org/repository/webwerkstatt/draft/ModelRevised.xhtml
+		// The following requirements exists:
+		// - run converter with oldValue and newValue
+		// - when updater is existing run converter only if update is proceeded
+		// - bind is slow
+		// - arguments is slow when it's items are accessed or it's converted using $A
+
+		if (this.isActive/*this.isRecursivelyActivated()*/) return;
+		this.isActive = true; // this.activate();
+		var self = this, updater = this.getUpdater(), converter = this.getConverter();
+		var callOrSetTarget = function(newValue) {
+			// use a function and not a method to capture this in self and so that no bind is necessary
+			// and oldValue is accessible. Note that when updater calls this method arguments can be
+			// more than just the new value
+			if (converter)
+				newValue = converter.call(self, newValue, oldValue);
+			var targetMethod = self.targetObj[self.targetMethodName]
+			var result = (typeof targetMethod === 'function') ?
+				targetMethod.apply(self.targetObj, arguments) :
+				self.targetObj[self.targetMethodName] = newValue;
+			if (self.removeAfterUpdate) self.disconnect();
+			return result;
+		};
+
+		try {
+			if (updater)
+				return updater.call(this, callOrSetTarget, newValue, oldValue);
+			else
+				return callOrSetTarget(newValue);		
+		} catch(e) {
+			dbgOn(Config.debugConnect);
+			console.warn('Error when trying to update ' + this + ' with value '
+				+ newValue + ':\n' + e + '\n' + e.stack);
+		} finally {
+			this.isActive = false;
+		}
+	},
+
+},
+'private helper', {
+
 	addSourceObjGetterAndSetter: function() {
 		var
 			sourceObj = this.sourceObj,
@@ -69,7 +145,7 @@ Object.subclass('AttributeConnection', {
 			newAttrName = this.privateAttrName(sourceAttrName);
 
 		if (sourceObj[newAttrName])
-			throw dbgOn(new Error('newAttrName ' + newAttrName + ' already exists. Are there already other connections?'));
+			console.warn('newAttrName ' + newAttrName + ' already exists. Are there already other connections?');
 			
 		// add new attr to the serialization ignore list
 		if (sourceObj.doNotSerialize !== undefined && sourceObj.doNotSerialize.push)
@@ -120,7 +196,6 @@ Object.subclass('AttributeConnection', {
 		sourceObj[methodName].isWrapped = true;
 	},
 
-
 	removeSourceObjGetterAndSetter: function() {
 		// delete the getter and setter and the slot were the real value was stored
 		// assign the real value to the old slot
@@ -143,55 +218,13 @@ Object.subclass('AttributeConnection', {
 			if (this.isSimilarConnection(conns[i]))
 				return conns[i];
 	},
-
-	update: function(newValue, oldValue) {
-		// This method is optimized for Safari and Chrome. See Tests.BindingsTest.BindingsProfiler
-		// and http://lively-kernel.org/repository/webwerkstatt/draft/ModelRevised.xhtml
-		// The following requirements exists:
-		// - run converter with oldValue and newValue
-		// - when updater is existing run converter only if update is proceeded
-		// - bind is slow
-		// - arguments is slow when it's items are accessed or it's converted using $A
-
-		if (this.isActive/*this.isRecursivelyActivated()*/) return;
-		this.isActive = true; // this.activate();
-		var self = this;
-		var callOrSetTarget = function(newValue) {
-			// use a function and not a method to capture this in self and so that no bind is necessary
-			// and oldValue is accessible. Note that when updater calls this method arguments can be
-			// more than just the new value
-			if (self.converter)
-				newValue = self.converter.call(self, newValue, oldValue);
-			var targetMethod = self.targetObj[self.targetMethodName]
-			var result = (typeof targetMethod === 'function') ?
-				targetMethod.apply(self.targetObj, arguments) :
-				self.targetObj[self.targetMethodName] = newValue;
-			if (self.removeAfterUpdate) self.disconnect();
-			return result;
-		};
-
-		try {
-			if (this.updater)
-				return this.updater.call(this, callOrSetTarget, newValue, oldValue);
-			else
-				return callOrSetTarget(newValue);		
-		} catch(e) {
-			dbgOn(Config.debugConnect)
-			console.warn('Error when trying to update ' + this + ' with value '
-				+ newValue + ':\n' + e + '\n' + e.stack);
-		} finally {
-			this.isActive = false;
-		}
-	},
+},
+'testing', {
 
 	isRecursivelyActivated: function() {
 		// is this enough? Maybe use Stack?
 		return this.isActive
 	},
-
-	activate: function() { this.isActive = true },
-
-	deactivate: function() { this.isActive = false },
 
 	isSimilarConnection: function(other) {
 		if (!other) return;
@@ -201,11 +234,8 @@ Object.subclass('AttributeConnection', {
 			this.targetObj == other.targetObj &&
 			this.targetMethodName == other.targetMethodName
 	},
-
-	onSourceAndTargetRestored: function() {
-		if (this.sourceObj && this.targetObj) this.connect();
-	},
-
+},
+'debugging', {
 	toString: function() {
 		return Strings.format('AttributeConnection(%s.%s --> %s.%s())',
 			this.getSourceObj(),
@@ -213,11 +243,6 @@ Object.subclass('AttributeConnection', {
 			this.getTargetObj(),
 			this.getTargetMethodName());
 	},
-	
-	copy: function(copier) {
-		return AttributeConnection.fromLiteral(this.toLiteral(), copier);
-	}
-
 });
 
 AttributeConnection.addMethods({
@@ -246,8 +271,8 @@ AttributeConnection.addMethods({
 			sourceAttrName: this.sourceAttrName,
 			targetObj: getId(this.targetObj),
 			targetMethodName: this.targetMethodName,
-			converter: this.converter ? this.converter.toString() : null,
-			updater: this.updater ? this.updater.toString() : null,
+			converter: this.converterString,
+			updater: this.updaterString,
 			removeAfterUpdate: this.removeAfterUpdate,
 		};
 	},
@@ -332,7 +357,7 @@ Object.extend(lively.bindings, {
 		if (sourceObj[sourceProp])
 			targetObj[targetSelector](sourceObj[sourceProp])
 		else
-			lively.bindings.connect(sourceObj, sourceProp, targetObj, targetSelector)
+			lively.bindings.connect(sourceObj, sourceProp, targetObj, targetSelector, {removeAfterUpdate: true})
 	},
 })
 

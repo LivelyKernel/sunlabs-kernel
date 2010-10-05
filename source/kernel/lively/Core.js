@@ -144,7 +144,14 @@ Object.extend(Global, {
 
 // console handling
 Object.extend(Global, {
-	
+
+	alert: function(msg) {
+		if (Global.WorldMorph && WorldMorph.current())
+			WorldMorph.current().alert(msg.toString());
+		else
+			console.log('ALERT: ' + msg);
+	},
+
 	onerror: function(message, url, code) {
 		console.log('in %s: %s, code %s', url, message, code);
 	},
@@ -772,8 +779,6 @@ Object.subclass('Exporter', {
 
 		var exporter = this;
 
-		lively.data.Wrapper.collectSystemDictionaryGarbage(this.rootMorph, optSystemDictionary);	
-
 		this.rootMorph.withAllSubmorphsDo(function() { 
 			exporter.verbose && console.log("serializing " + this);
 			this.prepareForSerialization(helperNodes, optSystemDictionary);			
@@ -828,7 +833,9 @@ Object.extend(Exporter, {
 			throw new Error('Can not continue serializing World beacause the base document is broken')
 		newDoc.getElementsByTagName("title")[0].textContent = document.title; // persist the title
 		// FIXME this should go to another place?
-		var systemDictionary = this.addSystemDictionary(newDoc);
+		// FIXME addSystemDictionary is deprecated
+		lively.data.Wrapper.collectSystemDictionaryGarbage(morph);
+		var systemDictionary = this.addSystemDictionary(newDoc, morph);
 		importer.canvas(newDoc).appendChild(new Exporter(morph).serialize(newDoc, systemDictionary));
 		var fieldNodes = $A(newDoc.getElementsByTagName('field'));
 		this.stripEpimorphs(fieldNodes);
@@ -856,12 +863,11 @@ Object.extend(Exporter, {
 		})
 	},
 	
-	addSystemDictionary: function(doc) {
-		var dict = lively.data.Wrapper.dictionary;
+	addSystemDictionary: function(doc, morph) {
+		var dict = morph.dictionary();
 		if (!dict) return;
 		var preExisting = doc.getElementById(dict.id);
-		if (preExisting)
-			preExisting.parentNode.removeChild(preExisting);
+		if (preExisting) preExisting.parentNode.removeChild(preExisting);
 		var newDict = dict.cloneNode(true);
 		doc.getElementsByTagName('svg')[0].appendChild(doc.importNode(newDict, true));
 		return newDict
@@ -1026,7 +1032,7 @@ Object.subclass('Copier', {
 	copyProperty: function (property, object, other) {
 		// console.log("smartCopyProperty " + property + " " + object + " from: " + other)
 
-	    if (other[property] instanceof Function && other[property].isSerializeable) {
+	    if (other[property] instanceof Function && other[property].isSerializable) {
 			object[property] = other[property]; // share script
 			return
 		};
@@ -1325,18 +1331,34 @@ Copier.subclass('Importer', {
 });
 Function.addMethods(
 'serialization', {
-	toLiteral: function() { return {source: ''+ this}},
+	toLiteral: function() {
+		return {source: String(this)}
+	},
+	unbind: function() {
+		// for serializing functions
+		return Function.fromString(this.toString());
+	},
+	asScript: function() {
+		var script = this.unbind();
+		script.isSerializable = true;
+		return script;
+	},
+	asScriptOf: function(obj, optName) {
+		var name = optName || this.name;
+		if (!name)
+			throw Error("Function that wants to be a script needs a name: " + this);
+		obj[name] = this.asScript();
+		return obj[name];
+	},
 });
 Object.extend(Function, {
-	unbind: function(funcOrString) {
-		// unbind closure to make it persitable
+	fromString: function(funcOrString) {
 		return eval('(' + funcOrString.toString() + ')') 
 	},
 
 	fromLiteral: function(obj) { 
-		var f = eval('(' +obj.source + ')');
-		f.isSerializeable = true;
-		return f}
+		return Function.fromString(obj.source).asScript();
+	},
 });
 
 Importer.marker = Object.extend(new Importer(), {
@@ -1555,7 +1577,7 @@ Morph.addMethods('default', {
 	copyAttributesFrom: function(copier, other) {
 
 		for (var p in other) {
-			if ((other[p] instanceof Function && !other[p].isSerializeable) || !other.hasOwnProperty(p) || this.noShallowCopyProperties.include(p))
+			if ((other[p] instanceof Function && !other[p].isSerializable) || !other.hasOwnProperty(p) || this.noShallowCopyProperties.include(p))
 				continue;
 
 			if (other[p] instanceof Morph) {
@@ -1925,14 +1947,10 @@ Morph.addMethods('default', {
 	collectAllUsedFills: function(/*$super, */result) {
 		// result = $super(result);
 		var fill = this.getFill();
-		if (fill instanceof lively.paint.Gradient)
-			result.push(fill);
-		if (this.submorphs) {
-			this.submorphs.each(function(ea) {
-				ea.collectAllUsedFills(result)
-			}, this);
-		}
-		// do nothing
+		if (fill instanceof lively.paint.Gradient) result.push(fill);
+		var stroke = this.shape.getStroke(); // fixme
+		if (stroke instanceof lively.paint.Gradient) result.push(stroke);
+		if (this.submorphs) this.submorphs.invoke('collectAllUsedFills', result);
 		return result
 	}
 },
@@ -3696,18 +3714,15 @@ Morph.addMethods('default', {
 		return url;
 	},
 },
-'Scripts', {
-	addScript: function(funcOrString) {
-		var func = Function.unbind(funcOrString);
-		if (! (func.name))
-			throw Error("function has no name in addScript: " + funcOrString)
-		this.addScriptNamed(func.name, func)
+'scripts', {
+	addScript: function(funcOrString, optName) {
+		var func = Function.fromString(funcOrString);
+		return func.asScriptOf(this, optName);
 	},
 
 	addScriptNamed: function(name, funcOrString) {
-		var func = Function.unbind(funcOrString)
-		func.isSerializeable = true;
-		this[name] =  func;
+		// DEPRECATED!!!
+		return this.addScript(funcOrString, name);
 	},
 });
 
@@ -6813,7 +6828,7 @@ Object.subclass('DocLinkConverter', {
 			return el.firstChild && el.firstChild.data && el.firstChild.data.startsWith('Config.codeBase=');
 		});
 
-		var codeBaseDef = this.createCodeBaseDef(this.relativeCodeBaseFrom(this.codeBase, this.toDir));
+		var codeBaseDef = this.createCodeBaseDef(this.codeBaseFrom(this.codeBase, this.toDir));
 		
 		if (codeBaseDefs.length == 0) {
 			var script = NodeFactory.create('script');
@@ -6855,6 +6870,16 @@ Object.subclass('DocLinkConverter', {
 		return relative + fn;
 	},
 
+	codeBaseFrom: function(codeBase, toDir) {
+		var urlCodeBase = new URL(codeBase);
+		var urlToDir = new URL(toDir);
+
+		if ((urlCodeBase.hostname == urlToDir.hostname) && (urlCodeBase.port == urlToDir.port))
+			return this.relativeCodeBaseFrom(codeBase, toDir);
+		else
+			return urlCodeBase.toString();
+	},
+
 	relativeCodeBaseFrom: function(codeBase, toDir) {
 		codeBase = new URL(codeBase);
 		toDir = new URL(toDir);
@@ -6867,7 +6892,7 @@ Object.subclass('DocLinkConverter', {
 	},
 
 	relativeLivelyPathFrom: function(codeBase, toDir) {
-		return this.relativeCodeBaseFrom(codeBase, toDir) + 'lively/';
+		return this.codeBaseFrom(codeBase, toDir) + 'lively/';
 	},
 
 	extractFilename: function(url) {

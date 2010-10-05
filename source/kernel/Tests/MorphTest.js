@@ -1,6 +1,6 @@
 module('Tests.MorphTest').requires('lively.TestFramework').toRun(function() {
 
-TestCase.subclass('MorphTest', {
+TestCase.subclass('Tests.MorphTest.MorphTest', {
 	
 	createTestMorph: function(owner){
 	    var m =  Morph.makeRectangle( 0,  0, 10, 10);
@@ -33,28 +33,16 @@ TestCase.subclass('MorphTest', {
 	
 });
 
-TestCase.subclass('ButtonMorphTest', {
-	
-	
-	// testConnectButton: function() {
-	// 	var b = new ButtonMorph(rect(10,10,20,20));
-	// 	var counter = 0;
-	// 	b.connectModel({onUpdateValue: function(value) {
-	// 		counter += 1;
-	// 	});
-	// },
-	
-});
-
-
-TestCase.subclass('TextListMorphTest', {
+TestCase.subclass('Tests.MorphTest.TextListMorphTest', {
 
 	setUp: function() {
 		this.morph = new TextListMorph(new Rectangle(0,0,100,100),[]);
 		this.model = Record.newNodeInstance({List: [], Selection: null, Capacity: 4, 
 			ListDelta: [], DeletionConfirmation: null, DeletionRequest: null});
-	    this.morph.relayToModel(this.model, {List: "List", Selection: "Selection", Capacity: "-Capacity", 
-				      ListDelta: "-ListDelta", DeletionConfirmation: "-DeletionConfirmation", DeletionRequest: "+DeletionRequest"});
+	    this.morph.relayToModel(this.model, {
+						List: "List", Selection: "Selection", Capacity: "-Capacity", 
+						ListDelta: "-ListDelta", DeletionConfirmation: "-DeletionConfirmation", 
+						DeletionRequest: "+DeletionRequest"});
 	},
 	
 	tearDown: function() {
@@ -94,7 +82,7 @@ TestCase.subclass('TextListMorphTest', {
 
 });
 
-TestCase.subclass('ListMorphTest', {
+TestCase.subclass('Tests.MorphTest.ListMorphTest', {
 
     setUp: function() {
         this.model =  Record.newPlainInstance({MyList: [], MySelection: null});
@@ -150,7 +138,7 @@ TestCase.subclass('ListMorphTest', {
     },
 
 });
-TestCase.subclass('DragnDropListTest',
+TestCase.subclass('Tests.MorphTest.DragnDropListTest',
 'default category', {
 	xtestDropItem: function() {
 		var items = [{isListItem: true, string: 'a', value: 1},
@@ -178,27 +166,27 @@ TestCase.subclass('DragnDropListTest',
 		this.assertEqual(list.itemList.length, 4, "wrong item number")
 },
 });
-TestCase.subclass('FilterableListMorphTest', {
+TestCase.subclass('Tests.MorphTest.FilterableListMorphTest', {
 
-test01FilterDoesNotModifyItems: function() {
-	var items = [{isListItem: true, string: 'a', value: 1},
-		{isListItem: true, string: 'b', value: 2},
-		{isListItem: true, string: 'c', value: 3}];
-	var list = new FilterableListMorph(new Rectangle(0,0,100,300), items);
-	this.assertEqual(3, list.submorphs.length);
-	this.assertEqual(3, list.itemList.length);
-	list.setFilter(/a|c/);
-	this.assertEqual(2, list.submorphs.length);
-	this.assertEqual(3, list.itemList.length);
-	list.setFilter(/.*/);
-	this.assertEqual(3, list.submorphs.length);
-	this.assertEqual(3, list.itemList.length);
-},
+	test01FilterDoesNotModifyItems: function() {
+		var items = [{isListItem: true, string: 'a', value: 1},
+			{isListItem: true, string: 'b', value: 2},
+			{isListItem: true, string: 'c', value: 3}];
+		var list = new FilterableListMorph(new Rectangle(0,0,100,300), items);
+		this.assertEqual(3, list.submorphs.length);
+		this.assertEqual(3, list.itemList.length);
+		list.setFilter(/a|c/);
+		this.assertEqual(2, list.submorphs.length);
+		this.assertEqual(3, list.itemList.length);
+		list.setFilter(/.*/);
+		this.assertEqual(3, list.submorphs.length);
+		this.assertEqual(3, list.itemList.length);
+	},
 
 });
 
 
-TestCase.subclass('HandMorphTest', {
+TestCase.subclass('Tests.MorphTest.HandMorphTest', {
         
     testHandleMouseEvent: function() {
         var world = WorldMorph.current();
@@ -253,26 +241,26 @@ TestCase.subclass('HandMorphTest', {
     
 });
 
-TestCase.subclass('TextMorphTest', {
-    setUp: function() {
-        this.m = new TextMorph(new Rectangle(0,0,100,100),"Hello World\n\n3+4\n123\t\tEnde");
-        this.m.openInWorld();
-		this.dontRemove = false;
-    },
-    
-    testLineNumberForIndex: function() {
-        this.assertEqual(this.m.lines.length, 4, "wrong line numbers");
-        this.assertEqual(this.m.lineNumberForIndex(0), 0);
-        this.assertEqual(this.m.lineNumberForIndex(7), 0);
-        this.assertEqual(this.m.lineNumberForIndex(12), 1);
-    },
-    
-    testSelectionRange: function() {
-        this.m.setSelectionRange(0,5);
-        this.assertEqual(this.m.getSelectionString(), "Hello");
-        this.m.setSelectionRange(6,11);
-        this.assertEqual(this.m.getSelectionString(), "World");
-    },
+MorphTestCase.subclass('Tests.MorphTest.TextMorphTest', {
+	setUp: function($super) {
+		$super()
+		this.m = new TextMorph(new Rectangle(0,0,100,100),"Hello World\n\n3+4\n123\t\tEnde");
+		this.openMorph(this.m);
+	},
+	
+	testLineNumberForIndex: function() {
+		this.assertEqual(this.m.lines.length, 4, "wrong line numbers");
+		this.assertEqual(this.m.lineNumberForIndex(0), 0);
+		this.assertEqual(this.m.lineNumberForIndex(7), 0);
+		this.assertEqual(this.m.lineNumberForIndex(12), 1);
+	},
+	
+	testSelectionRange: function() {
+		this.m.setSelectionRange(0,5);
+		this.assertEqual(this.m.getSelectionString(), "Hello");
+		this.m.setSelectionRange(6,11);
+		this.assertEqual(this.m.getSelectionString(), "World");
+	},
 
 	testExtendSelection: function() {
 		var m = this.m;
@@ -324,7 +312,7 @@ TestCase.subclass('TextMorphTest', {
 		var padding = Rectangle.inset(0, 0)
 		textMorph.padding = padding;
 	
-		textMorph.openInWorld(pt(100,200), "testTextMorph")
+		this.openMorph(textMorph);
 	
 		this.assertIdentity(textMorph.padding, padding, "padding changed before")
 		textMorph.setFontSize(13);
@@ -339,25 +327,16 @@ TestCase.subclass('TextMorphTest', {
 		var padding = Rectangle.inset(0, 0)
 		textMorph.padding = padding;
 	
-		textMorph.openInWorld(pt(100,200), "testTextMorph")
+		this.openMorph(textMorph);
 	
 		this.assertIdentity(textMorph.padding, padding, "padding changed before")
 		textMorph.setFontSize(13);
 		this.assert(textMorph.padding !== padding, "padding did not changed after setFontSize")
 	},
-
-
-    tearDown: function() {
-		if (this.dontRemove) {
-			this.m.requestKeyboardFocus(WorldMorph.current().firstHand());
-			return;
-		}
-        this.m.remove();
-    },
-    
+	
 });
 
-TestCase.subclass('ImageMorphTest', {
+TestCase.subclass('Tests.MorphTest.ImageMorphTest', {
 
 	setUp: function() {
 		this.m = new ImageMorph(rect(pt(0,0),pt(100,100)),"Resources/images/Halloween4.jpg");
@@ -393,7 +372,7 @@ TestCase.subclass('ImageMorphTest', {
     },
 });
 
-TestCase.subclass('ScrollPaneTest', {
+TestCase.subclass('Tests.MorphTest.ScrollPaneTest', {
 
 	testDisableScrollBar: function() {
 		var scrollPane = Global.newTextListPane(new Rectangle(0,0,100,100));
@@ -414,7 +393,7 @@ TestCase.subclass('ScrollPaneTest', {
 });
 
 
-TestCase.subclass('VideoMorphTest', {
+TestCase.subclass('Tests.MorphTest.VideoMorphTest', {
 
 	sourceFromYoutube: function() {
 		return '<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1"></param><param name="allowFullScreen" value="true"></param><param name="allowscriptaccess" value="always"></param><embed src="http://www.youtube.com/v/gGw09RZjQf8&hl=en&fs=1" type="application/x-shockwave-flash" allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed></object>';
@@ -446,7 +425,7 @@ testExtractExtent: function() {
 
 
 // TODO Marko, what has to happen with this code?
-TestCase.subclass('NewListMorphTest',
+TestCase.subclass('Tests.MorphTest.NewListMorphTest',
 'default category', {
 	setUp: function($super) {
 		$super();
@@ -491,7 +470,7 @@ TestCase.subclass('NewListMorphTest',
 	},
 
 });
-TestCase.subclass('NodeMorphTest', {
+TestCase.subclass('Tests.MorphTest.NodeMorphTest', {
 	
 	setUp: function() {
 		this.spec = {maxDist: 100, minDist: 50, step: 20};
@@ -635,7 +614,7 @@ TestCase.subclass('NodeMorphTest', {
 
 
 // (new TestRunner()).openIn(this.world())
-TestCase.subclass("HTMLFontCharWidthCompositionTest", {
+TestCase.subclass("Tests.MorphTest.HTMLFontCharWidthCompositionTest", {
 
 	testFontComputeExtents: function() {
 		var font = lively.Text.Font.forFamily("Helvetica", 100);
@@ -656,7 +635,7 @@ TestCase.subclass("HTMLFontCharWidthCompositionTest", {
 })
 
 
-TestCase.subclass("ProgressBarMorphTest", {
+TestCase.subclass("Tests.MorphTest.ProgressBarMorphTest", {
 
 	setUp: function() {
 		var morphName = "TheProgressTestMorph";
@@ -728,7 +707,7 @@ TestCase.subclass('Tests.MorphTest.HorizontalDividerTest', {
 });
 
 
-TestCase.subclass("HorizontalLayoutTest", {
+TestCase.subclass("Tests.MorphTest.HorizontalLayoutTest", {
 	
 	setUp: function() {
 
@@ -797,7 +776,7 @@ TestCase.subclass("HorizontalLayoutTest", {
 	},
 })
 
-TestCase.subclass("VerticalLayoutTest", {
+TestCase.subclass("Tests.MorphTest.VerticalLayoutTest", {
 
 	setUp: function() {
 	},
@@ -957,7 +936,7 @@ MorphTestCase.subclass('Tests.MorphTest.MouseEventTest', {
 });
 
 
-TestCase.subclass('Tests.Text.RunArrayTest', {
+TestCase.subclass('Tests.MorphTest.RunArrayTest', {
 
 	testSerializeRunArray: function() {
 		var sut = new RunArray();
@@ -1010,15 +989,11 @@ TestCase.subclass('Tests.MorphTest.CopyLabelTest', {
 })
 
 
-TestCase.subclass('BinarySearchListMorphTest', {
+MorphTestCase.subclass('Tests.MorphTest.BinarySearchListMorphTest', {
 
 	createList: function() {
-		var listName = "binarySearchListMorphTest_TestMorph"
-		var m = $morph(listName); if (m) m.remove(); 
 		var l = new ListMorph(new Rectangle(0, 0, 100, 100), [])
-		l.name = listName
-
-		l.openInWorld()
+		this.openMorph(l);
 		list = range(0, 20).collect(function(i) { return i.toString() +i+i+i+i })
 		l.updateList(list)
 		l.setPosition(pt(100,100))
