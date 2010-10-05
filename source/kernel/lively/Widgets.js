@@ -2795,6 +2795,11 @@ BoxMorph.subclass('ScrollPane',
     },
 
     onDeserialize: function() {
+		if (this.scrollBar) { // FIXME migration for old instances
+			this.scrollBar.remove()
+			delete this.scrollBar;
+			this.addVerticalScrollBar();
+		}
 		this.adjustForNewBounds();
     },
 
@@ -2896,6 +2901,8 @@ BoxMorph.subclass('ScrollPane',
 			this.addHorizontalScrollBar();
 		return this.horizontalScrollBar
 	},
+
+
 
 	disableVerticalScrollBar: function() {
 		if (!this.verticalScrollBar) return
@@ -3083,7 +3090,7 @@ updateScrollBarSliders: function() {
 	if (this.horizontalScrollBar) {
 		var scrollBar = this.getHorizontalScrollBar();
 		scrollBar.slider.setVisible(this.getHorizontalVisibleExtent() < 1);
-	}
+	};
 },
 
 
@@ -3097,6 +3104,14 @@ updateScrollBarSliders: function() {
 		inner.addMorph(m)
 	},
 
+},
+'deprecated', {
+	// to be removed when there is  no old code that depends on it
+	// (relays reference these)
+	getScrollBar: function() { return this.getVerticalScrollBar() },
+	getScrollPosition: function() { return this.getVerticalScrollPosition() },
+	getVisibleExtent: function() { return this.getVerticalVisibleExtent() },
+	setScrollPosition: function(p) { return this.setVerticalScrollPosition(p) },
 });
 
 Object.extend(Global, { // helper functions
@@ -6052,8 +6067,8 @@ ContainerMorph.subclass('ChainedListMorph',
 	},
 
 	listSelected: function(sel, listPane) {
-		lively.bindings.signal(this, 'selection', sel);
 		if (!sel) return;
+		lively.bindings.signal(this, 'selection', sel);
 		var childNodes = Object.isFunction(sel.childNodes) ? sel.childNodes() : sel.childNodes;
 		if (!childNodes) return
 		var listItems = childNodes.collect(function(node) {
