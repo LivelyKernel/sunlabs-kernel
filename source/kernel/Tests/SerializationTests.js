@@ -635,6 +635,16 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 		this.assert(doc.getElementById(morph.id()), "morph should be serialized")
 		this.assert(!(doc.getElementById(epimorph.id())), "epimorph should not be serialized")
 	},
+	testStripHandleMorphs: function() {
+		var morph = new Morph(new lively.scene.Rectangle(this.bounds));
+		var handle = morph.makeHandle(pt(0,0), "topLeft", newFakeMouseEvent(morph.getPosition()));
+		morph.addMorph(handle);
+		this.worldMorph.addMorph(morph);
+		var doc = Exporter.shrinkWrapMorph(this.worldMorph);
+		this.assert(doc.getElementById(morph.id()), "morph should be serialized")
+		this.assert(!(doc.getElementById(handle.id())), "handle should not be serialized")
+	},
+
 
 	testSerializeJSONConformantObjects: function() {
 		var morph = new Morph(new lively.scene.Rectangle(this.bounds));
@@ -841,7 +851,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 	testAddSystemDictionary: function() {
 		var importer = new Importer();
 		var newDoc = importer.getBaseDocument();
-		var systemDictionary = Exporter.addSystemDictionary(newDoc);
+		var systemDictionary = Exporter.addSystemDictionary(newDoc, this.worldMorph);
 	
 		this.assert(systemDictionary, "no systemDictionary returned");
 		this.assert(systemDictionary, "no systemDictionary returned");
@@ -849,7 +859,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.Serialization
 	},
 });
 
-TestCase.subclass("ScriptingMorphTest",
+Tests.SerializationTests.SerializationBaseTestCase.subclass("Tests.SerializationTests.ScriptingMorphTest",
 'testing', {
 
 	testFunctionAsScript: function() { // FIXME does not belong here

@@ -639,8 +639,6 @@ Morph.subclass('HandleMorph', {
 		"Shift+drag to change width ",
 	maxHelpCount: 20,
 	helpCount: 0,
-	isEpimorph: true,
-	
 	initialize: function($super, location, shapeType, hand, targetMorph, partName) {
 		$super(new shapeType(location.asRectangle().expandBy(5)));
 		this.location = location;
@@ -652,6 +650,7 @@ Morph.subclass('HandleMorph', {
 		this.rollover = true;  // pops up near hangle locs, goes away if mouse rolls out
 		this.showingAllHandles = false;	 // all handles are shown, eg, on touch screens
 		this.normalize();
+		this.isEpimorph = true; // has to be on instance side for DOM serialization... 
 		return this;
 	},
 	
