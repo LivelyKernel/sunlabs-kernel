@@ -881,8 +881,7 @@ BoxMorph.subclass('TextMorph',
 'settings', {
 	
 	documentation: "Container for Text",
-	doNotSerialize: ['charsTyped', 'charsReplaced', 'delayedComposition', 'focusHalo', 'lastFindLoc', 'lines', 'priorSelection', 'previousSelection', 
-		'selectionRange', 'selectionPivot','typingHasBegun', 'undoSelectionRange', 'undoTextString', '_statusMorph'],
+	doNotSerialize: ['charsTyped', 'charsReplaced', 'delayedComposition', 'focusHalo', 'lastFindLoc', 'lines', 'priorSelection', 'previousSelection', 'selectionRange', 'selectionPivot','typingHasBegun', 'undoSelectionRange', 'undoTextString', '_statusMorph'],
 
 	// these are prototype variables
 	fontSize:	Config.defaultFontSize	 || 12,
@@ -1624,31 +1623,33 @@ BoxMorph.subclass('TextMorph',
 			Global.document.location.href = link;
 			return
 		}
-		var url = URL.ensureAbsoluteURL(link);
-		// add require to LKWiki.js here
-		var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
-		var isExternalLink = url.hostname != document.location.hostname;
-		var openInNewWindow = evt.isMetaDown();
+		var url = URL.ensureAbsoluteURL(link),
+			world = this.world();
+		require('lively.LKWiki').toRun(function() {
+			var wikiNav = Global['WikiNavigator'] && new WikiNavigator(url, null, -1 /*FIXME don't ask for the headrevision*/);
+			var isExternalLink = url.hostname != document.location.hostname;
+			var openInNewWindow = evt.isAltDown();
 
-		var followLink = function (answer) {
-			Config.askBeforeQuit = false;
-			if (!isExternalLink) {
-				var queries = Object.extend(url.getQuery(), {date: new Date().getTime()});
-				url = url.withQuery(queries);
-			}
-			if (openInNewWindow)
-				Global.window.open(url.toString());
+			var followLink = function (answer) {
+				Config.askBeforeQuit = false;
+				if (!isExternalLink) {
+					var queries = Object.extend(url.getQuery(), {date: new Date().getTime()});
+					url = url.withQuery(queries);
+				}
+				if (openInNewWindow)
+					Global.window.open(url.toString());
+				else
+					Global.window.location.assign(url.toString());
+			};
+			
+			if (!Config.confirmNavigation) 
+				return followLink();
+			
+			if (wikiNav && wikiNav.isActive() && !isExternalLink)
+				wikiNav.askToSaveAndNavigateToUrl(world, openInNewWindow);
 			else
-				Global.window.location.assign(url.toString());
-		};
-		
-		if (!Config.confirmNavigation) 
-			return followLink();
-		
-		if (wikiNav && wikiNav.isActive() && !isExternalLink)
-			wikiNav.askToSaveAndNavigateToUrl(this.world(), openInNewWindow);
-		else
-			this.world().confirm("Please confirm link to " + url.toString(), followLink);
+				world.confirm("Please confirm link to " + url.toString(), followLink);
+		});
 	},	
 
 	onMouseUp: function(evt) {
@@ -2114,7 +2115,7 @@ BoxMorph.subclass('TextMorph',
 
 	processCommandKeys: function(evt) {	 //: Boolean (was the command processed?)
 		var key = evt.getKeyChar();
-		// console.log('command = ' + key + "evt.isShiftDown() = " + evt.isShiftDown());
+		console.log('command = ' + key + "evt.isShiftDown() = " + evt.isShiftDown() + " keyCode " + evt.getKeyCode());
 
 		// FIXME -- these need to be included in editMenuItems
 		if (evt.isShiftDown()) {  // shifted commands here...
@@ -2167,8 +2168,9 @@ BoxMorph.subclass('TextMorph',
 
 		switch(evt.getKeyCode()) {
 			// Font Size
-			case 189/*alt+'+'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 0.8).roundTo(1)))}); return true; }
-			case 187/*alt+'-'*/: { this.emphasizeSelection({size: (this.setFontSize((this.fontSize * 1.2).roundTo(1)))}); return true; }
+			case 189/*cmd+'+'*/: { this.changeFontSizeByFactor(0.8); return true;}
+			case 187/*cmd+'-'*/: { this.changeFontSizeByFactor(1.2); return true; }
+
 			// indent/outdent selection
 			case 221/*cmd+]*/: { this.indentSelection(); evt.stop(); return true }
 			case 219/*cmd+]*/: { this.outdentSelection(); evt.stop(); return true }
@@ -2805,6 +2807,10 @@ BoxMorph.subclass('TextMorph',
 		
 		this.composeAfterEdits(replacementHints);
 	},
+	changeFontSizeByFactor: function(factor) {
+		this.setFontSize((this.fontSize * factor).roundTo(1))
+	},
+
 	
 	composeAfterEdits: function(replacementHints) {
 		// tag: newText
