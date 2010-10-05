@@ -325,7 +325,7 @@ Object.extend(DisplayThemes, {
 	hpi: {},
 });
 
-DisplayThemes.lively.__proto__ = DisplayThemes.primtive;
+DisplayThemes.lively.__proto__ = DisplayThemes.primitive;
 DisplayThemes.hpi.__proto__ = DisplayThemes.lively;
 
 Object.extend(DisplayThemes.primitive, { 
@@ -457,11 +457,23 @@ Object.extend(DisplayThemes.primitive, {
 	},
 
 	fabrik: { 
-		borderColor: Color.red, 
+		borderColor: Color.black, 
 		borderWidth: 2, 
 		borderRadius: 0, 
-		fill: Color.blue.lighter(), 
+		fill: Color.gray.lighter(), 
 		opacity: 1
+	},
+
+	fabrik_componentBox: { 
+		borderColor: Color.gray, 
+		borderWidth: 2, 
+		borderRadius: 6, 
+		fill: Color.gray.lighter(), 
+		opacity: 1
+	},
+
+	fabrik_listPane: {
+		fill: Color.white, 	
 	},
 
 	world: {

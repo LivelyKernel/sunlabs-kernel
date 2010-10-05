@@ -33,49 +33,8 @@ Object.extend(TabCompletion, {
 
 });
 
-TestCase.subclass('TabCompletionTest', {
-	testAllSymbols: function() {
-		this.assert(TabCompletion.allSymbols().length > 1000)
-	},
-
-	testAllSymbolsAreUnique: function() {
-		var all = TabCompletion.allSymbols(true);
-		var uniq = all.clone().uniq();
-		this.assertEqual(all.length, uniq.length, "not unique");
-	},
-	
-	testExtractLocalSymbols: function() {
-		var text = "abc abbc\nabbd\tabbe";
-		var all = TabCompletion.extractLocalSymbols(text)
-		this.assert(all.length == 4, "wrong lenth")
-	}
-
-});
 
 
-TestCase.subclass('TabCompletionLayerTest', {
-
-	createText: function(string) {
-		var sut = new TextMorph(new Rectangle(0,0,100,100), string);
-		sut.setWithLayers([TabCompletionLayer]);
-		return sut
-	},
-
-	testTabCompletionChoicesForLastWord: function() {
-		var string = "\nfunc\nNextLine\n"
-		var sut = this.createText(string);
-		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
-		var coices = sut.tabCompletionChoicesForLastWord("func");
-		this.assert(coices.length > 0);
-	},
-
-	testTabCompletionChoicesForLastWord: function() {
-		var string = "\nfunc\nNextLine\n"
-		var sut = this.createText(string);
-		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
-		// this.assertEqual(sut.tabCompletionForLastWord("func", false), "function");
-	}
-});
 
 
 cop.create('TabCompletionLayer').refineClass(TextMorph, {
