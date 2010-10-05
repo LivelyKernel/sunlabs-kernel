@@ -85,8 +85,11 @@ Global.locateCanvas = function(optNode) { // dirty secret
 
 namespace('lively.data');
 
-Object.subclass('lively.data.Wrapper', {
+Object.subclass('lively.data.Wrapper',
+'documentation', {
 	documentation: "A wrapper around a native object, stored as rawNode",
+},
+'initializing', {
 
 	rawNode: null,
 
@@ -105,6 +108,9 @@ Object.subclass('lively.data.Wrapper', {
 		var myClass = Class.forName(this.getType());
 		return new myClass(copier || Copier.marker, this);
 	},
+
+},
+'accessing', {
 
 	getType: function() {
 		var ctor = this.constructor.getOriginal();
@@ -127,51 +133,22 @@ Object.subclass('lively.data.Wrapper', {
 	})(),
 
 	id: function() {
-		dbgOn(!this.rawNode);
-		return this.rawNode.getAttribute("id");
+		return this._livelyDataWrapperId_ || this.rawNode.getAttribute("id");
 	},
 
 	setId: function(value) {
 		var prev = this.id();
 		// easy parsing if value is an int, just call parseInt()
-		this.rawNode.setAttribute("id", value + ":" + this.getType()); // this may happen automatically anyway by setting the id property
+		// this may happen automatically anyway by setting the id property
+		var id = value + ":" + this.getType();
+		this.rawNode.setAttribute("id", id);
+		this._livelyDataWrapperId_ = id;
 		return prev;
 	},
 
 	setDerivedId: function(origin) {
 		this.setId(origin.id().split(':')[0]);
 		return this;
-	},
-
-	removeRawNode: function() {
-		var parent = this.rawNode && this.rawNode.parentNode;
-		return parent && parent.removeChild(this.rawNode);
-	},
-
-	replaceRawNodeChildren: function(replacement) {
-		while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
-		if (replacement) this.rawNode.appendChild(replacement);
-	},
-
-	toString: function() {
-		try {
-			return "#<" + this.getType() +	":" + this.rawNode + ">";
-		} catch (err) {
-			return "#<toString error: " + err + ">";
-		}
-	},
-
-	inspect: function() {
-		try {
-			return this.toString() + "[" + this.toMarkupString() + "]";
-		} catch (err) {
-			return "#<inspect error: " + err + ">";
-		}
-	},
-
-	toMarkupString: function() {
-		// note forward reference
-		return Exporter.stringify(this.rawNode);
 	},
 
 	uri: function() {
@@ -214,20 +191,36 @@ Object.subclass('lively.data.Wrapper', {
 	},
 
 	getDefsNode: function() {
-		var defNode = $A(this.rawNode.getElementsByTagName('defs')).detect(function(ea) {
-			if (ea == null) {
-				lively.lang.Execution.showStack();
-				return false;
-			}
-			return ea.parentNode === this.rawNode;
-		}, this);
+		var defNode = $A(this.rawNode.childNodes).detect(function(node) {
+			return node && node.tagName == 'defs';
+		});
 		// create and append one when defNode is not there
 		if (!defNode)
 			defNode = this.rawNode.appendChild(NodeFactory.create('defs'));
 		return defNode;
 	},
-	
-	doNotSerialize: ['rawNode'],
+	canvas: function() {
+		return locateCanvas(this.rawNode);
+	},
+
+
+},
+'rawnode handling', {
+
+	removeRawNode: function() {
+		var parent = this.rawNode && this.rawNode.parentNode;
+		return parent && parent.removeChild(this.rawNode);
+	},
+
+	replaceRawNodeChildren: function(replacement) {
+		while (this.rawNode.firstChild) this.rawNode.removeChild(this.rawNode.firstChild);
+		if (replacement) this.rawNode.appendChild(replacement);
+	},
+
+},
+'XML serialization', {
+
+	doNotSerialize: ['rawNode', '_dictionary'],
 
 	isPropertyOnIgnoreList: function(prop) {
 		return this.doNotSerialize.include(prop) || this.isPropertyOnIgnoreListInClassHierarchy(prop, this.constructor);
@@ -343,7 +336,7 @@ Object.subclass('lively.data.Wrapper', {
 
 	preparePropertyForSerialization: function(prop, propValue, extraNodes, optSystemDictionary) {
 		// console.log("prepare property " + prop + ": " + optSystemDictionary)
-		if (propValue instanceof Function && !propValue.isSerializeable) {
+		if (propValue instanceof Function && !propValue.isSerializable) {
 			return;
 		} else if (lively.data.Wrapper.isInstance(propValue)) {
 			this.prepareWrapperPropertyForSerialization(prop, propValue, extraNodes, optSystemDictionary)
@@ -359,37 +352,6 @@ Object.subclass('lively.data.Wrapper', {
 		}
 	},
 
-	reference: function() {
-		// console.log("reference " + this)
-		if (!this.refcount) {
-			if (!this.id()) this.setId(this.newId());
-			this.dictionary().appendChild(this.rawNode);
-			this.refcount = 1; 
-			return;
-		}
-		this.refcount ++;
-	},
-
-	dereference: function() {
-		// console.log("dereference " + this)
-		// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
-		if (this.refcount === undefined) throw new Error('sorry, undefined');
-		this.refcount --;
-		if (this.refcount == 0 && this.rawNode.parentNode)
-			this.dictionary().removeChild(this.rawNode);
-	},
-
-	dictionary: function() {
-		if (lively.data.Wrapper.dictionary)
-			return	lively.data.Wrapper.dictionary;
-		if (lively.data.Wrapper.dictionary = Global.document.getElementById("SystemDictionary"))
-			return lively.data.Wrapper.dictionary;
-		var canvas = locateCanvas();
-		lively.data.Wrapper.dictionary =  canvas.appendChild(NodeFactory.create("defs"));
-		lively.data.Wrapper.dictionary.setAttribute("id", "SystemDictionary");
-		return lively.data.Wrapper.dictionary;
-	},
-	
 	deserializeWidgetFromNode: function(importer, node) {
 		var type = lively.data.Wrapper.getEncodedType(node);
 		if (!type)
@@ -494,12 +456,102 @@ Object.subclass('lively.data.Wrapper', {
 		}, this);
 	},
 
+},
+'system dictionary', {
+
+	reference: function() {
+		if (this.refcount === undefined) this.refcount = 0;
+		this.refcount++;
+		this.ensureInDictionary();
+	},
+
+	dereference: function() {
+		// console.log("dereference " + this)
+		// sadly, when the object owning the gradient is reclaimed, nobody will tell us to dereference
+		if (this.refcount === undefined) throw new Error('sorry, undefined');
+		this.refcount--;
+		if (this.refcount == 0 && this.rawNode.parentNode)
+			this.rawNode.parentNode.removeChild(this.rawNode);
+	},
+
+	ensureInDictionary: function() {
+		if (!this.rawNode) {
+			console.error('Something really wrong with ' + this +
+				'. Trying to add to SystemDictionary but no rawNode!');
+			return
+		}
+
+		if (!this.id()) this.setId(this.newId());
+		var dict = this.dictionary();
+		// check if its in the DOM
+		if (this.rawNode.parentNode === dict) return;
+		if (this.rawNode.parentNode) {
+			debugger
+			console.warn(Strings.format('Wrapper %s will be added to SystemDictionary ' +
+				'but was added somewhere else:%s',
+				this, this.rawNode.parentNode.tagName))
+			this.rawNode.parentNode.removeChild(this.rawNode);
+		}
+		// check if a node with the same id is in the DOM
+		var existing = document.getElementById(this.id()); // better just look into dict?
+		if (existing) {
+			// console.warn('Whooooooha adding wrapper ' + this +
+				// ' to dictionary but a wrapper with this id is already in the dom!')
+			// existing.parentNode.removeChild(existing);
+			this.rawNode = existing;
+		} else {
+			dict.appendChild(this.rawNode);
+		}
+	},
+
+
+	dictionary: function() {
+		var canvas = locateCanvas(this.rawNode),
+			dict = this._dictionary || $A(canvas.childNodes).detect(function(node) {
+				return node.getAttribute && node.getAttribute('id') == 'SystemDictionary' })
+
+		if (!dict) {
+			if (canvas.tagName == 'g') debugger; // not good
+			dict = canvas.appendChild(NodeFactory.create("defs"));
+			dict.setAttribute("id", "SystemDictionary");
+		}
+
+		if (!this._dictionary)
+			this._dictionary = dict;
+
+		if (!lively.data.Wrapper.dictionary) // FIXME
+			lively.data.Wrapper.dictionary = dict;
+		return dict;
+	},
+
 	resolveUriToObject: function(uri) {
 		if (this.id() == uri)
 			return this;
 		return null
 	}
 
+},
+'debugging', {
+	toString: function() {
+		try {
+			return "#<" + this.getType() +	":" + this.rawNode + ">";
+		} catch (err) {
+			return "#<toString error: " + err + ">";
+		}
+	},
+
+	inspect: function() {
+		try {
+			return this.toString() + "[" + this.toMarkupString() + "]";
+		} catch (err) {
+			return "#<inspect error: " + err + ">";
+		}
+	},
+
+	toMarkupString: function() {
+		// note forward reference
+		return Exporter.stringify(this.rawNode);
+	},
 });
 
 Object.extend(lively.data.Wrapper, {
@@ -581,21 +633,66 @@ Object.extend(lively.data.Wrapper, {
 
 	collectSystemDictionaryGarbage: function(rootMorph, optSystemDictionary) {
 		"lively.data.Wrapper.collectSystemDictionaryGarbage()"
-		if (!rootMorph)
-			rootMorph = WorldMorph.current();
-		var fills = [];
-		this.collectAllFillsInObjects(Object.values(Global), fills);
-		rootMorph.collectAllUsedFills(fills)
-		var usedFillIds = fills.collect(function(ea){return ea.id()});
-		var dict = optSystemDictionary || rootMorph.dictionary();
-		$A(dict.childNodes).each(function(ea) {
-			// console.log("GC considering " + ea)
-			if(['linearGradient', 'radialGradient'].include(ea.tagName) && !usedFillIds.include(ea.id)) {
-				// console.log("SystemDictionary GC: remove " + ea)
-				dict.removeChild(ea)
+		var root = rootMorph || WorldMorph.current();
+		if (!this.needDictionaryGC(root)) return;
+
+		var dict = optSystemDictionary || root.dictionary(),
+			fillNodes = this.allFillNodes(dict),
+			usedFills = this.usedFills(root);
+
+		var usedFillIds = usedFills.invoke('id').uniq(),
+			usedFillNodes = usedFillIds.collect(function(id) {
+				return fillNodes.detect(function(node) { return node.id === id })
+			});
+		// usedFills.forEach(function(fill) {
+			// var usedRawNode = usedFillNodes.detect(function(node) { return node && node.id === fill.id() })
+			// if (fill.rawNode !== usedRawNode) {
+				// fill.rawNode = usedRawNode;
+			// }
+		// })
+		fillNodes.forEach(function(fillNode) {
+			if (!usedFillNodes.include(fillNode) && fillNode.parentNode)
+				dict.removeChild(fillNode);
+		});
+
+		// force to rerender
+		root.withAllSubmorphsDo(function() {
+			var shapeRawNode = this.shape.rawNode;
+			if (!shapeRawNode) return;
+			var fillURI = shapeRawNode.getAttribute('fill')
+			if (fillURI) {
+				shapeRawNode.setAttribute('fill', 'none')
+				shapeRawNode.setAttribute('fill', fillURI)
+			}
+			var strokeURI = shapeRawNode.getAttribute('stroke');
+			if (strokeURI) {
+				shapeRawNode.setAttribute('stroke', 'none')
+				shapeRawNode.setAttribute('stroke', strokeURI)
 			}
 		});
 	},
+
+	usedFills: function(root) {
+		var usedFills = [];
+		this.collectAllFillsInObjects(Object.values(Global), usedFills);
+		root.collectAllUsedFills(usedFills);
+		return usedFills
+	},
+
+	allFillNodes: function(dict) {
+		dict = dict || WorldMorph.current().dictionary();
+		var fillTagNames = ['linearGradient', 'radialGradient'],
+			dictNodes = $A(dict.childNodes),
+			fillNodes = dictNodes.select(function(node) { return fillTagNames.include(node.tagName) });
+		return fillNodes
+	},
+	needDictionaryGC: function(wrapper) {
+		// SVG and canvas wont need it since fills are handled differently
+		return wrapper.canvas().tagName == 'svg';
+	},
+
+
+
 });
 
 Object.extend(Object.subclass('lively.data.FragmentURI'), {
@@ -637,33 +734,14 @@ Object.extend(lively.data.Length.subclass('lively.data.Coordinate'), {
 
 using(namespace('lively.scene'), lively.data.Wrapper).run(function(unused, Wrapper) {
 
-Wrapper.subclass('lively.scene.Node');
-	
-this.Node.addProperties({ 
-	FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
-	StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
-	StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
-	LineJoin: {name: "stroke-linejoin"},
-	LineCap: {name: "stroke-linecap"},
-	StrokeDashArray: {name: "stroke-dasharray"},
-	StyleClass: {name: "class"}
-}, Config.useStyling ? lively.data.StyleRecord : lively.data.DOMRecord);
-
-this.Node.addMethods({	 
-
+lively.data.Wrapper.subclass('lively.scene.Node',
+'documentation', {
 	documentation:	"Objects that can be located on the screen",
 	//In this particular implementation, graphics primitives are
 	//mapped onto various SVG objects and attributes.
-
+},
+'initializing', {
 	rawNode: null, // set by subclasses
-
-	doNotSerialize: ['cachedTransforms'],
-	
-	setBounds: function(bounds) { 
-		//copy uses this, so throwing is not nice
-    	console.warn('Node: setBounds unsupported on type ' + this.getType());
-		// throw new Error('setBounds unsupported on type ' + this.getType());
-	},
 
 	copyFrom: function($super, copier, other) {
 		$super(copier, other);
@@ -678,37 +756,27 @@ this.Node.addMethods({
 		}
 	},
 
+},
+'XML serialization', {
+	doNotSerialize: ['cachedTransforms'],
+
 	deserialize: function($super, importer, rawNode) {
 		$super(importer, rawNode);
-		var attr = rawNode.getAttributeNS(null, "fill");
-		var url = lively.data.FragmentURI.parse(attr);
-		if (url) {
-			// FIXME
-			//this._fill = lively.data.FragmentURI.getElement(fillAttr);
-		} else {
-			this._fill = Color.fromString(attr);
-		}
-
-		attr = rawNode.getAttributeNS(null, "stroke");
-		url = lively.data.FragmentURI.parse(attr);
-		if (url) {
-			// FIXME
-			//this._stroke = lively.data.FragmentURI.getElement(fillAttr);
-		} else {
-			this._stroke = Color.fromString(attr);
-		}
+		this._fill = this.getFill();
+		this._stroke = this.getStroke();
 	},
+
+},
+'accessing', {
 
 	canvas: function() {
-		return locateCanvas();
+		return locateCanvas(this.rawNode);
 	},
-
-	nativeContainsWorldPoint: function(p) {
-		var r = this.canvas(this.rawNode).createSVGRect();
-		r.x = p.x;
-		r.y = p.y;
-		r.width = r.height = 0;
-		return this.canvas(this.rawNode).checkIntersection(this.rawNode, r);
+		
+	setBounds: function(bounds) { 
+		//copy uses this, so throwing is not nice
+    	console.warn('Node: setBounds unsupported on type ' + this.getType());
+		// throw new Error('setBounds unsupported on type ' + this.getType());
 	},
 
 	setVisible: function(flag) {
@@ -717,86 +785,63 @@ this.Node.addMethods({
 		return this;
 	},
 
-	isVisible: function() {
-		// Note: this may not be correct in general in SVG due to inheritance,
-		// but should work in LIVELY.
-		var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
-		return hidden == false;
-	},
-
-	applyFilter: function(filterUri) {
-		// deprecated
-		if (filterUri) 
-			this.rawNode.setAttributeNS(null, "filter", filterUri);
-		else
-			this.rawNode.removeAttributeNS(null, "filter");
-	},
-
 	translateBy: function(displacement) {
 		// todo
 	},
 
 	setFill: function(paint) {
-		if ((this._fill !== paint) && (this._fill instanceof lively.paint.Gradient)) {
-			this._fill.dereference();
+		this.setFillOrStrokePaint('fill', paint);
+	},
+
+	getFill: function() {
+		return this.getFillOrStrokePaint('fill');
+	},
+	
+	setStroke: function(paint) {
+		this.setFillOrStrokePaint('stroke', paint);
+	},
+
+	getStroke: function() {
+		return this.getFillOrStrokePaint('stroke');
+	},
+
+	setFillOrStrokePaint: function(propName, paint) {
+		var cachedProperty = '_' + propName; // like _fill
+		if ((this[cachedProperty] !== paint) && (this[cachedProperty] instanceof lively.paint.Gradient)) {
+			this[cachedProperty].dereference();
 		}
-		this._fill = paint;
+		this[cachedProperty] = paint;
 		if (paint === undefined) {
-			this.rawNode.removeAttributeNS(null, "fill");
+			this.rawNode.removeAttributeNS(null, propName);
 		} else if (paint === null) {
-			this.rawNode.setAttributeNS(null, "fill", "none");
+			this.rawNode.setAttributeNS(null, propName, "none");
 		} else if (paint instanceof Color) {
-			this.rawNode.setAttributeNS(null, "fill", String(paint));
+			this.rawNode.setAttributeNS(null, propName, String(paint));
 		} else if (paint instanceof lively.paint.Gradient) {
 			paint.reference();
-			this.rawNode.setAttributeNS(null, "fill", paint.uri());
+			this.rawNode.setAttributeNS(null, propName, paint.uri());
 		} else {
 			throw dbgOn(new TypeError('cannot deal with paint ' + paint));
 		}
 	},
 
-	getFill: function() {
-		// hack
-		if (this._fill || this._fill === null)
-			return this._fill;
-		var attr = this.rawNode.getAttribute('fill');
-		if (!attr) { 
-			false && console.log("Didn't find fill for " + this); return null; 
+	getFillOrStrokePaint: function(propName) {
+		var cachedProperty = '_' + propName;
+		if (this[cachedProperty] || this[cachedProperty] === null)
+			return this[cachedProperty];
+		var attr = this.rawNode.getAttribute(propName);
+		var color = Color.fromString(attr);
+		if (color) {
+			this[cachedProperty] = color;
+			return this[cachedProperty];
 		};
-		var rawFill = lively.data.FragmentURI.getElement(attr);
-		if (!rawFill) { 
-			false && console.log("Didn't find fill for " + this); return null; 
-		};
-		var klass = lively.data.Wrapper.getEncodedType(rawFill);
+		var rawGradient = lively.data.FragmentURI.getElement(attr);
+		if (!rawGradient) return null;
+		var klass = lively.data.Wrapper.getEncodedType(rawGradient);
 		klass = Class.forName(klass) || Class.forName('lively.paint.' + klass);
-		if (!klass) { 
-			false && console.log("Didn't find fill for " + this); return null; 
-		};
 		var importer = new Importer();
-		//dbgOn(true);
-		this._fill = new klass(importer, rawFill);
-		return this._fill;
-	},
-	
-	setStroke: function(paint) {
-		if ((this._stroke !== paint) && (this._stroke instanceof lively.paint.Gradient)) {
-			this._stroke.dereference();
-		}
-		this._stroke = paint;
-		if (paint === undefined) {
-			this.rawNode.removeAttributeNS(null, "stroke");
-		} else if (paint === null) {
-			this.rawNode.setAttributeNS(null, "stroke", "none");
-		} else if (paint instanceof Color) {
-			this.rawNode.setAttributeNS(null, "stroke", String(paint));
-		} else if (paint instanceof lively.paint.Gradient) {
-			paint.reference();
-			this.rawNode.setAttributeNS(null, "stroke", paint.uri());
-		} else throw dbgOn(new TypeError('cannot deal with paint ' + paint));
-	},
-
-	getStroke: function() {
-		return this._stroke;
+		this[cachedProperty] = new klass(importer, rawGradient);
+		return this[cachedProperty];
 	},
 
 	getTransforms: function() {
@@ -838,11 +883,53 @@ this.Node.addMethods({
 				this.rawNode.setAttributeNS(null, "transform" , array.invoke('toString').join(' '));
 			} 
 		}
-	}
+	},
+
+},
+'testing', {
+
+	nativeContainsWorldPoint: function(p) {
+		var r = this.canvas(this.rawNode).createSVGRect();
+		r.x = p.x;
+		r.y = p.y;
+		r.width = r.height = 0;
+		return this.canvas(this.rawNode).checkIntersection(this.rawNode, r);
+	},
+
+	isVisible: function() {
+		// Note: this may not be correct in general in SVG due to inheritance,
+		// but should work in LIVELY.
+		var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
+		return hidden == false;
+	},
+
+},
+'SVG filters', {
+
+	applyFilter: function(filterUri) {
+		// deprecated
+		if (filterUri) 
+			this.rawNode.setAttributeNS(null, "filter", filterUri);
+		else
+			this.rawNode.removeAttributeNS(null, "filter");
+	},
+
 });
 
-// FIXME: unfortunate aliasing for FX, should be removed (Bind doesn't translate accessors properly)
-this.Node.addMethods({
+(function addPropertiesToNode() {
+	lively.scene.Node.addProperties({ 
+		FillOpacity: { name: "fill-opacity", from: Number, to: String, byDefault: 1.0},
+		StrokeOpacity: { name: "stroke-opacity", from: Number, to: String, byDefault: 1.0},
+		StrokeWidth: { name: "stroke-width", from: Number, to: String, byDefault: 1.0},
+		LineJoin: {name: "stroke-linejoin"},
+		LineCap: {name: "stroke-linecap"},
+		StrokeDashArray: {name: "stroke-dasharray"},
+		StyleClass: {name: "class"}
+	}, Config.useStyling ? lively.data.StyleRecord : lively.data.DOMRecord);
+})();
+
+lively.scene.Node.addMethods({
+	// FIXME: unfortunate aliasing for FX, should be removed (Bind doesn't translate accessors properly)
 	setstroke: lively.scene.Node.prototype.setStroke,
 	setfill: lively.scene.Node.prototype.setFill,
 	setfillOpacity: lively.scene.Node.prototype.setFillOpacity,
@@ -890,7 +977,7 @@ lively.scene.Node.subclass('lively.scene.Shape', {
 });
 
 
-Object.extend(this.Shape, {
+Object.extend(lively.scene.Shape, {
 	// merge with Import.importWrapperFromNode?
 	importFromNode: function(importer, node) {
 		switch (node.localName) {
@@ -2913,7 +3000,7 @@ lively.scene.Node.subclass('lively.scene.Text', {
 
 	getFontFamily: function() {
 		return this.getTrait("font-family");
-	}
+	},
 
 });
 
@@ -2961,39 +3048,72 @@ lively.data.Wrapper.subclass('lively.paint.Stop', {
 
 });
 
-Object.extend(this.Stop, {
+Object.extend(lively.paint.Stop, {
 	fromLiteral: function(literal) {
 		return new lively.paint.Stop(literal.offset, literal.color);
-	}
+	},
 });
 
 
 // note that Colors and Gradients are similar but Colors don't need an SVG node
-Wrapper.subclass("lively.paint.Gradient", {
+lively.data.Wrapper.subclass("lively.paint.Gradient",
+'initializing', {
 
 	dictionaryNode: null,
-	initialize: function($super, node) {
+
+	initialize: function($super) {
 		$super();
-		this.stops = [];
+		this.stops = this.stops || [];
 		this.refcount = 0;
-		this.rawNode = node;
+		this.initializeNode();
 	},
+
+	initializeNode: function() {
+		if (!this.rawNode)
+			this.rawNode = this.createRawNode();
+		if (!this.rawNode.parentNode /*&& this.refcount > 0*/) // FIXME refcounting not working!!!
+			this.ensureInDictionary()
+		this.setStops(this.stops);
+	},
+	findOrCreateRawNode: function() {
+		return document.getElementById(this.id()) || this.createRawNode();
+	},
+
+
+	createRawNode: function() { throw new Error('subclass responsibility') },
 
 	deserialize: function($super, importer, rawNode) {
 		$super(importer, rawNode);
-		//rawNode.removeAttribute("id");
-		var rawStopNodes = $A(this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop'));
-		this.stops = rawStopNodes.map(function(stopNode) { return new lively.paint.Stop(importer, stopNode) });
+		this.stops = this.rawStopNodes().map(function(stopNode) {
+			return new lively.paint.Stop(importer, stopNode);
+		});
 		this.refcount = 0;
 	},
 
 	copyFrom: function($super, copier, other) {
 		$super(copier, other);
 		dbgOn(!other.stops);
-		//this.rawNode.removeAttribute("id");
-		var rawStopNodes = $A(this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop'));
-		this.stops = rawStopNodes.map(function(stopNode) { return new lively.paint.Stop(importer, stopNode) });
+		this.stops = this.rawStopNodes().map(function(stopNode) {
+			return new lively.paint.Stop(importer, stopNode);
+		});
 		this.refcount = 0;
+	},
+
+},
+'accessing', {
+
+	rawStopNodes: function() {
+		return $A(this.rawNode.getElementsByTagNameNS(Namespace.SVG, 'stop'));
+	},
+
+	setStops: function(list) {
+		var rawNode = this.rawNode;
+		if (!rawNode) throw new Error('Trying to setting stops in a gradient that has no rawNode');
+		this.stops = list;
+		// remove old
+		this.rawStopNodes().forEach(function(stopRawNode) { stopRawNode && rawNode.removeChild(stopRawNode) });
+		// add new
+		list.forEach(function(stop) { rawNode.appendChild(stop.rawNode) });
 	},
 
 	addStop: function(offset, color) {
@@ -3003,13 +3123,9 @@ Wrapper.subclass("lively.paint.Gradient", {
 		return this;
 	},
 
-	setStops: function(list) {
-		if (this.stops && this.stops.length > 0) throw new Error('stops already initialized to ' + this.stops);
-		list.forEach(function(stop) {
-			this.stops.push(stop);
-			this.rawNode.appendChild(stop.rawNode);
-		}, this);
-	},
+},
+
+'debugging', {
 
 	toString: function() {
 		return "#<" + this.getType() + this.toMarkupString() + ">";
@@ -3018,38 +3134,42 @@ Wrapper.subclass("lively.paint.Gradient", {
 });
 
 
-this.Gradient.subclass("lively.paint.LinearGradient", {
+lively.paint.Gradient.subclass("lively.paint.LinearGradient",
+'initializing', {
 
 	initialize: function($super, stopSpec, vector) {
-		vector = vector || lively.paint.LinearGradient.NorthSouth;
-		$super(NodeFactory.create("linearGradient",
-					  {x1: vector.x, y1: vector.y, 
-					   x2: vector.maxX(), y2: vector.maxY()})); 
-		this.vector = vector;  // cache for access without rawNode
-		this.setStops(stopSpec);
-		return this;
+		this.vector = vector || lively.paint.LinearGradient.NorthSouth;
+		this.stops = stopSpec || [];
+		$super();
+	},
+
+	createRawNode: function() {
+		return NodeFactory.create("linearGradient",
+		  {x1: this.vector.x, y1: this.vector.y, 
+		   x2: this.vector.maxX(), y2: this.vector.maxY()})
 	},
 
 	mixedWith: function(color, proportion) {
+		// FIXME does this method get called?
 		var result = new lively.paint.LinearGradient();
-		for (var i = 0; i < stops.length; i++) {
+		for (var i = 0; i < this.stops.length; i++) {
 			result.addStop(new lively.paint.Stop(this.stops[i].offset(), 
 							 this.stops[i].color().mixedWith(color, proportion)));
 		}
 		return result;
-	}
+	},
 
 });
 
 
-Object.extend(this.LinearGradient, {
+Object.extend(lively.paint.LinearGradient, {
 	fromLiteral: function(literal) {
 		return new lively.paint.LinearGradient(literal.stops, 
 			literal.vector || lively.paint.LinearGradient.NorthSouth);
 	}
 });
 
-Object.extend(this.LinearGradient, {
+Object.extend(lively.paint.LinearGradient, {
 	NorthSouth: rect(pt(0, 0), pt(0, 1)),
 	SouthNorth: rect(pt(0, 1), pt(0, 0)),
 	EastWest:	rect(pt(0, 0), pt(1, 0)),
@@ -3059,19 +3179,30 @@ Object.extend(this.LinearGradient, {
 });
 
 
-this.Gradient.subclass('lively.paint.RadialGradient', {
+lively.paint.Gradient.subclass('lively.paint.RadialGradient',
+'initializing', {
 
 	initialize: function($super, stopSpec, optF) {
-		$super(NodeFactory.create("radialGradient"));
-		this.setStops(stopSpec);
-		if (optF) {
-			this.setTrait("fx", optF.x);
-			this.setTrait("fy", optF.y);
+		this.stops = stopSpec;
+		this.f = optF;
+		$super();
+	},
+
+	createRawNode: function() {
+		return NodeFactory.create("radialGradient");
+	},
+
+	initializeNode: function($super) {
+		$super();
+		if (this.f) {
+			this.setTrait("fx", this.f.x);
+			this.setTrait("fy", this.f.y);
 		}
-	}
+	},
+
 });
 
-Object.extend(this.RadialGradient, {
+Object.extend(lively.paint.RadialGradient, {
 	fromLiteral: function(literal) {
 		return new lively.paint.RadialGradient(literal.stops, literal.focus);
 	}
