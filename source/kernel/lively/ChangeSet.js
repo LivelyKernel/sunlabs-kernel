@@ -198,7 +198,8 @@ Change.addMethods({
 	getFileString: function() { throw new Error('Not yet, sorry!') },
 });
 
-Change.subclass('ChangeSet', {
+Change.subclass('ChangeSet',
+'initializing', {
 
 	initialize: function(optName) {
 		// Keep track of an ordered list of Changes
@@ -207,6 +208,14 @@ Change.subclass('ChangeSet', {
 	},
 
 	initializeFromWorldNode: function(node) {
+		if (!node)
+			throw dbgOn(new Error('Couldn\'t initialize ChangeSet'));
+		if (node.localName !== 'defs')
+			node = this.findOrCreateDefNodeOfWorld(node);
+		return this.initializeFromNode(node);
+	},
+
+	initializeFromNode: function(node) {
 		if (!this.reconstructFrom(node))
 			this.addHookTo(node);
 		return this;
@@ -214,14 +223,16 @@ Change.subclass('ChangeSet', {
 
 	initializeFromFile: function(fileName, fileString) {
 		if (!fileString) {
-			if (fileName.startsWith('http'))
-				fileString = new WebResource(fileName).get().content;
-			else
-				fileString = new FileDirectory(new URL(Config.codeBase) || URL.source).fileContent(fileName);
+			var url = fileName.startsWith('http') ? new URL(fileName) : URL.codeBase.withFilename(fileName);
+			fileString = new WebResource(url).get().content;
 		}
-		var doc = new DOMParser().parseFromString(fileString, "text/xml");
+		return this.initializeFromString(fileString);
+	},
+
+	initializeFromString: function(str) {
+		var doc = new DOMParser().parseFromString(str, "text/xml");
 		if (!this.reconstructFrom(doc))
-			throw dbgOn(new Error('Couldn\'t create ChangeSet from ' + fileName));
+			throw dbgOn(new Error('Couldn\'t create ChangeSet from ' + str));
 		return this;
 	},
 
@@ -229,30 +240,34 @@ Change.subclass('ChangeSet', {
 		if (!node) return false;
 		var codeNodes = node.getElementsByTagName('code');
 		if (codeNodes.length == 0) return false;
-		if (codeNodes.length > 1) console.warn('multiple code nodes in ' + node);
-		this.xmlElement = codeNodes[0];
+		if (codeNodes.length > 1)
+			console.warn('multiple code nodes in ' + node);
+		this.xmlElement = codeNodes[codeNodes.length-1];
 		return true;
 	},
 
-	addHookTo: function(node) {
-		if (!node)
-			throw dbgOn(new Error('Couldn\'t add ChangeSet'));
-		defNode = node.localName == 'defs' ? node : this.findOrCreateDefNodeOfWorld(node);
+	addHookTo: function(defNode) {
 		this.xmlElement = LivelyNS.create("code");
 		defNode.appendChild(this.xmlElement);
 	},
 	
 	findOrCreateDefNodeOfWorld: function(doc) {
-		var defNode = new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc);
-		if (!defNode) {
-			var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
-			doc : new Query('.//*[@type="WorldMorph"]').manualNSLookup().findFirst(doc);
-			if (!worldNode) dbgOn(true);
-			defNode = NodeFactory.create('defs');
-			worldNode.appendChild(defNode); // null Namespace?
-		}
+		// FIXME !!!
+		doc = doc.ownerDocument ? doc.ownerDocument : doc;
+		var defNode = new Query('.//*[@lively:type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc) ||
+			new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc);
+		if (defNode) return defNode;
+		var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
+			doc : (new Query('.//*[@lively:type="WorldMorph"]').manualNSLookup().findFirst(doc)
+				|| new Query('.//*[@type="WorldMorph"]').manualNSLookup().findFirst(doc)) ;
+		if (!worldNode) dbgOn(true);
+		defNode = NodeFactory.create('defs');
+		worldNode.appendChild(defNode); // null Namespace?
 		return defNode;
 	},
+
+},
+'subelements', {
 
 	addChange: function(change) {
 		this.addSubElement(change);
@@ -263,10 +278,6 @@ Change.subclass('ChangeSet', {
 		return $A(this.xmlElement.childNodes)
 		.collect(function(ea) { return parser.createChange(ea) })
 		.reject(function(ea) { return !ea });
-	},
-
-	evaluate: function() {
-		this.subElements().forEach(function(item) { item.evaluate() });
 	},
 
 	removeChangeNamed: function(name) {
@@ -294,6 +305,15 @@ Change.subclass('ChangeSet', {
 		this.addChange(DoitChange.create(source, name));
 	},
 
+},
+'evaluation', {
+
+	evaluate: function() {
+		this.subElements().forEach(function(item) { item.evaluate() });
+	},
+
+},
+'SimpleBrowser support', {
 	// used in SimpleBrowser, lively.Tools. No changes are recorded yet...
 	logChange: function(spec) {},
 });
@@ -649,7 +669,7 @@ Object.extend(ChangeSet, {
 		// Return the changeSet associated with the current world
 		var worldOrNode = WorldMorph.current() || new Importer().canvasContent(Global.document)[0];
 		return ChangeSet.fromWorld(worldOrNode);
-	}
+	},
 
 });
 
