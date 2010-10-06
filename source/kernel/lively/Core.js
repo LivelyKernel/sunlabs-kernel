@@ -1087,10 +1087,9 @@ Object.subclass('Copier', {
 			if (!found && name === 'clip') {
 				// last hope, not clean
 				var clipRawNode = Global.document.getElementById(ref);
-				if (!clipRawNode)
-					return;
+				if (!clipRawNode) return;
 				// ok, there must be a better way to deal with it...
-				found = wrapper[name] = new lively.scene.Clip(this, Global.document.getElementById(ref));
+				found = wrapper[name] = new lively.scene.Clip(wrapper.shape);
 				if (found) console.warn('Found reference somehow but not in the way it was intended to be found!!!')
 			}
 		    if (!found) {

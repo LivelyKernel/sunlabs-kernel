@@ -253,7 +253,7 @@ Change.subclass('ChangeSet',
 	
 	findOrCreateDefNodeOfWorld: function(doc) {
 		// FIXME !!!
-		doc = doc.ownerDocument ? doc.ownerDocument : doc;
+		doc = doc.ownerDocument ? doc.ownerDocument.documentElement : doc;
 		var defNode = new Query('.//*[@lively:type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc) ||
 			new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc);
 		if (defNode) return defNode;

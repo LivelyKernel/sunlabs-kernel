@@ -1016,4 +1016,19 @@ MorphTestCase.subclass('Tests.MorphTest.BinarySearchListMorphTest', {
 	},
 		
 })
+TestCase.subclass('Tests.MorphTest.ClipMorphTest',
+'testing', {
+	testDuplicateClipMorph: function() {
+		try {
+			var  m = new BoxMorph(new Rectangle(0,0, 100,100))
+			m.beClipMorph();
+			m.openInWorld();
+			this.assert(m.clip.rawNode, 'original clip has no rawNode');
+			var m2 = m.duplicate();
+			this.assert(m2.clip.rawNode, 'rawNode was not copied of clip!')
+		} finally {
+			m.remove();
+		}
+	},
+});
 }) // end of module
