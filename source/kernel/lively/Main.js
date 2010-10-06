@@ -434,7 +434,7 @@ Object.subclass('lively.Main.ExampleLoader', {
 				});
 			}
 
-			if (!Config.skipMostExamples && Config.showMap) {
+			if (false && !Config.skipMostExamples && Config.showMap) { // unfortunately the maps API has changed
 				require('lively.Examples').toRun(function(unused, exampleModule) {
 					var tile = exampleModule.maps.tileExtent;
 					var map = new MapFrameMorph(new Rectangle(0, 0, 2*tile.x, 2*tile.y), true);
@@ -444,6 +444,23 @@ Object.subclass('lively.Main.ExampleLoader', {
 				});
 			}
 
+			if (!Config.skipMostExamples && Config.showKaleidoscope) { // unfortunately the maps API has changed
+				require('lively.Examples').toRun(function(unused, exampleModule) {
+					var kaleidoscopeWorld = new LinkMorph(null, pt(60, 560));
+					lm1.myWorld.addMorph(kaleidoscopeWorld);
+					kaleidoscopeWorld.addLabel("Kaleidoscope");
+					kaleidoscopeWorld.myWorld.onEnter = function() {
+						if (!kaleidoscopeWorld.enterCount) kaleidoscopeWorld.enterCount = 0;
+						if (kaleidoscopeWorld.enterCount > 0) return
+						var kal = new SymmetryMorph(300, 7);
+						kaleidoscopeWorld.myWorld.addMorph(kal);
+						kal.startUp();
+						kal.addMorph(Morph.makeStar(pt(0,30)))
+						kal.addMorph(Morph.makeStar(pt(20,160)))
+					}
+				});
+			}
+			
 			// Add sample curve stuff
 			if (Config.showCurveExample) {
 				var g = lively.scene;

@@ -270,6 +270,7 @@ Config.showPenScript = true;
 Config.showTester = true;
 Config.showBitmap = false;
 Config.showMap = !Config.skipMostExamples && !UserAgent.isTouch;
+Config.showKaleidoscope = !Config.skipMostExamples && !UserAgent.isTouch;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
 // Config.random is used as the ID for the messenger morph for each user
