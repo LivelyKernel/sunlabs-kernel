@@ -432,12 +432,13 @@ BoxMorph.subclass("ImageMorph",
 	},
 
 	setOriginalImageSizeWhenLoaded: function(imgSrc) {
+		console.log('setting original size of image using canvas image element')
 		var newImg = new Image();
 		newImg.src = imgSrc;
 		newImg.onload = function() {
 			var extent = pt(newImg.width, newImg.height);
-			this.originalExtent = extent;
 			this.setExtent(extent)
+			this.originalExtent = extent;
 		}.bind(this)
 	},
 
