@@ -247,20 +247,34 @@ Change.subclass('ChangeSet',
 	},
 
 	addHookTo: function(defNode) {
-		this.xmlElement = LivelyNS.create("code");
+		$A(defNode.childNodes).forEach(function(node) {
+			if (node.localName == 'code') defNode.removeChild(node);
+		});
+		this.xmlElement = this.xmlElement || LivelyNS.create("code");
 		defNode.appendChild(this.xmlElement);
 	},
 	
 	findOrCreateDefNodeOfWorld: function(doc) {
 		// FIXME !!!
-		doc = doc.ownerDocument ? doc.ownerDocument.documentElement : doc;
-		var defNode = new Query('.//*[@lively:type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc) ||
-			new Query('.//*[@type="WorldMorph"]/*[local-name()="defs"]').manualNSLookup().findFirst(doc);
+		if (doc.getAttribute && doc.getAttribute('type') == "WorldMorph") {
+			var worldNode = doc,
+				defNode = $A(worldNode.childNodes).detect(function(node) { return node.localName == 'defs' });
+			if (!defNode) {
+				defNode = NodeFactory.create('defs');
+				worldNode.appendChild(defNode);
+			}
+			return defNode
+		}
+		var rootElement = doc.documentElement ? doc.documentElement : doc.ownerDocument.documentElement,
+			defNodeQuery1 = '//*[@lively:type="WorldMorph"]/*[local-name()="defs"]',
+			defNodeQuery2 = '//*[@type="WorldMorph"]/*[local-name()="defs"]',
+			defNode = Query.find(defNodeQuery1, rootElement) || Query.find(defNodeQuery2, rootElement);
 		if (defNode) return defNode;
-		var worldNode = doc.getAttribute('type') == 'WorldMorph' ?
-			doc : (new Query('.//*[@lively:type="WorldMorph"]').manualNSLookup().findFirst(doc)
-				|| new Query('.//*[@type="WorldMorph"]').manualNSLookup().findFirst(doc)) ;
-		if (!worldNode) dbgOn(true);
+		var worldNodeQuery1 = '//*[@lively:type="WorldMorph"]',
+			worldNodeQuery2 = '//*[@type="WorldMorph"]',
+			worldNode = rootElement.getAttribute('type') == 'WorldMorph' ? rootElement :
+				Query.find(worldNodeQuery1, rootElement) || Query.find(worldNodeQuery2, rootElement);
+		dbgOn(!worldNode);
 		defNode = NodeFactory.create('defs');
 		worldNode.appendChild(defNode); // null Namespace?
 		return defNode;
@@ -659,6 +673,10 @@ Object.extend(ChangeSet, {
 		cs.ensureHasInitializeScript();
 		cs.ensureHasWorldRequirements();
 		return cs;
+	},
+
+	fromNode: function(node) {
+		return new ChangeSet('Local code').initializeFromNode(node);
 	},
 
 	fromFile: function(fileName, fileString) {
