@@ -91,6 +91,15 @@ View.subclass('Query',  {
 	},
 
 });
+Object.extend(Query, {
+	find: function(expr, doc) {
+		return new Query(expr).manualNSLookup().findFirst(doc)
+	},
+
+	findAll: function(expr, doc) {
+		return new Query(expr).manualNSLookup().findAll(doc)
+	},
+});
 
 TextMorph.subclass('XPathQueryMorph', {
     documentation: "TextMorph with an associated contextNode, evals result in evaluating XPath queries",
