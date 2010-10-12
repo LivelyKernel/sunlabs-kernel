@@ -2,10 +2,9 @@ module('Tests.MorphTest').requires('lively.TestFramework').toRun(function() {
 
 TestCase.subclass('Tests.MorphTest.MorphTest', {
 	
-	createTestMorph: function(owner){
+	createTestMorph: function(owner) {
 	    var m =  Morph.makeRectangle( 0,  0, 10, 10);
-	    if(owner)
-	        owner.addMorph(m);
+	    if (owner) owner.addMorph(m);
 	    return m
 	},
 	
@@ -28,9 +27,7 @@ TestCase.subclass('Tests.MorphTest.MorphTest', {
 		this.m1.ownerWidget = w;
 		this.assertIdentity(this.m1.getOwnerWidget(), w, "m1")
 		this.assertIdentity(this.m2.getOwnerWidget(), w, "m2")
-
-	}
-	
+	},
 });
 
 TestCase.subclass('Tests.MorphTest.TextListMorphTest', {
@@ -424,52 +421,6 @@ testExtractExtent: function() {
 });
 
 
-// TODO Marko, what has to happen with this code?
-TestCase.subclass('Tests.MorphTest.NewListMorphTest',
-'default category', {
-	setUp: function($super) {
-		$super();
-        this.list = new NewListMorph(new Rectangle(80,80,50,20));
-	},
-
-	xtestAddItem: function() {
-		var item1 = 'First test item';
-		var item2 = 'Second test item';
-
-		this.assertIncludesAll([], this.list.getList(), 'the list of the NewListMorph was not empty at the beginning');
-
-		this.list.addItem(item1);
-		this.assertIncludesAll([item1], this.list.getList(), 'a new list item was not properly add to the NewListMorph');
-		this.assertEquals(1, this.list.submorphs.length, 'the representation of a new list item was not properly added to the NewListMorph');
-
-		this.list.addItem(item2);
-		this.assertIncludesAll([item1, item2], this.list.getList(), 'a new list item was not properly add to the NewListMorph');
-		this.assertEquals(2, this.list.submorphs.length, 'the representation of a new list item was not properly added to the NewListMorph');
-	},
-
-	xtestSetList: function() {
-		var item1 = 'First test item';
-		var item2 = 'Second test item';
-
-		this.assertIncludesAll([], this.list.getList(), 'the list of the NewListMorph was not empty at the beginning');
-
-		this.list.setList([item1, item2]);
-		this.assertIncludesAll([item1, item2], this.list.getList(), 'a new list was not properly set to the NewListMorph');
-		this.assertEquals(2, this.list.submorphs.length, 'the representation of a new list was not properly created for the NewListMorph');
-	},
-
-	xtestToMorphConversion: function() {
-		var textItem = 'Test item';
-		var morphItem = Morph.makeRectangle(0, 0, 10, 10);
-
-		var morph = this.list.convertToMorph(textItem);
-		this.assertEquals(true, (morph instanceof Morph), 'text list item was not converted to a morph');
-
-		morph = this.list.convertToMorph(morphItem);
-		this.assertEquals(true, (morph instanceof Morph), 'morph list item was not "converted" to a morph');
-	},
-
-});
 TestCase.subclass('Tests.MorphTest.NodeMorphTest', {
 	
 	setUp: function() {
@@ -705,13 +656,47 @@ TestCase.subclass('Tests.MorphTest.HorizontalDividerTest', {
 	},
 
 });
-
-
-TestCase.subclass("Tests.MorphTest.HorizontalLayoutTest", {
+TestCase.subclass("Tests.MorphTest.LayoutTest",
+'running', {
 	
-	setUp: function() {
-
+	tearDown: function($super) {
+		$super();
+		if (this._errorOccured) {
+			// let it stay open
+		} else {
+			this.morph.remove()
+		}		
 	},
+
+	createTestMorph: function(name) {
+		name = name || this.currentSelector + '_testMorph';
+		var pos = pt(0,0);
+		if($morph(name)) {
+			pos = $morph(name).getPosition();
+			$morph(name).remove();
+		}
+ 		this.morph = new BoxMorph(pos.extent(pt(300,100)));
+		this.morph.layoutManager = new this.layouterClass();
+		this.morph.name = name;
+		this.morph.setFill(Color.gray);
+		this.morph.openInWorld();
+		return this.morph;		
+	},
+
+	box: function(extentX, extentY) {
+		var m = Morph.makeRectangle(0,0,50,50);
+		m.setBorderWidth(0);
+		return m;
+	},
+})
+
+
+
+Tests.MorphTest.LayoutTest.subclass("Tests.MorphTest.HorizontalLayoutTest",
+'settings', {
+	layouterClass: HorizontalLayout,
+},
+'testing', {
 
 	testToLiteral: function() {
 		var sut = new HorizontalLayout();
@@ -723,38 +708,26 @@ TestCase.subclass("Tests.MorphTest.HorizontalLayoutTest", {
 		this.assert(sut instanceof HorizontalLayout)
 	},
 
-
-	createTestMorph: function(name) {
-		if($morph(name))
-			$morph(name).remove();
- 		this.morph = new BoxMorph(new Rectangle(0,0,300,100));
-		this.morph.layoutManager = new HorizontalLayout();
-		this.morph.name = name;
-		this.morph.setFill(Color.gray);
-		this.morph.openInWorld();
-		return this.morph;		
-	},
-
 	testLayoutBeforeAddMorph: function() {
-		var m = this.createTestMorph("HorizontalLayoutTest_M1");
-		var s1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
-		var s2 = Morph.makeRectangle(new Rectangle(0,0,50,50));
-		var s3 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var m = this.createTestMorph("HorizontalLayoutTest_M1"),
+			s1 = this.box(50,50),
+			s2 = this.box(50,50),
+			s3 = this.box(50,50);
 
 		m.addMorph(s1);
 		m.addMorph(s2);
 		m.addMorph(s3);
 	
-		this.assertEqualState(s1.getPosition(), pt(0.5,0.5), "s1 bad");
-		this.assertEqualState(s2.getPosition(), pt(51.5,0.5), "s2 bad");
-		this.assertEqualState(s3.getPosition(), pt(102.5,0.5), "s3 bad");
+		this.assertEqual(s1.getPosition(), pt(0,0), "s1 bad");
+		this.assertEqual(s2.getPosition(), pt(50, 0), "s2 bad");
+		this.assertEqual(s3.getPosition(), pt(100, 0), "s3 bad");
 	},
 
 	testLayout: function() {
-		var m = this.createTestMorph("HorizontalLayoutTest_M2");
-		var s1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
-		var s2 = Morph.makeRectangle(new Rectangle(0,0,50,50));
-		var s3 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var m = this.createTestMorph("HorizontalLayoutTest_M2"),
+			s1 = this.box(50,50),
+			s2 = this.box(50,50),
+			s3 = this.box(50,50);
 
 		m.addMorph(s1);
 		m.addMorph(s2);
@@ -763,34 +736,32 @@ TestCase.subclass("Tests.MorphTest.HorizontalLayoutTest", {
 		s2.remove();
 		m.layoutManager.layout(m);	
 
-		this.assertEqualState(s1.getPosition(), pt(0.5,0.5), "s1 bad");
-		this.assertEqualState(s3.getPosition(), pt(51.5,0.5), "s3 bad");
+		this.assertEqual(s1.getPosition(), pt(0,0), "s1 bad");
+		this.assertEqual(s3.getPosition(), pt(50, 0), "s3 bad");
+	},
+	testAddInGap: function() {
+		var m = this.createTestMorph(),
+			s1 = this.box(50,50),
+			s2 = this.box(50,50),
+			s3 = this.box(50,50),
+			s4 = this.box(50,50);
+		m.addMorph(s1);
+		m.addMorph(s2);
+		m.addMorph(s3);
+		s2.remove();
+		m.addMorph(s4);
+		this.assertEqual(s4.getPosition(), pt(50, 0), "s4 bad " + s4.getPosition().x);
+		s1.remove(); s4.remove(); m.addMorph(s4);
+		this.assertEqual(s4.getPosition(), pt(0, 0), "s4 bad 2" + s4.getPosition().x);
 	},
 
-	tearDown: function() {
-		if (this._errorOccured) {
-			// let it stay open
-		} else {
-			this.morph.remove()
-		}		
-	},
 })
 
-TestCase.subclass("Tests.MorphTest.VerticalLayoutTest", {
-
-	setUp: function() {
-	},
-
-	createTestMorph: function(name) {
-		if($morph(name))
-			$morph(name).remove();
-  		this.morph = new BoxMorph(new Rectangle(0,0,300,100));
-		this.morph.layoutManager = new VerticalLayout();
-		this.morph.name = name;
-		this.morph.setFill(Color.gray);
-		this.morph.openInWorld();
-		return this.morph;		
-	},
+Tests.MorphTest.LayoutTest.subclass("Tests.MorphTest.VerticalLayoutTest",
+'settings', {
+	layouterClass: VerticalLayout,
+},
+'testing', {
 
 	testLayoutBeforeAddMorph: function() {
 		var m = this.createTestMorph("VerticalLayoutTest_M1");
@@ -824,13 +795,6 @@ TestCase.subclass("Tests.MorphTest.VerticalLayoutTest", {
 		this.assertEqualState(s3.getPosition(), pt(0.5,51.5), "s3 bad");
 	},
 
-	tearDown: function() {
-		if (this._errorOccured) {
-			// let it stay open
-		} else {
-			this.morph.remove()
-		}		
-	},
 })
 
 
