@@ -2520,8 +2520,8 @@ lively.scene.Image.addMethods({
 			// loading and loading at deserialization time, otherwise
 			// it'll fail at deserialization
 			var xml = Strings.format('<image xmlns="http://www.w3.org/2000/svg" ' 
-			+ 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
-			+ ' width="%s" height="%s" xlink:href="%s" />', width, height, href);
+				+ 'xmlns:xlink="http://www.w3.org/1999/xlink" ' 
+				+ ' width="%s" height="%s" xlink:href="%s" />', width, height, escape(href));
 			this.rawNode = new Importer().parse(xml);
 		} else {
 
