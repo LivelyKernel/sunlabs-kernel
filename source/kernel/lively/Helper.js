@@ -557,14 +557,15 @@ Object.subclass('lively.Helper.XMLConverter', {
 
 	storeXMLDataInto: function(xml, jsObj) {
 		jsObj.tagName = xml.tagName;
+		jsObj.toString = function() { return jsObj.tagName };
 		$A(xml.attributes).forEach(function(attr) { jsObj[attr.name] = attr.value	});
-		if (xml.childNodes.length === 0) return jsObj;
+		if (!xml.childNodes || xml.childNodes.length === 0) return jsObj;
 		jsObj.children = $A(xml.childNodes).collect(function(node) {
 			if (node.nodeType == Global.document.CDATA_SECTION_NODE) {
-				return {tagName: 'cdataSection', data: node.data};
+				return {tagName: 'cdataSection', data: node.data, toString: function() { return 'CDATA'}};
 			}
 			if (node.nodeType == Global.document.TEXT_NODE) {
-				return {tagName: 'textNode', data: node.data};
+				return {tagName: 'textNode', data: node.data, toString: function() { return 'TEXT'}};
 			}
 			return this.storeXMLDataInto(node, {});
 		}, this);
