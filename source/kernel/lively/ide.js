@@ -104,13 +104,19 @@ Widget.subclass('lively.ide.BasicBrowser',
  
 		var panel = new lively.ide.BrowserPanel(extent);
         PanelMorph.makePanedPanel(extent, this.panelSpec, panel);
-
 		this.panel = panel;
-        var model = this.getModel();
-        var browser = this;
+
+		var model = this.getModel(),
+			browser = this;
  
         function setupListPanes(paneName) {
             var morph = panel[paneName];
+			// morph.innerMorph().plugTo(model, {
+				// selection: '->set' + paneName + 'Selection',
+				// selection: '<-get' + paneName + 'Selection',
+				// itemList: '<-get' + paneName + 'Content',
+				// : '<-get' + paneName + 'Content',
+			// })
             morph.connectModel(model.newRelay({List:        ("-" + paneName + "Content"),
                                                Selection:   (      paneName + 'Selection'),
                                                Menu:        ("-" + paneName + "Menu")}), true);
@@ -942,7 +948,8 @@ ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 			lively.ide.ClassHierarchyViewCommand,
 			lively.ide.AddClassToFileFragmentCommand,
 			lively.ide.AddLayerToFileFragmentCommand,
-			lively.ide.AddMethodToFileFragmentCommand]
+			lively.ide.AddMethodToFileFragmentCommand,
+			lively.ide.RunTestMethodCommand]
 	},
 
 
@@ -2492,6 +2499,46 @@ lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddMethodToFileFragment
 
 	createSource: function(methodName) {
 		return Strings.format('%s: function() {},', methodName);
+	},
+
+});
+lively.ide.BrowserCommand.subclass('lively.ide.RunTestMethodCommand', {
+
+	wantsMenu: Functions.True,
+
+	getSelectedNode: function() {
+		return this.browser.selectedNode();
+	},
+
+	getTestClass: function() {
+		var node = this.getSelectedNode(),
+			klass = Class.forName(node.target.className);
+		return klass && Global.TestCase && klass.isSubclassOf(TestCase) && klass;
+	},
+
+	isActive: function(pane) {
+		var node = this.getSelectedNode();
+		if (!node.isMemberNode || node.target.isStatic() || !node.target.getName().startsWith('test'))
+			return;
+		return this.getTestClass() != null;
+	},
+
+	runTest: function() {
+		var klass = this.getTestClass(),
+			testSelector = this.getSelectedNode().target.getName();
+		var test = new klass();
+		test.runTest(testSelector);
+		var failures = test.result.failureList();
+		if (failures.length == 0) {
+			var msg = klass.name + '>>' + testSelector + ' succeeded'; 
+			WorldMorph.current().setStatusMessage(msg, Color.green, 3);
+		} else {
+			WorldMorph.current().setStatusMessage(failures[0], Color.red, 6);
+		}
+	},
+
+	trigger: function() {
+		return [['run test', this.runTest.bind(this)]]
 	},
 
 });
