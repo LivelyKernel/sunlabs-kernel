@@ -21,6 +21,8 @@
  */
 
 
+module('lively.Core').requires().toRun(function() {
+
 /* Code loader. Appends file to DOM. */
 Object.subclass('ScriptLoader',
 'loading', {
@@ -195,14 +197,22 @@ Object.extend(Global, {
 // DOM manipulation (Browser and graphics-independent)
 // ===========================================================================
 
-Namespace =  {
-    SVG : "http://www.w3.org/2000/svg", 
-    LIVELY : UserAgent.usableNamespacesInSerializer ? "http://www.experimentalstuff.com/Lively"  : null, 
-    XLINK : "http://www.w3.org/1999/xlink", 
-    XHTML: "http://www.w3.org/1999/xhtml"
+Global.Namespace = {
+	SVG: "http:\/\/www.w3.org/2000/svg", 
+	LIVELY: UserAgent.usableNamespacesInSerializer ? "http:\/\/www.experimentalstuff.com/Lively"  : null, 
+	XLINK: "http:\/\/www.w3.org/1999/xlink", 
+	XHTML: "http:\/\/www.w3.org/1999/xhtml",
+	ATOM: "http:\/\/www.w3.org/2005/Atom",
+
+	// Google specific
+	OPENSEARCH: "http:\/\/a9.com/-/spec/opensearchrss/1.0/",
+	GBS: "http:\/\/schemas.google.com/books/2008",
+	DC: "http:\/\/purl.org/dc/terms",
+	BATCH: "http:\/\/schemas.google.com/gdata/batch",
+	GD: "http:\/\/schemas.google.com/g/2005",
 };
 
-var Converter = {
+Global.Converter = {
     documentation: "singleton used to parse DOM attribute values into JS values",
 
 
@@ -382,7 +392,7 @@ var Converter = {
 };
 
 
-var NodeFactory = {
+Global.NodeFactory = {
 
     createNS: function(ns, name, attributes) {
 	var element = Global.document.createElementNS(ns, name);
@@ -428,7 +438,7 @@ var NodeFactory = {
 
 };
 
-XLinkNS = {
+Global.XLinkNS = {
 	create: function(href, doc) {
 		var doc = doc || Global.document;
 		var node = NodeFactory.createNS(null, 'script', {type: "text/ecmascript"});
@@ -445,7 +455,7 @@ XLinkNS = {
     }
 };
 
-LivelyNS = {
+Global.LivelyNS = {
 
 	prefix: 'lively:',
 
@@ -479,7 +489,7 @@ LivelyNS = {
 	},
 };
 
-XHTMLNS = {
+Global.XHTMLNS = {
 
 	create: function(name, attributes) {
 		return NodeFactory.createNS(Namespace.XHTML, name, attributes);
@@ -506,9 +516,11 @@ XHTMLNS = {
 		node.setAttributeNS(Namespace.LIVELY, "type", string);
 	}
 };
-  
-Class.addMixin(lively.data.DOMRecord, lively.data.Wrapper.prototype);
-Class.addMixin(lively.data.DOMNodeRecord, lively.data.Wrapper.prototype);
+
+(function addRecordStuffToWrapper() { // FIXME refactor
+	Class.addMixin(lively.data.DOMRecord, lively.data.Wrapper.prototype);
+	Class.addMixin(lively.data.DOMNodeRecord, lively.data.Wrapper.prototype);
+})();
 
 
 
@@ -563,9 +575,11 @@ Object.subclass('Event', {
 	},
 
 	offset: function() {
+		// Test
+		// return pt(0,0 )
 		// note that FF doesn't doesnt calculate offsetLeft/offsetTop early enough we don't precompute these values
-		var topElement = this.canvas;
 		if (Config.isEmbedded) {
+			var topElement = this.canvas;
 			var offsetX = 0;
 			var offsetY = -3;
 			do {
@@ -575,7 +589,11 @@ Object.subclass('Event', {
 			} while (topElement && topElement.tagName != 'BODY');
 			return pt(offsetX, offsetY);
 		} else {
-			return pt(topElement.offsetLeft || 0, (topElement.offsetTop  || 0) - 3);
+			if (Event.canvasOffset === undefined) {
+				var topElement = this.canvas;
+				Event.canvasOffset = pt(topElement.offsetLeft || 0, (topElement.offsetTop  || 0) - 3);
+			}
+			return Event.canvasOffset;
 		}
 	},
 
@@ -741,24 +759,26 @@ Event.basicInputEvents = basicMouseEvents.concat(Event.keyboardEvents).concat(["
 
 })();
 
-function equals(leftObj, rightObj) {
-    if (!leftObj && !rightObj) return true;
-    if (!leftObj || !rightObj) return false;
-    switch (leftObj.constructor) {
-        case String:
-	case Boolean:
-	case Number:
-            return leftObj == rightObj;
-    };
-    if (leftObj.isEqualNode)
-        return leftObj.isEqualNode(rightObj);
-    var cmp = function(left, right) {
-	for (var value in left)
-	    if (!(left[value] instanceof Function))
-		return equals(left[value], right[value]);
-    };
-    return cmp(leftObj, rightObj) && cmp(rightObj, leftObj);
-};
+Object.extend(Global, {
+	equals: function(leftObj, rightObj) {
+		if (!leftObj && !rightObj) return true;
+		if (!leftObj || !rightObj) return false;
+		switch (leftObj.constructor) {
+			case String:
+			case Boolean:
+			case Number:
+				return leftObj == rightObj;
+		};
+		if (leftObj.isEqualNode)
+			return leftObj.isEqualNode(rightObj);
+		var cmp = function(left, right) {
+			for (var value in left)
+				if (!(left[value] instanceof Function))
+					return equals(left[value], right[value]);
+		};
+		return cmp(leftObj, rightObj) && cmp(rightObj, leftObj);
+	},	
+});
 
 
 Object.subclass('Exporter', {
@@ -1107,12 +1127,13 @@ Object.subclass('Copier', {
 
 }); 
 
-// 'dummy' copier for simple objects
-Copier.marker = Object.extend(new Copier(), {
-    addMapping: Functions.Empty,
-    lookup: Functions.Null
+Object.extend(Copier, {
+	// 'dummy' copier for simple objects
+	marker: Object.extend(new Copier(), {
+    	addMapping: Functions.Empty,
+    	lookup: Functions.Null
+	}),
 });
-
 
 
 Copier.subclass('Importer', {
@@ -1328,6 +1349,15 @@ Copier.subclass('Importer', {
 		return world;
 	}
 });
+
+Object.extend(Importer, {
+	marker: Object.extend(new Importer(), {
+	    addMapping: Functions.Empty,
+	    lookup: Functions.Null,
+	}),
+});
+
+
 Function.addMethods(
 'serialization', {
 	toLiteral: function() {
@@ -1350,6 +1380,7 @@ Function.addMethods(
 		return obj[name];
 	},
 });
+
 Object.extend(Function, {
 	fromString: function(funcOrString) {
 		return eval('(' + funcOrString.toString() + ')') 
@@ -1359,12 +1390,6 @@ Object.extend(Function, {
 		return Function.fromString(obj.source).asScript();
 	},
 });
-
-Importer.marker = Object.extend(new Importer(), {
-    addMapping: Functions.Empty,
-    lookup: Functions.Null
-});
-
 
 
 // ===========================================================================
@@ -1980,9 +2005,11 @@ Morph.addMethods('default', {
 
 	setBorderWidth: function(newWidth) {
 		if (newWidth == null) newWidth = 0;
-		// Workaround Chrome Windows BUG
-		// that displays a line when the strok width is 0
-		if (newWidth == 0) newWidth = this.nearlyZeroBorderWidth;
+		if (Config.ChromeWindowsBorderBugFix) {
+			// Workaround Chrome Windows BUG
+			// that displays a line when the strok width is 0
+			if (newWidth == 0) newWidth = this.nearlyZeroBorderWidth;
+		}
 		
 		var oldWidth = this.getBorderWidth();
 		if (newWidth == oldWidth) return;
@@ -3845,7 +3872,7 @@ Object.extend(Morph, {
 
 
 // View trait
-ViewTrait = {
+Global.ViewTrait = {
     connectModel: function(plugSpec, optKickstartUpdates) {
 	// FIXME what if already connected, 
 	if (plugSpec instanceof Relay) {
@@ -4370,7 +4397,7 @@ PasteUpMorph.subclass("WorldMorph",
 		this.enterCount = 0;
 	},
 
-	doNotSerialize: ['hands', 'scheduledActions', 'lastStepTime', 'mainLoop', 'worldId', 'secondTick', 'currentScript', 'currentSelection' ],
+	doNotSerialize: ['hands', 'scheduledActions', 'lastStepTime', 'mainLoop', 'worldId', 'secondTick', 'currentScript', 'currentSelection', '_statusMessageContainer'],
 
     initializeTransientState: function($super) {
         $super();
@@ -5021,6 +5048,28 @@ PasteUpMorph.subclass("WorldMorph",
 		}.bind(this)); 
 	},
 
+	saveWorldWithJSON: function(optURLOrPath) {
+		var world = this,
+			url = optURLOrPath || URL.source,
+			start = new Date().getTime(),
+			onFinished = function() {
+				var time = new Date().getTime() - start;
+				world.setStatusMessage("world saved to " + url + " in " + time + "ms \n(" + time + "ms serialization)", Color.green, 3)
+			};
+			
+			
+		// make relative to absolute URL
+		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
+		require("draft.SmartRefSerialization","draft.SerializationRefactoring").toRun(function() {
+			if (world._statusMessageContainer) world._statusMessageContainer.remove();
+			var doc = ObjectGraphLinearizer.serializeWorld(world);
+			Exporter.saveDocumentToFile(doc, url, onFinished);
+		});
+
+		
+		return url;
+	},
+	
 	saveWorld: function(optURLOrPath) {
 		var url = optURLOrPath || URL.source;
 		// make relative to absolute URL
@@ -5061,7 +5110,6 @@ PasteUpMorph.subclass("WorldMorph",
 		}).bind(this).delay(0);
 		return url;
 	},
-	
 	windowBounds: function () {
 		var canvas = this.canvas();
 		var scale = 1/this.world().getScale();
@@ -5141,9 +5189,13 @@ PasteUpMorph.subclass("WorldMorph",
 		]);
 		if (! this.isProtectedWorld()) { // Global. avoids an error if Network.js not loaded
 			// save but only if it's not the startup world
-			menu.addItem(["save current world to current URL (s)", function() { 
+			menu.addItem(["save world to current URL (s)", function() { 
 				menu.remove(); 
 				this.saveWorld();
+			}]);
+			menu.addItem(["save world with JSON", function() { 
+				menu.remove(); 
+				this.saveWorldWithJSON();
 			}]);
 		}
 		if(Config.debugExtras) {
@@ -5542,6 +5594,26 @@ PasteUpMorph.subclass("WorldMorph",
  		if (this.currentSelection) 
 			this.currentSelection.remove();
 	},
+},
+'local code', {
+	getChangeSet: function() {
+		return ChangeSet.fromWorld(this);
+	},
+	setChangeSet: function(cs) {
+		cs.addHookTo(cs.findOrCreateDefNodeOfWorld(this.rawNode));
+	},
+
+	getCodeNode: function() {
+		var codeElement = Query.find('./svg:defs/*[local-name()="code"]', this.rawNode);
+		return codeElement;
+	},
+	replaceCodeNode: function(newCodeNode) {
+		this.getDefsNode().replaceChild(this.getCodeNode(), newCodeNode);
+		return newCodeNode;
+	},
+
+
+
 })
 
 
@@ -6293,8 +6365,9 @@ Morph.subclass("HandMorph",
             // console.log("changed "+ ea);
             ea.changed("globalPosition", this.getPosition());
         }, this);
-    }
+    },
 });
+
 Morph.subclass('LinkMorph', {
 
     documentation: "two-way hyperlink between two Lively worlds",
@@ -6583,7 +6656,7 @@ BoxMorph.subclass('ContainerMorph', {
 /**
  * Hacks 
  */
-ClipboardHack = {
+Global.ClipboardHack = {
 	ensurePasteBuffer: function() {
 		// Return a reference to a text element to serve as our proxy for communication
 		//   with the OS about text such as cut/paste, or iPad keyboard input
@@ -6661,36 +6734,41 @@ ClipboardHack = {
 
 }
 
+Object.extend(Global, { // various stuff
+	basicResize: function(world, canvas, newWidth, newHeight) {
+		canvas.setAttribute("width", newWidth);
+		canvas.setAttribute("height", newHeight);
+		world.setExtent(pt(newWidth, newHeight));
+		world.fullBounds = new Rectangle(0, 0, newWidth, newHeight);
+	},
 
-Global.basicResize = function(world, canvas, newWidth, newHeight) {
-	canvas.setAttribute("width", newWidth);
-	canvas.setAttribute("height", newHeight);
-	world.setExtent(pt(newWidth, newHeight));
-	world.fullBounds = new Rectangle(0, 0, newWidth, newHeight);
-};
+	onresize: function(evt) {
+		if (!Config.onWindowResizeUpdateWorldBounds) return; 
+		var h = document.getElementsByTagName('html')[0];
+	    var world = WorldMorph.current();
+		if (!world) {
+			console.log("Error: No world to resize.")
+			return;
+		}		
+		// Todo: get rid of the arbitrary offset without getting scrollbars
+	    var newWidth = h.clientWidth - 4;
+	    var newHeight = h.clientHeight-  4;
+	},
 
-window.onresize = function(evt) {
-	if (!Config.onWindowResizeUpdateWorldBounds) return; 
-	var h = document.getElementsByTagName('html')[0];
-    var world = WorldMorph.current();
-	if (!world) {
-		console.log("Error: No world to resize.")
-		return;
-	}		
-	// Todo: get rid of the arbitrary offset without getting scrollbars
-    var newWidth = h.clientWidth - 4;
-    var newHeight = h.clientHeight-  4;
-};
+	$morph: function getMorphNamedShortcut(name) {
+		return WorldMorph.current().getMorphNamed(name);
+	},
 
-Global.$morph = function getMorphNamedShortcut(name) { return WorldMorph.current().getMorphNamed(name) };
+	interactiveEval: function(text) {
+	   // FIXME for compatibility, load jQuery for some interactive conveniences
+		// ECMAScript 3rd edition, section 12.4: 
+		// “Note that an ExpressionStatement cannot start with an opening curly brace because that might make it ambiguous with a Block.“
+		//text = '(' + text + ')'; // workaround for that issue
+		return eval(text);
+	},
+	
+});
 
-function interactiveEval(text) {
-   // FIXME for compatibility, load jQuery for some interactive conveniences
-	// ECMAScript 3rd edition, section 12.4: 
-	// “Note that an ExpressionStatement cannot start with an opening curly brace because that might make it ambiguous with a Block.“
-	//text = '(' + text + ')'; // workaround for that issue
-	return eval(text);
-}
 
 Object.subclass('ClipboardCopier', {
 	
@@ -6873,7 +6951,7 @@ Object.subclass('DocLinkConverter', {
 		var urlCodeBase = new URL(codeBase);
 		var urlToDir = new URL(toDir);
 
-		if ((urlCodeBase.hostname == urlToDir.hostname) && (urlCodeBase.port == urlToDir.port))
+		if ((urlCodeBase.normalizedHostname() == urlToDir.normalizedHostname()) && (urlCodeBase.port == urlToDir.port))
 			return this.relativeCodeBaseFrom(codeBase, toDir);
 		else
 			return urlCodeBase.toString();
@@ -6998,7 +7076,22 @@ Invocation.subclass('SchedulableAction', {
  *  TODO: Move into own package
  *
  */
-Object.subclass('LayoutManager', {
+Object.subclass('LayoutManager',
+'layouting', {
+	layout: function(supermorph) {
+		// subclass responsibility
+	},
+
+	xPosForInsert: function(supermorph, addedMorph) {
+		// return addedMorph.bounds().left()
+		return this.leftPaddingOf(supermorph);
+	},
+
+	yPosForInsert: function(supermorph, addedMorph) {
+		return this.topPaddingOf(supermorph);
+	},
+},
+'morphic extensions', {
 
     setBounds: function(target, newRect) {
 		// DI: Note get/setBounds should be deprecated in favor of get/setExtent and get/setPosition
@@ -7061,9 +7154,11 @@ Object.subclass('LayoutManager', {
 		supermorph.layoutChanged();
     },
 
+},
+'derived accessing', {
 
-	layout: function(supermorph) {
-		// subclass responsibility
+	orderedSubMorphsOf: function(morph) {
+		return morph.visibleSubmorphs();
 	},
 
 	leftMarginOf: function(morph) {
@@ -7097,39 +7192,20 @@ Object.subclass('LayoutManager', {
 	bottomPaddingOf: function(morph) {
 		return morph.padding ? morph.padding.bottom() : 0;
 	},
-	
+},
+'serialization', {
 	toLiteral: function() {
 		return {}
-	}
+	},
 });
 
 LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 
-	beforeAddMorph: function(supermorph, submorph, isFront) {
-		if (submorph.isEpimorph) return;
-
-		// runs before submorph is added
-		var dx = this.leftMarginOf(submorph);
-		var dy;
-		var last = supermorph.topSubmorph();
-
-		if (!last) {
-			dx += this.leftPaddingOf(supermorph);
-			dy =  this.topPaddingOf(supermorph);
-			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
-		} else {
-			dx += this.rightMarginOf(last);
-			dy = 0;
-			submorph.align(submorph.bounds().topLeft(), last.bounds().topRight());
-			submorph.translateBy(pt(dx, dy));
-		}
-	},
-	
 	layout: function(supermorph) {
-		var x = this.leftPaddingOf(supermorph);
-		var y =  this.topPaddingOf(supermorph);
-		var submorphs = supermorph.visibleSubmorphs();
-		for(var i=0; i < submorphs.length; i++) {
+		var x = this.leftPaddingOf(supermorph),
+			y =  this.topPaddingOf(supermorph),
+			submorphs = this.orderedSubMorphsOf(supermorph);
+		for (var i = 0; i < submorphs.length; i++) {
 			var submorph = submorphs[i];
 			x += this.leftMarginOf(submorph)
 			submorph.align(submorph.bounds().topLeft(), pt(x, y));
@@ -7137,6 +7213,37 @@ LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 			x += this.rightMarginOf(submorph);
 		}
 	},
+	
+	// fixmE not added to superclass because of performance
+	beforeAddMorph: function(supermorph, submorph, isFront) {
+		// runs before submorph is added
+		if (submorph.isEpimorph) return;
+		var pos = pt(this.xPosForInsert(supermorph, submorph),
+					this.yPosForInsert(supermorph, submorph));
+		submorph.align(submorph.bounds().topLeft(), pos)
+	},
+	
+	xPosForInsert: function(supermorph, addedMorph) {
+		// find a gap where addedMorph fits in and return the xPos
+		var submorphs = this.orderedSubMorphsOf(supermorph),
+			left = this.leftPaddingOf(supermorph), right = 0, gap = 0,
+			requiredWidth = addedMorph.bounds().width +
+							this.leftMarginOf(addedMorph) +
+							this.rightMarginOf(addedMorph);
+		for (var i = 0; i < submorphs.length; i++) {
+			var morph = submorphs[i];
+			right = morph.getPosition().x - this.leftMarginOf(morph);
+			gap = right - left;
+			if (gap >= requiredWidth) return left;
+			left = morph.bounds().right() + this.rightMarginOf(morph);
+		}
+		return left;
+	},
+
+	orderedSubMorphsOf: function(morph) {
+		return morph.visibleSubmorphs().sortBy(function(subM) { return subM.getPosition().x });
+	},
+
 });
 
 Morph.addMethods('default layout manager', {
@@ -7150,31 +7257,13 @@ Object.extend(HorizontalLayout, {
 
 LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 
-	beforeAddMorph: function(supermorph, submorph, isFront) {
-		if (submorph.isEpimorph) return;
-		// runs before submorph is added
-		var dx;
-		var dy = this.topMarginOf(submorph);
-		var last = supermorph.topSubmorph();
-
-		if (!last) {
-			dx = this.leftPaddingOf(supermorph);
-			dy += this.topPaddingOf(supermorph);
-			submorph.align(submorph.bounds().topLeft(), pt(dx, dy));
-		} else {
-			dx = 0;
-			dy += this.bottomMarginOf(last);
-			submorph.align(submorph.bounds().topLeft(), last.bounds().bottomLeft());
-			//submorph.translateBy(pt(dx, dy));
-		}
-	},
-
 	layout: function(supermorph) {
-		var x = this.leftPaddingOf(supermorph);
+		// var x = this.leftPaddingOf(supermorph);
 		var y =  this.topPaddingOf(supermorph);
 		var submorphs = supermorph.visibleSubmorphs();
 		for(var i=0; i < submorphs.length; i++) {
-			var submorph = submorphs[i];
+			var submorph = submorphs[i],
+				x = submorph.bounds().left();
 			y += this.topMarginOf(submorph)
 			submorph.align(submorph.bounds().topLeft(), pt(x, y));
 			y += submorph.bounds().height;
@@ -7182,6 +7271,36 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 		}
 	},
 
+	// fixmE not added to superclass because of performance
+	beforeAddMorph: function(supermorph, submorph, isFront) {
+		// runs before submorph is added
+		if (submorph.isEpimorph) return;
+		var pos = pt(this.xPosForInsert(supermorph, submorph),
+					this.yPosForInsert(supermorph, submorph));
+		submorph.align(submorph.bounds().topLeft(), pos)
+	},
+
+	yPosForInsert: function(supermorph, addedMorph) {
+		// find a gap where addedMorph fits in and return the yPos
+		var submorphs = this.orderedSubMorphsOf(supermorph),
+			top = this.topPaddingOf(supermorph), bottom = 0, gap = 0,
+			requiredHeight = addedMorph.bounds().height +
+							this.topMarginOf(addedMorph) +
+							this.bottomMarginOf(addedMorph);
+		for (var i = 0; i < submorphs.length; i++) {
+			var morph = submorphs[i];
+			bottom = morph.getPosition().y - this.topMarginOf(morph);
+			gap = bottom - top;
+			if (gap >= requiredHeight) return top;
+			top = morph.bounds().bottom() + this.bottomMarginOf(morph);
+		}
+		return top;
+	},
+	
+	orderedSubMorphsOf: function(morph) {
+		return morph.visibleSubmorphs().sortBy(function(subM) { return subM.getPosition().y });
+	},
+	
 });
 
 Object.extend(VerticalLayout, { 
@@ -7189,3 +7308,5 @@ Object.extend(VerticalLayout, {
 })
 
 console.log('loaded Core.js');
+
+}); // end of module

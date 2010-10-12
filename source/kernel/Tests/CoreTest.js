@@ -528,6 +528,18 @@ TestCase.subclass('Tests.CoreTest.DocLinkConversionTest', {
 		var result = sut.createCodeBaseDef('../../');
 		this.assertEquals('Config.codeBase=Config.getDocumentDirectory()+\'../../\'', result);
 	},
+	test06ConvertDifferentDomains: function() {
+		var d = this.exampleDoc();
+		var codeBase = 'http://www.lively-kernel.org/repository/webwerkstatt/';
+		var toDir = 'http://www.new-host.com/path1/path2/';
+		var sut = new DocLinkConverter(codeBase, toDir);
+		var newDoc = sut.convert(d);
+		var scripts = $A(newDoc.getElementsByTagName('script'));
+
+		this.assertEquals(codeBase + 'lively/JSON.js', scripts[0].getAttribute('xlink:href'));
+		this.assertEquals(codeBase + 'lively/localconfig.js', scripts[2].getAttribute('xlink:href'));
+	},
+
 
 });
 TestCase.subclass('LoaderTest',
