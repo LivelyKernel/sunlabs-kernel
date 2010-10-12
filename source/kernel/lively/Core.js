@@ -5039,10 +5039,12 @@ PasteUpMorph.subclass("WorldMorph",
 },
 'Feedback and Saving', {
 
-	promptAndSaveWorld: function() {
+	promptAndSaveWorld: function(asJson) {
 		this.prompt("world file (.xhtml)", function(filename) {
+			if (!filename.endsWith('.xhtml')) filename += '.xhtml'
 			var start = new Date().getTime();	
-			this.exportLinkedFile(filename);
+			if (asJson) this.saveWorldWithJSON(filename);
+			else this.exportLinkedFile(filename);
 			var time = new Date().getTime() - start;
 			this.setStatusMessage("world save as " + filename + " in " + time + "ms", Color.green, 3)	
 		}.bind(this)); 
@@ -5185,7 +5187,8 @@ PasteUpMorph.subclass("WorldMorph",
 				new NetRequest().put(URL.source.withFilename('auth'));
 				// sometimes the wikiBtn seems to break after an authenticate
 				if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
-			["publish world as ... ", function() { this.promptAndSaveWorld()}]
+			["publish world as ... ", function() { this.promptAndSaveWorld() }],
+			["publish world with JSON ... ", function() { this.promptAndSaveWorld(true/*asJson*/) }],
 		]);
 		if (! this.isProtectedWorld()) { // Global. avoids an error if Network.js not loaded
 			// save but only if it's not the startup world

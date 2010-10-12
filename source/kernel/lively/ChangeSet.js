@@ -256,7 +256,7 @@ Change.subclass('ChangeSet',
 	
 	findOrCreateDefNodeOfWorld: function(doc) {
 		// FIXME !!!
-		if (doc.getAttribute && doc.getAttribute('type') == "WorldMorph") {
+		if (doc.getAttribute && (doc.getAttribute('type') || doc.getAttribute('lively:type')) == "WorldMorph" ) {
 			var worldNode = doc,
 				defNode = $A(worldNode.childNodes).detect(function(node) { return node.localName == 'defs' });
 			if (!defNode) {

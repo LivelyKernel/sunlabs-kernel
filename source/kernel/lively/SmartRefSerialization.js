@@ -138,7 +138,9 @@ Object.subclass('ObjectGraphLinearizer',
 			if (!obj.hasOwnProperty(key) || key === this.idProperty) continue;
 			var value = obj[key];
 			if (this.somePlugin('ignoreProp', [obj, key, value])) continue;
+this.path.push(key)
 			copy[key] = this.register(value);
+this.path.splice(this.path.length-1, 1); // remove last
 		}
 		this.letAllPlugins('serializeObj', [obj, copy]);
 		this.copyDepth--
@@ -248,7 +250,7 @@ this.path.splice(this.path.length-1, 1); // remove last
 
 	log: function(msg) {
 		WorldMorph.current() ?
-			WorldMorph.current().setStatusMessage(msg, Color.blue, 4) :
+			WorldMorph.current().setStatusMessage(msg, Color.blue, 6) :
 			console.log(msg);
 	},
 	getPath: function() {
@@ -455,6 +457,7 @@ ObjectLinearizerPlugin.subclass('LivelyWrapperPlugin', // for serializing lively
 			// if (obj.isPropertyOnIgnoreList && obj.isPropertyOnIgnoreList(propName)) return true;
 			if (!value) return false;
 			if (value.nodeType) return true; // FIXME dont serialize nodes
+			if (value === Global) return true;
 		} catch(e) {
 			// strange objects that are created by layers make problems here:
 			// layer[object._layer_object_id] = {_layered_object: object};

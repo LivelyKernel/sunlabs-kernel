@@ -2595,6 +2595,8 @@ Object.subclass('lively.scene.Similitude', {
 	* @param [float] scale
 	*/
 
+	doNotSerialize: ['matrix_'],
+	
 	initialize: function(duck) { 
 		// matrix is a duck with a,b,c,d,e,f, could be an SVG matrix or a Lively Transform
 		// alternatively, its a combination of translation rotation and scale
@@ -2648,7 +2650,8 @@ Object.subclass('lively.scene.Similitude', {
 
 
 	isTranslation: function() {
-		return this.matrix_.type === SVGTransform.SVG_TRANSFORM_TRANSLATE;
+		var matrix = this.matrix_ || this.toMatrix();
+		return matrix.type === SVGTransform.SVG_TRANSFORM_TRANSLATE;
 	},
 
 	getTranslation: function() {
@@ -2762,7 +2765,7 @@ Object.subclass('lively.scene.Similitude', {
 	},
 
 	preConcatenate: function(t) {
-		var m = this.matrix_;
+		var m = this.matrix_ || this.toMatrix();
 		this.a =  t.a * m.a + t.c * m.b;
 		this.b =  t.b * m.a + t.d * m.b;
 		this.c =  t.a * m.c + t.c * m.d;
@@ -2774,7 +2777,8 @@ Object.subclass('lively.scene.Similitude', {
 	},
 
 	createInverse: function() {
-		return new lively.scene.Similitude(this.matrix_.inverse());
+		var matrix = this.matrix_ || this.toMatrix();
+		return new lively.scene.Similitude(matrix.inverse());
 	}
 
 });
