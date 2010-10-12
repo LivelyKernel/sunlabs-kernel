@@ -48,6 +48,7 @@ Object.subclass('lively.Text.Font', {
 	documentation: "representation of a font",
 	baselineFactor: 0.80,
 	
+	doNotSerialize: ['extents'],
 	initialize: function(family/*:String*/, size/*:Integer*/, style/*:String*/){
 		this.family = family;
 		this.size = size;
@@ -881,7 +882,7 @@ BoxMorph.subclass('TextMorph',
 'settings', {
 	
 	documentation: "Container for Text",
-	doNotSerialize: ['charsTyped', 'charsReplaced', 'delayedComposition', 'focusHalo', 'lastFindLoc', 'lines', 'priorSelection', 'previousSelection', 'selectionRange', 'selectionPivot','typingHasBegun', 'undoSelectionRange', 'undoTextString', '_statusMorph'],
+	doNotSerialize: ['charsTyped', 'charsReplaced', 'delayedComposition', 'focusHalo', 'lastFindLoc', 'lines', 'priorSelection', 'previousSelection', 'selectionRange', 'selectionPivot','typingHasBegun', 'undoSelectionRange', 'undoTextString', '_statusMorph', 'font'],
 
 	// these are prototype variables
 	fontSize:	Config.defaultFontSize	 || 12,
@@ -2969,29 +2970,33 @@ TextMorph.subclass('TestTextMorph', {
 BoxMorph.subclass('LabeledTextMorph', {
 
     documentation: "Morph that contains a small label and a TextMorph. Clips when TextMorphs grows larger than maxExtent",
-    labelOffset: pt(5, 1),
+    labelOffset: pt(0, 0),
     maxExtent: pt(500, 400),
     
     initialize: function($super, rect, labelString, textString, maxExtent) {
         $super(rect);
         if (maxExtent) this.maxExtent = maxExtent;
-        
+pt(20,20).asRectangle().center()
         /* configure the label */
-        var label = new TextMorph(this.labelOffset.asRectangle(), labelString);
+        // var label = new TextMorph(this.labelOffset.asRectangle(), labelString);
+        var label = new TextMorph(rect.center().withX(0), labelString);
         label.beLabel({fontSize: 11, fill: Color.veryLightGray, padding: Rectangle.inset(1)});
         label.setBounds(label.bounds()); // set the bounds again, when padding is changed, otherwise they would be wrong
         this.addMorphFront(label);
         
         /* configure the text */
-        var textPos = pt(0,label.getExtent().y/2);
-        var text = new TextMorph(textPos.extent(rect.extent()), textString);
-        text.applyStyle({wrapStyle: lively.Text.WrapStyle.Normal, borderColor: Color.veryLightGray.darker().darker(),
-                         padding: text.padding.withY(label.bounds().height / 2)});
+        var textPos = label.bounds().topRight(), //pt(0,label.getExtent().y/2),
+			text = new TextMorph(textPos.extent(rect.extent()), textString);
+        text.applyStyle({
+			wrapStyle: lively.Text.WrapStyle.Normal,
+			borderColor: Color.veryLightGray.darker().darker(),
+			padding: text.padding.withY(label.bounds().height / 2)
+		});
         this.addMorphBack(text);
         text.composeAfterEdits = text.composeAfterEdits.wrap(function(proceed) {
             proceed();
             if (this.textHeight() < this.maxExtent().y) this.setToTextHeight(); // grow with the textMorph
-            //else this.clipToShape();
+            // else this.clipToShape();
         }.bind(this));
         
         
@@ -3010,18 +3015,18 @@ BoxMorph.subclass('LabeledTextMorph', {
         return this.owner ? this.owner.innerBounds().extent() : this.maxExtent;
     },
     
-    reshape: function($super, partName, newPoint, lastCall) {
-        var priorPosition = this.getPosition();
-        var priorExtent = this.getExtent();
-	var result = $super(partName, newPoint, lastCall);
-        if (lastCall && this.textHeight() < this.getExtent().y) this.setToTextHeight();
-        var moveBy = this.getPosition().subPt(priorPosition);
-        var extendBy = this.getExtent().subPt(priorExtent);
-        this.label.setPosition(this.label.getPosition().addPt(moveBy));
-        this.text.setPosition(this.text.getPosition().addPt(moveBy));
-        this.text.setExtent(this.text.getExtent().addPt(extendBy));
-	return result;
-    },
+	reshape: function($super, partName, newPoint, lastCall) {
+		var priorPosition = this.getPosition(),
+			priorExtent = this.getExtent(),
+			result = $super(partName, newPoint, lastCall);
+		if (lastCall && this.textHeight() < this.getExtent().y) this.setToTextHeight();
+		var moveBy = this.getPosition().subPt(priorPosition),
+			extendBy = this.getExtent().subPt(priorExtent);
+		this.label.setPosition(this.label.getPosition().addPt(moveBy));
+		this.text.setPosition(this.text.getPosition().addPt(moveBy));
+		this.text.setExtent(this.text.getExtent().addPt(extendBy));
+		return result;
+	},
     
     textHeight: function() {
         return this.label.getExtent().y/2 + this.text.getExtent().y;
