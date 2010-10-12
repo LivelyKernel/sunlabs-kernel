@@ -365,3 +365,4 @@ Config.useDelayedHTMLRendering = false
 Config.couchDBURL = document.location.protocol + '//' + document.location.host + '/couchdb';
 Config.defaultCodeDB = 'code_db';
 Config.wikiRepoUrl = null;
+Config.ChromeWindowsBorderBugFix = UserAgent.isWindows && UserAgent.isChrome;
