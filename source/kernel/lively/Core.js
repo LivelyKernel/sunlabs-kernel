@@ -5060,7 +5060,7 @@ PasteUpMorph.subclass("WorldMorph",
 			
 		// make relative to absolute URL
 		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
-		require("draft.SmartRefSerialization","draft.SerializationRefactoring").toRun(function() {
+		require("lively.SmartRefSerialization").toRun(function() {
 			if (world._statusMessageContainer) world._statusMessageContainer.remove();
 			var doc = ObjectGraphLinearizer.serializeWorld(world);
 			Exporter.saveDocumentToFile(doc, url, onFinished);

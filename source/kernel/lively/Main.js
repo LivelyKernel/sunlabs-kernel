@@ -157,7 +157,7 @@ Object.subclass('lively.Main.Loader',
 		var self = this,
 			doc = canvas.ownerDocument,
 			jso = JSON.parse(json),
-			requirements = ["draft.SmartRefSerialization","draft.SerializationRefactoring"];
+			requirements = ["lively.SmartRefSerialization"];
 		requirements = requirements.concat(Config.modulesBeforeChanges);
 		this.setupCounter(canvas);
 		require(requirements).toRun(function() {
