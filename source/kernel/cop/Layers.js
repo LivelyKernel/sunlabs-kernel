@@ -546,10 +546,14 @@ Object.subclass('COPError', {
 
 Object.subclass("cop.PartialLayerComposition", {
 	initialize: function(obj,  prototypeObject, functionName, baseFunction, methodType) {
-		this.partialMethods = [baseFunction].concat(computerLayersFor(obj)
-			.collect(function(ea) {return ContextJS.lookupLayeredFunctionForObject(obj, ea, functionName, methodType)})
-			.select(function(ea) {return ea}));
-
+		this.partialMethods = [baseFunction];
+		var layers = computerLayersFor(obj);
+		for(var i=0; i< layers.length; i++) {
+			var layer = layers[i];
+			var partialMethod = ContextJS.lookupLayeredFunctionForObject(obj, layer, functionName, methodType);
+			if (partialMethod)
+				this.partialMethods.push(partialMethod);
+		};
 		this.object = obj;
 		this.prototypeObject = prototypeObject;
 		this.functionName = functionName;
