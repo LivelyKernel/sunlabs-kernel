@@ -153,33 +153,32 @@ Object.subclass('lively.Main.Loader',
 			})
         })
 	},
-	deserializeJSONWorld: function(canvas, jsonString) {
-		var self = this;
-		require(["draft.SmartRefSerialization","draft.SerializationRefactoring"].concat(Config.modulesOnWorldLoad)).toRun(function() {
-			var deserializer = SmartRefSerializer.forLively();
-				world = deserializer.deserialize(jsonString);
-			world.displayOnCanvas(canvas)
+	deserializeJSONWorld: function(canvas, json) {
+		var self = this,
+			doc = canvas.ownerDocument,
+			jso = JSON.parse(json),
+			requirements = ["draft.SmartRefSerialization","draft.SerializationRefactoring"];
+		requirements = requirements.concat(Config.modulesBeforeChanges);
+		this.setupCounter(canvas);
+		require(requirements).toRun(function() {
+			var changes = !Config.skipChanges && ObjectGraphLinearizer.deserializeChangeSetFromDocument(doc);
+			changes && changes.evaluateWorldRequirements();
+			var modulesOnWorldLoad = Config.modulesBeforeWorldLoad.concat(ObjectGraphLinearizer.sourceModulesIn(jso));
+			require(modulesOnWorldLoad).toRun(function() {
+				changes && changes.evaluateAllButInitializer();
+				require(Config.modulesOnWorldLoad).toRun(function() {
+					var world = ObjectGraphLinearizer.deserializeWorldFromJso(jso);
+					world.setChangeSet(changes);
+		            world.displayOnCanvas(canvas);
+		            console.log("world is " + world);
+					changes && changes.evaluateInitializer();
 
-			self.setupCounter(canvas);
-			if (Config.showWikiNavigator) self.showWikiNavigator();
-			self.onFinishLoading(world);
-			world.setStatusMessage('JSON world loaded', Color.green, 5)
+					if (Config.showWikiNavigator) self.showWikiNavigator();
+					self.onFinishLoading(world);
+					world.setStatusMessage('JSON world loaded', Color.green, 5)
+				})
+			})			
 		})
-        // require(Config.modulesBeforeChanges).toRun(function() {
-			// var changes = !Config.skipChanges && ChangeSet.fromWorld(canvas);
-			// changes && changes.evaluateWorldRequirements();
-			// require(Config.modulesBeforeWorldLoad).toRun(function() {
-				// changes && changes.evaluateAllButInitializer();
-				// require(Config.modulesOnWorldLoad).toRun(function() {
-					// world = importer.loadWorldContents(canvas);
-		            // world.displayOnCanvas(canvas);
-		            // console.log("world is " + world);
-					// changes && changes.evaluateInitializer();
-// 
-// 
-				// })
-			// })
-        // })
 	},
 
 	createNewWorld: function(canvas) {
