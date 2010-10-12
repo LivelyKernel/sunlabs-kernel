@@ -1027,7 +1027,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	isLoading: function() {
 		if (this.isLoaded()) return false;
 		if (this.uri().include('anonymous')) return true;
-		return Loader.scriptInDOM(this.uri());
+		return JSLoader.scriptInDOM(this.uri());
 	},
 	
 	load: function() {
@@ -1050,7 +1050,7 @@ Namespace.addMethods({ // module specific, should be a subclass?
 			this.loadRequirementsFirst();
 			return;
 		}
-		Loader.loadJs(this.uri());
+		JSLoader.loadJs(this.uri());
 	},
 	
 	isAnonymous: function() {
