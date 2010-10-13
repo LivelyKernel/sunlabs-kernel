@@ -775,7 +775,7 @@ TestCase.subclass('ObjectGraphLinearizerPluginTest',
 	},
 	test03IgnoreProps: function() {
 		var obj = {
-			isPropertyOnIgnoreList: function(key) { return key == 'foo' },
+			doNotSerialize: ['foo'],
 			foo: 23,
 			bar: 42,
 		};
