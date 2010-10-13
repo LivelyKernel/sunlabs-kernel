@@ -503,6 +503,9 @@ cop.create('TeXLayer')
 'div.title { font-size: 30}\n' +
 'div.subtitle { font-size: 20}\n' +
 'div.abstract { font-style: italic}\n' +
+'ul { list-style-position: inside;}\n' +
+'li.level1 { padding-left: 0pt;  font-size: 16}\n' +
+'li.level2 { padding-left: 30pt;  font-size: 14}\n' +
 'span.strong { font-weight: bold}\n' +
 'span.emph { font-style: italic}\n' +
 '\n</style>\n</head>\n'+
@@ -576,7 +579,9 @@ LaTeXConverter.addMethods({
 
 	$Listing: {
 		html: function(textMorph) { return Strings.format('<ul>%s</ul>\n', 
-			textMorph.getHTMLString().replace(/\- /g,"<li>")) },
+			textMorph.getHTMLString()
+				.replace(/(\n|^)- /g,"\n<li class='level1'>")
+				.replace(/\n\t- /g,"\n\t<li class='level2'>")) },
 		converter: function(textMorph) { return Strings.format('\\begin{lstlisting}%s\n\\end{lstlisting}\n\n', textMorph.textString) },
 		style: {},
 	},
