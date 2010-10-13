@@ -1450,8 +1450,9 @@ Object.subclass('MouseHandlerForRelay', {
  * Morph Class 
  */
 lively.data.Wrapper.subclass('Morph');
-// Functions for change management
+
 Object.extend(Morph, {
+	// Functions for change management
   	// this static function is needed to bind it during the defintion of some Morph methods
 	onLayoutChange: function(fieldName) { 
 		return function layoutChangeAdvice(/* arguments*/) {
@@ -1477,10 +1478,122 @@ Object.extend(Morph, {
 			morph.setTransforms(literal.transforms);
 		}
 		return morph;
-	}
+	},
+
+	// factory methods
+	makeLine: function(verts, lineWidth, lineColor) {
+		// make a line with its origin at the first vertex
+		// Note this works for simple lines (2 vertices) and general polylines
+		verts = verts.invoke('subPt', verts[0]);
+		var shape = new lively.scene.Polyline(verts);
+		var morph = new Morph(shape);
+		morph.setBorderWidth(lineWidth);
+		morph.setBorderColor(lineColor);
+		morph.setFill(null);
+		return morph;
+	},
+
+	makeCircle: function(location, radius, lineWidth, lineColor, fill) {
+		// make a circle of the given radius with its origin at the center
+		var morph = new Morph(new lively.scene.Ellipse(location, radius));
+		morph.setBorderWidth(lineWidth);
+		morph.setBorderColor(lineColor);
+		morph.setFill(fill || Color.blue);
+		return morph;
+	},
+
+	makeEllipse: function(bounds, lineWidth, lineColor, fill) {
+		// make a circle first (a bit wasteful)
+		var morph = this.makeCircle(bounds.center(), 0, lineWidth, lineColor, fill);
+		morph.setBounds(bounds);
+		morph.moveOriginBy(morph.innerBounds().center())
+		return morph;
+	},
+
+	makeRectangle: function(/**/) {
+		var morph;
+		switch (arguments.length) {
+			case 1: // rectangle
+			if (!(arguments[0] instanceof Rectangle)) throw new TypeError(arguments[0] + ' not a rectangle');
+			morph = new Morph(new lively.scene.Rectangle(arguments[0]));
+			break;
+			case 2: // location and extent
+			morph = new Morph(new lively.scene.Rectangle(arguments[0].extent(arguments[1])));
+			break;
+			case 4: // x,y,width, height
+			morph = new Morph(new lively.scene.Rectangle(new Rectangle(arguments[0], arguments[1], arguments[2], arguments[3])));
+			break;
+			default:
+			throw new Error("bad arguments " + arguments);
+		}
+		return morph.applyStyle({borderWidth: 1, borderColor: Color.black, fill: Color.blue});
+	},
+
+	makePolygon: function(verts, lineWidth, lineColor, fill) {
+		var morph = new Morph(new lively.scene.Polygon(verts));
+		morph.setBorderWidth(lineWidth);
+		morph.setBorderColor(lineColor);
+		morph.setFill(fill);
+		return morph;
+		//return morph.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
+	},
+
+	makeStar: function(position) {
+		var makeStarVertices = function(r,center,startAngle) {
+			var vertices = [];
+			var nVerts = 10;
+			for (var i=0; i <= nVerts; i++) {
+				var a = startAngle + (2*Math.PI/nVerts*i);
+				var p = Point.polar(r,a);
+				if (i%2 == 0) p = p.scaleBy(0.39);
+				vertices.push(p.addPt(center)); 
+			}
+			return vertices; 
+		}
+		var morph = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
+		morph.setPosition(position);
+		return morph
+	},
+	
+	makeCurve: function(verts, ctrls, closed) {
+		// Make up a new quadratic spline from the supplied vertices and control points.
+		// ctrls[i] is the ctrl point for segment from verts[i-1] to verts[i].  (ctrls[0] is never used)
+		if (verts.length < 2) return;
+		// console.log("verts = " + Object.inspect(verts));
+		// console.log("ctrls = " + Object.inspect(ctrls));
+		var g = lively.scene;
+		var cmds = [];
+		cmds.push(new g.MoveTo(true, verts[0].x,  verts[0].y));
+		for (var i=1; i<verts.length; i++) {
+			cmds.push(new g.QuadCurveTo(true, verts[i].x, verts[i].y, ctrls[i].x, ctrls[i].y));
+		}
+		var morph = new Morph(new g.Path(cmds));
+		if (closed) morph.applyStyle({ fill: Color.red, borderWidth: 1, borderColor: Color.black});
+			else morph.applyStyle({ fill: null, borderWidth: 3, borderColor: Color.red});
+		return morph;
+	},
+
+	makeHeart: function(position) {
+		var g = lively.scene;
+		var shape = new g.Path([
+			new g.MoveTo(true, 0,  0),
+			new g.CurveTo(true, 48.25, -5.77),
+			new g.CurveTo(true, 85.89, 15.05),
+			new g.CurveTo(true, 61.36, 32.78),
+			new g.CurveTo(true, 53.22, 46.00),
+			new g.CurveTo(true, 25.02, 68.58),
+			new g.CurveTo(true, 1.03,  40.34),
+			new g.CurveTo(true, 0,  0),
+		]);
+		var morph = new Morph(shape);
+		morph.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
+		morph.setPosition(position);
+		morph.rotateBy(3.9);
+		return morph
+	},
 });
 
-Morph.addMethods('default', {
+Morph.addMethods('settings', {
     documentation: "Base class for every graphical, manipulatable object in the system", 
 
 	doNotSerialize: ['fullBounds'],
@@ -1516,18 +1629,9 @@ Morph.addMethods('default', {
 
     nextNavigableSibling: null, // keyboard navigation
 
-	internalInitialize: function(rawNode, shouldAssign) {
-		this.rawNode = rawNode;
-		this.submorphs = [];
-		this.owner = null;
-		if (shouldAssign) {
-			LivelyNS.setType(this.rawNode, this.getType());
-			this.setId(this.newId());
-		}
-	},
+},
+'initializing', {
 
-	createRawNode: function() { return NodeFactory.create("g") },
-	
     initialize: function(shape) {
 		//console.log('initializing morph %s %s', initialBounds, shapeType);
 		this.internalInitialize(this.createRawNode(), true);
@@ -1540,19 +1644,16 @@ Morph.addMethods('default', {
 		this.initializeTransientState();
     },
 
-	shallowCopy: function () {
-		// Return a copy of this morph with no submorphs, but 
-		//  with the same shape and shape attributes as this
-		return new Morph(this.shape.copy()); 
-	},
-
-	duplicate: function () { 
-		// Return a full copy of this morph and its submorphs, with owner == null
-		var copier = new Copier()
-		var copy = this.copy(copier);
-		copier.finish()
-		copy.owner = null;
-		return copy;
+	createRawNode: function() { return NodeFactory.create("g") },
+		
+	internalInitialize: function(rawNode, shouldAssign) {
+		this.rawNode = rawNode;
+		this.submorphs = [];
+		this.owner = null;
+		if (shouldAssign) {
+			LivelyNS.setType(this.rawNode, this.getType());
+			this.setId(this.newId());
+		}
 	},
 
 	initializePersistentState: function(shape) {
@@ -1578,9 +1679,29 @@ Morph.addMethods('default', {
 		// this.created = false; // exists on server now
 		// some of this stuff may become persistent
 	},
+
+},
+'copying', {
+
+	okToDuplicate: Functions.True,  // default is OK
+	
+	shallowCopy: function () {
+		// Return a copy of this morph with no submorphs, but 
+		//  with the same shape and shape attributes as this
+		return new Morph(this.shape.copy()); 
+	},
+
+	duplicate: function () { 
+		// Return a full copy of this morph and its submorphs, with owner == null
+		var copier = new Copier()
+		var copy = this.copy(copier);
+		copier.finish()
+		copy.owner = null;
+		return copy;
+	},
+
     
-	copySubmorphsFrom: function(copier, other) {
-			
+	copySubmorphsFrom: function(copier, other) {			
 		// console.log("copy submorphs from " + other);
 		if (other.hasSubmorphs()) { // deep copy of submorphs
 			other.submorphs.forEach(function each(m) {
@@ -1695,27 +1816,9 @@ Morph.addMethods('default', {
 		return this; 
 	},
 
-	asLogo: function() {
-		var shapes = [], copier = new Copier(), root = this;
-		this.withAllSubmorphsDo(function() {
-			var s = this.shape.copy(copier)
-			if (this !== root) this.getTransform().applyTo(s.rawNode)
-			shapes.push(s)
-
-			if (!this.textContent) return // FIXME, overwrite in TextMorph
-			var s = new lively.scene.Group(); // text nodes parent needs to be a group or other non-graphical object
-			var textNode = this.textContent.copy(copier).rawNode;
-			s.rawNode.appendChild(textNode)
-			this.getTransform().applyTo(s.rawNode)
-			shapes.push(s);
-		})
-
-		var logo = new Morph(new lively.scene.Group())
-		logo.shape.setContent(shapes)
-		logo.setTransform(root.getTransform())
-		return logo;
-	},
-
+},
+'serialization', {
+	
 	deserialize: function($super, importer, rawNode) {
 		// FIXME what if id is not unique?
 		$super(importer, rawNode);
@@ -1879,15 +1982,58 @@ Morph.addMethods('default', {
 		}
 		return null
 	},
-	
-	getName: function() { return this.name },
-	setName: function(str) { this.name = str; return name },
-},
-'Style and Canvas',{	// tmp copy
-
-	getStyleClass: function() {
-		return this.styleClass || [];
+		
+	// Fill Garbage Collection on Serialization...
+	collectAllUsedFills: function(/*$super, */result) {
+		// result = $super(result);
+		var fill = this.getFill();
+		if (fill instanceof lively.paint.Gradient) result.push(fill);
+		var stroke = this.shape.getStroke(); // fixme
+		if (stroke instanceof lively.paint.Gradient) result.push(stroke);
+		if (this.submorphs) this.submorphs.invoke('collectAllUsedFills', result);
+		return result
 	},
+
+	exportLinkedFile: function(filename) {
+		var url;
+		if (Global["WikiNavigator"] && WikiNavigator.current) {
+			var nav = WikiNavigator.current;
+			url = WikiNavigator.fileNameToURL(filename);
+			nav.interactiveSaveWorld(url);
+		} else {
+			url = WorldMorph.current().saveWorld(filename);
+		}
+		if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
+		return url;
+	},
+
+},
+'accessing', {
+	getName: function() { return this.name },
+
+	setName: function(str) { this.name = str; return name },
+
+	canvas: function() {
+		return locateCanvas(this.rawNode);
+	},
+	
+    getOwnerWidget: function() {
+		return this.ownerWidget || this.owner.getOwnerWidget();
+	},
+
+	ownerChain: function() {
+		// Return an array of me and all my owners
+		// First item is, eg, world; last item is me
+		if (!this.owner) return [this];
+		var owners = this.owner.ownerChain();
+		owners.push(this);
+		return owners;
+	},
+
+},
+'styling',{	// tmp copy
+
+	getStyleClass: function() { return this.styleClass || [] },
 
 	setStyleClass: function(value) {
 		var attr;
@@ -1902,94 +2048,84 @@ Morph.addMethods('default', {
 		return value;
 	},
 
-	canvas: function() {
-		return locateCanvas(this.rawNode);
-	},
+	applyStyle: function(specs) { // note: use reflection instead?
+		for (var i = 0; i < arguments.length; i++) {
+			var spec = arguments[i];
+			if(!spec) return;  // dbgOn(!spec);
+			if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
+			if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
+			if (spec.fill !== undefined) this.setFill(spec.fill);
+			if (spec.opacity !== undefined) {
+				this.setFillOpacity(spec.opacity);
+				this.setStrokeOpacity(spec.opacity); 
+			}
+			if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
+			if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
 
-	setVisible: function(flag) { // FIXME delegate to sceneNode when conversion finished
-		if (flag) this.rawNode.removeAttributeNS(null, "display");
-		else this.rawNode.setAttributeNS(null, "display", "none");
+			if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
+				this.shape.roundEdgesBy(spec.borderRadius);
+			}
+			if (spec.suppressGrabbing !== undefined) this.suppressGrabbing = spec.suppressGrabbing;
+			if (spec.suppressHandles !== undefined) this.suppressHandles = spec.suppressHandles;
+
+			if (spec.focusHaloBorderWidth !== undefined) this.focusHaloBorderWidth = spec.focusHaloBorderWidth;
+			if (spec.focusHaloInset !== undefined) this.focusHaloInset = spec.focusHaloInset;
+		}
 		return this;
 	},
 
-	isVisible: function() { // FIXME delegate to sceneNode when conversion finished
-		// Note: this may not be correct in general in SVG due to inheritance,
-		// but should work in LIVELY.
-		var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
-		return hidden == false;
+	makeStyleSpec: function() {
+		// Adjust all visual attributes specified in the style spec
+		var spec = { };
+		spec.borderWidth = this.getBorderWidth();
+		spec.borderColor = this.getBorderColor();
+		spec.fill = this.getFill();
+		if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
+		spec.fillOpacity = typeof this.shape.getFillOpacity() !== undefined ? this.shape.getFillOpacity() : 1.0;
+		spec.strokeOpacity = typeof this.shape.getStrokeOpacity() !== undefined ?  this.shape.getStrokeOpacity() : 1.0;		
+		return spec;
 	},
 
-	applyFilter: function(filterUri) {// FIXME delegate to sceneNode when conversion finished
-		if (filterUri) 
-			this.rawNode.setAttributeNS(null, "filter", filterUri);
-		else
-		this.rawNode.removeAttributeNS(null, "filter");
-	}
-},
-'Widget',{  
+	applyStyleNamed: function(name) {
+		var style = this.styleNamed(name);
+		if (style) this.applyStyle(style);
+		else console.warn("applyStyleNamed: no style named " + name)
+	},
 
-    getOwnerWidget: function() {
-		if(this.ownerWidget) {
-			return this.ownerWidget
-		};
-		if (this.owner) {
-			return this.owner.getOwnerWidget();
-		}
-		return undefined;
-	}
-},
-// Extend Polylines and polygons to curves
-'Curves', {
-	// TODO: where is the difference to Morph.makeCurve?
-	makeCurve: function() {
-		//  Convert a polyline to a curve;  maybe a polygon to a blob  
-		var verts = this.shape.vertices();
-		var isClosed = this.shape instanceof lively.scene.Polygon;
-		// Need closing vertext for closed curves
-		if (verts.length < 2) return;
-		if (isClosed && (!verts[0].eqPt(verts.last()))) 
-			verts = verts.concat([verts[0]])
-		var current = verts[0];
-		var ctrl = current;
-		var controlPts = [];
-		controlPts.push(ctrl);
-		for (var i=1; i<verts.length; i++) {  // compute default control points
-			ctrl = current.subPt(ctrl).addPt(current);
-			controlPts.push(ctrl);
-			current = verts[i];
-		}
-		// Fix first control point if we have 3 or more verts
-		if (verts.length <= 3) 
-			controlPts[1] = verts[1].subPt(verts[2]).addPt(verts[1]);
-		var morph = Morph.makeCurve(verts, controlPts, isClosed)
-		this.world().addMorph(morph);
-		morph.setPosition(this.position());
-	}
-},
-// Fill Garbage Collection on Serialization...
-'Fill Serialization',{
-	collectAllUsedFills: function(/*$super, */result) {
-		// result = $super(result);
-		var fill = this.getFill();
-		if (fill instanceof lively.paint.Gradient) result.push(fill);
-		var stroke = this.shape.getStroke(); // fixme
-		if (stroke instanceof lively.paint.Gradient) result.push(stroke);
-		if (this.submorphs) this.submorphs.invoke('collectAllUsedFills', result);
-		return result
-	}
-},
-// Functions for manipulating the visual attributes of Morphs
-'Visual Attributes',{
+	styleNamed: function(name) {
+		// Look the name up in the Morph tree, else in current world
+		if (this.displayTheme) return this.displayTheme[name];
+		if (this.owner) return this.owner.styleNamed(name);
+		var world = WorldMorph.current();
+		if (world && (this !== world)) return world.styleNamed(name);
+		return DisplayThemes[Config.defaultDisplayTheme || "lively"][name]; // FIXME for onDeserialize, when no world exists yet
+	},
 
+	linkToStyles: function(styleClassList, optSupressApplication) {
+		// Record the links for later updates, and apply them now
+		this.setStyleClass(styleClassList);
+		if (!optSupressApplication) this.applyLinkedStyles();
+		return this;
+	},
+
+	applyLinkedStyles: function() {
+		// Apply all the styles to which I am linked, in order
+		var styleClasses = this.getStyleClass();
+		if (!styleClasses) return;
+		for (var i = 0; i < styleClasses.length; i++) {
+			this.applyStyleNamed(styleClasses[i]); 
+		}
+	},
+},
+'appearance', { // Functions for manipulating the visual attributes of Morphs
+	
 	setFill: function(fill) {
 		this.shape.setFill(fill);
 		this.changed();
 		return fill;
 	},
 
-	getFill: function() {
-		return this.shape.getFill();
-	},
+	getFill: function() { return this.shape.getFill() },
 
 	setBorderColor: function(newColor) {
 		this.shape.setStroke(newColor);
@@ -2001,6 +2137,7 @@ Morph.addMethods('default', {
 		return new Color(Importer.marker, this.shape.getStroke());
 	},
 
+	// FIXME for Chrome border bug
 	nearlyZeroBorderWidth: 0.00001,
 
 	setBorderWidth: function(newWidth) {
@@ -2063,76 +2200,62 @@ Morph.addMethods('default', {
 
  	getLineCap: function() { return this.shape.getLineCap() },
 
-	applyStyle: function(specs) { // note: use reflection instead?
-		for (var i = 0; i < arguments.length; i++) {
-			var spec = arguments[i];
-			if(!spec) return;  // dbgOn(!spec);
-			if (spec.borderWidth !== undefined) this.setBorderWidth(spec.borderWidth);
-			if (spec.borderColor !== undefined) this.setBorderColor(spec.borderColor);
-			if (spec.fill !== undefined) this.setFill(spec.fill);
-			if (spec.opacity !== undefined) {
-				this.setFillOpacity(spec.opacity);
-				this.setStrokeOpacity(spec.opacity); 
-			}
-			if (spec.fillOpacity !== undefined) this.setFillOpacity(spec.fillOpacity);
-			if (spec.strokeOpacity !== undefined) this.setStrokeOpacity(spec.strokeOpacity);
-
-			if (this.shape.roundEdgesBy && spec.borderRadius !== undefined) { 
-				this.shape.roundEdgesBy(spec.borderRadius);
-			}
-			if (spec.suppressGrabbing !== undefined) this.suppressGrabbing = spec.suppressGrabbing;
-			if (spec.suppressHandles !== undefined) this.suppressHandles = spec.suppressHandles;
-
-			if (spec.focusHaloBorderWidth !== undefined) this.focusHaloBorderWidth = spec.focusHaloBorderWidth;
-			if (spec.focusHaloInset !== undefined) this.focusHaloInset = spec.focusHaloInset;
+    // toggle fisheye effect on/off
+	toggleFisheye: function() { 
+		// if fisheye is true, we need to scale the morph to original size
+		if (this.fishEye) {
+			this.setScale(this.getScale() / this.fisheyeScale);
+			this.setFisheyeScale(1.0);
 		}
+		// toggle fisheye
+		this.fishEye = !this.fishEye;
+	},
+
+	// sets the scaling factor for the fisheye between 1..fisheyeGrowth
+	setFisheyeScale: function (newScale) {
+		// take the original centerpoint
+		var p = this.bounds().center();
+
+		this.fisheyeScale = newScale;
+		this.pvtCachedTransform = null;
+		this.layoutChanged();  
+		this.changed();
+
+		// if the fisheye was on move the fisheye'd morph by the difference between 
+		// original center point and the new center point divided by 2
+		if (this.fishEye) {
+			// (new.center - orig.center)/2
+			var k = this.bounds().center().subPt(p).scaleBy(.5).negated();
+			if (!pt(0,0).eqPt(k)) {
+				this.setPosition(this.position().addPt(k));
+				this.layoutChanged();  
+				this.changed();
+			}
+		}
+	},
+
+	isVisible: function() { // FIXME delegate to sceneNode when conversion finished
+		// Note: this may not be correct in general in SVG due to inheritance,
+		// but should work in LIVELY.
+		var hidden = this.rawNode.getAttributeNS(null, "display") == "none";
+		return hidden == false;
+	},
+
+	setVisible: function(flag) { // FIXME delegate to sceneNode when conversion finished
+		if (flag) this.rawNode.removeAttributeNS(null, "display");
+		else this.rawNode.setAttributeNS(null, "display", "none");
 		return this;
 	},
-
-	makeStyleSpec: function() {
-		// Adjust all visual attributes specified in the style spec
-		var spec = { };
-		spec.borderWidth = this.getBorderWidth();
-		spec.borderColor = this.getBorderColor();
-		spec.fill = this.getFill();
-		if (this.shape.getBorderRadius) spec.borderRadius = this.shape.getBorderRadius() || 0.0;
-		spec.fillOpacity = typeof this.shape.getFillOpacity() !== undefined ? this.shape.getFillOpacity() : 1.0;
-		spec.strokeOpacity = typeof this.shape.getStrokeOpacity() !== undefined ?  this.shape.getStrokeOpacity() : 1.0;		
-		return spec;
-	},
-
-	applyStyleNamed: function(name) {
-		var style = this.styleNamed(name);
-		if (style)
-			this.applyStyle(style);
+	
+	applyFilter: function(filterUri) {// FIXME delegate to sceneNode when conversion finished
+		if (filterUri) 
+			this.rawNode.setAttributeNS(null, "filter", filterUri);
 		else
-			console.warn("applyStyleNamed: no style named " + name)
+			this.rawNode.removeAttributeNS(null, "filter");
 	},
-
-	styleNamed: function(name) {
-		// Look the name up in the Morph tree, else in current world
-		if (this.displayTheme) return this.displayTheme[name];
-		if (this.owner) return this.owner.styleNamed(name);
-		var world = WorldMorph.current();
-		if (world && (this !== world)) return world.styleNamed(name);
-		return DisplayThemes[Config.defaultDisplayTheme || "lively"][name]; // FIXME for onDeserialize, when no world exists yet
-	},
-
-	linkToStyles: function(styleClassList, optSupressApplication) {
-		// Record the links for later updates, and apply them now
-		this.setStyleClass(styleClassList);
-		if (!optSupressApplication) this.applyLinkedStyles();
-		return this;
-	},
-
-	applyLinkedStyles: function() {
-		// Apply all the styles to which I am linked, in order
-		var styleClasses = this.getStyleClass();
-		if (!styleClasses) return;
-		for (var i = 0; i < styleClasses.length; i++) {
-			this.applyStyleNamed(styleClasses[i]); 
-		}
-	},
+	
+},
+'shape related', {
 
 	// NOTE:  The following four methods should all be factored into a single bit of reshaping logic
 	applyFunctionToShape: function() {  // my kingdom for a Smalltalk block!
@@ -2174,16 +2297,26 @@ Morph.addMethods('default', {
 		return newVerts;
 	}.wrap(Morph.onLayoutChange('shape')),
 
+	beClipMorph: function() {
+		// For simple morphs (rectangles, ellipses, polygons) this will cause all submorphs
+		// to be clipped to the shape of this morph.
+		// Note: the bounds function should probably be copied from ClipMorph as
+		//		part of this mutation
+		var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
+		this.clip = new lively.scene.Clip(this.shape);
+		defs.appendChild(this.clip.rawNode);
+		this.clip.applyTo(this);
+		this.isClipMorph = true;
+	},
+
 },
-'Layout',{
+'layouting',{
     
 	layoutManager: null, // singleton, intialzided later
 
 	// Simple hack until the layout manager can relayout
 	relayout: function() {
-		if (this.layoutManager) {
-			this.layoutManager.layout(this)
-		}	
+		if (this.layoutManager) this.layoutManager.layout(this);
 	},
 
 	setBounds: function(newRect) {
@@ -2198,6 +2331,19 @@ Morph.addMethods('default', {
 	},
 
 	getExtent: function(newRect) { return this.shape.bounds().extent() },
+
+	position: function() { // Deprecated -- use getPosition
+		return this.shape.bounds().topLeft().addPt(this.origin); 
+	},
+
+	getPosition: function() {
+		return this.shape.bounds().topLeft().addPt(this.origin); 
+	},
+
+	setPosition: function(newPosition) {
+		this.layoutManager.setPosition(this, newPosition);
+		return newPosition;
+	},
 
 	containsPoint: function(p) { 
 		// p is in owner coordinates
@@ -2219,28 +2365,115 @@ Morph.addMethods('default', {
 		return this.fullContainsPoint(this.owner.localize(p)); 
 	},
 
-	addNonMorph: function(node) {
-		if (node instanceof lively.data.Wrapper) throw new Error("add rawNode, not the wrapper itself");
-		return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
+	// Morph bounds, coordinates, moving and damage reporting functions
+    // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
+	bounds: function(ignoreTransients, ignoreTransform) {
+		if (this.fullBounds != null) return this.fullBounds;
+
+		var tfm = this.getTransform();
+		var fullBounds = this.localBorderBounds(ignoreTransform ? null : tfm);
+
+		var subBounds = this.submorphBounds(ignoreTransients);
+		if (subBounds != null) {
+			// could be simpler when no rotation...
+			fullBounds = fullBounds.union(tfm.transformRectToRect(subBounds));
+		}
+
+		if (fullBounds.width < 3 || fullBounds.height < 3) {
+			// Prevent Horiz or vert lines from being ungrabable
+			fullBounds = fullBounds.expandBy(3); 
+		}
+		this.fullBounds = fullBounds;
+		return fullBounds; 
+	},
+    
+	submorphBounds: function(ignoreTransients) {
+		var subBounds = null;
+		for (var i = 0; i < this.submorphs.length; i++) {
+			var m = this.submorphs[i];
+			if ((ignoreTransients && m.isEpimorph))
+				continue;
+			if (!m.isVisible()) {
+				continue;
+			}
+			subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));
+		}
+		return subBounds;
+	},
+    
+    // innerBounds returns the bounds of this morph only, and in local coordinates
+    innerBounds: function() {  return this.shape.bounds() },
+    
+	localBorderBounds: function(optTfm) {
+		// defined by the external edge of the border
+		// if optTfm is defined, transform the vertices first, then take the union
+		dbgOn(!this.shape);
+		var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
+
+		var borderMargin = this.getBorderWidth()/2;
+		// double border margin for polylines to account for elbow protrusions
+		if (this.shape.hasElbowProtrusions) borderMargin = borderMargin*2 + 1;
+		bounds = bounds.expandBy(borderMargin);
+		return bounds;
+	},
+	
+	changed: function() {
+		// Note most morphs don't need this in SVG, but text needs the 
+		// call on bounds() to trigger layout on new bounds
+		if(this.owner) this.owner.invalidRect(this.bounds());
 	},
 
-	addWrapper: function(w) {
-		if (w && w.rawNode) {
-			this.addNonMorph(w.rawNode);
-			return w;
-		} else return null;
+	invalidRect: function() {
+		// Do nothing (handled by SVG).  Overridden in canvas.
+    },
+
+    layoutOnSubmorphLayout: function(submorph) {
+		// override to return false, in which case layoutChanged() will not be propagated to
+		// the receiver when a submorph's layout changes. 
+		return true;
+    },
+
+	transformChanged: function() {
+		var scalePt = this.scalePoint;
+		if (this.fisheyeScale != 1) scalePt = scalePt.scaleBy(this.fisheyeScale);
+		this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, scalePt);
+		this.pvtCachedTransform.applyTo(this.rawNode);
 	},
 
-	addPseudoMorph: function(pseudomorph) {
-		if (pseudomorph instanceof Global.PseudoMorph) {
-			return this.addMorph(pseudomorph);
-		} else 
-			throw new Error(pseudomorph + " is not a PseudoMorph");
+	layoutChanged: function Morph$layoutChanged() {
+		// layoutChanged() is called whenever the cached fullBounds may have changed
+		// It invalidates the cache, which will be recomputed when bounds() is called
+		// Naturally it must be propagated up its owner chain.
+		// Note the difference in meaning from adjustForNewBounds()
+		// KP: the following may or may not be necessary:
+
+		this.transformChanged(); // DI: why is this here?
+		if(! this.fullBounds) return;  // already called
+
+		this.fullBounds = null;
+		if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
+			this.owner.layoutChanged();
+		}
+		this.layoutManager.layoutChanged(this);
 	},
 
+	adjustForNewBounds: function() {
+		// adjustForNewBounds() is called whenever the innerBounds may have changed in extent
+		//  -- it should really be called adjustForNewExtent --
+		// Depending on the morph and its layoutManager, it may then re-layout its
+		// submorphs and, in the process, propagate the message down to leaf morphs (or not)
+		// Of course a change in innerBounds implies layoutChanged() as well,
+		// but, for now, these are called separately.
+		// NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
+		// adjustForNewBounds() *must never be called from* a layout operation;
+		// The layout process should only move and resize submorphs, but never change the innerBounds
+
+		// If this method is overridden by a subclass, it should call super as well
+		if (this.focusHalo) this.adjustFocusHalo();
+	},
 },
 // Submorph management functions
-'Submorphs',{ 
+'submorphs',{ 
 
     addMorph: function(morph) { return this.addMorphFrontOrBack(morph, true) },
 
@@ -2275,14 +2508,31 @@ Morph.addMethods('default', {
 		return m;
 	},
 	
+	addNonMorph: function(node) {
+		if (node instanceof lively.data.Wrapper) throw new Error("add rawNode, not the wrapper itself");
+		return this.rawNode.insertBefore(node, this.shape && this.shape.rawNode.nextSibling);
+	},
+
+	addWrapper: function(w) {
+		if (w && w.rawNode) {
+			this.addNonMorph(w.rawNode);
+			return w;
+		} else return null;
+	},
+
+	addPseudoMorph: function(pseudomorph) {
+		if (pseudomorph instanceof Global.PseudoMorph) {
+			return this.addMorph(pseudomorph);
+		} else 
+			throw new Error(pseudomorph + " is not a PseudoMorph");
+	},
+
 	bringToFront: function() {
-		if (!this.owner)
-			return;
-		if (this.owner.topSubmorph() === this)
-			return;
+		if (!this.owner) return;
+		if (this.owner.topSubmorph() === this) return;
 		var owner = this.owner;
 		this.remove();
-		owner.addMorphFront(this)
+		owner.addMorphFront(this);
 	},
 
 	setSubmorphs: function(morphs) {
@@ -2412,15 +2662,11 @@ Morph.addMethods('default', {
 	},
 
 	// morph gets an opportunity to shut down when WindowMorph closes 
-	shutdown: function() {
-		this.remove();
-	},
-
-	okToDuplicate: Functions.True  // default is OK
+	shutdown: function() { this.remove() },
 
 },
 // Morph bindings to its parent, world, canvas, etc.
-'World',{
+'world',{
 
 	world: function() {
 		return this.owner ? this.owner.world() : null;
@@ -2443,27 +2689,59 @@ Morph.addMethods('default', {
 			this.name = optName;
 		}
     },
-	
-	toString: function() {
-		try {
-			return Strings.format("%s(%s)", this.rawNode && this.id() || "" , 
-			this.shape ? "[" + this.shape.bounds().toTuple() + "]" : "");
-		} catch (e) {
-			//console.log("toString failed on %s", [this.id(), this.getType()]);
-			return "#<Morph?{" + e + "}>";
-		}
+
+},
+'conversion', {
+	asLogo: function() {
+		var shapes = [], copier = new Copier(), root = this;
+		this.withAllSubmorphsDo(function() {
+			var s = this.shape.copy(copier)
+			if (this !== root) this.getTransform().applyTo(s.rawNode)
+			shapes.push(s)
+
+			if (!this.textContent) return // FIXME, overwrite in TextMorph
+			var s = new lively.scene.Group(); // text nodes parent needs to be a group or other non-graphical object
+			var textNode = this.textContent.copy(copier).rawNode;
+			s.rawNode.appendChild(textNode)
+			this.getTransform().applyTo(s.rawNode)
+			shapes.push(s);
+		})
+
+		var logo = new Morph(new lively.scene.Group())
+		logo.shape.setContent(shapes)
+		logo.setTransform(root.getTransform())
+		return logo;
 	},
 
-	inspect: function() {
-		try {
-			return this.toString();
-		} catch (err) {
-			return "#<inspect error: " + err + ">";
+	// Extend Polylines and polygons to curves
+	// FIXME: where is the difference to Morph.makeCurve?
+	makeCurve: function() {
+		//  Convert a polyline to a curve;  maybe a polygon to a blob  
+		var verts = this.shape.vertices();
+		var isClosed = this.shape instanceof lively.scene.Polygon;
+		// Need closing vertext for closed curves
+		if (verts.length < 2) return;
+		if (isClosed && (!verts[0].eqPt(verts.last()))) 
+			verts = verts.concat([verts[0]])
+		var current = verts[0];
+		var ctrl = current;
+		var controlPts = [];
+		controlPts.push(ctrl);
+		for (var i=1; i<verts.length; i++) {  // compute default control points
+			ctrl = current.subPt(ctrl).addPt(current);
+			controlPts.push(ctrl);
+			current = verts[i];
 		}
+		// Fix first control point if we have 3 or more verts
+		if (verts.length <= 3) 
+			controlPts[1] = verts[1].subPt(verts[2]).addPt(verts[1]);
+		var morph = Morph.makeCurve(verts, controlPts, isClosed)
+		this.world().addMorph(morph);
+		morph.setPosition(this.position());
 	},
-}, 
-// Morph coordinate transformation functions
-'Transform', {
+
+},
+'transform', { // Morph coordinate transformation functions
 
     // SVG has transform so renamed to getTransform()
     getTransform: function() {
@@ -2553,6 +2831,57 @@ Morph.addMethods('default', {
 		return globalTransform;
 	},
 
+	// mapping coordinates in the hierarchy
+    // map local point to world coordinates
+    worldPoint: function(pt) { 
+		return pt.matrixTransform(this.transformToMorph(this.world())); 
+    },
+
+	// map owner point to local coordinates
+	relativize: function(pt) { 
+		if (!this.owner)
+			throw new Error('no owner; call me after adding to a morph? ' + this);
+		try {
+			return pt.matrixTransform(this.owner.transformToMorph(this)); 
+		} catch (er) {
+			// console.info("ignoring relativize wrt/%s", this);
+			return pt;
+		}
+	},
+
+    // map owner rectangle to local coordinates
+    relativizeRect: function(r) { 
+		return rect(this.relativize(r.topLeft()), this.relativize(r.bottomRight()));
+    },
+
+    // map world point to local coordinates
+	localize: function(pt) {
+		if (pt == null) console.log('null pt');   
+		if (this.world() == null) {
+			// console.log('ERROR in '+  this.id() +' localize: '+ pt + ' this.world() is null');   
+			// printStack();
+			return pt;
+		}
+		return pt.matrixTransform(this.world().transformToMorph(this));
+	},
+
+    // map local point to owner coordinates
+	localizePointFrom: function(pt, otherMorph) {
+		try {
+			return pt.matrixTransform(otherMorph.transformToMorph(this));
+		} catch (er) {
+			// lively.lang.Execution.showStack();
+			console.log("problem " + er + " on " + this + " other " + otherMorph);
+			return pt;
+		}
+	},
+
+    transformForNewOwner: function(newOwner) {
+		return new lively.scene.Similitude(this.transformToMorph(newOwner));
+    },
+
+},
+'transform - accessors', {
 	translateBy: function(delta) {
 		this.changed();
 		this.origin = this.origin.addPt(delta);
@@ -2613,17 +2942,6 @@ Morph.addMethods('default', {
 		// Perform a linear scaling (based on x scale) by the given factor
 		this.setScale(this.getScale()*factor);
 	},
-	beClipMorph: function() {
-		// For simple morphs (rectangles, ellipses, polygons) this will cause all submorphs
-		// to be clipped to the shape of this morph.
-		// Note: the bounds function should probably be copied from ClipMorph as
-		//		part of this mutation
-		var defs = this.rawNode.appendChild(NodeFactory.create('defs'));
-		this.clip = new lively.scene.Clip(this.shape);
-		defs.appendChild(this.clip.rawNode);
-		this.clip.applyTo(this);
-		this.isClipMorph = true;
-	},
 
 	throb: function() {
 		this.scaleBy(this.getScale() <= 1 ? 2 : 0.9);
@@ -2647,70 +2965,97 @@ Morph.addMethods('default', {
 		this.submorphs.forEach(function (ea) { ea.translateBy(delta.negated()); });
 	},
 
-	// Animated moves for, eg, window collapse/expand
-	animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn, finalScale) {
-		if (nSteps <= 0) return;
-		var loc = this.position();
-		var delta = destination.subPt(loc).scaleBy(1 / nSteps);
-		var scaleDelta = finalScale ? (this.getScale() - finalScale) / nSteps : 0;
-		// console.log("scaleDelta = " + scaleDelta);
-		var path = [];
-		for (var i = 1; i<=nSteps; i++) { loc = loc.addPt(delta); path.unshift(loc); }
-		this.animatedFollowPath(path, msPer, callBackFn, scaleDelta);
+    moveSubmorphs: function(evt) {
+        var world = this.world();
+	
+        // Display height is returned incorrectly by many web browsers.
+        // We use an absolute Y-value instead. 
+        var towardsPoint = pt(world.bounds().center().x, 350);
+
+        switch (evt.getKeyCode()) {
+        case Event.KEY_LEFT:
+            this.submorphs.invoke('moveBy', pt(-10,0));
+            evt.stop();
+            return true;
+        case Event.KEY_RIGHT:
+            // forget the existing selection
+            this.submorphs.invoke('moveBy', pt(10, 0));
+            evt.stop();
+            return true;
+        case Event.KEY_UP:
+            this.submorphs.invoke('moveBy', pt(0, -10));
+            evt.stop();
+            return true;
+        case Event.KEY_DOWN:
+            this.submorphs.invoke('moveBy', pt(0, 10));
+            evt.stop();
+            return true;
+
+            // Experimental radial scrolling feature
+            // Read the comments near method Morph.moveRadially()
+        case Event.KEY_PAGEUP:
+        case 65: // The "A" key
+	    world.submorphs.invoke('moveRadially', towardsPoint, 10);
+            this.moveRadially(towardsPoint, 10);            
+            evt.stop();
+            return true;
+        case Event.KEY_PAGEDOWN:
+        case 90: // The "Z" key
+	    world.submorphs.invoke('moveRadially', towardsPoint, -10);
+            this.moveRadially(towardsPoint, -10);            
+            evt.stop();
+            return true;
+        }
+        
+        return false;
     },
 
-    animatedFollowPath: function(path, msPer, callBackFn, scaleDelta) {
-		var spec = {path: path.clone(), callBack: callBackFn, scaleDelta: scaleDelta};
-		spec.action = this.startStepping(msPer, 'animatedPathStep', spec);	
-    },
-
-
-	animatedPathStep: function(spec, scaleDelta) {
-		if (spec.path.length >= 1){
-			this.setScale(this.getScale()-spec.scaleDelta);
-			this.setPosition(spec.path.pop());
+    transformSubmorphs: function(evt) {
+		var fun = null;
+		switch (evt.getKeyChar()) {
+			case '>':
+				fun = function(m) { m.setScale(m.getScale()*1.1) };
+				break;
+			case '<':
+				fun = function(m) { m.setScale(m.getScale()/1.1) };
+				break;
+			case ']':
+				fun = function(m) { m.setRotation(m.getRotation() + 2*Math.PI/16) };
+				break;
+			case '[':
+				fun = function(m) { m.setRotation(m.getRotation() - 2*Math.PI/16) };
+				break;
 		}
-		if (spec.path.length >= 1) return
-		//spec.action.stop(this.world()); //JD: out
-		this.stopSteppingScriptNamedAndRemoveFromSubmorphs('animatedPathStep');//JD: delte script out of activeScripts, neede for deserialization
-		spec.callBack.call(this);
+		if (fun) {
+			this.submorphs.forEach(fun);
+			evt.stop();
+			return true;
+		} else return false;
 	},
 
-    // toggle fisheye effect on/off
-	toggleFisheye: function() { 
-		// if fisheye is true, we need to scale the morph to original size
-		if (this.fishEye) {
-			this.setScale(this.getScale() / this.fisheyeScale);
-			this.setFisheyeScale(1.0);
-		}
-		// toggle fisheye
-		this.fishEye = !this.fishEye;
+	moveForwardBy: function(amount) {
+		var nose = pt(1,0)
+		var dir = nose.matrixTransformDirection(this.getTransform()).normalized();
+		this.moveBy(dir.scaleBy(amount))
 	},
 
-	// sets the scaling factor for the fisheye between 1..fisheyeGrowth
-	setFisheyeScale: function (newScale) {
-		// take the original centerpoint
-		var p = this.bounds().center();
-
-		this.fisheyeScale = newScale;
-		this.pvtCachedTransform = null;
-		this.layoutChanged();  
-		this.changed();
-
-		// if the fisheye was on move the fisheye'd morph by the difference between 
-		// original center point and the new center point divided by 2
-		if (this.fishEye) {
-			// (new.center - orig.center)/2
-			var k = this.bounds().center().subPt(p).scaleBy(.5).negated();
-			if (!pt(0,0).eqPt(k)) {
-				this.setPosition(this.position().addPt(k));
-				this.layoutChanged();  
-				this.changed();
-			}
-		}
+	// TODO: There is a bug in Safari (the matrix multiplication is the wrong way around)
+	// that is not taken into account here....
+	rotateAround: function(angle, center) {
+		var tfm = new lively.scene.Similitude().toMatrix();
+		tfm = tfm.translate(center.x, center.y);
+		tfm = tfm.rotate(angle)		
+		tfm = tfm.translate( -center.x, -center.y);	
+		var oldTfm = this.getTransform().toMatrix();
+		var newTfm = oldTfm.multiply(tfm);
+		this.setTransform(new lively.scene.Similitude(newTfm));
 	},
 
-    // Experimental radial "black hole" scrolling feature: When
+	turnBy: function(angle) {
+		this.rotateAround(angle, this.shape.bounds().center())		
+	},
+
+	// Experimental radial "black hole" scrolling feature: When
     // an object comes close enough to the "event horizon" (specified
     // by 'towardsPoint'), the object is zoomed into the black hole.
     // Negative 'howMuch' values are used to "collapse" the display, 
@@ -2749,9 +3094,39 @@ Morph.addMethods('default', {
 			var newY = newDistance * Math.sin(theta);
 			this.setPosition(towardsPoint.addPt(pt(newX,newY)));
 		}
-	}
+	},
 },
-'Particle Behavior',{     
+'animations', {
+	// Animated moves for, eg, window collapse/expand
+	animatedInterpolateTo: function(destination, nSteps, msPer, callBackFn, finalScale) {
+		if (nSteps <= 0) return;
+		var loc = this.position();
+		var delta = destination.subPt(loc).scaleBy(1 / nSteps);
+		var scaleDelta = finalScale ? (this.getScale() - finalScale) / nSteps : 0;
+		// console.log("scaleDelta = " + scaleDelta);
+		var path = [];
+		for (var i = 1; i<=nSteps; i++) { loc = loc.addPt(delta); path.unshift(loc); }
+		this.animatedFollowPath(path, msPer, callBackFn, scaleDelta);
+    },
+
+    animatedFollowPath: function(path, msPer, callBackFn, scaleDelta) {
+		var spec = {path: path.clone(), callBack: callBackFn, scaleDelta: scaleDelta};
+		spec.action = this.startStepping(msPer, 'animatedPathStep', spec);	
+    },
+
+	animatedPathStep: function(spec, scaleDelta) {
+		if (spec.path.length >= 1){
+			this.setScale(this.getScale()-spec.scaleDelta);
+			this.setPosition(spec.path.pop());
+		}
+		if (spec.path.length >= 1) return
+		//spec.action.stop(this.world()); //JD: out
+		this.stopSteppingScriptNamedAndRemoveFromSubmorphs('animatedPathStep');//JD: delte script out of activeScripts, neede for deserialization
+		spec.callBack.call(this);
+	},
+
+},
+'particle behavior',{     
 
 	bounceInOwnerBounds: function() {
 		this.bounceInBounds(this.owner.innerBounds());
@@ -2791,9 +3166,10 @@ Morph.addMethods('default', {
 	stepAndBounce: function() {  // convenience for tile scripting
 		this.stepByVelocities();
 		this.bounceInOwnerBounds();
-	}
+	},
+	
 },
-'Balloon Help', {
+'balloon help', {
 
 	getHelpText: Functions.Null,  // override to supply help text
 
@@ -2823,11 +3199,10 @@ Morph.addMethods('default', {
 			return;
 		this.helpBalloonMorph.remove();
 		delete this.helpBalloonMorph;
-	}
+	},
 
 },
-// Morph mouse event handling functions
-'MouseEvents', {
+'mouse events', {
 
 	// KP: equivalent of the DOM capture phase
 	// KP: hasFocus is true if the receiver is the hands's focus (?)
@@ -2998,12 +3373,10 @@ Morph.addMethods('default', {
 		this.focusHalo.setLineJoin(lively.scene.LineJoins.Round);
 		this.focusHalo.ignoreEvents();
 		return true;
-	}
+	},
 
 },
-// Morph grabbing and menu functionality
-'Grabbing and Menus', {
-
+'handles', {
 	checkForControlPointNear: function(evt) {
 		if (this.suppressHandles) return false; // disabled
 		if (this.owner == null) return false; // cant reshape the world
@@ -3050,9 +3423,9 @@ Morph.addMethods('default', {
 		var handleShape = Object.isString(partName) || partName >= 0 ? lively.scene.Rectangle : lively.scene.Ellipse;
 		return new HandleMorph(position, handleShape, evt.hand, this, partName);
 	},
-
-    copySubmorphsOnGrab: false, // acts as a palette if true.
-    
+},
+'grabbing and dragging', {
+    copySubmorphsOnGrab: false, // acts as a palette if true.  
 	suppressGrabbing: false,
 
     // May be overridden to preempt (by returning null) the default action of grabbing me
@@ -3062,6 +3435,227 @@ Morph.addMethods('default', {
 			return null;
 		return this; 
     },
+
+	grid: function() {return Config.SnapGrid || pt(10,10)},
+
+	isSnappingToGrid: function() { return Config.isSnappingToGrid},
+
+	snapToGrid: function(pos) {
+		var grid = this.grid();
+		return pt(pos.x - (pos.x % grid.x), pos.y - (pos.y % grid.y))
+	},
+
+	dragMe: function(evt) {
+		var offset = this.getPosition().subPt(this.owner.localize(evt.point()));
+		var self = this;
+		var mouseRelay= {
+			captureMouseEvent: function(e) { 
+				if (e.type == "MouseMove")  {
+					var pos = this.owner.localize(e.hand.getPosition()).addPt(offset)
+					if (self.isSnappingToGrid()) {
+						this.setPosition(this.snapToGrid(pos));
+					} else {
+						this.setPosition(pos);
+					};
+				};
+				if (e.type == "MouseDown" || e.type == "MouseUp")  e.hand.setMouseFocus(null); 
+			}.bind(this),
+		};
+		evt.hand.setMouseFocus(mouseRelay);
+	},
+
+    showAsGrabbed: function(grabbedMorph) {
+		// At this time, there are three separate hand-effects:
+		//  1. applyDropShadowFilter, if it works, will cause the graphics engine to put a nice
+		//	   gaussian blurred drop-shadow on morphs that are grabbed by the hand
+		//  2. showGrabHalo will cause a halo object to be put at the end of the hand's
+		//	   submorph list for every grabbed morph (has property 'morphTrackedByHalo')
+		//  3. useShadowMorphs will cause a shadowCopy of each grabbed morph to be put
+		//	   at the end of the hand's submorph list (has property 'isHandMorphShadow')
+		// So, if everything is working right, the hand's submorph list looks like:
+		//	front -> Mc, Mb, Ma, Ha, Sa, Hb, Sb, Hc, Sc <- back [note front is last ;-]
+		// Where M's are grabbed morphs, H's are halos if any, and S's are shadows if any
+
+        if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
+
+		if (Config.showGrabHalo) {
+		    var bounds = grabbedMorph.bounds(true);
+		    var halo = this.addMorphBack(Morph.makeRectangle(bounds).applyStyle({fill: null, borderWidth: 0.5 }));
+		    halo.morphTrackedByHalo = grabbedMorph;
+		    halo.shape.setStrokeDashArray(String([3,2]));
+		    halo.setLineJoin(lively.scene.LineJoins.Round);
+		    halo.ignoreEvents();
+
+		    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
+		    idLabel.applyStyle(this.grabHaloLabelStyle);
+		    halo.addMorph(idLabel);
+		    idLabel.align(idLabel.bounds().bottomLeft(), halo.innerBounds().topRight());
+	    
+		    var pos = grabbedMorph.getPosition();
+		    var posLabel = new TextMorph(pt(20, 10).extentAsRectangle(), "").beLabel();
+		    posLabel.applyStyle(this.grabHaloLabelStyle);
+		    halo.positionLabel = halo.addMorph(posLabel);
+
+			this.updateGrabHalo();
+		}
+        if (this.useShadowMorphs) {
+			var shadow = grabbedMorph.shadowCopy();
+			shadow.isHandMorphShadow = true;
+			this.addMorphBack(shadow);
+			shadow.moveBy(pt(8, 8));
+		}
+    },
+
+    showAsUngrabbed: function(grabbedMorph) {
+		if (this.applyDropShadowFilter) grabbedMorph.applyFilter(null);
+    },
+    
+    alignToGrid: function() {
+        if(!Config.showGrabHalo) return;
+        var grid = function(a) {
+            return a - (a % (Config.alignToGridSpace || 5))
+		};
+		this.submorphs.forEach(function(halo) {
+		    if (halo.morphTrackedByHalo) { // this is a tracking halo
+	        	if (!halo.orgSubmorphPosition)
+			    halo.orgSubmorphPosition = halo.morphTrackedByHalo.getPosition();
+			var oldPos = this.worldPoint(halo.orgSubmorphPosition);
+			var gridPos = pt(grid(oldPos.x), grid(oldPos.y));
+			halo.morphTrackedByHalo.setPosition(this.localize(gridPos));
+		    }
+		}.bind(this));
+    },
+
+    updateGrabHalo: function Morph$updateGrabHalo() {
+		// Note there may be several grabHalos, and drop shadows as well
+		// See the comment in showAsGrabbed 
+		this.submorphs.forEach(function(halo) {
+		    if (halo.morphTrackedByHalo) { // this is a tracking halo
+				halo.setBounds(halo.morphTrackedByHalo.bounds(true).expandBy(3));
+				if (halo.positionLabel) {
+				    var pos = this.worldPoint(halo.morphTrackedByHalo.getPosition());
+				    var posLabel = halo.positionLabel;
+				    posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
+				    posLabel.align(posLabel.bounds().bottomCenter(), halo.innerBounds().topLeft());
+				}
+		    }
+		}.bind(this));
+    },
+
+	grabMorph: function(grabbedMorph, evt) { 
+		if (evt.isShiftDown() && (evt.isAltDown() || evt.isMetaDown())) {
+			grabbedMorph.dragMe(evt);
+			return;
+		}
+		if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.copySubmorphsOnGrab == true)) {
+			if (!grabbedMorph.okToDuplicate()) return;
+			grabbedMorph.copyToHand(this);
+			return;
+		}
+		if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) {
+			grabbedMorph.showMorphMenu(evt);
+			return;
+		}
+		// Give grabbed morph a chance to, eg, spawn a copy or other referent
+		grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
+		if (!grabbedMorph) return;
+
+		if (grabbedMorph.owner && !grabbedMorph.owner.openForDragAndDrop) return;
+
+		if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
+			this.keyboardFocus.relinquishKeyboardFocus(this);
+		}
+		// console.log('grabbing %s', grabbedMorph);
+		// Save info for cancelling grab or drop [also need indexInOwner?]
+		// But for now we simply drop on world, so this isn't needed
+		this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
+		if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
+		this.addMorphAsGrabbed(grabbedMorph);
+		// grabbedMorph.updateOwner(); 
+		this.changed(); //for drop shadow
+	},
+    
+    addMorphAsGrabbed: function(grabbedMorph) { 
+        this.addMorph(grabbedMorph);
+		this.showAsGrabbed(grabbedMorph);
+    },
+    
+    dropMorphsOn: function(receiver) {
+		if (receiver !== this.world()) 
+			this.unbundleCarriedSelection();
+		if (this.logDnD) 
+			console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
+		this.carriedMorphsDo( function(m) {
+			m.dropMeOnMorph(receiver);
+			this.showAsUngrabbed(m);
+		});
+		this.shadowMorphsDo( function(m) { m.stopAllStepping(); });
+		this.removeAllMorphs() // remove any shadows or halos
+    },
+
+    carriedMorphsDo: function(func) {
+		// Evaluate func for only those morphs that are being carried,
+		// as opposed to, eg, halos or shadows
+		this.submorphs.clone().reverse().forEach(function(m) {
+		    if (!m.morphTrackedByHalo && !m.isHandMorphShadow) func.call(this, m);
+		}.bind(this));
+    },
+
+    shadowMorphsDo: function(func) { 
+		// Evaluate func for only those morphs that are shadows,
+		this.submorphs.clone().reverse().forEach(function(m) {
+		    if (m.isHandMorphShadow) func.call(this, m);
+		}.bind(this));
+    },
+
+    unbundleCarriedSelection: function() {
+        // Unpack the selected morphs from a selection prior to drop or jump to other world
+        if (!this.hasSubmorphs() || !(this.topSubmorph() instanceof SelectionMorph)) return;
+        var selection = this.topSubmorph();
+        for (var i=0; i<selection.selectedMorphs.length; i++) {
+            this.addMorph(selection.selectedMorphs[i])
+        }
+        selection.removeOnlyIt();
+    },
+
+	toggleDnD: function(loc) {
+		// console.log(this + ">>toggleDnD");
+		this.openForDragAndDrop = !this.openForDragAndDrop;
+	},
+
+	openDnD: function(loc) {
+		this.openForDragAndDrop = true;
+	},
+
+	closeDnD: function(loc) {
+		// console.log(this + ">>closeDnD");
+		this.openForDragAndDrop = false;
+	},
+
+    closeAllToDnD: function(loc) {
+        // console.log(this + ">>closeAllDnD");
+        // Close this and all submorphs to drag and drop
+        this.closeDnD(); 
+        // make this recursive to give children a chance to interrupt...
+        this.submorphs.forEach( function(ea) { ea.closeAllToDnD(); });
+    },
+
+	openAllToDnD: function() {
+		// Open this and all submorphs to drag and drop
+		this.withAllSubmorphsDo( function() { this.openDnD(); });
+	},
+
+	dropMeOnMorph: function(receiver) {
+		receiver.addMorph(this); // this removes me from hand
+	},
+
+	pickMeUp: function(evt) {
+		var offset = evt.hand.getPosition().subPt(evt.point());
+		this.moveBy(offset);
+		evt.hand.addMorphAsGrabbed(this);
+	},
+},
+'morph menu', {
 
 	editMenuItems: function(evt) { 
 		return [];  // Overridden by, eg, TextMorph
@@ -3104,9 +3698,7 @@ Morph.addMethods('default', {
 		return items
 	},
 
-
 	morphMenu: function(evt) { 
-
 		var menu = new MenuMorph(this.morphMenuBasicItems(evt), this);
 		menu.addLine();
 		menu.addItem( ["world...", function() {this.world().showMorphMenu(evt)}.bind(this)]);
@@ -3146,16 +3738,10 @@ Morph.addMethods('default', {
 		]
 	},
 
-
 	subMenuStyleItems: function(evt) {
 		return new StyleEditor().styleEditorMenuItems(this, evt);
 	},
 
-
-
-
-
-	
 	subMenuItems: function(evt) {
 		return [
 			['Style', this.subMenuStyleItems(evt)],
@@ -3206,33 +3792,8 @@ Morph.addMethods('default', {
 		menu.open(evt);
     },
 
-	grid: function() {return Config.SnapGrid || pt(10,10)},
-
-	isSnappingToGrid: function() { return Config.isSnappingToGrid},
-
-	snapToGrid: function(pos) {
-		var grid = this.grid();
-		return pt(pos.x - (pos.x % grid.x), pos.y - (pos.y % grid.y))
-	},
-
-	dragMe: function(evt) {
-		var offset = this.getPosition().subPt(this.owner.localize(evt.point()));
-		var self = this;
-		var mouseRelay= {
-			captureMouseEvent: function(e) { 
-				if (e.type == "MouseMove")  {
-					var pos = this.owner.localize(e.hand.getPosition()).addPt(offset)
-					if (self.isSnappingToGrid()) {
-						this.setPosition(this.snapToGrid(pos));
-					} else {
-						this.setPosition(pos);
-					};
-				};
-				if (e.type == "MouseDown" || e.type == "MouseUp")  e.hand.setMouseFocus(null); 
-			}.bind(this),
-		};
-		evt.hand.setMouseFocus(mouseRelay);
-	},
+},
+'window related', {
 
 	putMeInAWindow: function(loc) {
 		var c = this.immediateContainer();
@@ -3271,55 +3832,7 @@ Morph.addMethods('default', {
 		return Object.inspect(this).truncate(); // Default response, overridden by containers
 	},
 
-	toggleDnD: function(loc) {
-		// console.log(this + ">>toggleDnD");
-		this.openForDragAndDrop = !this.openForDragAndDrop;
-	},
 
-	openDnD: function(loc) {
-		this.openForDragAndDrop = true;
-	},
-
-	closeDnD: function(loc) {
-		// console.log(this + ">>closeDnD");
-		this.openForDragAndDrop = false;
-	},
-
-    closeAllToDnD: function(loc) {
-        // console.log(this + ">>closeAllDnD");
-        // Close this and all submorphs to drag and drop
-        this.closeDnD(); 
-        // make this recursive to give children a chance to interrupt...
-        this.submorphs.forEach( function(ea) { ea.closeAllToDnD(); });
-    },
-
-	openAllToDnD: function() {
-		// Open this and all submorphs to drag and drop
-		this.withAllSubmorphsDo( function() { this.openDnD(); });
-	},
-
-	dropMeOnMorph: function(receiver) {
-		receiver.addMorph(this); // this removes me from hand
-	},
-
-	pickMeUp: function(evt) {
-		var offset = evt.hand.getPosition().subPt(evt.point());
-		this.moveBy(offset);
-		evt.hand.addMorphAsGrabbed(this);
-	},
-
-	notify: function(msg, loc) {
-		if (!loc) loc = this.world().positionForNewMorph();
-		new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
-	},
-
-	showOwnerChain: function(evt) {
-		var items = this.ownerChain().reverse().map(
-			function(each) { 
-				return [Object.inspect(each).truncate(), function(evt2) { each.showMorphMenu(evt) }]; 
-			});
-		new MenuMorph(items, this).openIn(this.world(), evt.point(), false, "Top item is topmost");
-	},
 
 	copyToHand: function(hand, evt, optCopier) {
 		// Function.prototype.shouldTrace = true;
@@ -3404,22 +3917,13 @@ Morph.addMethods('default', {
 		return this.morphToGrabOrReceive(evt, null, false);
 	},
 
-	ownerChain: function() {
-		// Return an array of me and all my owners
-		// First item is, eg, world; last item is me
-		if (!this.owner) return [this];
-		var owners = this.owner.ownerChain();
-		owners.push(this);
-		return owners;
-	},
 
 	acceptsDropping: function(morph) { 
 		return this.openForDragAndDrop && !(morph instanceof WindowMorph);
-	}
+	},
 
 },
-// Morph stepping/timer functions
-'Stepping', {
+'stepping', { // Morph stepping/timer functions
 
     startSteppingScripts: function() { }, // May be overridden to start stepping scripts
 
@@ -3481,191 +3985,52 @@ Morph.addMethods('default', {
 				this.suspendedScripts = null;
 			}
 		});
-	}
+	},
 
 },
-// Morph bounds, coordinates, moving and damage reporting functions
-'Bounds', { 
-
-    // bounds returns the full bounding box in owner coordinates of this morph and all its submorphs
-	bounds: function(ignoreTransients, ignoreTransform) {
-		if (this.fullBounds != null) return this.fullBounds;
-
-		var tfm = this.getTransform();
-		var fullBounds = this.localBorderBounds(ignoreTransform ? null : tfm);
-
-		var subBounds = this.submorphBounds(ignoreTransients);
-		if (subBounds != null) {
-			// could be simpler when no rotation...
-			fullBounds = fullBounds.union(tfm.transformRectToRect(subBounds));
-		}
-
-		if (fullBounds.width < 3 || fullBounds.height < 3) {
-			// Prevent Horiz or vert lines from being ungrabable
-			fullBounds = fullBounds.expandBy(3); 
-		}
-		this.fullBounds = fullBounds;
-		return fullBounds; 
-	},
-    
-	submorphBounds: function(ignoreTransients) {
-		var subBounds = null;
-		for (var i = 0; i < this.submorphs.length; i++) {
-			var m = this.submorphs[i];
-			if ((ignoreTransients && m.isEpimorph))
-				continue;
-			if (!m.isVisible()) {
-				continue;
-			}
-			subBounds = subBounds == null ? m.bounds(ignoreTransients) : subBounds.union(m.bounds(ignoreTransients));
-		}
-		return subBounds;
-	},
-    
-    // innerBounds returns the bounds of this morph only, and in local coordinates
-    innerBounds: function() { 
-		return this.shape.bounds();
-    },
-    
-	localBorderBounds: function(optTfm) {
-		// defined by the external edge of the border
-		// if optTfm is defined, transform the vertices first, then take the union
-		dbgOn(!this.shape);
-		var bounds = optTfm ? Rectangle.unionPts(this.shape.vertices().invoke('matrixTransform', optTfm)) : this.shape.bounds();
-
-		var borderMargin = this.getBorderWidth()/2;
-		// double border margin for polylines to account for elbow protrusions
-		if (this.shape.hasElbowProtrusions) borderMargin = borderMargin*2 + 1;
-		bounds = bounds.expandBy(borderMargin);
-		return bounds;
-	},
-    
-    
-    /** 
-      * mapping coordinates in the hierarchy
-      * @return [Point]
-      */
-
-    // map local point to world coordinates
-    worldPoint: function(pt) { 
-		return pt.matrixTransform(this.transformToMorph(this.world())); 
-    },
-
-	// map owner point to local coordinates
-	relativize: function(pt) { 
-		if (!this.owner) { 
-			throw new Error('no owner; call me after adding to a morph? ' + this);
-		}
-		try {
-			return pt.matrixTransform(this.owner.transformToMorph(this)); 
-		} catch (er) {
-			// console.info("ignoring relativize wrt/%s", this);
-			return pt;
-		}
+'scripts', {
+	addScript: function(funcOrString, optName) {
+		var func = Function.fromString(funcOrString);
+		return func.asScriptOf(this, optName);
 	},
 
-    // map owner rectangle to local coordinates
-    relativizeRect: function(r) { 
-		return rect(this.relativize(r.topLeft()), this.relativize(r.bottomRight()));
-    },
-
-    // map world point to local coordinates
-	localize: function(pt) {
-		if (pt == null) console.log('null pt');   
-		if (this.world() == null) {
-			// console.log('ERROR in '+  this.id() +' localize: '+ pt + ' this.world() is null');   
-			// printStack();
-			return pt;
-		}
-		return pt.matrixTransform(this.world().transformToMorph(this));
+	addScriptNamed: function(name, funcOrString) {
+		// DEPRECATED!!!
+		return this.addScript(funcOrString, name);
 	},
-
-    // map local point to owner coordinates
-	localizePointFrom: function(pt, otherMorph) {   
-		try {
-			return pt.matrixTransform(otherMorph.transformToMorph(this));
-		} catch (er) {
-			// lively.lang.Execution.showStack();
-			console.log("problem " + er + " on " + this + " other " + otherMorph);
-			return pt;
-		}
-	},
-
-    transformForNewOwner: function(newOwner) {
-		return new lively.scene.Similitude(this.transformToMorph(newOwner));
-    },
-
-	changed: function() {
-		// Note most morphs don't need this in SVG, but text needs the 
-		// call on bounds() to trigger layout on new bounds
-		if(this.owner) this.owner.invalidRect(this.bounds());
-	},
-
-	invalidRect: function() {
-		// Do nothing (handled by SVG).  Overridden in canvas.
-    },
-
-    layoutOnSubmorphLayout: function(submorph) {
-		// override to return false, in which case layoutChanged() will not be propagated to
-		// the receiver when a submorph's layout changes. 
-		return true;
-    },
-
-	transformChanged: function() {
-		var scalePt = this.scalePoint;
-		if (this.fisheyeScale != 1) scalePt = scalePt.scaleBy(this.fisheyeScale);
-		this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, scalePt);
-		this.pvtCachedTransform.applyTo(this.rawNode);
-	},
-
-	layoutChanged: function Morph$layoutChanged() {
-		// layoutChanged() is called whenever the cached fullBounds may have changed
-		// It invalidates the cache, which will be recomputed when bounds() is called
-		// Naturally it must be propagated up its owner chain.
-		// Note the difference in meaning from adjustForNewBounds()
-		// KP: the following may or may not be necessary:
-
-		this.transformChanged(); // DI: why is this here?
-		if(! this.fullBounds) return;  // already called
-
-		this.fullBounds = null;
-		if (this.owner && this.owner.layoutOnSubmorphLayout(this) && !this.isEpimorph) {     // May affect owner as well...
-			this.owner.layoutChanged();
-		}
-		this.layoutManager.layoutChanged(this);
-	},
-
-	adjustForNewBounds: function() {
-		// adjustForNewBounds() is called whenever the innerBounds may have changed in extent
-		//  -- it should really be called adjustForNewExtent --
-		// Depending on the morph and its layoutManager, it may then re-layout its
-		// submorphs and, in the process, propagate the message down to leaf morphs (or not)
-		// Of course a change in innerBounds implies layoutChanged() as well,
-		// but, for now, these are called separately.
-		// NB:  Because some morphs may re-lay themselves out in response to adjustForNewBounds()
-		// adjustForNewBounds() *must never be called from* a layout operation;
-		// The layout process should only move and resize submorphs, but never change the innerBounds
-
-		// If this method is overridden by a subclass, it should call super as well
-		if (this.focusHalo) this.adjustFocusHalo();
-	},
-
-	position: function() { // Deprecated -- use getPosition
-		return this.shape.bounds().topLeft().addPt(this.origin); 
-	},
-
-	getPosition: function() {
-		return this.shape.bounds().topLeft().addPt(this.origin); 
-	},
-
-	setPosition: function(newPosition) {
-		this.layoutManager.setPosition(this, newPosition);
-		return newPosition;
-	}
-
 },
-'Inspectors for Morphs', {
+'debugging', {
+	notify: function(msg, loc) {
+		if (!loc) loc = this.world().positionForNewMorph();
+		new MenuMorph([["OK", 0, "toString"]], this).openIn(this.world(), loc, false, msg); 
+	},
 
+	showOwnerChain: function(evt) {
+		var items = this.ownerChain().reverse().map(
+			function(each) { 
+				return [Object.inspect(each).truncate(), function(evt2) { each.showMorphMenu(evt) }]; 
+			});
+		new MenuMorph(items, this).openIn(this.world(), evt.point(), false, "Top item is topmost");
+	},
+
+	toString: function() {
+		try {
+			return Strings.format("%s(%s)", this.rawNode && this.id() || "" , 
+			this.shape ? "[" + this.shape.bounds().toTuple() + "]" : "");
+		} catch (e) {
+			//console.log("toString failed on %s", [this.id(), this.getType()]);
+			return "#<Morph?{" + e + "}>";
+		}
+	},
+
+	inspect: function() {
+		try {
+			return this.toString();
+		} catch (err) {
+			return "#<inspect error: " + err + ">";
+		}
+	},
+	
 	addSvgInspector: function() {
 		var xml = Exporter.stringify(new Exporter(this).serialize(Global.document));
 		var txt = this.world().addTextWindow({
@@ -3691,182 +4056,20 @@ Morph.addMethods('default', {
 				position: this.world().positionForNewMorph(null, this)
 			});
 		}
-	}
+	},
+
 },
 'Fabrik',{
-    isContainedIn: function(morph) {
-        if (!this.owner)
-            return false;
-        if (this.owner === morph)
-            return true;
-        else
-            return this.owner.isContainedIn(morph)
-    },
-},
-'Drive a Car Demo', {
-	moveForwardBy: function(amount) {
-		var nose = pt(1,0)
-		var dir = nose.matrixTransformDirection(this.getTransform()).normalized();
-		this.moveBy(dir.scaleBy(amount))
-	},
-
-	// TODO: There is a bug in Safari (the matrix multiplication is the wrong way around)
-	// that is not taken into account here....
-	rotateAround: function(angle, center) {
-		var tfm = new lively.scene.Similitude().toMatrix();
-		tfm = tfm.translate(center.x, center.y);
-		tfm = tfm.rotate(angle)		
-		tfm = tfm.translate( -center.x, -center.y);	
-		var oldTfm = this.getTransform().toMatrix();
-		var newTfm = oldTfm.multiply(tfm);
-		this.setTransform(new lively.scene.Similitude(newTfm));
-	},
-
-	turnBy: function(angle) {
-		this.rotateAround(angle, this.shape.bounds().center())		
-	}
-},	
-'Export',{
-	exportLinkedFile: function(filename) {
-		var url;
-		if (Global["WikiNavigator"] && WikiNavigator.current) {
-			var nav = WikiNavigator.current;
-			url = WikiNavigator.fileNameToURL(filename);
-			nav.interactiveSaveWorld(url);
-		} else {
-			url = WorldMorph.current().saveWorld(filename);
-		}
-		if (url) this.world().reactiveAddMorph(new ExternalLinkMorph(url));
-		return url;
-	},
-},
-'scripts', {
-	addScript: function(funcOrString, optName) {
-		var func = Function.fromString(funcOrString);
-		return func.asScriptOf(this, optName);
-	},
-
-	addScriptNamed: function(name, funcOrString) {
-		// DEPRECATED!!!
-		return this.addScript(funcOrString, name);
+	isContainedIn: function(morph) {
+		if (!this.owner) return false;
+		if (this.owner === morph) return true;
+		return this.owner.isContainedIn(morph)
 	},
 });
 
 
 
 // Morph factory methods for creating simple morphs easily
-Object.extend(Morph, {
-
-	makeLine: function(verts, lineWidth, lineColor) {
-		// make a line with its origin at the first vertex
-		// Note this works for simple lines (2 vertices) and general polylines
-		verts = verts.invoke('subPt', verts[0]);
-		var shape = new lively.scene.Polyline(verts);
-		var morph = new Morph(shape);
-		morph.setBorderWidth(lineWidth);
-		morph.setBorderColor(lineColor);
-		morph.setFill(null);
-		return morph;
-	},
-
-	makeCircle: function(location, radius, lineWidth, lineColor, fill) {
-		// make a circle of the given radius with its origin at the center
-		var morph = new Morph(new lively.scene.Ellipse(location, radius));
-		morph.setBorderWidth(lineWidth);
-		morph.setBorderColor(lineColor);
-		morph.setFill(fill || Color.blue);
-		return morph;
-	},
-
-	makeEllipse: function(bounds, lineWidth, lineColor, fill) {
-		// make a circle first (a bit wasteful)
-		var morph = this.makeCircle(bounds.center(), 0, lineWidth, lineColor, fill);
-		morph.setBounds(bounds);
-		morph.moveOriginBy(morph.innerBounds().center())
-		return morph;
-	},
-
-	makeRectangle: function(/**/) {
-		var morph;
-		switch (arguments.length) {
-			case 1: // rectangle
-			if (!(arguments[0] instanceof Rectangle)) throw new TypeError(arguments[0] + ' not a rectangle');
-			morph = new Morph(new lively.scene.Rectangle(arguments[0]));
-			break;
-			case 2: // location and extent
-			morph = new Morph(new lively.scene.Rectangle(arguments[0].extent(arguments[1])));
-			break;
-			case 4: // x,y,width, height
-			morph = new Morph(new lively.scene.Rectangle(new Rectangle(arguments[0], arguments[1], arguments[2], arguments[3])));
-			break;
-			default:
-			throw new Error("bad arguments " + arguments);
-		}
-		return morph.applyStyle({borderWidth: 1, borderColor: Color.black, fill: Color.blue});
-	},
-
-	makePolygon: function(verts, lineWidth, lineColor, fill) {
-		var morph = new Morph(new lively.scene.Polygon(verts));
-		morph.setBorderWidth(lineWidth);
-		morph.setBorderColor(lineColor);
-		morph.setFill(fill);
-		return morph;
-		//return morph.applyStyle({fill: fill, borderWidth: lineWidth, borderColor: lineColor});
-	},
-
-	makeStar: function(position) {
-		var makeStarVertices = function(r,center,startAngle) {
-			var vertices = [];
-			var nVerts = 10;
-			for (var i=0; i <= nVerts; i++) {
-				var a = startAngle + (2*Math.PI/nVerts*i);
-				var p = Point.polar(r,a);
-				if (i%2 == 0) p = p.scaleBy(0.39);
-				vertices.push(p.addPt(center)); 
-			}
-			return vertices; 
-		}
-		var morph = Morph.makePolygon(makeStarVertices(50,pt(0,0),0), 1, Color.black, Color.yellow);
-		morph.setPosition(position);
-		return morph
-	},
-	makeCurve: function(verts, ctrls, closed) {
-		// Make up a new quadratic spline from the supplied vertices and control points.
-		// ctrls[i] is the ctrl point for segment from verts[i-1] to verts[i].  (ctrls[0] is never used)
-		if (verts.length < 2) return;
-		// console.log("verts = " + Object.inspect(verts));
-		// console.log("ctrls = " + Object.inspect(ctrls));
-		var g = lively.scene;
-		var cmds = [];
-		cmds.push(new g.MoveTo(true, verts[0].x,  verts[0].y));
-		for (var i=1; i<verts.length; i++) {
-			cmds.push(new g.QuadCurveTo(true, verts[i].x, verts[i].y, ctrls[i].x, ctrls[i].y));
-		}
-		var morph = new Morph(new g.Path(cmds));
-		if (closed) morph.applyStyle({ fill: Color.red, borderWidth: 1, borderColor: Color.black});
-			else morph.applyStyle({ fill: null, borderWidth: 3, borderColor: Color.red});
-		return morph;
-	},
-
-	makeHeart: function(position) {
-		var g = lively.scene;
-		var shape = new g.Path([
-			new g.MoveTo(true, 0,  0),
-			new g.CurveTo(true, 48.25, -5.77),
-			new g.CurveTo(true, 85.89, 15.05),
-			new g.CurveTo(true, 61.36, 32.78),
-			new g.CurveTo(true, 53.22, 46.00),
-			new g.CurveTo(true, 25.02, 68.58),
-			new g.CurveTo(true, 1.03,  40.34),
-			new g.CurveTo(true, 0,  0),
-		]);
-		var morph = new Morph(shape);
-		morph.applyStyle({ fill: Color.red, borderWidth: 3, borderColor: Color.red});
-		morph.setPosition(position);
-		morph.rotateBy(3.9);
-		return morph
-	}
-});
 
 
 
@@ -5952,230 +6155,6 @@ Morph.subclass("HandMorph",
 			this.layoutChangedCount --;
 		}
     },
-},
-'Grabbing',{
-
-    showAsGrabbed: function(grabbedMorph) {
-		// At this time, there are three separate hand-effects:
-		//  1. applyDropShadowFilter, if it works, will cause the graphics engine to put a nice
-		//	   gaussian blurred drop-shadow on morphs that are grabbed by the hand
-		//  2. showGrabHalo will cause a halo object to be put at the end of the hand's
-		//	   submorph list for every grabbed morph (has property 'morphTrackedByHalo')
-		//  3. useShadowMorphs will cause a shadowCopy of each grabbed morph to be put
-		//	   at the end of the hand's submorph list (has property 'isHandMorphShadow')
-		// So, if everything is working right, the hand's submorph list looks like:
-		//	front -> Mc, Mb, Ma, Ha, Sa, Hb, Sb, Hc, Sc <- back [note front is last ;-]
-		// Where M's are grabbed morphs, H's are halos if any, and S's are shadows if any
-
-        if (this.applyDropShadowFilter) grabbedMorph.applyFilter(this.dropShadowFilter); 
-
-		if (Config.showGrabHalo) {
-		    var bounds = grabbedMorph.bounds(true);
-		    var halo = this.addMorphBack(Morph.makeRectangle(bounds).applyStyle({fill: null, borderWidth: 0.5 }));
-		    halo.morphTrackedByHalo = grabbedMorph;
-		    halo.shape.setStrokeDashArray(String([3,2]));
-		    halo.setLineJoin(lively.scene.LineJoins.Round);
-		    halo.ignoreEvents();
-
-		    var idLabel = new TextMorph(pt(20,10).extentAsRectangle(), String(grabbedMorph.id())).beLabel();
-		    idLabel.applyStyle(this.grabHaloLabelStyle);
-		    halo.addMorph(idLabel);
-		    idLabel.align(idLabel.bounds().bottomLeft(), halo.innerBounds().topRight());
-	    
-		    var pos = grabbedMorph.getPosition();
-		    var posLabel = new TextMorph(pt(20, 10).extentAsRectangle(), "").beLabel();
-		    posLabel.applyStyle(this.grabHaloLabelStyle);
-		    halo.positionLabel = halo.addMorph(posLabel);
-
-			this.updateGrabHalo();
-		}
-        if (this.useShadowMorphs) {
-			var shadow = grabbedMorph.shadowCopy();
-			shadow.isHandMorphShadow = true;
-			this.addMorphBack(shadow);
-			shadow.moveBy(pt(8, 8));
-		}
-    },
-
-    showAsUngrabbed: function(grabbedMorph) {
-		if (this.applyDropShadowFilter) grabbedMorph.applyFilter(null);
-    },
-    
-    alignToGrid: function() {
-        if(!Config.showGrabHalo) return;
-        var grid = function(a) {
-            return a - (a % (Config.alignToGridSpace || 5))
-		};
-		this.submorphs.forEach(function(halo) {
-		    if (halo.morphTrackedByHalo) { // this is a tracking halo
-	        	if (!halo.orgSubmorphPosition)
-			    halo.orgSubmorphPosition = halo.morphTrackedByHalo.getPosition();
-			var oldPos = this.worldPoint(halo.orgSubmorphPosition);
-			var gridPos = pt(grid(oldPos.x), grid(oldPos.y));
-			halo.morphTrackedByHalo.setPosition(this.localize(gridPos));
-		    }
-		}.bind(this));
-    },
-
-    updateGrabHalo: function Morph$updateGrabHalo() {
-		// Note there may be several grabHalos, and drop shadows as well
-		// See the comment in showAsGrabbed 
-		this.submorphs.forEach(function(halo) {
-		    if (halo.morphTrackedByHalo) { // this is a tracking halo
-				halo.setBounds(halo.morphTrackedByHalo.bounds(true).expandBy(3));
-				if (halo.positionLabel) {
-				    var pos = this.worldPoint(halo.morphTrackedByHalo.getPosition());
-				    var posLabel = halo.positionLabel;
-				    posLabel.setTextString(pos.x.toFixed(1) + "," + pos.y.toFixed(1));
-				    posLabel.align(posLabel.bounds().bottomCenter(), halo.innerBounds().topLeft());
-				}
-		    }
-		}.bind(this));
-    },
-
-	grabMorph: function(grabbedMorph, evt) { 
-		if (evt.isShiftDown() && (evt.isAltDown() || evt.isMetaDown())) {
-			grabbedMorph.dragMe(evt);
-			return;
-		}
-		if (evt.isShiftDown() || (grabbedMorph.owner && grabbedMorph.owner.copySubmorphsOnGrab == true)) {
-			if (!grabbedMorph.okToDuplicate()) return;
-			grabbedMorph.copyToHand(this);
-			return;
-		}
-		if (evt.isCommandKey() || evt.isRightMouseButtonDown() || evt.isMiddleMouseButtonDown()) {
-			grabbedMorph.showMorphMenu(evt);
-			return;
-		}
-		// Give grabbed morph a chance to, eg, spawn a copy or other referent
-		grabbedMorph = grabbedMorph.okToBeGrabbedBy(evt);
-		if (!grabbedMorph) return;
-
-		if (grabbedMorph.owner && !grabbedMorph.owner.openForDragAndDrop) return;
-
-		if (this.keyboardFocus && grabbedMorph !== this.keyboardFocus) {
-			this.keyboardFocus.relinquishKeyboardFocus(this);
-		}
-		// console.log('grabbing %s', grabbedMorph);
-		// Save info for cancelling grab or drop [also need indexInOwner?]
-		// But for now we simply drop on world, so this isn't needed
-		this.grabInfo = [grabbedMorph.owner, grabbedMorph.position()];
-		if (this.logDnD) console.log('%s grabbing %s', this, grabbedMorph);
-		this.addMorphAsGrabbed(grabbedMorph);
-		// grabbedMorph.updateOwner(); 
-		this.changed(); //for drop shadow
-	},
-    
-    addMorphAsGrabbed: function(grabbedMorph) { 
-        this.addMorph(grabbedMorph);
-		this.showAsGrabbed(grabbedMorph);
-    },
-    
-    dropMorphsOn: function(receiver) {
-		if (receiver !== this.world()) 
-			this.unbundleCarriedSelection();
-		if (this.logDnD) 
-			console.log("%s dropping %s on %s", this, this.topSubmorph(), receiver);
-		this.carriedMorphsDo( function(m) {
-			m.dropMeOnMorph(receiver);
-			this.showAsUngrabbed(m);
-		});
-		this.shadowMorphsDo( function(m) { m.stopAllStepping(); });
-		this.removeAllMorphs() // remove any shadows or halos
-    },
-
-    carriedMorphsDo: function(func) {
-		// Evaluate func for only those morphs that are being carried,
-		// as opposed to, eg, halos or shadows
-		this.submorphs.clone().reverse().forEach(function(m) {
-		    if (!m.morphTrackedByHalo && !m.isHandMorphShadow) func.call(this, m);
-		}.bind(this));
-    },
-
-    shadowMorphsDo: function(func) { 
-		// Evaluate func for only those morphs that are shadows,
-		this.submorphs.clone().reverse().forEach(function(m) {
-		    if (m.isHandMorphShadow) func.call(this, m);
-		}.bind(this));
-    },
-
-    unbundleCarriedSelection: function() {
-        // Unpack the selected morphs from a selection prior to drop or jump to other world
-        if (!this.hasSubmorphs() || !(this.topSubmorph() instanceof SelectionMorph)) return;
-        var selection = this.topSubmorph();
-        for (var i=0; i<selection.selectedMorphs.length; i++) {
-            this.addMorph(selection.selectedMorphs[i])
-        }
-        selection.removeOnlyIt();
-    },
-
-    moveSubmorphs: function(evt) {
-        var world = this.world();
-	
-        // Display height is returned incorrectly by many web browsers.
-        // We use an absolute Y-value instead. 
-        var towardsPoint = pt(world.bounds().center().x, 350);
-
-        switch (evt.getKeyCode()) {
-        case Event.KEY_LEFT:
-            this.submorphs.invoke('moveBy', pt(-10,0));
-            evt.stop();
-            return true;
-        case Event.KEY_RIGHT:
-            // forget the existing selection
-            this.submorphs.invoke('moveBy', pt(10, 0));
-            evt.stop();
-            return true;
-        case Event.KEY_UP:
-            this.submorphs.invoke('moveBy', pt(0, -10));
-            evt.stop();
-            return true;
-        case Event.KEY_DOWN:
-            this.submorphs.invoke('moveBy', pt(0, 10));
-            evt.stop();
-            return true;
-
-            // Experimental radial scrolling feature
-            // Read the comments near method Morph.moveRadially()
-        case Event.KEY_PAGEUP:
-        case 65: // The "A" key
-	    world.submorphs.invoke('moveRadially', towardsPoint, 10);
-            this.moveRadially(towardsPoint, 10);            
-            evt.stop();
-            return true;
-        case Event.KEY_PAGEDOWN:
-        case 90: // The "Z" key
-	    world.submorphs.invoke('moveRadially', towardsPoint, -10);
-            this.moveRadially(towardsPoint, -10);            
-            evt.stop();
-            return true;
-        }
-        
-        return false;
-    },
-
-    transformSubmorphs: function(evt) {
-		var fun = null;
-		switch (evt.getKeyChar()) {
-			case '>':
-				fun = function(m) { m.setScale(m.getScale()*1.1) };
-				break;
-			case '<':
-				fun = function(m) { m.setScale(m.getScale()/1.1) };
-				break;
-			case ']':
-				fun = function(m) { m.setRotation(m.getRotation() + 2*Math.PI/16) };
-				break;
-			case '[':
-				fun = function(m) { m.setRotation(m.getRotation() - 2*Math.PI/16) };
-				break;
-		}
-		if (fun) {
-			this.submorphs.forEach(fun);
-			evt.stop();
-			return true;
-		} else return false;
-	},
 },
 'Keyboard Events',{
 	isKeyDown: function(character) {
