@@ -1634,10 +1634,11 @@ Object.extend(Record, {
 			} else {
 				if (value == null && byDefault) value = byDefault;
 				coercedValue = to ? to(value) : value;
-				var oldValue = this.getRecordField(name) 
+				var oldValue = this.getRecordField(name);
 				this.setRecordField(name, coercedValue);
 			}
 			Record.notifyObserversOf(this, name, coercedValue, optSource, oldValue, optForce);
+			return coercedValue;
 		}
 	},
 	
@@ -2061,6 +2062,11 @@ Object.subclass("Rectangle", {
 
 Rectangle.addMethods({
 
+	equals: function(other) {
+		if (!other) return false;
+		return 	this.x == other.x && this.y == other.y && this.width == other.width && this.height == other.height;
+	},
+	
 	containsPoint: function(p) {
 		return this.x <= p.x && p.x <= this.x + this.width && this.y<= p.y && p.y <= this.y + this.height;
 	},
@@ -2563,7 +2569,8 @@ Record.subclass('lively.data.DOMRecord', {
 			value = "json:" + Converter.toJSONAttribute(value);
 		}
 
-		return this.rawNode.setAttributeNS(null, name, value || "");
+		this.rawNode.setAttributeNS(null, name, value || "");
+		return value;
 	},
 
 	removeRecordField: function(name) {
@@ -2634,6 +2641,7 @@ lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
 			else console.log("failed to encode " + name + "= " + value);
 			this[propName] = fieldElement;
 		}
+		return value;
 		// console.log("created cdata " + fieldElement.textContent);
 	},
 	
@@ -2705,7 +2713,8 @@ Record.subclass('lively.data.StyleRecord', {
 		if (value === undefined) {
 			throw new Error("use removeRecordField to remove " + name);
 		}
-		return this.rawNode.style.setProperty(name, value || "", "");
+		this.rawNode.style.setProperty(name, value || "", "");
+		return value;
 	},
 
 	removeRecordField: function(name) {
@@ -2860,8 +2869,7 @@ Object.subclass('lively.data.Resolver', {
 Global.ModelMigration = {
 	set: function(objectWithModel, slotName, value, force) { // derived from newDelegatorSetter -> setter
 		var m = objectWithModel.formalModel;
-		if (!m) 
-			return objectWithModel.setModelValue('set' + slotName, value);
+		if (!m) return objectWithModel.setModelValue('set' + slotName, value);
 		var method = m['set' + slotName];
 		// third arg is source, fourth arg forces relay to set value even if oldValue === value
 		return method && method.call(m, value, objectWithModel, force);
