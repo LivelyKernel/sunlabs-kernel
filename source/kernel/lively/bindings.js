@@ -106,26 +106,29 @@ Object.subclass('AttributeConnection',
 
 		if (this.isActive/*this.isRecursivelyActivated()*/) return;
 		this.isActive = true; // this.activate();
-		var self = this, updater = this.getUpdater(), converter = this.getConverter();
-		var callOrSetTarget = function(newValue) {
-			// use a function and not a method to capture this in self and so that no bind is necessary
-			// and oldValue is accessible. Note that when updater calls this method arguments can be
-			// more than just the new value
-			if (converter)
-				newValue = converter.call(self, newValue, oldValue);
-			var targetMethod = self.targetObj[self.targetMethodName]
-			var result = (typeof targetMethod === 'function') ?
-				targetMethod.apply(self.targetObj, arguments) :
-				self.targetObj[self.targetMethodName] = newValue;
-			if (self.removeAfterUpdate) self.disconnect();
-			return result;
-		};
+		var connection = this, updater = this.getUpdater(), converter = this.getConverter(),
+			target = this.targetObj, propName = this.targetMethodName;
+		if (!target || !propName) {
+			console.error('Cannot update ' + this.toString(newValue) + ' because of no target or targetProp');
+			return
+		}
+		var targetMethod = target[propName], callOrSetTarget = function(newValue) {
+				// use a function and not a method to capture this in self and so that no bind is necessary
+				// and oldValue is accessible. Note that when updater calls this method arguments can be
+				// more than just the new value
+				if (converter) newValue = converter.call(connection, newValue, oldValue);
+				var result = (typeof targetMethod === 'function') ?
+					targetMethod.apply(target, arguments) :
+					target[propName] = newValue;
+				if (connection.removeAfterUpdate) connection.disconnect();
+				return result;
+			};
 
 		try {
-			if (updater)
-				return updater.call(this, callOrSetTarget, newValue, oldValue);
-			else
-				return callOrSetTarget(newValue);		
+			// console.log(this.toString(newValue));
+			return updater ?
+				updater.call(this, callOrSetTarget, newValue, oldValue) :
+				callOrSetTarget(newValue);		
 		} catch(e) {
 			dbgOn(Config.debugConnect);
 			console.warn('Error when trying to update ' + this + ' with value '
@@ -139,8 +142,7 @@ Object.subclass('AttributeConnection',
 'private helper', {
 
 	addSourceObjGetterAndSetter: function() {
-		var
-			sourceObj = this.sourceObj,
+		var sourceObj = this.sourceObj,
 			sourceAttrName = this.sourceAttrName,
 			newAttrName = this.privateAttrName(sourceAttrName);
 
@@ -165,8 +167,9 @@ Object.subclass('AttributeConnection',
 			for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 				var c = sourceObj.attributeConnections[i];
 				if (c.getSourceAttrName() === sourceAttrName)
-						c.update(newVal, oldVal);
+					c.update(newVal, oldVal);
 			}
+			return newVal;
 		})
 
 		this.sourceObj.__defineGetter__(this.sourceAttrName, function() {
@@ -194,6 +197,7 @@ Object.subclass('AttributeConnection',
 		}
 
 		sourceObj[methodName].isWrapped = true;
+		sourceObj[methodName].originalFunction = origMethod; // for getOriginal()
 	},
 
 	removeSourceObjGetterAndSetter: function() {
@@ -236,12 +240,17 @@ Object.subclass('AttributeConnection',
 	},
 },
 'debugging', {
-	toString: function() {
-		return Strings.format('AttributeConnection(%s.%s --> %s.%s())',
-			this.getSourceObj(),
-			this.getSourceAttrName(),
-			this.getTargetObj(),
-			this.getTargetMethodName());
+	toString: function(optValue) {
+		try {
+			return Strings.format('AttributeConnection(%s.%s %s %s.%s)',
+				this.getSourceObj(),
+				this.getSourceAttrName(),
+				optValue ? ('-->' + String(optValue) + '-->') : '-->',
+				this.getTargetObj(),
+				this.getTargetMethodName());
+		} catch(e) {
+			return '<Error in AttributeConnection>>toString>';
+		}
 	},
 });
 
