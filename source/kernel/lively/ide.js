@@ -76,25 +76,33 @@ Widget.subclass('lively.ide.BasicBrowser',
 
 	initialize: function($super) {
 		$super();
-		var panes = this.allPaneNames;
 
 		//create a model and relay for connecting the additional components later on
-		var model = Record.newPlainInstance((function(){
-			return this.formals.inject({}, function(spec, ea){spec[ea]=null; return spec})}.bind(this))());
-		var spec = {SourceString: "SourceString", StatusMessage: "StatusMessage", RootFilters: "RootFilters"};
+		var formals = this.formals,
+			defaultValues = (function() {
+				return formals.inject({}, function(spec, ea) { spec[ea] = null; return spec });
+			})(),
+			model = Record.newPlainInstance(defaultValues);
+
+		this.initializeModelRelay(model);
+
+		this.buttonCommands = [];
+	},
+	initializeModelRelay: function(actualModel) {
+		var panes = this.allPaneNames,
+			spec = {SourceString: "SourceString", StatusMessage: "StatusMessage", RootFilters: "RootFilters"};
 		panes.forEach(function(ea) {
 			spec[ea + 'Content'] = ea + 'Content';
 			spec[ea + 'Selection'] = ea + 'Selection';
 			spec[ea + 'Menu'] = ea + 'Menu';
 			spec[ea + 'Filters'] = ea + 'Filters';
 		});
-		this.relayToModel(model, spec);
+		this.relayToModel(actualModel, spec);
 		this.filterPlaces.forEach(function(ea) {  /*identity filter*/	
 			this['set' + ea + 'Filters']([new lively.ide.NodeFilter()]);
 		}, this);
-
-		this.buttonCommands = [];
 	},
+
 	
     buildView: function (extent) {
  
@@ -105,31 +113,8 @@ Widget.subclass('lively.ide.BasicBrowser',
 		var panel = new lively.ide.BrowserPanel(extent);
         PanelMorph.makePanedPanel(extent, this.panelSpec, panel);
 		this.panel = panel;
-
-		var model = this.getModel(),
-			browser = this;
  
-        function setupListPanes(paneName) {
-            var morph = panel[paneName];
-			// morph.innerMorph().plugTo(model, {
-				// selection: '->set' + paneName + 'Selection',
-				// selection: '<-get' + paneName + 'Selection',
-				// itemList: '<-get' + paneName + 'Content',
-				// : '<-get' + paneName + 'Content',
-			// })
-            morph.connectModel(model.newRelay({List:        ("-" + paneName + "Content"),
-                                               Selection:   (      paneName + 'Selection'),
-                                               Menu:        ("-" + paneName + "Menu")}), true);
-            morph.withAllSubmorphsDo(function() {
-				if (this.constructor == SliderMorph) return;
-                this.onMouseDown = this.onMouseDown.wrap(function(proceed, evt) {
-					browser.ensureSourceNotAccidentlyDeleted(proceed.curry(evt));
-                });
-            })
-        }
- 
-        this.allPaneNames.each(function(ea) { setupListPanes(ea) });
- 
+		this.setupListPanes();
 		this.setupSourceInput();
 		this.setupLocationInput();
  
@@ -145,11 +130,39 @@ Widget.subclass('lively.ide.BasicBrowser',
         return panel;
     },
 
+	setupListPanes: function() {
+		var model = this.getModel(), browser = this;
+		function setupListPane(paneName) {
+            var morph = browser.panel[paneName];
+			// morph.innerMorph().plugTo(model, {
+				// selection: '->set' + paneName + 'Selection',
+				// selection: '<-get' + paneName + 'Selection',
+				// getList: '->get' + paneName + 'Content',
+				// updateList: '<-set' + paneName + 'Content',
+			// })
+            morph.connectModel(model.newRelay({List:        ("-" + paneName + "Content"),
+                                               Selection:   (      paneName + 'Selection'),
+                                               Menu:        ("-" + paneName + "Menu")}), true);
+            morph.withAllSubmorphsDo(function() {
+				if (this.constructor == SliderMorph) return;
+                this.onMouseDown = this.onMouseDown.wrap(function(proceed, evt) {
+					browser.ensureSourceNotAccidentlyDeleted(proceed.curry(evt));
+                });
+            })
+        }
+		this.allPaneNames.each(function(ea) { setupListPane(ea) });
+	},
+
 	setupSourceInput: function() {
 		this.sourceInput().maxSafeSize = 2e6;
 		// this.sourceInput().styleClass = ['codePane'];
 		this.panel.sourcePane.connectModel(this.getModel().newRelay({Text: "SourceString"}));
-		
+		// this.panel.sourcePane.innerMorph().plugTo(this, {
+		// 		setTextString: '<-setSourceString',
+		// 		savedTextString: '->setSourceString',
+		// 	});
+		// 	this.setSourceString('test');
+
 		this.panel.sourcePane.linkToStyles(["Browser_codePane"])
 		this.panel.sourcePane.innerMorph().linkToStyles(["Browser_codePaneText"])
 		this.panel.sourcePane.clipMorph.setFill(null);
@@ -161,10 +174,11 @@ Widget.subclass('lively.ide.BasicBrowser',
 	},
 	
 	setupLocationInput: function() {
-		if (!this.locationInput()) return;
-		this.locationInput().beInputLine();
-		this.locationInput().noEval = true;
-		this.locationInput().linkToStyles(["Browser_locationInput"])
+		var locInput = this.locationInput();
+		if (!locInput) return;
+		locInput.beInputLine();
+		locInput.noEval = true;
+		locInput.linkToStyles(["Browser_locationInput"])
 	},
 	
 	setupResizers: function() {
@@ -422,7 +436,7 @@ Widget.subclass('lively.ide.BasicBrowser',
 
 	onSourceStringUpdate: function(methodString, source) {
 		this.sourceString = methodString;
-		if (!methodString || methodString == this.emptyText) return;
+		if (!methodString || methodString == this.emptyText || !this.selectedNode()) return;
 		if (this.selectedNode().sourceString() == methodString &&
 			source !== this.panel.sourcePane.innerMorph())
 				return;
@@ -606,9 +620,6 @@ PanelMorph.subclass('lively.ide.BrowserPanel', {
 	openForDragAndDrop: false,
 	
 	onDeserialize: function($super) {
-		console.log('on derserialize browser with '  + Config.defaultDisplayTheme )
-
-
 		var widget = new this.ownerWidget.constructor();
 		if (widget instanceof lively.ide.WikiCodeBrowser) return; // FIXME deserialize wiki browser
 		var selection = this.getSelectionSpec();
@@ -869,7 +880,7 @@ Object.extend(lively.ide.NodeTypeFilter, {
 // ===========================================================================
 // Browsing js files and OMeta
 // ===========================================================================
-ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
+lively.ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 
 	documentation: 'Browser for source code parsed from js files',
 	viewTitle: "SystemBrowser",
@@ -2518,7 +2529,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.RunTestMethodCommand', {
 
 	isActive: function(pane) {
 		var node = this.getSelectedNode();
-		if (!node.isMemberNode || node.target.isStatic() || !node.target.getName().startsWith('test'))
+		if (!node || !node.isMemberNode || node.target.isStatic() || !node.target.getName().startsWith('test'))
 			return;
 		return this.getTestClass() != null;
 	},
