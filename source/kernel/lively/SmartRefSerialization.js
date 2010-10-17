@@ -39,6 +39,8 @@ Object.subclass('ObjectGraphLinearizer',
 },
 'accessing', {
 	idProperty: '__SmartId__',
+	escapedCDATAEnd: '<=CDATAEND=>',
+	CDATAEnd: '\]\]\>',
 
 	newId: function() { return this.idCounter++ },
 	getIdFromObject: function(obj) {
@@ -128,7 +130,7 @@ Object.subclass('ObjectGraphLinearizer',
 	},
 
 	copyObjectAndRegisterReferences: function(obj) {
-		if (this.copyDepth > 30) {
+		if (this.copyDepth > 50) {
 			debugger;
 			throw new Error('Stack overflow while registering objects? ' + obj)
 		}
@@ -199,14 +201,21 @@ this.path.splice(this.path.length-1, 1); // remove last
 		} finally {
 			this.cleanup();
 		}
-		return JSON.stringify(root);
+		return this.stringifyJSO(root);
 	},
 	addIdToObject: function(obj) { return obj[this.idProperty] = this.newId() },
+	stringifyJSO: function(jso) {
+		var str = JSON.stringify(jso),
+			regex = new RegExp(this.CDATAEnd, 'g');
+		str = str.replace(regex, this.escapedCDATAEnd);
+		return str
+	},
+
 },
 'deserializing',{
-	deserialize: function(jsonString) {
-		var jsonObj = JSON.parse(jsonString);
-		return this.deserializeJso(jsonObj);
+	deserialize: function(json) {
+		var jso = this.parseJSON(json);
+		return this.deserializeJso(jso);
 	},
 	deserializeJso: function(jsonObj) {
 		var start = new Date(),
@@ -217,6 +226,11 @@ this.path.splice(this.path.length-1, 1); // remove last
 		this.log('Deserializing done in ' + (new Date() - start) + 'ms');
 		this.cleanup();
 		return result;
+	},
+	parseJSON: function(json) {
+		var regex = new RegExp(this.escapedCDATAEnd, 'g'),
+			converted = json.replace(regex, this.CDATAEnd);
+		return JSON.parse(converted);
 	},
 
 },
@@ -335,6 +349,9 @@ Object.extend(ObjectGraphLinearizer, {
 
 	sourceModulesIn: function(jso) {
 		return new ClassPlugin().sourceModulesIn(jso.registry);
+	},
+	parseJSON: function(json) {
+		return new this().parseJSON(json);
 	},
 
 
@@ -723,6 +740,14 @@ TestCase.subclass('ObjectGraphLinearizerTest',
 		this.assertEqual(1, result.friends[0].value);
 		this.assertIdentity(result.friends[0], result.friends[1].friend);
 		this.assertIdentity(result, result.friends[0].friend);
+	},
+	testCDATAEndTagIsExcaped: function() {
+		var str = 'Some funny string with CDATA end tag: ]]> and again ]]>',
+			obj = { value: str };
+		var json = this.sut.serialize(obj);
+		this.assert(!json.include(']]>'), 'CDATA end tag included')
+		var result = this.sut.deserialize(json)
+		this.assertEqual(str, result.value);
 	},
 
 })
