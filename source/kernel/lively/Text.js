@@ -1087,10 +1087,11 @@ BoxMorph.subclass('TextMorph',
 	},
 
 	setTextString: function(replacement, replacementHints) {
-		replacement = this.pvtReplaceBadControlCharactersInString(replacement);
-		if (Object.isString(replacement)) replacement = String(replacement); // rk ??? Why call String()
-		if (this.autoAccept) this.setText(replacement);
-		this.pvtUpdateTextString(replacement, replacementHints);
+		var sanitized = this.pvtReplaceBadControlCharactersInString(replacement);
+		if (!Object.isString(sanitized)) sanitized = String(sanitized); // rk ??? Why call String()
+		if (this.autoAccept) this.setText(sanitized);
+		this.pvtUpdateTextString(sanitized, replacementHints);
+		return sanitized;
 	},
 	
 	updateTextString: function(newStr) {
