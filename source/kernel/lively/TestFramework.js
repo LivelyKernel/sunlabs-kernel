@@ -187,6 +187,8 @@ Object.subclass('TestCase',
 	assertEquals: function(firstValue, secondValue, msg){
 		if (firstValue && firstValue.constructor === Point && secondValue &&
 			secondValue.constructor === Point && firstValue.eqPt(secondValue)) return;
+		if (firstValue && firstValue.constructor === Rectangle && secondValue &&
+			secondValue.constructor === Rectangle && firstValue.equals(secondValue)) return;
 		if (firstValue && firstValue.constructor === Color && secondValue &&
 			secondValue.constructor === Color && firstValue.equals(secondValue)) return;
 		if (firstValue == secondValue) return;
