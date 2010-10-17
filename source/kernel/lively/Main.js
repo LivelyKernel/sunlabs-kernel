@@ -156,12 +156,11 @@ Object.subclass('lively.Main.Loader',
 	deserializeJSONWorld: function(canvas, json) {
 		var self = this,
 			doc = canvas.ownerDocument,
-			jso = JSON.parse(json),
-			requirements = ["lively.SmartRefSerialization"];
-		requirements = requirements.concat(Config.modulesBeforeChanges);
+			requirements = ["lively.SmartRefSerialization"].concat(Config.modulesBeforeChanges);
 		this.setupCounter(canvas);
 		require(requirements).toRun(function() {
-			var changes = !Config.skipChanges && ObjectGraphLinearizer.deserializeChangeSetFromDocument(doc);
+			var jso = ObjectGraphLinearizer.parseJSON(json),
+				changes = !Config.skipChanges && ObjectGraphLinearizer.deserializeChangeSetFromDocument(doc);
 			changes && changes.evaluateWorldRequirements();
 			var modulesOnWorldLoad = Config.modulesBeforeWorldLoad.concat(ObjectGraphLinearizer.sourceModulesIn(jso));
 			require(modulesOnWorldLoad).toRun(function() {
