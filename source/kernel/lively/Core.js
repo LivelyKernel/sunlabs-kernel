@@ -3662,12 +3662,10 @@ Morph.addMethods('settings', {
 	},
 
 	showMorphMenu: function(evt) {
-		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner) {
+		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner)
 			evt.hand.lastMorphMenu.remove(); // cleanup old open menus
-		};
-		var menu = this.morphMenu(evt);
-		var menuCaption = this.getName() ? this.getName() + ' - ' : '';
-		menuCaption += Object.inspect(this).truncate();
+		var menu = this.morphMenu(evt),
+			menuCaption = this.toString();
 		menu.openIn(this.world(), evt.point(), false, menuCaption); 
 		evt.hand.lastMorphMenu = menu;
 	},
@@ -3706,6 +3704,19 @@ Morph.addMethods('settings', {
 		menu.addItems(this.subMenuItems(evt));
 		return menu;
 	},
+	subMenuLayoutItems: function() {
+		var morph = this;
+		function setLayouter(klass) {
+			morph.layoutManager = new klass();
+			morph.relayout();
+		};
+		return [
+			["default layout", function() { setLayouter(LayoutManager) }],
+			["horizontal layout", function() { setLayouter(HorizontalLayout) }],
+			["vertical layout", function() { setLayouter(VerticalLayout) }],
+		];	
+	},
+
 
 	subMenuPropertiesItems: function(evt) {
 		return  [
@@ -3745,6 +3756,7 @@ Morph.addMethods('settings', {
 	subMenuItems: function(evt) {
 		return [
 			['Style', this.subMenuStyleItems(evt)],
+			['Layout', this.subMenuLayoutItems(evt)],
 			['Properties', this.subMenuPropertiesItems(evt)],
 			['Window and World', this.subMenuWindowItems(evt)]
 		]
@@ -4015,8 +4027,10 @@ Morph.addMethods('settings', {
 
 	toString: function() {
 		try {
-			return Strings.format("%s(%s)", this.rawNode && this.id() || "" , 
-			this.shape ? "[" + this.shape.bounds().toTuple() + "]" : "");
+			var name = this.getName();
+			if (name && name != '') name += '(' + this.constructor.name + ')';
+			else name = (this.rawNode && this.id()) || 'morph without rawNode';
+			return name;
 		} catch (e) {
 			//console.log("toString failed on %s", [this.id(), this.getType()]);
 			return "#<Morph?{" + e + "}>";
@@ -5308,6 +5322,10 @@ PasteUpMorph.subclass("WorldMorph",
 			}
 			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);			
 			statusMessage.remove();
+			(function removeJSONIfPresent() {
+				var jsonEl = doc.getElementById('LivelyJSONWorld');
+				if (jsonEl) jsonEl.parentNode.removeChild(jsonEl);
+			})()
 			serializeTime = new Date().getTime() - start;
 			(function() {
 				Exporter.saveDocumentToFile(doc, url, onFinished);
@@ -5315,6 +5333,7 @@ PasteUpMorph.subclass("WorldMorph",
 		}).bind(this).delay(0);
 		return url;
 	},
+
 	windowBounds: function () {
 		var canvas = this.canvas();
 		var scale = 1/this.world().getScale();
@@ -7060,17 +7079,13 @@ Invocation.subclass('SchedulableAction', {
  */
 Object.subclass('LayoutManager',
 'layouting', {
-	layout: function(supermorph) {
-		// subclass responsibility
-	},
+	layout: function(supermorph) {},
 
-	xPosForInsert: function(supermorph, addedMorph) {
-		// return addedMorph.bounds().left()
-		return this.leftPaddingOf(supermorph);
-	},
-
-	yPosForInsert: function(supermorph, addedMorph) {
-		return this.topPaddingOf(supermorph);
+},
+'positioning', {
+	positionForInsert: function(morph, ownerMorph) {
+		return morph.getPosition();
+		// return pt(this.leftPaddingOf(ownerMorph), this.topPaddingOf(ownerMorph));
 	},
 },
 'morphic extensions', {
@@ -7110,30 +7125,27 @@ Object.subclass('LayoutManager',
 	},
 
 	setPosition: function(target, newPosition) {
-		if (!newPosition)
-			return;
+		if (!newPosition) return;
 		var delta = newPosition.subPt(target.getPosition());
 		target.translateBy(delta);
 		return delta;
 	},
 
-    layoutChanged: function(target) {
-	
-    },
+    layoutChanged: function(target) {},
 
     beforeAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
     },
 
-    afterAddMorph: function(supermorph, submorph, isFront) {  // isFront -> general spec of location?
+    afterAddMorph: function(owner, morph, isFront) {  // isFront -> general spec of location?
+		this.layout(owner);
     },
 
-    beforeRemoveMorph: function(supermorph, submorph) {
-
-    },
+    beforeRemoveMorph: function(supermorph, submorph) {},
 
     afterRemoveMorph: function(supermorph, submorph) {
 		// new behavior:
 		supermorph.layoutChanged();
+		this.layout(supermorph); // FIXME
     },
 
 },
@@ -7186,45 +7198,26 @@ LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 	layout: function(supermorph) {
 		var x = this.leftPaddingOf(supermorph),
 			y =  this.topPaddingOf(supermorph),
+			height = supermorph.getExtent().y - this.bottomPaddingOf(supermorph)
 			submorphs = this.orderedSubMorphsOf(supermorph);
 		for (var i = 0; i < submorphs.length; i++) {
 			var submorph = submorphs[i];
 			x += this.leftMarginOf(submorph)
 			submorph.align(submorph.bounds().topLeft(), pt(x, y));
+			if (submorph.vResizing === 'spaceFill')
+				submorph.setExtent(submorph.getExtent().withY(height))
 			x += submorph.bounds().width;
 			x += this.rightMarginOf(submorph);
 		}
 	},
 	
-	// fixmE not added to superclass because of performance
-	beforeAddMorph: function(supermorph, submorph, isFront) {
-		// runs before submorph is added
-		if (submorph.isEpimorph) return;
-		var pos = pt(this.xPosForInsert(supermorph, submorph),
-					this.yPosForInsert(supermorph, submorph));
-		submorph.align(submorph.bounds().topLeft(), pos)
-	},
-	
-	xPosForInsert: function(supermorph, addedMorph) {
-		// find a gap where addedMorph fits in and return the xPos
-		var submorphs = this.orderedSubMorphsOf(supermorph),
-			left = this.leftPaddingOf(supermorph), right = 0, gap = 0,
-			requiredWidth = addedMorph.bounds().width +
-							this.leftMarginOf(addedMorph) +
-							this.rightMarginOf(addedMorph);
-		for (var i = 0; i < submorphs.length; i++) {
-			var morph = submorphs[i];
-			right = morph.getPosition().x - this.leftMarginOf(morph);
-			gap = right - left;
-			if (gap >= requiredWidth) return left;
-			left = morph.bounds().right() + this.rightMarginOf(morph);
-		}
-		return left;
-	},
 
-	orderedSubMorphsOf: function(morph) {
-		return morph.visibleSubmorphs().sortBy(function(subM) { return subM.getPosition().x });
-	},
+	
+
+
+
+
+
 
 });
 
@@ -7240,12 +7233,12 @@ Object.extend(HorizontalLayout, {
 LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 
 	layout: function(supermorph) {
-		// var x = this.leftPaddingOf(supermorph);
-		var y =  this.topPaddingOf(supermorph);
-		var submorphs = supermorph.visibleSubmorphs();
-		for(var i=0; i < submorphs.length; i++) {
-			var submorph = submorphs[i],
-				x = submorph.bounds().left();
+		var x = this.leftPaddingOf(supermorph),
+			y =  this.topPaddingOf(supermorph),
+			submorphs = supermorph.visibleSubmorphs();
+		for (var i = 0; i < submorphs.length; i++) {
+			var submorph = submorphs[i]
+				// x = submorph.bounds().left();
 			y += this.topMarginOf(submorph)
 			submorph.align(submorph.bounds().topLeft(), pt(x, y));
 			y += submorph.bounds().height;
@@ -7253,36 +7246,6 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 		}
 	},
 
-	// fixmE not added to superclass because of performance
-	beforeAddMorph: function(supermorph, submorph, isFront) {
-		// runs before submorph is added
-		if (submorph.isEpimorph) return;
-		var pos = pt(this.xPosForInsert(supermorph, submorph),
-					this.yPosForInsert(supermorph, submorph));
-		submorph.align(submorph.bounds().topLeft(), pos)
-	},
-
-	yPosForInsert: function(supermorph, addedMorph) {
-		// find a gap where addedMorph fits in and return the yPos
-		var submorphs = this.orderedSubMorphsOf(supermorph),
-			top = this.topPaddingOf(supermorph), bottom = 0, gap = 0,
-			requiredHeight = addedMorph.bounds().height +
-							this.topMarginOf(addedMorph) +
-							this.bottomMarginOf(addedMorph);
-		for (var i = 0; i < submorphs.length; i++) {
-			var morph = submorphs[i];
-			bottom = morph.getPosition().y - this.topMarginOf(morph);
-			gap = bottom - top;
-			if (gap >= requiredHeight) return top;
-			top = morph.bounds().bottom() + this.bottomMarginOf(morph);
-		}
-		return top;
-	},
-	
-	orderedSubMorphsOf: function(morph) {
-		return morph.visibleSubmorphs().sortBy(function(subM) { return subM.getPosition().y });
-	},
-	
 });
 
 Object.extend(VerticalLayout, { 
