@@ -71,6 +71,27 @@ AttributeConnection.addMethods('serialization', {
 		this.connect();
 	},
 });
+lively.ide.SystemBrowser.addMethods('serialization', {
+	onrestore: function() {
+		// lively.ide.startSourceControl();
+
+		// this.initializeModelRelay(this.getModel());
+		// this.setupListPanes();
+		// this.setupSourceInput();
+		
+		this.panel.onDeserialize.bind(this.panel).delay(0);
+		// (function() {
+		// 	var oldPanel = this.panel,
+		// 		newPanel = this.buildView(oldPanel.getExtent()),
+		// 		selection = oldPanel.getSelectionSpec(),
+		// 		window = oldPanel.owner;
+		// 	window.targetMorph = window.addMorph(newPanel);
+		// 	newPanel.setPosition(oldPanel.getPosition());
+		// 	oldPanel.remove();
+		// 	newPanel.resetSelection(selection, this);
+		// }).bind(this).delay(0);
+	},
+});
 
 
 cop.create('SmartRefSerializationCompatibility')
