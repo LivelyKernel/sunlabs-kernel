@@ -1,17 +1,20 @@
-(function setupConsole() {
+var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1,
+	isFireBug = isFirefox && window.console && window.console.firebug !== undefined;
 
+(function setupConsole() {
+	
     var platformConsole = window.console ||
 		(window.parent && window.parent.console) ||
 		{};
 
-	var required = ['log', 'group', 'groupEnd', 'warn', 'assert'];
+	var required = ['log', 'group', 'groupEnd', 'warn', 'assert', 'error'];
 	for (var i = 0; i < required.length; i++)
 		if (!platformConsole[required[i]])
 			platformConsole[required[i]] = function() {}
 
 	window.console = platformConsole;
 
-	if (platformConsole.firebug) return; // Firebug doesn't like to be overwritten
+	if (isFireBug) return;
 
 	function addWrappers() {
 		if (platformConsole.wasWrapped) return;
@@ -85,7 +88,7 @@ var JSLoader = {
 		else
 			script.setAttributeNS(null, 'src', exactUrl);
 
-		script.addEventListener('load', onLoadCb);
+		script.onload = onLoadCb;
 		script.setAttributeNS(null, 'async', true);
 
 		parentNode.appendChild(script);
@@ -388,7 +391,9 @@ LoadingScreen = {
 		var console = document.createElement('pre'), self = this;
 		console.setAttribute('id', this.consoleId);
 		console.setAttribute('style', "position: absolute; top: 0px; font-family: monospace; color: rgb(0,255,64); font-size: medium; padding-bottom: 20px;");
-
+		this.console = console;
+		if (isFireBug) return console;
+		
 		function addLine(str, style) {
 			style = style || ''
 			// console.appendChild(document.createElement('br'));
@@ -409,16 +414,16 @@ LoadingScreen = {
 
 		window.console.addConsumer(console)
 
-		this.console = console
+		
 		return console;
 	},
 
 	removeConsole: function() {
 		var console = this.console;
-		if (!console) return;
+		this.console = null;
+		if (!console || isFireBug) return;
 		window.console.removeConsumer(console)
 		this.removeElement(console);
-		this.console = null;
 	},
 
 	toggleConsole: function() {

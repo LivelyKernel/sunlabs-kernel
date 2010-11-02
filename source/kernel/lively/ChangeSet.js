@@ -620,14 +620,16 @@ ChangeSet.addMethods({
 	},
 	
 	evaluateInitializer: function() {
-		this.getInitializer().evaluate();
+		var initializerDoit = this.getInitializer();
+		if (initializerDoit) initializerDoit.evaluate();
 	},
 	
 	evaluateWorldRequirements: function() {
-		var list = this.getWorldRequirementsList().evaluate();
-		if (Object.isArray(list)) {
+		var requirementsDoit = this.getWorldRequirementsList();
+		if (!requirementsDoit) return;
+		var list = requirementsDoit.evaluate();
+		if (Object.isArray(list))
 			Config.modulesBeforeWorldLoad = Config.modulesBeforeWorldLoad.concat(list);
-		}
 	},
 	
 	ensureCompatibility: function() {
