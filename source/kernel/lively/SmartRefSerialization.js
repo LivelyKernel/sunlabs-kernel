@@ -244,7 +244,7 @@ this.path.splice(this.path.length-1, 1); // remove last
 		Properties.forEachOwn(registeredObj, function(key, value) {
 			if (!value || !this.isReference(value)) return;
 			var refRegisteredObj = this.getRegisteredObjectFromId(value.id)
-			result.push(key + ':' + value.id + '(' + refRegisteredObj[ClassPlugin.classNameProperty] + ')');
+			result.push(key + ':' + value.id + '(' + refRegisteredObj[ClassPlugin.prototype.classNameProperty] + ')');
 		}, this);
 		return result;
 	},
@@ -270,6 +270,45 @@ this.path.splice(this.path.length-1, 1); // remove last
 	getPath: function() {
 		 return '["' + this.path.join('"]["') + '"]'
 	},
+	listObjectsOfWorld: function(url) {
+		var doc = new WebResource(url).get().contentDocument;
+		if (!doc) { alert('Could not get ' + url); return };
+		var worldMetaElement = doc.getElementById(this.constructor.jsonWorldId);
+		if (!worldMetaElement) { alert('Could not get json from ' + url); return };
+		var jso = this.parseJSON(worldMetaElement.textContent);
+
+		function humanReadableByteSize(n) {
+			function round(n) { return Math.round(n * 100) / 100 }
+			if (n < 1000) return String(round(n)) + 'bytes'
+			n = n / 1024;
+			if (n < 1000) return String(round(n)) + 'kb'
+			n = n / 1024;
+			return String(round(n)) + 'mb'
+		}
+		var classes = {
+			toString: function() {
+				return 'classes:\n' + Properties.own(this)
+					.collect(function(prop) { return this[prop]  }, this)
+					.sortBy(function(tuple) { return tuple.bytes })
+					.collect(function(tuple) {
+						return tuple.name + ': ' + humanReadableByteSize(tuple.bytes) + ' (' + tuple.count + ')'
+					}, this)
+					.join('\n')
+			}
+		}
+
+plainObjs = []
+		Properties.forEachOwn(jso.registry, function(key, value) {
+			var className = value.registeredObject[ClassPlugin.prototype.classNameProperty] || 'plain object'
+if (className == 'plain object') plainObjs.push(value)
+			if (!classes[className]) classes[className] = {count: 0, bytes: 0, name: className};
+			classes[className].count++
+			classes[className].bytes += JSON.stringify(value.registeredObject).length;
+		});
+
+		WorldMorph.current().addTextWindow(classes.toString());
+	},
+
 
 });
 Object.extend(ObjectGraphLinearizer, {
@@ -538,7 +577,11 @@ ObjectLinearizerPlugin.subclass('OldModelFilter',
 		if (!klass || !klass.name.startsWith('anonymous_'))
 			return;
 		ClassPlugin.prototype.removeClassInfoIfPresent(persistentCopy);
-		persistentCopy.definition = JSON.stringify(original.definition)
+		var def = JSON.stringify(original.definition);
+		def = def.replace(/[\\]/g, '')
+		def = def.replace(/"+\{/g, '{')
+		def = def.replace(/\}"+/g, '}')
+		persistentCopy.definition = def;
 		persistentCopy.isInstanceOfAnonymousClass = true;
 		if (klass.superclass == Relay) {
 			persistentCopy.isRelay = true;
@@ -560,8 +603,12 @@ ObjectLinearizerPlugin.subclass('OldModelFilter',
 		if (!persistentCopy.isInstanceOfAnonymousClass) return null;
 		var instance;
 		function createInstance(ctor, ctorMethodName, argIfAny) {
-			var def = JSON.parse(persistentCopy.definition);
-			return ctor[ctorMethodName](def, argIfAny)
+			var string = persistentCopy.definition;
+			string = string.replace(/[\\]/g, '')
+			string = string.replace(/"+\{/g, '{')
+			string = string.replace(/\}"+/g, '}')
+			var def = JSON.parse(string);
+			return ctor[ctorMethodName](string, argIfAny)
 		}
 
 		if (persistentCopy.isRelay) {
