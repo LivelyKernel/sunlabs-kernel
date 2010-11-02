@@ -105,6 +105,8 @@ Object.subclass("CDB.Repository", CDB.Logger.prototype, {
 		}
 
 		for (var i = startIndex; i < args.length; i++) {
+
+			if (args[i] == undefined) throw new CDB.IllegalArgumentException('undefined is not allowed as an argument');
 			Array.prototype.splice.apply(args, [i, 1].concat(args[i].split(this.constants.CodeObjectDelimiter)));
 		}
 
@@ -170,18 +172,26 @@ Object.subclass("CDB.Repository", CDB.Logger.prototype, {
 			throw new CDB.ObjectNotFoundException('Unable to find the specified code object: "' + objQName + '"');
 		}
 
-		if (klass == null && dbObj.type) {
-		
-			switch (dbObj.type) {
-				case 'module': klass = CDB.Module; break;
-				case 'class': klass = CDB.Klass; break;
-				case 'method': klass = CDB.Method; break;
-			}
+		var classToInstantiate = null;
+
+		switch (dbObj.type) {
+			case 'module': classToInstantiate = CDB.Module; break;
+			case 'class': classToInstantiate = CDB.Klass; break;
+			case 'method': classToInstantiate = CDB.Method; break;
+			case 'layer': classToInstantiate = CDB.Layer; break;
 		}
 
-		this.debug('Found code object "' + objQName + '" (' + klass.type + ') revision ' + revision.number);
+		if (klass != null && klass != classToInstantiate) {
+			throw new CDB.TypeMismatchException('Expected ' + klass.type + ' but got ' + classToInstantiate.type);
+		}
 
-		var obj = new klass(dbObj.name);
+		if (classToInstantiate == null) {
+			throw new CDB.Exception('No class to instantiate, please fix Repository.getCodeObject');
+		}
+
+		this.debug('Found code object "' + objQName + '" (' + classToInstantiate.type + ') revision ' + revision.number);
+
+		var obj = new classToInstantiate(dbObj.name);
 		
 		// put object into the cache
 		this.cache[objQName] = obj;
@@ -401,6 +411,9 @@ CDB.Exception.subclass("CDB.IllegalArgumentException", {
 CDB.Exception.subclass("CDB.ObjectNotFoundException", {
 	
 });
+CDB.Exception.subclass("CDB.TypeMismatchException", {
+	
+});
 CDB.Exception.subclass("CDB.ConsistencyException", {
 	
 });
@@ -555,6 +568,9 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype,
 	// some user provided documentation of the code object
 	documentation: null,
 
+	// parent code object
+	parent: null,
+
 	// code object revision
 	revision: null,
 
@@ -572,32 +588,193 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype,
 	// the revision history of this code object
 	revisionHistory: null,
 
+	// CouchDB document object (set once first persisted)
+	documentObject: null,
+
+	// child code objects
+	childObjects: [],
+
+	// names of all child code objects
+	childNames: [],
+
+	// true if lazy loading should include drafts
+	includeDraftsOnLazyLoad: false,
+
 }, 'public functions', {
 
 	initialize: function(name) {
 
 		this.name = name;
 		this.documentation = null;
+		
+		this.revisionHistory = null;
+		this.revision = null;
 
 		this.action = 1; // add
 		this.persistent = false;
+		
 		this.repository = null;
 		this.documentObject = null;
-		this.revisionHistory = null;
+
+		this.parent = null;
+		this.childObjects = [];
+		this.childNames = [];
 	},
 
-	initializeFromDocument: function(docObj) {
+	initializeFromDocument: function(docObj, includeDrafts) {
 
 		this.action = 0; // update
 		this.persistent = true;
 		
 		this.name = docObj.name;
 		this.documentation = docObj.documentation;
+		
+		if (docObj.parent) {
+			this.setParent(this.repository.getCodeObject(docObj.parent, includeDrafts));
+		}
+
 		this.documentObject = docObj;
+		this.includeDraftsOnLazyLoad = includeDrafts;
+
+		this.childNames = docObj.children;
+	},
+
+	setParent: function(p) {
+		this.parent = p;
 	},
 
 	equals: function(other) {
-		return this.constructor.type == other.constructor.type && this.name == other.name;
+		
+		return this.constructor.type == other.constructor.type && this.name == other.name
+			&& ((this.parent == null && other.parent == null)
+				|| (this.parent != null && other.parent != null && this.parent.equals(other.parent))
+			);
+	},
+
+	addChildCodeObject: function(obj, cls) {
+
+		if (cls && cls.isSubclassOf && cls.isSubclassOf instanceof Function && cls.isSubclassOf(CDB.CodeObject) && ! obj instanceof cls) {
+			throw new CDB.IllegalArgumentException('Expected an instance of ' + cls.type + ' but got ' + obj.constructor.type);
+		} else if (!obj || ! obj instanceof CDB.CodeObject) {
+			throw new CDB.IllegalArgumentException('Code Object expected');
+		}
+
+		for (var idx = 0; idx < this.childNames.length; idx++) {
+			if (this.childNames[idx] == obj.name) {
+				throw new CDB.IllegalArgumentException('There is already a child with the same name in this code object');
+			}
+		}
+
+		this.childObjects.push(obj);
+		this.childNames.push(obj.name);
+
+		obj.setParent(this);
+	},
+
+	getChildCodeObject: function(name, cls) {
+
+		// first check whether it has already been loaded
+		for (var idx = 0; idx < this.childObjects.length; idx++) {
+			
+			if (this.childObjects[idx].name == name) {
+				
+				if (!cls || this.childObjects[idx] instanceof cls) return this.childObjects[idx];
+				else throw new CDB.TypeMismatchException('Expected ' + cls.type + ' but got ' + this.childObjects[idx].constructor.type);
+			}
+		}
+
+		// object is not yet loaded - check whether it exists
+		for (var idx = 0; idx < this.childNames.length; idx++) {
+			
+			if (this.childNames[idx] == name) {
+
+				var objName = this.getUnprefixedDocumentName();
+				var obj = this.repository.getCodeObject(objName, name, this.includeDraftsOnLazyLoad);
+				
+				this.childObjects.push(obj); 
+	
+				if (cls && ! (obj instanceof cls)) {
+					throw new CDB.TypeMismatchException('Expected ' + cls.type + ' but got ' + obj.constructor.type);
+				}
+
+				return obj;
+			}
+		}
+
+		throw new CDB.ObjectNotFoundException('Unable to find the specified code object: ' + name);
+	},
+
+	getChildCodeObjects: function(type) {
+
+		if (!type.isSubclassOf || !(type.isSubclassOf instanceof Function) || !type.isSubclassOf(CDB.CodeObject)) {
+			throw new CDB.IllegalArgumentException('Subclass of CDB.CodeObject expected');
+		}
+
+		var requestedChildren = [];
+
+		for (var idx = 0; idx < this.childObjects.length; idx++) {
+			if (this.childObjects[idx] instanceof type) requestedChildren.push(this.childObjects[idx]);
+		}
+
+		if (!this.repository) return requestedChildren; // we can be sure that this is the complete list
+
+		var myName = this.getUnprefixedDocumentName();
+		var listOfNames = this.repository.listCodeObjects(type, myName, this.includeDraftsOnLazyLoad);
+
+		var namesToFetch = [];
+
+		// this list might contain names that are not part of this.childNames -> filter them out
+		for (var idx = 0; idx < listOfNames.length; idx++) {
+			for (var jdx = 0; jdx < this.childNames.length; jdx++) {
+				if (listOfNames[idx] == this.childNames[jdx]) namesToFetch.push(listOfNames[idx]);
+			}
+		}
+
+		// children might already contain objects named in namesToFetch
+		outer: for (var idx = 0; idx < namesToFetch.length; idx++) {
+			
+			for (var jdx = 0; jdx < requestedChildren.length; jdx++) {
+				if (requestedChildren[jdx].name == namesToFetch[idx]) break outer;
+			}
+			
+			// we actually need to fetch the object
+			var obj = this.repository.getCodeObject(type, myName, namesToFetch[idx], this.includeDraftsOnLazyLoad);
+			this.childObjects.push(obj); requestedChildren.push(obj);
+		}
+
+		return requestedChildren;
+	},
+
+	removeChildCodeObject: function(obj, cls) {
+
+		if (cls && cls.isSubclassOf && cls.isSubclassOf instanceof Function && cls.isSubclassOf(CDB.CodeObject) && ! obj instanceof cls) {
+			throw new CDB.IllegalArgumentException('Expected an instance of ' + cls.type + ' but got ' + obj.constructor.type);
+		} else if (!obj || ! obj instanceof CDB.CodeObject) {
+			throw new CDB.IllegalArgumentException('Code Object expected');
+		}
+
+		// first check whether it really is a child
+		for (var idx = 0; idx < this.childObjects.length; idx++) {
+
+			if (this.childObjects[idx] == obj) {
+
+				// remove from list of child objects				
+				this.childObjects.splice(idx, 1);
+
+				for (var jdx = 0; jdx < this.childNames.length; jdx++) {
+
+					if (this.childNames[jdx] == obj.name) {
+
+						this.childNames.splice(jdx, 1);
+						// do not remove parent here
+
+						return;
+					}
+				}
+			}
+		}
+
+		throw new CDB.ObjectNotFoundException('Unable to find the specified code object: ' + obj.name);		
 	},
 
 	getRevision: function(revNo) {
@@ -641,20 +818,55 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype,
 		return this.revision && this.revision.status == 'draft';
 	},
 
-	deleteFromRepository: function() {
+	deleteFromRepository: function(recursive) {
+
+		if (!this.repository) {
+			throw new CDB.IllegalArgumentException('Code object has not been attached to a repository yet');
+		}
 		
+		var myName = this.getUnprefixedDocumentName();
+
 		this.action = 2;
-		this.debug('Code object "' + this.getUnprefixedDocumentName() + '" (' + this.constructor.type + ') is now scheduled for deletion');
+		this.debug('Code object "' + myName + '" (' + this.constructor.type + ') is now scheduled for deletion');
+
+		if (recursive) {
+
+			// load all remaining objects
+			outer: for (var idx = 0; idx < this.childNames.length; idx++) {
+			
+				for (var jdx = 0; jdx < this.childObjects.length; jdx++) {
+					if (this.childObjects[jdx].name == this.childNames[idx]) continue outer;
+				}
+
+				this.childObjects.push(this.repository.getCodeObject(myName, this.childNames[idx], this.includeDraftsOnLazyLoad));
+			}
+
+			// delete all objects
+			for (var idx = 0; idx < this.childObjects.length; idx++) {
+				this.childObjects[idx].deleteFromRepository(recursive);
+			}
+		}
+
+		if (this.parent) {
+			this.parent.removeChildCodeObject(this);
+		}
 	},
 	
 
 }, 'private functions', {
 
 	addToRepository: function(rep) {
-			this.repository = rep;
+		
+		this.repository = rep;
+
+		for (var idx = 0; idx < this.childObjects.length; idx++) {
+			this.childObjects[idx].addToRepository(rep);
+		}
 	},
 
 	checkConsistency: function() {
+
+		this.debug('Running consistency check for "' + this.name + '" (' + this.constructor.type + ')');
 
 		if (this.persistent && this.action == 1) {
 			throw new CDB.ConsistencyException('Code Object "' + this.name 
@@ -666,6 +878,25 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype,
 			throw new CDB.ConsistencyException('Code Object "' + this.name 
 					+ '" (' + this.constructor.type + ') is not persistent and can only be added');
 		}
+
+		if (!this.isDraft()) {
+
+			if (this.parent && this.action == 1 /* add */ && !this.repository.currentChangeSet.includes(this.parent)) {
+				throw new CDB.ConsistencyException('Parent code object "' + this.parent.name + '" is not part of the change set');
+			}
+
+			if (this.parent && this.action == 2 /* delete */ && !this.repository.currentChangeSet.includes(this.parent)) {
+				throw new CDB.ConsistencyException('Parent code object "' + this.parent.name + '" is not part of the change set');
+			}
+
+			for (var idx = 0; idx < this.childObjects.length; idx++) {
+	
+				if (this.childObjects[idx].action > 0 /* add or delete */ && !this.repository.currentChangeSet.includes(this.childObjects[idx])) {
+					throw new CDB.ConsistencyException('Child object "' + this.childObjects[idx].name + '" is not part of the change set');
+				}
+			}
+		}
+
 
 		var historyQName = this.repository.constants.RevisionHistoryPrefix;
 		historyQName += this.repository.constants.CodeObjectDelimiter;
@@ -697,14 +928,35 @@ Object.subclass("CDB.CodeObject", CDB.Logger.prototype,
 			this.repository.cache[docObj._id] = this.revisionHistory;
 		}
 	},
+	getUnprefixedDocumentName: function() {
+
+		// return plain name if there is no parent
+		if (this.parent == null) return this.name;
+
+		// concatenate names
+		return this.parent.getUnprefixedDocumentName() + this.repository.constants.CodeObjectDelimiter + this.name;
+	},
+
 
 	getWritableDocumentObject: function() {
 
-		return {
+		obj = {
 			'type': this.typeName,
 			'name': this.name,
 			'documentation': this.documentation
+		};
+
+		if (this.parent) {
+			obj.parent = this.parent.getUnprefixedDocumentName();
 		}
+
+		obj.children = [];
+
+		for (var idx = 0; idx < this.childNames.length; idx++) {
+			obj.children.push(this.childNames[idx]);
+		}
+
+		return obj;
 	},
 
 	createNewRevision: function(draft) {
@@ -894,20 +1146,6 @@ CDB.CodeObject.subclass("CDB.Module", {
 
 
 	/**************************************************
-	 Private Properties
-	 **************************************************/
-
-	// classes contained in this module (might be null)
-	classes: null,
-
-	// the names of the classes contained in this module
-	classNames: [],
-
-	// true if lazy fetching should consider drafts
-	retrieveLazyDrafts: false,
-
-
-	/**************************************************
 	 Public Functions
 	 **************************************************/
 
@@ -915,115 +1153,34 @@ CDB.CodeObject.subclass("CDB.Module", {
 
 		$super(name);
 
-		this.classes = null;
-		this.classNames = [];
 		this.requirements = [];
-		this.retrieveLazyDrafts = false;
 	},
 
 	initializeFromDocument: function($super, docObj, includeDrafts) {
 		
-		$super(docObj);
+		$super(docObj, includeDrafts);
 		
-		this.classNames = docObj.classes;
 		this.requirements = docObj.requirements;
-		this.retrieveLazyDrafts = includeDrafts;
-	},
-
-	retrieveClasses: function() {
-
-		if (this.classes != null) return;
-		else this.classes = [];
-
-		var objName = this.getUnprefixedDocumentName();
-		this.debug('Lazily loading all classes for module: ' + objName + ' ' + JSON.serialize(this.classNames));
-
-		for (var i = 0; i < this.classNames.length; i++) {
-
-			var cls = this.repository.getCodeObject(CDB.Klass, objName, this.classNames[i], this.retrieveLazyDrafts);
-	
-			cls.module = this;
-			cls.repository = this.repository;
-
-			this.classes.push(cls);
-		}
 	},
 
 	addClass: function(cls) {
+		this.addChildCodeObject(cls, CDB.Klass);
+	},
 
-		if (!cls || ! cls instanceof CDB.Klass) {
-			throw new CDB.IllegalArgumentException('Class expected');
-		}
-
-		if (this.persistent) {
-
-			// lazily load classes
-			this.retrieveClasses();
-
-			for (var idx = 0; idx < this.classes.length; idx++) {
-				if (this.classes[idx].name == cls.name) {
-					throw new CDB.IllegalArgumentException('There is already a class with the same name in this module');
-				}
-			}
-
-		} else this.classes = [];
-
-		this.classes.push(cls);
-		this.classNames.push(cls.name);
-
-		cls.module = this;
+	addLayer: function(layer) {
+		this.addChildCodeObject(layer, CDB.Layer);
 	},
 
 	getClass: function(name) {
-
-		// lazily load classes
-		this.retrieveClasses();
-
-		for (var idx = 0; idx < this.classes.length; idx++) {
-			if (this.classes[idx].name == name) return this.classes[idx];
-		}
-
-		throw new CDB.ObjectNotFoundException('Unable to find the specified class: ' + name);
+		return this.getChildCodeObject(name, CDB.Klass);
 	},
 
 	getClasses: function() {
-
-		// lazily load classes
-		this.retrieveClasses();
-
-		// clone the classes array
-		return this.classes.slice(0, this.classes.length);
+		return this.getChildCodeObjects(CDB.Klass);
 	},
 	
 	removeClass: function(cls) {
-
-		for (var idx = 0; idx < this.classNames.length; idx++) {
-
-			if (this.classNames[idx] == cls.name) {
-				
-				if (this.classes != null) this.classes.splice(idx, 1);
-				this.classNames.splice(idx, 1);
-
-				return; 
-			}
-		}
-
-		throw new CDB.ObjectNotFoundException('Unable to find the specified class: ' + cls.name);		
-	},
-
-	deleteFromRepository: function($super, recursive) {
-		
-		$super();
-
-		if (recursive) {
-
-			// lazily load classes
-			this.retrieveClasses();
-
-			for (var idx = 0; idx < this.classes.length; idx++) {
-				this.classes[idx].deleteFromRepository(recursive);
-			}
-		}
+		this.removeChildCodeObject(cls, CDB.Klass);
 	},
 	
 
@@ -1031,30 +1188,10 @@ CDB.CodeObject.subclass("CDB.Module", {
 	 Private Functions
 	 **************************************************/
 
-	addToRepository: function($super, rep) {
-
-		$super(rep);
-
-		if (this.classes == null) return;
-
-		for (var idx = 0; idx < this.classes.length; idx++) {
-			this.classes[idx].addToRepository(rep);
-		}
-	},
-
-	getUnprefixedDocumentName: function() {
-		return this.name;
-	},
-
 	getWritableDocumentObject: function($super) {
 
 		var docObj = $super();
 		docObj.requirements = this.requirements;
-		docObj.classes = [];	
-
-		for (var idx = 0; idx < this.classNames.length; idx++) {
-			docObj.classes.push(this.classNames[idx]);
-		}
 
 		return docObj;
 	}
@@ -1078,20 +1215,6 @@ CDB.CodeObject.subclass("CDB.Klass", {
 
 
 	/**************************************************
-	 Private Properties
-	 **************************************************/
-
-	// methods contained in this class (might be null)
-	methods: null,
-
-	// the names of the methods contained in this class
-	methodNames: [],
-
-	// true if lazy fetching should consider drafts
-	retrieveLazyDrafts: false,
-
-
-	/**************************************************
 	 Public Functions
 	 **************************************************/
 	
@@ -1099,193 +1222,52 @@ CDB.CodeObject.subclass("CDB.Klass", {
 		
 		$super(name);
 		
-		this.methods = null;
-		this.methodNames = [];
-
 		this.module = null;
 		this.superclass = null;
-
-		this.retrieveLazyDrafts = false;
 	},
 
 	initializeFromDocument: function($super, docObj, includeDrafts) {
 		
-		$super(docObj);
+		$super(docObj, includeDrafts);
 
 		this.superclass = docObj.superclass;
-
-		if (docObj.module) {
-			this.module = this.repository.getCodeObject(CDB.Module, docObj.module, includeDrafts);
-		}
-
-		this.methodNames = docObj.methods;
-		this.retrieveLazyDrafts = includeDrafts;
 	},
 
-	retrieveMethods: function() {
-
-		if (this.methods != null) return;
-		else this.methods = [];
-
-		var objName = this.getUnprefixedDocumentName();
-		this.debug('Lazily loading all methods for class: ' + objName + ' ' + JSON.serialize(this.methodNames));
-
-		for (var i = 0; i < this.methodNames.length; i++) {
-
-			var meth = this.repository.getCodeObject(CDB.Method, objName, this.methodNames[i], this.retrieveLazyDrafts);
-	
-			meth.klass = this;
-			meth.repository = this.repository;
-
-			this.methods.push(meth);
-		}
+	setParent: function($super, p) {
+		$super(p); this.module = p;
 	},
 
-	equals: function($super, other) {
-		return $super(other) && this.module == other.module;
+	setModule: function(m) {
+		this.setParent(m);
 	},
 
 	addMethod: function(meth) {
-
-		if (!meth || ! meth instanceof CDB.Method) {
-			throw new CDB.IllegalArgumentException('Method expected');
-		}
-
-		if (this.persistent) {
-
-			// lazily load all methods
-			this.retrieveMethods();
-
-			for (var idx = 0; idx < this.methods.length; idx++) {
-				if (this.methods[idx].name == meth.name) {
-					throw new CDB.IllegalArgumentException('There is already a method with the same name in this class');
-				}
-			}
-
-		} else this.methods = [];
-
-		this.methods.push(meth);
-		this.methodNames.push(meth.name);
-
-		meth.klass = this;
+		this.addChildCodeObject(meth, CDB.Method);
 	},
 
 	getMethod: function(name) {
-
-		// lazily load all methods
-		this.retrieveMethods();
-
-		for (var idx = 0; idx < this.methods.length; idx++) {
-			if (this.methods[idx].name == name) return this.methods[idx];
-		}
-
-		throw new CDB.ObjectNotFoundException('Unable to find the specified method: ' + name);		
+		return this.getChildCodeObject(name, CDB.Method);
 	},
 
 	getMethods: function() {
-
-		// lazily load all methods
-		this.retrieveMethods();
-
-		// clone the method array
-		return this.methods.slice(0, this.methods.length);
+		return this.getChildCodeObjects(CDB.Method);
 	},
 
 	removeMethod: function(meth) {
-
-		for (var idx = 0; idx < this.methodNames.length; idx++) {
-
-			if (this.methodNames[idx] == meth.name) {
-				
-				if (this.methods != null) this.methods.splice(idx, 1);
-				this.methodNames.splice(idx, 1);
-
-				return; 
-			}
-		}
-
-		throw new CDB.ObjectNotFoundException('Unable to find the specified method: ' + meth.name);		
+		this.removeChildCodeObject(meth, CDB.Method);
 	},
 
-	deleteFromRepository: function($super, recursive) {
-		
-		$super();
 
-		// remove from module
-		this.module.removeClass(this);
-
-		if (recursive) {
-
-			// lazily load all methods
-			this.retrieveMethods();
-
-			for (var idx = 0; idx < this.methods.length; idx++) {
-				this.methods[idx].deleteFromRepository(recursive);
-			}
-		}
-	},
 	
 
 	/**************************************************
 	 Private Functions
 	 **************************************************/
 
-	checkConsistency: function($super) {
-	
-		// common consistency checks
-		$super();
-
-		// skip further checks if this is a draft revision
-		if (this.isDraft()) return;
-
-		this.debug('Running consistency check for class "' + this.name + '"');
-
-		if (this.module && this.action == 1 /* add */ && !this.repository.currentChangeSet.includes(this.module)) {
-			throw new CDB.ConsistencyException('Module "' + this.module.name + '" is not part of the change set');
-		}
-
-		if (this.methods == null) return;
-
-		for (var idx = 0; idx < this.methods.length; idx++) {
-
-			if ((this.methods[idx].action == 1 /* add */ || this.methods[idx].action == 2 /* delete */) && !this.repository.currentChangeSet.includes(this.methods[idx])) {
-				throw new CDB.ConsistencyException('Method "' + this.methods[idx].name + '" is not part of the change set');
-			}
-		}
-	},
-
-	addToRepository: function($super, rep) {
-
-		$super(rep);
-
-		if (this.methods == null) return;
-
-		for (var idx = 0; idx < this.methods.length; idx++) {
-			this.methods[idx].addToRepository(rep);
-		}
-	},
-
-	getUnprefixedDocumentName: function() {
-
-		if (this.module == null) return this.name;
-
-		// concatenate names
-		return this.module.getUnprefixedDocumentName() + this.repository.constants.CodeObjectDelimiter + this.name;
-	},
-
 	getWritableDocumentObject: function($super) {
 
 		var docObj = $super();
 		docObj.superclass = this.superclass;
-		docObj.methods = [];
-
-		for (var idx = 0; idx < this.methodNames.length; idx++) {
-			docObj.methods.push(this.methodNames[idx]);
-		}
-
-		if (this.module) {
-			docObj.module = this.module.getUnprefixedDocumentName();
-		}
 
 		return docObj;
 	}
@@ -1313,34 +1295,29 @@ CDB.CodeObject.subclass("CDB.Method", {
 	 **************************************************/
 
 	initialize: function($super, name) {
+		
 		$super(name);
+		
 		this.klass = null;
 		this.source = null;
 	},
 
 	initializeFromDocument: function($super, docObj, includeDrafts) {
 
-		$super(docObj);
+		$super(docObj, includeDrafts);
 
 		this.source = docObj.source;
-
-		if (docObj.klass) { // just to prevent failures from old methods without klass
-			this.klass = this.repository.getCodeObject(CDB.Klass, docObj.klass, includeDrafts);
-		}
 	},
 
-	equals: function($super, other) {
-		return $super(other) && this.klass.equals(other.klass);
+	setParent: function($super, p) {
+		$super(p); this.klass = p;
 	},
 
-	deleteFromRepository: function($super) {
-		
-		$super();
-
-		if (this.klass != null) {
-			this.klass.removeMethod(this);
-		}
+	setClass: function(c) {
+		this.setParent(c);
 	},
+
+
 
 
 	/**************************************************
@@ -1352,34 +1329,79 @@ CDB.CodeObject.subclass("CDB.Method", {
 		// common consistency checks
 		$super();
 
-		this.debug('Running consistency check for method "' + this.name + '"');
-
 		if (this.klass == null) {
 			throw new CDB.ConsistencyException('Method "' + this.name + '" does not belong to a class');
 		}
-
-		if (this.action == 1 /* add */ && !this.repository.currentChangeSet.includes(this.klass)) {
-			throw new CDB.ConsistencyException('Class "' + this.klass.name + '" is not part of the change set');
-		} 
-
-		if (this.action == 2 /* delete */ && !this.repository.currentChangeSet.includes(this.klass)) {
-			throw new CDB.ConsistencyException('Class "' + this.klass.name + '" is not part of the change set');
-		}
 	},
 
-	getUnprefixedDocumentName: function() {
-		return this.klass.getUnprefixedDocumentName() + this.repository.constants.CodeObjectDelimiter + this.name;
-	},
+
 
 	getWritableDocumentObject: function($super) {
 
 		var docObj = $super();
 		docObj.source = this.source;
-		docObj.klass = this.klass.getUnprefixedDocumentName();
 
 		return docObj;
 	}
 	
+});
+CDB.CodeObject.subclass("CDB.Layer", {
+
+	/**************************************************
+	 Public Properties
+	 **************************************************/
+
+	// constants: code object type name
+	typeName: 'layer',
+
+	// read only: module this class belongs to
+	module: null,
+
+
+	/**************************************************
+	 Public Functions
+	 **************************************************/
+	
+	initialize: function($super, name) {
+		
+		$super(name);
+		
+		this.module = null;
+	},
+
+	initializeFromDocument: function($super, docObj, includeDrafts) {
+		
+		$super(docObj, includeDrafts);
+	},
+
+	setParent: function($super, p) {
+		$super(p); this.module = p;
+	},
+
+	setModule: function(m) {
+		this.setParent(m);
+	},
+
+	deleteFromRepository: function($super, recursive) {
+		
+		$super(recursive);
+
+		// remove from module
+		this.module.removeLayer(this);
+	},
+	
+
+	/**************************************************
+	 Private Functions
+	 **************************************************/
+
+	getWritableDocumentObject: function($super) {
+
+		var docObj = $super();
+
+		return docObj;
+	}
+
 });
 
 Object.subclass("CDB.ChangeSet", CDB.Logger.prototype, {
