@@ -113,8 +113,8 @@ Object.subclass('ProtoVisDrawing',
 	setPosition: function(pos) {
 		var c = this.canvas();
 		if (!c) return;
-		c.style.left = pox.x + 'px';
-		c.style.top = pox.y + 'px';
+		c.style.left = pos.x + 'px';
+		c.style.top = pos.y + 'px';
 	},
 },
 'rendering', {
