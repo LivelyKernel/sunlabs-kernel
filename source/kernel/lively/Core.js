@@ -395,8 +395,8 @@ Global.Converter = {
 Global.NodeFactory = {
 
     createNS: function(ns, name, attributes) {
-	var element = Global.document.createElementNS(ns, name);
-	return NodeFactory.extend(ns, element, attributes);
+		var element = Global.document.createElementNS(ns, name);
+		return NodeFactory.extend(ns, element, attributes);
     },
 
     create: function(name, attributes) {
@@ -1419,11 +1419,13 @@ Object.subclass('MouseHandlerForDragging', {
 
 Object.subclass('MouseHandlerForRelay', {
 
+	defaultEventSpec: {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"},
+	
 	initialize: function (target, eventSpec) {
 		//  Send events to a different target, with different methods
 		//    Ex: box.relayMouseEvents(box.owner, {onMouseUp: "boxReleased", onMouseDown: "boxPressed"})
 		this.target = target;
-		this.eventSpec = eventSpec || {onMouseDown: "onMouseDown", onMouseMove: "onMouseMove", onMouseUp: "onMouseUp"};
+		this.eventSpec = eventSpec || this.defaultEventSpec;
 	},
 
 	handleMouseEvent: function(evt, originalTarget) {
@@ -1673,6 +1675,7 @@ Morph.addMethods('settings', {
     // setup various things 
 	initializeTransientState: function() { 
 		this.fullBounds = null; // a Rectangle in owner coordinates
+		this.priorExtent = this.innerBounds().extent();
 		// this includes the shape as well as any submorphs
 		// cached here and lazily computed by bounds(); invalidated by layoutChanged()
 
@@ -2070,6 +2073,8 @@ Morph.addMethods('settings', {
 
 			if (spec.focusHaloBorderWidth !== undefined) this.focusHaloBorderWidth = spec.focusHaloBorderWidth;
 			if (spec.focusHaloInset !== undefined) this.focusHaloInset = spec.focusHaloInset;
+			if (spec.padding !== undefined) this.padding = spec.padding;
+			if (spec.margin !== undefined) this.margin = spec.margin;
 		}
 		return this;
 	},
@@ -2286,7 +2291,7 @@ Morph.addMethods('settings', {
 			return this.shape.reshape(partName,newPoint,lastCall);
 		} finally {
 			// FIXME: consider converting polyline to polygon when vertices merge.
-			this.adjustForNewBounds();
+			if (this.layoutManager && this.layoutManager.onReshape) this.layoutManager.onReshape(this);
 		}
 	}.wrap(Morph.onLayoutChange('shape')),
 
@@ -2311,6 +2316,11 @@ Morph.addMethods('settings', {
 
 },
 'layouting',{
+
+    // FIXME: this doesn't account properly for border width
+    // the CSS box model, see http://www.w3.org/TR/REC-CSS2/box.html    
+    padding: new Rectangle(0, 0, 0, 0), // between morph borders and its content (inwards)
+    margin: new Rectangle(0, 0, 0, 0), // between morph border and its siblings
     
 	layoutManager: null, // singleton, intialzided later
 
@@ -2402,7 +2412,9 @@ Morph.addMethods('settings', {
 	},
     
     // innerBounds returns the bounds of this morph only, and in local coordinates
-    innerBounds: function() {  return this.shape.bounds() },
+    innerBounds: function() { 
+        return this.shape.bounds().insetByRect(this.padding);
+    },
     
 	localBorderBounds: function(optTfm) {
 		// defined by the external edge of the border
@@ -3664,9 +3676,11 @@ Morph.addMethods('settings', {
 	showMorphMenu: function(evt) {
 		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner)
 			evt.hand.lastMorphMenu.remove(); // cleanup old open menus
-		var menu = this.morphMenu(evt),
-			menuCaption = this.toString();
-		menu.openIn(this.world(), evt.point(), false, menuCaption); 
+		var world = this.world(),
+			menu = this.morphMenu(evt),
+			menuCaption = this.toString(),
+			captionClickAction = world.prompt.bind(world).curry('edit name', this.setName.bind(this), this.getName());
+		menu.openIn(world, evt.point(), false, menuCaption, captionClickAction); 
 		evt.hand.lastMorphMenu = menu;
 	},
 
@@ -5380,7 +5394,7 @@ PasteUpMorph.subclass("WorldMorph",
 		var self = this;
 		this.prompt('new world title', function(input) {
 			document.title = input;
-		});
+		}, document.title);
 	},
 },
 /**
@@ -6593,30 +6607,9 @@ Morph.subclass('BoxMorph', {
 
     documentation: "Occupies a rectangular area of the screen, can be laid out",
 
-    // FIXME: this doesn't account properly for border width
-    // the CSS box model, see http://www.w3.org/TR/REC-CSS2/box.html    
-    padding: new Rectangle(0, 0, 0, 0), // between morph borders and its content (inwards)
-    margin: new Rectangle(0, 0, 0, 0), // between morph border and its 
-
     initialize: function($super, initialBounds) {
 		$super(new lively.scene.Rectangle(initialBounds));
     },
-        // ??
-    innerBounds: function() { 
-        return this.shape.bounds().insetByRect(this.padding);
-    },
-
-	applyStyle: function($super, spec) { // no default actions, note: use reflection instead?
-		$super(spec);
-		if (!spec) {
-			throw new TypeError('spec is undefined in applyStyle');		
-		}
-		if (spec.padding !== undefined) {
-			if (!(spec.padding instanceof Rectangle)) 
-				throw new TypeError(spec.padding + ' not a Rectangle');
-			this.padding = spec.padding;
-		}
-	}
 
 });
 
@@ -7078,9 +7071,14 @@ Invocation.subclass('SchedulableAction', {
  *
  */
 Object.subclass('LayoutManager',
+'testing', {
+	layoutAllowed: function() { return LayoutManager.layoutAllowed() },
+},
 'layouting', {
 	layout: function(supermorph) {},
-
+	onReshape: function(morph) {
+		morph.adjustForNewBounds();
+	},
 },
 'positioning', {
 	positionForInsert: function(morph, ownerMorph) {
@@ -7193,9 +7191,25 @@ Object.subclass('LayoutManager',
 	},
 });
 
+Object.extend(LayoutManager, {
+	defaultInstance: new LayoutManager(),
+	fromLiteral: function(literal) { return this.defaultInstance },
+
+	layoutAllowed: function() { return !this.suppressLayout },
+	noLayoutDuring: function(callback) {
+		this.suppressLayout = true;
+		try {
+			callback();
+		} finally {
+			this.suppressLayout = false
+		};
+	},
+});
+
 LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 
 	layout: function(supermorph) {
+		if (!this.layoutAllowed()) return;
 		var x = this.leftPaddingOf(supermorph),
 			y =  this.topPaddingOf(supermorph),
 			height = supermorph.getExtent().y - this.bottomPaddingOf(supermorph)
@@ -7211,28 +7225,22 @@ LayoutManager.subclass('HorizontalLayout',  { // alignment more than anything
 		}
 	},
 	
-
-	
-
-
-
-
-
-
 });
 
 Morph.addMethods('default layout manager', {
-	layoutManager: new LayoutManager()
+	layoutManager: LayoutManager.defaultInstance,
 });
 
 Object.extend(HorizontalLayout, { 
-	fromLiteral: function(literal) { return new this() } 
+	defaultInstance: new HorizontalLayout(),
+	fromLiteral: function(literal) { return this.defaultInstance }, 
 })
 
 
 LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 
 	layout: function(supermorph) {
+		if (!this.layoutAllowed()) return;
 		var x = this.leftPaddingOf(supermorph),
 			y =  this.topPaddingOf(supermorph),
 			submorphs = supermorph.visibleSubmorphs();
@@ -7249,7 +7257,8 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 });
 
 Object.extend(VerticalLayout, { 
-	fromLiteral: function(literal) { return new this() } 
+	defaultInstance: new VerticalLayout(),
+	fromLiteral: function(literal) { return this.defaultInstance }, 
 })
 
 console.log('loaded Core.js');
