@@ -269,20 +269,21 @@ TextMorph.addMethods('SyntaxHighlight',{
 
 	highlightJavaScriptSyntaxFromTo: function(from, to) {
 		this.simpleEmphasizeFromTo({Color: Color.black, style: 'unbold'}, from, to)
-		var string = this.textString.substring(from,to)
+		var string = this.textString.substring(from,to),
+			style = this.textStyle,
+			highlighterRules = SyntaxHighlighter.JavaScriptRules;
 		// var style = new RunArray([s.length],	[new TextEmphasis({})]);
-		var style = this.textStyle;
-
-		Properties.own(SyntaxHighlighter.JavaScriptRules).each(function(ea) {
-			var rule = SyntaxHighlighter.JavaScriptRules[ea];
-			// var exp = new RegExp(r.match);
-			var exp = rule.match;
-			var m;
+		
+		for (var ruleName in highlighterRules) {
+			if (!highlighterRules.hasOwnProperty(ruleName)) continue;
+			var rule = highlighterRules[ruleName],
+				exp = rule.match, m;
 			while(m = exp.exec(string)) {
 				// this.emphasizeFromTo(rule.style, from + m.index, from + m.index + m[0].length - 1 )
 				style = style.simpleMergeStyle(new TextEmphasis(rule.style), from + m.index, from + m.index + m[0].length - 1) // TODO ckeck "-1"
 			}
-		}, this);
+		};
+
 		// override all other styles... to be refactored
 		// this.textStyle =  this.textStyle.mergeStyle(style, from, to)	
 		this.textStyle = style.coalesce();
@@ -296,10 +297,10 @@ TextMorph.addMethods('SyntaxHighlight',{
 
 	delayedSyntaxHighlighting: function(optFrom, optTo) {
 		// console.log("delayedSyntaxHig...." + optFrom + "," + optTo)
-		var string = this.textString;
-		var self = this;
-		var from = optFrom || 0;
-		var to = optTo || self.textString.length;			
+		var string = this.textString,
+			self = this,
+			from = optFrom || 0,
+			to = optTo || self.textString.length;			
 
 		this.highlightJavaScriptMinFrom = Math.min(this.highlightJavaScriptMinFrom, from) || from
 		this.highlightJavaScriptMaxTo = Math.max(this.highlightJavaScriptMaxTo, to) || to
@@ -374,11 +375,11 @@ cop.create("SyntaxHighlightLayer").refineClass(TextMorph, {
 }).refineClass(lively.ide.BasicBrowser, {
 
 	hightlightSourcePane: function() {
-		var m= this.panel.sourcePane.innerMorph();
+		var m = this.panel.sourcePane.innerMorph();
 		if (m.textString.length < 10000) {
 			try {
-				var time = Functions.timeToRun(function(){m.highlightJavaScriptSyntax()});
-				// m.delayedSyntaxHighlighting();
+				// var time = Functions.timeToRun(function(){m.highlightJavaScriptSyntax()});
+				m.delayedSyntaxHighlighting();
 			} catch (er) {
 				console.log("Error during Syntax Highligthing " + er)
 			}
