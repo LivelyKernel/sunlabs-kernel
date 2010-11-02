@@ -39,22 +39,22 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		var expected = 'http://localhost/webwerkstatt/';
 		this.assertEqual(expected, result.toString());
 	},
-testRemoveRelativeParts3: function() {
+
+	testRemoveRelativeParts3: function() {
 		var urlString = 'http://localhost/foo//bar';
 		var result = new URL(urlString).withRelativePartsResolved();
 		var expected = 'http://localhost/foo/bar';
 		this.assertEqual(expected, result.toString());
 	},
-testRemoveRelativeParts4: function() {
+
+	testRemoveRelativeParts4: function() {
 		var urlString = 'http://localhost/foo/./bar';
 		var result = new URL(urlString).withRelativePartsResolved();
 		var expected = 'http://localhost/foo/bar';
 		this.assertEqual(expected, result.toString());
 	},
 
-
-
-	testRelativePartsFrom: function() {
+	testRelativePathFrom1: function() {
 		var expected = 'test/bar/baz';
 		
 		var url1 = new URL('http://www.foo.org/test/bar/baz');
@@ -71,6 +71,19 @@ testRemoveRelativeParts4: function() {
 			result = url1.relativePathFrom(url2);
 		} catch (e) { return }
 		this.assert(false, 'error expected')
+	},
+
+	testRelativePathFrom2: function() {
+		var expected = '../test/bar/baz';
+		
+		var url1 = new URL('http://www.foo.org/test/bar/baz');
+		var url2 = new URL('http://www.foo.org/bar/');
+		var result = url1.relativePathFrom(url2);
+		this.assertEqual(expected, result.toString());
+
+		expected = '../../bar/';
+		result = url2.relativePathFrom(url1);
+		this.assertEqual(expected, result.toString());
 	},
 	
 	testMakeProxy: function() {
@@ -211,7 +224,12 @@ TestCase.subclass('Tests.NetworkTest.WebResourceTest', {
 		this.assert(rev1< rev2);
 	},
 
-
+	testGetResponseHeaders: function() {
+		var sut = new WebResource(this.plainTextFileURL);
+		sut.get();
+		this.assertEquals(typeof sut.responseHeaders, 'object', 'Response headers were not defined.');
+		this.assertEquals(sut.responseHeaders['Content-Type'], 'text/plain', 'No response header "Content-Type" with  value "text/plain" was found!');
+	},
 
 });
 

@@ -223,21 +223,24 @@ TestCase.subclass('Tests.ClassTest.ModuleRelatedClassTests',
 	setUp: function($super) {
 		$super();
 		this.createdClasses = [];
+		this.createdModules = [];
 	},
 	tearDown: function($super) {
 		$super();
-		this.createdClasses.forEach(function(klass) {
-			var ns = Class.namespaceFor(klass.type || klass.name);
-			delete ns[klass.name];
-		})
+		this.createdClasses.invoke('remove');
+		this.createdModules.invoke('remove');
 	},
 },
 'helper', {
 	createModule: function(/*name, callback, ...*/) {
-		var args = $A(arguments),
-			name = args.shift();
-		module(name).requires().toRun(function() {
-			args.forEach(function(callback) { callback() });
+		var test = this,
+			args = $A(arguments),
+			name = args.shift(),
+			m = module(name);
+		m._isLoaded = true;
+		this.createdModules.push(m);
+		m.requires().toRun(function() {
+			args.forEach(function(callback) { callback.call(test) });
 		});
 	},
 	createDummyClass: function(no) {
@@ -270,8 +273,14 @@ TestCase.subclass('Tests.ClassTest.ModuleRelatedClassTests',
 			this.createDummyClass.curry(1));
 		var klass1 = this.getDummyClass(1),
 			klass2 = this.getDummyClass(2);
-		this.assertEquals(module(moduleName2).namespaceIdentifier, klass2.sourceModule.namespaceIdentifier);
-		this.assertEquals(module(moduleName1).namespaceIdentifier, klass1.sourceModule.namespaceIdentifier);
+		this.assert(klass1, 'klass1 not set');
+		this.assert(klass2, 'klass2 not set');
+		var sourceModule1 = klass1.sourceModule,
+			sourceModule2 = klass2.sourceModule;
+		this.assert(sourceModule1, 'sourceModule1 not set');
+		this.assert(sourceModule2, 'sourceModule2 not set');
+		this.assertEquals(module(moduleName1).namespaceIdentifier, sourceModule1.namespaceIdentifier, '1');
+		this.assertEquals(module(moduleName2).namespaceIdentifier, sourceModule2.namespaceIdentifier, '2');
 	},
 	testGlobalCanBeRequired: function() {
 		require('Global').toRun(function() { this.works = true }.bind(this))

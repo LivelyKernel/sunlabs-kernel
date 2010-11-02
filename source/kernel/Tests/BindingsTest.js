@@ -268,17 +268,14 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		this.assertEqual(5, result, 'method connection not working');
 	},
 	test25DoubleConnectTwoMethods: function() {
-		var obj1 = {m1: function() { return 3 }};
-		var obj2 = {m2: function(val) { return val + 2 }};
-		var obj3 = {m3: function(val) { return val * 2 }};
+		var obj1 = {m1: function() { return 3 }},
+			obj2 = {m2: function(val) { return val + 2 }},
+			obj3 = {m3: function(val) { return val * 2 }},
+			m1 = obj1.m1,
+			con1 = connect(obj1, 'm1', obj2, 'm2'),
+			con2 = connect(obj1, 'm1', obj3, 'm3'),
+			result = obj1.m1();
 
-		var m1 = obj1.m1;
-
-		var con1 = connect(obj1, 'm1', obj2, 'm2');
-		var con2 = connect(obj1, 'm1', obj3, 'm3');
-
-		var result;
-		result = obj1.m1();
 		this.assertEqual(10, result, 'double method connection not working');
 
 		con1.disconnect();
@@ -292,12 +289,11 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		this.assertIdentity(m1, obj1.m1, 'original method was not restored after method connection');
 	},
 	test26TransitiveMethodConnect: function() {
-		var obj1 = {m1: function() { return 3 }};
-		var obj2 = {m2: function(val) { return val + 2 }};
-		var obj3 = {m3: function(val) { return val * 2 }};
-
-		var con1 = connect(obj1, 'm1', obj2, 'm2');
-		var con2 = connect(obj2, 'm2', obj3, 'm3');
+		var obj1 = {m1: function() { return 3 }},
+			obj2 = {m2: function(val) { return val + 2 }},
+			obj3 = {m3: function(val) { return val * 2 }},
+			con1 = connect(obj1, 'm1', obj2, 'm2'),
+			con2 = connect(obj2, 'm2', obj3, 'm3');
 
 		var result = obj1.m1();
 		this.assertEqual(10, result, 'double method connection not working');
@@ -311,13 +307,11 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		this.assertEqual(2, obj3.m3(1), 'after con2 disconnect m3');
 	},
 	test27ConnectMethodToArribute: function() {
-		var obj1 = {m1: function() { return 3 }};
-		var obj2 = {x: null};
-
+		var obj1 = {m1: function() { return 3 }}, obj2 = {x: null};
 		connect(obj1, 'm1', obj2, 'x');
-
-		var result = obj1.m1();
-		this.assertEqual(3, result, 'connected attribute not set correctly');
+		var r = obj1.m1();
+		this.assertEqual(3, r, 'result not correct');
+		this.assertEqual(3, obj2.x, 'connected attribute not set correctly');
 	},
 
 
