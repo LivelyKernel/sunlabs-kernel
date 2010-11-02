@@ -383,6 +383,7 @@ Morph.addMethods('plugs', {
 		// experimental protocol
 		// This message preserves the model-view "plug" API of MVC's pluggable views,
 		// while using the "direct connect" form of change notification
+		// {dir: String, name: String, options: Object}
 		var view = this;
 
 		function parseStringSpec(stringSpec) {
