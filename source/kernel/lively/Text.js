@@ -1226,6 +1226,8 @@ BoxMorph.subclass('TextMorph',
 		return this;
 	},
 
+	listItemMargin: Rectangle.inset(0,1.5,0,0),
+
 	beListItem: function() {
 		// specify padding, otherwise selection will overlap
 		this.applyStyleDeferred({
@@ -1240,6 +1242,7 @@ BoxMorph.subclass('TextMorph',
 		this.suppressGrabbing = true;
 		this.focusHaloBorderWidth = 0;
 		this.drawSelection = Functions.Empty; // TODO does not serialize
+		this.margin = this.listItemMargin;
 		return this;
 	},
 	
