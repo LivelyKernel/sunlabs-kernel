@@ -1676,37 +1676,67 @@ BoxMorph.subclass("TextListMorph",
 });
 
 // it should be the other way round...
-TextListMorph.subclass("ListMorph", {
-
+TextListMorph.subclass("ListMorph",
+'documentation', {
     documentation: 'Can handle list items, not only strings. '
 		+ '{isListItem: true, string: string, value: object, onDrag: function, onDrop: function}',
     connections: ['itemList', 'selection', 'selectedLineNo'],
+},
+'settings', {
 	focusHaloBorderWidth: 0, // dont show focus
-	
+},
+'initializing', {
+
     initialize: function($super, initialBounds, itemList, optPadding, optTextStyle, suppressSelectionOnUpdate) {
         $super(initialBounds, itemList, optPadding, optTextStyle)
         this.suppressSelectionOnUpdate = suppressSelectionOnUpdate;
     },
-    
-    generateListItem: function(value, rect) {
-        if (this.itemPrinter)
-            value = this.itemPrinter(value);
-        return new TextMorph(rect, value.string /*fix for Fabrik XMLStringArray, use itemPrinter*/ 
-			|| value.toString()).beListItem();
-    },
+},
+'private list manipulation', {
+	removeNotNeededListItems: function(newList) {
+		var morphsToRemove = this.submorphs.slice(newList.length);
+		LayoutManager.noLayoutDuring(function() {
+			morphsToRemove.invoke('remove')
+		});
+	},
 
-    generateSubmorphs: function(itemList) {
-        var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle();
-        for (var i = 0; i < itemList.length; i++)  {
-            var m = this.generateListItem(itemList[i], rect);
-            if (this.textStyle) m.applyStyle(this.textStyle);
-            this.addMorph(m);
-            m.closeDnD();
-            m.relayMouseEvents(this);
-			m.morphMenu = this.morphMenu.bind(this);
-        }
-    },
-    
+	generateListItem: function(value, rect, existingListItem) {
+		if (this.itemPrinter) value = this.itemPrinter(value);
+		value = value.string /*fix for Fabrik XMLStringArray, use itemPrinter*/ || value.toString();
+		if (existingListItem !== undefined) {
+			existingListItem.setTextString(value);
+			return existingListItem;
+		}
+		return new TextMorph(rect, value).beListItem();
+	},
+
+	generateSubmorphs: function(itemList) {
+		var rect = pt(this.baseWidth, TextMorph.prototype.fontSize).extentAsRectangle();
+		LayoutManager.noLayoutDuring(function() {
+			for (var i = 0; i < itemList.length; i++)  {
+				var existingListItem = this.submorphs[i],
+					m = this.generateListItem(itemList[i], rect, existingListItem);
+				if (this.textStyle) m.applyStyle(this.textStyle);
+				if (!existingListItem) this.addMorph(m);
+				m.margin = Rectangle.inset(0, 1.5, 0, 0);
+				m.closeDnD();
+				m.relayMouseEvents(this);
+				m.morphMenu = this.morphMenu.bind(this);
+			}
+		}.bind(this));
+		this.relayout();
+	},
+
+	findSubmorphAtPosition: function(pos) {
+		for(var i=0; i< this.submorphs.length; i++) {
+			var m = this.submorphs[i];	
+			if (m.containsPoint(pos)) return m;
+		}
+	},
+
+},
+'selection', {
+ 
     selectLineAt: function(lineNo, shouldUpdateModel) {  
         if (this.selectedLineNo in this.submorphs)
             this.submorphs[this.selectedLineNo].setFill(this.savedFill);
@@ -1745,19 +1775,24 @@ TextListMorph.subclass("ListMorph", {
         return $super(item.isListItem ? item.string : item);
     },
     
-    
-    updateList: function($super, newList) {
-        $super(newList);
-        this.suppressSelectionOnUpdate || this.selectLineAt(this.selectedLineNo);
+},
+'list interface', {
+
+	updateList: function(newList) {
+		// FIXME duplication with superclass ------ REFACTOR!!!!
+		if(!newList || newList.length == 0) newList = ["-----"]; // jl 2008-08-02 workaround... :-(
+        var priorItem = this.getSelection();
+        this.itemList = newList;
+
+        this.removeNotNeededListItems(newList);
+        this.generateSubmorphs(newList);
+
+        this.setSelectionToMatch(priorItem)
+        this.resetScrollPane();
     },
 
-
-	findSubmorphAtPosition: function(pos) {
-		for(var i=0; i< this.submorphs.length; i++) {
-			var m = this.submorphs[i];	
-			if (m.containsPoint(pos)) return m;
-		}
-	},
+},
+'mouse events', {
 	
 	morphToGrabOrReceive: function(evt, droppingMorph, checkForDnD) {
 		// If checkForDnD is false, return the morph to receive this mouse event (or null)
@@ -2004,15 +2039,22 @@ DragnDropListMorph.subclass('FilterableListMorph', {
 
 	applyFilter: function(items) {
 		if (!this.filter) return items;
-		return items.select(function(item) {
-			return this.filter.test(item.string);
-		}, this);
+		var result = [];
+		for (var i = 0; i < items.length; i++) {
+			var item = items[i];
+			if (this.filter.test(item.string)) result.push(item);
+		}
+		return result;
 	},
 
 	filteredItemList: function() {
 		return this.applyFilter(this.itemList);
 	},
 
+	removeNotNeededListItems: function($super, newList) {
+		$super(this.applyFilter(newList));
+	},
+	
 	generateSubmorphs: function($super, itemList) {
 		$super(this.applyFilter(this.itemList))
 	},
@@ -2329,7 +2371,7 @@ Morph.subclass("MenuMorph",
 	},
 
 },'morphic',{	
-	openIn: function(parentMorph, loc, remainOnScreen, captionIfAny) { 
+	openIn: function(parentMorph, loc, remainOnScreen, captionIfAny, optCaptionClickAction) { 
 		if (this.items.length == 0) return;
 
 		// Note: on a mouseDown invocation (as from a menu button),
@@ -2379,30 +2421,36 @@ Morph.subclass("MenuMorph",
 			var label = TextMorph.makeLabel(captionIfAny, this.labelStyle);
 			label.align(label.bounds().bottomCenter(), this.listMorph.shape.bounds().topCenter());
 			this.label = this.addMorph(label);
-			this.label.setFill(new lively.paint.LinearGradient([new lively.paint.Stop(0, Color.white),
-								new lively.paint.Stop(1, Color.gray)]));
+			this.label.setFill(new lively.paint.LinearGradient(
+				[new lively.paint.Stop(0, Color.white),
+				new lively.paint.Stop(1, Color.gray)]));
+			if (optCaptionClickAction) {
+				label.enableEvents();
+				label.suppressHandles = true;
+				this.captionClickAction = optCaptionClickAction;
+			}
 		}
 
 		// If menu and/or caption is off screen, move it back so it is visible
-		var menuRect = this.bounds();  //includes caption if any
-		var bounds = (this.world() || WorldMorph.current()).visibleBounds();
-		var visibleRect = menuRect.intersection(bounds);
-		var delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
+		var menuRect = this.bounds(),  //includes caption if any
+			bounds = (this.world() || WorldMorph.current()).visibleBounds(),
+			visibleRect = menuRect.intersection(bounds),
+			delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
 		delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
 		if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
 
 		this.listMorph.relayMouseEvents(this);
 		// Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
 		if (!remainOnScreen) {
-		var hand = parentMorph.world().firstHand();
-		hand.setMouseFocus(this);
+			var hand = parentMorph.world().firstHand();
+			hand.setMouseFocus(this);
 			hand.setKeyboardFocus(this.listMorph);
 		}
 	},
 	
 	selectedItemIndex: function(evt) {
-		var target = this.listMorph.morphToReceiveEvent(evt);
-		var index = this.listMorph.submorphs.indexOf(target);
+		var target = this.listMorph.morphToReceiveEvent(evt),
+			index = this.listMorph.submorphs.indexOf(target);
 		if (index === -1) return null;
 		return index;
 	},
@@ -2450,12 +2498,15 @@ Morph.subclass("MenuMorph",
 			this.setMouseFocus(evt);
 			return true; // do nothing on a click...
 		}
-	
+
 		if (!this.invokeItemAtIndex(evt, this.selectedItemIndex(evt)) && !this.stayUp)
 			this.setMouseFocus(evt); // moved away, don't lose the focus
 	},
 
 	onMouseDown: function(evt) {
+		if (this.label && this.captionClickAction && this.morphToReceiveEvent(evt) === this.label)
+			this.captionClickAction(evt);
+
 		if (this.selectedItemIndex(evt) === null && !this.stayUp)
 			this.removeOnEvent(evt);
 	},
@@ -4268,8 +4319,10 @@ BoxMorph.subclass("TitleBarMorph",
 	},
 	
 	setTitle: function(string) {
+		string = String(string).truncate(90);
 		this.label.setTextString(string);
-		this.adjustForNewBounds();  // This will align the buttons and label properly
+		// FIXME too slow!!!
+		// this.adjustForNewBounds();  // This will align the buttons and label properly
 	},
 
 	hightlightAllButtons: function(trueForShow) {
@@ -4530,8 +4583,10 @@ Morph.subclass('WindowMorph', {
         this.collapsedTransform = this.getTransform();
         this.collapsedExtent = this.innerBounds().extent();
 		this.collapsedPosition = this.position();
-        var finExpand = function () {	
-			this.setTransform(this.expandedTransform); 
+        var finExpand = function () {
+			// MR: added a fix for collapsed, save windows, made it optional
+			if (this.expandedTransform)
+				this.setTransform(this.expandedTransform); 
 			this.targetMorph.setVisible(true);
 			// enable events if they weren't disabled in expanded form
 			if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
