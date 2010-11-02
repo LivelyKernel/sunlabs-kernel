@@ -346,13 +346,18 @@ Widget.subclass('lively.ide.BasicBrowser',
 	},
 
 	selectNodeMatching: function(testFunc) {
-	for (var i = 0; i < this.allPaneNames.length; i++) {
-		var paneName = this.allPaneNames[i];
-		var node = this.inPaneSelectNodeMatching(paneName, testFunc);
-		if (node) return node;
-	}
-	return null;
-},
+		for (var i = 0; i < this.allPaneNames.length; i++) {
+			var paneName = this.allPaneNames[i];
+			var node = this.inPaneSelectNodeMatching(paneName, testFunc);
+			if (node) return node;
+		}
+		return null;
+	},
+	selectNodeNamed: function(name) {
+		return this.selectNodeMatching(function(node) {
+			return node && node.asString && node.asString().include(name);
+		});
+	},
 
     onPane1SelectionUpdate: function(node) {
 
