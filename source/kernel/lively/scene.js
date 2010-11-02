@@ -2564,6 +2564,7 @@ this.Node.subclass('lively.scene.Clip', {
 	},
 
 	setClipShape: function(shape) {
+		if (shape === this.shape) return;
 		this.shape = shape.copy(); // FIXME: target.outline() ?
 		this.replaceRawNodeChildren(this.shape.rawNode);
 	},
