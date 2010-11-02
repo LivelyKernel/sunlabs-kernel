@@ -167,9 +167,26 @@ Object.subclass('URL', {
 	},
 
 	relativePathFrom: function(origin) {
-		if (!this.pathname.startsWith(origin.pathname)  || origin.normalizedHostname() != this.normalizedHostname())
+		function checkPathes(path1, path2) {
+			var paths1 = path1.split('/');
+			var paths2 = path2.split('/');
+
+			paths1.shift();
+			paths2.shift();
+
+			for (var i = 0; i < paths2.length; i++) {
+				if (!paths1[i] || (paths1[i] != paths2[i]))
+					break;
+			}
+
+			var result = '../'.times(paths2.length - i - 1) + paths1.splice(i).join('/');
+			return result;
+		}
+
+		var relPath;
+		if (origin.normalizedHostname() != this.normalizedHostname() || !(relPath = checkPathes(this.withRelativePartsResolved().pathname, origin.withRelativePartsResolved().pathname)))
 			throw new Error('bad origin ' + origin + ' vs ' + this);
-		return this.pathname.substring(origin.pathname.length);
+		return relPath;
 	},
 
 	svnWorkspacePath: function() {
@@ -343,6 +360,7 @@ View.subclass('NetRequest', {
 		"+ReadyState", // Updated on every state transition of the request.
 		"+ResponseXML", // Updated at most once, when request state is {Done}, with the parsed XML document retrieved.
 		"+ResponseText", // Updated at most once, when request state is {Done}, with the text content retrieved.
+		"+ResponseHeaders",  // Updated at most once, when request state is {Done}, with the response headers retrieved.
 		"StreamContent",
 		"Progress",
 	],
@@ -402,6 +420,8 @@ View.subclass('NetRequest', {
 				this.setResponseText(this.getResponseText());
 			if (this.transport.responseXML) 
 				this.setResponseXML(this.getResponseXML());
+			if (this.transport.getAllResponseHeaders())
+				this.setResponseHeaders(this.getResponseHeaders());
 			this.disconnectModel(); // autodisconnect?
 		}
 	},
@@ -429,6 +449,20 @@ View.subclass('NetRequest', {
 
 	getResponseXML: function() {
 		return this.transport.responseXML || "";
+	},
+
+	getResponseHeaders: function() {
+		var headerString = this.transport.getAllResponseHeaders();
+		var headerObj = {};
+		headerString.split('\r\n').each(function(ea) {
+			var splitter = ea.indexOf(':');
+			if (splitter != -1) {
+				headerObj[ea.slice(0, splitter)] = ea.slice(splitter + 1).trim();
+				// as headers should be case-insensitiv, add lower case headers (for Safari)
+				headerObj[ea.slice(0, splitter).toLowerCase()] = ea.slice(splitter + 1).trim();
+			}
+		});
+		return headerObj;
 	},
 
 	getStatus: function() {
@@ -634,6 +668,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 		"ContentText", //:String
 		"URL", // :URL
 		"RequestStatus", // :NetRequestStatus
+		"ResponseHeaders",
 		"Progress",
 	],
 
@@ -676,6 +711,7 @@ View.subclass('Resource', NetRequestReporterTrait, {
 			ResponseXML: "+ContentDocument", 
 			ResponseText: "+ContentText", 
 			Status: "+RequestStatus",
+			ResponseHeaders: "+ResponseHeaders",
 			Progress: "+Progress"}, this));
 		if (sync) req.beSync();
 		if (this.contentType) req.setContentType(this.contentType);
@@ -1270,6 +1306,7 @@ WebResource.addMethods({
 					setRequestStatus: function(reqStatus) { self.status = reqStatus; self.isExisting = reqStatus.isSuccess() },
 					setContentText: function(string) { self.content = string },
 					setContentDocument: function(doc) { self.contentDocument = doc },
+					setResponseHeaders: function(obj) { self.responseHeaders = obj },
 					setProgress: function(progress) { self.progress = progress },
 					setHeadRevision: function(rev) { self.headRevision = rev },
 					getHeadRevision: function() { return self.headRevision },
@@ -1280,6 +1317,7 @@ WebResource.addMethods({
 				setRequestStatus: 'setRequestStatus',
 				setContentText: 'setContentText',
 				setContentDocument: 'setContentDocument',
+				setResponseHeaders: 'setResponseHeaders',
 				setProgress: 'setProgress',
 				setHeadRevision: 'setHeadRevision',
 				getHeadRevision: 'getHeadRevision',
@@ -1297,6 +1335,7 @@ WebResource.addMethods({
 					setStatus: function(reqStatus) { self.status = reqStatus; self.isExisting = reqStatus.isSuccess() },
 					setResponseText: function(string) { self.content = string },
 					setResponseXML: function(doc) { self.contentDocument = doc },
+					setResponseHeaders: function(obj) { self.responseHeaders = obj },
 					setReadyState: function(readyState) { self.readystate = readyState },
 					setProgress: function(progress) { self.progress = progress },
 					setStreamContent: function(content) { self.content = content },
@@ -1304,6 +1343,7 @@ WebResource.addMethods({
 				setStatus: 'setStatus',
 				setResponseText: 'setResponseText',
 				setResponseXML: 'setResponseXML',
+				setResponseHeaders: 'setResponseHeaders',
 				setReadyState: 'setReadyState',
 				setProgress: 'setProgress',
 				setStreamContent: 'setStreamContent',
