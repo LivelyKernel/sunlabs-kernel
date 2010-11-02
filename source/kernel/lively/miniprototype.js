@@ -127,6 +127,7 @@ Object.extend(Function.prototype, {
       return wrapper.apply(this, wrapperArgs);
     }
 	wrappedFunc.isWrapper = true;
+	wrappedFunc.originalFunction = __method;
 	return wrappedFunc;
   }
 
