@@ -30,6 +30,9 @@ Morph.addMethods('serialization', {
 })
 
 TextMorph.addMethods('serialization', {
+
+	doNotSerialize: TextMorph.prototype.doNotSerialize.concat(['undoHistory']),
+
 	onrestore: function($super) {
 		$super();
 		if (this.rawNode && this.textContent.rawNode) {
