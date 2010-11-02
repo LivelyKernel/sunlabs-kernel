@@ -549,6 +549,12 @@ addCategorizedMethods: function(categoryName, source) {
 				return categoryName;
 		return null;
 	},
+	remove: function() {
+		var ownerNamespace = Class.namespaceFor(this.type),
+			ownName = Class.unqualifiedNameFor(this.type);
+		delete ownerNamespace[ownName];
+	},
+
 });
 
 var Class = {
@@ -804,7 +810,13 @@ var Strings = {
 	withDecimalPrecision: function Strings$withDecimalPrecision(str, precision) {
 		var floatValue = parseFloat(str);
 		return isNaN(floatValue) ? str : floatValue.toFixed(precision);
-	}
+	},
+
+	indent: function(str, indentString, depth) {
+		var indent = range(0, depth).collect(function(i){ return indentString }).join("");
+		return indent + str;
+	},
+
 };
 
 
@@ -1073,6 +1085,12 @@ Namespace.addMethods({ // module specific, should be a subclass?
 			throw new Error('Wrong module: ' + this.namespaceIdentifier +
 				' instead of expected ' + m.namespaceIdentifier )
 	},
+	remove: function() {
+		var ownerNamespace = Class.namespaceFor(this.namespaceIdentifier),
+			ownName = Class.unqualifiedNameFor('Tests.ClassTest.DummyModule1')
+		delete ownerNamespace[ownName];
+	},
+
 	
 	toString: function() {
 			return 'namespace(' + this.namespaceIdentifier +
