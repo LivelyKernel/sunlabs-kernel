@@ -72,10 +72,11 @@ var JSLoader = {
 		var parentNode = this.findParentScriptNode();
 
 		var exactUrl = url;
-		if (true || Config.disableScriptCaching)
-			exactUrl = (exactUrl.indexOf('?') == -1) ?
-				exactUrl + '?' + new Date().getTime() :
-				exactUrl + '&' + new Date().getTime();
+		if (exactUrl.indexOf('!svn') <= 0)
+			if (true || Config.disableScriptCaching)
+				exactUrl = (exactUrl.indexOf('?') == -1) ?
+					exactUrl + '?' + new Date().getTime() :
+					exactUrl + '&' + new Date().getTime();
 
 		var xmlNamespace = parentNode.namespaceURI;
 
