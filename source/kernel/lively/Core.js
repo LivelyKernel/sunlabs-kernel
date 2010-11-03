@@ -1163,9 +1163,10 @@ Copier.subclass('Importer', {
 			return null;
 		} else {
 			var doc = webRes.contentDocument;
-			console.log("problems to parse  " + URL.source);
-			if (!doc)
+			if (!doc) {
+				console.log("problems to parse  " + URL.source);
 				return null;
+			}
 			this.clearCanvas(doc);
 			return doc;
 		}
