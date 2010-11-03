@@ -2708,14 +2708,16 @@ Morph.addMethods('settings', {
 		var shapes = [], copier = new Copier(), root = this;
 		this.withAllSubmorphsDo(function() {
 			var s = this.shape.copy(copier)
-			if (this !== root) this.getTransform().applyTo(s.rawNode)
+			// if (this !== root) this.getTransform().applyTo(s.rawNode)
+			this.transformForNewOwner(root).applyTo(s.rawNode)
+
 			shapes.push(s)
 
 			if (!this.textContent) return // FIXME, overwrite in TextMorph
 			var s = new lively.scene.Group(); // text nodes parent needs to be a group or other non-graphical object
 			var textNode = this.textContent.copy(copier).rawNode;
 			s.rawNode.appendChild(textNode)
-			this.getTransform().applyTo(s.rawNode)
+			this.transformForNewOwner(root).applyTo(s.rawNode)
 			shapes.push(s);
 		})
 
@@ -5766,6 +5768,7 @@ PasteUpMorph.subclass("WorldMorph",
 						ide.startSourceControl().browseReferencesTo(whatToSearch);
 					});
 				})
+				evt.stop();
 				return true;
 			};
 			if (key == 'b') {
