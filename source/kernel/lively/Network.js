@@ -290,9 +290,9 @@ Object.extend(URL, {
 		var px = this.proxy;
 		if (!px) return url;
 		if (px.normalizedHostname() != url.normalizedHostname()) // FIXME  protocol?
-			return px.withFilename(url.hostname + url.fullPath());
+			return px.withFilename(url.hostname + (url.port ? ':' + url.port : '') + url.fullPath());
 		if (px.port != url.port)
-			return px.withFilename(url.hostname + "/" + url.port + url.fullPath());
+			return px.withFilename(url.hostname + ":" + url.port + url.fullPath());
 		if (px.hostname != url.hostname) // one has prefix www, the other not
 			return new URL({
 				protocol: url.protocol,
