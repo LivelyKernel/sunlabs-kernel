@@ -1376,6 +1376,12 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
 		menu.unshift(['check for redundant klass definitions', function() {
 			node.checkForRedundantClassDefinitions()
 		}]);
+		menu.unshift(['Add to world requirements', function() {
+			var moduleName = module(node.moduleName).namespaceIdentifier;
+			ChangeSet.current().addWorldRequirement(moduleName);
+			alertOK(moduleName + ' added to local requirements');
+		}]);
+
 	return menu;
 },
 
