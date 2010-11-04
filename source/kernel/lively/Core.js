@@ -148,10 +148,15 @@ Object.extend(Global, {
 Object.extend(Global, {
 
 	alert: function(msg) {
-		if (Global.WorldMorph && WorldMorph.current())
-			WorldMorph.current().alert(msg.toString());
-		else
-			console.log('ALERT: ' + msg);
+		var world = Global.WorldMorph && WorldMorph.current()
+		if (world) world.alert(msg.toString());
+		else console.log('ALERT: ' + msg);
+	},
+
+	alertOK: function(msg) {
+		var world = Global.WorldMorph && WorldMorph.current()
+		if (world) world.setStatusMessage(msg.toString(), Color.green, 5);
+		else console.log(msg);
 	},
 
 	onerror: function(message, url, code) {
@@ -1163,10 +1168,9 @@ Copier.subclass('Importer', {
 			return null;
 		} else {
 			var doc = webRes.contentDocument;
-			if (!doc) {
-				console.log("problems to parse  " + URL.source);
+			console.log("problems to parse  " + URL.source);
+			if (!doc)
 				return null;
-			}
 			this.clearCanvas(doc);
 			return doc;
 		}
@@ -5426,16 +5430,16 @@ PasteUpMorph.subclass("WorldMorph",
 				new NetRequest().put(URL.source.withFilename('auth'));
 				// sometimes the wikiBtn seems to break after an authenticate
 				if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
-			["publish world as ... ", function() { this.promptAndSaveWorld() }],
-			["publish world with JSON ... ", function() { this.promptAndSaveWorld(true/*asJson*/) }],
+			["publish world as ... (XML)", function() { this.promptAndSaveWorld() }],
+			["publish world as ... (JSON)", function() { this.promptAndSaveWorld(true/*asJson*/) }],
 		]);
 		if (! this.isProtectedWorld()) { // Global. avoids an error if Network.js not loaded
 			// save but only if it's not the startup world
-			menu.addItem(["save world to current URL (s)", function() { 
+			menu.addItem(["save world (XML)", function() { 
 				menu.remove(); 
 				this.saveWorld();
 			}]);
-			menu.addItem(["save world with JSON", function() { 
+			menu.addItem(["save world (JSON)", function() { 
 				menu.remove(); 
 				this.saveWorldWithJSON();
 			}]);
@@ -5792,8 +5796,8 @@ PasteUpMorph.subclass("WorldMorph",
 				return true;
 			}
 			if (key == 's') { // save
-				if (! this.isProtectedWorld()) {
-					this.saveWorld()
+				if (!this.isProtectedWorld()) {
+					this.saveWorldWithJSON();
 				} else {
 					this.setStatusMessage("Warning: Did not save world, because it is protected!", Color.red, 3)
 				}
