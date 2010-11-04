@@ -2,6 +2,9 @@ module('lively.SmartRefSerialization').requires('lively.TestFramework', 'apps.Pr
 
 
 Object.subclass('ObjectGraphLinearizer',
+'settings', {
+	defaultCopyDepth: 70,
+},
 'initializing', {
 
 	initialize: function() {
@@ -130,8 +133,9 @@ Object.subclass('ObjectGraphLinearizer',
 	},
 
 	copyObjectAndRegisterReferences: function(obj) {
-		if (this.copyDepth > 50) {
+		if (this.copyDepth > this.defaultCopyDepth) {
 			debugger;
+			inspect(obj)
 			throw new Error('Stack overflow while registering objects? ' + obj)
 		}
 		this.copyDepth++
