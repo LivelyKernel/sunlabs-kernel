@@ -1606,17 +1606,20 @@ BoxMorph.subclass("TextListMorph",
 
 	generateSubmorphs: function(itemList) {
 		var rect = pt(this.baseWidth, this.getItemFontSize()).extentAsRectangle();
-		for (var i = 0; i < itemList.length; i++)  {
-			var m = new TextMorph(rect, itemList[i]).beListItem();
-			if (this.textStyle) m.applyStyle(this.textStyle);
-			this.addMorph(m);
-			m.relayMouseEvents(this);
-		}
+		LayoutManager.noLayoutDuring(function() {
+			for (var i = 0; i < itemList.length; i++)  {
+				var m = new TextMorph(rect, itemList[i]).beListItem();
+				if (this.textStyle) m.applyStyle(this.textStyle);
+				this.addMorph(m);
+				m.relayMouseEvents(this);
+			}
+		}.bind(this));
 		// FIXME: border doesn't belong here, doesn't take into account padding.
 		var borderBounds = this.bounds();//.expandBy(this.getBorderWidth()/2);
 		var delta = 2; // FIXME FIXME
 		var newBounds = new Rectangle(delta, 0, borderBounds.width - delta, borderBounds.height + this.padding.bottom());
 		this.shape.setBounds(newBounds);
+		this.relayout();
 	},
 
 	adjustForNewBounds: function($super) {
