@@ -2668,7 +2668,7 @@ Object.subclass('CodeParser', {
             }
             descr = null;
         }
-        
+
         if (this.specialDescr && this.specialDescr.length > 0 &&  (!this.specialDescr.last().subElements().last().isError || !this.changeList.last().isError))
             console.warn('Couldn\'t find end of ' + this.specialDescr.last().type);
             //throw dbgOn(new Error('Couldn\'t find end of ' + specialDescr.last().type));
@@ -2688,9 +2688,9 @@ parseNonFile: function(source) {
 	couldNotGoForward: function(descr, specialDescr) {
 		//dbgOn(true);
 		console.warn('Could not go forward before line ' + this.findLineNo(this.lines, this.ptr));
-		var errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1, this.fileName);
-		var lastAdded = this.changeList.last();
-		var responsible = lastAdded.flattened().detect(function(ea) { return ea.subElements(1) && ea.subElements(1).include(descr) });
+		var	errorDescr = new ide.ParseErrorFileFragment(this.src, null, 'errorDef', this.ptr, this.src.length-1, this.fileName),
+			lastAdded = this.changeList.last(),
+			responsible = lastAdded.flattened().detect(function(ea) { return ea.subElements(1) && ea.subElements(1).include(descr) });
 		if (responsible) {
 		  responsible._subElements.pop();
 		  responsible._subElements.push(errorDescr);
@@ -2699,7 +2699,7 @@ parseNonFile: function(source) {
 		  responsible.pop();
 		  responsible.push(errorDescr);
 		} else {
-		  throw new Error('Couldn\'t find last added descriptor');
+		  console.warn('Couldn\'t find last added descriptor');
 		}
 		this.ptr = errorDescr.stopIndex + 1;
 	},
@@ -3105,7 +3105,9 @@ SourceDatabase.subclass('AnotherSourceDatabase', {
 		var moduleWrapper = this.findModuleWrapperForFileName(fileName)
 		if (!moduleWrapper)
 			throw dbgOn(new Error('Cannot parse for ' + fileName + ' because module is not in SourceControl'));
-		var root = newFileString ? moduleWrapper.parse(newFileString, this) : moduleWrapper.retrieveSourceAndParse(this);
+		var root = newFileString ?
+			moduleWrapper.parse(newFileString, this) :
+			moduleWrapper.retrieveSourceAndParse(this);
 		return root;
 	},
 	
