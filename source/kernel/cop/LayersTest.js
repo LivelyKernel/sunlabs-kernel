@@ -108,19 +108,14 @@ Object.subclass('cop.example.DummyClass', {
 		return cop.proceed() + 1000;
 	},
 	
-	get DummyLayer$e(proceed) {
-		//console.log("get e in DummyLayer procceed=" + proceed);
+	get DummyLayer$e() {
 		return this._DummyLayer_e;
 	},
-	set DummyLayer$e($proceed, v) {
-		// console.log("set e in DummyLayer to " + v);
+	set DummyLayer$e(v) {
 		this._DummyLayer_e = v;
 	},
-	get DummyLayer$m(proceed) {
-		// console.log("get m in DummyLayer procceed=" + proceed);
-		if (!proceed) return; // ocasionally called from the system, without providing 
+	get DummyLayer$m() {
 		return cop.proceed() + " World";
-
 	},
 	h: function() {
 		// console.log("h");
@@ -1026,20 +1021,16 @@ Object.subclass('cop.tests.MyClass', {
 	initialize: function() {
 		this.a = 7;
 	},
-	get MyTestLayer1$a(proceed) {
-		// console.log("get MyLayer1 a");
+	get MyTestLayer1$a() {
 		return this._MyLayer_a;
 	},
-	set MyTestLayer1$a(proceed, v) {
-		// console.log("set MyLayer1 a");
+	set MyTestLayer1$a(v) {
 		this._MyLayer_a = v;
 	},
-	get MyTestLayer2$a(proceed) {
-		// console.log("get MyLayer2 a");
+	get MyTestLayer2$a() {
 		return this._MyLayer2_a;
 	},
-	set MyTestLayer2$a(proceed, v) {
-		// console.log("set MyLayer3 a");
+	set MyTestLayer2$a(v) {
 		this._MyLayer2_a = v;
 	},
 });
@@ -1094,7 +1085,7 @@ TestCase.subclass('cop.LayersTest.LayerStateTest', {
 			get a() {
 				return l1_value;
 			},
-			set a(proceed, value) {
+			set a(value) {
 				l1_value = value;
 			}		
 		});
@@ -1116,7 +1107,7 @@ TestCase.subclass('cop.LayersTest.LayerStateTest', {
 			get a() {
 				return this.l1_value;
 			},
-			set a(proceed, value) {
+			set a(value) {
 				this.l1_value = value;
 			},		
 		});
