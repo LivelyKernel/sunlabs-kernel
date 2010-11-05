@@ -284,12 +284,24 @@ classElemsInCategory =
     /* ometa stuff */
     ometaParameter = ':' name:n spaces       -> n,
     ometaParameters =  ometaParameter*,
-    ometaRuleDef = pos:p name:n spaces ometaParameters:a ('=' | "->") (~',' (chunk('(', ')') |  chunk('{', '}') | chunk('\'', '\'') | chunk('"', '"') | ~'}' anything))*:body ( ',' | empty )
--> { this._fragment(n, 'ometaRuleDef', p, this.pos()-1, [], {parameters: a}) },
+    ometaRuleDef =
+	pos:p name:n spaces ometaParameters:a ('=' | "->")
+	(~','
+		(chunk('(', ')')
+	|	chunk('{', '}')
+	| 	chunk('\'', '\'')
+	|	chunk('"', '"')
+	|	chunk('[', ']')
+	| 	~'}' anything
+	))*:body
+	( ',' | empty )
+	-> { this._fragment(n, 'ometaRuleDef', p, this.pos()-1, [], {parameters: a}) },
     ometaInherit = "<:" spaces name:sn -> sn
 						| empty -> { null },
-    ometaDef = pos:p "ometa" spaces name:n space ometaInherit:sn spaces '{' spaces (ometaRuleDef:d spaces -> d)*:defs spaces '}' defEnd
--> { this._fragment(n, 'ometaDef', p, this.pos()-1, defs, {superclassName: sn}) },
+    ometaDef =
+	pos:p "ometa" spaces name:n space ometaInherit:sn spaces
+	'{' spaces (ometaRuleDef:d spaces -> d)*:defs spaces '}' defEnd spaces
+	-> { this._fragment(n, 'ometaDef', p, this.pos()-1, defs, {superclassName: sn}) },
                         
                     
     /* otherStuff */
