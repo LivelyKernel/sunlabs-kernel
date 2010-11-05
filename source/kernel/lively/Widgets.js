@@ -1614,12 +1614,12 @@ BoxMorph.subclass("TextListMorph",
 				m.relayMouseEvents(this);
 			}
 		}.bind(this));
+		this.relayout();
 		// FIXME: border doesn't belong here, doesn't take into account padding.
 		var borderBounds = this.bounds();//.expandBy(this.getBorderWidth()/2);
 		var delta = 2; // FIXME FIXME
 		var newBounds = new Rectangle(delta, 0, borderBounds.width - delta, borderBounds.height + this.padding.bottom());
 		this.shape.setBounds(newBounds);
-		this.relayout();
 	},
 
 	adjustForNewBounds: function($super) {
