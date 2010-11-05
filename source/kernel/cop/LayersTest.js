@@ -1682,6 +1682,16 @@ TestCase.subclass('cop.LayersTest.CopProceedTest', {
 
 })
 
+TestCase.subclass('cop.LayersTest.ContextJSBugs', {
+
+	testLookupLayeredFunctionForObjectIgnoresInheritedProperties: function() {
+		var layer = new Layer();
+		var obj = {foo: function() {return 3} };
+		layer.refineObject(obj, {foo: function() {return cop.proceed() + 1}});
+		this.assertIdentity(ContextJS.lookupLayeredFunctionForObject(obj, layer, 'toString'), undefined, 'toString should not be found')
+	}
+})
+
 });
 console.log("loaded LayersTest.js");
 

@@ -61,6 +61,7 @@ var object_id_counter = 0; // hack, to work around absence of identity dictionar
 // because working with objects is a serialization problem in itself, perhaps we should restrict ourself in working with classes
 // So classes have names and names can be used as keys in dictionaries :-)
 
+// TODO REFACTOR
 Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 	if (!layer)
 		throw new Error("in ensurePartialLayer: layer is nil");
@@ -71,20 +72,24 @@ Global.ensurePartialLayer = function Layers$ensurePartialLayer(layer, object) {
 	return layer[object._layer_object_id];
 };
 
+// TODO REFACTOR
 Global.layerMethod = function(layer, object,  property, func) {
 	ensurePartialLayer(layer, object)[property] = func;
 	func.displayName = "layered " + layer.name + " " + (object.constructor ? (object.constructor.type + "$"): "") + property;
 	ContextJS.makeFunctionLayerAware(object, property);
 };
 
+// TODO REFACTOR
 Global.layerGetterMethod = function(layer, object, property, getter) {	
 	ensurePartialLayer(layer, object).__defineGetter__(property, getter);
 };
 
+// TODO REFACTOR
 Global.layerSetterMethod = function(layer, object, property, setter) {
 	ensurePartialLayer(layer, object).__defineSetter__(property, setter);
 };
 
+// TODO REFACTOR
 Global.layerProperty = function(layer, object,  property, defs) {
 	if (!defs) {
 		return layerPropertyWithShadow(layer, object, property);
@@ -103,7 +108,7 @@ Global.layerProperty = function(layer, object,  property, defs) {
 		layerMethod(layer, object,  property, defs[property]);
 	};
 };
-
+// TODO REFACTOR
 layerPropertyWithShadow = function(layer, object, property) {
 	var defs = {};
 	var selector = "_layered_"+layer.name+"_"+ property; 
@@ -118,8 +123,8 @@ layerPropertyWithShadow = function(layer, object, property) {
 		this[selector] = v;});
 	layerProperty(layer, object, property, defs);
 };
-
-computerLayersFor = function Layers$computerLayersFor(obj) { 
+// TODO REFACTOR
+computeLayersFor = function Layers$computeLayersFor(obj) { 
 	if (obj && obj.activeLayers) {
 		// the object is now fully responsible for the layer composition
 		return obj.activeLayers(Global.currentLayers);
@@ -128,6 +133,7 @@ computerLayersFor = function Layers$computerLayersFor(obj) {
 	return layers;
 };
 
+// TODO REFACTOR
 Global.composeLayers = function Layers$composeLayers(stack, index, obj) {
 	// console.log("compose " + stack + " index: " + index)
 	if (index === undefined) {
@@ -155,6 +161,7 @@ Global.composeLayers = function Layers$composeLayers(stack, index, obj) {
 	throw new Error("Error: Problems in layer composition");
 };
 
+// TODO REFACTOR
 Global.currentLayers= function Layers$currentLayers(obj) {
 	if (cop.LayerStack.length == 0) {
 		throw new Error("The default layer is missing");
@@ -178,7 +185,7 @@ Global.currentLayers= function Layers$currentLayers(obj) {
 	});
 };
 
-
+// TODO REFACTOR
 // clear cached layer compositions
 var invalidateLayerComposition = function Layers$invalidateLayerComposition() {
 	cop.LayerStack.each(function(ea) {
@@ -186,11 +193,14 @@ var invalidateLayerComposition = function Layers$invalidateLayerComposition() {
 	});
 };
 
+// TODO REFACTOR
 Global.resetLayerStack = function() {
 	cop.LayerStack = [{isStatic: true, toString: function() {return "BaseLayer";}, composition: null}];
 	invalidateLayerComposition();
 };
 
+
+// TODO How to make this independend from the Lively Kernel class system?
 Object.subclass("Layer", {
 	
 	initialize: function(name) {
@@ -245,7 +255,7 @@ Object.subclass("Layer", {
 	
 });
 
-
+// Lively Kernel Literal Serialization
 Object.extend(Layer, {
 	fromLiteral: function(literal) {
 		// console.log("Deserializing Layer Activation from: " + literal.name)
@@ -547,7 +557,7 @@ Object.subclass('COPError', {
 Object.subclass("cop.PartialLayerComposition", {
 	initialize: function(obj,  prototypeObject, functionName, baseFunction, methodType) {
 		this.partialMethods = [baseFunction];
-		var layers = computerLayersFor(obj);
+		var layers = computeLayersFor(obj);
 		for(var i=0; i< layers.length; i++) {
 			var layer = layers[i];
 			var partialMethod = ContextJS.lookupLayeredFunctionForObject(obj, layer, functionName, methodType);
@@ -577,7 +587,9 @@ Object.extend(ContextJS, {
 			} else if (methodType == 'setter'){
 				layered_function = layer_definition_for_object.__lookupSetter__(function_name);
 			} else {
-				layered_function = layer_definition_for_object[function_name];
+				if (layer_definition_for_object.hasOwnProperty(function_name)) {
+					layered_function = layer_definition_for_object[function_name];
+				}
 			}
 		}
 		if (!layered_function) {
@@ -603,7 +615,7 @@ Object.extend(ContextJS, {
 				var result ;
 				try {
 					result = cop.proceed.apply(this, arguments);
-					// return executeWithLayers(base_function, this, computerLayersFor(this), 0, base_obj, function_name, args);
+					// return executeWithLayers(base_function, this, computeLayersFor(this), 0, base_obj, function_name, args);
 				} finally {
 					ContextJS.effectiveLayerCompositionStack.pop()
 				};
