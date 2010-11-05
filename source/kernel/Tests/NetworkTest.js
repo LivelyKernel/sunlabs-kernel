@@ -93,9 +93,19 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		try { // FIXME			
 			// normal behavior
 			var result = URL.makeProxied('http://bar.com/');
-			var expected = 'http://foo.com/proxy/bar.com/'
+			var expected = 'http://foo.com/proxy/bar.com/';
 			this.assertEqual(expected, result.toString());
-		
+
+			// normal behavior with port		
+			var result = URL.makeProxied('http://bar.com:1234/');
+			var expected = 'http://foo.com/proxy/bar.com:1234/';
+			this.assertEqual(expected, result.toString());
+
+			// normal behavior, same URL and another port		
+			var result = URL.makeProxied('http://foo.com:1234/');
+			var expected = 'http://foo.com/proxy/foo.com:1234/';
+			this.assertEqual(expected, result.toString());
+
 			// don't proxy yourself
 			var result = URL.makeProxied(URL.proxy);
 			this.assertEqual(URL.proxy.toString(), result.toString());
@@ -230,6 +240,15 @@ TestCase.subclass('Tests.NetworkTest.WebResourceTest', {
 		this.assertEquals(typeof sut.responseHeaders, 'object', 'Response headers were not defined.');
 		this.assertEquals(sut.responseHeaders['Content-Type'], 'text/plain', 'No response header "Content-Type" with  value "text/plain" was found!');
 	},
+
+	testInitWithURL: function() {
+		this.plainTextFileURL.port = 1234;
+		this.assert(this.plainTextFileURL.toString().indexOf(':1234/') != -1, 'Port was not set correctly');
+
+		var sut = new WebResource(this.plainTextFileURL);
+		this.assert(this.plainTextFileURL, sut.getURL(), 'Given URL and used URL are not the same');
+	},
+
 
 });
 
