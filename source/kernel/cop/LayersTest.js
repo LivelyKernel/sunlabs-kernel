@@ -250,12 +250,12 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		currentTest = this;
 		this.oldGlobalLayers = cop.GlobalLayers;
 		cop.GlobalLayers = []; // ok, when we are testing layers, there should be no other layers active in the system (to make thinks easier)
-		resetLayerStack();
+		cop.resetLayerStack();
 	},
 	
 	tearDown: function() {
 		cop.GlobalLayers = this.oldGlobalLayers;
-		resetLayerStack();
+		cop.resetLayerStack();
 	},
 
 	makeObject1: function() {
@@ -283,7 +283,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 	
 	makeHtmlLayer: function() {
 		var layer = {};
-		ensurePartialLayer(layer, this.object1)["print"] =  function() {
+		cop.ensurePartialLayer(layer, this.object1)["print"] =  function() {
 			return "<b>"+ cop.proceed() + "</b>"; 
 		};
 		layer.toString = function() {return "Layer HTML";};
@@ -348,7 +348,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		this.makeLayer1();
 		cop.withLayers([this.layer1], function() {
 			this.assert(this.layer1, "no this.layer1");
-			this.assert(currentLayers().first(), "currentLayers failed");
+			this.assert(cop.currentLayers().first(), "currentLayers failed");
 		}.bind(this));
 	},
 
@@ -356,7 +356,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
   		this.makeObject1();
   		this.makeLayer1();
 		this.assertEqual(this.object1.f(2,3), 0, "default result of f() failed");
-		ContextJS.makeFunctionLayerAware(this.object1,"f");
+		cop.makeFunctionLayerAware(this.object1,"f");
 		this.assertEqual(this.object1.f(2,3), 0, "default result of f() with layer aware failed");
 		cop.withLayers([this.layer1], function() {
 			var r = this.object1.f(2,3);
@@ -381,7 +381,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
   		this.makeLayer1();
   		this.makeLayer2();
 		cop.withLayers([this.layer2, this.layer1], function() {
-			ContextJS.makeFunctionLayerAware(this.object1,"f");
+			cop.makeFunctionLayerAware(this.object1,"f");
 			this.object1.f();
 			this.assertEqual(currentTest.execution.toString(), ["l1.f", "l2.f", "d.f"]);
 		}.bind(this));
@@ -393,8 +393,8 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
   		this.makeLayer2();
   		this.makeLayer3();
 		cop.withLayers([this.layer1, this.layer2, this.layer3], function() {
-			ContextJS.makeFunctionLayerAware(this.object1,"f");
-			ContextJS.makeFunctionLayerAware(this.object1,"g");
+			cop.makeFunctionLayerAware(this.object1,"f");
+			cop.makeFunctionLayerAware(this.object1,"g");
 			this.object1.f();
 			var r = this.object1.g();
 			this.assertEqual(r, "Hello World", "result of g() is wrong");
@@ -417,7 +417,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 	testHTMLLayerExample: function() {
   		this.makeObject1();
   		this.makeHtmlLayer();
-		ContextJS.makeFunctionLayerAware(this.object1,"print");		
+		cop.makeFunctionLayerAware(this.object1,"print");		
 		cop.withLayers([this.htmlLayer], function() {
 			this.assertEqual(this.object1.print(), "<b>"+this.object1.myString + "</b>", "html print does not work")		
 		}.bind(this));
@@ -433,7 +433,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 			},
 		});
 		var object1 = new cop.example.DummyClass();
-		ContextJS.makeFunctionLayerAware(cop.example.DummyClass.prototype,"f");
+		cop.makeFunctionLayerAware(cop.example.DummyClass.prototype,"f");
 		
 		this.assertEqual(object1.f(2,3), 0, "default result of f() with layer aware failed");
 		cop.withLayers([layer1], function() {
@@ -448,8 +448,8 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		cop.withLayers([DummyLayer], function() {
 			this.assertEqual(o.h(), 3, "outer layer broken");
 			cop.withLayers([DummyLayer3], function() {
-				// console.log("Layers: " + currentLayers());
-				// currentLayers().each(function(ea){
+				// console.log("Layers: " + cop.currentLayers());
+				// cop.currentLayers().each(function(ea){
 				// 	var p = ea[cop.example.DummyClass.prototype];
 				// 	if (p) {
 				// 		console.log("" + ea + ".h : " + p.h)
@@ -513,46 +513,46 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var object1 = {f: function() {return 0}, g: function() {}};
 		var layer1 = {};
 		
-		layerMethod(layer1, object1, "f", function(){
+		cop.layerMethod(layer1, object1, "f", function(){
 			return cop.proceed() + 1});
 			
-		this.assert(getLayerDefinitionForObject(layer1, object1).f, "f did not get stored");	
+		this.assert(cop.getLayerDefinitionForObject(layer1, object1).f, "f did not get stored");	
 		
-		layerMethod(layer1, object1, "g", function(){});
+		cop.layerMethod(layer1, object1, "g", function(){});
 	
-		this.assert(getLayerDefinitionForObject(layer1, object1).f, "f did not get stored");	
-		this.assert(getLayerDefinitionForObject(layer1, object1).g, "g did not get stored");	
+		this.assert(cop.getLayerDefinitionForObject(layer1, object1).f, "f did not get stored");	
+		this.assert(cop.getLayerDefinitionForObject(layer1, object1).g, "g did not get stored");	
 	},
 
 	testLayerInClass: function() {
 		var o = new cop.example.DummyClass();
 		this.assert(!o['DummyLayer$f'], "layer code ended up in class");
-		this.assert(getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype).f, "f did not end up in DummyLayer");
-		this.assert(getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype), "DummyLayer2 has no partial class");
-		this.assert(getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype).h, "DummyLayer2 has no method for h");
+		this.assert(cop.getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype).f, "f did not end up in DummyLayer");
+		this.assert(cop.getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype), "DummyLayer2 has no partial class");
+		this.assert(cop.getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype).h, "DummyLayer2 has no method for h");
 	},
 
 	testLayerActivation: function() {
 		var layer1 = {};
-		var oldLength = currentLayers().length;
+		var oldLength = cop.currentLayers().length;
 		cop.withLayers([layer1], function() {
-			this.assertEqual(currentLayers().length, oldLength + 1, "layer1 is not actived");
+			this.assertEqual(cop.currentLayers().length, oldLength + 1, "layer1 is not actived");
 		}.bind(this));
-		this.assertEqual(currentLayers().length, oldLength, "layer1 is not deactived");
+		this.assertEqual(cop.currentLayers().length, oldLength, "layer1 is not deactived");
   	},
 
 	testNestedLayerActivation: function() {
 		var layer1 = {};
 		var layer2 = {};
-		this.assertEqual(currentLayers().length, 0, "there are active layers where there shouldn't be ")
+		this.assertEqual(cop.currentLayers().length, 0, "there are active layers where there shouldn't be ")
 		cop.withLayers([layer1], function() {
-			this.assertEqual(currentLayers().length, 1, "layer1 is not active");
+			this.assertEqual(cop.currentLayers().length, 1, "layer1 is not active");
 			cop.withLayers([layer2], function() {
-				this.assertEqual(currentLayers().length, 2, "layer2 is not active");
+				this.assertEqual(cop.currentLayers().length, 2, "layer2 is not active");
 			}.bind(this));
-			this.assertEqual(currentLayers().length, 1, "layer2 is not deactivated");
+			this.assertEqual(cop.currentLayers().length, 1, "layer2 is not deactivated");
 		}.bind(this));
-		this.assertEqual(currentLayers().length, 0, "layer1 is not deactivated");
+		this.assertEqual(cop.currentLayers().length, 0, "layer1 is not deactivated");
   	},
 
 	testNestedLayerDeactivationAndActivation: function() {
@@ -561,9 +561,9 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer3 = {toString: function(){return "l3"}};
 		cop.withLayers([layer1, layer2, layer3], function() {
 			cop.withoutLayers([layer2], function() {
-				this.assertEqual(currentLayers().toString(), ["l1","l3"].toString());
+				this.assertEqual(cop.currentLayers().toString(), ["l1","l3"].toString());
 				cop.withLayers([layer2], function() {
-					this.assertEqual(currentLayers().toString(), ["l1","l3","l2"].toString());
+					this.assertEqual(cop.currentLayers().toString(), ["l1","l3","l2"].toString());
 				}.bind(this));
 			}.bind(this));
 		}.bind(this));
@@ -573,9 +573,9 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer1 = {};
 		cop.withLayers([layer1], function() {
 			cop.withLayers([layer1], function() {
-				this.assertEqual(currentLayers().length, 1, "layer1 activated twice");
+				this.assertEqual(cop.currentLayers().length, 1, "layer1 activated twice");
 			}.bind(this));
-			this.assertEqual(currentLayers().length, 1, "layer1 is deactivated");
+			this.assertEqual(cop.currentLayers().length, 1, "layer1 is deactivated");
 		}.bind(this));
   	},
 
@@ -584,9 +584,9 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer2 = {};
 		cop.withLayers([layer1, layer2], function() {
 			cop.withoutLayers([layer2], function() {
-				this.assertEqual(currentLayers().length, 1, "layer2 is not deactiveated");
+				this.assertEqual(cop.currentLayers().length, 1, "layer2 is not deactiveated");
 			}.bind(this));
-			this.assertEqual(currentLayers().length, 2, "layer2 is not reactivated");
+			this.assertEqual(cop.currentLayers().length, 2, "layer2 is not reactivated");
 		}.bind(this));
   	},
 
@@ -604,7 +604,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 			}.bind(this));
 		} catch (e) {
 			if (!e.testError) throw e;
-			this.assertEqual(currentLayers().length, 0, "layer1 is still active");
+			this.assertEqual(cop.currentLayers().length, 0, "layer1 is still active");
 			
 		}
   	},
@@ -620,13 +620,13 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		cop.withLayers([layer1], function() {
 			try {
 				cop.withoutLayers([layer1], function() {
-					this.assertEqual(currentLayers().length, 0, "layer1 deactivation is not active");
+					this.assertEqual(cop.currentLayers().length, 0, "layer1 deactivation is not active");
 					this.object1.f();
 				}.bind(this));
 			} catch (e) {
 				if (!e.testError) throw e;			
 			};
-			this.assertEqual(currentLayers().length, 1, "layer1 deactivation is still active");
+			this.assertEqual(cop.currentLayers().length, 1, "layer1 deactivation is still active");
 		}.bind(this));
   	},
 
@@ -637,9 +637,9 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer3 = {toString: function(){return "l3"}};
 		
 		var stack = [{}];
-		this.assertEqual(composeLayers(stack.clone()).toString(), [].toString());
-		this.assertEqual(composeLayers([{}, {withLayers: [layer1]}]).toString(), ["l1"].toString());
-		this.assertEqual(composeLayers([{}, {withLayers: [layer1]},{withLayers: [layer2, layer3]} ]).toString(), ["l1","l2","l3"].toString());
+		this.assertEqual(cop.composeLayers(stack.clone()).toString(), [].toString());
+		this.assertEqual(cop.composeLayers([{}, {withLayers: [layer1]}]).toString(), ["l1"].toString());
+		this.assertEqual(cop.composeLayers([{}, {withLayers: [layer1]},{withLayers: [layer2, layer3]} ]).toString(), ["l1","l2","l3"].toString());
   	},
 
 	testComposeLayersWithWithoutLayers: function() {
@@ -648,7 +648,7 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer3 = {toString: function(){return "l3"}};
 		
 		var stack = [{}];
-		this.assertEqual(composeLayers([{}, {withLayers: [layer1, layer2, layer3]},{withoutLayers: [layer2]}]).toString(), ["l1","l3"].toString());
+		this.assertEqual(cop.composeLayers([{}, {withLayers: [layer1, layer2, layer3]},{withoutLayers: [layer2]}]).toString(), ["l1","l3"].toString());
 		
   	},
 	
@@ -685,11 +685,11 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 	testEnableDisableLayer: function() {
 		var layer1 = {name: "Layer1"};
 		cop.enableLayer(layer1);
-		this.assertEqual(currentLayers().length, 1, "layer 1 is not enabled");
-		// console.log("current layers: " + currentLayers())
+		this.assertEqual(cop.currentLayers().length, 1, "layer 1 is not enabled");
+		// console.log("current layers: " + cop.currentLayers())
 		cop.disableLayer(layer1);
 		this.assert(!cop.LayerStack.last().composition, "there is a cached composition!");
-		this.assertEqual(currentLayers().length, 0, "layer 1 is not disabeled");
+		this.assertEqual(cop.currentLayers().length, 0, "layer 1 is not disabeled");
 	},
 	
 
@@ -698,9 +698,9 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer2 = {name: "Layer2"};
 		cop.withLayers([layer2], function() {
 			cop.enableLayer(layer1);
-			this.assertEqual(currentLayers().length, 2, "layer 2 is not enabled");			
+			this.assertEqual(cop.currentLayers().length, 2, "layer 2 is not enabled");			
 		}.bind(this));
-		this.assertEqual(currentLayers().length, 1, "layer 1 is not enabled");
+		this.assertEqual(cop.currentLayers().length, 1, "layer 1 is not enabled");
 		cop.disableLayer(layer1);
 	},
 	
@@ -708,9 +708,9 @@ TestCase.subclass('cop.LayersTest.LayerTest', {
 		var layer1 = {name: "Layer1"};
 		cop.withLayers([layer1], function() {
 			cop.enableLayer(layer1);
-			this.assertEqual(currentLayers().length, 1, "layer 1 enabled twice?");			
+			this.assertEqual(cop.currentLayers().length, 1, "layer 1 enabled twice?");			
 		}.bind(this));
-		this.assertEqual(currentLayers().length, 1, "layer 1 is not enabled");
+		this.assertEqual(cop.currentLayers().length, 1, "layer 1 is not enabled");
 	},
 	
 	testLayerSubclass: function() {
@@ -1039,7 +1039,7 @@ TestCase.subclass('cop.LayersTest.LayerStateTest', {
 
 	testMakePropertyLayerAware: function() {
 		var o = {a: 3};
-		ContextJS.makePropertyLayerAware(o,"a");
+		cop.makePropertyLayerAware(o,"a");
 		
 		this.assertEqual(o.a, 3, "getter is broken");
 		o.a = 4;
@@ -1089,7 +1089,7 @@ TestCase.subclass('cop.LayersTest.LayerStateTest', {
 				l1_value = value;
 			}		
 		});
-		this.assert(getLayerDefinitionForObject(layer1,o).__lookupSetter__("a"), "layer1 hast no setter for a");
+		this.assert(cop.getLayerDefinitionForObject(layer1,o).__lookupSetter__("a"), "layer1 hast no setter for a");
 		this.assert(o.__lookupSetter__("a").isLayerAware, "o.a setter is not layerAware");
 		
 		cop.withLayers([layer1], function() {
@@ -1168,14 +1168,14 @@ TestCase.subclass('cop.LayersTest.LayerStateTest', {
 	},
 	
 	testLayerInstallation: function() {
-		this.assert(getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype).__lookupGetter__("e"), "no getter in partial class");
+		this.assert(cop.getLayerDefinitionForObject(DummyLayer, cop.example.DummyClass.prototype).__lookupGetter__("e"), "no getter in partial class");
 		this.assert(cop.example.DummyClass.prototype.__lookupGetter__("e"), "no getter in class");
 	},
 	
 	testLayerPropertyWithShadow: function() {
 		var o = {};
 		var layer1 = {};
-		layerPropertyWithShadow(layer1, o, "a");
+		cop.layerPropertyWithShadow(layer1, o, "a");
 		o.a = 5;
 		cop.withLayers([layer1], function() {
 			o.a = 10;
@@ -1189,7 +1189,7 @@ TestCase.subclass('cop.LayersTest.LayerStateTest', {
 	
 	testLayerClassPropertyWithShadow: function() {
 		var o = new cop.example.DummyClass();
-		layerPropertyWithShadow(DummyLayer, o, "a");
+		cop.layerPropertyWithShadow(DummyLayer, o, "a");
 		o.a = 5;
 		cop.withLayers([DummyLayer], function() {
 			o.a = 10;
@@ -1204,7 +1204,7 @@ TestCase.subclass('cop.LayersTest.LayerStateTest', {
 	testLayerPropertyWithShadowFallsBack: function() {
 		var o = {};
 		var layer1 = {};
-		layerPropertyWithShadow(layer1, o, "a");
+		cop.layerPropertyWithShadow(layer1, o, "a");
 		o.a = 5;
 		cop.withLayers([layer1], function() {
 			this.assertEqual(o.a, 5, "fallback is broken");
@@ -1512,8 +1512,8 @@ TestCase.subclass('cop.LayersTest.CopProceedTest', {
 
 		});
 
-		ContextJS.makeFunctionLayerAware(CopProceedTestClass.prototype, 'm')
-		ContextJS.makePropertyLayerAware(CopProceedTestClass.prototype, 'p')
+		cop.makeFunctionLayerAware(CopProceedTestClass.prototype, 'm')
+		cop.makePropertyLayerAware(CopProceedTestClass.prototype, 'p')
 
 		cop.create('CopProceedTestAddLayer').refineClass(CopProceedTestClass, {
 			m: function(a) {
@@ -1551,14 +1551,14 @@ TestCase.subclass('cop.LayersTest.CopProceedTest', {
 		var newLength;
 
 		cop.proceed = function() {
-			newLength = ContextJS.effectiveLayerCompositionStack.length;
+			newLength = cop.effectiveLayerCompositionStack.length;
 		}
 
 		var o = {m: function() { 
 			return 1}}
-		ContextJS.makeFunctionLayerAware(o, 'm')
+		cop.makeFunctionLayerAware(o, 'm')
 
-		var oldLength = ContextJS.effectiveLayerCompositionStack.length;
+		var oldLength = cop.effectiveLayerCompositionStack.length;
 		
 		o.m();
 
@@ -1572,7 +1572,7 @@ TestCase.subclass('cop.LayersTest.CopProceedTest', {
 		var functionName;
 
 		cop.proceed = function() {
-			var composition = ContextJS.effectiveLayerCompositionStack.last();
+			var composition = cop.effectiveLayerCompositionStack.last();
 			partialMethods = composition.partialMethods;
 			object = composition.object;
 			prototypeObject = composition.prototypeObject;
@@ -1679,7 +1679,7 @@ TestCase.subclass('cop.LayersTest.ContextJSBugs', {
 		var layer = new Layer();
 		var obj = {foo: function() {return 3} };
 		layer.refineObject(obj, {foo: function() {return cop.proceed() + 1}});
-		this.assertIdentity(ContextJS.lookupLayeredFunctionForObject(obj, layer, 'toString'), undefined, 'toString should not be found')
+		this.assertIdentity(cop.lookupLayeredFunctionForObject(obj, layer, 'toString'), undefined, 'toString should not be found')
 	}
 })
 
