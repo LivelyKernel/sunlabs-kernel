@@ -812,9 +812,13 @@ var Strings = {
 		return isNaN(floatValue) ? str : floatValue.toFixed(precision);
 	},
 
-	indent: function(str, indentString, depth) {
-		var indent = range(0, depth).collect(function(i){ return indentString }).join("");
-		return indent + str;
+	indent: function (str, indentString, depth) {
+		if (!depth || depth <= 0) return str;
+		while (depth > 0) {
+			depth--;
+			str = indentString + str;
+		}
+		return str;
 	},
 
 };
@@ -856,6 +860,13 @@ var Functions = {
 		func();
 		return new Date().getTime() - startTime;
 	},
+	timeToRunN: function Functions$timeToRunN(func, n) {
+		var time = 0;
+		for (var i = 0; i < n; i++)
+			time += Functions.timeToRun(func);
+		return time / n;
+	},
+
 	
 	notYetImplemented: function Functions$notYetImplemented() {
 		throw new Error('Not yet implemented');
