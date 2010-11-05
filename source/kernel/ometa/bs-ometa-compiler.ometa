@@ -54,7 +54,7 @@ ometa BSOMetaParser <: Parser {
                                                   ),
   grammar        = keyword('ometa') name:n
                      ( "<:" name | empty -> 'OMeta' ):sn
-                     "{" listOf(#rule, ','):rs "}"                        BSOMetaOptimizer.optimizeGrammar(
+                     "{" listOf(#rule, ','):rs (',' | empty) "}"                        BSOMetaOptimizer.optimizeGrammar(
                                                                             [#Grammar, n, sn].concat(rs)
                                                                           )
 }
