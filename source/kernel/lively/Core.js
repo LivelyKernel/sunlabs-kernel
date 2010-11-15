@@ -5259,7 +5259,7 @@ PasteUpMorph.subclass("WorldMorph",
 	windowBounds: function () {
 		var canvas = this.canvas();
 		var scale = 1/this.world().getScale();
-		var topLeft = pt(Global.pageXOffset - canvas.offsetLeft, Global.pageYOffset - canvas.offsetTop);
+		var topLeft = pt(Global.pageXOffset - (canvas.offsetLeft || 0), Global.pageYOffset - (canvas.offsetTop || 0));
 		var width = Math.min(
 			Global.document.documentElement.clientWidth * scale,
 			WorldMorph.current().getExtent().x);
