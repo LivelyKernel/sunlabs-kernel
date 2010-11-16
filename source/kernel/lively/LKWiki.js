@@ -134,9 +134,13 @@ world: function() {
 	
 	doSave: function(doNotOverwrite, optUrl) { // ok, clean this whole thing up!!!!
 		this.prepareForSaving();
-		var worldDoc = Exporter.shrinkWrapMorph(this.world()); // why not this.world()?
-		var myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null;
-		var status;
+		var worldDoc = Exporter.shrinkWrapMorph(this.world()),
+			myRevision = doNotOverwrite ? this.model.getOriginalRevision() : null,
+			status;
+		(function removeJSONIfPresent() {
+			var jsonEl = worldDoc.getElementById('LivelyJSONWorld');
+			if (jsonEl) jsonEl.parentNode.removeChild(jsonEl);
+		})();
 		if (optUrl) { // save page elsewhere
 			optUrl = optUrl.withRelativePartsResolved();
 			new DocLinkConverter(this.repoUrl(), optUrl.getDirectory()).convert(worldDoc);
@@ -271,7 +275,8 @@ world: function() {
 	},
 
 openRegisterDialog: function() {
-	new UserRegistrationDialog().open();
+	// new UserRegistrationDialog().open();
+	window.open('http://lively-kernel.org/trac/register')
 },
 
 
