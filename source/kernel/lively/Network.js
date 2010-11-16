@@ -168,8 +168,8 @@ Object.subclass('URL', {
 
 	relativePathFrom: function(origin) {
 		function checkPathes(path1, path2) {
-			var paths1 = path1.split('/');
-			var paths2 = path2.split('/');
+			var paths1 = path1.split('/'),
+				paths2 = path2.split('/');
 
 			paths1.shift();
 			paths2.shift();
@@ -179,13 +179,19 @@ Object.subclass('URL', {
 					break;
 			}
 
+			// now that's some JavaScript FOO
 			var result = '../'.times(paths2.length - i - 1) + paths1.splice(i).join('/');
 			return result;
 		}
 
-		var relPath;
-		if (origin.normalizedHostname() != this.normalizedHostname() || !(relPath = checkPathes(this.withRelativePartsResolved().pathname, origin.withRelativePartsResolved().pathname)))
-			throw new Error('bad origin ' + origin + ' vs ' + this);
+		if (origin.normalizedHostname() != this.normalizedHostname())
+			throw new Error('hostname differs in relativePathFrom ' + origin + ' vs ' + this);
+		var myPath = this.withRelativePartsResolved().pathname,
+			otherPath = origin.withRelativePartsResolved().pathname;
+		if (myPath == otherPath) return '';
+		var relPath = checkPathes(myPath, otherPath);
+		if (!relPath)
+			throw new Error('pathname differs in relativePathFrom ' + origin + ' vs ' + this);
 		return relPath;
 	},
 
