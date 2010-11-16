@@ -963,10 +963,15 @@ Object.subclass('Copier', {
 			return
 		};
 
-	    if ((other[property] instanceof Function) 
-		 	|| ! other.hasOwnProperty(property) 
-		 	|| (other.doNotCopyProperties && other.doNotCopyProperties.include(property)))
-			return; // copy nothing		
+	    if ((other[property] instanceof Function) || !other.hasOwnProperty(property)) return;
+
+		var ignored = false, doNotCopyObj = other;
+		while(!ignored && doNotCopyObj) {
+			ignored = doNotCopyObj.doNotCopyProperties && doNotCopyObj.doNotCopyProperties.include(property);
+			doNotCopyObj = doNotCopyObj.constructor.superclass && doNotCopyObj.constructor.superclass.prototype;
+		}
+		if (ignored) return;
+
 		var original = other[property];
 		if (original !== undefined) {
 			if (original && Object.isArray(original)) {
@@ -4654,12 +4659,6 @@ PasteUpMorph.subclass("WorldMorph",
         Morph.prototype.suppressBalloonHelp = !Morph.prototype.suppressBalloonHelp;
     },
 
-    toggleDebugBackground: function() {
-        // Debug background is transparent, so that we can see the console
-        // if it is not otherwise visible
-        Config.useDebugBackground = !Config.useDebugBackground;
-        this.shape.setFillOpacity(Config.useDebugBackground ? 0.8 : 1.0);
-    },
 
     chooseDisplayTheme: function(evt) { 
         var themes = DisplayThemes;
@@ -5201,9 +5200,9 @@ PasteUpMorph.subclass("WorldMorph",
 			
 		// make relative to absolute URL
 		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
-		require("lively.SmartRefSerialization").toRun(function() {
+		require("lively.persistence.Serializer").toRun(function() {
 			if (world._statusMessageContainer) world._statusMessageContainer.remove();
-			var doc = ObjectGraphLinearizer.serializeWorld(world);
+			var doc = lively.persistence.Serializer.serializeWorld(world);
 			Exporter.saveDocumentToFile(doc, url, onFinished);
 		});
 
@@ -5446,13 +5445,13 @@ PasteUpMorph.subclass("WorldMorph",
 //			["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
 			["System code browser (b)", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world)})}],
 			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world)})}],
-			["Wiki code Browser", function(evt) { require('lively.ide', 'lively.LKWiki').toRun(function(unused, ide) {
-				var cb = function(input) {
-					var repo = new URL(input);
-					new ide.WikiCodeBrowser(repo).open()
-				};
-				world.prompt('Wiki base URL?', cb, URL.source.getDirectory().toString());
-				})}],
+			// ["Wiki code Browser", function(evt) { require('lively.ide', 'lively.LKWiki').toRun(function(unused, ide) {
+				// var cb = function(input) {
+					// var repo = new URL(input);
+					// new ide.WikiCodeBrowser(repo).open()
+				// };
+				// world.prompt('Wiki base URL?', cb, URL.source.getDirectory().toString());
+				// })}],
 			["Switch System browser directory...", function(evt) { require('lively.ide').toRun(function(unused, ide) {
 				var cb = function(input) {
 					if (!input.endsWith('/')) input += '/';
@@ -5462,15 +5461,9 @@ PasteUpMorph.subclass("WorldMorph",
 				})}],				
 			["File Browser", function(evt) { new FileBrowser().openIn(world) }],
 			["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world); }],	
-			["Enable profiling", function() {
-					Config.debugExtras = true;
-					lively.lang.Execution.installStackTracers(); }],
 			["Console (l)", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
 			["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world) }) }],
 			["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().open() }) }],
-			["Call Stack Viewer", function(evt) { 
-			if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
-			else new StackViewer(this).openIn(world); }],	  
 			["FrameRateMorph", function(evt) {
 				var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
 				m.startSteppingScripts(); }],
@@ -5504,20 +5497,6 @@ PasteUpMorph.subclass("WorldMorph",
 			}],			
 		];
 
-		if (Config.debugExtras) { var index = -1;
-			for (var i=0; i<toolMenuItems.length; i++) if (toolMenuItems[i][0] == "Enable profiling") index = i;
-				if (index >= 0) 
-					toolMenuItems.splice(index, 1,
-						["-----"],
-						["Profiling help", function(evt) { this.openURLasText( URL.common.project.withRelativePath(
-							"/trac/wiki/ProfilingHelp?format=txt"), "Profiling help"); }],
-						["Arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }],
-						["Arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }],
-						["Disable profiling", function() {
-							Config.debugExtras = false;
-							lively.lang.Execution.installStackTracers("uninstall");	 }],
-						["-----"]);
-		};
 		return toolMenuItems
 	},
 
@@ -5550,8 +5529,6 @@ PasteUpMorph.subclass("WorldMorph",
 			  function () { Config.showGrabHalo = !Config.showGrabHalo}],
 			[HandMorph.prototype.applyDropShadowFilter ? "don't use filter shadows" : "use filter shadows (if supported)",
 			  function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
-			[(Config.useDebugBackground ? "use normal background" : "use debug background"),
-					  this.toggleDebugBackground],
 			[(Config.isSnappingToGrid ? "[X]": "[]") + " snap to grid",
 						  function(){Config.isSnappingToGrid = !Config.isSnappingToGrid}],
 			["change title",   this, 'askForWorldTitle'],
@@ -5562,19 +5539,52 @@ PasteUpMorph.subclass("WorldMorph",
 		];
 	},
 	
-
 	helpSubMenuItems: function(evt) {
-		var world = this.world();
 		return	[
 			["Connect documentation", function(evt) {
 				require('lively.bindings').toRun(function() {
 					world.openURLasText(new URL("http://lively-kernel.org/trac/wiki/ConnectHelp?format=txt"), "Connect documentation");
-				})
-			}],
+				})}],
 			["Command key help", function(evt) {
-				this.openURLasText(new URL("http://lively-kernel.org/trac/wiki/CommandKeyHelp?format=txt"), "Command key help"); }]
+				this.openURLasText(new URL("http://lively-kernel.org/trac/wiki/CommandKeyHelp?format=txt"), "Command key help"); }],
 		];
 	},
+	
+	debuggingSubMenuItems: function(evt) {
+		var world = this.world();
+		var items = [
+			['World serialization info', function() {
+				require('lively.persistence.Debugging').toRun(function() {
+					var json = lively.persistence.Serializer.serialize(world),
+						printer = lively.persistence.Debugging.Helper.listObjects(json);
+					world.addTextWindow(printer.toString());
+				});
+			}],
+			["Enable profiling", function() {
+				Config.debugExtras = true;
+				lively.lang.Execution.installStackTracers(); }],
+			["Call Stack Viewer", function(evt) { 
+				if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
+				else new StackViewer(this).openIn(world); }],
+		];
+
+		if (!Config.debugExtras) return items;
+
+		var index = -1;
+		for (var i=0; i<items.length; i++) if (items[i][0] == "Enable profiling") index = i;
+		if (index < 0) return items;
+		items.splice(index, 1,
+			["-----"],
+			["Profiling help", function(evt) { this.openURLasText( URL.common.project.withRelativePath(
+				"/trac/wiki/ProfilingHelp?format=txt"), "Profiling help"); }],
+			["Arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }],
+			["Arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }],
+			["Disable profiling", function() {
+				Config.debugExtras = false;
+				lively.lang.Execution.installStackTracers("uninstall");	 }],
+			["-----"]);
+	},
+
 	
 	subMenuItems: function(evt) {
 		//console.log("mouse point == %s", evt.mousePoint);
@@ -5584,6 +5594,7 @@ PasteUpMorph.subclass("WorldMorph",
 			['Tools', this.toolSubMenuItems(evt)],
 			['Scripting', this.scriptingSubMenuItems(evt)],
 			['Preferences', this.preferencesSubMenuItems(evt)],
+			['Debugging', this.debuggingSubMenuItems(evt)],
 			['Help', this.helpSubMenuItems(evt)]];
 	},
 	

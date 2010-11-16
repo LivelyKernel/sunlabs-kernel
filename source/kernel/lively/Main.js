@@ -25,7 +25,7 @@
  * Main.js.  System startup and demo loading.
  */
 
-module('lively.Main').requires().toRun(function() {
+module('lively.Main').requires("lively.Persistence").toRun(function() {
 
 
 Object.subclass('lively.Main.Loader',
@@ -153,30 +153,43 @@ Object.subclass('lively.Main.Loader',
 			})
         })
 	},
+
 	deserializeJSONWorld: function(canvas, json) {
+		return this.deserializeJSONWorldWithChangeset(canvas, json);
+	},
+
+	deserializeJSONWorldWithChangeset: function(canvas, json, changeSet) {
 		var self = this,
 			doc = canvas.ownerDocument,
-			requirements = ["lively.SmartRefSerialization"].concat(Config.modulesBeforeChanges);
+			serializationModule = "lively.persistence.Serializer";
 		this.setupCounter(canvas);
-		require(requirements).toRun(function() {
-			var jso = ObjectGraphLinearizer.parseJSON(json),
-				changes = !Config.skipChanges && ObjectGraphLinearizer.deserializeChangeSetFromDocument(doc);
-			changes && changes.evaluateWorldRequirements();
-			var modulesOnWorldLoad = Config.modulesBeforeWorldLoad.concat(ObjectGraphLinearizer.sourceModulesIn(jso));
-			require(modulesOnWorldLoad).toRun(function() {
-				changes && changes.evaluateAllButInitializer();
-				require(Config.modulesOnWorldLoad).toRun(function() {
-					var world = ObjectGraphLinearizer.deserializeWorldFromJso(jso);
-					world.setChangeSet(changes);
-		            world.displayOnCanvas(canvas);
-		            console.log("world is " + world);
-					changes && changes.evaluateInitializer();
 
-					if (Config.showWikiNavigator) self.showWikiNavigator();
-					self.onFinishLoading(world);
-					world.setStatusMessage('JSON world loaded', Color.green, 5)
-				})
-			})			
+		require("lively.persistence.Serializer").toRun(function() {
+			var jso = lively.persistence.Serializer.parseJSON(json),
+				requirements = Config.modulesBeforeChanges
+					.concat(lively.persistence.Serializer.sourceModulesIn(jso))
+					.uniq();
+			require(requirements).toRun(function() {
+				if (!Config.skipChanges) {
+					var changes = changeSet ||
+						lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
+					changes && changes.evaluateWorldRequirements();
+				}
+				require(Config.modulesBeforeWorldLoad).toRun(function() {
+					changes && changes.evaluateAllButInitializer();
+					require(Config.modulesOnWorldLoad).toRun(function() {
+						var world = lively.persistence.Serializer.deserializeWorldFromJso(jso);
+						world.setChangeSet(changes);
+						world.displayOnCanvas(canvas);
+						console.log("world is " + world);
+						changes && changes.evaluateInitializer();
+
+						if (Config.showWikiNavigator) self.showWikiNavigator();
+						self.onFinishLoading(world);
+						world.setStatusMessage('JSON world loaded', Color.green, 5)
+					})
+				})			
+			})
 		})
 	},
 
