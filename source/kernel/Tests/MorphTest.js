@@ -1112,33 +1112,6 @@ TestCase.subclass('Tests.MorphTest.CopyLabelTest', {
 })
 
 
-MorphTestCase.subclass('Tests.MorphTest.BinarySearchListMorphTest', {
-
-	createList: function() {
-		var l = new ListMorph(new Rectangle(0, 0, 100, 100), [])
-		this.openMorph(l);
-		list = range(0, 20).collect(function(i) { return i.toString() +i+i+i+i })
-		l.updateList(list)
-		l.setPosition(pt(100,100))
-		return l 
-	},
-
-	assertFindIdentitcalMortAt: function(sut, pos) {
-		var item = sut.findSubmorphAtPosition(pos)
-		var realItem = (Morph.prototype.morphToGrabOrReceive.bind(sut))(newFakeMouseEvent(sut.worldPoint(pos)))
-		this.assertIdentity(item, realItem, "morph not found at " + pos)
-	},
-
-	testFindSubmorphAtPositionFirst: function() {
-		var sut = this.createList()
-		this.assertFindIdentitcalMortAt(sut, pt(5,5))
-		this.assertFindIdentitcalMortAt(sut, pt(5,10))
-		this.assertFindIdentitcalMortAt(sut, pt(5,20))
-		this.assertFindIdentitcalMortAt(sut, pt(5,40))
-		this.assertFindIdentitcalMortAt(sut, pt(5,80))
-	},
-		
-})
 TestCase.subclass('Tests.MorphTest.ClipMorphTest',
 'testing', {
 	testDuplicateClipMorph: function() {

@@ -1,19 +1,24 @@
 module('apps.ProtoVisInterface').requires().toRun(function() {
 
-(function load() {
-	lively.bindings.callWhenNotNull(
-		WorldMorph, 'currentWorld',
-		apps.ProtoVisInterface, 'start')
-})();
-
-
 Object.extend(apps.ProtoVisInterface, {
 
 	start: function() {
 		WorldMorph.current().canvas().style.position = 'absolute';
+
 		// FIXME
-		Loader.loadJs('http://lively-kernel.org/repository/webwerkstatt/projects/HTML5/protovis-3.2/protovis-r3.2.js',
-			function() { apps.ProtoVisInterface.loaded = true })
+		var url = URL.codeBase.withFilename('projects/HTML5/protovis-3.2/protovis-d3.2.js'),
+			src = new WebResource(url).get().content
+			try {
+				eval(src)
+				Global.pv = pv;
+				apps.ProtoVisInterface.loaded = true
+			} catch(e) {
+				throw new Error('Could not load protovis because ' + e)
+			}
+			
+		// FIXME
+		// Loader.loadJs('http://lively-kernel.org/repository/webwerkstatt/projects/HTML5/protovis-3.2/protovis-d3.2.js',
+			// function() { apps.ProtoVisInterface.loaded = true })
 	},
 
 	renderVis: function(vis, pos, scale) {
@@ -126,8 +131,8 @@ Object.subclass('ProtoVisDrawing',
 		this.vis = this.draw();
 		this.vis.render();
 		this.canvas().style.position = 'absolute';
-		this.canvas().addEventListener('mouseover', function() {WorldMorph.current().showHostMouseCursor() });
-		this.canvas().addEventListener('mouseout', function() {WorldMorph.current().hideHostMouseCursor() });
+		this.canvas().addEventListener('mouseover', function() {WorldMorph.current().showHostMouseCursor() }, true);
+		this.canvas().addEventListener('mouseout', function() {WorldMorph.current().hideHostMouseCursor() }, true);
 	},
 	remove: function() {
 		var c = this.canvas();
@@ -136,5 +141,11 @@ Object.subclass('ProtoVisDrawing',
 		this.vis = null;
 	},
 });
+
+(function load() {
+	lively.bindings.callWhenNotNull(
+		WorldMorph, 'currentWorld',
+		apps.ProtoVisInterface, 'start')
+})();
 
 }); // end of module

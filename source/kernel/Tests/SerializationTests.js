@@ -85,7 +85,7 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase',
 		this.dom = stringToXML(
 			'<svg xmlns="http://www.w3.org/2000/svg" xmlns:lively="http://www.experimentalstuff.com/Lively" '+
 				'xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xhtml="http://www.w3.org/1999/xhtml" '+
-				'id="canvas" width="100%" height="100%" xml:space="preserve" '+
+				'id="canvas" width="800" height="600" xml:space="preserve" '+
 				'xmlns:xml="http://www.w3.org/XML/1998/namespace" zoomAndPan="disable">' +
 				'<title>Lively Kernel canvas</title>' + 
 			'</svg>').parentNode;

@@ -45,13 +45,13 @@ TestCase.subclass('Tests.OmetaTest.OmetaTest', {
     },
     
     testOmetaSampleInterpreter: function() {
-        var calcSrc = LKOMetaJSParser.matchAll(OmetaTest.ometaSampleInterpeter, "topLevel");
+        var calcSrc = LKOMetaJSParser.matchAll(Tests.OmetaTest.ometaSampleInterpeter, "topLevel");
         var result = eval(LKOMetaJSTranslator.match(calcSrc, "trans"));
         this.assertEqual(result, 42);
     },
     
     testEvalOmeta: function() {
-        this.assertEqual(OMetaSupport.ometaEval(OmetaTest.ometaSampleInterpeter), 42)
+        this.assertEqual(OMetaSupport.ometaEval(Tests.OmetaTest.ometaSampleInterpeter), 42)
     },
 
 	testOMetaUnderstandsNewExpr: function() {
@@ -60,7 +60,8 @@ TestCase.subclass('Tests.OmetaTest.OmetaTest', {
 	}
 });
 
-OmetaTest.ometaSampleInterpeter = "        ometa Calc {  \n\
+Object.extend(Tests.OmetaTest, {
+	ometaSampleInterpeter: "        ometa Calc {  \n\
   digit    = super(#digit):d          -> digitValue(d),\n\
   number   = number:n digit:d         -> (n * 10 + d) \n\
            | digit,\n\
@@ -75,6 +76,7 @@ OmetaTest.ometaSampleInterpeter = "        ometa Calc {  \n\
   expr     = addExpr\n\
 }\n\
 \n\
-Calc.matchAll('6*(4+3)', 'expr')";
+Calc.matchAll('6*(4+3)', 'expr')",
 
+});
 });

@@ -88,7 +88,7 @@ ometa BSJSParser <: Parser {
                | "name":n                                                                        -> [#get, n]
                | "number":n                                                                      -> [#number, n]
                | "string":s                                                                      -> [#string, s]
-               | "function" funcRest
+               | "function" ("name" | empty) funcRest
                | "new" "name":n "(" listOf(#expr, ','):as ")"                                    -> [#new, n].concat(as)
                | "[" listOf(#expr, ','):es "]"                                                   -> [#arr].concat(es)
                | json,
@@ -105,7 +105,7 @@ ometa BSJSParser <: Parser {
   stmt         = block
                | "var" listOf(#binding, ','):bs sc                                               -> [#begin].concat(bs)
                | "if" "(" expr:c ")" stmt:t ( "else" stmt
-                                            | empty -> [#get, 'undefined'] ):f sc                -> [#if, c, t, f]
+                                            | empty -> [#get, 'undefined'] ):f (sc | empty)    -> [#if, c, t, f]
                | "while" "(" expr:c ")" stmt:s                                                   -> [#while,   c, s]
                | "do" stmt:s "while" "(" expr:c ")" sc                                           -> [#doWhile, s, c]
                | "for" "(" ( "var" binding

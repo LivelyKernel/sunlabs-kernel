@@ -85,6 +85,12 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 		result = url2.relativePathFrom(url1);
 		this.assertEqual(expected, result.toString());
 	},
+	testRelativePathFrom3Identity: function() {
+		var url = new URL('http://www.foo.org/bar/'),
+			result = url.relativePathFrom(url);
+		this.assertEqual('', result.toString());
+	},
+
 	
 	testMakeProxy: function() {
 		var originalProxy = URL.proxy;
@@ -121,6 +127,8 @@ TestCase.subclass('Tests.NetworkTest.URLTest', {
 });
 
 TestCase.subclass('Tests.NetworkTest.WebResourceTest', {
+
+	shouldRun: !Config.serverInvokedTest,
 
 	plainTextString: 'this is a test\nfoo\nbar',
 

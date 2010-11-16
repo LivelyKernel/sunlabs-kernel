@@ -274,10 +274,8 @@ Foo.addMethods('catC',{\n\
 		var commandSpec = commands.detect(function(spec) { return spec[0] == 'add class' });
 		this.assert(commandSpec && Object.isFunction(commandSpec[1]), 'Cannot find add class command');
 
-		var className = 'NewClass';
-		this.answerPromptsDuring(commandSpec[1], [
-			{question: 'super class name', answer: 'Object'},
-			{question: 'class name', answer: className}]);
+		var className = 'MyClass';
+		this.answerPromptsDuring(commandSpec[1]);
 
 		var newClassFragment = this.fileFragment.subElements().detect(function(ff) {
 			return ff.getName() == className;
@@ -303,7 +301,7 @@ Foo.addMethods('catC',{\n\
 		this.assert(commandSpec && Object.isFunction(commandSpec[1]), 'Cannot find add method command');
 
 		var methodName = 'newMethod';
-		this.answerPromptsDuring(commandSpec[1], [{question: 'name', answer: methodName}]);
+		this.answerPromptsDuring(commandSpec[1]);
 
 		var newMethodFragment = this.fileFragment.flattened().detect(function(ff) {
 			return ff.getName() == methodName;
@@ -316,6 +314,8 @@ Foo.addMethods('catC',{\n\
 		// var newNode = browser.selectedNode();
 		// this.assertEquals(newMethodFragment, newNode.target, 'browser hasn\'t selected the new method');
 	},
+
+
 	testBrowseIt: function() {
 		this.buildTestSource();
 		var browser = this.browser;
