@@ -407,16 +407,18 @@ Object.extend(Function.prototype, {
 	},
 
 	addMethods: function(/*...*/) {
-
 		var args = arguments;
 		var category = this.defaultCategoryName;
-		for (var i = 0; i < args.length; i++)
-			if (Object.isString(args[i]))
+		for (var i = 0; i < args.length; i++) {
+			if (Object.isString(args[i])) {
 				category = args[i];
-			else
+			} else {
 				this.addCategorizedMethods(category, args[i] instanceof Function ? (args[i])() : args[i]);
+			}
+		}
 	},
-addCategorizedMethods: function(categoryName, source) {
+	
+	addCategorizedMethods: function(categoryName, source) {
 		// first parameter is a category name
 		// copy all the methods and properties from {source} into the
 		// prototype property of the receiver, which is intended to be
@@ -2568,7 +2570,7 @@ namespace('lively.data');
 // FIXME the following does not really belong to Base should be somewhere else
 Record.subclass('lively.data.DOMRecord', {
 	description: "base class for records backed by a DOM Node",
-	noShallowCopyProperties: ['id', 'rawNode'],
+	noShallowCopyProperties: ['id', 'rawNode', '_livelyDataWrapperId_'],
 
 	initialize: function($super, store, argSpec) {
 		$super(store, argSpec);
