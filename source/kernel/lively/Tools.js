@@ -2211,13 +2211,17 @@ ChangeList.subclass('SourceDatabase', {
     },
     
     interestingLKFileNames: function(url) {
-		var fileURLs = new WebResource(url).getSubElements().subDocuments.collect(function(ea) { return ea.getURL() })
-		var fileNames = fileURLs.collect(function(ea) { return ea.relativePathFrom(URL.codeBase) })
-        var acceptedFileNames = /.*\.(st|js|lkml|txt|ometa|st)/
-		fileNames = fileNames.select(function(ea) { return acceptedFileNames.test(ea) });
-        fileNames = fileNames.uniq();
-        var rejects = ['JSON.js'];
-		fileNames = fileNames.reject(function(ea) { return rejects.include(ea) });
+		var webR = new WebResource(url).beSync(),
+			fileURLs = webR.getSubElements().subDocuments.collect(function(ea) { return ea.getURL() }),
+			fileNames = fileURLs.collect(function(ea) { return ea.relativePathFrom(URL.codeBase) }),
+			acceptedFileNames = /.*\.(st|js|lkml|txt|ometa|st)/,
+			rejects = ['JSON.js'];
+
+		fileNames = fileNames
+			.select(function(ea) { return acceptedFileNames.test(ea) })
+			.reject(function(ea) { return rejects.include(ea) })
+			.uniq();
+
 		return fileNames;
     },
 
