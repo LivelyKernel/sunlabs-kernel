@@ -316,12 +316,18 @@ Object.subclass('TestCase',
 		return simulatedEvent;
 	},
 
-	doMouseEvent: function(type, pos, targetMorph, shouldFocus) {
+	doMouseEvent: function(type, pos, targetMorphOrNode, shouldFocus) {
 		// type one of click, mousedown, mouseup, mouseover, mousemove, mouseout.
-		var hand = targetMorph.world().firstHand()
 		var evt = this.createMouseEvent(type, pos);
-		if (shouldFocus) hand.setMouseFocus(targetMorph);
-		targetMorph.world().rawNode.dispatchEvent(evt)
+		if (targetMorphOrNode instanceof Morph) {
+			if (shouldFocus) {
+				var hand = targetMorphOrNode.world().firstHand()
+				hand.setMouseFocus(targetMorphOrNode);
+			}
+			targetMorphOrNode.world().rawNode.dispatchEvent(evt);
+			return
+		}
+		targetMorphOrNode.dispatchEvent(evt)
 	},
 
 });
@@ -600,112 +606,44 @@ PanelMorph.subclass('TestRunnerPanel', {
 
 });
 
-Widget.subclass('TestRunner', {
+Widget.subclass('TestRunner', 
+'settings', {
 
 	viewTitle: "TestRunner",
 	documentation: 'Just a simple Tool for running tests in the Lively Kernel environment',
 	initialViewExtent: pt(600,500),
 	formals: ['TestClasses', 'SelectedTestClass', 'ResultText', 'FailureList', 'Failure'],
 	ctx: {},
+},
+'initialization', {
 	
 	initialize: function($super, optTestModule) {
 		$super(null);
-		var model = Record.newPlainInstance((function(){var x={};this.formals.each(function(ea){x[ea]=null});return x}.bind(this))());
-		this.onTestClassesUpdate = Functions.Null;
-		this.onSelectedTestClassUpdate = Functions.Null;
-		this.onResultTextUpdate = Functions.Null;
-		this.onFailureListUpdate = Functions.Null;
-		this.onFailureUpdate = Functions.Null;
-		this.relayToModel(model, {TestClasses: 'TestClasses', SelectedTestClass: 'SelectedTestClass', ResultText: 'ResultText', FailureList: 'FailureList', Failure: 'Failure'});
+		var model = Record.newPlainInstance(
+			(function(){
+				var x={};
+				this.formals.forEach(function(ea){ x[ea] = null });
+				return x;
+			}.bind(this))());
+
+		this.relayToModel(model, {
+			TestClasses: 'TestClasses',
+			SelectedTestClass: 'SelectedTestClass',
+			ResultText: 'ResultText',
+			FailureList: 'FailureList',
+			Failure: 'Failure',
+		});
 		
 		this.testModule = optTestModule;
 		this.refresh();
 	},
-refresh: function() {
-	this.getModel().setTestClasses(this.testModule ? this.testClassesOfModule(this.testModule) : this.allTestClasses());
+
+	refresh: function() {
+		this.getModel().setTestClasses(this.testModule ?
+			this.testClassesOfModule(this.testModule) : this.allTestClasses());
+	},
 },
-
-	
-	runTests: function(buttonDown) {
-		if (buttonDown) return;
-		this.runSelectedTestCase();
-	},
-
-	runAllTests: function(buttonDown) {
-		if (buttonDown) return;
-		this.runAllTestCases();
-	},
-
-	runSelectedTestCase: function() {
-		var testClassName = this.getSelectedTestClass();
-		if (!testClassName) return;
-		var testCase = new (Class.forName(testClassName))();
-		this.setBarColor(Color.darkGray);
-		testCase.runAll();
-		this.resultBar.label.setExtent(this.resultBar.getExtent());
-		this.setResultOf(testCase);
-	},
-	
-	runAllTestCases: function() {
-		var testSuite = new TestSuite();
-		var counter = 1;
-		//all classes from the list
-		testSuite.setTestCases(this.getTestClasses().map(function(ea) {
-		    return Class.forName(ea);
-		}));
-		var self = this;
-		var max = testSuite.testCaseClasses.length;
-	 	this.setBarColor(Color.darkGray);
-		testSuite.showProgress = function(testCase) {
-		    self.setResultText(testCase.constructor.type);
-		 	var progress = counter /  max;   
-			self.resultBar.setValue(progress);
-			// console.log("progress " + progress)
-			self.resultBar.label.setExtent(self.resultBar.getExtent());
-
-		    var failureList = testSuite.result.failureList();
-		    if(failureList.length > 0) {
-		        self.setFailureList(failureList);
-		        self.setBarColor(Color.red);
-		    };
-		    counter += 1;
-		};
-		testSuite.runAll();
-		testSuite.runFinished = function() {
-	        self.setResultOf(testSuite);
-		};		
-		
-	},
-		
-	setResultOf: function(testObject) {
-		this.testObject = testObject;
-		this.setResultText(this.testObject.result.shortResult());
-		this.setFailureList(this.testObject.result.failureList());
-		this.setBarColor(this.testObject.result.failureList().length == 0 ? Color.green : Color.red);
-		this.resultBar.setValue(1)
-		console.log(testObject.result.printResult());
-		// updating list with timings
-		this.setTestClasses(this.getTestClasses(),true);
-	},
-
-	testClassesOfModule: function(m) {
-		return m.classes()
-			.select(function(ea) { return ea.isSubclassOf(TestCase) && ea.prototype.shouldRun })
-		    .collect(function(ea) { return ea.type })
-		    .select(function(ea) { return !ea.include('Dummy') })
-		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
-            .sort();
-	},
-
-	allTestClasses: function() {
-		return TestCase.allSubclasses()
-		    .select(function(ea) { return ea.prototype.shouldRun && !ea.isAbstract })
-		    .collect(function(ea) { return ea.type })
-		    .select(function(ea) { return !ea.include('Dummy') })
-		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
-            .sort();
-	},
-	
+'view', {
 	buildView: function(extent) {
 		var panel;
 		panel = new TestRunnerPanel(extent);
@@ -767,10 +705,10 @@ refresh: function() {
 		});
 		
 		return panel;
-		},
+	},
 		
-		setBarColor: function(color) {
-			this.resultBar.bar.setFill(color);
+	setBarColor: function(color) {
+		this.resultBar.bar.setFill(color);
 	},
 	
 	openErrorStackViewer: function(testFailedObj) {
@@ -786,7 +724,101 @@ refresh: function() {
 		};
 		
 		new ErrorStackViewer(failedDebugObj).openIn(WorldMorph.current(), pt(220, 10));
-	}
+	},
+},
+'model related', {
+	onTestClassesUpdate: Functions.Null,
+	onSelectedTestClassUpdate: Functions.Null,
+	onResultTextUpdate: Functions.Null,
+	onFailureListUpdate: Functions.Null,
+	onFailureUpdate: Functions.Null,
+},
+'running', {
+	
+	runTests: function(buttonDown) {
+		if (buttonDown) return;
+		this.runSelectedTestCase();
+	},
+
+	runAllTests: function(buttonDown) {
+		if (buttonDown) return;
+		this.runAllTestCases();
+	},
+
+	runSelectedTestCase: function() {
+		var testClassName = this.getSelectedTestClass();
+		if (!testClassName) return;
+		var testCase = new (Class.forName(testClassName))();
+		this.setBarColor(Color.darkGray);
+		testCase.runAll();
+		this.resultBar.label.setExtent(this.resultBar.getExtent());
+		this.setResultOf(testCase);
+	},
+	
+	runAllTestCases: function() {
+		var testSuite = new TestSuite();
+		var counter = 1;
+		//all classes from the list
+		testSuite.setTestCases(this.getTestClasses().map(function(ea) {
+		    return Class.forName(ea);
+		}));
+		var self = this;
+		var max = testSuite.testCaseClasses.length;
+	 	this.setBarColor(Color.darkGray);
+		testSuite.showProgress = function(testCase) {
+		    self.setResultText(testCase.constructor.type);
+		 	var progress = counter /  max;   
+			self.resultBar.setValue(progress);
+			// console.log("progress " + progress)
+			self.resultBar.label.setExtent(self.resultBar.getExtent());
+
+		    var failureList = testSuite.result.failureList();
+		    if(failureList.length > 0) {
+		        self.setFailureList(failureList);
+		        self.setBarColor(Color.red);
+		    };
+		    counter += 1;
+		};
+		testSuite.runAll();
+		testSuite.runFinished = function() {
+	        self.setResultOf(testSuite);
+		};		
+		
+	},
+
+},
+'results', {
+		
+	setResultOf: function(testObject) {
+		this.testObject = testObject;
+		this.setResultText(this.testObject.result.shortResult());
+		this.setFailureList(this.testObject.result.failureList());
+		this.setBarColor(this.testObject.result.failureList().length == 0 ? Color.green : Color.red);
+		this.resultBar.setValue(1)
+		console.log(testObject.result.printResult());
+		// updating list with timings
+		this.setTestClasses(this.getTestClasses(),true);
+	},
+
+},
+'accessing', {
+	testClassesOfModule: function(m) {
+		return m.classes()
+			.select(function(ea) { return ea.isSubclassOf(TestCase) && ea.prototype.shouldRun })
+		    .collect(function(ea) { return ea.type })
+		    .select(function(ea) { return !ea.include('Dummy') })
+		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
+            .sort();
+	},
+
+	allTestClasses: function() {
+		return TestCase.allSubclasses()
+		    .select(function(ea) { return ea.prototype.shouldRun && !ea.isAbstract })
+		    .collect(function(ea) { return ea.type })
+		    .select(function(ea) { return !ea.include('Dummy') })
+		    .select(function(ea) { return Config.skipGuiTests ? !ea.endsWith('GuiTest') : true })
+            .sort();
+	},
 	
 });
 
