@@ -478,6 +478,8 @@ View.subclass('NetRequest', {
 				this.transport.setRequestHeader(p, value);
 				}, this);
 			this.transport.send(content || '');
+			if (Global.isFirefox && this.isSync) // mr: FF does not use callback when sync 
+				this.onReadyStateChange();
 			return this;
 		} catch (er) {
 			var status = this.getStatus();
