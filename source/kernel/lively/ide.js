@@ -358,6 +358,9 @@ Widget.subclass('lively.ide.BasicBrowser',
 			return node && node.asString && node.asString().include(name);
 		});
 	},
+	selectNothing: function() {
+		if (this.panel) this.setPane1Selection(null, true);
+	},
 
     onPane1SelectionUpdate: function(node) {
 
@@ -894,7 +897,6 @@ lively.ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	initialize: function($super) {
 		$super();
 		this.installFilter(lively.ide.NodeTypeFilter.defaultInstance(), 'Pane1');
-		this.installFilter(new lively.ide.SortFilter(), 'Root');
 		this.evaluate = true;
 		this.targetURL = null;
 	},
@@ -924,6 +926,8 @@ lively.ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 	},
 	
 	setTargetURL: function(url) {
+		url = url.withRelativePartsResolved();
+		this.selectNothing();
 		this.ensureSourceNotAccidentlyDeleted(function() {
 			var prevURL = this.targetURL;
 			if (!url.toString().endsWith('/'))
@@ -1081,6 +1085,7 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 	initialize: function($super, target, browser, parent) {
 		$super(target, browser, parent);
 		this.allFiles = [];
+		this.subNamespacePaths = [];
 	},
 	
 	addFile: function(file) { this.allFiles.push(file) },
@@ -1088,22 +1093,35 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 	removeFile: function(file) { this.allFiles = this.allFiles.without(file) },
 	
 	locationChanged: function() {
-		try {
-			this.allFiles = this.target.interestingLKFileNames(this.browser.getTargetURL());
+		this.browser.selectNothing();
+		var url = this.browser.getTargetURL();
+		try {			
+			this.allFiles = this.target.interestingLKFileNames(url);
 		} catch(e) {
 			// can happen when browser in a serialized world that is moved tries to relativize a URL
-			console.warn('Cannot get files for code browser ' + e)
+			this.statusMessage('Cannot get files for code browser with url ' + url + ' error ' + e, Color.red, 6)
 			this.allFiles = [];
 		}
+
+		this.parentNamespacePath = url.withFilename('../');
+		this.subNamespacePaths = this.pathsToSubNamespaces(url);
 	},
+	pathsToSubNamespaces: function(url) {
+		var webR = webR = new WebResource(url).beSync(),
+			dirs = webR.getSubElements().subCollections;
+			paths = dirs.collect(function(ea) { return ea.getURL() });
+		return paths;
+	},
+
 	
 	childNodes: function() {
 		// js files + OMeta files (.txt) + lkml files + ChangeSet current
 		//if (this._childNodes) return this._childNodes; // optimization
-		var nodes = [];
-		var srcDb = this.target;
-		var b = this.browser;
+		var nodes = [],
+			srcDb = this.target,
+			b = this.browser;
 		if (this.allFiles.length == 0) this.locationChanged();
+		if (!this.subNamespacePaths) this.subNamespacePaths = [];
 		for (var i = 0; i < this.allFiles.length; i++) {
 			var fn = this.allFiles[i];
 			if (fn.endsWith('.js')) {
@@ -1118,8 +1136,24 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 				}.bind(this))
 			}
 		};
-		nodes.push(ChangeSet.current().asNode(b)); // add local changes
+		nodes = nodes.sortBy(function(node) { return node.asString().toLowerCase() });
+
+		// namespace nodes		
+		var nsNodes = [];
+		for (var i = 0; i < this.subNamespacePaths.length; i++) {
+			var relativePath = this.subNamespacePaths[i];
+			nsNodes.push(new lively.ide.NamespaceNode(relativePath, b, this));
+		}
+		nsNodes = nsNodes.sortBy(function(node) { return node.asString() });
+		if (this.parentNamespacePath)
+			nsNodes.push(new lively.ide.NamespaceNode(this.parentNamespacePath, b, this));
+		nodes = nodes.concat(nsNodes)
+
+		// add local changes
+		nodes.push(ChangeSet.current().asNode(b));
+
 		this._childNodes = nodes;
+
 		return nodes;
 	},
 });
@@ -1162,7 +1196,38 @@ ide.BrowserNode.subclass('lively.ide.WikiCodeNode', {
 	
 });
  
-ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
+lively.ide.BrowserNode.subclass('lively.ide.NamespaceNode',
+'documentation', {
+	documentation: 'Has as its target a relative path to a subnamespace like lively/AST/. Sets new browser location on activation.'
+},
+'initialization', {
+	nameExtractor: /\/?([^\/]+)\/$/,
+
+	initialize: function($super, target, browser, parent) {
+		$super(target, browser, parent);
+		this.setLocalName();
+	},
+
+	setLocalName: function() {
+		// var localName = this.nameExtractor.exec(this.target);
+		// this.localName = (localName && localName[1]) ? (localName[1] + '/') : ('?' + this.target);
+		this.localName = this.target.filename();
+
+	},
+},
+'default', {
+	asString: function() { return this.localName },
+
+	completeURL: function() { return new URL(this.target) },
+
+	onSelect: function() {
+		// debugger
+		this.browser.setTargetURL(this.completeURL())
+	},
+});
+lively.ide.BrowserNode.subclass('lively.ide.FileFragmentNode', {
+
+	doNotSerialize: ['savedSource'],
 
 	toString: function() {
 		return this.constructor.name + '<' + this.getName() + '>'
@@ -1307,7 +1372,6 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
      
     sourceString: function($super) {
 		this.loadModule();
-        //if (!this.target) return '';
 		var src = $super();
 		if (src.length > this.maxStringLength && !this.showAll) return '';
         return src;
@@ -1377,7 +1441,7 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
 			node.checkForRedundantClassDefinitions()
 		}]);
 		menu.unshift(['Add to world requirements', function() {
-			var moduleName = module(node.moduleName).namespaceIdentifier;
+			var moduleName = lively.ide.ModuleWrapper.forFile(node.moduleName).moduleName();
 			ChangeSet.current().addWorldRequirement(moduleName);
 			alertOK(moduleName + ' added to local requirements');
 		}]);
@@ -2148,7 +2212,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 
 	world: function() { return WorldMorph.current() },
 
-	createFile: function(filename) {
+	createModuleFile: function(filename) {
 		var content = '', browser = this.browser;
 		if (filename.endsWith('.ometa')) {
 			content = this.ometaTemplate();
@@ -2167,6 +2231,20 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 		browser.allChanged();
 		browser.inPaneSelectNodeNamed('Pane1', filename);
 	},
+	createNamespaceDir: function(dirName) {
+		if (!dirName.endsWith('/')) dirName += '/';
+		var browser = this.browser,
+			url = browser.getTargetURL().withFilename(dirName);
+		new WebResource(url).create();
+		browser.rootNode().locationChanged();
+		browser.allChanged();
+		browser.inPaneSelectNodeNamed('Pane1', dirName);
+	},
+
+	createFileOrDir: function(input) {
+		return input.endsWith('/') ? this.createNamespaceDir(input) : this.createModuleFile(input);
+	},
+
 
 	moduleTemplateFor: function(filename) {
 		var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
@@ -2183,7 +2261,7 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 	trigger: function() {
 		var browser = this.browser;
 		this.browser.ensureSourceNotAccidentlyDeleted(function() {
-			this.world().prompt('Enter filename (something like foo or foo.js or foo.ometa)', this.createFile.bind(this));
+			this.world().prompt('Enter filename (something like foo or foo.js or foo.ometa or foo/)', this.createFileOrDir.bind(this));
 		}.bind(this));
 	},
 	
@@ -2919,11 +2997,16 @@ CodeParser.subclass('OMetaParser', {
 	
 });
 
-Object.subclass('lively.ide.ModuleWrapper', {
-
+Object.subclass('lively.ide.ModuleWrapper',
+'documentation', {
 	documentation: 'Compatibility layer around normal modules for SourceCodeDatabase and other tools. Will probably merged with normal modules in the future.',
+},
+'settings', {
 	forceUncached: true,
-	
+	doNotSerialize: ['_cachedSource'],
+},
+'initialization', {
+
 	initialize: function(moduleName, type) {
 		if (!moduleName || !type)
 			throw new Error('Cannot create ModuleWrapper without moduleName or type!');
@@ -2934,17 +3017,13 @@ Object.subclass('lively.ide.ModuleWrapper', {
 		this._ast = null;
 		this._cachedSource = null;
 	},
-	
+
+},
+'accessing', {	
 	type: function() { return this._type },
-	
 	ast: function() { return this._ast },
-	
 	moduleName: function() { return this._moduleName },
-	
-	fileURL: function() {
-		return URL.codeBase.withFilename(this.fileName());
-	},
-	
+	fileURL: function() { return URL.codeBase.withFilename(this.fileName()) },
 	fileName: function() {
 		return this.moduleName().replace(/\./g, '/') + '.' + this.type();
 	},
@@ -2966,7 +3045,10 @@ Object.subclass('lively.ide.ModuleWrapper', {
 		this.setCachedSource(source);
 		new WebResource(this.fileURL()).setContent(source);
 	},
-	
+
+},
+'parsing', {
+
 	retrieveSourceAndParse: function(optSourceDB) {
 		return this._ast = this.parse(this.getSource(), optSourceDB);
 	},
@@ -3024,6 +3106,8 @@ Object.subclass('lively.ide.ModuleWrapper', {
 		ast.setFileName(this.fileName());
 		return ast;
 	},
+},
+'removing', {
 	
 	remove: function() {
 		new WebResource(this.fileURL()).del();
