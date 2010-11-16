@@ -42,7 +42,7 @@ Object.extend(OMetaSupport, {
     translateAndWrite: function(sourceFileName, destFileName, additionalRequirements) {
 	var requirementsString = additionalRequirements ? ',\'' + additionalRequirements.join('\',\'') + '\'' : '';
 	var str = Strings.format('module(\'%s\').requires(\'ometa.parser\'%s).toRun(function() {\n%s\n});',
-		destFileName,
+		destFileName.replace(/\.js$/, '').replace(/\//g, '.'),
 		requirementsString,
 		OMetaSupport.translateToJs(OMetaSupport.fileContent(sourceFileName)));
 	OMetaSupport.writeGrammar(destFileName, str)

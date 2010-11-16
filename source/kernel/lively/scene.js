@@ -108,6 +108,7 @@ Object.subclass('lively.data.Wrapper',
 		var myClass = Class.forName(this.getType());
 		return new myClass(copier || Copier.marker, this);
 	},
+	doNotCopyProperties: ['_livelyDataWrapperId_'], 
 
 },
 'accessing', {
