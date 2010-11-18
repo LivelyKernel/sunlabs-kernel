@@ -114,8 +114,9 @@ UndoableCommand.subclass("RemoveMorphCommand", {
 });
 
 
-cop.createLayer("UndoLayer")
-cop.layerClass(UndoLayer, TextMorph, {
+cop.create("UndoLayer")
+.beGlobal()
+.refineClass(TextMorph, {
 
 	getUndoHistory: function() {
 		if (!this.undoHistory)
@@ -197,5 +198,6 @@ cop.layerClass(UndoLayer, TextMorph, {
 		})
  	},
 });
-cop.enableLayer(UndoLayer);
+
+
 })
