@@ -5354,7 +5354,11 @@ Morph.subclass("ProgressBarMorph", {
 		this.setValue(0.3);
 
 		this.label = new TextMorph(new Rectangle(0,0, 100, 20), '');
-		this.label.applyStyle({textColor: Color.white, fill: null, borderWidth: 0})
+		this.label.applyStyle({
+			textColor: Color.white, 
+			fill: null, 
+			strokeOpacity: 0,
+			borderWidth: 0})
 		this.addMorph(this.label);
 		this.label.ignoreEvents()
 	},
