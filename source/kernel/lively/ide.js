@@ -362,6 +362,7 @@ Widget.subclass('lively.ide.BasicBrowser',
 		if (this.panel) this.setPane1Selection(null, true);
 	},
 
+
     onPane1SelectionUpdate: function(node) {
 
 		this.pane1Selection = node; // for bindings
@@ -2574,7 +2575,7 @@ lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddLayerToFileFragmentC
 	},
 
 	createSource: function(layerName, className) {
-			return Strings.format('cop.create(%s).refineClass(%s, {\n\tm1: function(proceed, a) {return proceed(a)},\n});', layerName, className);
+			return Strings.format('cop.create(%s).refineClass(%s, {\n\tmethodName: function(arg1) {\n\t\tvar result = cop.proceed(arg1);\n\t\treturn result\n\t},\n});', layerName, className);
 		},
 
 });
