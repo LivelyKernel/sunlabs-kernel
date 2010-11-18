@@ -4660,6 +4660,7 @@ PasteUpMorph.subclass("WorldMorph",
     },
 
 
+
     chooseDisplayTheme: function(evt) { 
         var themes = DisplayThemes;
         var target = this; // trouble with function scope
@@ -5323,33 +5324,15 @@ PasteUpMorph.subclass("WorldMorph",
 		menu.addLine();
 		menu.addItems(this.subMenuItems(evt));
 		menu.addLine();
-		menu.addItems([
-			["New subworld (LinkMorph)", function(evt) { evt.hand.world().addMorph(new LinkMorph(null, evt.point()));}],  
-			["External link", function(evt) { evt.hand.world().addMorph(new ExternalLinkMorph(URL.source, evt.point()));}],
-			["authenticate for write access", function() {
-				new NetRequest().put(URL.source.withFilename('auth'));
-				// sometimes the wikiBtn seems to break after an authenticate
-				if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
-			["publish world as ... (XML)", function() { this.promptAndSaveWorld() }],
-			["publish world as ... (JSON)", function() { this.promptAndSaveWorld(true/*asJson*/) }],
-		]);
+		menu.addItem(["save world as ... ", function() { this.promptAndSaveWorld(true/*asJson*/) }]);
+
 		if (! this.isProtectedWorld()) { // Global. avoids an error if Network.js not loaded
-			// save but only if it's not the startup world
-			menu.addItem(["save world (XML)", function() { 
-				menu.remove(); 
-				this.saveWorld();
-			}]);
-			menu.addItem(["save world (JSON)", function() { 
+			menu.addItem(["save world (s)", function() { 
 				menu.remove(); 
 				this.saveWorldWithJSON();
 			}]);
 		}
-		if(Config.debugExtras) {
-			menu.addItem(["arm profile for next mouseDown", function() {evt.hand.armProfileFor("MouseDown") }]);
-			menu.addItem(["arm profile for next mouseUp", function() {evt.hand.armProfileFor("MouseUp") }]);
-		}
-		menu.addItem(["resize world", this.resizeByUser]);
-		menu.addItem(["restart system", this.restart]);
+
 		return menu;
 	},
 	
@@ -5381,24 +5364,24 @@ PasteUpMorph.subclass("WorldMorph",
 	complexMorphsSubMenuItems: function(evt) {
 		var world = this.world();
 		return [
-			["SliderMorph", function(evt) { world.addMorph(Widget.makeSlider(evt.point().extent(pt(120, 40))))}],
 			["ButtonMorph", function(evt) { world.addMorph(new ScriptableButtonMorph(evt.point().extent(pt(70, 30))))}],
-			["ProgressBarMorph", function(evt) { world.addMorph(new ProgressBarMorph(evt.point().extent(pt(70, 30))))}],
-			["ScaleMorph", function(evt) { world.addMorph(new ScaleMorph(evt.point().extent(pt(70, 30))))}],
+			["SliderMorph", function(evt) { world.addMorph(Widget.makeSlider(evt.point().extent(pt(120, 40))))}],
+			// ["ProgressBarMorph", function(evt) { world.addMorph(new ProgressBarMorph(evt.point().extent(pt(70, 30))))}],
+			// ["ScaleMorph", function(evt) { world.addMorph(new ScaleMorph(evt.point().extent(pt(70, 30))))}],
 			["Clock", function(evt) {
 				require('lively.Examples').toRun(function() {
 					var m = world.addMorph(new ClockMorph(evt.point(), 50));
 					m.startSteppingScripts();
 					ChangeSet.current().addWorldRequirement('lively.Examples')
 				})}],
-			["FabrikClock", function(evt) {
-				require('lively.Fabrik').toRun(function() {
-					var clock = new FabrikClockWidget();
-					var morph = clock.buildView();
-					world.addMorph(morph);
-					morph.setPosition(evt.point());
-					morph.startSteppingScripts(); }); }],
-			["Text Window", function(evt) { 
+			// ["FabrikClock", function(evt) {
+				// require('lively.Fabrik').toRun(function() {
+					// var clock = new FabrikClockWidget();
+					// var morph = clock.buildView();
+					// world.addMorph(morph);
+					// morph.setPosition(evt.point());
+					// morph.startSteppingScripts(); }); }],
+ 			["Text Window", function(evt) { 
 				WorldMorph.current().addTextWindow("Editable text"); }],
 			["Piano Keyboard", function(evt) {
 				require('lively.Examples').toRun(function() {
@@ -5415,15 +5398,7 @@ PasteUpMorph.subclass("WorldMorph",
 					img.openInWorld() }) }],
 			["Video Morph", function(evt) {
 				VideoMorph.openAndInteractivelyEmbed(evt.point()) }],
-			["Layout Demo", function(evt) {
-				require('lively.GridLayout').toRun(function() {
-					GridLayoutMorph.demo(evt.hand.world(), evt.point()); }); }],
-			["Effects demo (FF only)", function(evt) { require('lively.demofx').toRun(Functions.Empty); }],
-			["PresentationPage", function(evt) { 
-				require('lively.Presentation').toRun(function(){
-					world.addMorph(new lively.Presentation.PageMorph(new Rectangle(0,0,800,600)))
-				}); 
-			}],
+
 			// ["Duplicator Panel", function(evt) { 
 			// 	require('lively.Graffle').toRun(function(){
 			// 		world.addMorph(Morph.makeDefaultDuplicatorPanel(evt.point()))
@@ -5442,7 +5417,6 @@ PasteUpMorph.subclass("WorldMorph",
 	toolSubMenuItems: function(evt) {
 		var world = this.world();
 		var toolMenuItems = [
-//			["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
 			["System code browser (b)", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world)})}],
 			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world)})}],
 			// ["Wiki code Browser", function(evt) { require('lively.ide', 'lively.LKWiki').toRun(function(unused, ide) {
@@ -5452,34 +5426,22 @@ PasteUpMorph.subclass("WorldMorph",
 				// };
 				// world.prompt('Wiki base URL?', cb, URL.source.getDirectory().toString());
 				// })}],
-			["Switch System browser directory...", function(evt) { require('lively.ide').toRun(function(unused, ide) {
-				var cb = function(input) {
-					if (!input.endsWith('/')) input += '/';
-					ide.startSourceControl().switchCodeBase(new URL(input));
-				};
-				world.prompt('Enter System browser directory (URL)', cb, URL.source.getDirectory().toString());
-				})}],				
-			["File Browser", function(evt) { new FileBrowser().openIn(world) }],
-			["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world); }],	
-			["Console (l)", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
+			// ["Switch System browser directory...", function(evt) { require('lively.ide').toRun(function(unused, ide) {
+				// var cb = function(input) {
+					// if (!input.endsWith('/')) input += '/';
+					// ide.startSourceControl().switchCodeBase(new URL(input));
+				// };
+				// world.prompt('Enter System browser directory (URL)', cb, URL.source.getDirectory().toString());
+				// })}],				
 			["TestRunner", function(evt) { require('lively.TestFramework').toRun(function() { new TestRunner().openIn(world) }) }],
-			["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().open() }) }],
-			["FrameRateMorph", function(evt) {
-				var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
-				m.startSteppingScripts(); }],
-			["EllipseMaker", function(evt) {
-				var m = world.addMorph(new EllipseMakerMorph(evt.point()));
-				m.startSteppingScripts(); }],
-			["XHTML Browser", function(evt) { 
-				var xeno = new XenoBrowserWidget('sample.xhtml');
-				xeno.openIn(world); }],
+			// ["OMetaWorkspace", function(evt) { require('lively.Ometa').toRun(function() { new OmetaWorkspace().open() }) }],
 			["Viewer for latest file changes", function(evt) {
-			var cb = function(input) {
-				require('lively.LKWiki').toRun(function(u,m) {
-					var url = new URL(input);
-					console.log(url);
-					new LatestWikiChangesList(url).openIn(world);
-			}); }
+				var cb = function(input) {
+					require('lively.LKWiki').toRun(function(u,m) {
+						var url = new URL(input);
+						console.log(url);
+						new LatestWikiChangesList(url).openIn(world);
+				}); }
 				world.prompt('Url to observe', cb, URL.source.getDirectory().toString()); 
 			}],
 			["Version Viewer", function(evt) {
@@ -5520,7 +5482,6 @@ PasteUpMorph.subclass("WorldMorph",
 		return [
 			[(Config.usePieMenus ? "don't " : "") + "use pie menus",
 					  function() { Config.usePieMenus = !Config.usePieMenus; }],
-			["choose display theme...", this.chooseDisplayTheme],
 			[(Morph.prototype.suppressBalloonHelp ? "enable balloon help" : "disable balloon help"),
 					  this.toggleBalloonHelp],
 			[(HandMorph.prototype.useShadowMorphs ? "don't " : "") + "show drop shadows",
@@ -5531,13 +5492,52 @@ PasteUpMorph.subclass("WorldMorph",
 			  function () { HandMorph.prototype.applyDropShadowFilter = !HandMorph.prototype.applyDropShadowFilter}],
 			[(Config.isSnappingToGrid ? "[X]": "[]") + " snap to grid",
 						  function(){Config.isSnappingToGrid = !Config.isSnappingToGrid}],
+
+		];
+	},
+	propertiesSubMenuItems: function(evt) {
+		var world = this.world();
+		return [
+			["choose display theme...", this.chooseDisplayTheme],
 			["change title",   this, 'askForWorldTitle'],
 			["add module requirements...",
 				 function(){this.showAddWorldRequirementsMenu(evt.mousePoint)}],
 			["remove module requirements...",
-				 function(){this.showRemoveWorldRequirementsMenu(evt.mousePoint)}]
+				 function(){this.showRemoveWorldRequirementsMenu(evt.mousePoint)}],
+			["resize world", this.resizeByUser],
 		];
 	},
+
+	depricatedSubMenuItems: function(evt) {
+		var world = this.world();
+		return [
+			["Tools", [
+				["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
+				["File Browser", function(evt) { new FileBrowser().openIn(world) }],
+				["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world); }],
+				["Console (l)", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
+				["XHTML Browser", function(evt) { 
+					var xeno = new XenoBrowserWidget('sample.xhtml');
+					xeno.openIn(world); }],
+
+			]],
+			["Scripting", this.scriptingSubMenuItems()],
+			["New subworld (LinkMorph)", function(evt) { evt.hand.world().addMorph(new LinkMorph(null, evt.point()));}],  
+			["External link", function(evt) { evt.hand.world().addMorph(new ExternalLinkMorph(URL.source, evt.point()));}],
+			["authenticate for write access", function() {
+				new NetRequest().put(URL.source.withFilename('auth'));
+				// sometimes the wikiBtn seems to break after an authenticate
+				if (Config.showWikiNavigator) WikiNavigator.enableWikiNavigator(true); }],
+
+			["save world as ... (XML)", function() { this.promptAndSaveWorld() }],
+			["save world (XML)", function() { 
+				menu.remove(); 
+				this.saveWorld();
+			}],
+
+		];
+	},
+
 	
 	helpSubMenuItems: function(evt) {
 		return	[
@@ -5553,6 +5553,13 @@ PasteUpMorph.subclass("WorldMorph",
 	debuggingSubMenuItems: function(evt) {
 		var world = this.world();
 		var items = [
+			["FrameRateMorph", function(evt) {
+				var m = world.addMorph(new FrameRateMorph(evt.point().extent(pt(160, 10)), "FrameRateMorph"));
+				m.startSteppingScripts(); }],
+			["EllipseMaker", function(evt) {
+				var m = world.addMorph(new EllipseMakerMorph(evt.point()));
+				m.startSteppingScripts(); }],
+
 			['World serialization info', function() {
 				require('lively.persistence.Debugging').toRun(function() {
 					var json = lively.persistence.Serializer.serialize(world),
@@ -5566,7 +5573,9 @@ PasteUpMorph.subclass("WorldMorph",
 			["Call Stack Viewer", function(evt) { 
 				if (Config.debugExtras) lively.lang.Execution.showStack("use viewer");
 				else new StackViewer(this).openIn(world); }],
+			["restart system", this.restart],
 		];
+
 
 		if (!Config.debugExtras) return items;
 
@@ -5592,9 +5601,10 @@ PasteUpMorph.subclass("WorldMorph",
 			['Simple morphs', this.simpleMorphsSubMenuItems(evt)],
 			['Complex morphs', this.complexMorphsSubMenuItems(evt)],
 			['Tools', this.toolSubMenuItems(evt)],
-			['Scripting', this.scriptingSubMenuItems(evt)],
-			['Preferences', this.preferencesSubMenuItems(evt)],
+			['Properties', this.propertiesSubMenuItems(evt)],
 			['Debugging', this.debuggingSubMenuItems(evt)],
+			['Depricated', this.depricatedSubMenuItems(evt)],
+			['Preferences', this.preferencesSubMenuItems(evt)],
 			['Help', this.helpSubMenuItems(evt)]];
 	},
 	
@@ -6690,7 +6700,7 @@ Object.subclass('ClipboardCopier', {
 
 	createBaseDocument: function(source) {
 		return new DOMParser().parseFromString('<?xml version="1.0" standalone="no"?>' +
-			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
+			'<svg xmlns:lively="http://www.experimentalstuff.com/Lively" xmlns="http://www.w3.org/2000/svg" id="canvas">' +
                 '<g type="WorldMorph" id="1:WorldMorph" transform="matrix(1 0 0 1 0 0)" fill="rgb(255,255,255)">'+
                     '<rect x="0" y="0" width="800" height="600"/>' +          
                     source  +
