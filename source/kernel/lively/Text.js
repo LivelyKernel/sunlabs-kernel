@@ -1214,6 +1214,7 @@ BoxMorph.subclass('TextMorph',
 		this.applyStyleDeferred({
 			borderWidth: 0,
 			fill: null,
+			strokeOpacity: 0,
 			wrapStyle: lively.Text.WrapStyle.Shrink, 
 			fontSize: 12,
 			padding: Rectangle.inset(0),
@@ -1233,6 +1234,7 @@ BoxMorph.subclass('TextMorph',
 		this.applyStyleDeferred({
 			borderWidth: 0, 
 			fill: null, 
+			strokeOpacity: 0,
 			wrapStyle: lively.Text.WrapStyle.None, 
 			padding: Rectangle.inset(4, 0)});
 		this.ignoreEvents();
@@ -2479,10 +2481,9 @@ BoxMorph.subclass('TextMorph',
 	// compose the lines if necessary and then render them
 	renderText: function(topLeft, compositionWidth) {
 		// tag: newText
-		// Note:  This seems to be a spacer for one-line texts, as in a list of texts,
-		//	  not an interline spacing for lines in a paragraph.
+		// Note: This seems to be a spacer for one-line texts, as in a list of texts,
+		// not an interline spacing for lines in a paragraph.
 		var defaultInterline = (lively.Text.TextLine.prototype.lineHeightFactor - 1) * this.font.getSize();
-
 		this.lines = this.composeLines(0, topLeft.addXY(0, defaultInterline/2), compositionWidth, this.font);
 		for (var i = 0; i < this.lines.length; i++) this.lines[i].render(this.textContent);
 	},
