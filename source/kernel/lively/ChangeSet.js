@@ -251,7 +251,16 @@ Change.subclass('ChangeSet',
 			if (node.localName == 'code') defNode.removeChild(node);
 		});
 		this.xmlElement = this.xmlElement || LivelyNS.create("code");
-		defNode.appendChild(this.xmlElement);
+		try {
+			defNode.appendChild(this.xmlElement);
+		} catch(e) {
+			// the xmlElement may have originated from another document, in
+			// such a case we have to import the node into the defNode's
+			// ownerDocument first. Otherwise, forward error.
+			if (e.code == DOMException.WRONG_DOCUMENT_ERR)
+				defNode.appendChild(defNode.ownerDocument.importNode(this.xmlElement, true));
+			else throw e;
+		}
 	},
 	
 	findOrCreateDefNodeOfWorld: function(doc) {
