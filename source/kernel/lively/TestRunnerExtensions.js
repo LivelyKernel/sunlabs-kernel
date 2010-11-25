@@ -21,7 +21,7 @@ cop.create("TimeEachTestLayer")
 		this.timeOfTestRuns[selector] = time;
 	},
 
-	getSortedTimesOfTestRuns: function(proceed) {
+	getSortedTimesOfTestRuns: function() {
 		var times = this.timeOfTestRuns
 		if(!times) return;	
 		var sortedTimes = Object.keys(times).collect(function(eaSelector) {
