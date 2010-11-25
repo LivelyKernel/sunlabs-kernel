@@ -38,6 +38,8 @@ TextMorph.addMethods('serialization', {
 		$super();
 		if (this.rawNode && this.textContent.rawNode) {
 			this.rawNode.appendChild(this.textContent.rawNode);
+			if (!this.font)
+				this.font = lively.Text.Font.forFamily(this.fontFamily, this.fontSize)
 			this.setNullSelectionAt(0);
 			this.changed();
 		}

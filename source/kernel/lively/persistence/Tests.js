@@ -111,6 +111,24 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerTest',
 		var result = this.sut.deserialize(json)
 		this.assertEqual(str, result.value);
 	},
+	test10IdIsStored: function() {
+		this.sut.keepIds = true;
+		var obj = {foo: 23},
+			id = this.sut.register(obj).id,
+			registeredCopy = this.sut.getRegisteredObjectFromId(id);
+		this.assert(registeredCopy[this.sut.idProperty] !== undefined, 'copy has no id');
+	},
+	test11IdIsNotAlwaysDeleted: function() {
+		this.sut.keepIds = true;
+		var obj = {foo: 23},
+			id = this.sut.register(obj).id,
+			recreated = this.sut.recreateFromId(id);
+		this.sut.cleanup(); // evil!!!!
+		this.assertEquals(id, obj[this.sut.idProperty], 'orig');
+		this.assertEquals(id, recreated[this.sut.idProperty], 'recreated');
+	},
+
+
 
 })
 
@@ -192,6 +210,50 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 		this.assert(sut.doNotSerialize(obj, 'x'), 'x');
 		this.assert(!sut.doNotSerialize(obj, 'foo'), 'foo');
 	},
+	testRaiseErrorWhenClassNotFound: function() {
+		this.serializer = ObjectGraphLinearizer.forLively(); // plugin creation should happen there
+		try {
+			var klass = Object.subclass('Dummy_testDontRaiseErrorWhenClassNotFound', {}),
+				instance = new klass(),
+				serialized = this.serializer.serialize(instance);
+		} finally {
+			klass.remove();
+		}
+
+		var temp = Config.ignoreClassNotFound;
+		Config.ignoreClassNotFound = false;
+		try {
+			this.serializer.deserialize(serialized)
+		} catch(e) { return } finally { Config.ignoreClassNotFound = temp }
+
+		this.assert(false, 'No error rasied when deserializing obj without class')
+
+	},
+	testRaiseNoErrorWhenClassNotFoundWhenOverridden: function() {
+		this.serializer = ObjectGraphLinearizer.forLively(); // plugin creation should happen there
+		try {
+			var className = 'Dummy_testRaiseNoErrorWhenClassNotFoundWhenOverridden',
+				klass = Object.subclass(className, {}),
+				instance = new klass(),
+				serialized = this.serializer.serialize(instance);
+		} finally {
+			klass.remove();
+		}
+
+		var temp = Config.ignoreClassNotFound;
+		Config.ignoreClassNotFound = true;
+		try {
+			var result = this.serializer.deserialize(serialized)
+		} finally {
+			Config.ignoreClassNotFound = temp
+		}
+		this.assert(result.isClassPlaceHolder)
+		this.assertEquals(className, result.className)
+
+		
+	},
+
+
 
 });
 

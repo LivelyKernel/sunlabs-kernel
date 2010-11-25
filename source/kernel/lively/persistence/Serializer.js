@@ -3,6 +3,7 @@ module('lively.persistence.Serializer').requires('lively.persistence.ObjectExten
 Object.subclass('ObjectGraphLinearizer',
 'settings', {
 	defaultCopyDepth: 70,
+	keepIds: false,
 },
 'initializing', {
 
@@ -18,9 +19,9 @@ Object.subclass('ObjectGraphLinearizer',
 		// remive ids from all original objects and the original objects as well as any recreated objects
 		for (var id in this.registry) {
 			var entry = this.registry[id];
-			if (entry.originalObject)
+			if (!this.keepIds && entry.originalObject)
 				delete entry.originalObject[this.idProperty]
-			if (entry.recreatedObject)
+			if (!this.keepIds && entry.recreatedObject)
 				delete entry.recreatedObject[this.idProperty]
 			delete entry.originalObject;
 			delete entry.recreatedObject;
@@ -140,7 +141,7 @@ Object.subclass('ObjectGraphLinearizer',
 		this.copyDepth++
 		var copy = {};
 		for (var key in obj) {
-			if (!obj.hasOwnProperty(key) || key === this.idProperty) continue;
+			if (!obj.hasOwnProperty(key) || (key === this.idProperty && !this.keepIds)) continue;
 			var value = obj[key];
 			if (this.somePlugin('ignoreProp', [obj, key, value])) continue;
 this.path.push(key)
@@ -382,8 +383,15 @@ ObjectLinearizerPlugin.subclass('ClassPlugin',
 		var className = persistentCopy[this.classNameProperty];
 		if (!className) return;
 		var klass = Class.forName(className);
-		if (!klass) throw new Error('ObjectGraphLinearizer is trying to deserialize instance of' +
-				className + ' but this class cannot be found!');
+		if (!klass) {
+			var msg = 'ObjectGraphLinearizer is trying to deserialize instance of ' +
+				className + ' but this class cannot be found!';
+			if (!Config.ignoreClassNotFound) throw new Error(msg);
+			console.error(msg);
+			lively.bindings.callWhenNotNull(WorldMorph, 'currentWorld',
+				{warn: function(world) { world.alert(msg) }}, 'warn');
+			return {isClassPlaceHolder: true, className: className};
+		}
 		return new klass(this);
 	},
 
