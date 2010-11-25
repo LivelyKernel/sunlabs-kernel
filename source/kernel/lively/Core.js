@@ -1236,11 +1236,10 @@ Copier.subclass('Importer', {
     
 	loadWorldContents: function(doc) { 
 		// possibly doc === Global.document; 
-		var world = null;
-		var morphs = this.importFromNodeList(this.canvasContent(doc));
+		var world = null,
+			morphs = this.importFromNodeList(this.canvasContent(doc));
 
-		if (!(0 in morphs)) 
-			return null;
+		if (!(0 in morphs)) return null;
 
 		var canvas = this.canvas(doc);
 
@@ -5322,7 +5321,7 @@ PasteUpMorph.subclass("WorldMorph",
 		menu.keepOnlyItemsNamed(["inspect", "edit style"]);
 		menu.addItems([['reset scale', function(evt) { var w = evt.hand.world(); w.setScale(1); w.resizeCanvasToFitWorld() }]]);
 		menu.addLine();
-		menu.addItems(this.subMenuItems(evt));
+		menu.addItems(this.subMenuItems(evt, menu));
 		menu.addLine();
 		menu.addItem(["save world as ... ", function() { this.promptAndSaveWorld(true/*asJson*/) }]);
 
@@ -5508,7 +5507,7 @@ PasteUpMorph.subclass("WorldMorph",
 		];
 	},
 
-	depricatedSubMenuItems: function(evt) {
+	depricatedSubMenuItems: function(evt, menu) {
 		var world = this.world();
 		return [
 			["Tools", [
@@ -5595,7 +5594,7 @@ PasteUpMorph.subclass("WorldMorph",
 	},
 
 	
-	subMenuItems: function(evt) {
+	subMenuItems: function(evt, menu) {
 		//console.log("mouse point == %s", evt.mousePoint);
 		return [
 			['Simple morphs', this.simpleMorphsSubMenuItems(evt)],
@@ -5603,7 +5602,7 @@ PasteUpMorph.subclass("WorldMorph",
 			['Tools', this.toolSubMenuItems(evt)],
 			['Properties', this.propertiesSubMenuItems(evt)],
 			['Debugging', this.debuggingSubMenuItems(evt)],
-			['Depricated', this.depricatedSubMenuItems(evt)],
+			['Depricated', this.depricatedSubMenuItems(evt, menu)],
 			['Preferences', this.preferencesSubMenuItems(evt)],
 			['Help', this.helpSubMenuItems(evt)]];
 	},
@@ -7125,14 +7124,16 @@ Object.extend(LayoutManager, {
 	defaultInstance: new LayoutManager(),
 	fromLiteral: function(literal) { return this.defaultInstance },
 
-	layoutAllowed: function() { return !this.suppressLayout },
+	layoutAllowed: function() { return this.suppressLayoutLevel <= 0 },
 	noLayoutDuring: function(callback) {
-		this.suppressLayout = true;
+		if (!this.suppressLayoutLevel) this.suppressLayoutLevel = 0;
+		this.suppressLayoutLevel++;
 		try {
-			callback();
+			var result = callback && callback();
 		} finally {
-			this.suppressLayout = false
+			this.suppressLayoutLevel--
 		};
+		return result;
 	},
 });
 
