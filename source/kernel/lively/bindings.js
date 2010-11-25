@@ -184,10 +184,10 @@ Object.subclass('AttributeConnection',
 			throw new Error('addConnectionWrapper didnt get a method to wrap')
 
 		sourceObj[this.privateAttrName(methodName)] = origMethod; // save so that it can be restored
-		sourceObj[methodName] = function() {
+		sourceObj[methodName] = function connectionWrapper() {
 			if (sourceObj.attributeConnections === undefined)
 				throw new Error('Sth wrong with sourceObj, has no attributeConnections')
-			var result = origMethod.apply(sourceObj, arguments);
+			var result = connectionWrapper.originalFunction.apply(sourceObj, arguments);
 			for (var i = 0; i < sourceObj.attributeConnections.length; i++) {
 				var c = sourceObj.attributeConnections[i];
 				if (c.getSourceAttrName() === methodName)
