@@ -219,12 +219,12 @@ thisModule.SerializationBaseTestCase.subclass('Tests.SerializationTests.Serializ
 	 * the svg element is the canvas and is needed for deserialization
 	 */
 	testLoadTwoMorphsWithoutWorld: function() {
-		var world = this.loadWorldFromSource( 
-			'<svg xmlns="http://www.w3.org/2000/svg" id="canvas">' +
-				'<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)">'+
+		var world = this.loadWorldFromSource(
+			'<svg xmlns="http://www.w3.org/2000/svg" x="0" y="0" width="200" height="200" id="canvas">' +
+				'<g type="Morph" id="102:Morph" transform="matrix(1 0 0 1 11 11)" fill="rgb(255,255,255)">'+
 					'<rect x="0" y="0" width="100" height="100" fill="rgb(250,0,0)"/>'+
 				'</g>'+
-				'<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)">'+
+				'<g type="Morph" id="103:Morph" transform="matrix(1 0 0 1 50 50)" fill="rgb(255,255,255)">'+
 					'<rect x="0" y="0" width="100" height="100" fill="rgb(0,0,250)"/>'+
 				'</g>'+
 			'</svg>');
