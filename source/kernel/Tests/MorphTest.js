@@ -565,7 +565,11 @@ TestCase.subclass('Tests.MorphTest.NodeMorphTest', {
 
 
 // (new TestRunner()).openIn(this.world())
-TestCase.subclass("Tests.MorphTest.HTMLFontCharWidthCompositionTest", {
+TestCase.subclass("Tests.MorphTest.HTMLFontCharWidthCompositionTest",
+'running', {
+	shouldRun: false,
+},
+'testing', {
 
 	testFontComputeExtents: function() {
 		var font = lively.Text.Font.forFamily("Helvetica", 100),
@@ -722,7 +726,11 @@ MorphTestCase.subclass("Tests.MorphTest.DuplicateTextMorphTest", {
 // logMethod(Morph.prototype, "onMouseDown");
 //logMethod(HandMorph.prototype, "reallyHandleMouseEvent");
 
-MorphTestCase.subclass('Tests.MorphTest.MouseEventTest', {
+MorphTestCase.subclass('Tests.MorphTest.MouseEventTest',
+'running', {
+	shouldRun: false,
+},
+'testing', {
 
 	test01OwnerCanCaptureEvent: function() {
 		// tests if the owner morph's event handler is activated when first event handler returns false
