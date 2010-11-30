@@ -94,8 +94,13 @@ cop.create('WorkspaceControlLayer')
 		
 	}).refineClass(WorldMorph, {
 		onKeyDown: function(evt) {
-			var key = evt.getKeyChar() && evt.getKeyChar().toLowerCase();
+			
+			var key = evt.getKeyChar();
+			if (!key.toLowerCase)
+				return cop.proceed(evt);
+
 			if (key && evt.isCommandKey() && !evt.isShiftDown()) {
+				key = key.toLowerCase();
 				if (key == 'k') { 
 					WorldMorph.current().addWorkspace();
 					return true;
