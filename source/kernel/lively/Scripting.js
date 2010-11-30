@@ -68,7 +68,7 @@ Morph.addMethods({
 		var nameField = new TextMorph(new Rectangle(0,-15,100,20), this.name);
 		this.addMorph(nameField);
 		nameField.beLabel();
-		nameField.applyStyle({fill: null, borderWidth: 0, textColor: Color.gray.darker(), fontSize: 10})
+		nameField.applyStyle({fill: null, borderWidth: 0, strokeOpacity: 0, textColor: Color.gray.darker(), fontSize: 10})
 		nameField.isNameField = true;
 		connect(this, 'name', nameField, 'setTextString')
 	},

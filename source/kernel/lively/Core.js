@@ -2056,15 +2056,9 @@ Morph.addMethods('settings', {
 	nearlyZeroBorderWidth: 0.00001,
 
 	setBorderWidth: function(newWidth) {
-		if (newWidth == null) newWidth = 0;
-		if (Config.ChromeWindowsBorderBugFix) {
-			// Workaround Chrome Windows BUG
-			// that displays a line when the strok width is 0
-			if (newWidth == 0) newWidth = this.nearlyZeroBorderWidth;
-		}
-		
+		if (!newWidth) newWidth = 0;		
 		var oldWidth = this.getBorderWidth();
-		if (newWidth == oldWidth) return;
+		if (newWidth === oldWidth) return;
 
 		// Opt: only notify change with the bigger of two bounds
 		if (oldWidth > newWidth) this.changed();
@@ -4516,6 +4510,7 @@ PasteUpMorph.subclass("WorldMorph",
 },
 'initilization', {
 	initialize: function($super, canvas, backgroundImageId) {
+debugger
 		var bounds = Rectangle.fromElement(canvas);
 		// sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
 		// in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
@@ -5685,8 +5680,13 @@ PasteUpMorph.subclass("WorldMorph",
 	
 	onKeyDown: function(evt) {
 		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
-		var key = evt.getKeyChar().toLowerCase();
-		if (evt.isCommandKey() && evt.isShiftDown()) {
+		var key = evt.getKeyChar();
+		if (! key.toLowerCase)
+			return;
+
+		key = key.toLowerCase();
+
+		if ( evt.isCommandKey() && evt.isShiftDown()) {
 			if (key == 'f') {
 				var world = this;
 				require('lively.ide').toRun(function(unused, ide) {
@@ -6255,6 +6255,7 @@ Morph.subclass("HandMorph",
 		morph.ignoreEvents();
 		morph.isEpimorph = true;
 		morph.setBorderWidth(0);
+		morph.setStrokeOpacity(0);
 		morph.setFill(null);
 		this.indicatorMorph = morph;
 		this.addMorph(morph);

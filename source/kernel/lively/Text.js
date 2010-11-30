@@ -799,7 +799,7 @@ lively.Text.WrapStyle = Class.makeEnum([
 Morph.subclass('TextSelectionMorph', {
 
 	documentation: "Visual representation of the text selection",
-	style: {fill: Color.primary.blue, borderWidth: 0, borderRadius: 1},
+	style: {fill: Color.primary.blue, borderWidth: 0, strokeOpacity: 0, borderRadius: 1},
 	isEpimorph: true,
 	
 	initialize: function($super) {
@@ -1348,7 +1348,7 @@ BoxMorph.subclass('TextMorph',
 		console.log("status: " + msg)
 		if (!this._statusMorph) {
 			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
-			this._statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 1})
+			this._statusMorph.applyStyle({borderWidth: 0, strokeOpacity: 0, fill: Color.gray, fontSize: 16, fillOpacity: 1})
 		}
 		var statusMorph = this._statusMorph;
 		statusMorph.textString = msg;
@@ -1850,7 +1850,14 @@ BoxMorph.subclass('TextMorph',
 			return true;
 		}
 			
-		
+		// Firefox fix: evt.stop does not work when shift+arrow key for selection is pressed
+		// and instead of selecting text it is deleted
+		if (UserAgent.fireFoxVersion && evt.isShiftDown()) {
+			var events = [Event.KEY_HOME, Event.KEY_END, Event.KEY_PAGEUP, Event.KEY_PAGEDOWN,
+				Event.KEY_LEFT, Event.KEY_RIGHT, Event.KEY_UP];
+			if (events.include(c)) { evt.stop(); return false };
+		}
+
 		if (!evt.isMetaDown()) {
 			this.replaceSelectionfromKeyboard(evt.getKeyChar()); 
 			evt.stop(); // done
@@ -3006,7 +3013,7 @@ pt(20,20).asRectangle().center()
         
         
         /* configure this*/
-        this.applyStyle({borderWidth: 0, fill: Color.veryLightGray});        
+        this.applyStyle({borderWidth: 0, strokeOpacity: 0, fill: Color.veryLightGray});        
         this.label = label;
         this.text = text;
         [this, this.label, this.text].forEach(function() {

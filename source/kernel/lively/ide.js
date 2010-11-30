@@ -595,7 +595,7 @@ Widget.subclass('lively.ide.BasicBrowser',
 		var s = this.panel.sourcePane;	
 		if (!this._statusMorph) {
 			this._statusMorph = new TextMorph(pt(300,30).extentAsRectangle());
-			this._statusMorph.applyStyle({borderWidth: 0})
+			this._statusMorph.applyStyle({borderWidth: 0, strokeOpacity: 0})
 		}
 		var statusMorph = this._statusMorph;
 		statusMorph.setTextString(msg);

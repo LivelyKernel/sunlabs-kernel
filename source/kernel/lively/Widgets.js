@@ -54,6 +54,8 @@ BoxMorph.subclass('ButtonMorph', {
 
 	focusHaloBorderWidth: 0,
 
+	suppressHandles: true,
+
 	openForDragAndDrop: false,
 
     // A ButtonMorph is the simplest widget
@@ -116,7 +118,10 @@ BoxMorph.subclass('ButtonMorph', {
         } 
     },
     
-	onMouseMove: Functions.Empty,
+	onMouseMove: function(evt) {
+
+		if (!evt.mouseButtonPressed && !this.hasHandles()) this.checkForControlPointNear(evt);
+	},
 
 	onMouseUp: function(evt) {
 		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
@@ -563,7 +568,7 @@ BoxMorph.subclass("ClipMorph", {
 	// (optionally) reports of damage from submorphs are also clipped so that,
 	// eg, scrolling can be more efficient
 	
-	style: { fill: null, borderWidth: 0},
+	style: { fill: null, borderWidth: 0, strokeOpacity: 0},
 	
 	openForDragAndDrop: false,
 
@@ -1335,7 +1340,7 @@ BoxMorph.subclass("TextListMorph",
 
 'properties', {
 	documentation: "A list that uses TextMorphs to display individual items",
-	style: { borderColor: Color.black, borderWidth: 1, fill: Color.white},
+	style: { borderColor: Color.black, borderWidth: 1, fill: Color.white,  strokeOpacity: 1},
 	formals: ["List", "Selection", "-Capacity", "-ListDelta", "-DeletionConfirmation", "+DeletionRequest"],
 	defaultCapacity: 50,
 	highlightItemsOnMove: false,
@@ -2916,6 +2921,7 @@ BoxMorph.subclass('ScrollPane',
 
 // lively.bindings.connect(morph, 'setFill', this.clipMorph, 'setFill')
 		morph.setBorderWidth(0);
+		morph.setStrokeOpacity(0);
 		this.clipMorph.addMorph(morph);
 	},
 
@@ -4181,7 +4187,7 @@ BoxMorph.subclass("TitleBarMorph",
 	controlSpacing: 3,
 	barHeight: 22,
 	shortBarHeight: 15,
-	style: {borderWidth: 0, fill: null},
+	style: {borderWidth: 0, fill: null, strokeOpacity: 0},
 	labelStyle: { 
 		borderRadius: 8, 
 		padding: Rectangle.inset(6, 2), 
@@ -4278,6 +4284,7 @@ BoxMorph.subclass("TitleBarMorph",
 			loc = loc.addPt(dx); 
 		}
 		if (this.label) {
+			// this.label.setPosition(pt(22,3))
 			this.label.align(this.label.bounds().topCenter(), this.innerBounds().topCenter());
 			if (this.label.bounds().topLeft().x < loc.x) {
 				this.label.align(this.label.bounds().topLeft(), loc.addXY(0,-3));
@@ -4390,7 +4397,7 @@ Morph.subclass("WindowControlMorph", {
 
     documentation: "Event handling for Window morphs",
 
-    style: {borderWidth: 0},
+    style: {borderWidth: 0, strokeOpacity: 0},
     
     focus: pt(0.4, 0.2),
     formals: ["-HelpText", "-Trigger"],
@@ -4465,7 +4472,7 @@ Morph.subclass("WindowControlMorph", {
 
 BoxMorph.subclass('StatusBarMorph', {
 
-    style: { borderWidth: 0, fill: null},
+    style: { borderWidth: 0, fill: null, strokeOpacity: 0},
 
     initialize: function($super, titleBar) {
 	var bounds = titleBar.getExtent().extentAsRectangle().withHeight(8);
@@ -4499,7 +4506,7 @@ Morph.subclass('WindowMorph', {
     titleBar: null,
     statusBar: null,
     targetMorph: null,
-    style: {borderWidth: 0, fill: null, borderRadius: 0},
+    style: {borderWidth: 0, fill: null, borderRadius: 0, strokeOpacity: 0},
     
     initialize: function($super, targetMorph, headline, optSuppressControls) {
         var bounds = targetMorph.bounds();
@@ -5650,7 +5657,7 @@ BoxMorph.subclass("StatusMessageContainer",
 
 	setupDismissAllButton: function(){
 		this.dismissAllButton = new ButtonMorph(new Rectangle(0,0,400,15)).setLabel("dismiss all");
-		this.dismissAllButton.applyStyle({fill: Color.lightGray, borderWidth: 0})
+		this.dismissAllButton.applyStyle({fill: Color.lightGray, borderWidth: 0, strokeOpacity: 0})
 		connect(this.dismissAllButton, "fire", this, "dismissAll");
 	},
 },
@@ -5750,7 +5757,7 @@ BoxMorph.subclass("StatusMessageContainer",
 			statusMorph.addMorph(moreButton);
 		}
 
-		statusMorph.applyStyle({borderWidth: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.7, borderRadius: 10});
+		statusMorph.applyStyle({borderWidth: 0, strokeOpacity: 0, fill: Color.gray, fontSize: 16, fillOpacity: 0.7, borderRadius: 10});
 		if (optStyle)
 			statusMorph.applyStyle(optStyle);
 		statusMorph.textString = msg;
@@ -5916,7 +5923,7 @@ BoxMorph.subclass('CheckBoxMorph', {
 
 	buildLabel: function() {
 		this.label = this.addMorph(new TextMorph(new Rectangle(0,0, 30, 10)))
-		this.label.applyStyle({fill: null, borderWidth: 0, fontSize: 18})
+		this.label.applyStyle({fill: null, borderWidth: 0, strokeOpacity: 0, fontSize: 18})
 		this.label.emphasizeAll({align: 'center'})
 		this.label.ignoreEvents()
 	},

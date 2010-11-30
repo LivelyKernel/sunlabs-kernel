@@ -110,6 +110,7 @@ Object.subclass('lively.data.Wrapper',
 	},
 	doNotCopyProperties: ['_livelyDataWrapperId_'], 
 
+
 },
 'accessing', {
 
