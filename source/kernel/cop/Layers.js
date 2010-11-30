@@ -299,6 +299,56 @@ Object.extend(cop, {
 
 		cop.pvtMakeFunctionOrPropertyLayerAware(base_obj, property, getter, 'getter');
 		cop.pvtMakeFunctionOrPropertyLayerAware(base_obj, property, setter, 'setter');
+	},
+	makeFunctionLayerUnaware: function(base_obj, function_name) {
+			if (!base_obj) 
+				throw new Error("need object to makeFunctionLayerUnaware");
+			
+			var prevFunction;
+			var currentFunction = base_obj[function_name];
+	
+			if (currentFunction === undefined)
+				return; // nothing to do here			
+			
+
+			while (typeof currentFunction.originalFunction == 'function' && 
+				!currentFunction.isLayerAware) {
+
+				var prevFunction = currentFunction;
+				currentFunction = currentFunction.originalFunction			
+			}
+		
+			if (!(currentFunction.isLayerAware))
+				return; // nothing to do here			
+			
+			var originalFunction = currentFunction.originalFunction
+
+			if (!(originalFunction instanceof Function))
+				throw new Error("makeFunctionLayerUnaware Error: no orignal function");
+
+			if (prevFunction instanceof Function) {
+				prevFunction.originalFunction = originalFunction			
+			} else {
+				base_obj[function_name] = originalFunction
+			}
+	},
+
+	uninstallLayersInObject: function(object) {
+		Functions.own(object).each(function(ea){
+			cop.makeFunctionLayerUnaware(object, ea)
+		})
+	},
+
+	// cop.uninstallLayersInAllClasses()
+	uninstallLayersInAllClasses: function() {
+
+		Global.classes(true).each(function(ea) {
+			cop.uninstallLayersInObject(ea.prototype) 
+		})
+	},
+
+	allLayers: function() {
+		Object.values(Global).select(function(ea) { return ea instanceof Layer})
 	}
 });
 

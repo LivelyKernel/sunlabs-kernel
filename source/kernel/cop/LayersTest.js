@@ -1683,6 +1683,74 @@ TestCase.subclass('cop.LayersTest.ContextJSBugs', {
 	}
 })
 
-});
+TestCase.subclass("cop.UninstallLayerTest", {
+
+	testMakeFunctionLayerUnaware: function() {
+		var obj = {m: function() {return 3}};
+		var originalFunction = obj.m;
+		cop.makeFunctionLayerAware(obj, "m");
+		
+		this.assert(obj.m !== originalFunction, "make layer aware failed")
+
+		cop.makeFunctionLayerUnaware(obj, "m");
+
+		this.assert(obj.m === originalFunction, "make layer unaware failed")
+	},
+
+	testMakeFunctionLayerUnawareThatIsConnected: function() {
+		var obj1 = {m1: function(a) {return a}};
+		var obj2 = {m2: function(b) { 
+			this.b = b;
+			// do nothing
+		}};
+
+		var originalFunction = obj1.m1;
+		cop.makeFunctionLayerAware(obj1, "m1");
+
+		var layerWrapper = obj1.m1;
+
+		connect(obj1, "m1", obj2, "m2");
+		var bindingsWrapper = obj1.m1;
+
+
+		this.assert(bindingsWrapper !== layerWrapper, "binding did not work")
+		this.assert(bindingsWrapper.originalFunction == layerWrapper, "bindings did not wrap around layer?")
+
+		cop.makeFunctionLayerUnaware(obj1, "m1");
+		this.assert(obj1.m1 === bindingsWrapper, "make layer unaware overwrote binding")
+
+		obj1.m1(99)
+		this.assertEqual(99, obj2.b);
+	},
+
+	
+
+	testUninstallLayerInObject: function() {
+		var obj1 = {
+			m1: function() {return 3},
+			m2: function() {return 2}
+		};
+		var originalM1 = obj1.m1;
+		var originalM2 = obj1.m2;
+
+		
+		var layer = new Layer();
+		layer.refineObject(obj1, {
+			m1: function() { cop.proceed() + 1},
+		});
+
+		var layer2 = new Layer();
+		layer2.refineObject(obj1, {
+			m2: function() { cop.proceed() + 1},
+		});
+
+
+		cop.uninstallLayersInObject(obj1);
+
+		this.assert(obj1.m1 === originalM1, "obj1.m1 is still wrapped");
+		this.assert(obj1.m2 === originalM2, "obj2.m2 is still wrapped");
+			
+	}
+})});
 console.log("loaded LayersTest.js");
 
