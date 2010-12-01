@@ -485,6 +485,9 @@ Object.extend(Array.prototype, {
       return !values.include(value);
     });
   },
+  withoutAll: function(otherArr) {
+	return this.without.apply(this, otherArr);
+  },
 
   reverse: function(inline) {
     return (inline !== false ? this : this.toArray())._reverse();
@@ -514,8 +517,11 @@ Object.extend(Array.prototype, {
 
   inspect: function() {
     return '[' + this.map(Object.inspect).join(', ') + ']';
-  }
+  },
 
+	pushAt: function(item, index) {
+		this.splice(index, 0, item);
+	},
 });
 
 // use native browser JS 1.6 implementation if available
