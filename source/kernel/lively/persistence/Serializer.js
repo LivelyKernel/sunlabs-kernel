@@ -327,6 +327,7 @@ Object.extend(ObjectGraphLinearizer, {
 			new LivelyWrapperPlugin(),
 			new OldModelFilter(),
 			new ScriptFilter(),
+			new LayerPlugin()
 		]);
 		return serializer;
 	},
@@ -412,6 +413,36 @@ ObjectLinearizerPlugin.subclass('ClassPlugin',
 				result.push(sourceModule);
 		}, this)
 		return result.uniq();
+	},
+});
+ObjectLinearizerPlugin.subclass('LayerPlugin',
+'properties', {
+	withLayersPropName: 'withLayers',
+	withoutLayersPropName: 'withoutLayers'
+
+},'plugin interface', {
+	serializeObj: function(original, persistentCopy) {
+		this.serializeLayerArray(original, persistentCopy, this.withLayersPropName)
+		this.serializeLayerArray(original, persistentCopy, this.withoutLayersPropName)
+	},
+	afterDeserializeObj: function(obj) {
+		this.deserializeLayerArray(obj, this.withLayersPropName)
+		this.deserializeLayerArray(obj, this.withoutLayersPropName)
+	},
+},'helper',{
+	serializeLayerArray: function(original, persistentCopy, propname) {
+		var layers = original[propname]
+		if (layers && layers.length > 0)
+			persistentCopy[propname] = layers.invoke('getName');
+	},
+
+	deserializeLayerArray: function(obj, propname) {
+		var layers = obj[propname];
+		if (layers && layers.length > 0) {
+			obj[propname] = layers.collect(function(ea) {
+				return Object.isString(ea) ? cop.create(ea, true) : ea;
+			});
+		}
 	},
 });
 ObjectLinearizerPlugin.subclass('LivelyWrapperPlugin', // for serializing lively.data.Wrappers
@@ -656,18 +687,19 @@ Object.extend(lively.persistence.Serializer, {
 		// serialize changeset
 		var cs = ChangeSet.fromWorld(world),
 			csElement = doc.importNode(cs.getXMLElement(), true),
-			metaCSNode = doc.createElement('meta')
+			metaCSNode = XHTMLNS.create('meta');
 		metaCSNode.setAttribute('id', this.changeSetElementId);
 		metaCSNode.appendChild(csElement);
 
 		// serialize world
 		var json = this.serialize(world, null, serializer),
-			metaWorldNode = doc.createElement('meta');
+			metaWorldNode = XHTMLNS.create('meta');
 		metaWorldNode.setAttribute('id', this.jsonWorldId)
 		metaWorldNode.appendChild(doc.createCDATASection(json))
 
-		doc.head.appendChild(metaCSNode)
-		doc.head.appendChild(metaWorldNode)
+		var head = doc.getElementsByTagName('head')[0];
+		head.appendChild(metaCSNode)
+		head.appendChild(metaWorldNode)
 
 		return doc;
 	

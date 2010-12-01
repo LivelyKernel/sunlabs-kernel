@@ -179,6 +179,36 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 		this.assert(result instanceof lively.persistence.Tests.SmartRefTestDummy, 'instanceof 1');
 		this.assert(result.friend instanceof lively.persistence.Tests.SmartRefTestDummy, 'instanceof 2');
 	},
+	testSerializeObjectSpecificLayers: function() {
+		var instance1 = new lively.persistence.Tests.SmartRefTestDummy()
+		var layer = cop.create('TestSerializeLayersLayer');
+		instance1.withLayers = [layer];
+
+		this.serializer = ObjectGraphLinearizer.forLively(); // plugin creation should happen there
+		var result = this.serializeAndDeserialize(instance1)
+	
+		this.assert(result.withLayers, 'deserialized has no withLayers');
+		this.assert(result.withLayers[0], 'deserialized has no reference to the layer');
+		this.assert(result.withLayers[0] instanceof Layer,	'deserialized layer is layer ');
+		this.assertIdentity(result.withLayers[0], instance1.withLayers[0], 
+			'deserialized layer is not identical with original');
+	},
+	testSerializeObjectSpecificWithoutLayers: function() {
+		var instance1 = new lively.persistence.Tests.SmartRefTestDummy()
+		var layer = cop.create('TestSerializeLayersLayer');
+		instance1.withoutLayers = [layer];
+
+		this.serializer = ObjectGraphLinearizer.forLively(); // plugin creation should happen there
+		var result = this.serializeAndDeserialize(instance1)
+	
+		this.assert(result.withoutLayers, 'deserialized has no withLayers');
+		this.assert(result.withoutLayers[0], 'deserialized has no reference to the layer');
+		this.assert(result.withoutLayers[0] instanceof Layer,	'deserialized layer is layer ');
+		this.assertIdentity(result.withoutLayers[0], instance1.withoutLayers[0], 
+			'deserialized layer is not identical with original');
+	},
+
+
 	test03IgnoreProps: function() {
 		var obj = {
 			doNotSerialize: ['foo'],
