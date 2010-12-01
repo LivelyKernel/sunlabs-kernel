@@ -1118,29 +1118,31 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 	childNodes: function() {
 		// js files + OMeta files (.txt) + lkml files + ChangeSet current
 		//if (this._childNodes) return this._childNodes; // optimization
-		var nodes = [],
+		var moduleNodes = [],
+			nsNodes = [],
 			srcDb = this.target,
 			b = this.browser;
+
+		// modules (files)
 		if (this.allFiles.length == 0) this.locationChanged();
 		if (!this.subNamespacePaths) this.subNamespacePaths = [];
 		for (var i = 0; i < this.allFiles.length; i++) {
 			var fn = this.allFiles[i];
 			if (fn.endsWith('.js')) {
-				nodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), b, this, fn));
+				moduleNodes.push(new ide.CompleteFileFragmentNode(srcDb.rootFragmentForModule(fn), b, this, fn));
 			} else if (fn.endsWith('.ometa')) {
-				nodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), b, this, fn));
+				moduleNodes.push(new ide.CompleteOmetaFragmentNode(srcDb.rootFragmentForModule(fn), b, this, fn));
 			} else if (fn.endsWith('.lkml')) {
-				nodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), b, this));
+				moduleNodes.push(new ide.ChangeSetNode(ChangeSet.fromFile(fn, srcDb.getCachedText(fn)), b, this));
 			} else if (fn.endsWith('.st')) {
 				require('lively.SmalltalkParserSupport').toRun(function() {
-					nodes.push(new StBrowserFileNode(srcDb.rootFragmentForModule(fn), b, this, fn));
+					moduleNodes.push(new StBrowserFileNode(srcDb.rootFragmentForModule(fn), b, this, fn));
 				}.bind(this))
 			}
 		};
-		nodes = nodes.sortBy(function(node) { return node.asString().toLowerCase() });
+		moduleNodes = moduleNodes.sortBy(function(node) { return node.asString().toLowerCase() });
 
 		// namespace nodes		
-		var nsNodes = [];
 		for (var i = 0; i < this.subNamespacePaths.length; i++) {
 			var relativePath = this.subNamespacePaths[i];
 			nsNodes.push(new lively.ide.NamespaceNode(relativePath, b, this));
@@ -1148,9 +1150,10 @@ ide.BrowserNode.subclass('lively.ide.SourceControlNode', {
 		nsNodes = nsNodes.sortBy(function(node) { return node.asString() });
 		if (this.parentNamespacePath)
 			nsNodes.push(new lively.ide.NamespaceNode(this.parentNamespacePath, b, this));
-		nodes = nodes.concat(nsNodes)
 
 		// add local changes
+		var nodes = nsNodes;
+		nodes = nodes.concat(moduleNodes);
 		nodes.push(ChangeSet.current().asNode(b));
 
 		this._childNodes = nodes;
