@@ -302,9 +302,12 @@ CustomJSON = (function () {
 })();
 
 // reuse existing JSON implementation
-if (JSON) {
+if (window && window.JSON) {
 	for (var name in CustomJSON)
-		JSON[name] = CustomJSON[name];
+		if (!JSON[name])
+			JSON[name] = CustomJSON[name];
 } else {
-	JSON = CustomJSON
+	window.JSON = CustomJSON
+	JSON.parse = JSON.unserialize
+	JSON.stringify = JSON.serialize
 }
