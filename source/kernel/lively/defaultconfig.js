@@ -247,7 +247,9 @@ var Config = {
 	// e.g. don't open standard Brwser menu on right
     suppressDefaultMouseBehavior: UserAgent.canExtendBrowserObjects,
 
-    resizeScreenToWorldBounds: false
+    resizeScreenToWorldBounds: false,
+
+	changeLocationOnSaveWorldAs: false,
 };
 
 // Note this patch fixes a problem with recent WebKit builds and Safari 4 beta
@@ -365,7 +367,9 @@ Config.useDelayedHTMLRendering = false
 Config.couchDBURL = document.location.protocol + '//' + document.location.host + '/couchdb';
 Config.defaultCodeDB = 'code_db';
 Config.wikiRepoUrl = null;
-Config.ChromeWindowsBorderBugFix = (UserAgent.isWindows || UserAgent.isLinux) && UserAgent.isChrome;
+
+
+// Config.ChromeWindowsBorderBugFix = (UserAgent.isWindows || UserAgent.isLinux) && UserAgent.isChrome;
 
 Config.serverInvokedTest = false;
 
