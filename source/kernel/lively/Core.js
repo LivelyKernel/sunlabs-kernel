@@ -5176,28 +5176,43 @@ debugger
 		this.prompt("world file (.xhtml)", function(filename) {
 			if (!filename.endsWith('.xhtml')) filename += '.xhtml'
 			var start = new Date().getTime();	
-			if (asJson) this.saveWorldWithJSON(filename);
+			var onFinish = function(url) {
+				WorldMorph.current().setStatusMessage('goto ' + url, Color.green, undefined, 
+					function(){ window.open(url)});
+
+				if (Config.changeLocationOnSaveWorldAs)
+					window.location = url;
+			};
+			if (asJson) this.saveWorldWithJSON(filename, onFinish);
 			else this.exportLinkedFile(filename);
 			var time = new Date().getTime() - start;
 			this.setStatusMessage("world save as " + filename + " in " + time + "ms", Color.green, 3)	
+
+
 		}.bind(this)); 
 	},
 
-	saveWorldWithJSON: function(optURLOrPath) {
+	saveWorldWithJSON: function(optURLOrPath, optOnFinish) {
 		var world = this,
 			url = optURLOrPath || URL.source,
 			start = new Date().getTime(),
 			onFinished = function() {
 				var time = new Date().getTime() - start;
 				world.setStatusMessage("world saved to " + url + " in " + time + "ms \n(" + time + "ms serialization)", Color.green, 3)
+
+				if (optOnFinish)
+					optOnFinish.call(this, url)
+
 			};
-			
 			
 		// make relative to absolute URL
 		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
 		require("lively.persistence.Serializer").toRun(function() {
 			if (world._statusMessageContainer) world._statusMessageContainer.remove();
 			var doc = lively.persistence.Serializer.serializeWorld(world);
+
+			var titleTag = doc.getElementsByTagName('title')[0]
+			if (titleTag) titleTag.textContent = url.filename().replace('.xhtml', '')
 			Exporter.saveDocumentToFile(doc, url, onFinished);
 		});
 
@@ -5296,6 +5311,8 @@ debugger
 		var self = this;
 		this.prompt('new world title', function(input) {
 			document.title = input;
+			var titleTag = document.getElementsByTagName('title')[0];
+			titleTag.textContent = input;
 		}, document.title);
 	},
 },
@@ -5487,13 +5504,15 @@ debugger
 			[(Config.isSnappingToGrid ? "[X]": "[]") + " snap to grid",
 						  function(){Config.isSnappingToGrid = !Config.isSnappingToGrid}],
 
+			[(Config.changeLocationOnSaveWorldAs ? "[X]": "[]") + " change location on save world as",
+						  function(){Config.changeLocationOnSaveWorldAs = !Config.changeLocationOnSaveWorldAs}],
+
 		];
 	},
 	propertiesSubMenuItems: function(evt) {
 		var world = this.world();
 		return [
 			["choose display theme...", this.chooseDisplayTheme],
-			["change title",   this, 'askForWorldTitle'],
 			["add module requirements...",
 				 function(){this.showAddWorldRequirementsMenu(evt.mousePoint)}],
 			["remove module requirements...",
@@ -5679,12 +5698,25 @@ debugger
 	takesKeyboardFocus: Functions.True,
 	
 	onKeyDown: function(evt) {
-		// console.log("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
+		// alert("WorldMorph onKeyDown " + this + " ---  " + evt + " char: " + evt.getKeyChar() )
 		var key = evt.getKeyChar();
 		if (! key.toLowerCase)
 			return;
 
 		key = key.toLowerCase();
+
+		if ( evt.isAltDown()) {
+			if (key == 'c') {
+				this.doCopyStyle()
+				evt.stop()
+				return true;
+			};
+			if (key == 'v') {
+				this.doPasteStyle()
+				evt.stop()
+				return true;
+			}
+		}
 
 		if ( evt.isCommandKey() && evt.isShiftDown()) {
 			if (key == 'f') {
@@ -5755,6 +5787,31 @@ debugger
 			this.pasteFromSource(TextMorph.clipboardString);
 		}
 	},
+	doCopyStyle: function() {
+		var target = this.firstHand().keyboardFocus;
+		if (this.currentSelection && this.currentSelection.selectedMorphs.length > 0) {
+			target = this.currentSelection.selectedMorphs[0]
+		};
+
+		alert('copy style: ' + target)
+		if (target)
+			new StyleCopier().copyFromMorph(target)
+		else
+			alert("no target")
+	},
+	doPasteStyle: function() {
+		var targets
+		if (this.currentSelection && this.currentSelection.selectedMorphs.length > 0) {
+			targets = this.currentSelection.selectedMorphs
+		} else {
+			targets = [this.firstHand().keyboardFocus];
+		}
+		targets.forEach(function(ea){
+			new StyleCopier().pasteToMorph(ea)
+		})	
+	},
+
+
 	
 	doCut: function() {
 		console.log("cut selection")
