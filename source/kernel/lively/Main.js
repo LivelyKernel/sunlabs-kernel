@@ -558,7 +558,7 @@ Object.subclass('lively.Main.ExampleLoader', {
 		if (Config.showBrowser) new SimpleBrowser().openIn(devWorld.myWorld, pt(20, 20));
 
 		if (Config.showTester)
-			require('lively.Examples').toRun(function() { new TestWidget().openIn(devWorld.myWorld, pt(835, 450)) });
+			require('lively.Examples').toRun(function() { new TestWidget().openIn(devWorld.myWorld, pt(935, 450)) });
 
 
 		if (!Config.skipMostExamples && !UserAgent.isTouch) new ObjectBrowser().openIn(devWorld.myWorld, pt(50, 100));
@@ -599,6 +599,15 @@ Object.subclass('lively.Main.ExampleLoader', {
 			browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(160, 150));
 		}
 
+		if (Config.showSystemBrowser) {
+			require('lively.ide').toRun(function() {
+				new lively.ide.SystemBrowser().openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(100, 350))
+			})
+			var browser = new TwoPaneObjectBrowser();
+			console.log('showing TwoPaneBrowser!');
+			browser.openIn();
+		}
+		
 		if (Config.showGridDemo)
 			require('lively.GridLayout').toRun(function() {
 				alert('demo!!');
