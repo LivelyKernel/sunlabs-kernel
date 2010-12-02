@@ -603,9 +603,6 @@ Object.subclass('lively.Main.ExampleLoader', {
 			require('lively.ide').toRun(function() {
 				new lively.ide.SystemBrowser().openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(100, 350))
 			})
-			var browser = new TwoPaneObjectBrowser();
-			console.log('showing TwoPaneBrowser!');
-			browser.openIn();
 		}
 		
 		if (Config.showGridDemo)
