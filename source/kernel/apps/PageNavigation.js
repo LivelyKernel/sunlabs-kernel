@@ -61,7 +61,7 @@ cop.create("PageNavigationLayer")
 			};
 			var morph = new TextMorph(pt(0,0).extent(pt(100,100)), no);
 			morph.name = this.pageNumberMorphName();
-			morph.applyStyle({fill: null, fontSize: 18, borderWidth: 0});
+			morph.applyStyle({fill: null, fontSize: 18, borderWidth: 0, strokeOpacity: 0});
 			morph.ignoreEvents();
 			morph.openInWorld();
 			morph.align(morph.bounds().bottomLeft(), this.bounds().bottomLeft().addPt(pt(10, -10)))

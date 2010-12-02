@@ -565,34 +565,33 @@ Object.subclass('lively.Main.ExampleLoader', {
 
 		// Sample executable script pane
 		if (Config.showPenScript) {
-			require('lively.Tools').toRun(function() {
-				var parser = new CodeMarkupParser(new URL(Config.codeBase).withFilename('Pen.lkml'));
-				parser.onComplete = function() {
-					var widget;
-					if (Config.showTestText) widget = new TestTextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
-					else widget = new TextMorph(pt(50,30).extent(pt(250,50)), Pen.script);
-					widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100)));
-					if (Config.showHilbertFun) Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
-					devWorld.myWorld.addMorph(widget);
-					if (Config.tryFasteroids)
-					require('lively.Contributions').toRun(function() {
-						lively.Contributions.installFasteroids(world, new Rectangle(150, 100, 600, 400));
-					});
-				}
-				parser.parse();
+			require('lively.ChangeSet').toRun(function() {
+				ChangeSet.fromFile(URL.codeBase.withFilename('Pen.lkml').toString()).evaluate();
+				var textmorphClass = Config.showTestText ? TestTextMorph : TextMorph,
+					widget = new textmorphClass(pt(50,30).extent(pt(250,50)), Pen.script);
+				widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100)));
+				if (Config.showHilbertFun)
+					Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
+				devWorld.myWorld.addMorph(widget);
+			});
+		};
+
+		if (Config.tryFasteroids) {
+			require('lively.Contributions').toRun(function() {
+				lively.Contributions.installFasteroids(world, new Rectangle(150, 100, 600, 400));
 			});
 		}
 
 		if (Config.showWebStore()) {
 			var store = new FileBrowser();
 			store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
-		}
+		};
 
 		if (Config.showDOMBrowser) {
 			var browser = new DOMBrowser();
 			console.log('showing DOMBrowser!');
 			browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(260, 120));
-		}
+		};
 
 		if (Config.showTwoPaneObjectBrowser) {
 			var browser = new TwoPaneObjectBrowser();

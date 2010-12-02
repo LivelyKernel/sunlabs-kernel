@@ -1,8 +1,7 @@
 module('apps.Journal').requires('cop.Layers', 'apps.DateFormat').toRun(function() {
 
-cop.createLayer('JournalEntryLayer')
-
-cop.layerClass(JournalEntryLayer, TextMorph, {
+cop.create('JournalEntryLayer')
+.refineClass(TextMorph, {
 	splitInOwer: function(evt) {
 		if(!this.owner)
 			return;
@@ -24,7 +23,7 @@ cop.layerClass(JournalEntryLayer, TextMorph, {
 		// at a position....
 	},
 
-	onKeyDown: function(proceed, evt) {
+	onKeyDown: function(evt) {
 		// console.log("on key press" + evt)
 		if (evt.isCtrlDown() && (evt.getKeyCode() == 13)) {
 				this.splitInOwer(evt);

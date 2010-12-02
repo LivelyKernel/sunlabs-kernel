@@ -223,7 +223,7 @@ Object.subclass("SimpleCanvasPlotter", {
 
 	enable: function() {
 		this._enabled = true;
-		enableLayer(LiveEventBenchmarkLayer)
+		cop.enableLayer(LiveEventBenchmarkLayer)
 
 	},
 

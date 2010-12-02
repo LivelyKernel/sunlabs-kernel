@@ -342,6 +342,18 @@ PaperMorph.addMethods(
 'contextJS', {
 	withLayers: [PaperMorphLayer, SpellCheckerLayer]
 });
+cop.create('PaperMorphMenuLayer')
+.beGlobal()
+.refineClass(WorldMorph, {
+	toolSubMenuItems: function(evt) {
+		var menuItems = cop.proceed(evt);
+		menuItems.push(["PaperMorph", function(evt) {
+			var m = new PaperMorph();		
+			m.openInWorld(evt.mousePoint, "paperMorph")
+		}]);
+		return menuItems;
+	}
+});
 
 // PaperMorph.prototype.setWithLayers([PaperMorphLayer, TeXLayer])
 
@@ -364,8 +376,8 @@ Object.subclass('LaTeXTextMorphWrapper', {
 });*/
 
 	converterNames: function() {
-	return Properties.all(LaTeXConverter.prototype).select(function(ea) { return ea.startsWith('$' ) });
-},
+		return Properties.all(LaTeXConverter.prototype).select(function(ea) { return ea.startsWith('$' ) });
+	},
 
 	textMorphTypes: function() {
 		return this.converterNames().collect(function(ea) { return ea.substring(1, ea.length) });
@@ -460,7 +472,7 @@ Object.subclass('LaTeXTextMorphWrapper', {
 	},
 
 	addMethodsToLayerClass: function(layer, klass, methods) {
-		layerClass(layer, klass, methods);
+		layer.refineClass(klass, methods);
 		// klass.addMethods(methods)
 	},
 });
@@ -519,9 +531,7 @@ cop.create('TeXLayer')
 		return text
 	},
 
-
-
-	asText: function(proceed) {
+	asText: function() {
 		if (this.generateHTML) {
 			return this.createHTMLBody();
 		} else {

@@ -94,7 +94,9 @@ Widget.subclass('PresentationManager', 'default category', {
 
 });
 
-cop.create('ExtListMorphLayer').refineClass(ListMorph, {
+cop.create('ExtListMorphLayer')
+.beGlobal()
+.refineClass(ListMorph, {
 
 	generateListItem: function(value, rect) {
 		if (value instanceof Morph) {
@@ -151,6 +153,5 @@ cop.create('ExtListMorphLayer').refineClass(ListMorph, {
 
 });
 
-enableLayer(ExtListMorphLayer);
 
 }) // end of module

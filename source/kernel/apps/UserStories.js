@@ -1,4 +1,4 @@
-module('apps.UserStories').requires('lively.bindings', 'cop.Layers', 'lively.Connector').toRun(function() {
+module('apps.UserStories').requires('lively.bindings', 'cop.Layers', 'lively.Connector', 'lively.Styles').toRun(function() {
 
 Object.extend(Global, {
 	
@@ -25,7 +25,9 @@ Object.extend(Global, {
 	
 });
 
-cop.create('UserStoryLayer').refineClass(WorldMorph, {
+cop.create('UserStoryLayer')
+.beGlobal()
+.refineClass(WorldMorph, {
 	toolSubMenuItems: function(evt) {
 		var menuItems = cop.proceed(evt);
 		menuItems.push(["User Sory controls", function(evt) {
@@ -63,7 +65,68 @@ cop.create('UserStoryLayer').refineClass(WorldMorph, {
 		return menuItems;
 	}
 });
-cop.enableLayer(UserStoryLayer);
+Object.extend(DisplayThemes.primitive, { 
+	
+	userStoryCard: {
+		fill: Color.gray.lighter(),
+		fillOpacity: 1,
+		borderColor: Color.gray.darker(),
+		borderRadius: 8,
+		borderWidth: 2,
+		strokeOpacity: 1,
+	},
+
+	userStoryButton: {
+		fill: Color.rgb(255,215,102),
+		fillOpacity: 1,
+		borderColor: Color.rgb(255,143,0),
+		borderRadius: 8,
+		borderWidth: 2,
+		strokeOpacity: 1,
+	},
+
+	// does not work, since Pane, Clip and Text play together...
+	userStoryNotes: {
+		fillOpacity: 0,
+		strokeOpacity: 0,
+	},
+
+	userStoryDescription: {
+		fillOpacity: 0,
+		strokeOpacity: 0,
+	},
+
+	userStoryMoveButton: {
+		fillOpacity: 0,
+		borderRadius: 8,
+		borderWidth: 2,
+	},
+
+	userStoryCloseButton: {
+		fill: Color.red,
+		fillOpacity: 1,
+		borderColor: Color.rgb(255,143,0),
+		borderRadius: 8,
+		borderWidth: 2,
+		strokeOpacity: 1,
+	},
+
+	userStoriesSimpleTask: {
+		fill: Color.rgb(255,215,102),
+		fillOpacity: 1,
+		borderColor: Color.rgb(255,143,0),
+		borderRadius: 8,
+		borderWidth: 2,
+		strokeOpacity: 1,
+	},
+
+	userStoriesSimpleTaskTitle: {
+		textColor: Color.rgb(0,0,0),
+		fontSize: 17,
+		fontFamily: 'Helvetica'
+	},
+});
+
 
 BoxMorph.subclass('apps.UserStories.UserStoryBaseMorph', {
 
@@ -152,12 +215,14 @@ BoxMorph.subclass('apps.UserStories.UserStoryBaseMorph', {
 		var btn = this.createButton('move', this.makeBounds(0.8, 0.01, 0.93, 0.12));
 		lively.bindings.connect(btn, 'value', this, 'toggleMove');
 		this.moveHorizontal.push(btn);
+		btn.linkToStyles(['userStoryMoveButton']);
 		this.moveBtn = btn
 	},
 
 	addCloseBtn: function() {
 		var btn = this.createButton('X', this.makeBounds(0.93, 0.01, 0.98, 0.12))
 		lively.bindings.connect(btn, 'fire', this, 'remove');
+		btn.linkToStyles(['userStoryCloseButton']);
 		this.moveHorizontal.push(btn);
 	},
 
@@ -192,9 +257,12 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.UserStoryMorph',
 	style: {fill: Color.rgb(255,234,79), fillOpacity: 0.34, suppressGrabbing: true},
 	defaultExtent: pt(420,320),
 	isUserStory: true,
+	styleClass: ['userStoryCard'],
 
 	initialize: function($super) {
 		$super(this.defaultExtent.extentAsRectangle());
+
+		this.applyLinkedStyles();
 
 		this.tasks = [];
 
@@ -204,7 +272,7 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.UserStoryMorph',
 		this.addResizer();
 		this.addTimings();
 		this.addCloseBtn();
-		this.addMoveBtn()
+		this.addMoveBtn();
 	},
 	
 	initializeFrom: function($super, other) {
@@ -234,11 +302,13 @@ apps.UserStories.UserStoryBaseMorph.subclass('apps.UserStories.UserStoryMorph',
 
 	addStory: function() {
 		var t = this.createTextPane('story', 'Story description', this.makeBounds(0.03, 0.15, 0.97, 0.5));
+		t.linkToStyles(['userStortyDescription'])
 		this.resizeWidth.push(t)
 	},
 
 	addNotes: function() {
 		var t = this.createTextPane('notes', 'Notes and Tests', this.makeBounds(0.03, 0.52, 0.97, 0.9));
+		t.linkToStyles(['userStortyNotes'])
 		this.resizeComplete.push(t);
 	},
 
@@ -563,6 +633,32 @@ ContainerMorph.subclass('apps.UserStories.IterationMorph', {
 			this.addMorph(ea)
 		}, this);
 	},
+});
+BoxMorph.subclass('apps.UserStories.SimpleTaskMorph',
+'default category', {
+
+	styleClass: ['userStoriesSimpleTask'],
+
+	defaultExtent: pt(300, 30),
+
+	initialize: function($super, bounds) {
+		$super(this.defaultExtent.extentAsRectangle());
+		this.addTitle();
+		this.applyLinkedStyles()
+	},
+
+	addTitle: function() {
+		var t = new TextMorph(this.defaultExtent.extentAsRectangle(), 'Title of Task')
+		t.setFillOpacity(0);
+		t.setStrokeOpacity(0);
+		t.linkToStyles(['userStoriesSimpleTaskTitle'])
+
+		t.suppressGrabbing = true;
+		t.suppressHandles = true;
+		this.addMorph(t);
+		this.title = t;
+	},
+
 });
 
 Object.extend(Global, {
