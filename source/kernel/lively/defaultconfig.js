@@ -41,6 +41,7 @@ var UserAgent = (function() {
     var isMozilla = window.navigator && window.navigator.userAgent.indexOf("Mozilla") > -1;
     var isChrome = window.navigator && window.navigator.userAgent.indexOf("Chrome") > -1;
     var isOpera = window.navigator && window.navigator.userAgent.indexOf("Opera") > -1;
+    var isIE = window.navigator && window.navigator.userAgent.indexOf("MSIE") > -1;
     var fireFoxVersion = window.navigator && window.navigator.userAgent.split("Firefox/")[1]; // may be undefined
     if (fireFoxVersion == null)
 	fireFoxVersion = window.navigator && window.navigator.userAgent.split("Minefield/")[1];
@@ -62,23 +63,25 @@ var UserAgent = (function() {
         usableHTMLEnvironment: !isRhino,
 
         webKitVersion: webKitVersion,
-	
+
         isRhino: isRhino,
-	
+
         isMozilla: isMozilla,
 
         isChrome: isChrome,
 
         isOpera: isOpera,
 
-	fireFoxVersion: fireFoxVersion ? fireFoxVersion.split('.') : null, 
-	
+        isIE: isIE,
+
+        fireFoxVersion: fireFoxVersion ? fireFoxVersion.split('.') : null, 
+
         isWindows: window.navigator && window.navigator.platform == "Win32",
 
         isLinux: window.navigator && window.navigator.platform.startsWith("Linux"),
 
         isTouch: window.navigator && (window.navigator.platform == "iPhone" || window.navigator.platform == "iPad" || window.navigator.platform == "iPod"),
-		touchIsMouse: false
+        touchIsMouse: false
 
     };
 
@@ -181,8 +184,8 @@ var Config = {
     // Use the browser's affine transforms
     useTransformAPI: (!UserAgent.isOpera) && UserAgent.usableTransformAPI, 
 
-    // Firefox 2 has known problems with getTransformToElement, detect it
-    useGetTransformToElement: !(UserAgent.isOpera ||
+    // Firefox, Opera and IE have known problems with getTransformToElement, detect it
+    useGetTransformToElement: !(UserAgent.isOpera || UserAgent.isIE ||
 	UserAgent.fireFoxVersion && (UserAgent.fireFoxVersion[0] == '2' || UserAgent.fireFoxVersion[0] == '3')),
 
     // Enable drop shadows for objects (does not work well in most browsers)
@@ -249,7 +252,7 @@ var Config = {
 
     resizeScreenToWorldBounds: false,
 
-	changeLocationOnSaveWorldAs: false,
+    changeLocationOnSaveWorldAs: false,
 };
 
 // Note this patch fixes a problem with recent WebKit builds and Safari 4 beta
@@ -275,7 +278,9 @@ Config.showMap = !Config.skipMostExamples && !UserAgent.isTouch;
 Config.showKaleidoscope = !Config.skipMostExamples && !UserAgent.isTouch;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
+Config.showSystemBrowser = true;
 // Config.random is used as the ID for the messenger morph for each user
+// rk 12/2/10 this isn't used anymore, right?
 Config.random = Math.round(Math.random()*2147483647);
 
 // More complex demos
