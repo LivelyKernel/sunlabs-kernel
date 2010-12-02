@@ -435,7 +435,7 @@ Object.subclass('lively.Main.ExampleLoader', {
 			if (Config.showRSSReader() && Config.showNetworkExamples) {
 				require('lively.Examples').toRun(function() {
 					console.log('initializing RSS reader');
-					new FeedWidget("http://reviews.cnet.com/4924-5_7-0.xml?7eChoice=1&orderBy=-7rvDte&maxhits=25&dedup=1&tag=rb_content;rb_mtx").openIn(lm1.myWorld, pt(725, 120));
+					new FeedWidget("http://feeds.feedburner.com/ajaxian").openIn(lm1.myWorld, pt(725, 120));
 				});
 			}
 

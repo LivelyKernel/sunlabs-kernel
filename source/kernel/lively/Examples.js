@@ -396,7 +396,6 @@ Widget.subclass('FeedWidget', {
 	this.getModel().ItemMenu = [
 	    ["open in new window", "openLink"],
 	    ["get XML source", "makeSourcePane"],
-	    ["Jonathan Schwartz's Blog", "setURL", "http://blogs.sun.com/jonathan/feed/entries/rss"],
 	    ["Unofficial Apple blog", "setURL", "http://feeds.tuaw.com/weblogsinc/tuaw"],
 	    ["Ajaxian", "setURL", "http://feeds.feedburner.com/ajaxian"],
 	];
@@ -2305,7 +2304,7 @@ ClipMorph.subclass("lively.Examples.asteroids.GameMorph", {
 Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
 
     description: "Example widget with updated weather info for a list of cities",
-    imagepath: "Resources/weather/",
+    imagepath: URL.codeBase.withFilename("Resources/weather/").toString(),
     viewTitle: "Weather widget",
     initialViewExtent: pt(250, 260),
 
