@@ -278,7 +278,7 @@ Config.showMap = !Config.skipMostExamples && !UserAgent.isTouch;
 Config.showKaleidoscope = !Config.skipMostExamples && !UserAgent.isTouch;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
-Config.showSystemBrowser = true;
+Config.showSystemBrowser = false;
 // Config.random is used as the ID for the messenger morph for each user
 // rk 12/2/10 this isn't used anymore, right?
 Config.random = Math.round(Math.random()*2147483647);
