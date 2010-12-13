@@ -2131,7 +2131,6 @@ BoxMorph.subclass('TextMorph',
 
 	processCommandKeys: function(evt) {	 //: Boolean (was the command processed?)
 		var key = evt.getKeyChar();
-		console.log('command = ' + key + "evt.isShiftDown() = " + evt.isShiftDown() + " keyCode " + evt.getKeyCode());
 
 		// FIXME -- these need to be included in editMenuItems
 		if (evt.isShiftDown()) {  // shifted commands here...
