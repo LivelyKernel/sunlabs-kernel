@@ -79,7 +79,7 @@ Object.extend(Global, {
 (function configFromURL() { // override config options with options from the query part of the URL
 
     // may have security implications ...
-    var query = Global.document.documentURI.split('?')[1];
+    var query = Global.document.URL.split('?')[1];
     if (!query) return;
 
     var configOverrides = query.toQueryParams();
@@ -1077,6 +1077,15 @@ Copier.subclass('Importer', {
 			console.log("problems to parse  " + URL.source);
 			if (!doc)
 				return null;
+			// FIX for IE9+
+			if (doc.documentElement == null) {
+			 	doc = new ActiveXObject('MSXML2.DOMDocument.6.0');
+				doc.validateOnParse = false;
+				doc.setProperty('ProhibitDTD', false);
+				doc.setProperty('SelectionLanguage', 'XPath');
+				doc.setProperty('SelectionNamespaces', XPathEmulator.prototype.createNSResolver());
+				doc.loadXML(webRes.content);
+			}
 			this.clearCanvas(doc);
 			return doc;
 		}
@@ -1102,7 +1111,7 @@ Copier.subclass('Importer', {
 		while (node) {
 			var toRemove = node;
 			node = node.nextSibling;
-			if (toRemove.localName == "g") 
+			if ((toRemove.localName || toRemove.nodeName) == "g") // nodeName is FIX for IE9+
 				canvas.removeChild(toRemove);
 		}
 	},
@@ -1529,7 +1538,7 @@ Morph.addMethods('settings', {
     openForDragAndDrop: true, // Submorphs can be extracted from or dropped into me
     mouseHandler: MouseHandlerForDragging.prototype, //a MouseHandler for mouse sensitivity, etc
 
-  	// depricated
+  	// deprecated
   	noShallowCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'], 
 
 	doNotCopyProperties: ['id', 'rawNode', 'shape', 'submorphs', 'defs', 'activeScripts', 'nextNavigableSibling', 'focusHalo', 'fullBounds'],
@@ -1803,7 +1812,7 @@ Morph.addMethods('settings', {
         //  wade through the children
         var children = [];
         var helperNodes = [];
-        
+
         for (var desc = this.rawNode.firstChild; desc != null; desc = desc.nextSibling) {
             if (desc.nodeType == Node.TEXT_NODE || desc.nodeType == Node.COMMENT_NODE) {
                 if (desc.textContent == "\n") 
@@ -3874,8 +3883,7 @@ Morph.addMethods('settings', {
 	},
 
 	startStepping: function(stepTime, scriptName, argIfAny) {
-		if (!scriptName) 
-			throw Error("Old code");
+		if (!scriptName) throw Error("Old code");
 		var action = new SchedulableAction(this, scriptName, argIfAny, stepTime);
 		this.addActiveScript(action);
 		action.start(this.world());
@@ -4510,7 +4518,6 @@ PasteUpMorph.subclass("WorldMorph",
 },
 'initilization', {
 	initialize: function($super, canvas, backgroundImageId) {
-debugger
 		var bounds = Rectangle.fromElement(canvas);
 		// sometimes bounds has zero dimensions (when reloading thes same page, timing issues?
 		// in Firefox bounds may be 1x1 size?? maybe everything should be run from onload or sth?
@@ -4715,7 +4722,11 @@ debugger
     },
 	hideHostMouseCursor: function() {
 		if (!Config.hideSystemCursor) return;
-		var	path = URL.codeBase.withFilename('media/nocursor.gif').pathname
+		if (UserAgent.isChrome && UserAgent.isWindows)
+			// chrome on windows cannot display cur files
+			var	path = URL.codeBase.withFilename('media/nocursor.gif').pathname;
+		else
+			var	path = URL.codeBase.withFilename('media/nocursor.cur').pathname;
 		document.body.style.cursor = 'url("' + path + '"), none';
 	},
 	showHostMouseCursor: function() {
@@ -4846,8 +4857,8 @@ debugger
 			}
 			this.currentScript = null;
 
-			var timeNow = new Date().getTime();
-			var ticks = timeNow - timeStarted;
+			var timeNow = new Date().getTime(),
+				ticks = timeNow - timeStarted;
 			if (ticks > 0) action.ticks += ticks;  // tally time spent in that script
 			timeStarted = timeNow;
 		}
@@ -5198,11 +5209,9 @@ debugger
 			start = new Date().getTime(),
 			onFinished = function() {
 				var time = new Date().getTime() - start;
-				world.setStatusMessage("world saved to " + url + " in " + time + "ms \n(" + time + "ms serialization)", Color.green, 3)
-
-				if (optOnFinish)
-					optOnFinish.call(this, url)
-
+				world.setStatusMessage("world saved to " + url + " in " + time +
+					"ms \n(" + time + "ms serialization)", Color.green, 3)
+				if (optOnFinish) optOnFinish.call(this, url);
 			};
 			
 		// make relative to absolute URL
@@ -5211,12 +5220,11 @@ debugger
 			if (world._statusMessageContainer) world._statusMessageContainer.remove();
 			var doc = lively.persistence.Serializer.serializeWorld(world);
 
-			var titleTag = doc.getElementsByTagName('title')[0]
-			if (titleTag) titleTag.textContent = url.filename().replace('.xhtml', '')
+			var titleTag = doc.getElementsByTagName('title')[0];
+			if (titleTag) titleTag.textContent = url.filename().replace('.xhtml', '');
 			Exporter.saveDocumentToFile(doc, url, onFinished);
 		});
 
-		
 		return url;
 	},
 	
@@ -5224,14 +5232,15 @@ debugger
 		var url = optURLOrPath || URL.source;
 		// make relative to absolute URL
 		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
-		var start = new Date().getTime();
-		var self = this;
-		var serializeTime;
-		var onFinished = function() {
-			var time = new Date().getTime() - start;
-			self.setStatusMessage("world saved to " + url + " in " + time + "ms \n(" + serializeTime + "ms serialization)", Color.green, 3)
-		}
-		var statusMessage = WorldMorph.current().setStatusMessage("serializing....");
+		var start = new Date().getTime(),
+			self = this,
+			serializeTime,
+			onFinished = function() {
+				var time = new Date().getTime() - start;
+				self.setStatusMessage("world saved to " + url +
+					" in " + time + "ms \n(" + serializeTime + "ms serialization)", Color.green, 3);
+				},
+			statusMessage = WorldMorph.current().setStatusMessage("serializing....");
 		(function() {
 			var oldHand = this.firstHand();
 			var oldKeyboardFocus = oldHand.keyboardFocus;
@@ -5240,7 +5249,6 @@ debugger
 			var world = this;
 			try {
 				doc = Exporter.shrinkWrapMorph(this.world());
-			
 			} catch(e) {
 				this.setStatusMessage("Save failed due to:\n" + e, Color.red, 10, function() {
 					world.showErrorDialog(e)
@@ -5251,7 +5259,7 @@ debugger
 				if (oldKeyboardFocus)
 					oldKeyboardFocus.requestKeyboardFocus(oldHand);
 			}
-			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);			
+			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);
 			statusMessage.remove();
 			(function removeJSONIfPresent() {
 				var jsonEl = doc.getElementById('LivelyJSONWorld');
@@ -5521,7 +5529,7 @@ debugger
 		];
 	},
 
-	depricatedSubMenuItems: function(evt, menu) {
+	deprecatedSubMenuItems: function(evt, menu) {
 		var world = this.world();
 		return [
 			["Tools", [
@@ -5572,7 +5580,6 @@ debugger
 			["EllipseMaker", function(evt) {
 				var m = world.addMorph(new EllipseMakerMorph(evt.point()));
 				m.startSteppingScripts(); }],
-
 			['World serialization info', function() {
 				require('lively.persistence.Debugging').toRun(function() {
 					var json = lively.persistence.Serializer.serialize(world),
@@ -5616,7 +5623,7 @@ debugger
 			['Tools', this.toolSubMenuItems(evt)],
 			['Properties', this.propertiesSubMenuItems(evt)],
 			['Debugging', this.debuggingSubMenuItems(evt)],
-			['Depricated', this.depricatedSubMenuItems(evt, menu)],
+			['Deprecated', this.deprecatedSubMenuItems(evt, menu)],
 			['Preferences', this.preferencesSubMenuItems(evt)],
 			['Help', this.helpSubMenuItems(evt)]];
 	},
@@ -5948,7 +5955,7 @@ Morph.subclass("HandMorph",
 		var node = morphOrNode.rawNode || morphOrNode;
 		var selector = isRemove ? 'removeEventListener' : 'addEventListener';
 		eventNames.forEach(function(name) { 
-            node[selector](name, this, this.handleOnCapture);
+            node[selector](name, (!UserAgent.isIE ? this : this.handleEvent.bind(this)), this.handleOnCapture);
 		}, this);
 	},
 	
@@ -6359,7 +6366,7 @@ Morph.subclass("HandMorph",
 		}
 	}
 },
-'Fabrik Extension (DEPRICATED)',{
+'Fabrik Extension (DEPRECATED)',{
     changed: function($super, morph) {
         $super();
         this.globalPosition = this.getPosition();

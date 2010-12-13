@@ -519,9 +519,9 @@ Object.extend(Array.prototype, {
     return '[' + this.map(Object.inspect).join(', ') + ']';
   },
 
-	pushAt: function(item, index) {
-		this.splice(index, 0, item);
-	},
+  pushAt: function(item, index) {
+    this.splice(index, 0, item);
+  },
 });
 
 // use native browser JS 1.6 implementation if available

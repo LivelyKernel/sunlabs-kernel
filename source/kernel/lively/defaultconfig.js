@@ -146,7 +146,9 @@ var UserAgent = (function() {
 //--------------------------
 // Determine runtime behavior based on UA capabilities and user choices (override in localconfig.js)
 //--------------------------
-var Config = {
+if (!Config) var Config = {}
+
+Object.extend(Config, {
 
     // Allows easy object duplication using the Shift key
     shiftDragForDup: true,
@@ -253,7 +255,7 @@ var Config = {
     resizeScreenToWorldBounds: false,
 
     changeLocationOnSaveWorldAs: false,
-};
+});
 
 // Note this patch fixes a problem with recent WebKit builds and Safari 4 beta
 // We should test for these versions, and drop this code when it's no longer needed
@@ -305,7 +307,7 @@ Object.extend(Config, {
 
 Object.extend(Config, {
 	getDocumentDirectory: function() {
-		var url = document.documentURI;
+		var url = document.URL;
 		return url.substring(0, url.lastIndexOf('/') + 1);
 	},
 });

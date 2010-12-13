@@ -180,7 +180,7 @@ Object.subclass('URL', {
 			}
 
 			// now that's some JavaScript FOO
-			var result = '../'.times(paths2.length - i - 1) + paths1.splice(i).join('/');
+			var result = '../'.times(paths2.length - i - 1) + paths1.splice(i, paths1.length).join('/');
 			return result;
 		}
 
@@ -250,7 +250,7 @@ Object.subclass('URL', {
 // create URLs often needed
 Object.extend(URL, {
 
-	source: new URL(document.documentURI),
+	source: new URL(document.URL),
 
 	codeBase: new URL(Config.codeBase).withRelativePartsResolved(),
 })
@@ -384,7 +384,7 @@ View.subclass('NetRequest', {
 		console.log("enableProgress")
 		// FIXME onprogress leads to strange 101 errors when no internet connection available
 		this.transport.onprogress = this.onProgress.bind(this);
-		if (!UserAgent.isTouch) // FIXME crashes Mobile Safari
+		if (!UserAgent.isTouch && this.transport.upload !== undefined) // FIXME crashes Mobile Safari && IE9+
 			this.transport.upload.onprogress = this.onProgress.bind(this);
 	},
 
@@ -410,7 +410,12 @@ View.subclass('NetRequest', {
 		this.setReadyState(this.getReadyState());
 		if (this.getReadyState() === this.Loading) { // For comet networking
 			this.setStatus(this.getStatus());
-			if (this.transport.responseText) {
+			var hasResponseText = false;
+			try {
+				// FIX for IE9+ if responseText is not available yet
+				hasResponseText = this.transport.responseText;
+			} catch (e) { console.warn('Request\'s response text is not available yet.'); }
+			if (hasResponseText) {
 				var allContent = this.getResponseText();
 				var newStart = this._streamContentLength ? this._streamContentLength : 0;
 				var newContent = allContent.substring(newStart);
@@ -418,7 +423,6 @@ View.subclass('NetRequest', {
 				this.setStreamContent(newContent);
 				this._streamContentLength = allContent.length;
 			}
-				
 		}
 		if (this.getReadyState() === this.Done) {
 			this.setStatus(this.getStatus());
@@ -1374,6 +1378,8 @@ WebResource.addMethods({
 	put: function(content, contentType) {
 		if ((Global.Document && content instanceof Document) || (Global.Node && content instanceof Node)) {
 			content = Exporter.stringify(content);
+		} else if (content.xml) { // serialization FIX for IE9+
+			content = content.xml;
 		}
 		this.content = content;
 		var resource = this.createResource();
@@ -1451,7 +1457,8 @@ WebResource.addMethods({
 		nodes.shift(); // remove first since it points to this WebResource
 		var result = [];
 		for (var i = 0; i < nodes.length; i++) {
-			var url = urlQ.findFirst(nodes[i]).textContent;
+			var urlNode = urlQ.findFirst(nodes[i]);
+			var url = urlNode.textContent || urlNode.text; // text is FIX for IE9+
 			if (/!svn/.test(url)) continue;// ignore svn dirs
 			var child = new WebResource(this.getURL().withPath(url));
 			var revNode = nodes[i].getElementsByTagName('version-name')[0];

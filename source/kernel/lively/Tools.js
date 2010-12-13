@@ -2274,11 +2274,12 @@ Object.subclass('BasicCodeMarkupParser', {
     protoQuery: new Query("proto"),
     staticQuery: new Query("static"),
 
-    nameOf: function(element) {
-	var name = element.getAttributeNS(null, "name");
-	if (!name) throw new Error("no class name");
-	return name;
-    },
+	nameOf: function(element) {
+		// attibutes.getQualifiedItem is FIX for IE9+
+		var name = (element.getAttributeNS ? element.getAttributeNS(null, "name") : element.attributes.getQualifiedItem("name", "").nodeValue);
+		if (!name) throw new Error("no class name");
+		return name;
+	},
 
     parseDocumentElement: function(element, isHack) {
 		var classes;
@@ -2305,7 +2306,8 @@ Object.subclass('BasicCodeMarkupParser', {
 	// note eval oreder first parse proto methods, then static methods.
 	var className = this.nameOf(element);
 	var klass = null;
-	var superName = element.getAttributeNS(null, "super");
+	// attributes.getQualifiedItem is FIX for IE9+
+	var superName = (element.getAttributeNS ? element.getAttributeNS(null, "super") : element.attributes.getQualifiedItem("super", "").nodeValue);
 	
 	if (superName) { // super is present so we are subclassing (too hackerish?)
 	    var superClass = Class.forName(superName);
@@ -2343,9 +2345,9 @@ Object.subclass('BasicCodeMarkupParser', {
 	    // use intermediate value because eval doesn't seem to return function
 	    // values.
 	    // this would be a great place to insert a Cajita evaluator.
-	    return eval("BasicCodeMarkupParser._=" + element.textContent);
+	    return eval("BasicCodeMarkupParser._=" + (element.textContent || element.text)); // text is FIX for IE9+
 	} catch (er) { 
-	    console.log("error " + er + " parsing " + element.textContent);
+	    console.log("error " + er + " parsing " + (element.textContent || element.text)); // text is FIX for IE9+
 	    return undefined;
 	}
     },
@@ -2430,11 +2432,6 @@ Object.extend(EvalSourceRegistry, {
 		return this._current;
 	}
 })
-
-
-
-
-
 
 }.logCompletion("Tools.js"));
 

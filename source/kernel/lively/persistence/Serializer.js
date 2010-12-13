@@ -547,6 +547,11 @@ ObjectLinearizerPlugin.subclass('OldModelFilter',
 	},
 	serializeObj: function(original, persistentCopy) {
 		var klass = original.constructor;
+		// FIX for IE9+ which does not implement Function.name
+		if (!klass.name) {
+			var n = klass.toString().match('^function\s*([^(]*)\\(');
+			klass.name = (n ? n[1].strip() : '');
+		}
 		if (!klass || !klass.name.startsWith('anonymous_')) return;
 		ClassPlugin.prototype.removeClassInfoIfPresent(persistentCopy);
 		var def = JSON.stringify(original.definition);
@@ -681,25 +686,36 @@ Object.extend(lively.persistence.Serializer, {
 			metaElement.parentNode.removeChild(metaElement)
 
 		// FIXME remove system dictionary
-		var sysDict = doc.getElementById('SystemDictionary');
+		var sysDict = (doc.getElementById ? doc.getElementById('SystemDictionary') : doc.selectSingleNode('//*[@id="SystemDictionary"]'));
 		if (sysDict) sysDict.parentNode.removeChild(sysDict);
 
 		// serialize changeset
-		var cs = ChangeSet.fromWorld(world),
-			csElement = doc.importNode(cs.getXMLElement(), true),
-			metaCSNode = XHTMLNS.create('meta');
+		var cs = ChangeSet.fromWorld(world)
+		if (!UserAgent.isIE) {
+			var csElement = doc.importNode(cs.getXMLElement(), true),
+				metaCSNode = XHTMLNS.create('meta');
+		} else { // FIX for IE9+
+			// mr: this is a real IE hack!
+			var helperDoc = new ActiveXObject('MSXML2.DOMDocument.6.0');
+			helperDoc.loadXML(new XMLSerializer().serializeToString(cs.getXMLElement()));
+			var csElement = doc.importNode(helperDoc.firstChild, true),
+				metaCSNode = doc.createNode(1, 'meta', Namespace.XHTML);
+		}
 		metaCSNode.setAttribute('id', this.changeSetElementId);
 		metaCSNode.appendChild(csElement);
 
 		// serialize world
-		var json = this.serialize(world, null, serializer),
-			metaWorldNode = XHTMLNS.create('meta');
+		var json = this.serialize(world, null, serializer);
+		if (doc instanceof Document)
+			var metaWorldNode = XHTMLNS.create('meta');
+		else // FIX for IE9+
+			var metaWorldNode = doc.createNode(1, 'meta', Namespace.XHTML);
 		metaWorldNode.setAttribute('id', this.jsonWorldId)
 		metaWorldNode.appendChild(doc.createCDATASection(json))
 
-		var head = doc.getElementsByTagName('head')[0];
-		head.appendChild(metaCSNode)
-		head.appendChild(metaWorldNode)
+		var head = doc.getElementsByTagName('head')[0] || doc.selectSingleNode('//*["head"=name()]');
+		head.appendChild(metaCSNode);
+		head.appendChild(metaWorldNode);
 
 		return doc;
 	

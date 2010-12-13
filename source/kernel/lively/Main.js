@@ -142,8 +142,8 @@ Object.subclass('lively.Main.Loader',
 				changes && changes.evaluateAllButInitializer();
 				require(Config.modulesOnWorldLoad).toRun(function() {
 					world = importer.loadWorldContents(canvas);
-		            world.displayOnCanvas(canvas);
-		            console.log("world is " + world);
+					world.displayOnCanvas(canvas);
+					console.log("world is " + world);
 					changes && changes.evaluateInitializer();
 
 					self.onFinishLoading(world);
@@ -585,13 +585,13 @@ Object.subclass('lively.Main.ExampleLoader', {
 		if (Config.showWebStore()) {
 			var store = new FileBrowser();
 			store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
-		};
+		}
 
 		if (Config.showDOMBrowser) {
 			var browser = new DOMBrowser();
 			console.log('showing DOMBrowser!');
 			browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(260, 120));
-		};
+		}
 
 		if (Config.showTwoPaneObjectBrowser) {
 			var browser = new TwoPaneObjectBrowser();

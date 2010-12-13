@@ -19,7 +19,11 @@ var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1,
 	function addWrappers() {
 		if (platformConsole.wasWrapped) return;
 		platformConsole.wasWrapped = true;
-		for (var name in platformConsole)
+
+		var props = [];
+		for (var name in platformConsole) props.push(name);
+		
+		for (var i = 0; i < props.length; i++)
 			(function(name) {
 				var func = platformConsole[name];
 				platformConsole['$' + name] = func;
@@ -31,7 +35,8 @@ var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1,
 						if (consumerFunc) consumerFunc.apply(consumers[i], arguments);
 					}
 				};
-			})(name);
+			})(props[i]);
+		
 	}
 
 	function removeWrappers() {
@@ -89,7 +94,9 @@ var JSLoader = {
 		else
 			script.setAttributeNS(null, 'src', exactUrl);
 
-		script.onload = onLoadCb;
+		if (onLoadCb)
+			script.onload = onLoadCb;
+		
 		script.setAttributeNS(null, 'async', true);
 
 		parentNode.appendChild(script);
@@ -194,8 +201,7 @@ var LivelyLoader = {
 	// ------- generic load support ----------
 	//
 	codeBase: (function findCodeBase() {
-		var
-			bootstrapFileName = 'bootstrap.js',
+		var bootstrapFileName = 'bootstrap.js',
 			scripts = JSLoader.getScripts(),
 			i = 0, node, urlFound;
 
@@ -307,12 +313,6 @@ var LivelyLoader = {
 		if (!canvas || canvas.tagName !== 'div') return null;
 		return canvas
 	},
-
-
-
-
-
-
 };
 LoadingScreen = {
 	width: function() { return document.documentElement.clientWidth || 800 },

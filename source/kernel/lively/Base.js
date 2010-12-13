@@ -26,20 +26,97 @@
 // according to rationale_for_es3_1_static_object_methodsaug26.pdf on wiki.ecmascript.org
 // implementation uses __defineGetter__/__proto__ logic
 
+if (!Object.hasOwnProperty('defineProperty')) {
+	Object.defineProperty = function(object, property, descriptor) {
+		if (typeof descriptor  !== 'object') throw new TypeError();
+		if (descriptor.value) {
+			object[String(property)] = descriptor.value;
+		} else {
+			if (descriptor.getter) 
+				object.__defineGetter__(property, descriptor.getter);
+			if (descriptor.setter)
+				object.__defineSetter__(property, descriptor.setter);
+		}
+		return object;
+	};
+}
 
-Object.defineProperty = function(object, property, descriptor) {
-	if (typeof descriptor  !== 'object') throw new TypeError();
-	if (descriptor.value) {
-		object[String(property)] = descriptor.value;
-	} else {
-		if (descriptor.getter) 
-			object.__defineGetter__(property, descriptor.getter);
-		if (descriptor.setter)
-			object.__defineSetter__(property, descriptor.setter);
-	}
-	return object;
-};
-	 
+if (!Object.hasOwnProperty('getOwnPropertyDescriptor')) {
+	Object.defineProperties(Object, {
+		getOwnPropertyDescriptor: { 
+			value: function(object, name) {
+				// FIXME? use $schema?
+				var descriptor = { enumerable: true, writable: true, flexible: true};
+				var getter = object.__lookupGetter__(name);
+				var setter = object.__lookupSetter__(name);
+				if (getter || setter) {
+					descriptor.getter = getter;
+					descriptor.setter = setter;
+				} else {
+					descriptor.value = object[name];
+				}
+				return descriptor;
+			}
+		}
+	});
+}
+
+if (!Object.hasOwnProperty('__lookupGetter__')) {
+	Object.defineProperties(Object.prototype, {
+		'__lookupGetter__': {
+			value: function(prop) {
+				var propDef = Object.getOwnPropertyDescriptor(this, prop);
+				var protoPropDef = Object.getOwnPropertyDescriptor(this.constructor['prototype'], prop);
+				if (propDef)
+				 	return propDef.get;
+				else if (protoPropDef)
+					return protoPropDef.get;
+				else
+					return;
+			}
+		}
+	});
+}
+
+if (!Object.hasOwnProperty('__lookupSetter__')) {
+	Object.defineProperties(Object.prototype, {
+		'__lookupSetter__': {
+			value: function(prop) {
+				var propDef = Object.getOwnPropertyDescriptor(this, prop);
+				var protoPropDef = Object.getOwnPropertyDescriptor(this.constructor['prototype'], prop);
+				if (propDef)
+				 	return propDef.set;
+				else if (protoPropDef)
+					return protoPropDef.set;
+				else
+					return;
+			}
+		}
+	});
+}
+
+if (!Object.hasOwnProperty('__defineGetter__')) {
+	Object.defineProperties(Object.prototype, {
+		'__defineGetter__': {
+			value: function(prop, func) {
+				if (!this.hasOwnProperty(prop)) this[prop] = undefined;
+				Object.defineProperty(this, prop, { get: func });
+			}
+		}
+	});
+}
+
+if (!Object.hasOwnProperty('__defineSetter__')) {
+	Object.defineProperties(Object.prototype, {
+		'__defineSetter__': {
+			value: function(prop, func) {
+				if (!this.hasOwnProperty(prop)) this[prop] = undefined;
+				Object.defineProperty(this, prop, { set: func });
+			}
+		}
+	});
+}
+
 Object.defineProperties = function(object, descriptorSet) {
 	for (var name in descriptorSet) {
 		if (!descriptorSet.hasOwnProperty(name)) continue;
@@ -47,7 +124,7 @@ Object.defineProperties = function(object, descriptorSet) {
 	}
 	return object;
 }
-	 
+
 Object.defineProperties(Object, {
 	create: { 
 		value: function(proto, descriptorSet) { //descriptor can be undefined
@@ -82,22 +159,6 @@ Object.defineProperties(Object, {
 		value: function(object) {
 			if (typeof object !== 'object') throw new TypeError('type ' + (typeof object) + ' does not have a prototype');
 			return object.__proto__;
-		}
-	},
-	 
-	getOwnPropertyDescriptor: { 
-		value: function(object, name) {
-			// FIXME? use $schema?
-			var descriptor = { enumerable: true, writable: true, flexible: true};
-			var getter = object.__lookupGetter__(name);
-			var setter = object.__lookupSetter__(name);
-			if (getter || setter) {
-				descriptor.getter = getter;
-				descriptor.setter = setter;
-			} else {
-				descriptor.value = object[name];
-			}
-			return descriptor;
 		}
 	},
 	 
@@ -441,7 +502,7 @@ Object.extend(Function.prototype, {
 		for (var property in source) {
 
 			if (property == 'constructor') continue;
-			
+
 			var getter = source.__lookupGetter__(property);
 			if (getter) this.prototype.__defineGetter__(property, getter);
 			var setter = source.__lookupSetter__(property);

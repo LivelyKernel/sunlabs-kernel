@@ -37,6 +37,10 @@ Global.locateCanvas = function(optNode) { // dirty secret
 
 	// find the first "svg" element with id "canvas"
 	var elements = optNode && optNode.getElementsByTagName("svg");
+	if (UserAgent.isIE) { // FIX for IE9+
+		if (elements && (elements.length == 0) && optNode)
+			elements = optNode.selectNodes('//*["svg"=name()]');
+	}
 	if (elements) {
 		for (var i = 0; i < elements.length; i++) {
 			var el = elements.item(i);
@@ -446,7 +450,8 @@ Object.subclass('lively.data.Wrapper',
 		var name = LivelyNS.getAttribute(node, "name");
 		this[name] = [];
 		var index = 0;
-		$A(node.getElementsByTagName("item")).forEach(function(elt) {
+		var items = $A(node.getElementsByTagName("item")).concat($A(node.getElementsByTagNameNS(Namespace.LIVELY, "item"))); // FIX for IE9+ namespace problems
+		items.forEach(function(elt) {
 			var ref = LivelyNS.getAttribute(elt, "ref");
 			if (ref) {
 				importer.addPatchSite(this, name, ref, index);
