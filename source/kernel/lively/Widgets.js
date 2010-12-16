@@ -41,14 +41,16 @@
 
 module('lively.Widgets').requires('lively.Text', 'lively.Styles').toRun(function(thisModule, text) {
 
-BoxMorph.subclass('ButtonMorph', {
-    
+BoxMorph.subclass('ButtonMorph',
+'documentation', {
     documentation: "Simple button. Provides three connections: value, isActive, fire",
+},
+'settings and state', {
     focusHaloBorderWidth: 3, // override the default
     label: null,
     toggle: false, //if true each push toggles the model state 
     styleClass: ['button'],
-    
+
     formals: ["Value", "IsActive"],
 	connections: ['value', 'isActive', 'fire'],
 
@@ -57,7 +59,8 @@ BoxMorph.subclass('ButtonMorph', {
 	suppressHandles: true,
 
 	openForDragAndDrop: false,
-
+},
+'initializing', {
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
 	initialize: function($super, initialBounds) {
@@ -75,14 +78,16 @@ BoxMorph.subclass('ButtonMorph', {
 		this.changeAppearanceFor(this.value);
 		return this;
 	},
-
+},
+'XML serialization', {
     onDeserialize: function() {
 		this.baseFill = this.shape.getFill();
 		if (Object.isString(this.baseFill)) // FIXME
 			this.baseFill = Color.fromString(this.baseFill) || Color.red
 		this.changeAppearanceFor(this.value);
     },
-
+},
+'accessing', {
 	setFill: function($super, fill) {
 		$super(fill);
 		this.baseFill = fill;
@@ -104,7 +109,22 @@ BoxMorph.subclass('ButtonMorph', {
 		if (bool) updateAttributeConnection(this, 'fire');
 		this.value = bool;
 	},
-	
+
+	setLabel: function(txt) {
+		this.label && this.label.remove();
+		this.label = TextMorph.makeLabel(txt).centerAt(this.innerBounds().center());
+		this.addMorph(this.label);
+		return this;
+	},
+
+	getLabel: function() {
+		if (!this.label) 
+			return '';
+		return this.label.textString
+	},
+
+},
+'event handling', {
 	handlesMouseDown: function(evt) {
 		return !evt.isCommandKey() && evt.isLeftMouseButtonDown();
 	},
@@ -130,7 +150,40 @@ BoxMorph.subclass('ButtonMorph', {
 		// the following should happen in response
 		this.changeAppearanceFor(newValue); 
 	},
+
+    takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus
     
+    setHasKeyboardFocus: Functions.K, 
+
+    onKeyDown: function(evt) {
+		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
+        switch (evt.getKeyCode()) {
+        case Event.KEY_RETURN:
+        case Event.KEY_SPACEBAR:
+            this.setValue(true); 
+            this.changeAppearanceFor(true);
+            evt.stop();
+            return true;
+        }
+        return false;
+    },
+
+    onKeyUp: function(evt) {
+		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
+        var newValue = this.toggle ? !this.getValue() : false;
+        switch (evt.getKeyCode()) {
+        case Event.KEY_RETURN:
+        case Event.KEY_SPACEBAR:
+            this.changeAppearanceFor(newValue);
+            this.setValue(newValue);
+            evt.stop();
+            return true;
+        }
+        return false;
+    },
+
+},
+'styling', {
 	changeAppearanceFor: function(value) {
 		if(!this.lighterFill || !this.normalFill){
 			this.initColor();
@@ -178,67 +231,13 @@ BoxMorph.subclass('ButtonMorph', {
 			this.changeAppearanceFor(this.getValue());
 		}
 	},
-
+},
+'model related', {
 	updateView: function(aspect, controller) {
 		var p = this.modelPlug;
 		if (!p) return;
 		if (aspect == p.getValue || aspect == 'all') 
 			this.onValueUpdate(this.getValue());
-	},
-
-	onValueUpdate: function(value) {
-		if (this.toggle) console.log("got updated with value " + value);
-		this.changeAppearanceFor(value);
-	},
-	
-	onIsActiveUpdate: function(isActive) {
-		if (!this.label) return;
-		this.label.applyStyle({ textColor: (isActive ? Color.black : Color.gray.darker()) });
-	},
-
-
-    takesKeyboardFocus: Functions.True,          // unlike, eg, cheapMenus
-    
-    setHasKeyboardFocus: Functions.K, 
-
-    onKeyDown: function(evt) {
-		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
-        switch (evt.getKeyCode()) {
-        case Event.KEY_RETURN:
-        case Event.KEY_SPACEBAR:
-            this.setValue(true); 
-            this.changeAppearanceFor(true);
-            evt.stop();
-            return true;
-        }
-        return false;
-    },
-
-    onKeyUp: function(evt) {
-		if (!this.getIsActive() && this.getIsActive() !== undefined) return;
-        var newValue = this.toggle ? !this.getValue() : false;
-        switch (evt.getKeyCode()) {
-        case Event.KEY_RETURN:
-        case Event.KEY_SPACEBAR:
-            this.changeAppearanceFor(newValue);
-            this.setValue(newValue);
-            evt.stop();
-            return true;
-        }
-        return false;
-    },
-
-	setLabel: function(txt) {
-		this.label && this.label.remove();
-		this.label = TextMorph.makeLabel(txt).centerAt(this.innerBounds().center());
-		this.addMorph(this.label);
-		return this;
-	},
-
-	getLabel: function() {
-		if (!this.label) 
-			return '';
-		return this.label.textString
 	},
 
 	buttonAction: function(funcOrSelector, target) {
@@ -251,7 +250,20 @@ BoxMorph.subclass('ButtonMorph', {
 					funcOrSelector.apply(target);
 			}}
 		});
-	}
+	},
+
+},
+'callbacks', {
+	onValueUpdate: function(value) {
+		if (this.toggle) console.log("got updated with value " + value);
+		this.changeAppearanceFor(value);
+	},
+	
+	onIsActiveUpdate: function(isActive) {
+		if (!this.label) return;
+		this.label.applyStyle({ textColor: (isActive ? Color.black : Color.gray.darker()) });
+	},
+
 });
 
 Morph.subclass('ButtonBehaviorMorph', {
@@ -362,7 +374,7 @@ BoxMorph.subclass("ImageMorph",
 'initializing', {
 
 	documentation: "Image container",
-	style:{ borderWidth: 0, fill:Color.blue.lighter() },
+	style:{ borderWidth: 0, fill: Color.blue.lighter() },
 	formals: ["-URL"],
 
 	initialize: function($super, viewPort, url, disableScaling) {
@@ -442,7 +454,7 @@ BoxMorph.subclass("ImageMorph",
 		newImg.src = imgSrc;
 		newImg.onload = function() {
 			var extent = pt(newImg.width, newImg.height);
-			this.setExtent(extent)
+			// this.setExtent(extent)
 			this.originalExtent = extent;
 		}.bind(this)
 	},
@@ -534,6 +546,7 @@ encodeOnServer: function(urlString) {
 		menu.addItem(["Edit image src", this.editImageSrc]);
 		return menu;  
 	},
+
 
 });
 
@@ -3327,21 +3340,21 @@ BoxMorph.subclass('XenoMorph', {
     },
 
     onURLUpdate: function(url) {
-	if (!url) return;
-	var xeno = this;
-	function clearChildren(node) {
-	    while(node.firstChild) node.removeChild(node.firstChild);
-	}
-	var callback = Object.extend(new NetRequestReporter(), {
-	    setContent: function(doc) {
-		clearChildren(xeno.foRawNode);
-		xeno.foRawNode.appendChild(document.adoptNode(doc.documentElement));
-	    },
-	    setContentText: function(txt) {
-		clearChildren(xeno.foRawNode);
-		xeno.foRawNode.appendChild(document.createTextNode(txt));
-	    }
-	});
+		if (!url) return;
+		var xeno = this;
+		function clearChildren(node) {
+		    while(node.firstChild) node.removeChild(node.firstChild);
+		}
+		var callback = Object.extend(new NetRequestReporter(), {
+		    setContent: function(doc) {
+				clearChildren(xeno.foRawNode);
+				xeno.foRawNode.appendChild(document.adoptNode(doc.documentElement));
+		    },
+		    setContentText: function(txt) {
+				clearChildren(xeno.foRawNode);
+				xeno.foRawNode.appendChild(document.createTextNode(txt));
+		    }
+		});
         var req = new NetRequest({model: callback, setResponseXML: "setContent", setResponseText: "setContentText"});
         req.setContentType("text/xml");
         req.get(url);
@@ -4248,9 +4261,14 @@ BoxMorph.subclass("TitleBarMorph",
 	
 	connectButtons: function(w) {
 		if (this.suppressControls) return;
-		this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
-		this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
-		this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
+		this.closeButton.plugTo(w, {getHelpText: '->getCloseHelp', fire: '->initiateShutdown'});
+		this.menuButton.plugTo(w, {getHelpText: '->getMenuHelp', fire: '->showTargetMorphMenu'});
+		this.collapseButton.plugTo(w, {getHelpText: '->getCollapseHelp', fire: '->toggleCollapse'});
+
+		// deprecated
+		// this.closeButton.relayToModel(w, {HelpText: "-CloseHelp", Trigger: "=initiateShutdown"});
+		// this.menuButton.relayToModel(w, {HelpText: "-MenuHelp", Trigger: "=showTargetMorphMenu"});
+		// this.collapseButton.relayToModel(w, {HelpText: "-CollapseHelp", Trigger: "=toggleCollapse"});
 	},
 	
 	onDeserialize: function() {
@@ -4393,19 +4411,22 @@ BoxMorph.subclass("TitleTabMorph", {
 
 });
 
-Morph.subclass("WindowControlMorph", {
-
+Morph.subclass("WindowControlMorph",
+'documentation', {
     documentation: "Event handling for Window morphs",
-
+},
+'settings and state', {
     style: {borderWidth: 0, strokeOpacity: 0},
     
     focus: pt(0.4, 0.2),
-    formals: ["-HelpText", "-Trigger"],
-    
+    formals: ["-HelpText", "-Trigger"], // deprecated
+	connections: ['HelpText', 'fire'],
+},
+'initializing', {
 	initialize: function($super, rect, inset, color, labelString, labelOffset) {
 		$super(new lively.scene.Ellipse(rect.insetBy(inset)));
 		if (color) {
-			// depricated 
+			// deprecated 
 			var gfx = lively.paint;
 			this.setFill(new gfx.RadialGradient([new gfx.Stop(0, color.lighter(2)),
 				new gfx.Stop(0.5, color),
@@ -4421,45 +4442,25 @@ Morph.subclass("WindowControlMorph", {
 		};
 		return this;
 	},
-
+},
+'event handling', {
     handlesMouseDown: Functions.True,
-
     onMouseDown: function($super, evt) {
         $super(evt);
-	// interesting case for the MVC architecture
-        return this.formalModel.onTriggerUpdate(evt);
+		lively.bindings.signal(this, 'fire', evt);
+		// deprecated
+        this.formalModel && this.formalModel.onTriggerUpdate(evt);
+		return true;
     },
-
 	onMouseOver: function($super, evt) {
-
-		// this.world().setStatusMessage("over " + this, Color.green, 5)
-		if (this.owner && this.owner.hightlightAllButtons ) {
-			this.owner.hightlightAllButtons(true)
-		}
-		// if (this.getFill() instanceof lively.paint.Gradient) {
-			// var prevColor = this.getFill().stops[1].color();
-			// var gfx = lively.paint;
-			// this.setFill(new gfx.RadialGradient([new gfx.Stop(0, Color.white), 
-			// new gfx.Stop(0.5, prevColor),
-			// new gfx.Stop(1, prevColor.darker())], this.focus));
-		// }
+		if (this.owner && this.owner.hightlightAllButtons )
+			this.owner.hightlightAllButtons(true);
 		$super(evt);
 	},
     
 	onMouseOut: function($super, evt) {
-
-		// this.world().setStatusMessage("out " + this, Color.green, 5)
-		if (this.owner && this.owner.hightlightAllButtons ) {
-			this.owner.hightlightAllButtons(false)
-		}
-
-		// if (this.getFill() instanceof lively.paint.Gradient) {
-			// var prevColor = this.getFill().stops[1].color();
-			// var gfx = lively.paint;
-			// this.setFill(new gfx.RadialGradient([new gfx.Stop(0, prevColor.lighter(2)),
-			// new gfx.Stop(0.5, prevColor),
-			// new gfx.Stop(1, prevColor.darker())], this.focus));
-		// }
+		if (this.owner && this.owner.hightlightAllButtons )
+			this.owner.hightlightAllButtons(false);
 		$super(evt);
 	},
     
@@ -4499,35 +4500,42 @@ BoxMorph.subclass('StatusBarMorph', {
 });
 
 
-Morph.subclass('WindowMorph', {
-
+Morph.subclass('WindowMorph',
+'documentation', {
     documentation: "Full-fledged windows with title bar, menus, etc.",
+},
+'settings and state', {
     state: 'expanded',
     titleBar: null,
     statusBar: null,
     targetMorph: null,
     style: {borderWidth: 0, fill: null, borderRadius: 0, strokeOpacity: 0},
-    
+},
+'initializing', {
     initialize: function($super, targetMorph, headline, optSuppressControls) {
-        var bounds = targetMorph.bounds();
-        $super(new lively.scene.Rectangle(bounds));
-        var titleBar = this.makeTitleBar(headline, bounds.width, optSuppressControls);
-        var titleHeight = titleBar.bounds().height;
+		var bounds = targetMorph.bounds();
+		$super(new lively.scene.Rectangle());
+
+		var titleBar = this.makeTitleBar(headline, bounds.width, optSuppressControls)
+			titleHeight = titleBar.bounds().height;
 		this.setBounds(bounds.withHeight(bounds.height + titleHeight));
-        this.targetMorph = this.addMorph(targetMorph);
-        this.titleBar = this.addMorph(titleBar);
-        this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
-        targetMorph.setPosition(this.contentOffset);
-        this.closeAllToDnD();
+		this.targetMorph = this.addMorph(targetMorph);
+		this.titleBar = this.addMorph(titleBar);
+		this.contentOffset = pt(0, titleHeight - titleBar.getBorderWidth()/2); // FIXME: hack
+		targetMorph.setPosition(this.contentOffset);
+		this.closeAllToDnD();
+
 		this.collapsedTransform = null;
 		this.collapsedExtent = null;
-        this.expandedTransform = null;
+		this.expandedTransform = null;
 		this.expandedExtent = null;
 		this.ignoreEventsOnExpand = false;
-		if (Config.useStatusBar) this.statusBar = this.addMorph(new StatusBarMorph(this.titleBar));
-        // this.adjustForNewBounds();
-        return this;
-    },
+
+		if (Config.useStatusBar)
+			this.statusBar = this.addMorph(new StatusBarMorph(this.titleBar));
+
+		return this;
+	},
 
     shadowCopy: function(hand) {
 		// For now just make a rectangle, later add top rounding
@@ -4537,32 +4545,30 @@ Morph.subclass('WindowMorph', {
 		return copy;
     },
 
-    toString: function($super) {
-        var label = this.titleBar && this.titleBar.label;
-        return $super() + (label ? ": " + label.textString : ""); 
-    },
-
+},
+'XML serialization', {
     restorePersistentState: function($super, importer) {
         $super(importer);
 		// remove the following:
         //this.contentOffset = pt(0, this.titleBar.bounds().height);
     },
-
-}, 'window bar', {
+},
+'window behavior', {
     
     makeTitleBar: function(headline, width, optSuppressControls) {
         // Overridden in TabbedPanelMorph
         return new TitleBarMorph(headline, width, this, optSuppressControls);
     },
 
-	setTitle: function(string) {
-		this.titleBar.setTitle(string);
-	},
-
+	setTitle: function(string) { this.titleBar.setTitle(string) },
     windowContent: function() { return this.targetMorph; },
-    
     immediateContainer: function() { return this;  },
-
+    getCloseHelp: function() { return "Close"; },
+    getMenuHelp: function() { return "Menu"; },
+    getCollapseHelp: function() { return this.isCollapsed() ? "Expand" : "Collapse"; },
+    contentIsVisible: function() { return !this.isCollapsed(); },
+},
+'collapsing', {
     toggleCollapse: function() {
         return this.isCollapsed() ? this.expand() : this.collapse();
     },
@@ -4571,19 +4577,19 @@ Morph.subclass('WindowMorph', {
         if (this.isCollapsed()) return;
         this.expandedTransform = this.getTransform();
 		this.expandedExtent = this.getExtent();
-		this.expandedPosition = this.position();
+		this.expandedPosition = this.getPosition();
 		this.ignoreEventsOnExpand = this.targetMorph.areEventsIgnored();
 		this.targetMorph.ignoreEvents(); // unconditionally
 		this.targetMorph.setVisible(false);
 		var finCollapse = function () {
-			this.setTransform(this.collapsedTransform  || this.expandedTransform);
         	this.state = 'collapsed';  // Set it now so setExtent works right
+			if (this.collapsedTransform) this.setTransform(this.collapsedTransform);
         	if (this.collapsedExtent) this.setExtent(this.collapsedExtent);
 			this.shape.setBounds(this.titleBar.bounds());
 			this.layoutChanged();
-        	this.titleBar.highlight(false);
+        	// this.titleBar.highlight(false);
 		}.bind(this);
-		if(this.collapsedPosition && this.collapsedPosition.dist(this.position()) > 100)
+		if (this.collapsedPosition && this.collapsedPosition.dist(this.position()) > 100)
 			this.animatedInterpolateTo(this.collapsedPosition, 5, 50, finCollapse);
 		else finCollapse();
     },
@@ -4594,37 +4600,29 @@ Morph.subclass('WindowMorph', {
         this.collapsedExtent = this.innerBounds().extent();
 		this.collapsedPosition = this.position();
         var finExpand = function () {
+			this.state = 'expanded';  // Set it now so setExtent works right
 			// MR: added a fix for collapsed, save windows, made it optional
 			if (this.expandedTransform)
 				this.setTransform(this.expandedTransform); 
-			this.targetMorph.setVisible(true);
-			// enable events if they weren't disabled in expanded form
-			if (!this.ignoreEventsOnExpand) this.targetMorph.enableEvents();
-	        	this.state = 'expanded';  // Set it now so setExtent works right
 			if (this.expandedExtent) {
 				this.setExtent(this.expandedExtent);
 				this.shape.setBounds(this.expandedExtent.extentAsRectangle());
 			}
+			this.targetMorph.setVisible(true);
+			// enable events if they weren't disabled in expanded form
+			if (!this.ignoreEventsOnExpand)
+				this.targetMorph.enableEvents();
 			this.world().addMorphFront(this);  // Bring this window forward if it wasn't already
 			this.layoutChanged();
-	        	this.takeHighlight();
 		}.bind(this);
-		if(this.expandedPosition && this.expandedPosition.dist(this.position()) > 100)
-				this.animatedInterpolateTo(this.expandedPosition, 5, 50, finExpand);
+		if (this.expandedPosition && this.expandedPosition.dist(this.position()) > 100)
+			this.animatedInterpolateTo(this.expandedPosition, 5, 50, finExpand);
 		else finExpand();
     },
 
-    isCollapsed: function() { return this.state === 'collapsed'; },
-
-    getCloseHelp: function() { return "Close"; },
-
-    getMenuHelp: function() { return "Menu"; },
-    
-    getCollapseHelp: function() { return this.isCollapsed() ? "Expand" : "Collapse"; },
-
-    contentIsVisible: function() { return !this.isCollapsed(); },
-}, 'event handling', {
-
+    isCollapsed: function() { return this.state === 'collapsed' },
+},
+'event handling', {
 
     // Following methods promote windows on first click----------------
     morphToGrabOrReceive: function($super, evt, droppingMorph, checkForDnD) {
@@ -4660,7 +4658,7 @@ Morph.subclass('WindowMorph', {
         var oldTop = this.world().topSubmorph();
         this.world().addMorphFront(this);
         evt.hand.setMouseFocus(null);
-		if(this.targetMorph.takesKeyboardFocus()) 
+		if (this.targetMorph.takesKeyboardFocus()) 
 			evt.hand.setKeyboardFocus(this.targetMorph);
 		return true;
     },
@@ -4677,8 +4675,8 @@ Morph.subclass('WindowMorph', {
         return this; 
     },
 
-}, 'window', {
-
+},
+'window', {
     takeHighlight: function() {
         // I've been clicked on.  unhighlight old top, and highlight me
         var oldTop = this.world().topWindow();
@@ -4709,7 +4707,8 @@ Morph.subclass('WindowMorph', {
         tm.removeItemNamed("turn fisheye on");
         tm.openIn(this.world(), evt.mousePoint, false, this.targetMorph.inspect().truncate()); 
     },
-}, 'layout', {
+},
+'layout', {
     reshape: function($super, partName, newPoint, lastCall) {
 		// Minimum size for reshap should probably be a protoype var
 		var r = this.innerBounds().withPartNamed(partName, newPoint);
@@ -4733,6 +4732,12 @@ Morph.subclass('WindowMorph', {
         if (this.isCollapsed()) return;
         this.targetMorph.setExtent(pt(newWidth, newHeight - titleHeight));
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
+    },
+},
+'debugging', {
+    toString: function($super) {
+        var label = this.titleBar && this.titleBar.label;
+        return $super() + (label ? ": " + label.textString : ""); 
     },
 });
    
@@ -5663,9 +5668,7 @@ BoxMorph.subclass("StatusMessageContainer",
 },
 'actions', {
 	dismissAll: function() {
-		this.submorphs.clone().each(function(ea) {
-			ea.remove()
-		})
+		this.submorphs.clone().invoke('remove')
 	},
 
 	startUpdate: function() {
@@ -5675,13 +5678,16 @@ BoxMorph.subclass("StatusMessageContainer",
 			console.log("WARNING StatusMessageContainer found no world");
 			return
 		}
+		// rk 12/3/10 added code below to stop already running updates
+		world.stopSteppingForActionsMatching(function(action) {
+			return action.scriptName == 'updateMessages' && action.actor.constructor == StatusMessageContainer;
+		})
 		world.startSteppingFor(new SchedulableAction(this, 'updateMessages', undefined, 1000))
 	},
 
 	showDismissAllButton: function() {
-		if (!this.dismissAllButton) {
+		if (!this.dismissAllButton)
 			this.setupDismissAllButton();
-		};
 		if (!this.dismissAllButton.owner) {
 			this.addMorphBack(this.dismissAllButton);
 			this.relayout()
@@ -5697,36 +5703,36 @@ BoxMorph.subclass("StatusMessageContainer",
 	},
 
 	updateMessages: function() {
-		var time = new Date().getTime();
-		var messagesToBeDeleted = this.submorphs.select( function(ea) {return ea.removeAtTime && ea.removeAtTime < time})
+		var time = new Date().getTime(),
+			messagesToBeDeleted = this.submorphs.select(function(ea) {
+				return ea.removeAtTime && ea.removeAtTime < time})
 		
 		if (messagesToBeDeleted.length > 0) {
-			messagesToBeDeleted.each(function(ea) {ea.remove()});
+			messagesToBeDeleted.invoke('remove');
 			this.relayout();
 		}
+
 		// get rid of the dismiss button
-		var visibleMorphs = this.visibleSubmorphs();
-		if (visibleMorphs.length == 1) {
-			visibleMorphs[0].remove();
-		}
+		if (this.visibleSubmorphs().length == 1) this.dismissAll()
 	},
 
 	addProgressBar: function(msg, options) {
-		var statusMorph = this.addStatusMessage("");
-		var progressBar = new ProgressBarMorph(new Rectangle(5,5, 370,20));
+		var statusMorph = this.addStatusMessage(""),
+			progressBar = new ProgressBarMorph(new Rectangle(5,5, 370,20));
 		statusMorph.addMorph(progressBar);
 		progressBar.setLabel(msg);
 		connect(
 			progressBar, 'value', 
 			statusMorph, 'remove', 
-			{updater: function($proceed, newValue, oldValue) {
-				if (newValue == 1) $proceed() 
+			{updater: function($upd, newValue, oldValue) {
+				if (newValue == 1) $upd() 
 			}})
 		return progressBar
 	},
 
 	addStatusMessage: function(msg, color, delay, callback, optStyle, kind) {	
-		console.log((kind ? kind : "status msg: ") + msg)
+		console.log((kind ? kind : "status msg: ") + msg);
+
 		this.showDismissAllButton();
 
 		var statusMorph = new TextMorph(pt(400,30).extentAsRectangle());
