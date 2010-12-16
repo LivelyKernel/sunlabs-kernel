@@ -384,9 +384,10 @@ ObjectLinearizerPlugin.subclass('ClassPlugin',
 		var className = persistentCopy[this.classNameProperty];
 		if (!className) return;
 		var klass = Class.forName(className);
-		if (!klass) {
+		if (!klass || ! (klass instanceof Function)) {
 			var msg = 'ObjectGraphLinearizer is trying to deserialize instance of ' +
 				className + ' but this class cannot be found!';
+			dbgOn(true);
 			if (!Config.ignoreClassNotFound) throw new Error(msg);
 			console.error(msg);
 			lively.bindings.callWhenNotNull(WorldMorph, 'currentWorld',

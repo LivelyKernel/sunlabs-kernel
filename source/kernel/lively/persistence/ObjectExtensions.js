@@ -75,7 +75,12 @@ lively.paint.Gradient.addMethods('serialization', {
 });
 AttributeConnection.addMethods('serialization', {
 	onrestore: function() {
-		this.connect();
+		try {
+			this.connect();
+		} catch(e) {
+			dbgOn(true);
+			console.error('AttributeConnection>>onrestore: Cannot restore ' + this);
+		}
 	},
 });
 lively.ide.SystemBrowser.addMethods('serialization', {
@@ -131,8 +136,16 @@ cop.create('SmartRefSerializationCompatibility')
 		var height = this.height || this.rawNode.height.baseVal.value;
 		return y <= p.y && p.y <= y + height;
 	},
+});
+
+
+ImageMorph.addMethods('serialization', {
+	onrestore: function($super) {
+		$super()
+		if (this.image && this.image.rawNode)
+			this.addNonMorph(this.image.rawNode);
+	},
 })
-;
 
 
 // lively.scene.Rectangle.addMethods('SmartRefSerialization',{

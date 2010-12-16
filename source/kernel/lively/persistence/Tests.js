@@ -359,6 +359,8 @@ TestCase.subclass('lively.persistence.Tests.RestoreTest',
 		result.someScript(42);
 		this.assertEquals(42, result.val, 'script not serialized');
 	},
+
+
 	test03bSerializeScript: function() {
 		var obj = {foo: function(x) { this.x = x }.asScript()};
 		obj.foo(2)
@@ -367,6 +369,13 @@ TestCase.subclass('lively.persistence.Tests.RestoreTest',
 		result.foo(3);
 		this.assertEquals(3, result.x, 'script not serialized');
 	},
+	test04SerializeImageMorph: function() {
+		var morph = new ImageMorph(rect(pt(0,0),pt(100,100)), "http://lively-kernel.org/repository/webwerkstatt/media/livelylogo-small.png");
+		var result = this.serializeAndDeserialize(morph);
+		
+		this.assertEqual(morph.rawNode.childNodes.length, result.rawNode.childNodes.length, "childNods are not correctly restored")
+	},
+
 
 });
 
