@@ -25,7 +25,7 @@
  * Main.js.  System startup and demo loading.
  */
 
-module('lively.Main').requires("lively.Persistence").toRun(function() {
+module('lively.Main').requires().toRun(function() {
 
 
 Object.subclass('lively.Main.Loader',
