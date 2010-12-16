@@ -1,5 +1,5 @@
-var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1,
-	isFireBug = isFirefox && window.console && window.console.firebug !== undefined;
+var isFirefox = window.navigator.userAgent.indexOf('Firefox') > -1;
+var isFireBug = isFirefox && window.console && window.console.firebug !== undefined;
 
 (function setupConsole() {
 	
@@ -101,6 +101,56 @@ var JSLoader = {
 
 		parentNode.appendChild(script);
 	},
+	loadCombinedModules: function(combinedFileUrl, callback) {
+		// If several modules are combined in one file they can be loaded with this method.
+		// The method will ensure that all included modules are loaded and if they
+		// have required modules that are not included in the combined file also those will
+		// be loaded.
+
+		var originalLoader = this,
+			combinedLoader = {
+				expectToLoadModules: function(listOfRelativePaths) {
+					this.expectedModulePaths = listOfRelativePaths;
+					this.expectedModuleURLs = new Array(listOfRelativePaths.length);
+					for (var i = 0; i < listOfRelativePaths.length; i++)
+						this.expectedModuleURLs[i] = LivelyLoader.codeBase + listOfRelativePaths[i]
+					this.expectedModules = new Array(listOfRelativePaths.length);
+					for (var i = 0; i < listOfRelativePaths.length; i++) {
+						var moduleName = listOfRelativePaths[i].replace(/\//g, '.');
+						moduleName = moduleName.replace(/\.js$/g, '');
+						this.expectedModules[i] = moduleName;
+					}
+				},
+				includedInCombinedFile: function(scriptUrl) {
+					return this.expectedModuleURLs && this.expectedModuleURLs.indexOf(scriptUrl) >= 0;
+				},
+				loadJs: function(url) {
+					console.log('loadJs: ' + url)
+					if (!this.includedInCombinedFile(url)) originalLoader.loadJs(url);
+				},
+				scriptInDOM: function(url) {
+					console.log('scriptInDOM: ' + url)
+					return originalLoader.scriptInDOM(url) || this.includedInCombinedFile(url);
+				},
+			},
+			callCallback = function() {
+				Global.JSLoader = originalLoader;
+				// FIXME
+				var realModules = combinedLoader.expectedModules
+					.select(function(ea) { return Class.forName(ea) !== undefined });
+				require(realModules).toRun(callback)
+			};
+
+		if (this.scriptInDOM(combinedFileUrl)) { callCallback(); return }
+
+		// while loading the combined file we replace the loader
+		JSLoader = combinedLoader;
+
+		this.loadJs(combinedFileUrl, callCallback);
+	},
+
+
+
 
 	loadAll: function(urls, cb) {
 		urls.reverse().reduce(function(loadPrevious, url) {
@@ -232,20 +282,30 @@ var LivelyLoader = {
 		target.__defineGetter__(propName, function() { return target[newPropName] })
 		console.log('Watcher for ' + target + '.' + propName + ' installed')
 	},
+	createConfigObject: function() {
+		// Should have addtional logic for the case when no no window object exist...
+		if (!window.Config) window.Config = {};
+		window.Config.codeBase = this.codeBase;
+	},
+
 	
 	bootstrap: function(thenDoFunc) {
-		// Config = {}
-		// this.installWatcher(window, 'Config', true)
-		// this.installWatcher(Config, 'codeBase', true)
+		this.createConfigObject();
 		
-		var codeBase = this.codeBase;
+		var optimizedLoading = document.URL.indexOf('quickLoad') > 0 && document.URL.indexOf('!svn') == -1;
+		if (optimizedLoading) {
+			console.log('optimized loading enabled')
+			JSLoader.loadCombinedModules(this.codeBase + 'generated/combinedModules.js', thenDoFunc);
+			return
+		}
+		
+		var codeBase = this.codeBase;		
 		JSLoader.resolveAndLoadAll(codeBase, [
 			'lively/JSON.js',
 			'lively/miniprototype.js',
 			'lively/defaultconfig.js',
 			'lively/localconfig.js'],
 			function() {
-				Config.codeBase = codeBase;
 				JSLoader.resolveAndLoadAll(codeBase, [
 					'lively/Base.js',
 					'lively/scene.js',
@@ -405,16 +465,18 @@ LoadingScreen = {
 			if (console.parentNode && line.scrollIntoViewIfNeeded)
 				line.scrollIntoViewIfNeeded()
 		}
-		console.log = function(msg) { addLine(msg) };
-		console.warn = function(msg) { addLine(msg, 'color: yellow;') };
-		console.error = function(msg) {
-			if (!console.parentNode) self.toggleConsole();
-			addLine(msg, 'color: red; font-size: large;');
-			self.ensureBrokenWorldMessage();
+
+		this.consoleProxy = {
+			log: function(msg) { addLine(msg) },
+			warn: function(msg) { addLine(msg, 'color: yellow;') },
+			error: function(msg) {
+				if (!console.parentNode) self.toggleConsole();
+				addLine(msg, 'color: red; font-size: large;');
+				self.ensureBrokenWorldMessage();
+			},
 		};
 
-		window.console.addConsumer(console)
-
+		window.console.addConsumer(this.consoleProxy)
 		
 		return console;
 	},
@@ -423,8 +485,10 @@ LoadingScreen = {
 		var console = this.console;
 		this.console = null;
 		if (!console || isFireBug) return;
-		window.console.removeConsumer(console)
 		this.removeElement(console);
+		if (!this.consoleProxy) return
+		window.console.removeConsumer(this.consoleProxy)
+		this.consoleProxy = null;
 	},
 
 	toggleConsole: function() {
@@ -436,6 +500,11 @@ LoadingScreen = {
 	},
 
 	buildConsoleButton: function() {
+		// var btn = document.createElement('button');
+		// btn.setAttribute('style', "position: fixed; right: 170px; top: 20px; width: 70px; text-align:center; font-family: monospace; border: 1px solid; border-color: rgb(100,100,100); color: rgb(100,100,100)");
+		// btn.setAttribute('style', "position: fixed; right: 170px; top: 20px; width: 70px;");
+		// btn.onclick = function() { LoadingScreen.toggleConsole() }
+		// return btn
 		var a = document.createElement('a');
 		a.setAttribute('style', "position: fixed; right: 170px; top: 20px; width: 70px; text-align:center; font-family: monospace; border: 1px solid; border-color: rgb(100,100,100); color: rgb(100,100,100)");
 		a.setAttribute('href', 'javascript:LoadingScreen.toggleConsole()');
@@ -446,7 +515,7 @@ LoadingScreen = {
 	buildCloseButton: function() {
 		var a = document.createElement('a');
 		a.setAttribute('style', "position: fixed; right: 90px; top: 20px; width: 70px; text-align:center; font-family: monospace; border: 1px solid; border-color: rgb(100,100,100); color: rgb(100,100,100)");
-		a.setAttribute('href', 'javascript:LoadingScreen.remove()');
+		a.setAttribute('href', 'javascript:LoadingScreen.remove();');
 		a.textContent = 'close'
 
 		return a;

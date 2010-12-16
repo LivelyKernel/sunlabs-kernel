@@ -21,7 +21,7 @@
  */
 
 
-module('lively.Helper').requires().toRun(function() {
+module('lively.Helper').requires('lively.Widgets').toRun(function() {
 
 // this.getRichText().asMorph().openInWorld()
 

@@ -375,6 +375,7 @@ function module(moduleName) {
 					try {
 						module.activate();
 						code.apply(this, requiredModules);
+						module._isLoaded = true;
 					} catch(e) {
 						console.error('Error while loading ' + moduleName + ': ' + e);
 						dbgOn(true);
@@ -396,9 +397,9 @@ function module(moduleName) {
 };
 
 function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/) {
-	function getUniqueName() { return 'anonymous_module_' + require.counter }
+	var getUniqueName = function() { return 'anonymous_module_' + require.counter },
+		args = $A(arguments);
 	require.counter !== undefined ? require.counter++ : require.counter = 0;
-	var args = $A(arguments);
 	return module(getUniqueName()).beAnonymous().requires(Object.isArray(args[0]) ? args[0] : args);
 };
 
@@ -959,13 +960,10 @@ var Properties = {
 
 	forEachOwn: function Properties$forEachOwn(object, func, context) {
 		for (var name in object) {
-			if (object.hasOwnProperty(name)) {
-				var value = object[name];
-				if (!(value instanceof Function)) {
-					var result = func.call(context || this, name, value);
-					// cont && cont.call(context || this, result); 
-				}
-			}
+			if (!object.hasOwnProperty(name)) continue;
+			var value = object[name];
+			if (!(value instanceof Function))
+				var result = func.call(context || this, name, value);
 		}
 	},
 
@@ -1066,6 +1064,10 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	},
 	
 	addRequiredModule: function(requiredModule) {
+		// privateRequirements is just for keeping track later on
+		if (!this.privateRequirements) this.privateRequirements = [];
+		this.privateRequirements.push(requiredModule);
+
 		if (requiredModule.isLoaded()) return;
 		if (!this.pendingRequirements) this.pendingRequirements = [];
 		this.pendingRequirements.push(requiredModule);
@@ -1123,7 +1125,6 @@ Namespace.addMethods({ // module specific, should be a subclass?
 		}
 		if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
 			this.runOnloadCallbacks();
-			this._isLoaded = true;
 			// time is not only the time needed for the Netrequest and code evaluation
 			// but the complete time span from the creation of the module (when the module is first encountered)
 			// to evaluation the evaluation of its code, including load time of all requirements
@@ -1161,10 +1162,14 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	},
 	remove: function() {
 		var ownerNamespace = Class.namespaceFor(this.namespaceIdentifier),
-			ownName = Class.unqualifiedNameFor('Tests.ClassTest.DummyModule1')
+			ownName = Class.unqualifiedNameFor(this.namespaceIdentifier)
 		delete ownerNamespace[ownName];
 	},
-
+	removeScriptNode: function() {
+		var node = document.getElementById(this.uri());
+		if (!node) return
+		node.parentNode.removeChild(node);
+	},
 	
 	toString: function() {
 			return 'namespace(' + this.namespaceIdentifier +
@@ -1175,6 +1180,39 @@ Namespace.addMethods({ // module specific, should be a subclass?
 Object.extend(Namespace, {
 	namespaceStack: [Global],
 	current: function() { return this.namespaceStack.last() },
+	topologicalSortLoadedModules: function() {
+		// get currently loaded modules that really are js files
+		var modules = Global.subNamespaces(true).select(function(ea) {
+			return new WebResource(ea.uri()).exists() });
+
+		// topological sort modules according to their requirements
+		var sortedModules = [], i = 0;
+		while (i < 1000 && modules.length > 0) {
+			i++;
+			var canBeLoaded = modules.select(function(module) {
+				if (!module.privateRequirements) return true;
+				return module.privateRequirements.all(function(requirement) {
+					return sortedModules.include(requirement) })
+			})
+			sortedModules = sortedModules.concat(canBeLoaded);
+			modules = modules.withoutAll(canBeLoaded);
+		}
+		if (modules.length > 0)
+			throw new Error('Cannot find dependencies for all modules!');
+
+		return sortedModules;
+	},
+
+	bootstrapModules: function() {
+		// return a string to include in bootstrap.js
+		var urls = this.topologicalSortLoadedModules().collect(function(ea) {
+			return new URL(ea.uri()).relativePathFrom(URL.codeBase)  });
+
+		var manual = ['lively/miniprototype.js', 'lively/JSON.js', 'lively/defaultconfig.js', 'lively/localconfig.js', 'lively/Base.js']
+
+		urls = manual.concat(urls);
+		return '[\'' + urls.join('\', \'') + '\']';
+	},
 });
 
 (function moveNamespaceClassToLivelyLang() {
