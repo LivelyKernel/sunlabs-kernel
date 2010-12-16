@@ -334,7 +334,7 @@ Widget.subclass('lively.ide.BasicBrowser',
 		var wanted = nodes.detect(test);
 		if (!wanted) return null;
 		var list = this.panel[paneName].innerMorph();
-		list.setSelection(wanted);
+		list.setSelection(wanted, true);
 		return wanted;
 	},
 
@@ -541,7 +541,7 @@ Widget.subclass('lively.ide.BasicBrowser',
 		// be careful -- this can lead to overwritten source code
 		var pane = this.paneNameOfNode(node);
 		if (!pane) return;
-		this.inPaneSelectNodeNamed(pane, ''); // unselect
+		this.inPaneSelectNodeMatching(pane, Functions.False); // unselect
 		this.inPaneSelectNodeMatching(pane, function(other) { return other.target == node.target });
 		// this.setSourceString(node.sourceString());
 	},
@@ -1377,8 +1377,7 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
     sourceString: function($super) {
 		this.loadModule();
 		var src = $super();
-		if (src.length > this.maxStringLength && !this.showAll) return '';
-        return src;
+		return !this.showAll && src.length > this.maxStringLength ? '' : src;
     },
     
     asString: function() {
@@ -1434,8 +1433,8 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
 		menu.unshift(['reparse', function() {
     		node.getSourceControl().reparseModule(node.moduleName, true);
     		node.signalChange() }]);
-		menu.unshift(['toggle showAll', function() {
-    		node.showAll = !node.showAll;
+		menu.unshift(['show all', function() {
+    		node.showAll = true;
     		node.signalTextChange() }]);
 		menu.unshift(['remove', function() {
 			browser.sourceDatabase().removeFile(node.moduleName);
@@ -1447,6 +1446,7 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
 		menu.unshift(['Add to world requirements', function() {
 			var moduleName = lively.ide.ModuleWrapper.forFile(node.moduleName).moduleName();
 			ChangeSet.current().addWorldRequirement(moduleName);
+			module(moduleName).load()
 			alertOK(moduleName + ' added to local requirements');
 		}]);
 
@@ -2216,44 +2216,44 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 
 	world: function() { return WorldMorph.current() },
 
-	createModuleFile: function(filename) {
-		var content = '', browser = this.browser;
-		if (filename.endsWith('.ometa')) {
+	createModuleFile: function(url) {
+		var content = '';
+		if (url.filename().endsWith('.ometa')) {
 			content = this.ometaTemplate();
 		} else {
-			if (!filename.endsWith('.js')) filename += '.js';
-			content = this.moduleTemplateFor(filename);
+			if (!url.filename().endsWith('.js'))
+				url = new URL(url.toString() + '.js');
+			content = this.moduleTemplateFor(url);
 		}
-
-		var dir = new FileDirectory(this.browser.getTargetURL());
-		if (dir.fileOrDirectoryExists(filename)) {
-			this.world().notify('File ' + filename + ' already exists!');
+		var webR = new WebResource(url).beSync();
+		if (webR.exists()) {
+			this.world().notify('File ' + url + ' already exists!');
 			return null
 		}
-		dir.writeFileNamed(filename, content);
-		browser.rootNode().locationChanged();
-		browser.allChanged();
-		browser.inPaneSelectNodeNamed('Pane1', filename);
+		webR.put(content);
+		return url.filename();
 	},
-	createNamespaceDir: function(dirName) {
-		if (!dirName.endsWith('/')) dirName += '/';
-		var browser = this.browser,
-			url = browser.getTargetURL().withFilename(dirName);
+	createNamespaceDir: function(url) {
 		new WebResource(url).create();
-		browser.rootNode().locationChanged();
-		browser.allChanged();
-		browser.inPaneSelectNodeNamed('Pane1', dirName);
+		return url.filename(); 
 	},
 
 	createFileOrDir: function(input) {
-		return input.endsWith('/') ? this.createNamespaceDir(input) : this.createModuleFile(input);
+		var browser = this.browser,
+			url = browser.getTargetURL().withFilename(input),
+			nodeName = url.isLeaf() ? this.createModuleFile(url) : this.createNamespaceDir(url);
+
+		browser.rootNode().locationChanged();
+		browser.allChanged();
+		browser.inPaneSelectNodeNamed('Pane1', nodeName);
 	},
 
 
-	moduleTemplateFor: function(filename) {
-		var fnWithoutJs = filename.substring(0, filename.indexOf('.'));
-		var moduleBase = this.browser.getTargetURL().withRelativePartsResolved().relativePathFrom(URL.codeBase);
-		var moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
+	moduleTemplateFor: function(url) {
+		var filename = url.filename(),
+			fnWithoutJs = filename.substring(0, filename.indexOf('.')),
+			moduleBase = url.getDirectory().withRelativePartsResolved().relativePathFrom(URL.codeBase),
+			moduleName = moduleBase.toString().replace(/\//g, '.') + fnWithoutJs;
 		return Strings.format('module(\'%s\').requires().toRun(function() {\n\n// Enter your code here\n\n}) // end of module',
 				moduleName);
 	},
@@ -2263,10 +2263,11 @@ lively.ide.BrowserCommand.subclass('lively.ide.AddNewFileCommand', {
 	},
 
 	trigger: function() {
-		var browser = this.browser;
-		this.browser.ensureSourceNotAccidentlyDeleted(function() {
-			this.world().prompt('Enter filename (something like foo or foo.js or foo.ometa or foo/)', this.createFileOrDir.bind(this));
-		}.bind(this));
+		var command = this, browser = this.browser;
+		browser.ensureSourceNotAccidentlyDeleted(function() {
+			command.world().prompt('Enter filename (something like foo or foo.js or foo.ometa or foo/)',
+				command.createFileOrDir.bind(command));
+		});
 	},
 	
 });
@@ -3621,6 +3622,24 @@ Object.subclass('lively.ide.FileFragment',
 		src = src.split(/\n[\n]+/).last();
 		return src;
 	},
+	getSubElementAtLine: function(line, depth) {
+		var element = this.subElements().detect(function(ea) {
+			return  ea.startLine() <= line && ea.stopLine() >= line});
+		if (element && depth > 1) {
+			return element.getSubElementAtLine(line, depth - 1) || element
+		};
+		return element
+	},
+	getOwnerNamePath: function() {
+		return this.getOwnerPath().pluck('name')
+	},
+	getOwnerPath: function() {
+		var owner = this.findOwnerFragment();
+		return (owner ? owner.getOwnerPath() : []).concat([this])
+	},
+
+
+
 
 },
 'browser support', {
@@ -3671,7 +3690,24 @@ Object.subclass('lively.ide.FileFragment',
 		return sibling;
 	},
 },
-'change compatibility', {
+
+'line position', {
+
+	charsUpToLineInString: function(string, line) {
+		var lines = string.split('\n')
+		var result = 0;
+		for(var i=0; (i < line) && (i < lines.length); i++) {
+			result = result + lines[i].length + 1
+		};
+		return result
+	},
+	charsUpToLine: function(line) {
+		var string = this.getSourceCode(); 
+		return  this.charsUpToLineInString(string, line - this.startLine())
+	},
+
+
+},'change compatibility', {
 
 	getName: function() {
 		return this.name;
@@ -3830,6 +3866,157 @@ Widget.subclass('lively.ide.FileVersionViewer',
 		else
 			w.setStatusMessage('Could not revert ' + this.url + ': ' + status, Color.red, 5);
 		this.setTarget(this.url); // update list
+	},
+});
+Object.subclass('lively.ide.ChromeErrorParser',
+'parse', {
+	parseStackLine: function(lineString) {
+		var m = lineString.match(/.*(http.*\.js)\?(\d+)\:(\d+):(\d+)/)
+
+		var errorLine = new lively.ide.ChromeErrorLine()
+		errorLine.full = lineString
+		if (m == undefined) {
+			return errorLine;
+		}
+		errorLine.url = m[1] || "";
+		errorLine.sourceID = m[2];
+		errorLine.line = Number(m[3]);
+		errorLine.linePosition = Number(m[4]);
+
+		return errorLine
+	},
+
+	parseErrorStack: function(errorStackString) {
+		return errorStackString.split("\n")
+			.select(function(ea) {return ea.startsWith("    at ")})
+			.collect(function(ea) {return this.parseStackLine(ea)}, this) 
+	},
+
+	fileFragmentList: function(errorStackString) {
+		var parsedStack = this.parseErrorStack(errorStackString)
+		var sc = lively.ide.startSourceControl();
+
+		return parsedStack.collect(function(ea) {
+			return ea.fileFragment()
+		})
+	},
+});
+Object.subclass('lively.ide.ChromeErrorLine',
+'default category', {
+	toString: function() {
+		if (this.url == undefined)
+			return this.full;
+		return this.path() + " " + this.line + ":" + this.linePosition 
+	},
+	fileFragment: function() {
+		var sc = lively.ide.startSourceControl(),
+			moduleWrapper = sc.addModule(this.path());
+		if (moduleWrapper == undefined)
+			return undefined
+		return moduleWrapper.ast().getSubElementAtLine(this.line, 5)
+	},
+	path: function() {
+		if (this.url == undefined) return ""
+		return new URL(this.url).relativePathFrom(URL.codeBase) 
+	},
+
+
+});
+Widget.subclass('lively.ide.ErrorStackViewer',
+'settings', {
+	
+	viewTitle: "Error Stack Viewer",
+    initialViewExtent: pt(700, 500),
+
+},
+'initializing', {
+
+	buildView: function(extent) {
+		extent = extent || this.initialViewExtent;
+
+		var panel = PanelMorph.makePanedPanel(extent, [
+			['errorMessage', newTextPane, new Rectangle(0, 0, 1, 0.05)],
+			['errorList', newRealListPane, new Rectangle(0, 0.05, 1, 0.45)],
+			['browseButton', newButton, new Rectangle(0, 0.5, 0.2, 0.05)],
+			['sourcePane', newTextPane, new Rectangle(0, 0.55, 1, 0.45)],
+		]);
+		
+		var browseButton = panel.browseButton;
+		browseButton.setLabel('browse');
+		browseButton.plugTo(this, {fire: '->browseSelection'});
+
+		this.errorStackListMorph = panel.errorList.innerMorph();
+		this.errorStackListMorph.dragEnabled = false;
+
+		this.sourceTextMorph = panel.sourcePane.innerMorph();
+		this.sourceTextMorph.setWithLayers([SyntaxHighlightLayer]);
+
+		panel.sourcePane.linkToStyles(["Browser_codePane"])
+		panel.sourcePane.innerMorph().linkToStyles(["Browser_codePaneText"])
+		panel.sourcePane.clipMorph.setFill(null);
+
+		connect(this.errorStackListMorph, "selection", this, 'updateSourceFromErrorLine')
+		connect(this, 'errorStackList', this.errorStackListMorph, 'updateList').update(this.errorStackList)
+
+		this.panel = panel;
+
+		this.updateErrorMessage();
+
+		return panel;
+	},
+	
+	setErrorStack: function(errorStackString) {
+		var list = new lively.ide.ChromeErrorParser().parseErrorStack(errorStackString)
+		this.errorStackList = list;
+	},
+	setError: function(error) {
+		if (error.stack)
+			this.setErrorStack(error.stack);
+		this.errorMessage = error.message;
+		this.errorType = error.type;
+		this.updateErrorMessage();
+	},
+},
+
+'actions', {
+	updateErrorMessage: function() {
+		if (this.panel == undefined)
+			return;
+		this.panel.errorMessage.innerMorph().setTextString(this.errorType + ': ' + this.errorMessage)
+	},
+
+	updateSourceFromErrorLine: function(errorLine) {
+
+		var fileFragment = errorLine.fileFragment();
+
+		this.sourceTextMorph.setTextString(fileFragment.getSourceCode())
+		this.sourceTextMorph.highlightJavaScriptSyntax();
+
+		var from = fileFragment.charsUpToLine(errorLine.line) + errorLine.linePosition
+		var to = fileFragment.charsUpToLine(errorLine.line + 1) - 1; // line end
+		
+		// error text selection		
+		if (this.sourceTextMorph.errorTextSelection) {
+			 this.sourceTextMorph.errorTextSelection.undraw()
+		} else {
+			this.sourceTextMorph.errorTextSelection = new TextSelectionMorph();
+			this.sourceTextMorph.addMorph(this.sourceTextMorph.errorTextSelection)
+			this.sourceTextMorph.style = 
+				{fill: Color.gray.lighter(), borderWidth: 0, strokeOpacity: 0, borderRadius: 1};
+		}
+		var selectionRange = [from - 1, to-1];
+		this.sourceTextMorph.drawSelectionInRange(this.sourceTextMorph.errorTextSelection, selectionRange)
+		this.sourceTextMorph.scrollSelectionIntoView(selectionRange)
+	},
+
+	browseSelection: function() {
+		var errorLine = this.selectedErrorLine();
+		if(errorLine) errorLine.fileFragment().browseIt();
+
+	},
+
+	selectedErrorLine: function() {
+		return this.errorStackListMorph.selection
 	},
 });
 
