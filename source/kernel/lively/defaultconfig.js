@@ -257,6 +257,7 @@ Object.extend(Config, {
     changeLocationOnSaveWorldAs: false,
 });
 
+
 // Note this patch fixes a problem with recent WebKit builds and Safari 4 beta
 // We should test for these versions, and drop this code when it's no longer needed
 // Thanks to Phil Weaver for tracking this down and suggesting this fix.
@@ -331,7 +332,7 @@ Object.extend(Config, {
 	modulesBeforeChanges: ['lively.LKWiki', 'lively.ChangeSet', 'lively.Styles'], // evaluated first, even before ChangeSet of a world
 	modulesBeforeWorldLoad: [], // evaluated before all changes
 	modulesOnWorldLoad: ['lively.TouchSupport'], // evaluated before ChangeSet initializer
-	codeBase: Config.getDocumentDirectory(),
+	codeBase: Config.codeBase || Config.getDocumentDirectory(),
 	disableScriptCaching: false,
 	defaultDisplayTheme: 'lively',
 	hideSystemCursor: true,
