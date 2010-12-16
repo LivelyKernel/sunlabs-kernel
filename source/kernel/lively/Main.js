@@ -25,7 +25,7 @@
  * Main.js.  System startup and demo loading.
  */
 
-module('lively.Main').requires().toRun(function() {
+module('lively.Main').requires("lively.Persistence").toRun(function() {
 
 
 Object.subclass('lively.Main.Loader',
@@ -585,13 +585,13 @@ Object.subclass('lively.Main.ExampleLoader', {
 		if (Config.showWebStore()) {
 			var store = new FileBrowser();
 			store.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(460, 120));
-		}
+		};
 
 		if (Config.showDOMBrowser) {
 			var browser = new DOMBrowser();
 			console.log('showing DOMBrowser!');
 			browser.openIn(Config.webStoreInMain ? WorldMorph.current() : devWorld.myWorld, pt(260, 120));
-		}
+		};
 
 		if (Config.showTwoPaneObjectBrowser) {
 			var browser = new TwoPaneObjectBrowser();
