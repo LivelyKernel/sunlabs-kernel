@@ -1892,13 +1892,27 @@ WidgetModel.subclass('ChangeList', {
 		panel.searchAgainButton.setLabel('search again');
 		connect(panel.searchAgainButton, 'fire', this, 'searchAgain')
 
-
         m = panel.bottomPane;
 		m.setFill(Color.white);
 		m.innerMorph().owner.setFill(null);
 		m.innerMorph().setFill(null);
         m.innerMorph().getTextSelection().borderRadius = 0;
         m.connectModel({model: this, getText: "getChangeItemText", setText: "setChangeItemText", getSelection: "getSearchString", getMenu: "default"});
+
+		this.sourceTextMorph = m.innerMorph();
+		if (Global.SyntaxHighlightLayer) {
+			this.sourceTextMorph.setWithLayers([SyntaxHighlightLayer]);
+			connect(this.sourceTextMorph, 'textString', this.sourceTextMorph, 'textString', {
+				updater: function($upd, newValue, oldValue) {
+					this.getSourceObj().highlightJavaScriptSyntax.bind(this.getSourceObj()).delay(0)
+				}
+
+			})
+		}
+		m.linkToStyles(["Browser_codePane"])
+		m.innerMorph().setFontFamily('Courier')
+		m.innerMorph().linkToStyles(["Browser_codePaneText"])
+		m.clipMorph.setFill(null);
 
 		// if (this.getChangeBanners().length > 0) {
 			// this.setChangeSelection(this.getChangeBanners()[0])
@@ -2267,148 +2281,6 @@ Object.subclass('SourceCodeDescriptor', {
 
 });
 
-Object.subclass('BasicCodeMarkupParser', {
-    documentation: "Evaluates code in the lkml code format",
-    // this is the first attempt, format subject to change
-    classQuery: new Query("/code/class"),
-    protoQuery: new Query("proto"),
-    staticQuery: new Query("static"),
-
-	nameOf: function(element) {
-		// attibutes.getQualifiedItem is FIX for IE9+
-		var name = (element.getAttributeNS ? element.getAttributeNS(null, "name") : element.attributes.getQualifiedItem("name", "").nodeValue);
-		if (!name) throw new Error("no class name");
-		return name;
-	},
-
-    parseDocumentElement: function(element, isHack) {
-		var classes;
-		if (isHack) {
-	    	var xpe = new XPathEvaluator();
-	    	function resolver(arg) {
-				//return "http://www.w3.org/2000/svg";
-				return Namespace.SVG;
-			}
-			var result = xpe.evaluate("/lively:code/lively:class", element, resolver, XPathResult.ANY_TYPE, null);
-	    	var res = null;
-	    	classes = [];
-	    	while (res = result.iterateNext()) classes.push(res);
-		}  else {
-	    	classes = this.classQuery.findAll(element);
-		}
-
-		for (var i = 0; i < classes.length; i++) 
-	  	  this.parseClass(classes[i], isHack);
-		return classes;
-    },
-
-    parseClass: function(element, isHack) {
-	// note eval oreder first parse proto methods, then static methods.
-	var className = this.nameOf(element);
-	var klass = null;
-	// attributes.getQualifiedItem is FIX for IE9+
-	var superName = (element.getAttributeNS ? element.getAttributeNS(null, "super") : element.attributes.getQualifiedItem("super", "").nodeValue);
-	
-	if (superName) { // super is present so we are subclassing (too hackerish?)
-	    var superClass = Class.forName(superName);
-	    if (!Class.isClass(superClass)) throw new Error('no superclass');
-	    klass = superClass.subclass(className);
-	} else {
-	    klass = Class.forName(className);
-	}
-	
-	var protos;
-
-	if (isHack) {
-	    var xpe = new XPathEvaluator();
-	    function resolver(arg) {
-		return Namespace.SVG;
-	    }
-	    var result = xpe.evaluate("hack:proto", element, resolver, XPathResult.ANY_TYPE, null);
-	    protos = [];
-	    var res = null;
-	    while (res = result.iterateNext()) protos.push(res);
-	}  else {
-	    protos = this.protoQuery.findAll(element);
-	}
-
-	for (var i = 0; i < protos.length; i++)
-	    this.parseProto(protos[i], klass);
-
-	var statics = this.staticQuery.findAll(element);
-	for (var i = 0; i < statics.length; i++)
-	    this.parseStatic(statics[i], klass);
-    },
-
-    evaluateElement: function(element) {
-	try {
-	    // use intermediate value because eval doesn't seem to return function
-	    // values.
-	    // this would be a great place to insert a Cajita evaluator.
-	    return eval("BasicCodeMarkupParser._=" + (element.textContent || element.text)); // text is FIX for IE9+
-	} catch (er) { 
-	    console.log("error " + er + " parsing " + (element.textContent || element.text)); // text is FIX for IE9+
-	    return undefined;
-	}
-    },
-
-    parseProto: function(protoElement, cls) {
-	var name = this.nameOf(protoElement);
-	var mixin = {};
-	mixin[name] = this.evaluateElement(protoElement);
-	cls.addMethods(mixin);
-    },
-
-    parseStatic: function(staticElement, cls) {
-	var name = this.nameOf(staticElement);
-	cls[name] = this.evaluateElement(staticElement);
-    }
-
-});
-
-
-
-BasicCodeMarkupParser.subclass('CodeMarkupParser', ViewTrait, {
-    formals: ["CodeDocument", "CodeText", "URL"],
-
-    initialize: function(url) {
-	var model = Record.newPlainInstance({ CodeDocument: null, CodeText: null, URL: url});
-	this.resource = new Resource(model.newRelay({ ContentDocument: "+CodeDocument", ContentText: "+CodeText", URL: "-URL"}), 
-				     "application/xml");
-	this.connectModel(model.newRelay({ CodeDocument: "CodeDocument", CodeText: "CodeText"}));
-    },
-
-    parse: function() {
-	this.resource.fetch();
-    },
-    
-    onCodeTextUpdate: function(txt) {
-	if (!txt) return;
-	// in case the document is served as text anyway, try forcing xml
-	var parser = new DOMParser();
-	var xml = parser.parseFromString(txt, "text/xml");
-	this.onCodeDocumentUpdate(xml);
-    },
-
-    onCodeDocumentUpdate: function(doc) {
-	if (!doc) return;
-	this.parseDocumentElement(doc.documentElement);
-	this.onComplete();
-    },
-
-    onComplete: function() {
-	// override to supply an action 
-    }, 
-
-});
-
-Object.extend(CodeMarkupParser, {
-    load: function(filename, callback) {
-	var parser = new CodeMarkupParser(SourceDatabase.prototype.codeBaseURL.withFilename(filename));
-	if (callback) parser.onComplete = callback;
-	parser.parse();
-    }
-});
 
 Object.subclass("EvalSourceRegistry", {
 	initialize: function() {
