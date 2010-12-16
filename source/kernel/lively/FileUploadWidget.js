@@ -181,11 +181,31 @@ Morph.subclass('FileUploadMorph', {
     },
 })
 
-XenoMorph.subclass("FileUploadXenoMorph", {
+BoxMorph.subclass("FileUploadXenoMorph", {
 
 	initialize: function($super, bounds) {
 		$super(bounds);
+
+		this.setupForeignObject();
 		this.setupHTMLContent();
+	},
+
+	setupForeignObject: function() {
+		var fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') 
+		fo.setAttribute('width', '200'); 
+		fo.setAttribute('height', '50'); 
+		fo.setAttribute('x', '10'); 
+		fo.setAttribute('y', '10');
+		this.foRawNode = fo;
+		this.rawNode.appendChild(this.foRawNode)
+	},
+
+
+	onrestore: function($super) {
+		$super()
+		this.setupForeignObject();
+		this.setupHTMLContent();
+
 	},
 
 	handlesMouseDown: function() {return true},
@@ -297,7 +317,7 @@ XenoMorph.subclass("FileUploadXenoMorph", {
 		//input.setAttribute("style", "left:0px; top:-10px; width:100px; height:20px;"); 
 
 		this.foRawNode.appendChild(input);
-
+	
 	
 		var self = this;
 
