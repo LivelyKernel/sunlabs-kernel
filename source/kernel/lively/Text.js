@@ -25,7 +25,7 @@
  * Text.js.  Text-related functionality.
  */
 
-module('lively.Text').requires().toRun(function() {
+module('lively.Text').requires('lively.Core').toRun(function() {
 		
 Object.subclass('lively.Text.CharacterInfo', {
 	// could simply use Point as extent.
@@ -799,7 +799,8 @@ lively.Text.WrapStyle = Class.makeEnum([
 Morph.subclass('TextSelectionMorph', {
 
 	documentation: "Visual representation of the text selection",
-	style: {fill: Color.primary.blue, borderWidth: 0, strokeOpacity: 0, borderRadius: 1},
+	style: {fill: Color.gray, borderWidth: 0, strokeOpacity: 0, borderRadius: 1},
+	cursorColor: Color.black,
 	isEpimorph: true,
 	
 	initialize: function($super) {
@@ -811,8 +812,19 @@ Morph.subclass('TextSelectionMorph', {
 	addRectangle: function(rect) {
 		var m = this.addMorph(Morph.makeRectangle(rect));
 		m.applyStyle(this.style);
+		if (this.isCursor) {
+			m.setFill(this.cursorColor)
+		}
 		m.ignoreEvents();
 	},
+	beCursor: function() {
+		this.isCursor = true;
+	},
+	beSelection: function() {
+		this.isCursor = false;
+	},
+
+
 
 	undraw: function() {
 		this.removeAllMorphs();
@@ -1127,6 +1139,9 @@ BoxMorph.subclass('TextMorph',
 		if (spec.fontStyle !== undefined) {
 			this.emphasizeAll({style: spec.fontStyle});
 		}
+		if (spec.fontFamily !== undefined) {
+			this.setFontFamily(spec.fontFamily);
+		}
 		return this;
 	},
 
@@ -1375,10 +1390,12 @@ BoxMorph.subclass('TextMorph',
 		sp.setVerticalScrollPosition(sp.getVerticalScrollPosition());
 	},
 	
-	scrollSelectionIntoView: function() { 
+	scrollSelectionIntoView: function(optSelectionRange) {
+		var selectionRange = optSelectionRange || this.selectionRange;
+ 
 		var sp = this.enclosingScrollPane();
 		if (! sp) return;
-		var selRect = this.getCharBounds(this.selectionRange[this.hasNullSelection() ? 0 : 1]);
+		var selRect = this.getCharBounds(selectionRange[this.hasNullSelection(selectionRange) ? 0 : 1]);
 		sp.scrollRectIntoView(selRect); 
 	},
 	
@@ -1417,6 +1434,7 @@ BoxMorph.subclass('TextMorph',
 	},
 	
 	getSelectionString: function() {
+		if (this.textString == undefined) return undefined;
 		return this.textString.substring(this.selectionRange[0], this.selectionRange[1] + 1); 
 	},
 	
@@ -1473,8 +1491,10 @@ BoxMorph.subclass('TextMorph',
 		this.setSelectionRange(charIx, charIx); 
 	},
 	
-	hasNullSelection: function() { 
-		return this.selectionRange[1] < this.selectionRange[0]; 
+	hasNullSelection: function(optSelectionRange) {
+		var range = optSelectionRange || this.selectionRange;
+ 
+		return range[1] < range[0]; 
 	},
 
 	setSelectionRange: function(piv, ext) { 
@@ -2676,30 +2696,36 @@ BoxMorph.subclass('TextMorph',
 			return;
 
 		this.undrawSelection();
-		var selection = this.getTextSelection();
+		this.drawSelectionInRange(this.getTextSelection(), this.selectionRange)
+
+		// scrolling here can cause circularity with bounds calc
+		if (!noScroll) this.scrollSelectionIntoView();
+	},
+	drawSelectionInRange: function(selection, selectionRange) {
 
 		var jRect;
-		if (this.selectionRange[0] > this.textString.length - 1) { // null sel at end
-			jRect = this.getCharBounds(this.selectionRange[0]-1);
+		selection.beSelection()
+		if (selectionRange[0] > this.textString.length - 1) { // null sel at end
+			jRect = this.getCharBounds(selectionRange[0]-1);
 			if (jRect) {
 				jRect = jRect.translatedBy(pt(jRect.width,0));
 			}
 		} else {
-			jRect = this.getCharBounds(this.selectionRange[0]);
+			jRect = this.getCharBounds(selectionRange[0]);
 		}
 
 		if (jRect == null) {
 			if (this.textString.length > 0) {
-				// console.log("text box failure in drawSelection index = " + this.selectionRange[0] + "text is: " + this.textString.substring(0, Math.min(15,this.textString.length)) + '...'); 
 			}
 			return;
 		}
 
 		var r1 = this.lineRect(jRect.withWidth(1));
-		if (this.hasNullSelection()) {
-			var r2 = r1.translatedBy(pt(-1,0)); 
+		if (this.hasNullSelection(selectionRange)) {
+			var r2 = r1.translatedBy(pt(-1,0));
+			selection.beCursor();
 		} else {
-			jRect = this.getCharBounds(this.selectionRange[1]);
+			jRect = this.getCharBounds(selectionRange[1]);
 			if (jRect == null)	{
 				return;
 			}
@@ -2724,9 +2750,9 @@ BoxMorph.subclass('TextMorph',
 			}
 		}
 
-		// scrolling here can cause circularity with bounds calc
-		if (!noScroll) this.scrollSelectionIntoView();
-	},
+
+},
+
 
 	lineNo: function(r) { //Returns the line number of a given rectangle
 		return this.lineNumberForY(r.center().y);
