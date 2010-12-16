@@ -522,6 +522,16 @@ Object.extend(Array.prototype, {
   pushAt: function(item, index) {
     this.splice(index, 0, item);
   },
+	nestedDelay: function(iterator, waitSecs, endFunc) {
+		endFunc = endFunc || function() {};
+		return this.reverse().inject(endFunc, function(nextFunc, ea, idx) {
+			return function() {
+				iterator(ea, idx)
+				nextFunc.delay(waitSecs)
+			}
+		})
+	},
+
 });
 
 // use native browser JS 1.6 implementation if available
