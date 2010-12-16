@@ -569,6 +569,9 @@ Widget.subclass('LatestWikiChangesList', {
 		m.connectModel(model.newRelay({List: "-VersionList", Selection: "+VersionSelection"}));
 
 		panel.urlString = this.getURL().toString(); // FIXME For serialization
+
+		this.panel = panel;
+		this.panel.widget = this;
 		
 		return panel;
 	},
