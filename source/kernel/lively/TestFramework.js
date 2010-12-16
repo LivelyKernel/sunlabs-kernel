@@ -31,7 +31,7 @@ the system can be run from it */
  * - http://www.cjohansen.no/en/javascript/test_driven_development_with_javascript_part_two
  */
 
-module('lively.TestFramework').requires('lively.bindings').toRun(function(thisModule) {
+module('lively.TestFramework').requires('lively.bindings', 'lively.Widgets').toRun(function() {
 
 /* 
  * *** Error properties for documentation: ***
@@ -44,21 +44,24 @@ module('lively.TestFramework').requires('lively.bindings').toRun(function(thisMo
  *    sourceURL: http://localhost/lk/kernel/TestFramework.js
  */
 
-Global.printError = function printError(e) {
-   var s = "" + e.constructor.name + ": ";
-   for (i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
-   return s
-}
+Object.extend(Global, {
+	printError: function printError(e) {
+		var s = "" + e.constructor.name + ": ";
+		for (i in e) { s += i + ": " + String(e[i]) + ", "}; // get everything out....
+		return s
+	},
 
-Global.logError = function logError(e) {
-    console.log("Error: " + printError(e));
-}
+	logError: function logError(e) {
+		console.log("Error: " + printError(e));
+	},
+});
 
 Object.subclass('TestCase',
-'parameters', {
-
+'documentation', {
+	// connections: ['runAllFinished', 'testFinished'],
+},
+'settings', {
     shouldRun: true,
-
 	verbose: Functions.True,
 },
 'initializing', {
@@ -95,15 +98,14 @@ Object.subclass('TestCase',
 'running', {
 
 	runAll: function(statusUpdateFunc) {
-		var tests = this.createTests()
-		var t = Functions.timeToRun(function() {
-			tests.forEach(function(test) {
-				test.statusUpdateFunc = statusUpdateFunc;
-				test.runTest();
-			})
+		var tests = this.createTests();
+			t = Functions.timeToRun(function() {
+				tests.forEach(function(test) {
+					test.statusUpdateFunc = statusUpdateFunc;
+					test.runTest();
+				})
 		})
 		this.result.setTimeToRun(this.name(), t);
-		
 	},
 	
 	setUp: function() {},
@@ -462,8 +464,7 @@ Object.extend(MorphTestCase, {
 Object.subclass('TestSuite', {
 	initialize: function() {
 		this.result = new TestResult();
-		this.testsToRun = []
-		
+		this.testsToRun = [];
 	},
 	
 	setTestCases: function(testCaseClasses) {
@@ -478,24 +479,22 @@ Object.subclass('TestSuite', {
 		this.setTestCases(testClasses);
 	},
 	
-	runAll: function() {
+	runAll: function(statusUpdateFunc) {
 	    this.testClassesToRun = this.testCaseClasses;
-	    this.runDelayed();
+	    this.runDelayed(statusUpdateFunc);
 	},
 	
 	runDelayed: function() {
-	    var testCaseClass = this.testClassesToRun.shift();
-	    if (!testCaseClass) {
-	        if (this.runFinished)
-	            this.runFinished();
-	        return
-	    }
+		var testCaseClass = this.testClassesToRun.shift();
+		if (!testCaseClass) {
+			if (this.runFinished) this.runFinished();
+			return
+		}
 		var testCase = new testCaseClass(this.result)
-	    if (this.showProgress)
-	        this.showProgress(testCase);
-        testCase.runAll();
-        var scheduledRunTests = new SchedulableAction(this, "runDelayed", null, 0);
-        WorldMorph.current().scheduleForLater(scheduledRunTests, 0, false);
+		if (this.showProgress) this.showProgress(testCase);
+		testCase.runAll();
+		var scheduledRunTests = new SchedulableAction(this, "runDelayed", null, 0);
+		WorldMorph.current().scheduleForLater(scheduledRunTests, 0, false);
 	},	
 });
 
