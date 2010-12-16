@@ -2363,6 +2363,7 @@ Morph.addMethods('settings', {
 		if (this.fisheyeScale != 1) scalePt = scalePt.scaleBy(this.fisheyeScale);
 		this.pvtCachedTransform = new lively.scene.Similitude(this.origin, this.rotation, scalePt);
 		this.pvtCachedTransform.applyTo(this.rawNode);
+		this.signalGeometryChange();
 	},
 
 	layoutChanged: function Morph$layoutChanged() {
@@ -3048,7 +3049,8 @@ Morph.addMethods('settings', {
 		}
 		if (spec.path.length >= 1) return
 		//spec.action.stop(this.world()); //JD: out
-		this.stopSteppingScriptNamedAndRemoveFromSubmorphs('animatedPathStep');//JD: delte script out of activeScripts, neede for deserialization
+		//JD: delte script out of activeScripts, neede for deserialization
+		this.stopSteppingScriptNamedAndRemoveFromSubmorphs('animatedPathStep');
 		spec.callBack.call(this);
 	},
 
@@ -3881,6 +3883,15 @@ Morph.addMethods('settings', {
 		this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
 		if (this.activeScripts.length == 0) this.activeScripts = null;
 	},
+ 	stopSteppingScriptNamedAndRemoveFromSubmorphs: function(sName) {
+		if (!this.activeScripts) return;
+		var all = this.activeScripts.select(function (ea) { return ea.scriptName == sName });
+		if (this.world()) all.invoke('stop', this.world());
+		all.each(function(ea) {this.removeMorph(ea);}.bind(this));//remove
+		this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
+		if (this.activeScripts.length == 0) this.activeScripts = null;
+    },
+
 
 	startStepping: function(stepTime, scriptName, argIfAny) {
 		if (!scriptName) throw Error("Old code");
@@ -4007,6 +4018,16 @@ Morph.addMethods('settings', {
 		if (this.owner === morph) return true;
 		return this.owner.isContainedIn(morph)
 	},
+},
+'signals',{
+		signalGeometryChange: function() {
+		signal(this, 'geometryChanged')
+		var morphs = this.submorphs;
+		for(var i=0; i < morphs.length; i++) {
+			morphs[i].signalGeometryChange()
+		}
+	},
+
 });
 
 
@@ -4762,14 +4783,21 @@ PasteUpMorph.subclass("WorldMorph",
     //  automatically, whereas stopStepping is.  We know you won't forget to 
     //  turn your gadgets on, but we're more concerned to turn them off when you're done.
 
+	getScheduledActions: function() {
+		return this.scheduledActions.collect(function(ea) { return ea[1] });
+	},
+
     scheduleForLater: function(action, delayInMs, removePrior) {
         if (removePrior) this.stopSteppingFor(action, true);  // unschedule earlier
         this.scheduleAction(new Date().getTime() + delayInMs, action);
     },
     
     startSteppingFor: function(action) {
-		if (!action.scriptName) throw new Error("old code");
-		// New code for stepping schedulableActions
+		if (!action.scriptName) {
+			// throw new Error("old code");
+			console.log("faild to startSteppingFor with no scriptName ")
+			return 
+		}		
 		this.stopSteppingFor(action, true);  // maybe replacing arg or stepTime
 		this.scheduleAction(new Date().getTime(), action);
 	},
@@ -4789,35 +4817,30 @@ PasteUpMorph.subclass("WorldMorph",
 			return action.equalActorAndName(eaAction)
 		})
     },
+	stopSteppingForActionsMatching: function(func) {
+		this.getScheduledActions()
+			.select(func)
+			.forEach(function(action) { this.stopSteppingFor(action) }, this);
+	},
 
- 	stopSteppingScriptNamedAndRemoveFromSubmorphs: function(sName) {
-		if (!this.activeScripts) return;
-		var all =this.activeScripts.select(function (ea) { return ea.scriptName == sName });
-		all.invoke('stop', this.world());
-		all.each(function(ea) {this.removeMorph(ea);}.bind(this));//remove
-		this.activeScripts = this.activeScripts.select(function (ea) { return ea.scriptName !== sName });	
-		if (this.activeScripts.length == 0) this.activeScripts = null;
-    },
+
+
     
-    validateScheduler: function() {
-        // inspect an array of all the actions in the scheduler.  Note this
-        // is not the same as scheduledActions which is an array of tuples with times
-	var list = this.scheduledActions.clone();  // shorthand
-        for (var i = 0; i < list.length; i++) {
-            var actn = list[i][1];
-            if (actn.actor instanceof Morph && actn.actor.validatedWorld() !== this) {
-                this.stopSteppingFor(actn)
-            }
-        }
-    },
+	validateScheduler: function() {
+		this.getScheduledActions().forEach(function(action) {
+			if (action.actor instanceof Morph && action.actor.validatedWorld() !== this)
+				this.stopSteppingFor(action)
+		}, this);
+	},
 
     inspectScheduledActions: function() {
         // inspect an array of all the actions in the scheduler.  Note this
         // is not the same as scheduledActions which is an array of tuples with times
-        lively.Tools.inspect(this.scheduledActions.map(function(each) { return each[1]; }));
+		// doit: [WorldMorph.current().inspectScheduledActions()]
+        lively.Tools.inspect(this.getScheduledActions());
     },
 
-    doOneCycle: function WorldMorph$doOneCycle(world) {
+	doOneCycle: function WorldMorph$doOneCycle(world) {
         // Process scheduled scripts
 
         // Run through the scheduledActions queue, executing those whose time has come
@@ -4831,19 +4854,21 @@ PasteUpMorph.subclass("WorldMorph",
         // and until their day is come, they carry a msTime > a day
         // That way they won't interfere with daily scheduling, but they can
         // still be dealt with on world changes, day changes, save and load.
-		var msTime = new Date().getTime();
-		var timeOfNextStep = Infinity;
-		var list = this.scheduledActions;  // shorthand
-		var timeStarted = msTime;  // for tallying script overheads
+		var msTime = new Date().getTime(),
+			timeOfNextStep = Infinity,
+			list = this.scheduledActions,  // shorthand
+			timeStarted = msTime;  // for tallying script overheads
 		while (list.length > 0 && list[list.length - 1][0] <= msTime) {
-			var schedNode = list.pop();  // [time, action] -- now removed
-			var action = schedNode[1];
+			var schedNode = list.pop(),  // [time, action] -- now removed
+				action = schedNode[1];
 			this.currentScript = action; // so visible from stopStepping
 			lively.lang.Execution.resetDebuggingStack();  // Reset at each tick event
 			try {
 				action.exec();
 			} catch (er) {
-				console.warn("error on actor %s: %s", action.actor, er);
+				var msg = "error on actor ' + action.actor + ': " + (er.stack || er);
+				console.warn(msg);
+				alert(msg)
 				dbgOn(true);
 				lively.lang.Execution.showStack();
 				timeStarted = new Date().getTime();
@@ -4894,34 +4919,30 @@ PasteUpMorph.subclass("WorldMorph",
 		this.setNextStepTime(timeOfNextStep);
 	},
 
-    setNextStepTime: function(timeOfNextStep) {
-        if (timeOfNextStep == Infinity) { // didn't find anything to cycle through
-            this.mainLoop = null; 
-        } else {
-            this.mainLoop = Global.setTimeout(this.mainLoopFunc, timeOfNextStep - this.lastStepTime);
-        }
-    },
+	setNextStepTime: function(timeOfNextStep) {
+		this.mainLoop = timeOfNextStep == Infinity ?
+			null : Global.setTimeout(this.mainLoopFunc, timeOfNextStep - this.lastStepTime);
+	},
 
     kickstartMainLoop: function() {
         // kickstart the timer (note arbitrary delay)
         this.mainLoop = Global.setTimeout(this.mainLoopFunc, 10);
     },
 
-    scheduleAction: function(msTime, action) { 
-        // Insert a SchedulableAction into the scheduledActions queue
-
-        var list = this.scheduledActions;  // shorthand
-        for (var i=list.length-1; i>=0; i--) {
-            var schedNode = list[i];
-            if (schedNode[0] > msTime) {
-                list.splice(i+1, 0, [msTime, action]);
-                if (!this.mainLoop) this.kickstartMainLoop();
-                return; 
-            }
-        }
-        list.splice(0, 0, [msTime, action]);
-        if (!this.mainLoop) this.kickstartMainLoop();
-    },
+	scheduleAction: function(msTime, action) { 
+		// Insert a SchedulableAction into the scheduledActions queue
+		var list = this.scheduledActions;  // shorthand
+		for (var i=list.length-1; i>=0; i--) {
+			var schedNode = list[i];
+			if (schedNode[0] > msTime) {
+				list.splice(i+1, 0, [msTime, action]);
+				if (!this.mainLoop) this.kickstartMainLoop();
+				return; 
+			}
+		}
+		list.splice(0, 0, [msTime, action]);
+		if (!this.mainLoop) this.kickstartMainLoop();
+	},
 },
 'dialogs', {
     
@@ -4983,12 +5004,22 @@ PasteUpMorph.subclass("WorldMorph",
 		return dialog;
 	},
 	showErrorDialog: function(error) {
+		// Chrome
+		if (error.stack) {
+			var pane = new lively.ide.ErrorStackViewer();
+			pane.setError(error);
+			pane.open();
+			return
+		};
+
 		var pane = this.addTextWindow({
 			content: "",
 			title: "Error", 
 		});
 		pane.owner.setPosition(this.positionForNewMorph(pane))
 		LastPane  = pane
+
+		// Safari
 		if (error.expressionEndOffset && error.expressionBeginOffset && error.sourceURL) {
 			// works under Safari 5
 			var urlString = error.sourceURL;
@@ -5013,6 +5044,7 @@ PasteUpMorph.subclass("WorldMorph",
 			}
 		} 
 
+		// Fallback...
 		pane.innerMorph().setTextString(printObject(error))	
 		return pane
 	},
@@ -5218,10 +5250,10 @@ PasteUpMorph.subclass("WorldMorph",
 		try { url = new URL(url) } catch(e) { url = URL.source.withFilename(url) };
 		require("lively.persistence.Serializer").toRun(function() {
 			if (world._statusMessageContainer) world._statusMessageContainer.remove();
-			var doc = lively.persistence.Serializer.serializeWorld(world);
-
-			var titleTag = doc.getElementsByTagName('title')[0];
+			var doc = lively.persistence.Serializer.serializeWorld(world),
+				titleTag = doc.getElementsByTagName('title')[0];
 			if (titleTag) titleTag.textContent = url.filename().replace('.xhtml', '');
+			new DocLinkConverter(URL.codeBase, url.getDirectory()).convert(doc);
 			Exporter.saveDocumentToFile(doc, url, onFinished);
 		});
 
@@ -5242,11 +5274,9 @@ PasteUpMorph.subclass("WorldMorph",
 				},
 			statusMessage = WorldMorph.current().setStatusMessage("serializing....");
 		(function() {
-			var oldHand = this.firstHand();
-			var oldKeyboardFocus = oldHand.keyboardFocus;
+			var doc, world = this, oldHand = this.firstHand(),
+				oldKeyboardFocus = oldHand.keyboardFocus;
 			this.removeHand(oldHand);
-			var doc;
-			var world = this;
 			try {
 				doc = Exporter.shrinkWrapMorph(this.world());
 			} catch(e) {
@@ -5521,6 +5551,8 @@ PasteUpMorph.subclass("WorldMorph",
 		var world = this.world();
 		return [
 			["choose display theme...", this.chooseDisplayTheme],
+			// is now set automatically...
+			// ["change title",   this, 'askForWorldTitle'],
 			["add module requirements...",
 				 function(){this.showAddWorldRequirementsMenu(evt.mousePoint)}],
 			["remove module requirements...",
@@ -5586,6 +5618,9 @@ PasteUpMorph.subclass("WorldMorph",
 						printer = lively.persistence.Debugging.Helper.listObjects(json);
 					world.addTextWindow(printer.toString());
 				});
+			}],
+			['inspect ticking scripts', function() {
+				world.inspectScheduledActions();
 			}],
 			["Enable profiling", function() {
 				Config.debugExtras = true;
@@ -7241,8 +7276,9 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 			y =  this.topPaddingOf(supermorph),
 			submorphs = supermorph.visibleSubmorphs();
 		for (var i = 0; i < submorphs.length; i++) {
-			var submorph = submorphs[i]
-				// x = submorph.bounds().left();
+			var submorph = submorphs[i];
+			if (submorph.isVisible && !submorph.isVisible()) continue;
+			// x = submorph.bounds().left();
 			y += this.topMarginOf(submorph)
 			submorph.align(submorph.bounds().topLeft(), pt(x, y));
 			y += submorph.bounds().height;
