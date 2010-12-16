@@ -378,6 +378,7 @@ Object.extend(DisplayThemes.primitive, {
 		fill: Color.white,
 		focusHaloBorderWidth: 1,
 		focusHaloBorderWidth: 0.5,
+		fontFamily: 'Courier',
 	},
 
 	Browser_locationInput: {
