@@ -64,6 +64,7 @@ if (!Object.hasOwnProperty('getOwnPropertyDescriptor')) {
 if (!Object.hasOwnProperty('__lookupGetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__lookupGetter__': {
+			enumerable: false,
 			value: function(prop) {
 				var propDef = Object.getOwnPropertyDescriptor(this, prop);
 				var protoPropDef = Object.getOwnPropertyDescriptor(this.constructor['prototype'], prop);
@@ -81,6 +82,7 @@ if (!Object.hasOwnProperty('__lookupGetter__')) {
 if (!Object.hasOwnProperty('__lookupSetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__lookupSetter__': {
+			enumerable: false,
 			value: function(prop) {
 				var propDef = Object.getOwnPropertyDescriptor(this, prop);
 				var protoPropDef = Object.getOwnPropertyDescriptor(this.constructor['prototype'], prop);
@@ -98,6 +100,7 @@ if (!Object.hasOwnProperty('__lookupSetter__')) {
 if (!Object.hasOwnProperty('__defineGetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__defineGetter__': {
+			enumerable: false,
 			value: function(prop, func) {
 				if (!this.hasOwnProperty(prop)) this[prop] = undefined;
 				Object.defineProperty(this, prop, { get: func });
@@ -109,6 +112,7 @@ if (!Object.hasOwnProperty('__defineGetter__')) {
 if (!Object.hasOwnProperty('__defineSetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__defineSetter__': {
+			enumerable: false,
 			value: function(prop, func) {
 				if (!this.hasOwnProperty(prop)) this[prop] = undefined;
 				Object.defineProperty(this, prop, { set: func });
