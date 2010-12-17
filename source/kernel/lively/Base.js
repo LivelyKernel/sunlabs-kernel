@@ -888,7 +888,13 @@ var Strings = {
 		}
 		return str;
 	},
-
+	print: function(str) {
+		var result = str;
+		result = result.replace(/\n/g, '\\n\\\n')
+		result = result.replace(/("|')/g, '\\$1')
+		result = '\'' + result + '\'';
+		return result
+	},
 };
 
 
@@ -1370,15 +1376,7 @@ Object.extend(Function.prototype, {
 				return proceed.apply(this, args); 
 			} catch (er) {
 				if (WorldMorph) {
-					var world = WorldMorph.current();
-					var msg = "" + er
-					world.setStatusMessage(msg, Color.red, 15, 
-						function() {
-							require('lively.Helper').toRun(function() {
-								world.showErrorDialog(er)
-							}) 
-						},
-						{fontSize: 12, fillOpacity: 1});
+					WorldMorph.current().logError(er)
 					throw er;
 				}
 
@@ -2406,8 +2404,19 @@ Object.extend(Rectangle, {
 	},
 
 	fromElement: function(element) {
-		return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
-			element.width.baseVal.value, element.height.baseVal.value);
+		// FIXME
+		if (element.namespaceURI == Namespace.XHTML) {
+			var x = lively.data.Length.parse(element.style.left || 0),
+				y = lively.data.Length.parse(element.style.top || 0),
+				width = lively.data.Length.parse(element.style.width || 0),
+				height = lively.data.Length.parse(element.style.hieght || 0);
+			return new Rectangle(x, y, width, height);
+		}
+		if (element.namespaceURI == Namespace.SVG) {
+			return new Rectangle(element.x.baseVal.value, element.y.baseVal.value, 
+				element.width.baseVal.value, element.height.baseVal.value);
+		}
+		throw new Error('Cannot create Rectangle from ' + element);
 	},
 
 	inset: function(left, top, right, bottom) {
