@@ -59,8 +59,8 @@ Object.extend(lively.Main.WorldDataAccessor, {
 			return new lively.Main.XMLWorldData(canvas, worldNode, changeSet);
 		}
 
-		var os = new OfflineStorage();
-		if (OfflineStorage.available() && os.isOfflineStorageEnabled() && os.shouldAutoLoad()) {
+		var os = Global.OfflineStorage && new OfflineStorage();
+		if (os && OfflineStorage.available() && os.isOfflineStorageEnabled() && os.shouldAutoLoad()) {
 			var json = os.getLocalJSONData();
 			changeSet = os.deserializeChangeSetFromLocalStorage();
 			return new lively.Main.JSONWorldData(canvas, json, changeSet);
