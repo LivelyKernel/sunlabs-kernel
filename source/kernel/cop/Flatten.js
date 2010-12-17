@@ -1,11 +1,12 @@
 module('cop.Flatten').requires('cop.Layers').toRun(function() {
 
-Object.subclass('MethodManipulator', {
-
+Object.subclass('MethodManipulator',
+'initializing', {
 	initialize: function() {
 		this.parameterRegex = /function\s*\(([^\)]*)\)/;
 	},
-
+},
+'string manipulation', {
 	removeTrailingWhitespace: function(string) {
 		while (string.length > 0 && /\s|\n|\r/.test(string[string.length - 1]))
 			string = string.substring(0, string.length - 1);

@@ -26,15 +26,15 @@ cop.create('FlattenTestLayer')
 
 	m1: function() { return 42 },
 	
-	m2: function($proceed, arg) { return arg + 3 },
+	m2: function(arg) { return arg + 3 },
 
-	m3: function($proceed, arg) {
-		$proceed(arg);
+	m3: function(arg) {
+		cop.proceed(arg);
 		return arg + 10;
 	},
 
-	m4: function($proceed, arg) {
-		var x = $proceed(arg);
+	m4: function(arg) {
+		var x = cop.proceed(arg);
 		return  x + 9;
 	},
 })
@@ -111,16 +111,16 @@ TestCase.subclass('FlattenTest', {
 	},
 
 	test01aFindLayeredMethods: function() {
-		var result = this.sut.namesOfLayeredMethods(this.dummyClass.prototype);
-		var expected = ['m1', 'm2', 'm3' ,'m4'];
+		var result = this.sut.namesOfLayeredMethods(this.dummyClass.prototype),
+			expected = ['m1', 'm2', 'm3' ,'m4'];
 	
 		result = this.sut.namesOfLayeredMethods(this.dummyClass);
 		expected = ['classMethod1'];
 		this.assertEqualState(expected, result);
 	},
 	test01bFindLayeredProperties: function() {
-		var result = this.sut.namesOfLayeredProperties(this.dummyClass.prototype);
-		var expected = ['x'];
+		var result = this.sut.namesOfLayeredProperties(this.dummyClass.prototype),
+			expected = ['x'];
 		this.assertEqualState(expected, result);
 
 		result = this.sut.namesOfLayeredProperties(this.dummyClass);
@@ -129,26 +129,26 @@ TestCase.subclass('FlattenTest', {
 	},
 
 	test01cFindAllLayeredObjects: function() {
-		var result = this.sut.layeredObjects();
-		var expected = [this.dummyClass.prototype, this.dummyClass, Tests.ContextJSFlattenTest];
+		var result = this.sut.layeredObjects(),
+			expected = [this.dummyClass.prototype, this.dummyClass, Tests.ContextJSFlattenTest];
 		this.assertEqualState(expected, result);
 	},
 
 
 	test02GenerateReplaceMethod: function() {
-		var result = this.sut.generateMethodReplacement(this.dummyClass.prototype, 'm1');
-		var expected = 'm1: function() { return 42 },'
+		var result = this.sut.generateMethodReplacement(this.dummyClass.prototype, 'm1'),
+			expected = 'm1: function() { return 42 },'
 		this.assertEquals(expected, result);
 	},
 
 	test03GenerateReplaceMethodWhenProceedIsThereButNotUsed: function() {
-		var result = this.sut.generateMethodReplacement(this.dummyClass.prototype, 'm2');
-		var expected = 'm2: function(arg) { return arg + 3 },'
+		var result = this.sut.generateMethodReplacement(this.dummyClass.prototype, 'm2'),
+			expected = 'm2: function(arg) { return arg + 3 },'
 		this.assertEquals(expected, result);
 	},
 	test04GenerateReplaceMethod: function() {
-		var result = this.sut.generateMethodReplacement(this.dummyClass.prototype, 'm4');
-		var expected = 'm4: function(arg) {\n\
+		var result = this.sut.generateMethodReplacement(this.dummyClass.prototype, 'm4'),
+			expected = 'm4: function(arg) {\n\
 		var x = (function(arg) {\n\
 			var result = arg * 3;\n\
 			return result + 9\n\
@@ -159,14 +159,15 @@ TestCase.subclass('FlattenTest', {
 	},
 
 	test05GenerateReplaceProperty: function() {
-		var result = this.sut.generatePropertyReplacement(this.dummyClass.prototype, 'x');
-		var expected = 'get x() { return 4 },'
+		var result = this.sut.generatePropertyReplacement(this.dummyClass.prototype, 'x'),
+			expected = 'get x() { return 4 },'
 		this.assertEquals(expected, result);
 	},
 	test06FlattenLayer: function() {
-		var blacklist = [{object: Tests.ContextJSFlattenTest.Dummy.prototype, name: 'm2'}];
-		var result = this.sut.flattened(blacklist);
-		var expected = 'Tests.ContextJSFlattenTest.Dummy.addMethods({\n\n\
+		var blacklist = [{object: Tests.ContextJSFlattenTest.Dummy.prototype, name: 'm2'}],
+			result = this.sut.flattened(blacklist),
+			expected =
+'Tests.ContextJSFlattenTest.Dummy.addMethods({\n\n\
 	get x() { return 4 },\n\n\
 	m1: function() { return 42 },\n\n\
 	m3: function(arg) {\n\
@@ -187,7 +188,6 @@ Object.extend(Tests.ContextJSFlattenTest.Dummy, {\n\n\
 Object.extend(Global.Tests.ContextJSFlattenTest, {\n\n\
 	get foo() { return 3 },\n\n\
 });'
-
 		this.assertEquals(expected, result);
 	},
 
