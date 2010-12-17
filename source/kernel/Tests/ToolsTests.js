@@ -1564,18 +1564,74 @@ setUpSource: function() {
 		f1.startIndex++;
 		this.assert(!f1.eq(f2), 5);
 	},
-testFindPrevFragment: function() {
-	this.setUpAlternateSource2();
-	var def = this.fragmentNamed('ClassA');
-	var prev = def.prevElement();
-	this.assertEquals('comment', prev.type);
+	testFindPrevFragment: function() {
+		this.setUpAlternateSource2();
+		var def = this.fragmentNamed('ClassA');
+		var prev = def.prevElement();
+		this.assertEquals('comment', prev.type);
+	},
+	testGetComment: function() {
+		this.setUpAlternateSource2();
+		var def = this.fragmentNamed('ClassA');
+		var comment = def.getComment();
+		this.assertEquals('// ClassA is so important\n// foo bar\n', comment);
+	},
+	testGetSubElementAtLine: function() {
+		this.setUpSource();
+
+		var element = this.root.getSubElementAtLine(5, 10);
+
+		this.assert(element, 'no element found');
+
+		this.assertEqual(element.name, "m1", 'wrong name');
+
+	},
+	testGetOwnerNamePathRoot: function() {
+		this.setUpSource();
+
+		var path = this.root.getOwnerNamePath();
+		this.assertEqual(path.length , 1, 'root path length wrong');
+		this.assertEqual(path[0] , "foo.js", 'root name wrong');
+
+	},
+	testGetOwnerNamePathOfMethod: function() {
+		this.setUpSource();
+
+		var m1Node = this.root.getSubElementAtLine(5, 10);
+		var path = m1Node.getOwnerNamePath();
+
+		this.assertEqual(path.length , 3, 'root path length wrong');
+		this.assertEqual(path[0] , "foo.js", 'root name wrong');
+		this.assertEqual(path[1] , "ClassA", 'class name wrong');
+		this.assertEqual(path[2] , "m1", 'class name wrong');
+	},
+	testCharsUpToLineInString: function() {
+		var string = "12345\n12345\n12345\n12345\n";
+		this.setUpSource()
+		var fileFragment = this.root;
+
+		this.assertEqual(fileFragment.charsUpToLineInString(string, 0), 0, "wrong chars for line 0")
+		this.assertEqual(fileFragment.charsUpToLineInString(string, 1), 6, "wrong chars for line 1")
+		this.assertEqual(fileFragment.charsUpToLineInString(string, 2), 12, "wrong chars for line 2")
+		this.assertEqual(fileFragment.charsUpToLineInString(string, 3), 18, "wrong chars for line 3")
+		this.assertEqual(fileFragment.charsUpToLineInString(string, 4), 24, "wrong chars for line 4")
+		this.assertEqual(fileFragment.charsUpToLineInString(string, 5), 25, "wrong chars for line 5")
+		this.assertEqual(fileFragment.charsUpToLineInString(string, 10), 25, "wrong chars for line 10")
+	},
+	testCharsUpToLine: function() {
+		this.setUpSource()
+		var fileFragment = this.root;
+
+		this.assertEqual(fileFragment.charsUpToLine(0), 0, "wrong... for 0")
+		this.assertEqual(fileFragment.charsUpToLine(5), 110, "wrong...")
+
+
 },
-testGetComment: function() {
-	this.setUpAlternateSource2();
-	var def = this.fragmentNamed('ClassA');
-	var comment = def.getComment();
-	this.assertEquals('// ClassA is so important\n// foo bar\n', comment);
-},
+
+
+
+
+
 
 
 
@@ -2105,6 +2161,75 @@ TestCase.subclass('Tests.ToolsTests.TabCompletionLayerTest', {
 		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
 		// this.assertEqual(sut.tabCompletionForLastWord("func", false), "function");
 	}
+});
+TestCase.subclass('Tests.ToolsTests.ChromeErrorStackParser',
+'tests', {
+	testParseErrorStackLine: function() {
+		var line = "    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/SyntaxHighlighting.js?1291814980471:347:20)"
+
+		var errorParser = new lively.ide.ChromeErrorParser();
+		
+		var result = errorParser.parseStackLine(line)
+		this.assert(result, "no result");
+		this.assert(result.url, "no url");
+		this.assert(!result.url.include("?"), "url contains ?");
+		this.assert(result.sourceID, "no sourceID");
+		this.assert(result.line, "no line");
+		this.assert(result.linePosition, "no linePosition");
+
+	},
+	testParseErrorStack: function() {
+		var errorStackString = this.errorStackString();
+		
+		var errorParser = new lively.ide.ChromeErrorParser();
+		var result = errorParser.parseErrorStack(errorStackString)
+		
+		this.assert(result, "no result");
+		this.assertEqual(result.length, 10,  "no result");
+		this.assertEqual(result[0].line, 1559, "wrong line number");
+
+	},
+	testFileFragmentList: function() {
+		var errorStackString = this.errorStackString();
+		var errorParser = new lively.ide.ChromeErrorParser();
+		var result = errorParser.fileFragmentList(errorStackString)				
+		this.assert(result, "no result")
+
+		this.assert(result[0] instanceof lively.ide.FileFragment, "no filefragment")
+		
+	},
+
+	errorStackString: function() {
+		return  "TypeError: Cannot read property 'bounds' of undefined\n" + 
+			'    at Morph.initialize (http://www.lively-kernel.org/repository/webwerkstatt/lively/Core.js?1291814979499:1559:15)\n' +
+			'    at Morph.initializer (http://www.lively-kernel.org/repository/webwerkstatt/lively/Base.js?1291814979441:646:20)\n' +
+			'    at new Morph (eval at <anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/Base.js?1291814979441:631:41))\n' +
+			'    at TextMorph.<anonymous> (eval at <anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/Core.js?1291814979499:6779:3))\n' +
+			'    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/Core.js?1291814979499:6779:10)\n' +
+			'    at bound (http://www.lively-kernel.org/repository/webwerkstatt/lively/Base.js?1291814979441:212:21)\n' +
+			'    at TextMorph.boundEval (http://www.lively-kernel.org/repository/webwerkstatt/lively/Text.js?1291814979841:2293:36)\n' +
+			'    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/Text.js?1291814979841:2051:19)\n' +
+			'    at Namespace.proceed (http://www.lively-kernel.org/repository/webwerkstatt/cop/Layers.js?1291814980353:491:33)\n' +
+			'    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/SyntaxHighlighting.js?1291814980471:347:20)'
+
+	},
+
+	testErrorStackViewer: function() {
+		var w = new lively.ide.ErrorStackViewer();
+		w.setErrorStack(this.errorStackString())
+	},
+	testErrorStackViewerBuildView: function() {
+		var w = new lively.ide.ErrorStackViewer();
+		w.setErrorStack(this.errorStackString());
+
+		w.buildView();
+		this.assert(w.errorStackListMorph.itemList.length > 4, "list not set")
+
+		
+	},
+
+
+
 });
 
 }) // end of module
