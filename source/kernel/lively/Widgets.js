@@ -3279,8 +3279,7 @@ BoxMorph.subclass("ColorPickerMorph", {
 
     colorWheel: function(n) { 
         if (this.colorWheelCache && this.colorWheelCache.length == n) return this.colorWheelCache;
-        console.log("computing wheel for " + n);
-        return this.colorWheelCache = Color.wheelHsb(n,338,1,1);
+        return this.colorWheelCache = Color.wheelHsb(Math.round(n),338,1,1);
     },
 
     handlesMouseDown: function(evt) { return !evt.isCommandKey() && evt.isLeftMouseButtonDown() },
@@ -4476,26 +4475,28 @@ BoxMorph.subclass('StatusBarMorph', {
     style: { borderWidth: 0, fill: null, strokeOpacity: 0},
 
     initialize: function($super, titleBar) {
-	var bounds = titleBar.getExtent().extentAsRectangle().withHeight(8);
-        $super(bounds);
-	
-	// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
-	// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
-	// bounds will be adjusted in adjustForNewBounds()
-	var contentMorph = Morph.makeRectangle(bounds.withHeight(bounds.height*2).withY(-bounds.height));
-	this.addMorph(new ClipMorph(bounds.withHeight(bounds.height + 2).withWidth(bounds.width + 2))).addMorph(contentMorph);
-	contentMorph.linkToStyles(["titleBar"]);
-	
-	this.ignoreEvents();
-	contentMorph.ignoreEvents();
-	contentMorph.owner.ignoreEvents();
-	this.contentMorph = contentMorph;
+		var bounds = titleBar.getExtent().extentAsRectangle().withHeight(8);
+	        $super(bounds);
+		
+		// contentMorph is bigger than the titleBar, so that the lower rounded part of it can be clipped off
+		// arbitrary paths could be used, but FF doesn't implement the geometry methods :(
+		// bounds will be adjusted in adjustForNewBounds()
+		var contentMorph = Morph.makeRectangle(bounds.withHeight(bounds.height*2).withY(-bounds.height));
+		this.addMorph(new ClipMorph(
+			bounds.withHeight(bounds.height + 2).withWidth(bounds.width + 2))).addMorph(contentMorph);
+		contentMorph.linkToStyles(["titleBar"]);
+		
+		this.ignoreEvents();
+		contentMorph.ignoreEvents();
+		contentMorph.owner.ignoreEvents();
+		this.contentMorph = contentMorph;
         return this;
     },
+
     adjustForNewBounds: function ($super) {
         $super();
-	var cm = this.contentMorph;
-	if (cm) cm.setExtent(pt(this.bounds().width, cm.bounds().height))
+		var cm = this.contentMorph;
+		if (cm) cm.setExtent(pt(this.bounds().width, cm.bounds().height))
     }
 });
 
