@@ -833,4 +833,31 @@ TestCase.subclass('Tests.MorphTest.ClipMorphTest',
 		}
 	},
 });
+TestCase.subclass('Tests.MorphTest.GeometryChangedEventTest',
+'tests', {
+	testGeometryChangedFiredOnMove: function() {
+
+		var obj1 = Morph.makeRectangle(0,0,100,100),
+			obj2 = {wasHere: function() {this.geometryChangedFired = true}};
+
+		connect(obj1, 'geometryChanged', obj2, 'wasHere')
+		obj1.moveBy(pt(10,10));
+
+		this.assert(obj2.geometryChangedFired, "geometryChanged not fired")
+	},
+	testGeometryChangedFiredOnParent: function() {
+
+		var 
+			parent = Morph.makeRectangle(0,0,100,100)
+			obj1 = Morph.makeRectangle(10,10,50,50),
+			obj2 = {wasHere: function() {this.geometryChangedFired = true}};
+		parent.addMorph(obj1);
+
+		connect(obj1, 'geometryChanged', obj2, 'wasHere')
+		parent.moveBy(pt(10,10));
+
+		this.assert(obj2.geometryChangedFired, "geometryChanged not fired")
+	},
+
+});
 }) // end of module

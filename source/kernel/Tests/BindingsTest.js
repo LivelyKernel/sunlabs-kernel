@@ -622,6 +622,22 @@ TestCase.subclass('Tests.BindingsTest.PlugTest',
 		this.assertEqual(pt(10,10), morph.getPosition(), 'positionOfMorph')
 	},
 });
+TestCase.subclass('Tests.BindingsTest.ConnectionJSONSerializationTest', {
+
+	test01ObjConnectedToMethodDeserialization: function() {
+		var obj1 = {m: function m(arg) { this.b = arg }.asScript()},
+			obj2 = {a: 5, ref: obj1};
+		connect(obj2, 'a', obj1, 'm')
+		obj2.a = 12;
+		this.assertEquals(12, obj2.ref.b, 'connection not working');
+		var jso = lively.persistence.Serializer.serialize(obj2),
+			newObj2 = lively.persistence.Serializer.deserialize(jso);
+		newObj2.a = 23;
+		this.assertEquals(23, newObj2.ref.b, 'connection not working after deserialization');
+	},
+
+
+});
 
 
 }); // end of module

@@ -308,6 +308,28 @@ Tests.LayoutTests.LayoutTest.subclass("Tests.LayoutTests.VerticalLayoutTest",
 		this.assertEquals(new Rectangle(10, 10, 30, 10), box.bounds());
 	},
 
+	test06InvisbleSubmorphs: function() {
+		var m = this.createTestMorph(),
+			s1 = this.box(50,50),
+			s2 = this.box(50,50),
+			s3 = this.box(50,50);
+
+		s1.setBorderWidth(1);
+		s2.setBorderWidth(1);
+		s3.setBorderWidth(1);
+
+		m.addMorph(s1);
+		m.addMorph(s2);
+		m.addMorph(s3);
+
+		s2.setVisible(false);
+		this.assertEquals(s2.isVisible(), false, "s2 was not set invisible");
+		m.relayout();
+
+		this.assertEqualState(s1.getPosition(), pt(0,0), "s1 bad");
+		this.assertEqualState(s3.getPosition(), pt(0,50), "s3 bad");
+	},
+
 });
 
 
