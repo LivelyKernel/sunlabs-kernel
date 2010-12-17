@@ -284,8 +284,9 @@ Change.subclass('ChangeSet',
 			worldNode = rootElement.getAttribute('type') == 'WorldMorph' ? rootElement :
 				Query.find(worldNodeQuery1, rootElement) || Query.find(worldNodeQuery2, rootElement);
 		dbgOn(!worldNode);
+		console.error('Cannot find worldNode when crating ChangeSet')
 		defNode = NodeFactory.create('defs');
-		worldNode.appendChild(defNode); // null Namespace?
+		if (worldNode) worldNode.appendChild(defNode); // null Namespace?
 		return defNode;
 	},
 

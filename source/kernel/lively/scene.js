@@ -164,25 +164,25 @@ Object.subclass('lively.data.Wrapper',
 
 	// convenience attribute access
 	getLivelyTrait: function(name) {
-		return this['lively:' + name] ?
-			String(this['lively:' + name]) :
+		return this['lively:_' + name] ?
+			String(this['lively:_' + name]) :
 			this.rawNode.getAttributeNS(Namespace.LIVELY, name);
 	},
 
 	// convenience attribute access
 	setLivelyTrait: function(name, value) {
-		this['lively:' + name] = value;
+		this['lively:_' + name] = value;
 		return this.rawNode.setAttributeNS(Namespace.LIVELY, name, value);
 	},
 
 	// convenience attribute access
 	removeLivelyTrait: function(name) {
-		delete this['lively:' + name];
+		delete this['lively:_' + name];
 		return this.rawNode.removeAttributeNS(Namespace.LIVELY, name);
 	},
 
 	getLengthTrait: function(name) {
-		return this[name] ? this[name] : lively.data.Length.parse(this.rawNode.getAttributeNS(null, name));
+		return this['_'+name] ? this['_'+name] : lively.data.Length.parse(this.rawNode.getAttributeNS(null, name));
 	},
 
 	setLengthTrait: function(name, value) {
@@ -190,15 +190,16 @@ Object.subclass('lively.data.Wrapper',
 	},
 
 	getTrait: function(name) {
-		return this[name] ? String(this[name]) : this.rawNode.getAttributeNS(null, name);
+		return this['_' + name] ? String(this['_' + name]) : this.rawNode.getAttributeNS(null, name);
 	},
 
 	setTrait: function(name, value) {
-		this[name] = value;
+		this['_' + name] = value;
 		return this.rawNode.setAttributeNS(null, name, String(value));
 	},
 
 	removeTrait: function(name) {
+		delete this['_'+name];
 		return this.rawNode.removeAttributeNS(null, name);
 	},
 

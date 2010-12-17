@@ -382,3 +382,5 @@ Config.wikiRepoUrl = null;
 Config.serverInvokedTest = false;
 
 Config.ignoreClassNotFound = true; // if a class is not found during deserializing a place holder object can be created instead of raising an error
+
+Config.forceHTML = false;

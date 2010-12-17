@@ -289,7 +289,7 @@ var LivelyLoader = {
 	},
 
 	
-	bootstrap: function(thenDoFunc) {
+	bootstrap: function(thenDoFunc, isCanvas) {
 		this.createConfigObject();
 		
 		var optimizedLoading = document.URL.indexOf('quickLoad') > 0 && document.URL.indexOf('!svn') == -1;
@@ -306,7 +306,7 @@ var LivelyLoader = {
 			'lively/defaultconfig.js',
 			'lively/localconfig.js'],
 			function() {
-				JSLoader.resolveAndLoadAll(codeBase, [
+				var modules =  [
 					'lively/Base.js',
 					'lively/scene.js',
 					'lively/Core.js',
@@ -317,61 +317,127 @@ var LivelyLoader = {
 					"lively/Data.js",
 					"lively/Storage.js",
 					"lively/Tools.js",
-					"lively/ide.js",
-
-					], thenDoFunc);
+					"lively/ide.js"
+				];
+				if (isCanvas) {
+					modules.splice(1, 0, 'lively/EmuDom.js');
+					modules.push('lively/CanvasExpt.js');
+					var coreIdx = modules.indexOf('lively/Core.js')
+					JSLoader.resolveAndLoadAll(
+						codeBase,
+						modules.slice(0, coreIdx + 1),
+						function() {
+							LivelyLoader.executeCanvasChanges();
+							JSLoader.resolveAndLoadAll(codeBase, modules.slice(coreIdx + 1), thenDoFunc);
+						});
+				} else {
+					JSLoader.resolveAndLoadAll(codeBase, modules, thenDoFunc);
+				}
 			});
 	},
 
 	//
 	// ------- load SVG world ---------------
 	//
-	loadSVGMain: function(canvas) {
+	loadMain: function(canvas) {
 		require('lively.Main').toRun(function() {
-			var loader = new lively.Main.Loader()
+			var loader = lively.Main.getLoader(canvas);
 			lively.bindings.connect(loader, 'finishLoading', LoadingScreen, 'remove');
 			loader.systemStart(canvas);
 		});
 	},
 
-	startSVGWorld: function() {
-		var canvas = this.findSVGCanvas(document);
+	startWorld: function() {
+		var canvas = this.findCanvas(document);
 		if (!canvas) return false;
 		var self = this;
 		LoadingScreen.add();
-		this.bootstrap(function() { self.loadSVGMain(canvas) });
+		this.bootstrap(function() { self.loadMain(canvas) });
 		return true;
 	},
-	findSVGCanvas: function(doc) {
+	findCanvas: function(doc) {
 		var canvas = doc.getElementById('canvas');
-		if (!canvas || canvas.tagName !== 'svg') return null;
-		return canvas
+		if (canvas && canvas.tagName === 'svg') return canvas;
+		canvas = doc.getElementById('canvas');
+		if (canvas && canvas.tagName === 'div') return canvas;
+		return null
 	},
 
 
-	//
-	// ------- load HTML world ---------------
-	//
-	loadHTMLMain: function(canvas) {
-		require('projects.HTML5.HTMLMain').toRun(function() {
-			var loader = new projects.HTML5.HTMLMain.Loader()
-			lively.bindings.connect(loader, 'finishLoading', LoadingScreen, 'remove');
-			loader.systemStart(canvas);
+
+	startCanvasWorld: function() {
+		var canvas = this.findRealCanvas(document);
+		if (!canvas) return false;
+		var self = this;
+		LoadingScreen.add();
+		this.bootstrap(function() { self.loadMain(canvas) }, true);
+		return true;
+	},
+
+	findRealCanvas: function(doc) {
+		var canvas = doc.getElementById('lively.canvas');
+		if (!canvas || canvas.tagName !== 'canvas') return null;
+		return canvas
+	},
+	
+	executeCanvasChanges: function() {
+		NodeFactory.create = function(name, attributes) {
+		    var element = emudom.document.createElementNS(Namespace.SVG, name);
+		    //return this.createNS(Namespace.SVG, name, attributes);  // doesn't work
+		    return NodeFactory.extend(null, element, attributes);
+		};
+
+		WorldMorph.addMethods({
+			setChangeSet: function(cs) {
+				// FIXME
+				// cs.addHookTo(cs.findOrCreateDefNodeOfWorld(this.rawNode));
+			},
+
+		    displayOnCanvas: function(canvas) {
+				// this.remove();
+
+				//canvas.appendChild(this.rawNode);
+				// otherwise we may be 
+		        var hand = this.addHand(new HandMorph(true));
+				WorldMorph.currentWorld = this; // this conflicts with mutliple worlds
+		        this.onEnter(); 
+
+				this.enterCount ++;
+		    },
+
+		    addHand: function(hand) {
+		        if (this.hands.length > 0 && !this.hands.first())
+		            this.hands.shift(); // FIXME: Quick bugfix. When deserializing the world the hands.first() is sometimes undefined
+		        this.hands.push(hand);
+		        hand.owner = this;
+		        hand.registerForEvents(this);
+		        hand.registerForEvents(hand);
+		        hand.layoutChanged();
+
+		        Event.keyboardEvents.forEach(function(each) {
+		            document.documentElement.addEventListener(each, hand, hand.handleOnCapture);
+		        });
+
+		        //this.rawNode.parentNode.appendChild(hand.rawNode);
+				return hand;
+		    }
+
 		});
-	},
 
-	startHTMLWorld: function() {
-		var canvas = this.findHTMLCanvas(document);
-		if (!canvas) return false;
-		LoadingScreen.add();
-		var self = this;
-		this.bootstrap(function() { self.loadHTMLMain(canvas) });
-		return true;
-	},
-	findHTMLCanvas: function(doc) {
-		var canvas = doc.getElementById('canvas');
-		if (!canvas || canvas.tagName !== 'div') return null;
-		return canvas
+		lively.data.Wrapper.addMethods({
+		    reference: function() {
+				if (!this.refcount) {
+			    	if (!this.id()) {
+						this.setId(this.newId());
+			    	}
+			    	//this.dictionary().appendChild(this.rawNode);
+			    	this.refcount = 1; 
+			    	return;
+				}
+				this.refcount ++;
+		    },
+			ensureInDictionary: function() { }
+		});		
 	},
 };
 LoadingScreen = {
@@ -587,8 +653,6 @@ var EmbededLoader = {
 			Config.resizeScreenToWorldBounds = false;
 			canvas.setAttribute("width", canvas.getElementsByTagName('g')[0].childNodes[0].width.baseVal.value.toString() + 'px');
 			canvas.setAttribute("height", canvas.getElementsByTagName('g')[0].childNodes[0].height.baseVal.value.toString() + 'px');
-			document.body.style.cursor = null
-			LivelyLoader.loadSVGMain(canvas);
 		} else {
 			// FIXME!!!
 			Config.resizeScreenToWorldBounds = false;
@@ -605,9 +669,9 @@ var EmbededLoader = {
 				canvas.style.left = values[0];
 				canvas.style.top = values[1];
 			}
-			document.body.style.cursor = null
-			LivelyLoader.loadHTMLMain(canvas);
 		}
+		document.body.style.cursor = null
+		LivelyLoader.loadMain(canvas);
 	},
 
 	convertCDATASections: function(el) {
@@ -655,8 +719,8 @@ var EmbededLoader = {
 (function startWorld() {
 	window.addEventListener('DOMContentLoaded', function() {
 		if (EmbededLoader.embedLively()) return;
-		if (LivelyLoader.startSVGWorld()) return;
-		if (LivelyLoader.startHTMLWorld()) return;
+		if (LivelyLoader.startCanvasWorld()) return;
+		if (LivelyLoader.startWorld()) return;
 		console.warn('couldn\'t strt Lively');
 	}, true);
 })();

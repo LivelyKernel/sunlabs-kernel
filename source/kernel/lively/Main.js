@@ -27,30 +27,129 @@
 
 module('lively.Main').requires().toRun(function() {
 
+Object.subclass('lively.Main.WorldDataAccessor',
+'initializing', {
+	initialize: function(canvas) {
+		this.canvas = canvas;
+	},
+},
+'accessing and creation', {
+	modulesBeforeChanges: function() { return Config.modulesBeforeChanges || [] },
+	modulesBeforeWorldLoad: function() { return Config.modulesBeforeWorldLoad || [] },
+	modulesOnWorldLoad: function() { return Config.modulesOnWorldLoad || [] },
+	getCanvas: function() { return this.canvas },
+	getWorld: function() {  throw new Error('Subclass responsibility') },
+	getChangeSet: function() {  throw new Error('Subclass responsibility') },
+});
+Object.extend(lively.Main.WorldDataAccessor, {
+	forDocument: function(doc) {
+		var canvas = doc.getElementById('canvas'), changeSet;
 
+		var jsonNode = doc.getElementById(lively.persistence.Serializer.jsonWorldId);
+		if (jsonNode) {
+			changeSet = lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
+			return new lively.Main.JSONWorldData(canvas, jsonNode.textContent, changeSet);
+		}
+
+		var morphNodes = $A(doc.getElementsByTagName('g')).concat($A(doc.getElementsByTagName('div'))),
+			worldNode = morphNodes.detect(function(node) {
+				return LivelyNS.getAttribute(node, 'type') === 'WorldMorph' });
+		if (worldNode) {
+			changeSet = ChangeSet.fromWorld(worldNode);
+			return new lively.Main.XMLWorldData(canvas, worldNode, changeSet);
+		}
+
+		var os = new OfflineStorage();
+		if (OfflineStorage.available() && os.isOfflineStorageEnabled() && os.shouldAutoLoad()) {
+			var json = os.getLocalJSONData();
+			changeSet = os.deserializeChangeSetFromLocalStorage();
+			return new lively.Main.JSONWorldData(canvas, json, changeSet);
+		}
+
+		var realCanvas = doc.getElementById('lively.canvas');
+		if (realCanvas && realCanvas.tagName == 'canvas') {
+			return new lively.Main.NewWorldData(realCanvas);
+		}
+
+		throw new Error('Cannot access data to load world');
+	},
+});
+lively.Main.WorldDataAccessor.subclass('lively.Main.XMLWorldData',
+'initializing', {
+	initialize: function($super, canvas, worldNode, changeSet) {
+		$super(canvas);
+		this.worldNode = worldNode;
+		this.changeSet = changeSet;
+	},
+},
+'accessing and creation', {
+	getWorld: function() {
+		if (this.world) return world;
+		var importer = new Importer();
+		this.world = importer.loadWorldContents(this.canvas);
+		return this.world;
+	},
+	getChangeSet: function() { return this.changeSet },
+});
+lively.Main.WorldDataAccessor.subclass('lively.Main.JSONWorldData',
+'initializing', {
+	initialize: function($super, canvas, json, changeSet) {
+		$super(canvas);
+		this.jso = lively.persistence.Serializer.parseJSON(json);
+		this.changeSet = changeSet;
+	},
+},
+'accessing and creation', {
+	modulesBeforeChanges: function($super) {
+		return $super().concat(lively.persistence.Serializer.sourceModulesIn(this.jso)).uniq();
+	},
+
+
+	getWorld: function() {
+		if (this.world) return world;
+		this.world = lively.persistence.Serializer.deserializeWorldFromJso(this.jso);
+		return this.world;
+	},
+	getChangeSet: function() { return this.changeSet },
+});
+lively.Main.WorldDataAccessor.subclass('lively.Main.NewWorldData',
+'accessing and creation', {
+	getWorld: function() {
+		if (this.world) return world;
+		this.world = new WorldMorph(this.getCanvas());
+		lively.bindings.callWhenNotNull(
+			WorldMorph, 'currentWorld', new lively.Main.Examples(), 'populateWorldWithExamples');
+		return this.world;
+	},
+
+	getChangeSet: function() {
+		if (!this.changeSet)
+			this.changeSet = ChangeSet.fromWorld(this.getCanvas());
+		return this.changeSet;
+	},
+});
 Object.subclass('lively.Main.Loader',
 'properties', {
 	connections: ['finishLoading'],
 },
-'testing', {
-
-	documentHasSerializedMorphs: function(doc) {
-	    var nodes = doc.getElementsByTagName("g");
-		return nodes && nodes.length > 0;
-		// nodes[0].getAttribute("type") == "WorldMorph"; // world is not always serialized
+'accessing', {
+	getCanvas: function() { return this.canvas },
+	getWorldData: function() {
+		if (!this.worldData)
+			this.worldData = lively.Main.WorldDataAccessor.forDocument(this.getCanvas().ownerDocument);
+		return this.worldData;
 	},
-	findJSONWorld: function() {
-		var meta = document.getElementById('LivelyJSONWorld')
-		if (!meta) return null;
-		return meta.textContent;
-	},
-
 },
 'preparation', {
 
-	configPatches: function() {
-		// Class browser visibility can be overridden with Config.browserAnyway
-		Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
+	prepareForLoading: function() {
+		this.canvasHeightPatch(this.getCanvas());
+		this.configPatches();
+		this.debuggingExtras();
+		this.clipboardHack();
+		this.replaceWindowMorphIfNotExisiting();
+		this.setupCounter(this.getCanvas());
+		Event.prepareEventSystem(this.getCanvas());
 	},
 
 	debuggingExtras: function() {
@@ -62,11 +161,6 @@ Object.subclass('lively.Main.Loader',
 
 	clipboardHack: function() {
 		if (!Config.suppressClipboardHack) ClipboardHack.ensurePasteBuffer();
-	},
-
-	replaceWindowMorphIfNotExisiting: function() {
-		// This stub allows us to run without Widgets.js
-		if(!WindowMorph) { WindowMorph = function() {} }
 	},
 
 	setupCounter: function(doc) {
@@ -89,6 +183,7 @@ Object.subclass('lively.Main.Loader',
 			WikiNavigator.enableWikiNavigator();
 		});
 	},
+
 	canvasHeightPatch: function(canvas) {
 	    if (canvas.height && canvas.height.baseVal && canvas.height.baseVal.value < 200) {
 	        // a forced value, some browsers have problems with height=100%
@@ -99,127 +194,112 @@ Object.subclass('lively.Main.Loader',
 },
 'loading', {
 
-	systemStart: function(optCanvas) {
+	systemStart: function(canvas) {
 		console.group("World loading");
+		
+		this.canvas = canvas;
 
-		var loader = this,
-			importer = new Importer(),
-			canvas = optCanvas || Global.document.getElementById("canvas"),
-			world = null;
+		this.prepareForLoading();
+		this.loadWorld(canvas);
+	},
 
-		// -----------------
-		this.canvasHeightPatch(canvas);
-		this.configPatches();
-		this.debuggingExtras();
-		this.clipboardHack();
-		this.replaceWindowMorphIfNotExisiting()
-		// ------------------------
-
-		Event.prepareEventSystem(canvas);
-
-		var json;
-		if (json = this.findJSONWorld()) {
-			this.deserializeJSONWorld(canvas, json)
-		} else if (loader.documentHasSerializedMorphs(document)) {
-			this.deserializeXMLWorld(canvas);
-		} else {
-			this.createNewWorld(canvas);
-		}
+	loadWorld: function() {
+		var self = this,
+			worldData = this.getWorldData(),
+			changes = !Config.skipChanges && worldData.getChangeSet();
+		require(worldData.modulesBeforeChanges()).toRun(function() {
+			changes && changes.evaluateWorldRequirements();
+			require(worldData.modulesBeforeWorldLoad()).toRun(function() {
+				changes && changes.evaluateAllButInitializer();
+				require(worldData.modulesOnWorldLoad()).toRun(function() {
+					var world = worldData.getWorld();
+					world.setChangeSet(changes);
+					world.displayOnCanvas(self.getCanvas());
+					changes && changes.evaluateInitializer();
+					self.onFinishLoading(world);
+				});
+			});			
+		});
 	},
 
 	onFinishLoading: function(world) {
 		console.groupEnd("World loading");
 		world.hideHostMouseCursor();
+		if (Config.showWikiNavigator) this.showWikiNavigator();
+		this.browserSpecificFixes()
 		if (lively.bindings) lively.bindings.signal(this, 'finishLoading', world);
 	},
-	deserializeXMLWorld: function(canvas) {
-		var world, importer = new Importer(), self = this;
-		this.setupCounter(canvas);
-        require(Config.modulesBeforeChanges).toRun(function() {
-			var changes = !Config.skipChanges && ChangeSet.fromWorld(canvas);
-			changes && changes.evaluateWorldRequirements();
-			require(Config.modulesBeforeWorldLoad).toRun(function() {
-				changes && changes.evaluateAllButInitializer();
-				require(Config.modulesOnWorldLoad).toRun(function() {
-					world = importer.loadWorldContents(canvas);
-					world.displayOnCanvas(canvas);
-					console.log("world is " + world);
-					changes && changes.evaluateInitializer();
 
-					self.onFinishLoading(world);
+},
+'maybe deprecated', {
+	configPatches: function() {
+		// Class browser visibility can be overridden with Config.browserAnyway
+		Config.showBrowser = !Config.skipMostExamples || Config.browserAnyway;
+	},
+	replaceWindowMorphIfNotExisiting: function() {
+		// This stub allows us to run without Widgets.js
+		if(!WindowMorph) { WindowMorph = function() {} }
+	},
+});
+lively.Main.Loader.subclass('lively.Main.CanvasLoader',
+'preperation', {
+	prepareForLoading: function() {
+	},
+},
+'loading', {
+});
+lively.Main.Loader.subclass('lively.Main.HTMLLoader',
+'preparation', {
+	setupCounter: function($super, doc) { return $super(doc.element || doc) },
+},
+'loading', {
+	systemStart: function($super, canvas) {
+		var loader = this,
+			modules = [
+				Config.useFlattenedHTMLRenderingLayer ? 'projects.HTML5.RenderingLayerFlattened' : 'projects.HTML5.RenderingLayer',
+				Config.useDelayedHTMLRendering ? 'projects.HTML5.HTMLSceneDelayed' : 'projects.HTML5.HTMLScene'];
 
-		            if (Config.showWikiNavigator) self.showWikiNavigator();
-				})
-			})
-        })
+		Config.useGetTransformToElement = false; // for manually applying transform
+
+		lively.Main.Examples = lively.Main.HTMLExamples; // replace class
+
+		require(modules).toRun(function() {
+			if (!canvas.isHTMLElementWrapper)
+				canvas = new HTMLElementWrapper(canvas);
+
+			if (Global.HTML5RenderingLayer) {
+				connect(loader, 'finishLoading', loader, 'enableLayerInWorld');
+				cop.withLayers([HTML5RenderingLayer], function() {
+					$super(canvas);
+				});
+				console.log('_________USING HTML5RenderingLayer____________')
+			} else {
+				connect(loader, 'finishLoading', WorldMorph, 'currentWorld');
+				$super(canvas);
+			}
+		});
 	},
 
-	deserializeJSONWorld: function(canvas, json) {
-		return this.deserializeJSONWorldWithChangeset(canvas, json);
+	enableLayerInWorld: function(world) {
+		world.setWithLayers([HTML5RenderingLayer]);
+		world.firstHand().setWithLayers([HTML5RenderingLayer]);
 	},
-
-	deserializeJSONWorldWithChangeset: function(canvas, json, changeSet) {
-		var self = this,
-			doc = canvas.ownerDocument,
-			serializationModule = "lively.persistence.Serializer";
-		this.setupCounter(canvas);
-
-		require("lively.persistence.Serializer").toRun(function() {
-			var jso = lively.persistence.Serializer.parseJSON(json),
-				requirements = Config.modulesBeforeChanges
-					.concat(lively.persistence.Serializer.sourceModulesIn(jso))
-					.uniq();
-			require(requirements).toRun(function() {
-				if (!Config.skipChanges) {
-					var changes = changeSet ||
-						lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
-					changes && changes.evaluateWorldRequirements();
-				}
-				require(Config.modulesBeforeWorldLoad).toRun(function() {
-					changes && changes.evaluateAllButInitializer();
-					require(Config.modulesOnWorldLoad).toRun(function() {
-						var world = lively.persistence.Serializer.deserializeWorldFromJso(jso);
-						world.setChangeSet(changes);
-						world.displayOnCanvas(canvas);
-						console.log("world is " + world);
-						changes && changes.evaluateInitializer();
-
-						if (Config.showWikiNavigator) self.showWikiNavigator();
-						self.onFinishLoading(world);
-						world.setStatusMessage('JSON world loaded', Color.green, 5)
-					})
-				})			
-			})
-		})
-	},
-
+		
 	createNewWorld: function(canvas) {
-		var world, loader = this,
-			requirements = Config.modulesBeforeChanges
-				.concat(Config.modulesBeforeWorldLoad)
-				.concat(Config.modulesOnWorldLoad);
-
-		require(requirements).toRun(function() {
-			var world = new WorldMorph(canvas);
-			world.displayOnCanvas(canvas);
-
-			loader.browserSpecificFixes();
-
-			if (Config.useShadowMorphs) HandMorph.prototype.useShadowMorphs = true;
-			if (!Config.skipAllExamples)
-				new lively.Main.ExampleLoader().populateWorldWithExamples(world);
-
-			loader.onFinishLoading(world);
-		})
+		// FIXME, add it somewhere
+		var world = new WorldMorph(canvas);
+		world.displayOnCanvas(canvas);
+		this.onFinishLoading(world)
+		
+		if (!Config.skipMostExamples)
+			new lively.Main.HTMLExamples().populateWorldWithExamples(world);
 	},
-
-
 
 });
 
 
 // uses demo flags from defaultconfig.js and localconfig.js
-Object.subclass('lively.Main.ExampleLoader', {
+Object.subclass('lively.Main.Examples', {
 
 	showStar: function(world) {
 		if (Config.showStar) {  // Make a star
@@ -688,6 +768,101 @@ Object.subclass('lively.Main.ExampleLoader', {
 		return world;
 	},
 
+});
+lively.Main.Examples.subclass('lively.Main.HTMLExamples', {
+
+	showStar: function(world) {
+			var makeStarVertices = function(r,center,startAngle) {
+				var vertices = [];
+				var nVerts = 10;
+				for (var i=0; i <= nVerts; i++) {
+					var a = startAngle + (2*Math.PI/nVerts*i);
+					var p = Point.polar(r,a);
+					if (i%2 == 0) p = p.scaleBy(0.39);
+					vertices.push(p.addPt(center));
+				}
+				return vertices;
+			}
+
+			var vertices = makeStarVertices(50,pt(0,0),0);
+			var widget = Morph.makePolygon(vertices, 1, Color.black, Color.yellow);
+			widget.setName('star')
+			world.addMorph(widget);
+			widget.setPosition(pt(125, 275));
+
+			if (Config.showStar && Config.spinningStar) {  // Make the star spin as a test of stepping
+				widget.startStepping(60, "rotateBy", 0.1);
+				if (world !== WorldMorph.current()) world.suspendAllActiveScripts();
+			}
+	},
+
+	showSampleMorphs: function(world) {
+		if (Config.showSampleMorphs) {
+			var colors = Color.wheel(4);
+			var loc = pt(150, 450);
+			var widgetExtent = pt(70, 30);
+			var dy = pt(0,50);
+			var dx = pt(120,0);
+
+			// Create a sample rectangle
+			widget = Morph.makeRectangle(loc, widgetExtent);
+			widget.setFill(colors[0]);
+			world.addMorph(widget);
+
+			// Create a sample ellipse
+			widget = Morph.makeEllipse(loc.addPt(dx).extent(widgetExtent), 1, Color.black, colors[1]);
+			// var shape = new HTML5EllipseShape(loc.addPt(dx).extent(widgetExtent));
+			// widget = new Morph(shape);
+			widget.setFill(colors[1]);
+			world.addMorph(widget);
+			
+			// // Create a sample line
+			loc = loc.addPt(dy);
+			widget = Morph.makeLine([pt(0,0), pt(-10,20), pt(70,0)], 2, Color.black);
+			widget.setPosition(loc.addXY(0,15));
+			world.addMorph(widget);
+			// 
+			// Create a sample polygon
+			widget = Morph.makePolygon([pt(0,0),pt(70,0),pt(40,30)], 1, Color.black, colors[2]);
+			world.addMorph(widget);
+			widget.setPosition(loc.addPt(dx));
+			loc = loc.addPt(dy);
+			// 
+			// // Create sample text morphs
+			widget = new TextMorph(loc.extent(pt(100,50)),"Big Text"); // big text
+			world.addMorph(widget.applyStyle({fontSize: 20, textColor: Color.blue}));
+
+			widget = new TextMorph(loc.addPt(dx).extent(pt(140,50)),"Unbordered"); // unbordered text
+			world.addMorph(widget.applyStyle({fontSize: 20, borderWidth: 0, fill: null}));			
+		}
+	},
+
+	populateSlideWorld: function(world) {
+		this.showStar(world);
+		this.showSampleMorphs(world);
+	},
+
+	populateWorldWithExamples: function($super, world) {
+		this.populateSlideWorld(world);
+		
+		// load other examples
+		Config.showAsteroids = Functions.False
+		Config.showInnerWorld = false
+		Config.showSlideWorld = false
+		Config.showDeveloperWorld = false
+		Config.showPhoneWorld = false;
+		require('lively.Examples').toRun(function() { $super(world) });
+	},
+	
+});
+Object.extend(lively.Main, {
+	getLoader: function(canvas) {
+		// real canvas
+		if (canvas.tagName == 'canvas') return new lively.Main.CanvasLoader();
+		if (canvas.tagName == 'svg' && !Config.forceHTML) return new lively.Main.Loader();
+		if (canvas.tagName == 'div' || Config.forceHTML) return new lively.Main.HTMLLoader();
+		throw new Error('No loader for ' + canvas);
+	},
 });
 
 }); // end of module
