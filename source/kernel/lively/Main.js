@@ -25,7 +25,7 @@
  * Main.js.  System startup and demo loading.
  */
 
-module('lively.Main').requires().toRun(function() {
+module('lively.Main').requires('lively.persistence.Serializer').toRun(function() {
 
 Object.subclass('lively.Main.WorldDataAccessor',
 'initializing', {
