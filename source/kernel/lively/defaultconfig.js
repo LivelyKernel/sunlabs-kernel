@@ -146,7 +146,10 @@ var UserAgent = (function() {
 //--------------------------
 // Determine runtime behavior based on UA capabilities and user choices (override in localconfig.js)
 //--------------------------
-if (!Config) var Config = {}
+if (Config) {
+	var ExistingConfig = Config;
+}
+var Config = {}
 
 Object.extend(Config, {
 
@@ -155,6 +158,10 @@ Object.extend(Config, {
     
     // URL that acts as a proxy for network operations 
     proxyURL: null,
+
+	// if createNewWorld is true then a new WorldMorph is build while loading
+	// instead of deserializing one
+	createNewWorld: false,
 
     // Quickly enable/disable most demos
     skipMostExamples: false,
@@ -384,3 +391,5 @@ Config.serverInvokedTest = false;
 Config.ignoreClassNotFound = true; // if a class is not found during deserializing a place holder object can be created instead of raising an error
 
 Config.forceHTML = false;
+
+if (ExistingConfig) Object.extend(Config, ExistingConfig);

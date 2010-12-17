@@ -45,6 +45,10 @@ Object.extend(lively.Main.WorldDataAccessor, {
 	forDocument: function(doc) {
 		var canvas = doc.getElementById('canvas'), changeSet;
 
+		if (Config.createNewWorld) {
+			return new lively.Main.NewWorldData(canvas);
+		}
+
 		var jsonNode = doc.getElementById(lively.persistence.Serializer.jsonWorldId);
 		if (jsonNode) {
 			changeSet = lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
