@@ -5048,6 +5048,16 @@ PasteUpMorph.subclass("WorldMorph",
 		pane.innerMorph().setTextString(printObject(error))	
 		return pane
 	},
+logError: function(er) {
+	var msg = "" + er
+	var world = this;
+	this.setStatusMessage(msg, Color.red, 15, 
+		function() {
+			world.showErrorDialog(er)
+		},
+		{fontSize: 12, fillOpacity: 1});
+},
+
 	showErrorDiaglogInWorkspace: function(source, expressionBeginOffset, expressionEndOffset, pane) {
 		// PRIVATE HELPER
 		console.log("begin " + expressionBeginOffset + " end " + expressionEndOffset)
@@ -5074,9 +5084,11 @@ PasteUpMorph.subclass("WorldMorph",
    
 	addFramedMorph: function(morph, title, optLoc, optSuppressControls) {
 		var displ = pt(5, 5);
-		return this.addMorphAt(
+		var w = this.addMorphAt(
 			new WindowMorph(morph, title, optSuppressControls), 
 			optLoc || this.positionForNewMorph(morph).subPt(displ));
+		w.adjustForNewBounds(); // hack
+		return w
 	},
 
 	addTextWindow: function(spec) {
@@ -7222,6 +7234,7 @@ Object.subclass('LayoutManager',
 
 Object.extend(LayoutManager, {
 	defaultInstance: new LayoutManager(),
+	suppressLayoutLevel: 0,
 	fromLiteral: function(literal) { return this.defaultInstance },
 
 	layoutAllowed: function() { return this.suppressLayoutLevel <= 0 },

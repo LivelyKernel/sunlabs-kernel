@@ -71,24 +71,6 @@ ChainedListMorphNode.subclass('lively.persistence.Debugging.InspectorNode',
 });
 
 Object.subclass('lively.persistence.Debugging.Helper',
-'json', {
-	prettyPrintJSON: function(jsoOrJson, indent) {
-		var jso = Object.isString(jsoOrJson) ? JSON.parse(jsoOrJson) : jsoOrJson,
-			str = '',
-			indent = indent || '',
-			propStrings = [];
-		
-		Properties.forEachOwn(jso, function(key, val) {
-			var propIndent = indent + '  ',
-				str = propIndent + key + ': ';
-			str += (typeof val == 'object') ? this.prettyPrintJSON(val, propIndent) : String(val);
-			str += ',';
-			propStrings.push(str);
-		}, this);
-		str += '{\n' + propStrings.join('\n') + '\n' + indent + '}';
-		return str;
-	},
-},
 'object sizes', {
 	listObjectsOfWorld: function(url) {
 		var doc = new WebResource(url).beSync().get().contentDocument;
@@ -162,7 +144,7 @@ Object.extend(lively.persistence.Debugging.Helper, {
 		if (jso.registry) jso = jso.registry;
 		return new this().listObjects(jso)
 	},
-	prettyPrintJSON: function(json) { return new this().prettyPrintJSON(json) },
+	prettyPrintJSON: function(json) { return JSON.prettyPrint(json) },
 });
 
 

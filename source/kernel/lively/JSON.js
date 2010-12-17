@@ -311,3 +311,23 @@ if (window && window.JSON) {
 	JSON.parse = JSON.unserialize
 	JSON.stringify = JSON.serialize
 }
+
+JSON.prettyPrint = function(jsoOrJson, indent) {
+	var jso = (typeof jsoOrJson == 'string') ? JSON.parse(jsoOrJson) : jsoOrJson,
+		str = '',
+		indent = indent || '',
+		propStrings = [];
+	
+	for (var key in jso) {
+		if (!jso.hasOwnProperty(key)) continue;
+		var val = jso[key],
+			propIndent = indent + '  ',
+			propStr = propIndent + key + ': ';
+		propStr += (typeof val == 'object') ? JSON.prettyPrint(val, propIndent) : String(val);
+		propStr += ',';
+		propStrings.push(propStr);
+	}
+	
+	str += propStrings.length == 0 ? '{}' : '{\n' + propStrings.join('\n') + '\n' + indent + '}';
+	return str;
+};
