@@ -67,15 +67,14 @@ var JSLoader = {
 	XLINKNamespace: 'http:\/\/www.w3.org/1999/xlink',
 	LIVELYNamespace: 'http:\/\/www.experimentalstuff.com/Lively',
 
-	loadJs: function(url, onLoadCb) {
+	loadJs: function(url, onLoadCb, loadSync) {
 		if (this.scriptInDOM(url)) {
-			console.log('script ' + url + ' already loaded');
+			console.log('script ' + url + ' already loaded or loading');
 			return
 		};
-		console.log('loading script ' + url);
-		
-		var parentNode = this.findParentScriptNode();
+		console.log('loading script ' + url);		
 
+		// adapt URL
 		var exactUrl = url;
 		if (exactUrl.indexOf('!svn') <= 0)
 			if (true || Config.disableScriptCaching)
@@ -83,24 +82,37 @@ var JSLoader = {
 					exactUrl + '?' + new Date().getTime() :
 					exactUrl + '&' + new Date().getTime();
 
-		var xmlNamespace = parentNode.namespaceURI;
-
-		var script = document.createElementNS(xmlNamespace, 'script');
+		// create and configure script tag
+		var parentNode = this.findParentScriptNode(),
+			xmlNamespace = parentNode.namespaceURI,
+			script = document.createElementNS(xmlNamespace, 'script');
+		parentNode.appendChild(script);
 		script.setAttributeNS(null, 'id', url);
 		script.setAttributeNS(null, 'type', 'text/ecmascript');
 
-		if (xmlNamespace == this.SVGNamespace)
-			script.setAttributeNS(this.XLINKNamespace, 'href', exactUrl);
+		return loadSync ?
+			this.loadSync(exactUrl, onLoadCb, script) :
+			this.loadAsync(exactUrl, onLoadCb, script);
+	},
+	loadSync: function(url, onLoadCb, script) {
+		var source = new WebResource(url).beSync().get().content;
+		eval(source);
+
+		if (typeof onLoadCb === 'function') onLoadCb();
+	},
+	loadAsync: function(url, onLoadCb, script) {
+		if (script.namespaceURI == this.SVGNamespace)
+			script.setAttributeNS(this.XLINKNamespace, 'href', url);
 		else
-			script.setAttributeNS(null, 'src', exactUrl);
+			script.setAttributeNS(null, 'src', url);
 
 		if (onLoadCb)
 			script.onload = onLoadCb;
 		
 		script.setAttributeNS(null, 'async', true);
-
-		parentNode.appendChild(script);
 	},
+
+
 	loadCombinedModules: function(combinedFileUrl, callback) {
 		// If several modules are combined in one file they can be loaded with this method.
 		// The method will ensure that all included modules are loaded and if they
@@ -291,8 +303,9 @@ var LivelyLoader = {
 	
 	bootstrap: function(thenDoFunc, isCanvas) {
 		this.createConfigObject();
-		
-		var optimizedLoading = document.URL.indexOf('quickLoad') > 0 && document.URL.indexOf('!svn') == -1;
+		var url = document.URL,
+			optimizedLoading = !url.match('quickLoad=false') && !url.match('!svn') &&
+				url.match('webwerkstatt') && String(document.location).match('lively-kernel.org') && !isCanvas;
 		if (optimizedLoading) {
 			console.log('optimized loading enabled')
 			JSLoader.loadCombinedModules(this.codeBase + 'generated/combinedModules.js', thenDoFunc);
