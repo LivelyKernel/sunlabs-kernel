@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2006-2009 Sun Microsystems, Inc.
+ * Copyright (c) 2008-2011 Hasso Plattner Institute
  *
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 // ===========================================================================
 // Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
