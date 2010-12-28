@@ -270,8 +270,8 @@ Foo.addMethods('catC',{\n\
 		browser.buildView()
 
 		browser.inPaneSelectNodeNamed('Pane1', 'dummySource.js');
-		var commands = browser.commandMenuSpec('Pane2');
-		var commandSpec = commands.detect(function(spec) { return spec[0] == 'add class' });
+		var commands = browser.commandMenuSpec('Pane2'),
+			commandSpec = commands.detect(function(spec) { return spec[0] == 'add class' });
 		this.assert(commandSpec && Object.isFunction(commandSpec[1]), 'Cannot find add class command');
 
 		var className = 'MyClass';
@@ -1069,6 +1069,37 @@ test05ParseBeGlobal: function() {
 
 
 
+
+});
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.TraitsParserTest', {
+	test01ParseSimpleTraitDef: function() {
+		var src = 'Trait(\'Foo\');';
+		this.sut.src = src;
+		var descriptor = this.sut.callOMeta("traitDef");
+		this.assert(descriptor, 'no descriptor');
+		this.assertEqual(descriptor.name, 'Foo');
+    },
+	test02ParseTraitAsFile: function() {
+		var src = 'Trait(\'Foo\');';
+		var result = this.sut.parseSource(src);
+		this.assertEqual(result.length, 1);
+		this.assertEqual(result[0].type, 'traitDef');
+		this.assertEqual(result[0].subElements().length, 0);
+	},
+	test03ParseTraitSubElements: function() {
+		var src = 'Trait("Foo",\n {a: 1,})';
+		this.sut.src = src;
+		var descriptor = this.sut.callOMeta("traitDef");
+		this.assertEqual(descriptor.subElements().length, 1);
+	},
+
+	test05ParseApplyTo: function() {
+		var src = '.applyTo(Bar, {exclude: ["x"],})';
+		this.sut.src = src;
+		var descriptor = this.sut.callOMeta("traitSubElement");
+		this.assertEqual(descriptor.name, ' -> Bar');
+		this.assertEqual(descriptor.subElements().length, 1);
+	},
 
 });
 Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.MethodCategoryParseTest', {
