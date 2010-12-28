@@ -228,7 +228,7 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 		var string = this.serializer.serialize(morph1);
 			jso = JSON.parse(string),
 			result = lively.persistence.Serializer.sourceModulesIn(jso);
-		this.assertEqualState(['Global.lively.Core', 'Global'], result);
+		this.assertEqualState(['Global.lively.Core', 'Global', 'Global.lively.scene'], result);
 	},
 
 	testDoNotSerializeFoundInClassHierarchy: function() {
@@ -281,6 +281,13 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 		this.assertEquals(className, result.className)
 
 		
+	},
+	testSerializeRegexp: function() {
+		this.serializer = ObjectGraphLinearizer.forLively(); // plugin creation should happen there
+		var obj = {regexp:  /.*/i},
+			result = this.serializeAndDeserialize(obj);
+		this.assert(result.regexp instanceof RegExp, 'not a regular expression')
+		this.assert(result.regexp.test('aab'), 'regular expression not working')
 	},
 
 

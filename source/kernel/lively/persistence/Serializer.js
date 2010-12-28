@@ -26,7 +26,7 @@ module('lively.persistence.Serializer').requires('lively.persistence.ObjectExten
 Object.subclass('ObjectGraphLinearizer',
 'settings', {
 	defaultCopyDepth: 70,
-	keepIds: false,
+	keepIds: Config.keepSerializerIds || false,
 },
 'initializing', {
 
@@ -68,7 +68,7 @@ Object.subclass('ObjectGraphLinearizer',
 	escapedCDATAEnd: '<=CDATAEND=>',
 	CDATAEnd: '\]\]\>',
 
-	newId: function() { return this.idCounter++ },
+	newId: function() {	return this.idCounter++ },
 	getIdFromObject: function(obj) {
 		return obj.hasOwnProperty(this.idProperty) ? obj[this.idProperty] : undefined;
 	},
@@ -167,11 +167,12 @@ Object.subclass('ObjectGraphLinearizer',
 			if (!obj.hasOwnProperty(key) || (key === this.idProperty && !this.keepIds)) continue;
 			var value = obj[key];
 			if (this.somePlugin('ignoreProp', [obj, key, value])) continue;
+			value = this.somePlugin('serializeObj', [value]) || value;
 this.path.push(key)
 			copy[key] = this.register(value);
 this.path.splice(this.path.length-1, 1); // remove last
 		}
-		this.letAllPlugins('serializeObj', [obj, copy]);
+		this.letAllPlugins('additionallySerialize', [obj, copy]);
 		this.copyDepth--
 		return copy
 	},
@@ -190,10 +191,10 @@ this.path.splice(this.path.length-1, 1); // remove last
 		this.setRecreatedObject(recreated, id); // important to set recreated before patching refs!
 		for (var key in registeredObj) {
 			if (key === this.classNameProperty) continue;
-			this.path.push(key) // for debugging
+this.path.push(key) // for debugging
 			var value = registeredObj[key];
 			recreated[key] = this.patchObj(value);
-			this.path.splice(this.path.length-1, 1); // remove last
+this.path.splice(this.path.length-1, 1); // remove last
 		};
 		this.letAllPlugins('afterDeserializeObj', [recreated]);
 		return recreated;
@@ -205,9 +206,9 @@ this.path.splice(this.path.length-1, 1); // remove last
 
 		if (Object.isArray(obj))
 			return obj.collect(function(item, idx) {
-				this.path.push(idx) // for debugging
+this.path.push(idx) // for debugging
 				var result = this.patchObj(item);
-				this.path.splice(this.path.length-1, 1); // remove last
+this.path.splice(this.path.length-1, 1); // remove last
 				return result;
 			}, this)
 
@@ -350,7 +351,8 @@ Object.extend(ObjectGraphLinearizer, {
 			new LivelyWrapperPlugin(),
 			new OldModelFilter(),
 			new ScriptFilter(),
-			new LayerPlugin()
+			new LayerPlugin(),
+			new RegExpPlugin()
 		]);
 		return serializer;
 	},
@@ -363,7 +365,8 @@ Object.subclass('ObjectLinearizerPlugin',
 	setSerializer: function(s) { this.serializer = s },
 },
 'plugin interface', {
-	serializeObj: function(original, persistentCopy) {},
+	serializeObj: function(original) {},
+	additionallySerialize: function(original, persistentCopy) {},
 	deserializeObj: function(persistentCopy) {},
 	ignoreProp: function(obj, propName) {},
 	afterDeserializeObj: function(obj) {},
@@ -377,7 +380,7 @@ ObjectLinearizerPlugin.subclass('ClassPlugin',
 	sourceModuleNameProperty: '__SourceModuleName__',
 },
 'plugin interface', {
-	serializeObj: function(original, persistentCopy) {
+	additionallySerialize: function(original, persistentCopy) {
 		this.addClassInfoIfPresent(original, persistentCopy);
 	},
 	deserializeObj: function(persistentCopy) {
@@ -445,7 +448,7 @@ ObjectLinearizerPlugin.subclass('LayerPlugin',
 	withoutLayersPropName: 'withoutLayers'
 
 },'plugin interface', {
-	serializeObj: function(original, persistentCopy) {
+	additionallySerialize: function(original, persistentCopy) {
 		this.serializeLayerArray(original, persistentCopy, this.withLayersPropName)
 		this.serializeLayerArray(original, persistentCopy, this.withoutLayersPropName)
 	},
@@ -497,7 +500,7 @@ ObjectLinearizerPlugin.subclass('LivelyWrapperPlugin', // for serializing lively
 
 },
 'plugin interface', {
-	serializeObj: function(original, persistentCopy) {
+	additionallySerialize: function(original, persistentCopy) {
 		if (typeof original.onstore === 'function')
 			original.onstore()
 		if (this.hasRawNode(original))
@@ -556,6 +559,32 @@ ObjectLinearizerPlugin.subclass('LivelyWrapperPlugin', // for serializing lively
 		newObj.rawNode = rawNode;
 	},
 });
+ObjectLinearizerPlugin.subclass('RegExpPlugin',
+'accessing', {
+	serializedRegExpProperty: '__regExp__',
+},
+'plugin interface', {
+	serializeObj: function(original) {
+		if (original instanceof RegExp)
+			return this.serializeRegExp(original);
+	},
+	serializeRegExp: function(regExp) {
+		var serialized = {};
+		serialized[this.serializedRegExpProperty] = regExp.toString();
+		return serialized;
+	},
+
+	deserializeObj: function(obj) {
+		var serializedRegExp = obj[this.serializedRegExpProperty];
+		if (!serializedRegExp) return null;
+		delete obj[this.serializedRegExpProperty];
+		try {
+			return eval(serializedRegExp);
+		} catch(e) {
+			console.error('Cannot deserialize RegExp ' + e + '\n' + e.stack);
+		}
+	},
+});
 ObjectLinearizerPlugin.subclass('OldModelFilter',
 'initializing', {
 	initialize: function($super) {
@@ -569,7 +598,7 @@ ObjectLinearizerPlugin.subclass('OldModelFilter',
 		// if (value && value.constructor && value.constructor.name.startsWith('anonymous_')) return true;
 		return false;
 	},
-	serializeObj: function(original, persistentCopy) {
+	additionallySerialize: function(original, persistentCopy) {
 		var klass = original.constructor;
 		// FIX for IE9+ which does not implement Function.name
 		if (!klass.name) {
@@ -639,7 +668,7 @@ ObjectLinearizerPlugin.subclass('ScriptFilter',
 	},
 },
 'plugin interface', {
-	serializeObj: function(original, persistentCopy) {
+	additionallySerialize: function(original, persistentCopy) {
 		var scripts = {}, found = false;
 		Functions.own(original).forEach(function(funcName) {
 			var func = original[funcName];
@@ -660,6 +689,10 @@ ObjectLinearizerPlugin.subclass('ScriptFilter',
 	},
 });
 ObjectLinearizerPlugin.subclass('GenericFilter',
+// example
+// f = new GenericFilter()
+// f.addPropertyToIgnore('owner')
+// 
 'initializing', {
 	initialize: function($super) {
 		$super();

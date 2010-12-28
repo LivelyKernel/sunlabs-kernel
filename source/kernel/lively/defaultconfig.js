@@ -392,4 +392,8 @@ Config.ignoreClassNotFound = true; // if a class is not found during deserializi
 
 Config.forceHTML = false;
 
+// This is for Persistence.js (ask Martin).
+Config.keepSerializerIds = false;
+Config.useOfflineStorage = false;
+
 if (ExistingConfig) Object.extend(Config, ExistingConfig);
