@@ -114,7 +114,7 @@ lively.ide.SystemBrowser.addMethods('serialization', {
 		// this.setupListPanes();
 		// this.setupSourceInput();
 		
-		this.panel.onDeserialize.bind(this.panel).delay(0);
+		if (this.panel) this.panel.onDeserialize.bind(this.panel).delay(0);
 		// (function() {
 		// 	var oldPanel = this.panel,
 		// 		newPanel = this.buildView(oldPanel.getExtent()),
@@ -125,6 +125,16 @@ lively.ide.SystemBrowser.addMethods('serialization', {
 		// 	oldPanel.remove();
 		// 	newPanel.resetSelection(selection, this);
 		// }).bind(this).delay(0);
+	},
+});
+lively.ide.LocalCodeBrowser.addMethods('serialization', {
+	onrestore: function() {
+		lively.bindings.callWhenNotNull(WorldMorph, 'currentWorld', this, 'initializeFromDeserializedWorld');
+	},
+	initializeFromDeserializedWorld: function(world) {
+		this._rootNode = null;
+		this.changeSet = world.getChangeSet();
+		this.start();
 	},
 });
 
