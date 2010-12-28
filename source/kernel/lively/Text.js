@@ -1441,8 +1441,8 @@ BoxMorph.subclass('TextMorph',
 	
 	getSelectionText: function() {
 		return this.textStyle ? 
-		this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
-		: new lively.Text.Text(this.getSelectionString());
+			this.getRichText().subtext(this.selectionRange[0], this.selectionRange[1] + 1)
+			: new lively.Text.Text(this.getSelectionString());
 	},
 
 	replaceSelectionWith: function(replacement) { 
@@ -1522,6 +1522,15 @@ BoxMorph.subclass('TextMorph',
 			return this.selectionRange[0]; // selection pivot in middle of sel
 		// console.log('Can\'t find current position in text');
 		return this.selectionRange[0];
+	},
+	printAndSelect: function(string) {
+		string = String(string);
+		this.setNullSelectionAt(this.selectionRange[1] + 1);
+		var prevSelection = this.selectionRange[0];
+		this.replaceSelectionWith(string);
+		this.setSelectionRange(prevSelection, prevSelection + string.length);
+		if (this.world())
+			this.requestKeyboardFocus(this.world().firstHand());
 	},
 
 },
@@ -2019,22 +2028,46 @@ BoxMorph.subclass('TextMorph',
 	},
 	
 	doInspect: function() {
-		console.log("do inspect")
-		var s = this.pvtStringAndOffsetToEval();
+		var inspectee = this.evalSelection();
+		if (!inspectee) return;
 		try {
-			var inspectee = this.tryBoundEval(s.str, s.offset);
-		} catch (e) {
-			console.log("eval error in doInspect " + e)
-		};
-		if (inspectee) {
-			try {
-				lively.Tools.inspect(inspectee);
-			} catch(e) {
-				this.setStatusMessage("could not open inspector on " + inspectee);
-				console.log("Error during opending an inspector:"+ e);
-			}
+			lively.Tools.inspect(inspectee);
+		} catch(e) {
+			this.setStatusMessage("could not open inspector on " + inspectee);
+			console.log("Error during opening an inspector: "+ e);
 		}
 	},
+	doListProtocol: function() {
+		var textMorph = this, items = [],
+			selection = Strings.removeSurroundingWhitespaces(this.getSelectionString() || this.pvtCurrentLineString());
+		if (selection.endsWith('.')) selection = selection.slice(0, selection.length-1);
+		var obj = this.tryBoundEval(selection);
+		if (!obj) return;
+
+		function funcSignaturesOf(obj) {
+			var funcs = 'nodeType' in obj ? Functions.all(obj) : Functions.own(obj)
+			return funcs.collect(function(name) {
+				var source = obj[name].toString(),
+					params = source.match(/function\s*[a-zA-Z0-9_$]*\s*\(([^\)]*)\)/)[1] || '';
+				return name + '(' + params + ')';
+			}).sort()
+		}
+		function withPrototypeChain(obj) {
+			var result = [obj], proto = Class.getPrototype(obj);
+			while(proto) { result.push(proto); proto = Class.getSuperPrototype(proto) }
+			return result;
+		}
+		withPrototypeChain(obj).forEach(function(proto) {
+			var subItems = funcSignaturesOf(proto).collect(function(signa) {
+				return [signa, function() { textMorph.printAndSelect(signa) }]});
+			if (subItems.length == 0) return;
+			var name = (obj === proto) ? obj.toString().truncate(60) :
+				proto.constructor.type || proto.constructor.name || '';
+			items.push([name, subItems]);
+		});
+		MenuMorph.openAtHand(items);
+	},
+
 	
 	pvtStringAndOffsetToEval: function() {
 		var strToEval = this.getSelectionString(); 
@@ -2046,18 +2079,10 @@ BoxMorph.subclass('TextMorph',
 		return {str: strToEval, offset: offset}
 	},
 	
-	doDoit: function() {
-		var s = this.pvtStringAndOffsetToEval();
-		this.tryBoundEval(s.str, s.offset);
-	},
+	doDoit: function() { this.evalSelection() },
 
 	// eval selection or current line if selection is emtpy
-	doPrintit: function() {
-		var s = this.pvtStringAndOffsetToEval();
-		this.tryBoundEval(s.str, s.offset, true);
-		// this.replaceSelectionWith(" " + result);
-		// this.setSelectionRange(prevSelection, prevSelection + result.length + 1);
-	},
+	doPrintit: function() { this.evalSelection(true) },
 
 	doSave: function() {
 		this.saveContents(this.textString); 
@@ -2077,17 +2102,15 @@ BoxMorph.subclass('TextMorph',
 				result = this.boundEval(str);		
 			}
 			
-			if (printIt) {
-				this.setNullSelectionAt(this.selectionRange[1] + 1);
-				var prevSelection = this.selectionRange[0];
-				var replacement = " " + result
-				this.replaceSelectionWith(replacement);
-				this.setSelectionRange(prevSelection, prevSelection + replacement.length);
-			}
+			if (printIt) this.printAndSelect(' ' + result);
 		} catch (e) {
 			this.showError(e, offset)
 		}	
 		return result;
+	},
+	evalSelection: function(replaceSelection) {
+		var s = this.pvtStringAndOffsetToEval();
+		return this.tryBoundEval(s.str, s.offset, replaceSelection);
 	},
 
 	showError: function(e, offset) {
@@ -2160,6 +2183,7 @@ BoxMorph.subclass('TextMorph',
 				case "B": { this.doBrowse(true); return true; } // Browse selected class
 				case "F": { this.doSearch(true); return true; } // Shift-Find alternative for w (search)
 				case "M": { this.doMuchMore(true); return true; } // Repeated replacement
+				case "P": { this.doListProtocol(); return true; } // Create a list of methods
 		};	};
 
 		if (key) key = key.toLowerCase();
