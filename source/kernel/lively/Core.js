@@ -3592,13 +3592,20 @@ Morph.addMethods('settings', {
 		return [];  // Overridden by, eg, TextMorph
 	},
 
-	showMorphMenu: function(evt) {
+	showMorphMenu: function(evt, optMenu) {
 		if (evt.hand.lastMorphMenu && evt.hand.lastMorphMenu.owner)
 			evt.hand.lastMorphMenu.remove(); // cleanup old open menus
 		var world = this.world(),
-			menu = this.morphMenu(evt),
+			menu = optMenu || this.morphMenu(evt),
 			menuCaption = this.toString(),
-			captionClickAction = world.prompt.bind(world).curry('edit name', this.setName.bind(this), this.getName());
+			captionClickAction = world.prompt.bind(world).curry(
+				'edit name',
+				function(newName) {
+					if (!newName) { alert('Invalid name ' + newName); return }
+					alertOK(this + ' renamed to ' + newName);
+					this.setName(newName);
+				}.bind(this),
+				this.getName());
 		menu.openIn(world, evt.point(), false, menuCaption, captionClickAction); 
 		evt.hand.lastMorphMenu = menu;
 	},
@@ -3632,7 +3639,7 @@ Morph.addMethods('settings', {
 	morphMenu: function(evt) { 
 		var menu = new MenuMorph(this.morphMenuBasicItems(evt), this);
 		menu.addLine();
-		menu.addItem( ["world...", function() {this.world().showMorphMenu(evt)}.bind(this)]);
+		menu.addItem(["world...", function() {this.world().showMorphMenu(evt)}.bind(this)]);
 		menu.addLine();
 		menu.addItems(this.subMenuItems(evt));
 		return menu;
@@ -5481,7 +5488,7 @@ logError: function(er) {
 		var world = this.world();
 		var toolMenuItems = [
 			["System code browser (b)", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.SystemBrowser().openIn(world)})}],
-			["Local code Browser", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world)})}],
+			["Local code Browser (l)", function(evt) { require('lively.ide').toRun(function(unused, ide) {new ide.LocalCodeBrowser().openIn(world)})}],
 			// ["Wiki code Browser", function(evt) { require('lively.ide', 'lively.LKWiki').toRun(function(unused, ide) {
 				// var cb = function(input) {
 					// var repo = new URL(input);
@@ -5582,7 +5589,7 @@ logError: function(er) {
 				["Class Browser", function(evt) { new SimpleBrowser().openIn(world, evt.point()); }],
 				["File Browser", function(evt) { new FileBrowser().openIn(world) }],
 				["Object Hierarchy Browser", function(evt) { new ObjectBrowser().openIn(world); }],
-				["Console (l)", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
+				["Console", function(evt) {world.addFramedMorph(new ConsoleWidget(50).buildView(pt(800, 100)), "Console"); }],
 				["XHTML Browser", function(evt) { 
 					var xeno = new XenoBrowserWidget('sample.xhtml');
 					xeno.openIn(world); }],
@@ -5796,8 +5803,9 @@ logError: function(er) {
 				require('lively.ide').toRun(function() { new lively.ide.SystemBrowser().open() });
 				return true;
 			}
-			if (key == 'l') { // (L)ogger
-				new ConsoleWidget().open();
+			if (key == 'l') { // (L)ocal code browser
+				// new ConsoleWidget().open();
+				require('lively.ide').toRun(function() { new lively.ide.LocalCodeBrowser().open() });
 				return true;
 			}
 			if (key == 'k') { // Workspace
@@ -7193,7 +7201,7 @@ Object.subclass('LayoutManager',
 'derived accessing', {
 
 	orderedSubMorphsOf: function(morph) {
-		return morph.visibleSubmorphs();
+		return morph.visibleSubmorphs().reject(function(ea) {return ea.isEpimorph});
 	},
 
 	leftMarginOf: function(morph) {
@@ -7289,7 +7297,7 @@ LayoutManager.subclass('VerticalLayout',  { // alignment more than anything
 		if (!this.layoutAllowed()) return;
 		var x = this.leftPaddingOf(supermorph),
 			y =  this.topPaddingOf(supermorph),
-			submorphs = supermorph.visibleSubmorphs();
+			submorphs = this.orderedSubMorphsOf(supermorph);
 		for (var i = 0; i < submorphs.length; i++) {
 			var submorph = submorphs[i];
 			if (submorph.isVisible && !submorph.isVisible()) continue;
