@@ -582,6 +582,7 @@ Object.extend(Function.prototype, {
 		var klass = this;
 		return Global.classes(true).select(function(ea) { return ea.isSubclassOf(klass) });
 	},
+	withAllSubclasses: function() { return [this].concat(this.allSubclasses()) },
 
 	directSubclasses: function() {
 		var klass = this;
@@ -764,11 +765,12 @@ var Class = {
 	},
 
 	getConstructor: function Class$getConstructor(object) {
-		return object.constructor.getOriginal();
+		var c = object.constructor;
+		return c.getOriginal ? c.getOriginal() : c;
 	},
 
 	getPrototype: function Class$getPrototype(object) {
-		return object.constructor.getOriginal().prototype;
+		return this.getConstructor(object).prototype;
 	},
 
 	applyPrototypeMethod: function Class$applyPrototypeMethod(methodName, target, args) {
@@ -778,7 +780,7 @@ var Class = {
 	},
 
 	getSuperConstructor: function Class$getSuperConstructor(object) {
-		return object.constructor.getOriginal().superclass;
+		return this.getConstructor(object).superclass;
 	},
 
 	getSuperPrototype: function Class$getSuperPrototype(object) {
@@ -888,6 +890,21 @@ var Strings = {
 		}
 		return str;
 	},
+
+	removeSurroundingWhitespaces: function(str) {
+		function removeTrailingWhitespace(string) {
+			while (string.length > 0 && /\s|\n|\r/.test(string[string.length - 1]))
+				string = string.substring(0, string.length - 1);
+			return string;
+		};
+
+		function removeLeadingWhitespace(string) {
+			return string.replace(/^[\n\s]*(.*)/, '$1');
+		};
+
+		return removeLeadingWhitespace(removeTrailingWhitespace(str));
+	},
+
 	print: function(str) {
 		var result = str;
 		result = result.replace(/\n/g, '\\n\\\n')
@@ -982,6 +999,16 @@ var Properties = {
 			if (object[name] === value) return name;
 		return undefined
 	},
+	values: function Properties$values(obj) {
+		var values = [];
+		for (var name in obj) values.push(obj[name]);
+		return values;
+	},
+	ownValues: function Properties$ownValues(obj) {
+		var values = [];
+		for (var name in obj) if (obj.hasOwnProperty(name)) values.push(obj[name]);
+		return values;
+	},
 
 };
 
@@ -1035,7 +1062,15 @@ Object.extend(Global, {
 	isLoaded: Functions.True,
 });
 
-Namespace.addMethods({ // module specific, should be a subclass?
+Namespace.addMethods(
+'initializing', {
+	beAnonymous: function() {
+		this._isAnonymous = true;
+		this.sourceModuleName = lively.lang.Namespace.current().namespaceIdentifier;
+		return this;
+	},
+},
+'accessing', { // module specific, should be a subclass?
 	
 	uri: function() { // FIXME cleanup necessary
 		if (this.fromDB) {
@@ -1060,7 +1095,8 @@ Namespace.addMethods({ // module specific, should be a subclass?
 			return url;
 		}
 	},
-	
+},
+'module dependencies', {
 	addDependendModule: function(depModule) {
 		if (!this.dependendModules) this.dependendModules = [];
 		this.dependendModules.push(depModule);
@@ -1106,7 +1142,14 @@ Namespace.addMethods({ // module specific, should be a subclass?
 	loadRequirementsFirst: function() {
 		this.pendingRequirements && this.pendingRequirements.invoke('load');
 	},
-	
+
+	wasRequiredBy: function() {
+		return Global.subNamespaces(true).select(function(m) {
+			return m.privateRequirements && m.privateRequirements.include(this);
+		}, this);
+	},
+},
+'load callbacks', {
 	addOnloadCallback: function(cb) {
 		if (!this.callbacks) this.callbacks = [];
 		this.callbacks.push(cb);
@@ -1117,7 +1160,13 @@ Namespace.addMethods({ // module specific, should be a subclass?
 		var cb;
 		while (cb = this.callbacks.shift()) { cb() };
 	},
-	
+
+	isAnonymous: function() {
+		return this._isAnonymous
+	},
+
+},
+'testing', {
 	isLoaded: function() {
 		return this._isLoaded;
 	},
@@ -1127,8 +1176,14 @@ Namespace.addMethods({ // module specific, should be a subclass?
 		if (this.uri().include('anonymous')) return true;
 		return JSLoader.scriptInDOM(this.uri());
 	},
-	
-	load: function() {
+
+	isAnonymous: function() {
+		return this._isAnonymous
+	},
+
+},
+'loading', {
+	load: function(loadSync) {
 		if (this.isLoaded()) {
 			this.runOnloadCallbacks();
 			return;
@@ -1147,19 +1202,9 @@ Namespace.addMethods({ // module specific, should be a subclass?
 			this.loadRequirementsFirst();
 			return;
 		}
-		JSLoader.loadJs(this.uri());
+		JSLoader.loadJs(this.uri(), null, loadSync);
 	},
 	
-	isAnonymous: function() {
-		return this._isAnonymous
-	},
-	
-	beAnonymous: function() {
-		this._isAnonymous = true;
-		this.sourceModuleName = lively.lang.Namespace.current().namespaceIdentifier;
-		return this;
-	},
-
 	activate: function() {
 		this.constructor.namespaceStack.push(this);
 	},
@@ -1170,6 +1215,8 @@ Namespace.addMethods({ // module specific, should be a subclass?
 			throw new Error('Wrong module: ' + this.namespaceIdentifier +
 				' instead of expected ' + m.namespaceIdentifier )
 	},
+},
+'removing', {
 	remove: function() {
 		var ownerNamespace = Class.namespaceFor(this.namespaceIdentifier),
 			ownName = Class.unqualifiedNameFor(this.namespaceIdentifier)
@@ -1180,7 +1227,8 @@ Namespace.addMethods({ // module specific, should be a subclass?
 		if (!node) return
 		node.parentNode.removeChild(node);
 	},
-	
+},
+'debugging', {
 	toString: function() {
 			return 'namespace(' + this.namespaceIdentifier +
 				(this.isAnonymous() ? ' loaded by ' + this.sourceModuleName : '') + ')'
