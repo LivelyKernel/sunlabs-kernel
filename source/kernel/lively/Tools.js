@@ -427,8 +427,9 @@ Widget.subclass('ColumnInspector',
 		}
 		var panel = PanelMorph.makePanedPanel(extent, [
 			['listPane', chainedLists, new Rectangle(0, 0, 1, 0.48)],
-			['resizer', function(bnds){return new HorizontalDivider(bnds)}, new Rectangle(0, 0.48, 1, 0.02)],
-			['sourcePane', newTextPane, new Rectangle(0, 0.5, 1, 0.5)],
+			['printView', newTextPane, new Rectangle(0, 0.48, 1, 0.07)],
+			['resizer', function(bnds){return new HorizontalDivider(bnds)}, new Rectangle(0, 0.55, 1, 0.02)],
+			['sourcePane', newTextPane, new Rectangle(0, 0.57, 1, 0.43)],
 		]);
 
 		// list content and list selection 
@@ -442,11 +443,9 @@ Widget.subclass('ColumnInspector',
 		});
 
 		// set title
-		panel.listPane.plugTo(panel, {
-			selection: {dir: '->', name: 'setTitle', options: {
-				converter: function(node) {	
-					// if (!node) return "no node?";
-					return node.object ? node.object.toString().truncate(40) : String(node.object)}}},
+		panel.listPane.plugTo(panel.printView.innerMorph(), {
+			selection: {dir: '->', name: 'setTextString', options: {
+				converter: function(node) {	return String(node.object) }}}
 		});
 
 		// source pane
@@ -455,6 +454,7 @@ Widget.subclass('ColumnInspector',
 
 		// resizer setup
 		panel.resizer.addScalingAbove(panel.listPane);
+		panel.resizer.addFixed(panel.printView);
 		panel.resizer.addScalingBelow(panel.sourcePane)
 
 		panel.ownerWidget = this; // For serialization
