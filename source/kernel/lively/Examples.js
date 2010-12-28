@@ -4289,7 +4289,7 @@ BoxMorph.subclass("EngineMorph", {
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(fullRect);
-	this.applyLinkedStyles();
+		this.applyLinkedStyles();
         this.makeLayout(1, false);
         this.setRunning(true);
     },
@@ -4322,21 +4322,22 @@ BoxMorph.subclass("EngineMorph", {
         this.normalSpeed = 100;
         this.crank = Morph.makeCircle(center, this.stroke*0.8, 4, Color.black, Color.gray);
         this.addMorph(this.crank);
-        this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 1, Color.black, Color.gray.darker(2));
+        this.crankPin = Morph.makeCircle(pt(0, -this.stroke/2), this.stroke*0.25, 1, 
+			Color.black, Color.gray.darker(2));
         this.crank.addMorph(this.crankPin);
-	this.crankPinCap = this.crankPin.copy();
-	this.crankPinCap.applyStyle(this.crankPinStyle);
+		this.crankPinCap = this.crankPin.copy();
+		this.crankPinCap.applyStyle(this.crankPinStyle);
         this.alternate = alternating;
         this.makeCylinders(nCylinders);
 
         var menu = new MenuMorph([]);
         for (var i=1; i<=9; i++) menu.addItem([i.toString(), this, 'makeCylinders', i]);
-        menu.openIn(this, pt(80,440), true, "Number of cylinders"); 
+        menu.openIn(this, pt(80,510), true, "Number of cylinders"); 
 
         menu = new MenuMorph([
             ["sequential", this, 'setAlternateTiming', false],
             ["alternate", this, 'setAlternateTiming', true] ]);
-        menu.openIn(this, pt(300,440), true, "Ignition timing"); 
+        menu.openIn(this, pt(300,510), true, "Ignition timing"); 
 
         this.addRunMenu();
 
@@ -4354,7 +4355,7 @@ BoxMorph.subclass("EngineMorph", {
             (this.stepTime == this.normalSpeed ? ["fast", this, 'setStepTime', 1]
              : ["slow", this, 'setStepTime', this.normalSpeed])
         ]);
-        this.runMenu.openIn(this, pt(310,515), true, "Operating State");
+        this.runMenu.openIn(this, pt(310,600), true, "Operating State");
     },
 
     makeCylinders: function(nCylinders) {
@@ -4443,7 +4444,7 @@ BoxMorph.subclass("EngineMorph", {
     },
 
     doStep: function() {
-	var crPt;
+		var crPt;
         this.crankAngle += this.angleStep; 
         if (this.crankAngle > Math.PI*4) this.crankAngle -= Math.PI*4;
         this.crank.setRotation(this.crankAngle);  // Rotate the crankshaft
@@ -4493,7 +4494,7 @@ BoxMorph.subclass("EngineMorph", {
 });
 
 EngineMorph.makeEngine = function(world, pos) {
-    var engine = new EngineMorph(new Rectangle(0, 0, 400, 600));
+    var engine = new EngineMorph(new Rectangle(0, 0, 450, 650));
     // KP: add the top morph to the world first, to make firefox happy
     world.addFramedMorph(engine, 'A Lively Engine', pos);
     engine.openAllToDnD();  // have a little fun...
