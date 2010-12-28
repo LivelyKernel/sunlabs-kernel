@@ -23,7 +23,7 @@
  */
 
 
-module('lively.TileScripting').requires('lively.Helper').toRun(function(thisModule) {
+module('lively.TileScripting').requires('lively.Helper').toRun(function() {
 
 Morph.addMethods({
    layout: function(notResizeSelf) {
@@ -32,16 +32,15 @@ Morph.addMethods({
 		if (this.owner)
 			this.owner.layout();
    },
-   asTile: function() {
-       return new thisModule.ObjectTile(null,this);
-   }
+	asTile: function() {
+		return new lively.TileScripting.ObjectTile(null,this);
+	},
+	morphMenu: Morph.prototype.morphMenu.wrap(function(proceed, evt) {
+		var menu = proceed(evt);
+	    menu.addItem(["make tile", function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)], 3);
+	    return menu;
+	}),
 });
-Morph.prototype.morphMenu = Morph.prototype.morphMenu.wrap(function(proceed, evt) {
-    var menu = proceed(evt);
-    menu.addItem(["make tile", function(evt) { evt.hand.addMorph(this.asTile()) }.bind(this)], 3);
-    return menu;
-});
-
 
 PanelMorph.subclass('lively.TileScripting.TileBoxPanel', {
 
@@ -91,7 +90,7 @@ Widget.subclass('lively.TileScripting.TileBox', {
     
     // new TileBox().openIn(WorldMorph.current())
     buildView: function(extent) {
-        var panel = new thisModule.TileBoxPanel(this.viewExtent);
+        var panel = new lively.TileScripting.TileBoxPanel(this.viewExtent);
         panel.adjustForNewBounds = Morph.prototype.adjustForNewBounds.bind(this); // so submorphs don't scale
         panel.applyStyle({fill: Color.white, borderWidth: 1, borderColor: Color.black});
         panel.suppressHandles = true;
@@ -99,13 +98,13 @@ Widget.subclass('lively.TileScripting.TileBox', {
         var defaultCreateFunc = function(theClass, optExtent) {
             return new theClass(optExtent && optExtent.extentAsRectangle());
         };
-        [thisModule.IfTile, thisModule.DebugTile, thisModule.NumberTile].each(function(ea) {
+        [lively.TileScripting.IfTile, lively.TileScripting.DebugTile, lively.TileScripting.NumberTile].each(function(ea) {
             this.add(defaultCreateFunc.curry(ea), null, null, panel);
         }, this);
         
         var buildScriptBox = function() {
             var world = WorldMorph.current();
-            var window = new thisModule.ScriptEnvironment().openIn(world);
+            var window = new lively.TileScripting.ScriptEnvironment().openIn(world);
             // window.remove();
             world.removeMorph(window);
             return window;
@@ -121,9 +120,9 @@ Widget.subclass('lively.TileScripting.TileBox', {
     
 });
 
-Object.extend(thisModule.TileBox, {
+Object.extend(lively.TileScripting.TileBox, {
     open: function() {
-        var tileBox = new thisModule.TileBox();
+        var tileBox = new lively.TileScripting.TileBox();
         tileBox.openIn(WorldMorph.current());
         return tileBox;
     }
@@ -141,7 +140,7 @@ buildView: function (extent) {
             ['runButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0, 0, 0.3, 0.1)],
             ['delayText', function(initialBounds) { return new TextMorph(initialBounds) }, new Rectangle(0.5, 0, 0.2, 0.1)],
             ['repeatButton', function(initialBounds) { return new ButtonMorph(initialBounds) }, new Rectangle(0.7, 0, 0.3, 0.1)],
-            ['tileHolder', function(initialBounds) { return new thisModule.TileHolder(initialBounds) }, new Rectangle(0, 0.1, 1, 0.9)]
+            ['tileHolder', function(initialBounds) { return new lively.TileScripting.TileHolder(initialBounds) }, new Rectangle(0, 0.1, 1, 0.9)]
         ]);
         
         // var panel = new Morph(extent.extentAsRectangle());
@@ -157,6 +156,7 @@ buildView: function (extent) {
 		
 		var delayText = panel.delayText;
 		delayText.autoAccept = true;
+		delayText.setTextString('100');
 		
 		var repeatButton = panel.repeatButton;
 		repeatButton.setLabel("Repeat");
@@ -187,9 +187,9 @@ buildView: function (extent) {
      
 });
    
-Object.extend(thisModule.ScriptEnvironment, {
+Object.extend(lively.TileScripting.ScriptEnvironment, {
     open: function() {
-        var scrEnv = new thisModule.ScriptEnvironment();
+        var scrEnv = new lively.TileScripting.ScriptEnvironment();
         scrEnv.openIn(WorldMorph.current());
         return scrEnv;
     }
@@ -246,7 +246,7 @@ BoxMorph.subclass('lively.TileScripting.TileHolder', {
             this.ensureEmptyDropAreaExists();
         }.bind(this);
         
-        var dropArea = new thisModule.DropArea(this.dropAreaExtent.extentAsRectangle(), cleanUp);
+        var dropArea = new lively.TileScripting.DropArea(this.dropAreaExtent.extentAsRectangle(), cleanUp);
         dropArea.setExtent(pt(this.getExtent().x, dropArea.getExtent().y));
 
         return this.addMorph(dropArea);
@@ -307,14 +307,6 @@ BoxMorph.subclass('lively.TileScripting.TileHolder', {
      }
 });
 
-Object.subclass('Test', {
-
-    a: function($super) { 1 },
-        
-    b: function($super) { 2 }
-
-});
-
 BoxMorph.subclass('lively.TileScripting.Tile', {
 
 	documentation: 'Abstract Tile',
@@ -345,7 +337,7 @@ BoxMorph.subclass('lively.TileScripting.Tile', {
     }
 });
 
-thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
+lively.TileScripting.Tile.subclass('lively.TileScripting.DebugTile', {
     
 	documentation: 'Allows to insert JavaScript',
 
@@ -367,7 +359,7 @@ thisModule.Tile.subclass('lively.TileScripting.DebugTile', {
     }
 });
 
-thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
+lively.TileScripting.Tile.subclass('lively.TileScripting.ObjectTile', {
     
 	documentation: 'Alias to another morph for scripting it',
 
@@ -392,7 +384,7 @@ thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
     
     createAlias: function(morph) {
         this.targetMorph = morph;
-        this.label.setTextString(this.objectId());
+        this.label.setTextString(this.objectName());
         this.addMenuButton();
         this.layout();
     },
@@ -400,6 +392,11 @@ thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
     objectId: function() {
         return this.targetMorph.id();
     },
+	objectName: function() {
+		var name = this.targetMorph.getName();
+		return name && name != '' ? name : this.objectId();
+	},
+
         
     addMenuButton: function() {
         var extent = pt(10,10);
@@ -411,13 +408,13 @@ thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
     
     addFunctionTile: function(methodName) {
         this.menuTrigger && this.menuTrigger.remove();
-        this.opTile = new thisModule.FunctionTile(null, methodName);
+        this.opTile = new lively.TileScripting.FunctionTile(null, methodName);
         this.addMorph(this.opTile);
     },
     
     openMenu: function(btnVal) {
         if (btnVal) return;
-        var menu = new thisModule.TileMenuCreator(this.targetMorph, this).createMenu();
+        var menu = new lively.TileScripting.TileMenuCreator(this.targetMorph, this).createMenu();
         var pos = this.getGlobalTransform().transformPoint(this.menuTrigger.getPosition());
     	menu.openIn(this.world(), pos, false, this.targetMorph.toString());
     },
@@ -431,12 +428,14 @@ thisModule.Tile.subclass('lively.TileScripting.ObjectTile', {
         
 });
 
-thisModule.ObjectTile.findMorph = function(id) {
-    // FIXME arrgh, what about morphs in subworlds?
-    var result;
-    WorldMorph.current().withAllSubmorphsDo(function() { if (this.id() === id) result = this });
-    return result;
-};
+Object.extend(lively.TileScripting.ObjectTile, {
+	findMorph: function(id) {
+		// FIXME arrgh, what about morphs in subworlds?
+		var result;
+		WorldMorph.current().withAllSubmorphsDo(function() { if (this.id() === id) result = this });
+		return result;
+	},
+});
 
 Object.subclass('lively.TileScripting.TileMenuCreator', {
     
@@ -458,6 +457,7 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
     },
     
     methodNamesFor: function(className) {
+		// new lively.TileScripting.TileMenuCreator().methodNamesFor('Morph')
         var allMethods = Class.forName(className).localFunctionNames();
         return allMethods.without.apply(allMethods, this.ignoredMethods);
     },
@@ -504,10 +504,11 @@ Object.subclass('lively.TileScripting.TileMenuCreator', {
                     "nativeWorldBounds", "canvas", "setVisible", "isVisible",
                     "applyFilter", "copy", "getType", "newId", "id", "setId", "setDerivedId", "removeRawNode",
                     "replaceRawNodeChildren", "toMarkupString", "uri", "getLivelyTrait", "setLivelyTrait", "removeLivelyTrait", "getLengthTrait",
-                    "setLengthTrait", "getTrait", "setTrait", "removeTrait", "preparePropertyForSerialization"]
+                    "setLengthTrait", "getTrait", "setTrait", "removeTrait", "preparePropertyForSerialization",
+'createRawNode', 'copySubmorphsFrom', 'copyAttributesFrom', 'copyActiveScriptsFrom', 'copyModelFrom', 'restoreFromDefsNode', 'resolveUriToObject', 'collectAllUsedFills', 'containsWorldPoint', 'bringToFront', 'setSubmorphs', 'indexOfSubmorph', 'getInsertPositionFor', 'visibleSubmorphs', 'validatedWorld', 'makeCurve', 'setTransforms', 'setRotation', 'setScale', 'setScalePoint', 'gettranslation', 'moveOriginBy', 'moveSubmorphs', 'transformSubmorphs', 'animatedPathStep', 'bounceInOwnerBounds', 'bounceInBounds', 'stepByVelocities', 'addAllHandles', 'hasHandles', 'removeAllHandlesExcept', 'makeHandle', 'grid', 'isSnappingToGrid', 'snapToGrid', 'dragMe', 'showAsGrabbed', 'showAsUngrabbed', 'alignToGrid', 'updateGrabHalo', 'grabMorph', 'addMorphAsGrabbed', 'dropMorphsOn', 'carriedMorphsDo', 'shadowMorphsDo', 'unbundleCarriedSelection', 'morphMenuBasicItems', 'subMenuLayoutItems', 'subMenuPropertiesItems', 'subMenuWindowItems', 'subMenuStyleItems', 'subMenuItems', 'shadowCopy', 'stopSteppingScriptNamed', 'stopSteppingScriptNamedAndRemoveFromSubmorphs', 'stopAllStepping', 'addScript', 'addScriptNamed', 'toString', 'signalGeometryChange', 'plugTo', 'activeLayers', 'collectWithLayersIn', 'collectWithoutLayersIn', 'dynamicLayers', 'structuralLayers', 'globalLayers', 'setWithLayers', 'addWithLayer', 'removeWithLayer', 'setWithoutLayers', 'getWithLayers', 'getWithoutLayers', 'getCustomStyle', 'applyCustomStyle', 'acceptsDropOf', 'acceptDrop', 'connectLineMorph', 'deconnectLineMorph', 'getConnectorMorphs', 'isPropertyOnIgnoreList', 'triggerUpdateConnectors', 'updateConnectors', 'connectMorphs', 'getEndPos', 'getGlobalEndPos', 'getGlobalStartPos', 'getStartPos', 'setEndPos', 'setGlobalEndPos', 'setGlobalStartPos', 'setStartPos', 'setupConnector', 'updateArrow', 'updateConnection', 'onrestore', 'restoreShapeRelation', 'restoreSubMorphRelation', 'asTile', 'beClipmorph', 'shallowCopy', 'asLogo', 'getMorphNamed', 'animatedFollowPath']
 });
 
-thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
+lively.TileScripting.Tile.subclass('lively.TileScripting.FunctionTile', {
     
 	documentation: 'Wraps a method of an Object',
 
@@ -527,7 +528,7 @@ thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
     addDropArea: function() {
         this.removeMorph(this.text2.remove());
         
-        var dropArea = new thisModule.DropArea(new Rectangle(0,0,20,15), this.addDropArea.bind(this));
+        var dropArea = new lively.TileScripting.DropArea(new Rectangle(0,0,20,15), this.addDropArea.bind(this));
         this.argumentDropAreas.push(this.addMorph(dropArea));
         
         this.addMorph(this.text2);
@@ -543,15 +544,15 @@ thisModule.Tile.subclass('lively.TileScripting.FunctionTile', {
 
 });
 
-thisModule.Tile.subclass('lively.TileScripting.IfTile', {
+lively.TileScripting.Tile.subclass('lively.TileScripting.IfTile', {
     
 	documentation: 'Conditional Tile',
 
     initialize: function($super, bounds) {
         $super(bounds);
         this.addMorph(new TextMorph(new Rectangle(0,0,20,this.bounds().height), 'if').beLabel());
-        this.testExprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
-        this.exprDropArea = this.addMorph(new thisModule.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
+        this.testExprDropArea = this.addMorph(new lively.TileScripting.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
+        this.exprDropArea = this.addMorph(new lively.TileScripting.DropArea(new Rectangle(0,0,50,this.getExtent().y)));
     },
     
     asJs: function() {
@@ -559,7 +560,7 @@ thisModule.Tile.subclass('lively.TileScripting.IfTile', {
     }
 });
 
-thisModule.Tile.subclass('lively.TileScripting.NumberTile', {
+lively.TileScripting.Tile.subclass('lively.TileScripting.NumberTile', {
     
 	documentation: 'Represents a number',
 
