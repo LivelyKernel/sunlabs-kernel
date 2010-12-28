@@ -970,6 +970,7 @@ lively.ide.BasicBrowser.subclass('lively.ide.SystemBrowser', {
 			lively.ide.ViewSourceCommand,
 			lively.ide.ClassHierarchyViewCommand,
 			lively.ide.AddClassToFileFragmentCommand,
+			lively.ide.AddObjectExtendToFileFragmentCommand,
 			lively.ide.AddLayerToFileFragmentCommand,
 			lively.ide.AddMethodToFileFragmentCommand,
 			lively.ide.RunTestMethodCommand]
@@ -1021,13 +1022,12 @@ ide.BasicBrowser.subclass('lively.ide.LocalCodeBrowser', {
 	initialize: function($super, optWorldProxy) {
 		$super();
 		this.worldProxy = optWorldProxy;
-		this.changeSet = (optWorldProxy && optWorldProxy.getChangeSet()) ||
-		ChangeSet.current();
+		this.changeSet = (optWorldProxy && optWorldProxy.getChangeSet()) || ChangeSet.current();
 		this.evaluate = true;
 	},
 
 	rootNode: function() {
-		ide.startSourceControl();
+		// lively.ide.startSourceControl();
 		if (!this._rootNode)
 			this._rootNode = this.changeSet.asNode(this);
 		return this._rootNode;
@@ -1356,7 +1356,7 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
     },
  
     childNodes: function() {
-		var acceptedTypes = ['klassDef', 'klassExtensionDef', 'functionDef', 'objectDef', 'copDef', /*'propertyDef'*/];
+		var acceptedTypes = ['klassDef', 'klassExtensionDef', 'functionDef', 'objectDef', 'copDef', 'traitDef', /*'propertyDef'*/];
         var browser = this.browser;
         var completeFileFragment = this.target;
         if (!completeFileFragment) return [];
@@ -1368,6 +1368,8 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CompleteFileFragmentNode', { //
 				return lively.ide.FunctionFragmentNode;
 			if (type === 'copDef')
 				return lively.ide.CopFragmentNode;
+			if (type === 'traitDef')
+				return lively.ide.TraitFragmentNode;
 			return lively.ide.ObjectFragmentNode;
 		}
 		return this.target.subElements(2)
@@ -2063,6 +2065,38 @@ lively.ide.FileFragmentNode.subclass('lively.ide.CopMemberFragmentNode', {
 	},
 
 });
+lively.ide.FileFragmentNode.subclass('lively.ide.TraitFragmentNode', {
+
+	isClassNode: true,
+
+	childNodes: function() {
+		return this.target.subElements().collect(function(fileFragment) {
+			return new lively.ide.TraitElemFragmentNode(fileFragment, this.browser, this)
+		}, this);
+ 	},
+
+	evalSource: function(newSource) {
+		try {
+			eval(newSource);
+		} catch (er) {
+			console.warn("error evaluating Trait:" + er);
+			throw(er)
+		}
+		console.log('Successfully evaluated layer');
+        return true;
+    },
+
+});
+lively.ide.FileFragmentNode.subclass('lively.ide.TraitElemFragmentNode', {
+
+    isMemberNode: true,
+	
+	evalSource: function(newSource) {
+		this.parent.evalSource(this.parent.sourceString());
+		return true;
+	},
+
+});
 
 /* Double dispatch Change classes to browser nodes */
 ChangeSet.addMethods({
@@ -2567,6 +2601,24 @@ lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddClassToFileFragmentC
 		},
 
 });
+lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddObjectExtendToFileFragmentCommand', {
+
+	menuName: 'add object extension',
+	targetPane: 'Pane2',
+	nodeType: 'isClassNode',
+
+	interactiveAddTo: function(siblingNode) {
+		var w = this.world(), b = this.browser, self = this;
+		var className = 'SomeObject'
+		self.createAndAddSource(siblingNode, className);
+		this.selectStringInSourcePane(className);
+	},
+
+	createSource: function(className) {
+		return Strings.format('Object.extend(%s, {\n\tm1: function() {},\n});', className);
+	},
+
+});
 lively.ide.AddToFileFragmentCommand.subclass('lively.ide.AddLayerToFileFragmentCommand', {
 
 	menuName: 'add layer',
@@ -2888,7 +2940,7 @@ CodeParser.subclass('JsParser', {
     debugMode: false,
 
     ometaRules: [/*'blankLine',*/ 'comment',
-               'klassDef', 'objectDef', 'klassExtensionDef', 'copDef', 'propertyDef',
+               'klassDef', 'objectDef', 'klassExtensionDef', 'traitDef', 'copDef', 'propertyDef',
                'functionDef', 'unknown'],
     
     parseClass: function() {

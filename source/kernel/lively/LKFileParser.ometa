@@ -324,7 +324,16 @@ copSubElement =
 copRefinement = 
 	( "refineClass" | "refineObject" ):sel '(' klass:n restKlassDef:spec ')'
 	-> { {name: n, refineSelector: sel, subElementSpec: spec} },
+traitDef =
+	pos:p "Trait(" klassName:n restKlassDef:spec ")" spacesNoNl nl* traitSubElement*:subs spaces defEnd
+	-> { this._fragment(n, 'traitDef', p, this.pos()-1, spec.classElems.concat(subs)) },
+traitSubElement =
+	pos:p spaces '.' traitApplication:spec
+	-> { this._fragment(spec.name, 'traitSubElement', p, this.pos()-1, spec.subElementSpec.classElems) },
 
+traitApplication = 
+	"applyTo" '(' klass:n restKlassDef:spec ')'
+	-> { {name: ' -> ' + n, subElementSpec: spec} },
 
 
     unknown = pos:p somethingBigRelated defEnd -> { this._fragment(null, 'unknown', p, this.pos()-1) }
