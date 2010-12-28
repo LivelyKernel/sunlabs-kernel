@@ -26,7 +26,7 @@
  * Main.js.  System startup and demo loading.
  */
 
-module('lively.Main').requires('lively.persistence.Serializer').toRun(function() {
+module('lively.Main').requires("lively.persistence.Serializer").toRun(function() {
 
 Object.subclass('lively.Main.WorldDataAccessor',
 'initializing', {
@@ -50,6 +50,14 @@ Object.extend(lively.Main.WorldDataAccessor, {
 			return new lively.Main.NewWorldData(canvas);
 		}
 
+		if (Config.useOfflineStorage) module("lively.Persistence").load(true);
+		var os = Global.OfflineStorage && new OfflineStorage();
+		if (os && OfflineStorage.available() && os.isOfflineStorageEnabled() && os.shouldAutoLoad()) {
+			var json = os.getLocalJSONData();
+			changeSet = os.deserializeChangeSetFromLocalStorage();
+			return new lively.Main.JSONWorldData(canvas, json, changeSet);
+		}
+
 		var jsonNode = doc.getElementById(lively.persistence.Serializer.jsonWorldId);
 		if (jsonNode) {
 			changeSet = lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
@@ -62,13 +70,6 @@ Object.extend(lively.Main.WorldDataAccessor, {
 		if (worldNode) {
 			changeSet = ChangeSet.fromWorld(worldNode);
 			return new lively.Main.XMLWorldData(canvas, worldNode, changeSet);
-		}
-
-		var os = Global.OfflineStorage && new OfflineStorage();
-		if (os && OfflineStorage.available() && os.isOfflineStorageEnabled() && os.shouldAutoLoad()) {
-			var json = os.getLocalJSONData();
-			changeSet = os.deserializeChangeSetFromLocalStorage();
-			return new lively.Main.JSONWorldData(canvas, json, changeSet);
 		}
 
 		var realCanvas = doc.getElementById('lively.canvas');
