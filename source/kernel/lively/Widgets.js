@@ -2227,13 +2227,13 @@ MenuItem.subclass("SubMenuItem", {
     },
     
     showMenu: function(evt, originalMenu) {
-        var target = originalMenu.targetMorph;
-        var menu = this.menu || new MenuMorph(this.getList(evt, target), target, originalMenu);
-        var ownIndex = originalMenu.items.indexOf(this);
-        var pos = pt(originalMenu.getPosition().x + originalMenu.listMorph.getExtent().x,
-                     originalMenu.getPosition().y + originalMenu.listMorph.submorphs[ownIndex].getPosition().y);
-        menu.openIn(originalMenu.owner, pos, false); 
-        this.menu = menu;
+		var target = originalMenu.targetMorph,
+			menu = this.menu || new MenuMorph(this.getList(evt, target), target, originalMenu),
+			ownIndex = originalMenu.items.indexOf(this),
+			pos = pt(originalMenu.getPosition().x + originalMenu.listMorph.getExtent().x,
+				originalMenu.getPosition().y + originalMenu.listMorph.submorphs[ownIndex].getPosition().y);
+		menu.openIn(originalMenu.owner, pos, false); 
+		this.menu = menu;
     },
     
     closeMenu: function(evt, originalMenu) {
@@ -2244,7 +2244,6 @@ MenuItem.subclass("SubMenuItem", {
 });
 
 Morph.subclass("MenuMorph", 
-
 'style properties', {
 	listStyle: { 
 		borderColor: Color.darkGray,
@@ -2271,7 +2270,8 @@ Morph.subclass("MenuMorph",
 
 	suppressHandles: true,
 	focusHaloBorderWidth: 0,
-},'intialize',{	
+},
+'intialize',{
 	initialize: function($super, items, targetMorph, ownerMenu) {
 		// items is an array of menuItems, each of which is an array of the form
 		// 	[itemName, target, functionName, parameterIfAny]
@@ -2310,12 +2310,24 @@ Morph.subclass("MenuMorph",
 	},
 
 	onDeserialize: function() {
-		if (this.listMorph) {
+		if (this.listMorph)
 			this.listMorph.relayMouseEvents(this);
-		}
 	},
 
-},'menu',{	
+},
+'accessing', {
+	selectedItem: function() {
+		if (!this.listMorph) return;
+		var item = this.items[this.listMorph.selectedLineNo];
+		return item;
+	},
+	selectedItemAt: function(idx) {
+		if (!this.listMorph) return;
+		this.listMorph.selectLineAt(idx);
+	},
+
+},
+'menu creation', {
 	addItem: function(item, index) {
 		var item = this.addPseudoMorph(this.checkItem(item));
 		if (!index && (index != 0)) { this.items.push(item); return }
@@ -2392,7 +2404,26 @@ Morph.subclass("MenuMorph",
 		return maxWidth*proto.fontSize/2 + protoPadding.left() + protoPadding.right();
 	},
 
-},'morphic',{	
+},
+'menu control', {
+	showSubMenuAt: function(index, evt) {
+		var item = this.items[index];
+		if (!item) return;
+		this.submenuItems().without(item).invoke('closeMenu');
+		if (!item.isSubMenuItem) return;
+		if (!item.menu) item.showMenu(evt, this);
+		item.menu.selectedItemAt(0);
+		if (item.menu.handOverMenu(evt.hand)) item.menu.setMouseFocus(evt);
+	},
+	backToOwnerMenu: function(evt) {
+		if (!this.ownerMenu) return;
+		this.remove();
+		if (this.selectedItem()) this.selectedItem().menu = null;
+		this.ownerMenu.setMouseFocus(evt);
+	},
+
+},
+'morphic',{	
 	openIn: function(parentMorph, loc, remainOnScreen, captionIfAny, optCaptionClickAction) { 
 		if (this.items.length == 0) return;
 
@@ -2425,6 +2456,16 @@ Morph.subclass("MenuMorph",
 						evt.stop();
 					return true;
 				}
+				case Event.KEY_RIGHT: {
+					if (menu.showSubMenuAt(this.selectedLineNo, evt)) 
+						evt.stop();
+					return true;
+				}
+				case Event.KEY_LEFT: {
+					if (menu.backToOwnerMenu(evt)) 
+						evt.stop();
+					return true;
+				}
 			}
 		};
 
@@ -2454,12 +2495,15 @@ Morph.subclass("MenuMorph",
 		}
 
 		// If menu and/or caption is off screen, move it back so it is visible
-		var menuRect = this.bounds(),  //includes caption if any
-			bounds = (this.world() || WorldMorph.current()).visibleBounds(),
-			visibleRect = menuRect.intersection(bounds),
-			delta = visibleRect.topLeft().subPt(menuRect.topLeft());  // delta to fix topLeft off screen
-		delta = delta.addPt(visibleRect.bottomRight().subPt(menuRect.bottomRight()));  // same for bottomRight
-		if (delta.dist(pt(0, 0)) > 1) this.moveBy(delta);  // move if significant
+		var bounds = (this.world() || WorldMorph.current()).visibleBounds(),
+			menuRect = this.bounds(),  //includes caption if any
+			visibleRect = menuRect.intersection(bounds);
+		// move so that bottomRight is on screen
+		this.align(menuRect.bottomRight(), visibleRect.bottomRight());
+		menuRect = this.bounds();
+		visibleRect = menuRect.intersection(bounds);
+		// move so that topLeft is on screen
+		this.align(menuRect.topLeft(), visibleRect.topLeft());
 
 		this.listMorph.relayMouseEvents(this);
 		// Note menu gets mouse focus by default if pop-up.  If you don't want it, you'll have to null it
@@ -2541,18 +2585,13 @@ Morph.subclass("MenuMorph",
 			this.listMorph.highlightItem(evt, -1, false);
 			this.setMouseFocusOverOwnerMenu(evt);
 			return;	
-			}
+		}
 
 		var index = this.selectedItemIndex(evt);
 		if (index === null) return;
 		this.listMorph.highlightItem(evt, index, false);
-		
-		var item = this.items[index];
-		this.submenuItems().without(item).invoke('closeMenu');
-		if (! item.isSubMenuItem) return;
-		if (! item.menu) item.showMenu(evt, this);
-			else if (item.menu.handOverMenu(evt.hand)) item.menu.setMouseFocus(evt);
-		
+
+		this.showSubMenuAt(index, evt);
 	},
 	
 	// is not called
@@ -2578,6 +2617,13 @@ Morph.subclass("MenuMorph",
 		item.invoke(evt, this.targetMorph);
 	}
 
+});
+Object.extend(MenuMorph, {
+	openAtHand: function(items, caption, optTarget) {
+		var world = WorldMorph.current(),
+			menu = new this(items, optTarget);
+		menu.openIn(world, world.firstHand().getPosition(), false, caption); 
+	},
 });
 
 BoxMorph.subclass("SliderMorph", {
