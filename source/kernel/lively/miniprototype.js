@@ -303,8 +303,8 @@ var Enumerable = {
   },
 
   include: function include(object) {
-    if (Object.isFunction(this.indexOf))
-      if (this.indexOf(object) != -1) return true;
+    if (typeof this.indexOf == 'function')
+      return this.indexOf(object) != -1;
 
     var found = false;
     this.each(function(value) {
@@ -522,14 +522,18 @@ Object.extend(Array.prototype, {
   pushAt: function(item, index) {
     this.splice(index, 0, item);
   },
-	nestedDelay: function(iterator, waitSecs, endFunc) {
+  pushIfNotIncluded: function(item) {
+	if (!this.include(item)) this.push(item);
+  },
+
+	nestedDelay: function(iterator, waitSecs, endFunc, context) {
 		endFunc = endFunc || function() {};
 		return this.reverse().inject(endFunc, function(nextFunc, ea, idx) {
 			return function() {
-				iterator(ea, idx)
-				nextFunc.delay(waitSecs)
+				iterator.call(context || Global, ea, idx);
+				nextFunc.delay(waitSecs);
 			}
-		})
+		})();
 	},
 
 });
