@@ -331,7 +331,8 @@ var LivelyLoader = {
 		// FIXME somehow solve the canvas loading issue...
 		var url = document.URL,
 			optimizedLoading = !url.match('quickLoad=false') && !url.match('!svn') &&
-				url.match('webwerkstatt') && String(document.location).match('lively-kernel.org') && !isCanvas;
+				(url.match('webwerkstatt') || url.match('lively-wiki')) &&
+				String(document.location).match('lively-kernel.org') && !isCanvas;
 		if (optimizedLoading) {
 			console.log('optimized loading enabled')
 			var hash = JSLoader.getSync(this.codeBase + 'generated/combinedModulesHash.txt')
