@@ -116,7 +116,7 @@ Failer.prototype.used = false
 
 // the OMeta "class" and basic functionality
 
-OMeta = {
+Global.OMeta = {
   _apply: function(rule) {
     var memoRec = this.input.memo[rule]
     if (memoRec == undefined) {

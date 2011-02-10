@@ -210,18 +210,19 @@ tempnam.n = 0;
 
 // Array extensions
 Global.printOn = function ometaPrintOn(objOrArray, ws) {
-    if (Object.isArray(objOrArray)) {
-        ws.nextPutAll("[")
-         for (var idx = 0; idx < objOrArray.length; idx++) {
-           if (idx > 0)
-             ws.nextPutAll(", ")
-           printOn(objOrArray[idx], ws);
-         }
-         ws.nextPutAll("]")
-    } else {
-        ws.nextPutAll(objOrArray ? objOrArray.toString() : "undefined")
-    }
+	if (Object.isArray(objOrArray)) {
+		ws.nextPutAll("[")
+		for (var idx = 0; idx < objOrArray.length; idx++) {
+			if (idx > 0)
+			ws.nextPutAll(", ")
+			printOn(objOrArray[idx], ws);
+		}
+		ws.nextPutAll("]")
+	} else {
+		ws.nextPutAll(objOrArray !== 0 && !objOrArray ? String(objOrArray) : objOrArray.toString())
+	}
 }
+
 Array.prototype.toString = function() { var ws = "".writeStream(); Global.printOn(this,ws); return ws.contents() }
 
 // delegation
