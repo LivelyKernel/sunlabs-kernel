@@ -1,3 +1,26 @@
+/*
+ * Copyright (c) 2008-2011 Hasso Plattner Institute
+ *
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
 module('cop.Flatten').requires('cop.Layers').toRun(function() {
 
 Object.subclass('MethodManipulator',
@@ -7,24 +30,16 @@ Object.subclass('MethodManipulator',
 	},
 },
 'string manipulation', {
-	removeTrailingWhitespace: function(string) {
-		while (string.length > 0 && /\s|\n|\r/.test(string[string.length - 1]))
-			string = string.substring(0, string.length - 1);
-		return string;
-	},
-
-	removeLeadingWhitespace: function(string) {
-		return string.replace(/^[\n\s]*(.*)/, '$1');
-	},
 	
 	removeSurroundingWhitespaces: function(str) {
-		return this.removeLeadingWhitespace(this.removeTrailingWhitespace(str));
+		return Strings.removeSurroundingWhitespaces(str);
 	},
 
 	removeSpacesAfterFunctionKeyword: function(methodString) {
 		return methodString.replace(/\s*(function)\s*(\(.*)/, '$1$2');
 	},
-
+},
+'method accessing', {
 	methodBody: function(methodString) {
 		var result = methodString
 		result = result.substring(result.indexOf('{') + 1, result.length);
@@ -47,7 +62,8 @@ Object.subclass('MethodManipulator',
 	firstParameter: function(methodString) {
 		return this.parameterNames(methodString)[0] || null
 	},
-
+},
+'method manipulation', {
 	removeFirstParameter: function(methodString) {
 		var params = this.parameterNames(methodString);
 		params.shift(); // remove first
@@ -55,9 +71,9 @@ Object.subclass('MethodManipulator',
 	},
 
 	addFirstParameter: function(methodString, param) {
-			var params = this.parameterNames(methodString);
-			params.unshift(param); // remove first
-			return methodString.replace(this.parameterRegex, 'function(' + params.join(', ') + ')');
+		var params = this.parameterNames(methodString);
+		params.unshift(param); // remove first
+		return methodString.replace(this.parameterRegex, 'function(' + params.join(', ') + ')');
 	},
 
 	inlineProceed: function(layerSrc, originalSrc, proceedVarName) {
@@ -137,14 +153,15 @@ Layer.addMethods({
 	},
 
 	generateMethodReplacement: function(object, methodName) {
-		var methodManipulator = new MethodManipulator();
-		var methodString = this.layerDefOfProperty(object, methodName);
+		var methodManipulator = new MethodManipulator(),
+			methodString = this.layerDefOfProperty(object, methodName);
 		if (!methodString)
-			throw new Error('method ' + object.type ? object.type : object + '>>' + methodName + ' not layered in ' + this);
-		var originalMethodString = object[methodName].getOriginal().toString();
+			throw new Error('method ' + object.type ? object.type : object +
+				'>>' + methodName + ' not layered in ' + this);
 
-		var proceedParameter = methodManipulator.firstParameter(methodString);
-		methodString = methodManipulator.inlineProceed(methodString, originalMethodString, proceedParameter);
+		var originalMethodString = object[methodName].getOriginal().toString(),
+			proceedName = 'cop.proceed';
+		methodString = methodManipulator.inlineProceed(methodString, originalMethodString, proceedName);
 
 		return Strings.format('%s: %s,', methodName, methodString);
 	},

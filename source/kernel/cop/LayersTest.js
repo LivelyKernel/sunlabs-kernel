@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2009-2010 Hasso-Plattner-Institut
+ * Copyright (c) 2008-2011 Hasso Plattner Institute
+ *
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -1751,6 +1752,44 @@ TestCase.subclass("cop.UninstallLayerTest", {
 		this.assert(obj1.m2 === originalM2, "obj2.m2 is still wrapped");
 			
 	}
-})});
+});
+TestCase.subclass('cop.LayersTest.UnrefineObjectTest', {
+
+	testUntrefineObject: function() {
+		var object = {foo: function() {return 3 }}
+
+		var layer = new Layer("TestLayer")
+		layer.refineObject(object, {
+			foo: function() {
+				return cop.proceed() + 4
+			}
+		})
+		
+		this.assert(cop.getLayerDefinitionForObject(layer, object), "no layer definition")
+		layer.unrefineObject(object);	
+		this.assert(cop.getLayerDefinitionForObject(layer, object) == undefined, "layer definition still there")
+
+	},
+	testUntrefineClass: function() {
+		var klass = Object.subclass("CopDummyUnrefineClass",{
+			foo: function() {return 3 }
+		})
+
+		var layer = new Layer("TestLayer")
+		layer.refineClass(klass, {
+			foo: function() {
+				return cop.proceed() + 4
+			}
+		})
+		
+		this.assert(cop.getLayerDefinitionForObject(layer, klass.prototype), "no layer definition")
+		layer.unrefineClass(klass);	
+		this.assert(cop.getLayerDefinitionForObject(layer, klass.prototype) == undefined, "layer definition still there")
+
+	},
+});
+
+
+});
 console.log("loaded LayersTest.js");
 

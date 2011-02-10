@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2009-2010 Hasso-Plattner-Institut
+ * Copyright (c) 2008-2011 Hasso Plattner Institute
+ *
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -70,20 +71,9 @@ cop.create('WorkspaceControlLayer')
 			}
 		},
 
-		askForNewTitle: function() {
-			var self = this;
-			WorldMorph.current().prompt('new name', function(input) {
-				self.setTitle(input);
-			});	
-		},
-
 		morphMenu: function(evt) {
 			var menu = cop.proceed(evt);
 			if (menu) {
-				menu.addItem([
-					"change title",   this, 
-					'askForNewTitle']);
-
 				menu.addItem([
 					(this.isWorkspaceLayerEnabled() ? "disable" : "enable") +
 					" workspace",   this, 

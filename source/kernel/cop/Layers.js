@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2009-2010 Hasso-Plattner-Institut
+ * Copyright (c) 2008-2011 Hasso Plattner Institute
+ *
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -423,7 +424,7 @@ Object.extend(cop, {
 		cop.LayerStack.push({withLayers: layers});
 		// console.log("callee: " + cop.withLayers.caller)
 		try {
-			func();
+			return func();
 		} finally {
 			cop.LayerStack.pop();
 		}
@@ -432,7 +433,7 @@ Object.extend(cop, {
 	withoutLayers: function withoutLayers(layers, func) {
 		cop.LayerStack.push({withoutLayers: layers});
 		try {
-			func();
+			return func();
 		} finally {
 			cop.LayerStack.pop();
 		}
@@ -573,7 +574,17 @@ Object.subclass("Layer", {
 	refineObject: function(obj, methods) {
 		cop.layerObject(this, obj, methods);
 		return this
-	}
+	},
+
+	unrefineObject: function(obj) {
+		var id = obj._layer_object_id;
+		if (id !== undefined)
+			delete this[id]
+	},
+
+	unrefineClass: function(classObj) {
+		this.unrefineObject(classObj.prototype)
+	},
 	
 });
 

@@ -1,6 +1,6 @@
 
 /* Code loader. Appends file to DOM. */
-var Loader = {
+var JSLoader = {
     
     loadJs: function(url, onLoadCb) {
         
