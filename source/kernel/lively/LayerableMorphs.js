@@ -23,7 +23,7 @@
 
 // The owner <-> submorph relationships of morphs can be used to propagate layer activations 
 
-module('lively.LayerableMorphs').requires('cop.Layers').toRun(function() {
+module('lively.LayerableMorphs').requires('lively.Core', 'cop.Layers').toRun(function() {
 
 Morph.addMethods(LayerableObjectTrait);
 Morph.prototype.lookupLayersIn = ["owner"];
