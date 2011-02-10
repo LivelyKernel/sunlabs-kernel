@@ -1,4 +1,4 @@
-module('apps.Journal').requires('cop.Layers', 'apps.DateFormat').toRun(function() {
+module('apps.Journal').requires('cop.Layers', 'apps.paper', 'apps.DateFormat').toRun(function() {
 
 cop.create('JournalEntryLayer')
 .refineClass(TextMorph, {
@@ -108,7 +108,7 @@ BoxMorph.subclass('JournalEntryContainer', {
 	layoutManager: new VerticalLayout(),
 	suppressGrabbing: true,
 
-	intialize: function(bounds) {
+	intialize: function($super, bounds) {
 		$super(bounds);
 		this.setupStyle();
 	},
@@ -116,15 +116,22 @@ BoxMorph.subclass('JournalEntryContainer', {
 	setupStyle: function() {
 		this.layoutManager = new VerticalLayout();
 		this.applyStyle(this.style);
-	},	
+	},
 
-	sortEntries: function($super) {
+	entries: function() { return this.submorphs.clone() },
+	entryTitles: function() { return this.entries().invoke('getTitle') },
+	entryMorphTitled: function(title) {
+		var idx;
+		this.entryTitles().detect(function(str, i) { idx = i; return str.include(title) })
+		return idx !== undefined ? this.entries()[idx] : null
+	},
+	sortEntries: function() {
 		var sortedEntries = this.submorphs.clone();
 		sortedEntries.sort(function(a,b) {return a.compare(b)});
 		this.orderMorphs(sortedEntries)
 	},
 
-	reverseSortEntries: function($super) {
+	reverseSortEntries: function() {
 		var sortedEntries = this.submorphs.clone();
 		sortedEntries.sort(function(a,b) {return a.compare(b)});
 		sortedEntries.reverse();
@@ -133,8 +140,6 @@ BoxMorph.subclass('JournalEntryContainer', {
 
 	relayout: function($super) {
 		$super();
-
-
 	},
 
 	adjustToSubmorphBounds: function() {
@@ -155,20 +160,21 @@ BoxMorph.subclass('JournalEntryContainer', {
 })
 
 
-Morph.subclass('JournalEntryMorph', {
+ParagraphContainerMorph.subclass('JournalEntryMorph', {
 
-	layoutManager: new VerticalLayout(),
+	layoutManager: new LayoutManager(),  // new VerticalLayout()
 
 	padding: new Rectangle(10,10,10,10),
 	margin: new Rectangle(5,5,5,5),
 
+	withLayers: [ParagraphLayer, JournalEntryLayer],
+
 	initialize: function($super, bounds) {
 		bounds = bounds || new Rectangle(0,0, 900, 150);
-		$super(new lively.scene.Rectangle(bounds));
+		$super(bounds);
 		this.ensureDateText();
 		this.setupStyle();
 		this.setupConnections();
-		this.setWithLayers([JournalEntryLayer])
 	},
 
 	setupStyle: function() {
@@ -177,17 +183,19 @@ Morph.subclass('JournalEntryMorph', {
 			borderColor: Color.rgb(200,200,220),
 			fill: Color.rgb(245,245,250),
 			fillOpacity: 1, 
-			borderRadius: 10}),
+			borderRadius: 10});
 
 		this.submorphs.each(function(ea) {
 			ea.suppressGrabbing = true;
 			
 			// fix border width issue
-			if (ea.getBorderWidth() == 0) 
+			if (ea.getBorderWidth() === 0) 
 				ea.setBorderWidth(0)
 		})
 	},
-	
+
+	getTitle: function() { return this.findDateText().textString },
+
 	visibleSubmorphs: function($super) {
 		return $super().reject(function(ea){ return ea instanceof HandleMorph})
 	},
@@ -262,7 +270,7 @@ Morph.subclass('JournalEntryMorph', {
 
 	findDateText: function() {
 		return this.submorphs.detect(function(ea) {
-			return /20[0-9][0-9]-[0-9][0-9]-[0-9][0-9].*/.match(ea.textString)
+			return (/20[0-9][0-9]-[0-9][0-9]-[0-9][0-9].*/).match(ea.textString)
 		})
 	},
 
@@ -276,7 +284,7 @@ Morph.subclass('JournalEntryMorph', {
 			return;
 		bounds = bounds.outsetByRect(this.padding)
 		var oldExtent = this.getExtent();
-		var newExtent = 	bounds.extent();
+		var newExtent = bounds.extent();
 
 		if (!oldExtent.eqPt(newExtent)) {
 			this.setExtent(newExtent)

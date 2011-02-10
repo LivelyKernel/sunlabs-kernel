@@ -1,4 +1,76 @@
-module('apps.paper').requires('cop.Layers', 'lively.SyntaxHighlighting', 'lively.LayerableMorphs', 'lively.SpellChecker').toRun(function() {
+module('apps.paper').requires('cop.Layers', 'lively.ide.SyntaxHighlighting', 'lively.LayerableMorphs', 'lively.SpellChecker').toRun(function() {
+
+cop.create('ParagraphLayer').refineClass(TextMorph, {
+	splitInOwer: function(evt) {
+		if(!this.owner)
+			return;
+		var pos = this.getCursorPos();
+		
+		var morph2 = this.duplicate();
+		morph2.setSelectionRange(0, pos);
+		morph2.replaceSelectionWith("")
+		// hackhackhack
+		if (morph2.textString.length === 0)
+			morph2.setTextString(" ");
+
+		this.owner.addMorph(morph2);
+		morph2.moveBy(pt(0,5)); // move it a bit down, because the paper morph sorts the morphs according to their position
+		morph2.setSelectionRange(0, 0);
+
+		this.setSelectionRange(pos, this.textString.size());
+		this.replaceSelectionWith("")
+
+		// hackhackhack
+		if (this.textString.length == 0)
+			this.setTextString(" ");
+
+		morph2.requestKeyboardFocus(evt.hand)		
+		
+		// at a position....
+	},
+
+	joinInOwner: function(evt) {
+			var morphs = this.getPaperMorph().contentMorphs()
+			var pos = morphs.indexOf(this)
+			if (pos > 0) {
+				var prev = morphs[pos - 1]
+				oldPos = prev.textString.length;
+				prev.setTextString(prev.textString + this.textString);
+				this.remove();
+				prev.setSelectionRange(oldPos, oldPos);
+				prev.requestKeyboardFocus(evt.hand)		
+			}
+	},
+
+// override the cmd + enter behavior
+	onKeyDown: function(evt) {		
+		var result;		 
+		try {		
+			if ((evt.getKeyCode() == 8) && (this.selectionRange[0] == 0) && (this.selectionRange[1] == -1)) {
+					this.joinInOwner(evt)
+			};
+ 
+			if (evt.isCtrlDown() && (evt.getKeyCode() == 13)) {
+					this.splitInOwer(evt);
+					// console.log("ctrl on key down" + evt)
+				return
+			}
+
+			result = cop.proceed(evt);
+
+
+ 		} catch(e) {
+			this.world().logError(e)
+			return true;
+		}
+		return result
+	},
+
+	getPaperMorph: function() {
+		return this.ownerChain().detect(function(ea) { return ea.isPaperMorph });
+	},
+
+});
 
 BoxMorph.subclass('ParagraphContainerMorph', 
 'intialize', {
@@ -9,21 +81,27 @@ BoxMorph.subclass('ParagraphContainerMorph',
 	textMargin: 5,
 	textStyle: {fill: null, borderWidth: 0.25, fontSize: 16, suppressHandles: true, suppressGrabbing: true},
 
+	withLayers: [ParagraphLayer],
+
+	initialize: function($super, bounds) {
+		$super(bounds);
+	},
+
 }, 'default' ,{
 
 	contentMorphs: function() {
-		var others = this.halos;
+		var others = this.halos || [];
 		others = others.concat(this.submorphs.select(function(m) { return m.isEpimorph }));
 		var morphs = Array.prototype.without.apply(this.submorphs, others);
 		return morphs.sort(function(a, b) { return a.bounds().top() - b.bounds().top() });
 	},
 
 },'helper',{
-	initialInsertPos: function() { return pt(this.margin, 30) },
+	initialInsertPos: function() { return pt(10, 10) },
 
 	bottomInsertPos: function() {
 		var morphs = this.contentMorphs(); // order by pos y
-		if (morphs.length == 0) return this.initialInsertPos();
+		if (morphs.length === 0) return this.initialInsertPos();
 		var m = morphs.last();
 		return m.getPosition().addPt(m.getExtent().withX(0));
 	},
@@ -66,6 +144,15 @@ BoxMorph.subclass('ParagraphContainerMorph',
 		})
 		return words
 	},
+	countCharacters: function() {
+		var characters = 0;
+		this.withAllSubmorphsDo(function() {
+			if (this.textString)
+				characters += this.textString.length
+		})
+		return characters
+	},
+
 
 	countWordsInTextMorph: function(morph) {
 		var words = this.countWords();
@@ -151,16 +238,17 @@ ParagraphContainerMorph.subclass('PaperMorph',
 	},
 
 	save: function() {
-		var w = this.world()
+		var w = this.world(),
+			url;
 		if (!this.fileLocation) {
 			w.alert('please set file location of paper morph first');
-			return
+			return;
 		}
 		try {
-			var url = new URL(this.fileLocation);
+			url = new URL(this.fileLocation);
 		} catch(e) {
 			w.alert('file location of paper morph not valid');
-			return
+			return;
 		}
 		var writer = new WebResource(url);
 		lively.bindings.connect(writer, 'status', w, 'setStatusMessage', {
@@ -193,7 +281,7 @@ ParagraphContainerMorph.subclass('PaperMorph',
 		var halo = new ButtonMorph(bounds);
 		halo.applyStyle(this.haloStyle);
 		halo.setLabel(label);
-		lively.bindings.connect(halo, 'fire', this, name);
+		lively.bindings.connect(halo, 'fire', this, name, {converter: function(v) { return undefined}});
 		this.addMorph(halo);
 		this.halos.push(halo);
 		return halo;
@@ -213,10 +301,10 @@ ParagraphContainerMorph.subclass('PaperMorph',
 // layers
 
 cop.create('PaperMorphLayer')
+.refineClass(ImageMorph, {
+	laTeXConverterRule: function() { return "$Image"}
+})
 .refineClass(TextMorph, {
-	getPaperMorph: function() {
-		return this.ownerChain().detect(function(ea) { return ea.isPaperMorph });
-	},
 
 	getUndoHistory: function() {
 		// override method in UndoLayer
@@ -225,64 +313,7 @@ cop.create('PaperMorphLayer')
 		// This may be because until now I only used layers to refine behavior defined in the base layer 
 		// but not in other layers.
 		return this.getPaperMorph().getUndoHistory()
-	},
-
-
-	splitInOwer: function(evt) {
-		if(!this.owner)
-			return;
-		var pos = this.getCursorPos();
-		
-		var morph2 = this.duplicate();
-		morph2.setSelectionRange(0, pos);
-		morph2.replaceSelectionWith("")
-		// hackhackhack
-		if (morph2.textString.length == 0)
-			morph2.setTextString(" ");
-
-		this.owner.addMorph(morph2);
-		morph2.moveBy(pt(0,5)); // move it a bit down, because the paper morph sorts the morphs according to their position
-		morph2.setSelectionRange(0, 0);
-
-		this.setSelectionRange(pos, this.textString.size());
-		this.replaceSelectionWith("")
-
-		// hackhackhack
-		if (this.textString.length == 0)
-			this.setTextString(" ");
-
-		morph2.requestKeyboardFocus(evt.hand)		
-		
-		// at a position....
-	},
-
-	joinInOwner: function(evt) {
-			var morphs = this.getPaperMorph().contentMorphs()
-			var pos = morphs.indexOf(this)
-			if (pos > 0) {
-				var prev = morphs[pos - 1]
-				oldPos = prev.textString.length;
-				prev.setTextString(prev.textString + this.textString);
-				this.remove();
-				prev.setSelectionRange(oldPos, oldPos);
-				prev.requestKeyboardFocus(evt.hand)		
-			}
-	},
-
-	// override the cmd + enter behavior
-	onKeyDown: function(evt) {
-		// console.log("on key press" + evt)
-		if ((evt.getKeyCode() == 8) && (this.selectionRange[0] == 0) && (this.selectionRange[1] == -1)) {
-				this.joinInOwner(evt)
-		};
-
-		if (evt.isCtrlDown() && (evt.getKeyCode() == 13)) {
-				this.splitInOwer(evt);
-				// console.log("ctrl on key down" + evt)
-			return
-		}
-		return cop.proceed(evt);
-	},
+	},	
 
 	doSave: function() {
 		this.getPaperMorph().save()
@@ -334,13 +365,10 @@ cop.create('PaperMorphLayer')
 
 
 
-
-
-
 });
 PaperMorph.addMethods(
 'contextJS', {
-	withLayers: [PaperMorphLayer, SpellCheckerLayer]
+	withLayers: [ParagraphLayer, PaperMorphLayer, SpellCheckerLayer]
 });
 cop.create('PaperMorphMenuLayer')
 .beGlobal()
@@ -542,6 +570,13 @@ cop.create('TeXLayer')
 });
 
 LaTeXConverter.addMethods({
+	$Image: {
+		html: function(imageMorph) { return Strings.format('<img src="%s" width="%s" height="%s"></img>\n',
+			imageMorph.image.getURL(), imageMorph.getExtent().x, imageMorph.getExtent().y) },
+		converter: function(imageMorph) { return Strings.format('%% image',imageMorph.image.getURL()) },
+		style: {suppressGrabbing: true},
+	},
+
 	$Paragraph: {
 		html: function(textMorph) { return Strings.format('<p>%s</p>\n', textMorph.getHTMLString()) },
 		converter: function(textMorph) { return Strings.format('%s\n\n', textMorph.textString) },
