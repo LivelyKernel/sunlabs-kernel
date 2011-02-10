@@ -130,6 +130,8 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerTest',
 
 
 
+
+
 })
 
 
@@ -139,7 +141,6 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 		$super();
 		this.serializer = new ObjectGraphLinearizer();
 	},
-
 	createAndAddDummyPlugin: function() {
 		var plugin = new ObjectLinearizerPlugin();
 		this.serializer.addPlugin(plugin);
@@ -151,8 +152,7 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 },
 'testing', {
 	test01RecreationPlugin: function() {
-		var sut = this.createAndAddDummyPlugin()
-		var obj = {foo: 23};
+		var sut = this.createAndAddDummyPlugin(), obj = {foo: 23};
 		sut.deserializeObj = function(registeredObj) { return {bar: registeredObj.foo * 2} };
 		var result = this.serializeAndDeserialize(obj);
 		this.assertEquals(23, result.foo);
@@ -225,10 +225,10 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 			morph2 = Morph.makeRectangle(0,0, 50, 50);
 		morph1.addMorph(morph2);
 		this.serializer = ObjectGraphLinearizer.forLively(); // plugin creation should happen there
-		var string = this.serializer.serialize(morph1);
+		var string = this.serializer.serialize(morph1),
 			jso = JSON.parse(string),
 			result = lively.persistence.Serializer.sourceModulesIn(jso);
-		this.assertEqualState(['Global.lively.Core', 'Global', 'Global.lively.scene'], result);
+		this.assertEqualState(['Global.lively.oldCore.Morphs', 'Global', 'Global.lively.scene'], result);
 	},
 
 	testDoNotSerializeFoundInClassHierarchy: function() {
@@ -289,8 +289,13 @@ TestCase.subclass('lively.persistence.Tests.ObjectGraphLinearizerPluginTest',
 		this.assert(result.regexp instanceof RegExp, 'not a regular expression')
 		this.assert(result.regexp.test('aab'), 'regular expression not working')
 	},
-
-
+	testSerializeClosure: function() {
+		this.serializer = ObjectGraphLinearizer.forLively(); // plugin creation should happen there
+		var obj = {foo: lively.Closure.fromFunction(function() { return y + 3 }, {y: 2}).recreateFunc()},
+			result = this.serializeAndDeserialize(obj);
+		this.assert(result.foo, 'function not deserialized')
+		this.assertEquals(5, result.foo(), 'closure not working')
+	},
 
 });
 

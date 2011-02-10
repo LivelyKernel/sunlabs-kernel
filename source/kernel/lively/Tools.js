@@ -27,7 +27,7 @@
  * object inspector, style editor, and profiling and debugging capabilities.  
  */
 
-module('lively.Tools').requires('lively.Text', 'lively.bindings', 'lively.Widgets').toRun(function(module, text) {
+module('lively.Tools').requires('lively.Text', 'lively.bindings', 'lively.Widgets', 'lively.Network').toRun(function(module, text) {
 
 // ===========================================================================
 // Class Browser -- A simple browser for Lively Kernel code
@@ -437,15 +437,24 @@ Widget.subclass('ColumnInspector',
 			setRoot: {dir: '<-', name: 'rootObj', options: {
 				converter: function(obj) { return new InspectorNode('', obj) }}},
 			selection: {dir: '->', name: 'inspectee', options: {
-				converter: function(node) { 
-					// if (!node) return "inspectee has no node?"
-					return node.object }}},
+				updater: function($upd, node) {
+					var inspectee = node.getObject();
+					if (!this.targetObj.isSimpleObject(inspectee)) $upd(inspectee)
+					else $upd(this.targetObj.rootObj)
+				}}},
 		});
 
-		// set title
+		// highlight the object
+		lively.bindings.connect(this, 'inspectee', this, 'highlightObj');
+
+		lively.bindings.connect(this, 'inspectee', panel, 'setTitle', {
+			converter: function(inspectee) { return 'Inspect: ' + String(inspectee).truncate(100) }
+		});
+
+
 		panel.listPane.plugTo(panel.printView.innerMorph(), {
 			selection: {dir: '->', name: 'setTextString', options: {
-				converter: function(node) {	return String(node.object) }}}
+				converter: function(node) {	return String(node.getObject()) }}}
 		});
 
 		// source pane
@@ -469,6 +478,13 @@ Widget.subclass('ColumnInspector',
 	doitContext: function() {
 		return this.inspectee || this.rootObj
 	},
+	highlightObj: function(obj) {
+		if (obj instanceof Morph) showMorph(obj)
+	},
+
+},
+'testing', {
+	isSimpleObject: function(inspectee) { return typeof inspectee !== 'object' },
 });
 Object.extend(ColumnInspector, {
 	inspect: function(obj) {
@@ -480,20 +496,22 @@ Object.extend(ColumnInspector, {
 });
 ChainedListMorphNode.subclass('InspectorNode',
 'initializing', {
-	initialize: function(name, obj) {
+	initialize: function(name, obj, fromObject) {
 		this.name = name;
 		this.object = obj;
+		this.fromObject = fromObject
 	},
 },
 'interface', {
 	asString: function() { return String(this.name) },
+	getObject: function() { return this.fromObject && this.name ? this.fromObject[this.name] : this.object },
 	childNodes: function() {
 		if (Object.isString(this.object)) return [];
 		var props = Properties.own(this.object)
 		if (this.object.__proto__) props.push('__proto__');
 		return [new InspectorNode('this', this.object)].concat(props
 			.sort()
-			.collect(function(key) { return new InspectorNode(key, this.object[key]) }, this));
+			.collect(function(key) { return new InspectorNode(key, this.object[key], this.object) }, this));
 	},
 });
 Object.extend(lively.Tools, {
@@ -1938,9 +1956,17 @@ loadDefaultModules: function() {
 
 	var srcCtrl = lively.ide.SourceControl;
 	var progressBar = WorldMorph.current().addProgressBar();
-	var files = srcCtrl.interestingLKFileNames(URL.codeBase.withFilename('lively/'));
-	files = files.concat(srcCtrl.interestingLKFileNames(URL.codeBase.withFilename('apps/')));
-	files = files.concat(srcCtrl.interestingLKFileNames(URL.codeBase.withFilename('Tests/')));
+	var files = [];
+	
+
+	[
+		'lively/', 'apps/', 'Tests/', 
+		'lively/ide', 'lively/persistence', 'lively/persistence', 'lively/dom', 'lively/AST', 'lively/oldCore'
+	].forEach(function(ea){
+		files = files.concat(srcCtrl.interestingLKFileNames(URL.codeBase.withFilename(ea)));
+	})
+
+
 
 	files = files.select(function(ea){ return ea.endsWith('.js')})
 

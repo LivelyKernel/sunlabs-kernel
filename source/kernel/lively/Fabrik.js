@@ -47,7 +47,7 @@
   * Examples for interactive testing and exploring
   */
 
-module('lively.Fabrik').requires('lively.Helper', 'cop.Layers').toRun(function() {
+module('lively.Fabrik').requires('lively.Helper', 'cop.Layers', 'lively.bindings').toRun(function() {
 
 // logMethod(Morph.prototype, 'onMouseDown');
 
@@ -346,9 +346,9 @@ Global.Fabrik = {
 		var conditionPin = extractCondition.addPin('Condition'); this.setPositionRel(pt(0.96, 0.2), conditionPin.morph);
 		var tempPin = extractCondition.addPin('Temp'); this.setPositionRel(pt(0.96, 0.4), tempPin.morph);
 		var humidityPin = extractCondition.addPin('Humidity'); this.setPositionRel(pt(0.96, 0.6), humidityPin.morph);
-		var windPin = extractCondition.addPin('Wind'); this.setPositionRel(pt(0.96, 0.8), windPin.morph);
-		var imagePin = extractCondition.addPin('Image'); this.setPositionRel(pt(0.5, 0.96), imagePin.morph);
-		extractCondition.setFunctionBody('if (input) {\n var infos = input.js.current_conditions; \n this.setCondition(infos.condition); \n this.setTemp(infos.temp_c + "°C / " + infos.temp_f + "°F"); \n this.setHumidity(infos.humidity); \n this.setWind(infos.wind_condition); \n this.setImage("http:\/\/www.google.com" + infos.icon);\n }');
+		var windPin = extractCondition.addPin('Wind'); this.setPositionRel(pt(0.96, 0.8), windPin.morph),
+			imagePin = extractCondition.addPin('Image'); this.setPositionRel(pt(0.5, 0.96), imagePin.morph);
+		extractCondition.setFunctionBody('if (input) {\n var infos = input.js.current_conditions; \n this.setCondition(infos.condition); \n this.setTemp(infos.temp_c + "C / " + infos.temp_f + "F"); \n this.setHumidity(infos.humidity); \n this.setWind(infos.wind_condition); \n this.setImage("http:\/\/www.google.com" + infos.icon);\n }');
 				
 		// add the 'UI'
 		var extent = pt(80,50);
@@ -414,7 +414,7 @@ Global.Fabrik = {
 		var urlComp = this.addTextComponent(f);
 		urlComp.setText("http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR");
 		var reqComp = this.addFunctionComponent(f);
-		reqComp.setFunctionBody("new NetRequest().beSync().get('http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR').getResponseXML().getElementsByTagName('double')[0].textContent;");
+		reqComp.setFunctionBody("new WebResource('http://www.webservicex.net/CurrencyConvertor.asmx/ConversionRate?FromCurrency=USD&ToCurrency=EUR').get().contentDocument.getElementsByTagName('double')[0].textContent;");
 		// reqComp.setFunctionBody("");
 		f.connectComponents(urlComp, "Text", reqComp, "Input");
 		var currencyComp = this.addTextComponent(f);
@@ -2323,7 +2323,7 @@ ComponentMorph.subclass('FabrikMorph', {
 		this.userFrame = this.addMorph(frame);
 		var handle = this.userFrame.createHandle(evt.hand)
 
-		return handle // for tests...ßßß
+		return handle // for tests...
 		// var handle = new HandleMorph(pt(0,0), lively.scene.Rectangle, evt.hand, this.userFrame, "bottomRight");
 		// 	handle.setExtent(pt(0, 0));
 		// 	handle.mode = 'reshape';
@@ -3056,15 +3056,16 @@ Component.subclass('WebRequestComponent', {
 			console.warn('Invalid URL! in makeRequest');
 			return // invalid url, we do not proceed
 		}
-		// var x = new Resource(this.formalModel.newRelay({URL: '-URL', ContentText: '+ResponseText', ContentDocument: '+ResponseXML'}));
 		
-		var x = new Resource(Record.newPlainInstance({URL: url, ContentText: '', ContentDocument: null}));
-		x.formalModel.addObserver({onContentTextUpdate: function(response) { this.formalModel.setResponseText(response) }.bind(this)});
-		x.formalModel.addObserver({onContentDocumentUpdate: function(response) {
-				var elem = document.importNode(response.documentElement, true);
-				this.formalModel.setResponseXML(FabrikConverter.xmlToStringArray(elem));
-		}.bind(this)});
-		x.fetch();
+		var webR = new WebResource(url).beAsync();
+		lively.bindings.connect(webR, 'content', this.formalModel, 'setResponseText');
+		lively.bindings.connect(webR, 'contentDocument', this.formalModel, 'setResponseXML', {
+			converter: function(doc) {
+				var elem = document.importNode(doc.documentElement, true);
+				return FabrikConverter.xmlToStringArray(elem);
+			}});
+		
+		webR.get();
 	}
 });
 

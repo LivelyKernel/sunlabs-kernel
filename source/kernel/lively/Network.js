@@ -30,7 +30,7 @@
  * inherited from the browser.  
  */
 
-module('lively.Network').requires('lively.bindings').toRun(function(thisModule) {
+module('lively.Network').requires('lively.bindings', 'lively.OldModel').toRun(function(thisModule) {
 	
 Object.subclass('URL', {
     splitter: new RegExp('(http:|https:|file:)' + '(//[^/:]*(:[0-9]+)?)?' + '(/.*)?'),
@@ -250,10 +250,15 @@ Object.subclass('URL', {
 
 // create URLs often needed
 Object.extend(URL, {
-
 	source: new URL(document.URL),
-
-	codeBase: new URL(Config.codeBase).withRelativePartsResolved(),
+	codeBase: (function setURLCodeBase() {
+		var url;
+		try { url = new URL(Config.codeBase) } catch(e) {
+			console.warn('Cannot correctly set URL.codeBase because of ' + e);
+			url = new URL(document.URL).getDirectory();
+		}
+		return url.withRelativePartsResolved();
+	})(),
 })
 
 Object.extend(URL, {
@@ -315,21 +320,27 @@ Object.extend(URL, {
 });
 
 
-Object.subclass('NetRequestStatus', {
+Object.subclass('NetRequestStatus',
+'documentation', {
 	documentation: "nice parsed status information, returned by NetRequest.getStatus when request done",
-
+},
+'initialization', {
 	initialize: function(method, url, transport) {
 		this.method = method;
 		this.url = url;
 		this.transport = transport;
 		this.exception = null;
 	},
+},
+'testing', {
+	isDone: function() { return this.transport.readyState === this.transport.DONE },
 
 	isSuccess: function() {
 		var code = this.transport.status;
 		return code >= 200 && code < 300;
 	},
-
+},
+'accessing', {
 	setException: function(e) {
 		this.exception = e;
 	},
@@ -348,7 +359,7 @@ Object.subclass('NetRequestStatus', {
 
 	getResponseHeader: function(name) {
 		return this.transport.getResponseHeader(name);
-	}
+	},
 
 });
 
@@ -377,6 +388,7 @@ View.subclass('NetRequest', {
 		this.requestNetworkAccess();
 		this.transport.onreadystatechange = this.onReadyStateChange.bind(this);
 		this.isSync = false;
+		this.isBinary = false;
 		this.requestHeaders = {};
 		$super(modelPlug)
 	},
@@ -404,6 +416,11 @@ View.subclass('NetRequest', {
 
 	beSync: function() {
 		this.isSync = true;
+		return this;
+	},
+
+	beBinary: function() {
+		this.isBinary = true;
 		return this;
 	},
 
@@ -488,7 +505,10 @@ View.subclass('NetRequest', {
 			Properties.forEachOwn(this.requestHeaders, function(p, value) {
 				this.transport.setRequestHeader(p, value);
 				}, this);
-			this.transport.send(content || '');
+			if (!this.isBinary)
+				this.transport.send(content || '');
+			else
+				this.transport.sendAsBinary(content || '');
 			if (Global.isFirefox && this.isSync) // mr: FF does not use callback when sync 
 				this.onReadyStateChange();
 			return this;
@@ -562,7 +582,9 @@ View.subclass('NetRequest', {
 		this.setRequestHeaders({'Lock-Token': '<' + lockToken + '>'});
 		return this.request("UNLOCK", URL.makeProxied(url));
 	},
-
+	head: function(url) {
+		return this.request("HEAD", URL.makeProxied(url), null);
+	},
 
 	toString: function() {
 		return "#<NetRequest{"+ this.method + " " + this.url + "}>";
@@ -613,64 +635,6 @@ NetRequestReporterTrait = {
 // convenience base class with built in handling of errors
 Object.subclass('NetRequestReporter', NetRequestReporterTrait);
 
-Importer.subclass('NetImporter', NetRequestReporterTrait, {
-	onCodeLoad: function(error) {
-		if (error) WorldMorph.current().alert("eval got error " + error);
-	},
-
-	pvtLoadCode: function(responseText) {
-		try {
-			eval(responseText); 
-		} catch (er) {
-			this.onCodeLoad(er);
-			return;
-		}
-		this.onCodeLoad(null);
-	},
-
-	loadCode: function(url, isSync) {
-		var req = new NetRequest({model: this, setResponseText: "pvtLoadCode", setStatus: "setRequestStatus"});
-		if (isSync) req.beSync();
-		req.get(url);
-	},
-
-	onWorldLoad: function(world, error) {
-		if (error) WorldMorph.current().alert("doc got error " + error);
-	},
-
-	pvtLoadMarkup: function(doc) {
-		var world;
-		try {
-			world = this.loadWorldContents(doc);
-		} catch (er) {
-			this.onWorldLoad(null, er);
-			return;
-		}
-		this.onWorldLoad(world, null);
-	},
-
-	loadMarkup: function(url, isSync) {
-		var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "pvtLoadMarkup"});
-		if (isSync) req.beSync();
-		req.get(url);
-	},
-
-	loadElement: function(filename, id) {
-		var result;
-		this.processResult = function(doc) {
-			var elt = doc.getElementById(id);
-			if (elt) {
-				var canvas = document.getElementById("canvas"); // note, no error handling
-				var defs = canvas.getElementsByTagName("defs")[0];
-				result = defs.appendChild(document.importNode(elt, true));
-			}
-		}
-		var url = URL.source.withFilename(filename);
-		new NetRequest({model: this, setStatus: "setRequestStatus", setResponseXML: "processResult"}).beSync().get(url);
-		return result;
-	}
-
-});
 
 
 View.subclass('Resource', NetRequestReporterTrait, {
@@ -826,7 +790,7 @@ Resource.subclass('SVNResource', {
 	},
 
 	getLocalUrl: function() {
-		return this.getURL().slice(this.repoUrl.length + (this.repoUrl.endsWith('/') ? 0 : 1));
+		return new URL(this.getURL()).relativePathFrom(new URL(this.repoUrl)).toString();
 	},
 
 	fetchHeadRevision: function(optSync) {
@@ -862,7 +826,7 @@ Resource.subclass('SVNResource', {
 			//determine local path of resource
 			//var local = new URL(this.getURL()).relativePathFrom(new URL(this.repoUrl));
 			var local = this.getURL().toString().substring(this.repoUrl.toString().length);
-			local = local.slice(1); // remove leading slash
+			if (local.startsWith('/')) local = local.slice(1); // remove leading slash
 			var ifHeader = Strings.format('(["%s//%s"])', optHeadRev, local);
 			console.log('Creating if header: ' + ifHeader);
 			Object.extend(headers, {'If': ifHeader});
@@ -1172,33 +1136,50 @@ Object.extend(FileDirectory, {
 	},
 });
 
-Object.subclass('WebResource', {
+Object.subclass('WebResource',
+'initializing', {
 
 	initialize: function(url) {
 		this._url = new URL(url);
 		this.beSync();
+		this.beText();
 	},
-
-	getURL: function() { return this._url },
-
-	getName: function() { return this.getURL().filename() },
-
-	isSync: function() { return this._isSync },
-	
-	beSync: function() { this._isSync = true; return this },
-
-	beAsync: function() { this._isSync = false; return this },
-
-	enableShowingProgress: function() {
-		this.isShowingProgress = true;
-	},
-
+},
+'accessing, testing, and configuration', {
+	getURL: function() { return this._url; },
+	getName: function() { return this.getURL().filename(); },
+	isSync: function() { return this._isSync; },
+	beSync: function() { this._isSync = true; return this; },
+	beAsync: function() { this._isSync = false; return this; },
+	isBinary: function() { return this._isBinary; },
+	beBinary: function() { this._isBinary = true; return this; },
+	beText: function() { this._isBinary = false; return this; },
 	forceUncached: function() {
 		this._url = this.getURL().withQuery({time: new Date().getTime()});
 		return this;
 	},
 
-	// deprecated
+	del: function() {
+		new NetRequest().beSync().del(this.getURL());
+	},
+},
+'progress', {
+	enableShowingProgress: function() {
+		this.isShowingProgress = true;
+	},
+	createProgressBar: function(label) {
+		this.enableShowingProgress();
+		var progressBar = WorldMorph.current().showStatusProgress("");
+		progressBar.setLabel(label || '');
+		progressBar.setValue(0);
+		connect(this, 'progress', progressBar, 'setValue',
+			{converter: function(rpe) { return (rpe.loaded / rpe.total) }});
+		connect(this, 'status', progressBar, 'setValue', {converter: function() { return 1 }});
+		return progressBar;
+	},
+
+},
+'DEPRECATED', {
 	getContent: function(rev, contentType) {
 		var resource = new SVNResource(
 			this.getURL().toString(),
@@ -1209,8 +1190,6 @@ Object.subclass('WebResource', {
 		resource.fetch(true, this.requestHeaders, rev);
 		return resource.getContentText();
 	},
-
-	// deprecated
 	getDocument: function(rev, contentType) {
 		var resource = new SVNResource(
 			this.getURL().toString(),
@@ -1220,15 +1199,11 @@ Object.subclass('WebResource', {
 		resource.fetch(true, this.requestHeaders, rev);
 		return resource.getContentDocument();
 	},
-
-	// deprecated
 	setContent: function(content, contentType) {
 		var resource = new Resource(Record.newPlainInstance({URL: this.getURL().toString()}));
 		if (contentType) resource.contentType = contentType;
 		resource.store(content, this.isSync(), this.requestHeaders);
 	},
-
-	// deprecated
 	exists: function(optCb) {
 		if (this.isSync())
 			return new NetRequest().beSync().get(this.getURL()).transport.status < 400;
@@ -1237,7 +1212,6 @@ Object.subclass('WebResource', {
 		}
 		return new NetRequest({model: model, setStatus: "setStatus"}).get(this.getURL());
 	},
-
 	isCollection: function() { return !this.getURL().isLeaf() },
 
 	copyTo: function(url) {
@@ -1274,17 +1248,9 @@ Object.subclass('WebResource', {
 	// 	return this.subElements(depth).select(function(ea) { return !ea.isCollection() });
 	// },
 
-	create: function() {
-		if (!this.isCollection()) { this.setContent(''); return }
-		new NetRequest().beSync().mkcol(this.getURL());
-	},
-
-	del: function() {
-		new NetRequest().beSync().del(this.getURL());
-	},
-
+},
+'debugging', {
 	toString: function() { return 'WebResource(' + this.getURL() + ')' },
-	
 });
 
 
@@ -1301,11 +1267,11 @@ WebResource.addMethods({
 		this.subResources = null;
 		this.requestHeaders = null;
 	},
+
 	setRequestHeaders: function(headers) {
 		this.requestHeaders = headers;
 		return this;
 	},
-
 
 	createResource: function() {
 		var self = this;
@@ -1376,7 +1342,9 @@ WebResource.addMethods({
 		return this
 	},
 
-	put: function(content, contentType) {
+	put: function(content, contentType, requiredRevision) {
+		// if requiredRevision is set then put will only succeed if the resource has
+		// the revision number requiredRevision
 		if ((Global.Document && content instanceof Document) || (Global.Node && content instanceof Node)) {
 			content = Exporter.stringify(content);
 		} else if (content.xml) { // serialization FIX for IE9+
@@ -1386,7 +1354,14 @@ WebResource.addMethods({
 		var resource = this.createResource();
 		if (contentType)
 			resource.contentType = contentType;
-		resource.store(content, this.isSync(), this.requestHeaders);
+		resource.store(content, this.isSync(), this.requestHeaders, requiredRevision);
+		return this;
+	},
+
+	create: function() {
+		if (!this.isCollection()) return this.put('');
+		var request = this.createNetRequest();
+		request.mkcol(this.getURL());
 		return this;
 	},
 
@@ -1407,7 +1382,29 @@ WebResource.addMethods({
 	
 	exists: function() {
 		// for async use this.get().isExisting directly
-		return this.beSync().get().isExisting
+		try {
+			return this.beSync().head().status.isSuccess()
+		} catch(e) {
+			return false;
+		}
+	},
+	head: function() {
+		var request = this.createNetRequest();
+		request.head(this.getURL());
+		return this;
+	},
+
+	propfind: function(depth) {
+		if (!depth) depth = 1;
+		var req = this.createNetRequest();
+		req.propfind(this.getURL(), depth);
+		return this;
+	},
+
+	getSubElements: function(depth) {
+		lively.bindings.connect(this, 'contentDocument', this, 'pvtProcessPropfindForSubElements', {removeAfterUpdate: true});
+		this.propfind(depth);
+		return this;
 	},
 
 	copyTo: function(url) {
@@ -1416,14 +1413,6 @@ WebResource.addMethods({
 		connect(this, 'content', otherResource, 'put', {removeAfterUpdate: true});
 		this.get();
 		return otherResource; // better return this for consistency?
-	},
-
-	getSubElements: function(depth) {
-		if (!depth) depth = 1;
-		var req = this.createNetRequest();
-		connect(this, 'contentDocument', this, 'pvtProcessPropfindForSubElements', {removeAfterUpdate: true});
-		req.propfind(this.getURL(), depth);
-		return this;
 	},
 	
 	getVersions: function(startRev, endRev) {
@@ -1469,6 +1458,13 @@ WebResource.addMethods({
 		this.subCollections = result.select(function(ea) { return ea.isCollection() });
 		this.subDocuments = result.select(function(ea) { return !ea.isCollection() });
 	},
+
+	getProperties: function(optRequestHeaders, rev) {
+		var res = this.createResource();
+		res.fetchProperties(this.isSync(), null, optRequestHeaders, rev);
+		return this;
+	},
+	
 	statusMessage: function(successMsg, failureMessage, onlyOnce) {
 		this.successMsg = successMsg;
 		this.failureMessage = failureMessage;
@@ -1482,11 +1478,10 @@ WebResource.addMethods({
 		return this
 	},
 
-
-
-
 });
-
+Object.extend(WebResource, {
+	create: function(url) { return new this(url) },
+});
 
 console.log('loaded Network.js');
 

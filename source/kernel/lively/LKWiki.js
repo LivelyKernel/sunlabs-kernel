@@ -23,30 +23,14 @@
  */
 
 
-module('lively.LKWiki').requires('lively.Network', 'lively.Data').toRun(function(ownModule) {
+module('lively.LKWiki').requires('lively.Network', 'lively.Data', 'lively.Widgets').toRun(function(ownModule) {
 
 URL.common.localWiki = URL.proxy.withFilename('wiki/');
 
-// FIXME cleanup!!! Use WikiNetworkAnalyzer and WikiWorldProxies
-Widget.subclass('WikiNavigator', {
-    
-    repoUrl: function() {
-            // FIXME: assertion: */proxy/wiki is used as the repository
-            // if URL.source.getDirectory() is http://localhost/livelyBranch/proxy/wiki/test/
-            // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
-            
-			if (Config.wikiRepoUrl)
-				return Config.wikiRepoUrl;
+// FIXME cleanup!!!
+Widget.subclass('WikiNavigator',
+'initializing', {
 
-			if (!URL.source.toString().include("wiki")) return URL.source.getDirectory().toString(); 
-			var match = /(.*wiki).*/.exec(URL.source.getDirectory().toString());
-			if (match) {
-            	return match[1];
-			} else {
-				return undefined
-			}
-    },
-   
     initialize: function($super, url, world, rev) {
 		$super(null);
 		if (!world) world = WorldMorph.current();
@@ -55,20 +39,14 @@ Widget.subclass('WikiNavigator', {
 
 		this.svnResource = new SVNResource(this.repoUrl(),
 			Record.newPlainInstance({URL: this.url.toString(), HeadRevision: null, Metadata: null}));
-		if (!rev) {
-			this.svnResource.fetchHeadRevision(true);
-			rev = this.svnResource.getHeadRevision();
-		}
+
 		this.model = Record.newPlainInstance({Versions: [], Version: null, URL: url, OriginalRevision: rev});
-		this.model.addObserver(this, {Version: "!Version"});
-		
+		this.model.addObserver(this, {Version: "!Version"});		
+		if (!rev) this.updateDocumentRevision();
+
 		return this;
 	},
-world: function() {
-	return WorldMorph.current();
-},
 
-	
 	buildView: function(extent) {
 	    var panel = PanelMorph.makePanedPanel(extent, [
 			['saveContentButton', function(initialBounds){return new ButtonMorph(initialBounds)}, new Rectangle(0.05, 0.2, 0.1, 0.35)],
@@ -117,6 +95,81 @@ world: function() {
 		this.panel = panel;
 		return panel;
 	},
+
+	createWikiNavigatorButton: function() {
+		var btn =  new TextMorph(new Rectangle(0,0,80,50), 'Wiki control');
+		var self = this;
+		btn.suppressHandles = true;
+		btn.suppressGrabbing = true;
+		btn.handlesMouseMove = Functions.True;
+		btn.handlesMouseDown = Functions.True;
+		btn.onMouseMove = function(evt) {};
+		btn.onMouseDown = function(evt) {
+			var navMorph = self.buildView(pt(800,105));
+			self.world().addMorph(navMorph);
+			navMorph.setPosition(pt(0, 0));
+		};
+		btn.setFill(null);
+		this.btn = btn;
+	},
+},
+'accessing', {
+    
+    repoUrl: function() {
+            // FIXME: assertion: */proxy/wiki is used as the repository
+            // if URL.source.getDirectory() is http://localhost/livelyBranch/proxy/wiki/test/
+            // the regexp outputs ["http://localhost/livelyBranch/proxy/wiki/test/", "http://localhost/livelyBranch/proxy/wiki"]
+            
+			if (Config.wikiRepoUrl)
+				return Config.wikiRepoUrl;
+
+			if (!URL.source.toString().include("wiki")) return URL.source.getDirectory().toString(); 
+			var match = /(.*wiki).*/.exec(URL.source.getDirectory().toString());
+			if (match) {
+            	return match[1];
+			} else {
+				return undefined
+			}
+    },
+   
+    initialize: function($super, url, world, rev) {
+		$super(null);
+		if (!world) world = WorldMorph.current();
+		this._world = world;
+		this.url = new URL(url).notSvnVersioned().withoutQuery();
+
+		this.svnResource = new SVNResource(this.repoUrl(),
+			Record.newPlainInstance({URL: this.url.toString(), HeadRevision: null, Metadata: null}));
+		if (!rev) {
+			this.svnResource.fetchHeadRevision(true);
+			rev = this.svnResource.getHeadRevision();
+		}
+		this.model = Record.newPlainInstance({Versions: [], Version: null, URL: url, OriginalRevision: rev});
+		this.model.addObserver(this, {Version: "!Version"});
+		
+		return this;
+	},
+
+	world: function() {
+		return WorldMorph.current();
+	},
+	currentDocumentRevision: function() { return this.model.getOriginalRevision() },
+
+},	
+'testing', {	
+	isActive: function() {
+		if (Config.wikiRepoUrl)
+			return true;
+	    // just look if url seems to point to a wiki file
+        return this.url.toString().include("wiki");
+	},
+	
+    worldExists: function(optURL) {
+		var url = optURL || this.model.getURL();
+        return new WebResource(url).get().status.isSuccess();
+    },
+},
+'saving', {
 	
 	prepareForSaving: function() {
 	    if (this.panel) this.panel.remove();
@@ -160,7 +213,8 @@ world: function() {
 	interactiveSaveWorld: function(optUrl) {
 		var world = WorldMorph.current();
 		var url = optUrl || this.model.getURL();
-		var anotherSave = function() {
+		var anotherSave = function(answer) {
+			if (!answer) return;
 			var status = this.doSave(true, optUrl);
 			console.log(Strings.format('%s saving world at %s to wiki',
 				status.isSuccess() ? "Success" : "Failure", url.toString()));
@@ -187,21 +241,22 @@ world: function() {
 	},
 	
 	askToOverwrite: function(optUrl, gotoUrl) {
-		WorldMorph.current().confirm('A newer version of the world was created by another user. Overwrite?', function() {
-			var status = this.doSave(false, optUrl);
-			console.log(status.code());
-			if (status.isSuccess() && gotoUrl)
-				this.navigateToUrl(optUrl, false, true);
-		}.bind(this));
+		WorldMorph.current().confirm('A newer version of the world was created by another user. Overwrite?',
+			function(answer) {
+				if (!answer) return;
+				var status = this.doSave(false, optUrl);
+				console.log(status.code());
+				if (status.isSuccess() && gotoUrl)
+					this.navigateToUrl(optUrl, false, true);
+			}.bind(this));
 	},
+
 	askToNavigateToUrl: function(url, openInNewWindow) {
 		WorldMorph.current().confirm('Navigate to ' + url.toString() + '?', function(response) {
 			if (!response) return;
 			this.navigateToUrl(url, openInNewWindow, true);
 		}.bind(this));
 	},
-
-
 	
 	askToSaveAndNavigateToUrl: function(world, openInNewWindow) {    
 	if (!Config.confirmNavigation) { // No other browsers confirm clickaway
@@ -249,7 +304,10 @@ world: function() {
 		else
 			Global.window.location.assign(url);
 	},
-	
+
+},
+
+'versions', {
 	onVersionUpdate: function(listItem) {
 		if (!listItem) return;
 		if (Object.isString(listItem)) {
@@ -275,11 +333,18 @@ world: function() {
 			{converter: function(versions) { return versions.asListItemArray() }});
 		res.getVersions();
 	},
+	updateDocumentRevision: function() {
+		this.svnResource.fetchHeadRevision(true);
+		var rev = this.svnResource.getHeadRevision();
+		this.model.setOriginalRevision(rev);
+	},
 
-openRegisterDialog: function() {
-	// new UserRegistrationDialog().open();
-	window.open('http://lively-kernel.org/trac/register')
 },
+'registering', {
+	openRegisterDialog: function() {
+		// new UserRegistrationDialog().open();
+		window.open('http://lively-kernel.org/trac/register')
+	},
 
 
 // -------------
@@ -290,40 +355,37 @@ openRegisterDialog: function() {
 	// This is necessary to get a session id and a form token from trac (required for next step).
 	// 2. a POST request with the user data, the session id, and the form token is made (the correct
 	// setup of the header is important) to run a cgi script on the server which calls the htpasswd command
-	var pwdConfirm = pwd;
-	var url = new URL('http://livelykernel.sunlabs.com/index.fcgi/register');
-	var getReq = new NetRequest({
-		setStatus: "register",
-		model: {
+	var pwdConfirm = pwd,
+		url = new URL('http://lively-kernel.org/trac/register'),
+		webR = WebResource(url),
+		helper = {
 			register: function() {
-				var header = getReq.transport.getResponseHeader('Set-Cookie');
-				var formToken = header.match(/.*trac_form_token=([0-9a-z]+);.*/)[1]
-				var session = header.match(/.*trac_session=([0-9a-z]+);.*/)[1];
-
-				var postReq = new NetRequest({
-					setStatus: "result",
-					model: {
-						result: function() {
-							postReq.getResponseText().match(/.*Another account with that name already exists.*/) ?
-							failureCb && failureCb() : successCb && successCb() }
+				var header = getReq.transport.getResponseHeader('Set-Cookie'),
+					formToken = header.match(/.*trac_form_token=([0-9a-z]+);.*/)[1],
+					session = header.match(/.*trac_session=([0-9a-z]+);.*/)[1],
+					postData = Strings.format('__FORM_TOKEN=%s&action=create&user=%s&password=%s&password_confirm=%s&name=%s&email=%s',
+				formToken, username, pwd, pwdConfirm, name, email)
+					webR2 = new WebResource(url),
+					helper2 = {
+						inform: function(content) {
+							content.match(/.*Another account with that name already exists.*/) ?
+								failureCb && failureCb() : successCb && successCb()
 						}
-				});
+					};
+				lively.bindings.connect(webR2, 'content', helper2, 'inform');
 
-				postReq.setRequestHeaders({
+				webR2.setRequestHeaders({
 					"Cookie": 'trac_form_token=' + formToken + '; trac_session=' + session,
 					'Cache-Control': 'max-age=0',
 					'Content-Type': 'application/x-www-form-urlencoded',
 					'Accept': 'text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5'
 				});		
 
-				var postData = Strings.format('__FORM_TOKEN=%s&action=create&user=%s&password=%s&password_confirm=%s&name=%s&email=%s',
-				formToken, username, pwd, pwdConfirm, name, email)
-				postReq.post(url, postData);
+				webR2.post(postData);
 			}
-		}});
-
-		getReq.setRequestHeaders({"Cookie": '' }); // Cookie must be empty to get new session and form token from trac
-		getReq.get(url);
+		}
+		webR.setRequestHeaders({"Cookie": '' }); // Cookie must be empty to get new session and form token from trac
+		webR.get();
 	},
 
 	login: function() {
@@ -338,36 +400,8 @@ openRegisterDialog: function() {
 		res.beAsync().put('');
 	},
 // -------------
-		
-	createWikiNavigatorButton: function() {
-		var btn =  new TextMorph(new Rectangle(0,0,80,50), 'Wiki control');
-		var self = this;
-		btn.suppressHandles = true;
-		btn.suppressGrabbing = true;
-		btn.handlesMouseMove = Functions.True;
-		btn.handlesMouseDown = Functions.True;
-		btn.onMouseMove = function(evt) {};
-		btn.onMouseDown = function(evt) {
-			var navMorph = self.buildView(pt(800,105));
-			self.world().addMorph(navMorph);
-			navMorph.setPosition(pt(0, 0));
-		};
-		btn.setFill(null);
-		this.btn = btn;
-	},
-	
-	isActive: function() {
-		if (Config.wikiRepoUrl)
-			return true;
-	    // just look if url seems to point to a wiki file
-        return this.url.toString().include("wiki");
-	},
-	
-    worldExists: function(optURL) {
-		var url = optURL || this.model.getURL();
-        return new WebResource(url).get().status.isSuccess();
-    },
-
+},
+'deletion', {
 	askToDeleteCurrentWorld: function() {
 		WorldMorph.current().confirm('Delete ' + this.model.getURL().toString() + '?', function(response) {
 			if (!response) return;
@@ -590,8 +624,9 @@ Widget.subclass('LatestWikiChangesList', {
 
 	searchForNewestFiles: function() {
 		this.notify('Please wait, fetching data');
-		var request = new NetRequest({model: this,  setResponseXML: 'onDirectoryContentUpdate'})
-		request.propfind(this.getURL().toString(), 'infinity')
+		var webR = new WebResource(this.getURL()).beAsync();
+		lively.bindings.connect(webR, 'contentDocument', this, 'onDirectoryContentUpdate');
+		webR.propfind('infinity')
 	},
 	
 	onDirectoryContentUpdate: function(propfindXML) {
@@ -869,15 +904,22 @@ findOrCreateProxiesForLinksIn: function(worldDocument) {
 },
 
 fetchLinksOfWorld: function(worldProxy, optCb /*not needed anymore?!*/) {
-		var r = new Resource(Record.newPlainInstance({URL: worldProxy.getURL().toString(), ContentDocument: null}));
-	r.getModel().addObserver({onContentDocumentUpdate: function(doc) {
-		if (!doc) { console.log('No doc??!'); return; }
-		worldProxy.setExisting(true);
-		this.addLinksOfWorld(worldProxy, doc);
-		optCb && optCb(this);
-	}.bind(this)});
-	r.setRequestStatus = function(status) { if (status.code() >= 300) worldProxy.setExisting(false); }; // ignore errors
-	r.fetch();
+	var webR = new WebResource(worldProxy.getURL()),
+		self = this,
+		helper = {
+			docArrived: function(doc) {
+				if (!doc) { console.log('No doc??!'); return; }
+				worldProxy.setExisting(true);
+				self.addLinksOfWorld(worldProxy, doc);
+				optCb && optCb(self);
+			},
+			statusArrived: function(status) {  if (status.code() >= 300) worldProxy.setExisting(false) }
+		};
+
+	lively.bindings.connect(webR, 'contentDocument', helper, 'docArrived');
+	lively.bindings.connect(webR, 'status', helper, 'statusArrived');
+	
+	webR.get()
 },
 addLinksOfWorld: function(worldProxy, worldDoc) {
 	if (!this.worldProxies.include(worldProxy)) this.worldProxies.push(worldProxy);
@@ -889,20 +931,14 @@ toExpression: function() {
 },
 writeStateToFile: function() {
 	var url = URL.source.withFilename('CachedWorldMetaData');
-	new NetRequest().put(url, this.toExpression());
+	new WebResource(url).beAsync().put(this.toExpression());
 },
 readStateFromFile: function(optCb) {
-	var url = URL.source.withFilename('CachedWorldMetaData');
-	var r = new NetRequest({
-		setStatus: "read",
-		model: {read: function() {
-			if (r.getStatus().code() < 400) {
-				console.log('Sucessfully read CachedWorldMetaData');
-				eval(r.getResponseText());
-			};
-			optCb && optCb()
-		}}});
-	r.get(url);
+	var url = URL.source.withFilename('CachedWorldMetaData'),
+		webR = new WebResource(url).beAsync(),
+		helper = {load: function(content) { try { eval(content) } catch(e) { alert(e) }; optCb && optCb() }};
+	connect(webR, 'content', helper, 'load');
+	webR.get();
 },
 stopUpdateLoop: function() {
 	if (!this.updateLoopId) {

@@ -1,30 +1,7 @@
-/*
- * Copyright (c) 2008-2011 Hasso Plattner Institute
- *
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+module('lively.ide.AutoCompletion').requires('lively.Text', 'cop.Layers').toRun(function() {
 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
-module('lively.TabCompletion').requires('cop.Layers', 'lively.TestFramework').toRun(function() {
-
-Object.subclass('TabCompletion');
-Object.extend(TabCompletion, {
+Object.subclass('lively.ide.AutoCompletion.TabCompletion');
+Object.extend(lively.ide.AutoCompletion.TabCompletion, {
 	customSymbols: function() {
 		return [
 			'function(){}', 
@@ -56,21 +33,17 @@ Object.extend(TabCompletion, {
 
 });
 
-
-
-
-
 cop.create('TabCompletionLayer').refineClass(TextMorph, {
 
 	tabCompletionChoicesForLastWord: function(lastWord) {
 			var selector = function(ea){return ea.startsWith(lastWord)};
 			var choices = this.checkForPropertyChoicesAt(this.selectionRange[0]);
 			// console.log("choices " + choices)
-			var allChoices = 	TabCompletion.allSymbols();
+			var allChoices = 	lively.ide.AutoCompletion.TabCompletion.allSymbols();
 			if (choices) {
 				allChoices = allChoices.concat(choices.uniq().select(selector)).sort();
 			}
-			var localCoices = TabCompletion.extractLocalSymbols(this.textString);
+			var localCoices = lively.ide.AutoCompletion.TabCompletion.extractLocalSymbols(this.textString);
 			localCoices = localCoices.reject(function(ea){return ea == "lastWord"}); // don't match yourself
 			var selectedAllChoices = allChoices.select(selector);
 			var selectedLocalChoices = localCoices.select(selector); ;
@@ -182,4 +155,5 @@ cop.create('TabCompletionLayer').refineClass(TextMorph, {
 
 TabCompletionLayer.beGlobal();
 
-})
+
+}) // end of module

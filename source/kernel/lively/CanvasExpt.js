@@ -38,6 +38,21 @@
 //
 //	Performance - cache color strings, gradient objects
 
+// Overwrite Morph.makeLine since EmuDom does not support paths
+Object.extend(Morph, {
+	makeLine: function(verts, lineWidth, lineColor) {
+		// make a line with its origin at the first vertex
+		// Note this works for simple lines (2 vertices) and general polylines
+		//verts = verts.invoke('subPt', verts[0]);
+		var shape = new lively.scene.Polyline(verts);
+		var morph = new Morph(shape);
+		morph.setBorderWidth(lineWidth);
+		morph.setBorderColor(lineColor);
+		morph.setFill(null);
+		return morph;
+	},
+});
+
 Morph.addMethods({  // Damage propagation
 
 	changed: function() { // Means we have to redraw due to altered content
@@ -195,6 +210,7 @@ WorldMorph.addMethods({  // World
 		// This is called after World.doOneCycle, and Hand.handleEvent
 		// set this.showDamageRectangles to true to see damage rectangles in action
 		if (this !== WorldMorph.current()) { // Might happen if doOneCycle in inactive world
+			debugger
 			console.log('inactive world');
 			return;
 		}
@@ -263,11 +279,12 @@ HandMorph.addMethods({  // Canvas Display
 	},
 
 	unregisterForEvents: function(morphOrNode) {
+debugger
 		this.addOrRemoveEvents(morphOrNode, Event.basicInputEvents, true);
 				
 		// Unregister for events from the 2D canvas as well
 		var canvas = document.getElementById('lively.canvas');
-		if (morphOrNode === this || canvas == null) return;
+		if (morphOrNode === canvas || canvas == null) return;
 		this.addOrRemoveEvents(canvas, Event.basicInputEvents, true);
 	},
 

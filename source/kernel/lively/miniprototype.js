@@ -105,13 +105,16 @@ Object.extend(Function.prototype, {
     return names.length == 1 && !names[0] ? [] : names;
   },
 
-  curry: function curry() {
-    if (!arguments.length) return this;
-    var __method = this, args = $A(arguments);
-    return function curried() {
-      return __method.apply(this, args.concat($A(arguments)));
-    }
-  },
+	curry: function curry() {
+		if (!arguments.length) return this;
+		var __method = this, args = $A(arguments),
+			wrappedFunc = function curried() {
+				return __method.apply(this, args.concat($A(arguments)));
+			}
+		wrappedFunc.isWrapper = true;
+		wrappedFunc.originalFunction = __method;
+		return wrappedFunc;
+	},
 
   delay: function delay() {
     var __method = this, args = $A(arguments), timeout = args.shift() * 1000;
@@ -526,15 +529,29 @@ Object.extend(Array.prototype, {
 	if (!this.include(item)) this.push(item);
   },
 
-	nestedDelay: function(iterator, waitSecs, endFunc, context) {
+	nestedDelay: function(iterator, waitSecs, endFunc, context, optSynchronChunks) {
 		endFunc = endFunc || function() {};
 		return this.reverse().inject(endFunc, function(nextFunc, ea, idx) {
 			return function() {
 				iterator.call(context || Global, ea, idx);
-				nextFunc.delay(waitSecs);
+				// only really delay every n'th call optionally
+				if (optSynchronChunks && (idx % optSynchronChunks  != 0)) {
+					nextFunc()
+				} else {
+					nextFunc.delay(waitSecs);
+				}
 			}
 		})();
 	},
+	doAndContinue: function(iterator, endFunc, context) {
+		endFunc = endFunc || function() {};
+		return this.reverse().inject(endFunc, function(nextFunc, ea, idx) {
+			return function() {
+				iterator.call(context || Global, nextFunc, ea, idx);
+			}
+		})();
+	},
+
 
 });
 

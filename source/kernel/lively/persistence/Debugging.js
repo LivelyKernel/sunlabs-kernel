@@ -23,6 +23,120 @@
 
 module('lively.persistence.Debugging').requires().toRun(function() {
 
+ObjectGraphLinearizer.addMethods(
+'debugging', {
+	serializedPropertiesOfId: function(id) {
+		// return property names of obj behind id
+		return Properties.all(this.getRegisteredObjectFromId(id))
+	},
+	referencesAndClassNamesOfId: function(id) {
+		// given an id, the regObj behind it is taken and for all its references a list is assembled
+		// [id:ClassName]
+		return this.referencesOfId(id).collect(function(id) {
+			var refRegisteredObj = this.getRegisteredObjectFromId(id)
+			return id + ':' + refRegisteredObj[ClassPlugin.prototype.classNameProperty];
+		}, this)
+	},
+	referencesOfId: function(id) {
+		// all the ids an regObj (given by id) points to
+		var registeredObj = this.getRegisteredObjectFromId(id), result = []
+		Properties.forEachOwn(registeredObj, function(key, value) {
+			if (Object.isArray(value)) {
+				result = result.concat(this.referencesInArray(value));
+				return
+			};
+			if (!value || !this.isReference(value)) return;
+			var refRegisteredObj = this.getRegisteredObjectFromId(value.id)
+			result.push(value.id);
+		}, this);
+		return result;
+	},
+	referencesInArray: function(arr) {
+		// helper for referencesOfId
+		var result = [];
+		arr.forEach(function(value) {
+			if (Object.isArray(value)) {
+				result = result.concat(this.referencesInArray(value));
+				return
+			};
+			if (!value || !this.isReference(value)) return;
+			var refRegisteredObj = this.getRegisteredObjectFromId(value.id)
+			result.push(value.id);
+		}, this)
+		return result
+	},
+
+
+	idsFromObjectThatReferenceId: function(wantedId) {
+		// all ids from regObj pointing to wantedId
+		var result = [], serializer = this;
+		function searchIn(obj, id) {
+			Object.values(obj).forEach(function(ref) {
+				if (serializer.isReference(ref) && ref.id == wantedId) result.push(id);
+				if (Object.isArray(ref)) searchIn(ref, id);
+			})
+		}
+		Properties.all(this.registry).forEach(function(id) {
+			searchIn(this.getRegisteredObjectFromId(id), id);
+		}, this)
+		return result;
+	},
+	objectsReferencingId: function(id) {
+		// get the regObjs for ids
+		return this
+			.idsFromObjectThatReferenceId(id)
+			.collect(function(id) { return this.getRegisteredObjectFromId(id) }, this);
+	},
+
+	objectsDo: function(func, jso) {
+		// example:
+		// browsers = []
+		// serializer.objectsDo(function(obj, id) {
+		//	 if (obj.__LivelyClassName__ == 'lively.ide.SystemBrowser')
+		//		browsers.push(id)
+		// })
+		Properties.all(jso || this.registry).forEach(function(id) {
+			func(this.getRegisteredObjectFromId(id), id)
+		}, this);
+	},
+	findIdReferencePathFromToId: function(fromId, toId, showClassNames) {
+		// how can one get from obj behind fromId to obj behind toId
+		// returns an array of ids
+		// serializer.findIdReferencePathFromToId(0, 1548)
+		var s = this, stack = [], visited = {}, found;
+		function pathFromIdToId(fromId, toId, depth) {
+			if (found) return;
+			if (depth > 30) {
+				alert('' + stack)
+				return
+			}
+			if (fromId === toId) { alert('found ' + stack); found = stack.clone() }
+			if (visited[fromId]) return;
+			visited[fromId] = true;
+			stack.push(fromId);
+			var refIds = s.referencesOfId(fromId);
+			for (var  i = 0; i < refIds.length; i++)
+				pathFromIdToId(refIds[i], toId, depth + 1);
+			stack.pop();
+		}
+		pathFromIdToId(fromId, toId, 0)
+
+		if (showClassNames)
+			return found.collect(function(id) {
+				return id + ':' + s.getRegisteredObjectFromId(id)[ClassPlugin.prototype.classNameProperty];
+			});
+
+		return found
+	},
+	showPosOfId: function(id) {
+		var o = this.getRegisteredObjectFromId(id).origin,
+			posObj = this.getRegisteredObjectFromId(o.id),
+			pos = pt(posObj.x, posObj.y)
+		Global.showPt(pos, 3)
+	},
+
+});
+
 Widget.subclass('lively.persistence.Debugging.Inspector',
 'settings', {
 	viewTitle: 'SmartRef Serialization Inspector',
@@ -108,15 +222,6 @@ Object.subclass('lively.persistence.Debugging.Helper',
 	},
 
 	listObjects: function(linearizerRegistry) {
-		function humanReadableByteSize(n) {
-			function round(n) { return Math.round(n * 100) / 100 }
-			if (n < 1000) return String(round(n)) + 'B'
-			n = n / 1024;
-			if (n < 1000) return String(round(n)) + 'KB'
-			n = n / 1024;
-			return String(round(n)) + 'MB'
-		}
-
 		var bytesAltogether = JSON.stringify(linearizerRegistry).length,
 			objCount = Properties.own(linearizerRegistry).length;
 		// aggregagator with output
@@ -128,33 +233,56 @@ Object.subclass('lively.persistence.Debugging.Helper',
 			},
 			toString: function() {
 				return Strings.format('all: %s (%s - %s per obj)',
-								humanReadableByteSize(bytesAltogether), objCount,
-								humanReadableByteSize(bytesAltogether / objCount))  +
+								Numbers.humanReadableByteSize(bytesAltogether), objCount,
+								Numbers.humanReadableByteSize(bytesAltogether / objCount))  +
 					'\nclasses:\n' + this.sortedEntries().collect(function(tuple) {
 							return Strings.format('%s: %s (%s - %s per obj)',
-								tuple.name, humanReadableByteSize(tuple.bytes), tuple.count,
-								humanReadableByteSize(tuple.bytes / tuple.count))
+								tuple.name, Numbers.humanReadableByteSize(tuple.bytes), tuple.count,
+								Numbers.humanReadableByteSize(tuple.bytes / tuple.count))
 
 						}, this).join('\n')
+			},
+			biggestObjectsOfType: function(typeString) {
+				return this[typeString].objects
+					.collect(function(ea) { return JSON.stringify(ea) })
+					.sortBy(function(ea) { return ea.length }).reverse()
+					.collect(function(ea) { return JSON.parse(ea) })
 			},
 			toCSV: function() {
 				var lines = ['type,size,size in bytes,count,size per object,size perobject in bytes'];
 				this.sortedEntries().forEach(function(tuple) {
-					lines.push([tuple.name, humanReadableByteSize(tuple.bytes), tuple.bytes, tuple.count,
-					humanReadableByteSize(tuple.bytes / tuple.count), tuple.bytes / tuple.count].join(','))
+					lines.push([tuple.name, Numbers.humanReadableByteSize(tuple.bytes), tuple.bytes, tuple.count,
+					Numbers.humanReadableByteSize(tuple.bytes / tuple.count), tuple.bytes / tuple.count].join(','))
 				});
 				return lines.join('\n');
 			},
 		}
-	
-		Properties.forEachOwn(linearizerRegistry, function(key, value) {
-			var className = value.registeredObject[ClassPlugin.prototype.classNameProperty] || 'plain object';
-			if (!classes[className]) classes[className] = {count: 0, bytes: 0, name: className};
+
+		ObjectGraphLinearizer.allRegisteredObjectsDo(linearizerRegistry, function(key, value) {
+			var className = value[ClassPlugin.prototype.classNameProperty] || 'plain object';
+			if (!classes[className])
+				classes[className] = {
+					count: 0,
+					bytes: 0,
+					name: className,
+					objects: []
+				};
 			classes[className].count++
-			classes[className].bytes += JSON.stringify(value.registeredObject).length;
+			classes[className].bytes += JSON.stringify(value).length;
+			classes[className].objects.push(value);
 		});
 
 		return classes;
+	},
+},
+'filtering', {
+	getObjectsByType: function(linearizerRegistry, typeString) {
+		var result = [];
+		ObjectGraphLinearizer.allRegisteredObjectsDo(linearizerRegistry, function(key, value) {
+			var className = value[ClassPlugin.prototype.classNameProperty] || 'plain object';
+			if (className === typeString) result.push(value);
+		});
+		return result;
 	},
 });
 
@@ -165,9 +293,14 @@ Object.extend(lively.persistence.Debugging.Helper, {
 	listObjects: function(jsonOrJso) {
 		var jso = Object.isString(jsonOrJso) ? JSON.parse(jsonOrJso) : jsonOrJso;
 		if (jso.registry) jso = jso.registry;
-		return new this().listObjects(jso)
+		var result = new this().listObjects(jso);
+		Global.worldSerializationDebuggingObjects = result;
+		return result
 	},
 	prettyPrintJSON: function(json) { return JSON.prettyPrint(json) },
+	getObjectsByType: function(jso, typeString) {
+		return new this().getObjectsByType(jso.registry, typeString);
+	},
 });
 
 

@@ -83,6 +83,8 @@ Object.subclass('TestCase',
 },
 'accessing', {
 	name: function() { return this.constructor.type },
+	testName: function() { return this.name() + '>>' + this.currentSelector },
+
 	
 	id: function() { return this.name() + '>>' + this.currentSelector },
 
@@ -92,23 +94,28 @@ Object.subclass('TestCase',
 	    }, this);
 	},
 
-	toString: function($super) {
-	    return $super() + "(" + this.timeToRun +")"
+	toString: function() {
+	    return "a" + this.constructor.name +"" + "(" + this.timeToRun +")"
 	},
 
 },
 'running', {
 
 	runAll: function(statusUpdateFunc) {
-		var tests = this.createTests();
-			t = Functions.timeToRun(function() {
+		var tests = this.createTests(),
+			time = Functions.timeToRun(function() {
 				tests.forEach(function(test) {
 					test.statusUpdateFunc = statusUpdateFunc;
 					test.runTest();
 				})
-		})
-		this.result.setTimeToRun(this.name(), t);
+			})
+		this.result.setTimeToRun(this.name(), time);
 	},
+	runAllThenDo: function(statusUpdateFunc, whenDoneFunc) {
+		this.runAll(statusUpdateFunc);
+		whenDoneFunc();
+	},
+
 	
 	setUp: function() {},
 	
@@ -163,7 +170,7 @@ Object.subclass('TestCase',
 		message += ' (' + file + ':' + line + ')';
 		message += ' in ' + this.id();
 		this.show(message , 'color: red;');
-		this.statusUpdateFunc && this.statusUpdateFunc(this, 'failure', message);
+		this.statusUpdateFunc && this.statusUpdateFunc(this, 'failure', message, error);
 	},
 
 	addAndSignalSuccess: function() {
@@ -210,6 +217,7 @@ Object.subclass('TestCase',
 	},
 
 	assertEqualState: function(leftObj, rightObj, msg) {
+		// have leftObj and rightObj equal properties?
         msg = (msg ? msg : ' ') + leftObj + " != " + rightObj + " because ";
 		if (!leftObj && !rightObj) return;
 		if (!leftObj || !rightObj) this.assert(false, msg);
@@ -244,25 +252,26 @@ Object.subclass('TestCase',
 	},
 	
 	assertMatches: function(expectedSpec, obj, msg) {
-	  for (var name in expectedSpec) {
-		var expected = expectedSpec[name];
-		var actual = obj[name];
-		if (expected === undefined || expected === null) {
-		  this.assertEquals(expected, actual, name + ' was expected to be ' + expected + (msg ? ' -- ' + msg : ''));
-		  continue;
+		// are all properties in expectedSpec also in and equal in obj?
+		for (var name in expectedSpec) {
+			var expected = expectedSpec[name], actual = obj[name];
+			if (expected === undefined || expected === null) {
+			  this.assertEquals(expected, actual, name + ' was expected to be ' + expected + (msg ? ' -- ' + msg : ''));
+			  continue;
+			}
+
+			if (expected.constructor === Function) continue;
+			
+			switch (expected.constructor) {
+			  case String:
+			  case Boolean:
+			  case Number: {
+				this.assertEquals(expected, actual, name + ' was expected to be ' + expected + (msg ? ' -- ' + msg : ''));
+				continue;
+			  }
+			};
+			this.assertMatches(expected, actual, msg);
 		}
-		if (expected.constructor === Function) continue;
-		//if (!expected && !actual) return;
-		switch (expected.constructor) {
-		  case String:
-		  case Boolean:
-		  case Number: {
-			this.assertEquals(expected, actual, name + ' was expected to be ' + expected + (msg ? ' -- ' + msg : ''));
-			continue;
-		  }
-		};
-		this.assertMatches(expected, actual, msg);
-	  }
 	},
 	
     assertIncludesAll: function(arrayShouldHaveAllItems, fromThisArray, msg) {
@@ -364,7 +373,7 @@ TestCase.subclass('AsyncTestCase', {
 		console.log('Scheduled action for ' + self.currentSelector);
 		(function() {
 			console.log('running delayed action for ' + self.currentSelector);
-			try { func.call(self) } catch(e) { self.addAndSignalFailure(e) }
+			try { func.call(self) } catch(e) { self.done(); self.addAndSignalFailure(e) }
 		}).delay(ms / 1000)
 	},
 
@@ -378,45 +387,44 @@ TestCase.subclass('AsyncTestCase', {
 		} catch (e) { this.addAndSignalFailure(e) }
 	},
 
-	runAll: function(statusUpdateFunc) {
-		var tests = this.createTests();
+	runAll: function(statusUpdateFunc, whenDoneFunc) {
+		var self = this, tests = this.createTests();
 
 		tests.forEach(function(test) {
 			test.statusUpdateFunc = statusUpdateFunc;
 			test.scheduled();
 		});
 
-		var runAllAsync = tests.reverse().inject(
-			function() { console.log('All tests of ' + this.name() + ' done'); }.bind(this),
-			function(testFunc, test) { return test.runAndDoWhenDone.bind(test).curry(testFunc) }
-		);
-
-		runAllAsync();
+		tests.doAndContinue(
+			function(next, test) { test.runAndDoWhenDone(next) },
+			function() { whenDoneFunc && whenDoneFunc(); console.log('All tests of ' + self.name() + ' done') },
+			this);
 
 		return tests;
 	},
+	runAllThenDo: function(statusUpdateFunc, whenDoneFunc) { this.runAll(statusUpdateFunc, whenDoneFunc) },
+
 
 	runAndDoWhenDone: function(func) {
 		this.runTest();
-		var self = this;
-		var waitMs = 100; // time for checking if test is done
+		var self = this, waitMs = 100; // time for checking if test is done
 		(function doWhenDone(timeWaited) {
-				if (timeWaited >= self._maxWaitDelay) {
-					if (!self._errorOccured) {
-						var msg = 'Asynchronous test was not done after ' + timeWaited + 'ms';
-						self.addAndSignalFailure({message: msg, toString: function() { return msg }});
-					}
-					self.done();
+			if (timeWaited >= self._maxWaitDelay) {
+				if (!self._errorOccured) {
+					var msg = 'Asynchronous test was not done after ' + timeWaited + 'ms';
+					self.addAndSignalFailure({message: msg, toString: function() { return msg }});
 				}
-				if (!self.isDone()) {
-					doWhenDone.curry(timeWaited + waitMs).delay(waitMs / 1000);
-					return;
-				}
-				try {
-					self.tearDown();
-				} catch(e) { if (!self._errorOccured) self.addAndSignalFailure(e) }
-				if (!self._errorOccured) self.addAndSignalSuccess();
-				func();
+				self.done();
+			}
+			if (!self.isDone()) {
+				doWhenDone.curry(timeWaited + waitMs).delay(waitMs / 1000);
+				return;
+			}
+			try {
+				self.tearDown();
+			} catch(e) { if (!self._errorOccured) self.addAndSignalFailure(e) }
+			if (!self._errorOccured) self.addAndSignalSuccess();
+			func();
 		})(0);
 	},
 
@@ -444,11 +452,13 @@ TestCase.subclass('MorphTestCase', {
 	openMorph: function(m) {
 		this.morphs.push(m);
 		this.world.addMorph(m)
+		return m;
 	},
 
 	openMorphAt: function(m, loc) {
 		this.morphs.push(m);
 		this.world.addMorphAt(m, loc)
+		return m;
 	},
 
 });
@@ -493,15 +503,11 @@ Object.subclass('TestSuite', {
 	
 	runDelayed: function() {
 		var testCaseClass = this.testClassesToRun.shift();
-		if (!testCaseClass) {
-			if (this.runFinished) this.runFinished();
-			return
-		}
+		if (!testCaseClass) { this.runFinished && this.runFinished(); return }
+
 		var testCase = new testCaseClass(this.result)
-		if (this.showProgress) this.showProgress(testCase);
-		testCase.runAll();
-		var scheduledRunTests = new SchedulableAction(this, "runDelayed", null, 0);
-		WorldMorph.current().scheduleForLater(scheduledRunTests, 0, false);
+		this.showProgress && this.showProgress(testCase);
+		testCase.runAllThenDo(Functions.Null, this.runDelayed.bind(this));
 	},	
 });
 
@@ -603,8 +609,6 @@ if (!lively.Widgets) return // for usage in non lively environments
 PanelMorph.subclass('TestRunnerPanel', {
 
 	documentation: 'Just a hack for deserializing my widget',
-
-	urlString: URL.source.getDirectory().toString(),
 	
 	onDeserialize: function($super) {
 	//	$super();
@@ -746,55 +750,49 @@ Widget.subclass('TestRunner',
 },
 'running', {
 	
-	runTests: function(buttonDown) {
-		if (buttonDown) return;
+	runTests: function() {
 		this.runSelectedTestCase();
 	},
 
-	runAllTests: function(buttonDown) {
-		if (buttonDown) return;
+	runAllTests: function() {
 		this.runAllTestCases();
 	},
 
 	runSelectedTestCase: function() {
-		var testClassName = this.getSelectedTestClass();
+		var self = this, testClassName = this.getSelectedTestClass();
 		if (!testClassName) return;
-		var testCase = new (Class.forName(testClassName))();
+		var testSuite = new TestSuite();
+		testSuite.setTestCases([Class.forName(testClassName)]);
 		this.setBarColor(Color.darkGray);
-		testCase.runAll();
 		this.resultBar.label.setExtent(this.resultBar.getExtent());
-		this.setResultOf(testCase);
+		testSuite.runFinished = function() { self.setResultOf(testSuite) };
+		testSuite.runAll();
 	},
 	
 	runAllTestCases: function() {
-		var testSuite = new TestSuite();
-		var counter = 1;
-		//all classes from the list
-		testSuite.setTestCases(this.getTestClasses().map(function(ea) {
-		    return Class.forName(ea);
-		}));
-		var self = this;
+		var self = this, testSuite = new TestSuite(), counter = 1;
+
+		// all classes from the list
+		testSuite.setTestCases(this.getTestClasses().map(function(ea) { return Class.forName(ea) }));
 		var max = testSuite.testCaseClasses.length;
 	 	this.setBarColor(Color.darkGray);
 		testSuite.showProgress = function(testCase) {
-		    self.setResultText(testCase.constructor.type);
-		 	var progress = counter /  max;   
+			self.setResultText(testCase.constructor.type);
+			var progress = counter /  max;   
 			self.resultBar.setValue(progress);
 			// console.log("progress " + progress)
 			self.resultBar.label.setExtent(self.resultBar.getExtent());
 
-		    var failureList = testSuite.result.failureList();
-		    if(failureList.length > 0) {
-		        self.setFailureList(failureList);
-		        self.setBarColor(Color.red);
-		    };
-		    counter += 1;
+			var failureList = testSuite.result.failureList();
+			if(failureList.length > 0) {
+				self.setFailureList(failureList);
+				self.setBarColor(Color.red);
+			};
+			counter += 1;
 		};
+		testSuite.runFinished = function() { self.setResultOf(testSuite) };		
+
 		testSuite.runAll();
-		testSuite.runFinished = function() {
-	        self.setResultOf(testSuite);
-		};		
-		
 	},
 
 },

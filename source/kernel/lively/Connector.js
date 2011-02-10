@@ -23,66 +23,29 @@
 
 module('lively.Connector').requires('cop.Layers', 'lively.Helper', 'lively.LayerableMorphs').toRun(function() {
 
-cop.create('NodeMorphLayer').refineClass(Morph, {
-	
-	isPropertyOnIgnoreList: function(prop) {
-		if (prop == "delayUpdateConnectors")
-			return true;
-		return cop.proceed(prop)
-	},
-	
-	changed: function(part) {
-		cop.proceed(part);
-		this.triggerUpdateConnectors();	 
-	},
-
-	// Manual Async Event Handling
-	triggerUpdateConnectors: function() {
-		if (!this.delayUpdateConnectors) {
-			this.delayUpdateConnectors = true;
-			Global.setTimeout(this.updateConnectors.bind(this), 0);
-		}
-	},
-
+cop.create('NodeMorphLayer')
+.refineClass(Morph, {
 	getConnectorMorphs: function() {
-		if(this.connectorMorphs) {
-			return this.connectorMorphs.select(function(ea) { return ea && ea.updateConnection})
-		}
-		return []
-	},
-	
-	updateConnectors: function() {
-		try {
-			this.getConnectorMorphs().each(function(ea) {
-				ea.updateConnection();
-			});
-		} finally {
-			// ensure that, a bug in the update process does not break the triggering of new updates
-			this.delayUpdateConnectors = false; 
-		}
-	},
+		if (this.attributeConnections == undefined)
+			return [];
 
+		return this.attributeConnections
+			.select(function(ea){ return ea.getTargetMethodName() == 'updateConnection'})
+			.collect(function(ea){ return ea.getTargetObj()})
+	},
 	connectLineMorph: function(line) {
-		// console.log("connect line morph " + line);
-		if(!this.connectorMorphs)
-			this.connectorMorphs = [];
-		if(!this.connectorMorphs.include(line))
-			this.connectorMorphs.push(line); 
+		lively.bindings.connect(this, "geometryChanged", line, "updateConnection")
 	},
-
 	deconnectLineMorph: function(line) {
-		if(!this.connectorMorphs)
-			return;
-		this.connectorMorphs = this.connectorMorphs.reject(function(ea){return ea === line;});
-	}
+		lively.bindings.disconnect(this, "geometryChanged", line, "updateConnection")	
+ 	},
 });
 
 
 cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 
 	onMouseUp: function(evt) {
-		var morph = this.findMorphUnderMe();
-		var line = this.owner;
+		var morph = this.findMorphUnderMe(), line = this.owner;
 		// console.log("handle mouse up on " + morph)
 		this.connectToMorph(morph);		
 		var result = cop.proceed(evt);
@@ -101,27 +64,28 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 	},
 
 	connectToMorph: function(newMorph) {
+		var connector = this.owner;
+		// Bugfix for connecting to connector itself
+		if (newMorph === connector.arrowHead.head) newMorph = null;
 		if (newMorph)
 			newMorph.setWithLayers([NodeMorphLayer]);
 		if (this.isStartHandle()) {
 			// console.log("I am a start handle!");
-			if (this.owner.startMorph) {
-				this.owner.startMorph.deconnectLineMorph(this.owner);
-			}
-			this.owner.startMorph = newMorph;
+			if (connector.startMorph)
+				connector.startMorph.deconnectLineMorph(connector);
+			connector.startMorph = newMorph;
 		}
-		if (this.isEndHandle() ) {
+		if (this.isEndHandle()) {
 			// console.log("I am an end handle!");
-			if (this.owner.endMorph) {
-				this.owner.endMorph.deconnectLineMorph(this.owner);
-			}
-			this.owner.endMorph = newMorph;
+			if (connector.endMorph)
+				connector.endMorph.deconnectLineMorph(connector);
+			connector.endMorph = newMorph;
 		}
 
 		if (newMorph) {
-			newMorph.connectLineMorph(this.owner);
+			newMorph.connectLineMorph(connector);
 			// console.log("connect to new morph " + newMorph)
-			this.owner.updateConnection();
+			connector.updateConnection();
 		}			
 	},
 
@@ -149,169 +113,9 @@ cop.create("ConnectorMorphLayer").refineClass(HandleMorph, {
 	},
 
 	getGlobalPosition: function() {
-		if (!this.owner)
-			return this.getPosition();
-		return this.owner.getGlobalTransform().transformPoint(this.getPosition());
-	}
-}).refineClass(Morph, {
-	
-	setupConnector: function() {
-		var lineColor = Color.black;
-		this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
-		this.addMorph(this.arrowHead);
-		this.updateArrow()
-	},
-
-	setVertices: function(verts) {
-  		cop.proceed(verts);
-		this.updateArrow();
-	},
-
-  	updateArrow: function() {
-		if (!this.arrowHead)
-			return;
-        var v = this.shape.vertices();
-        var toPos = v[v.length-1];
-        var fromPos = v[v.length-2];
-        this.arrowHead.pointFromTo(fromPos, toPos);
-   	},
-
-	get openForDragAndDrop() {
-		return false;
-	},
-
-	updateConnection: function () {
-		// console.log("updateConnection");
-		var world = this.world();
-		if (!this.world) return; // because of localize...
-				
-		if (this.startMorph) {
-			var obj1 = this.startMorph;
-			var bb1 = obj1.getGlobalTransform().transformRectToRect(obj1.shape.bounds());
-		} else {
-			var bb1 = rect(this.getGlobalStartPos(),this.getGlobalStartPos());
-		}
-		if (this.endMorph) {
-			var obj2 = this.endMorph;
-			var bb2 = obj2.getGlobalTransform().transformRectToRect(obj2.shape.bounds());
-		} else {
-			var bb2 = rect(this.getGlobalEndPos(),this.getGlobalEndPos());
-		}
-
-		var line = this;
-
-		// copied and adpated from graffle Raphael 1.2.1 - JavaScript Vector Library
-	    var p = [{x: bb1.x + bb1.width / 2, y: bb1.y - 1},
-	        {x: bb1.x + bb1.width / 2, y: bb1.y + bb1.height + 1},
-	        {x: bb1.x - 1, y: bb1.y + bb1.height / 2},
-	        {x: bb1.x + bb1.width + 1, y: bb1.y + bb1.height / 2},
-	        {x: bb2.x + bb2.width / 2, y: bb2.y - 1},
-	        {x: bb2.x + bb2.width / 2, y: bb2.y + bb2.height + 1},
-	        {x: bb2.x - 1, y: bb2.y + bb2.height / 2},
-	        {x: bb2.x + bb2.width + 1, y: bb2.y + bb2.height / 2}];
-	    var d = {}, dis = [];
-	    for (var i = 0; i < 4; i++) {
-	        for (var j = 4; j < 8; j++) {
-	            var dx = Math.abs(p[i].x - p[j].x),
-	                dy = Math.abs(p[i].y - p[j].y);
-	            if ((i == j - 4) || (((i != 3 && j != 6) || 
-					p[i].x < p[j].x) && ((i != 2 && j != 7) || p[i].x > p[j].x) && ((i != 0 && j != 5) || 
-					p[i].y > p[j].y) && ((i != 1 && j != 4) || p[i].y < p[j].y))) {
-	    	            dis.push(dx + dy);
-	     	           d[dis[dis.length - 1]] = [i, j];
-	            }
-	        }
-	    }
-	    if (dis.length == 0) {
-	        var res = [0, 4];
-	    } else {
-	        var res = d[Math.min.apply(Math, dis)];
-	    }
-	    var x1 = p[res[0]].x,
-	        y1 = p[res[0]].y,
-	        x4 = p[res[1]].x,
-	        y4 = p[res[1]].y,
-	        dx = Math.max(Math.abs(x1 - x4) / 2, 10),
-	        dy = Math.max(Math.abs(y1 - y4) / 2, 10),
-	        x2 = [x1, x1, x1 - dx, x1 + dx][res[0]].toFixed(3),
-	        y2 = [y1 - dy, y1 + dy, y1, y1][res[0]].toFixed(3),
-	        x3 = [0, 0, 0, 0, x4, x4, x4 - dx, x4 + dx][res[1]].toFixed(3),
-	        y3 = [0, 0, 0, 0, y1 + dy, y1 - dy, y4, y4][res[1]].toFixed(3);
-
-	    var path = ["M", x1.toFixed(3), y1.toFixed(3), 
-					"C", x2, y2, x3, y3, x4.toFixed(3), y4.toFixed(3)].join(",");
-
-		if (obj1)
-			line.setGlobalStartPos(pt(x1, y1));
-			// p2 and p3 are helper points...
-		if (obj2)
-			line.setGlobalEndPos(pt(x4, y4));
-	},
-
-	makeHandle: function(position, partName, evt) {
-		if (partName < 0)
-			return null; // no ellipses...
-		return cop.proceed(position, partName, evt);
-	},
-
-	getStartPos: function() { 
-		return this.shape.vertices().first();
-	},
-	
-	getEndPos: function() { 
-		return this.shape.vertices().last();
-	},
-	
-	setStartPos: function(p) {
-		var v = this.shape.vertices(); 
-		v[0] = p; 
-		this.setVertices(v);
-	},
-	
-	setEndPos: function(p) {
-		var v = this.shape.vertices(); 
-		v[v.length-1] = p; 
-		this.setVertices(v);
-	},
-	
-
-
-	setGlobalStartPos: function(p) {
-		// console.log("set start pos " + p);
-		
-		this.setStartPos(this.localize(p));
-	},
-
-	setGlobalEndPos: function(p) {
-		// console.log("line " + this + " set end pos " + p );
-		
-		this.setEndPos(this.localize(p));
-		
-	},
-
-	getGlobalStartPos: function(p) {
-		return this.worldPoint(this.getStartPos());
-	},
-
-	getGlobalEndPos: function(p) {
-		return this.worldPoint(this.getEndPos());
-	},
-	
-	connectMorphs: function(startMorph, endMorph) {
-		startMorph.setWithLayers([NodeMorphLayer]);
-		endMorph.setWithLayers([NodeMorphLayer]);
-		
-		if (this.startMorph) this.startMorph.deconnectLineMorph(this);
-		if (this.endMorph) this.endMorph.deconnectLineMorph(this)
-		
-		this.startMorph = startMorph;
-		this.endMorph = endMorph;
-			
-		startMorph.connectLineMorph(this);
-		endMorph.connectLineMorph(this);
-		
-		this.updateConnection();
-				
+		return this.owner ?
+			this.owner.getGlobalTransform().transformPoint(this.getPosition()) :
+			this.getPosition();
 	},
 });
 
@@ -325,22 +129,195 @@ cop.create("FindMorphLayer").refineClass(TextMorph, {
 	acceptsDropping: function(){
 		return true
 	}
-})
+});
+
+cop.create('UpdateConnectorLayer')
+.beGlobal()
+.refineClass(WorldMorph, {
+	
+	migrateConnectorMorphs: function() {
+		// replace old connectors with new instance...
+		this.withAllSubmorphsDo(function() {
+			if (this instanceof lively.Connector.ConnectorMorph)
+				return;
+
+			if (this.startMorph && this.endMorph ) {
+				alert("migrate " + this)
+				var m = new lively.Connector.ConnectorMorph();
+				m.connectMorphs(this.startMorph, this.endMorph);
+				this.owner.addMorph(m);
+				this.remove()
+			}
+		})
+
+		// this.withAllSubmorphsDo(function() {
+			// if (this.getWithLayers().include(NodeMorphLayer)) 
+				// this.setupConnectorBindings();
+		// })
+ 	},
+
+	debuggingSubMenuItems: function(evt) {
+		var items = cop.proceed(evt);
+		items.push(["update connectors", this.migrateConnectorMorphs.bind(this)]);
+		return items
+	},
+});
 
 
-// make morphs instance-specifically and structurally layerable
-Object.extend(Morph.prototype, LayerableObjectTrait);
-Morph.prototype.lookupLayersIn = ["owner"];
+Object.extend(Morph, {
+	makeConnector:  function(startPoint, endPoint) {
+		endPoint = endPoint || startPoint;
+		// var m = Morph.makeLine([pt(-1,-1), pt(0,0)], 1, Color.black);
+		// m.setWithLayers([ConnectorMorphLayer]);
+		// m.setupConnector();
+		// m.updateArrow()
+		var m =  new lively.Connector.ConnectorMorph();
+		m.setGlobalStartPos(startPoint);
+		m.setGlobalEndPos(endPoint);
+		m.updateArrow()
+		return m;
+	}
+});
 
-Morph.makeConnector = function(startPoint, endPoint) {
-	endPoint = endPoint || startPoint;
-	var m = Morph.makeLine([pt(-1,-1), pt(0,0)], 1, Color.black);
-	m.setWithLayers([ConnectorMorphLayer]);
-	m.setupConnector();
-	m.setGlobalStartPos(startPoint);
-	m.setGlobalEndPos(endPoint);
-	m.updateArrow()
-	return m
-}
+PathMorph.subclass('lively.Connector.ConnectorMorph',
+'settings', {
+	suppressGrabbing: true,
+},
+'initializing', {
+	initialize: function($super, startPoint, endPoint) {
+		startPoint = startPoint || pt(0,0);
+		endPoint = endPoint || pt(100,100);
+		$super([startPoint, endPoint]);
+		this.setGlobalStartPos(startPoint);
+		this.setGlobalEndPos(endPoint);
+		this.setWithLayers([ConnectorMorphLayer]);
+		this.setupConnector();
+		this.updateArrow()
+	},
+	setupConnector: function() {
+		var lineColor = Color.black;
+		this.arrowHead = new ArrowHeadMorph(1, lineColor, lineColor);
+		this.addMorph(this.arrowHead);
+		this.updateArrow()
+	},
+},
+'morphic', {
+
+	remove: function($super) {
+		this.disconnectMorphs();
+		return $super();
+	}
+},
+'accessing', {
+	getStartPos: function() { return this.shape.vertices().first() },
+	getEndPos: function() { return this.shape.vertices().last() },
+	
+	setStartPos: function(p) {
+		var v = this.shape.vertices(); 
+		v[0] = p; 
+		this.setVertices(v);
+	},
+	
+	setEndPos: function(p) {
+		var v = this.shape.vertices(); 
+		v[v.length-1] = p; 
+		this.setVertices(v);
+	},
+
+	setGlobalStartPos: function(p) { this.setStartPos(this.localize(p)) },
+	setGlobalEndPos: function(p) { this.setEndPos(this.localize(p)) },
+	getGlobalStartPos: function(p) { return this.worldPoint(this.getStartPos()) },
+	getGlobalEndPos: function(p) { return this.worldPoint(this.getEndPos()) },
+},
+'updating', {
+  	updateArrow: function() {
+		if (!this.arrowHead) return;
+		// get to points at the end of the path and calculate a vector
+		var toPos = this.getRelativePoint(1),
+			fromPos = this.getRelativePoint(0.9); // some point near the end
+		this.arrowHead.pointFromTo(fromPos, toPos);
+   	},
+	updateConnection: function (force) {
+		// console.log("updateConnection");
+		if (!this.world()) return; // because of localize...
+		var obj1 = this.startMorph,
+			obj2 = this.endMorph,
+			bb1 = obj1 ? obj1.getGlobalTransform().transformRectToRect(obj1.shape.bounds()) :
+						rect(this.getGlobalStartPos(), this.getGlobalStartPos()),
+			bb2 = obj2 ? obj2.getGlobalTransform().transformRectToRect(obj2.shape.bounds()) :
+						bb2 = rect(this.getGlobalEndPos(), this.getGlobalEndPos());
+
+		var ptArr = this.pathBetweenRects(bb1, bb2),
+			p1 = ptArr[0],
+			c1 = ptArr[1],
+			c2 = ptArr[2],
+			p2 = ptArr[3],
+			oldP1 = this.getStartPos(),
+			oldP2 = this.getEndPos();
+
+		if (!force && oldP1.eqPt(p1) && oldP2.eqPt(p2)) return;
+
+		// to not move the connectors because of rounding errors
+		p1 = obj1 ? p1 : this.getGlobalStartPos();
+		p2 = obj2 ? p2 : this.getGlobalEndPos()
+
+		this.updatePath(p1, c1, c2, p2);
+	},
+	updatePath: function(p1, c1, c2, p2) {
+		this.shape.setVertices([p1,p2]);
+		if (this.isCurve) {
+			var elements = this.shape.getElements(), e = elements.last();
+			// only has an effect when ctrl point was not edited by ser because then it's a Q
+			if (e.charCode == 'C') { // it's a BezierCurve with 2 ctrl pts that we will upd
+				e.controlX1 = c1.x;
+				e.controlY1 = c1.y;
+				e.controlX2 = c2.x;
+				e.controlY2 = c2.y;
+				this.shape.setElements(elements);
+			}
+		}
+		this.updateArrow();
+		return;
+	},
+	toggleLineStyle: function($super) {
+		$super();
+		this.updateArrow();
+	},
+},
+'connecting', {
+	connectMorphs: function(startMorph, endMorph) {
+		if (startMorph) startMorph.addWithLayer(NodeMorphLayer);
+		if (endMorph) endMorph.addWithLayer(NodeMorphLayer);
+		
+		if (this.startMorph) this.startMorph.deconnectLineMorph(this);
+		if (this.endMorph) this.endMorph.deconnectLineMorph(this)
+		
+		this.startMorph = startMorph;
+		this.endMorph = endMorph;
+			
+		if (startMorph) startMorph.connectLineMorph(this);
+		if (endMorph) endMorph.connectLineMorph(this);
+		
+		this.updateConnection();				
+	},
+	connectEndMorph: function(endMorph) {
+		if (endMorph) endMorph.addWithLayer(NodeMorphLayer);
+		if (this.endMorph) this.endMorph.deconnectLineMorph(this)
+		this.endMorph = endMorph;		
+		if (endMorph) endMorph.connectLineMorph(this);
+		
+		this.updateConnection();				
+	},
+
+	disconnectMorphs: function(s) {	
+		if (this.startMorph) this.startMorph.deconnectLineMorph(this);
+		if (this.endMorph) this.endMorph.deconnectLineMorph(this)
+		this.startMorph = null;
+		this.endMorph = null;			
+	},
+
+});
+
+
 
 }); // module Connector

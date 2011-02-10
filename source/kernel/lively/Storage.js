@@ -27,7 +27,7 @@
  * Storage.js.  Storage system implementation.
  */
 
-module('lively.Storage').requires('lively.Network', 'lively.Widgets').toRun(function(module) {
+module('lively.Storage').requires('lively.Network', 'lively.Widgets', 'lively.Data').toRun(function(module) {
 
 
 BoxMorph.subclass('PackageMorph', {
@@ -176,7 +176,7 @@ lively.data.Wrapper.subclass('lively.Storage.CollectionItem', {
 
 	asSVNVersionInfo: function() {
 		var r = this.rawNode;
-		// FIXME cleanup --> SVNResource>>pvtSetMetadataDoc
+		// FIXME cleanup --> Similar code exists  in lively.Network -> pvtSetMeta...sth
 		// rk 2/22/10: the namespace tag lp1 is required by Firefox
 		var prefix = UserAgent.fireFoxVersion ? 'lp1:' : '';
 
@@ -195,7 +195,7 @@ lively.data.Wrapper.subclass('lively.Storage.CollectionItem', {
 
 
 View.subclass('lively.Storage.WebFile', NetRequestReporterTrait, { 
-    documentation: "Read/Write file",     // merge with Resource?
+    documentation: "Read/Write file",     // merge with Network?
     formals: ["-File", "Content", "+CollectionItems", "+DirectoryList", "-RootNode"],
 
     initialize: function($super, plug) {
@@ -266,7 +266,7 @@ View.subclass('lively.Storage.WebFile', NetRequestReporterTrait, {
     },
 
     saveFileContent: function(url, content) {
-	new Resource(Record.newPlainInstance({URL: url})).store(content);
+		new WebResource(url).beAsync().put(content);
     },
 
     pvtSetFileContent: function(responseText) {
@@ -514,118 +514,16 @@ TwoPaneBrowser.subclass('FileBrowser', {
     initialize: function($super, rootNode) {
 	if (!rootNode) rootNode = URL.source.getDirectory();
 	$super(rootNode, new module.WebFile(), new module.WebFile());
-	var model = this.getModel();
-	var browser = this;
+	var model = this.getModel(), browser = this;
 
-	function addSvnItems(url, items) {
-	    var svnPath = url.svnWorkspacePath();
-	    if (!svnPath) return;
-	    items.push(["repository info", function(evt) {
-		var m = Record.newPlainInstance({Info: "fetching info"});
-		var s = new Subversion();
-		s.connectModel(m.newRelay({ServerResponse: "+Info"}));
-		var txt = this.world().addTextWindow({
-		    acceptInput: false,
-		    title: "info " + url,
-		    position: evt.point()
-		});
-		m.addObserver(txt, { Info: "!Text" });
-		s.info(svnPath);
-	    }]);
-	    items.push(["repository diff", function(evt) {
-		var m = new SyntheticModel(["Diff"]);
-		this.world().addTextWindow({acceptInput: false,
-					    plug: {model: m, getText: "getDiff"},
-					    title: "diff " + url,
-					    position: evt.point() });
-		new Subversion({model: m, setServerResponse: "setDiff"}).diff(svnPath);
-			       
-	    }]);
-	    items.push(["repository commit", function(evt) {
-		var world = this.world();
-		world.prompt("Enter commit message", function(message) {
-		    if (!message) {
-			// FIXME: pop an alert if message empty
-			console.log("cancelled commit");
-			return;
-		    }
-		    var m = new SyntheticModel(["CommitStatus"]);
-		    this.world().addTextWindow({acceptInput: false,
-						title: "commit " + url, 
-						plug: {model: m, getText: "getCommitStatus"}, 
-						position: evt.point() });
-		    new Subversion({model: m, setServerResponse: "setCommitStatus"}).commit(svnPath, message);
-		});
-	    }]);
-	    items.push(["repository log", function(evt) {
-		var world = this.world();
-		var url = URL.common.repository.withRelativePath(svnPath);
-
-		var model = Record.newPlainInstance({
-		    HeadRevision: 0, 
-		    RevisionHistory: null, 
-		    ReportDocument: null, 
-		    LogItems: null, 
-		    URL: url});
-		
-		var res = new Resource(model.newRelay({URL: "-URL", ContentDocument: "+ReportDocument"}));
-		
-		var q = new Query("//S:log-item", model.newRelay({ContextNode: "-RevisionHistory",
-								  Results: "+LogItems"}));
-		
-		model.addObserver({  //app logic is here
-		    onHeadRevisionUpdate: function(rev) {
-			res.fetchVersionHistory(rev, 0, model);
-		    },
-		    
-		    onLogItemsUpdate: function(items) {
-			var content = items.map(function(node) { 
-			    var creator = node.getElementsByTagName("creator-displayname")[0].textContent;
-			    var date = node.getElementsByTagName("date")[0].textContent;
-			    var comment = node.getElementsByTagName("comment")[0].textContent;
-			    return Strings.format("On %s by %s: %s", date, creator, comment);
-			});
-			var world = WorldMorph.current();
-			
-			world.addTextListWindow({ 
-			    extent: pt(500, 300), 
-			    content: content,
-			    title: "log history for " + url.filename(),
-			    plug: Record.newPlainInstance({
-				List: content,
-				Menu: [['show head revision', function() {
-				    world.alert('head revision ' + model.getHeadRevision())
-				}]]
-			    }).newRelay({List: "-List", Menu: "-Menu"})
-			});
-		    }
-		});
-		
-		res.fetchHeadRevision(model);
-		
-	    }]);
-
-
-	    
-	}
 	function addWebDAVItems(url, items) { 
 	    items.push(["get WebDAV info", function(evt) {
-		var m = Record.newPlainInstance({ Properties: null, PropertiesString: "", URL: url});
-		m.addObserver({  // ad-hoc observer, convenient data conversion
-		    onPropertiesUpdate: function(doc) { 
-			m.setPropertiesString(Exporter.stringify(doc));
-		    }
-		});
-		
-		var txt = this.world().addTextWindow({acceptInput: false,
-		    title: url,
-		    position: evt.point() });
-		txt.connectModel(m.newRelay({Text : "-PropertiesString"}));
-		
-		var res = new Resource(m);
-		// resource would try to use its own synthetic model, which is useless
-		res.fetchProperties(m);
-		
+			var webR = new WebResource(url).beAsync();
+			lively.bindings.connect(webR, 'contentDocument', this.world(), 'addTextWindow', {
+				converter: function(doc) {
+					return {acceptInput: false, title: url, position: evt.point(), content: Exporter.stringify(doc)};
+				}});
+			webR.getProperties(m);
 	    }]);
 	    
 	}
@@ -649,7 +547,6 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		}]
 	    ];
 	    addWebDAVItems(selected, items);
-	    addSvnItems(selected, items);
 	    return items;
 	};
 
@@ -681,43 +578,29 @@ TwoPaneBrowser.subclass('FileBrowser', {
 		["get modification time (temp)", browser, "onMenuShowModificationTime", url] // will go away
 	    ];
 	    addWebDAVItems(url, items);
-	    addSvnItems(url, items);
 
 	    // FIXME if not trunk, diff with trunk here.
 	    var shortName = url.filename();
-	    if (shortName.endsWith(".xhtml")) {
-		items.push(["load into current world", function(evt) {
-		    new NetRequest({model: new NetImporter(), setResponseXML: "loadWorldContentsInCurrent", 
-				    setStatus: "setRequestStatus"}).get(url);
-		}]);
 		
-		items.push(["load into new linked world", function(evt) {
-		    new NetRequest({model: new NetImporter(), setResponseXML: "loadWorldInSubworld",
-				    setStatus: "setRequestStatus"}).get(url);
-		}]);
-		
-	    } else if (shortName.endsWith(".js")) {
-		items.push(["evaluate as Javascript", function(evt) {
-		    var importer = NetImporter();
-		    importer.onCodeLoad = function(error) {
-			if (error) evt.hand.world().alert("eval got error " + error);
-		    }
-		    importer.loadCode(url); 
-		}]);
+		if (shortName.endsWith(".js")) {
+			items.push(["evaluate as Javascript", function(evt) {
+				var code = new WebResource(url).get().content;
+				try { eval(code) } catch(e) { evt.hand.world().alert("eval got error " + e) }
+			}]);
 	    } else if (FileBrowser.prototype.isGraphicFile(url)) {
-		// FIXME tell the browser not to load the contents.
-		items.push(["load image", function(evt) {
-		    var img = new ImageMorph(rect(pt(0,0), pt(500*2, 380*2)), fileName);
-		    evt.hand.world().addFramedMorph(img, shortName, evt.point());
-		}]);
+			// FIXME tell the browser not to load the contents.
+			items.push(["load image", function(evt) {
+			    var img = new ImageMorph(rect(pt(0,0), pt(500*2, 380*2)), fileName);
+			    evt.hand.world().addFramedMorph(img, shortName, evt.point());
+			}]);
 	    }
 	    
 	    if (lively.Tools.SourceControl) {
-		var fileName = url.filename();
-		items.unshift(['open a changeList browser', function(evt) {
-                    var chgList = lively.Tools.SourceControl.changeListForFileNamed(fileName);
-		    new ChangeList(fileName, null, chgList).openIn(this.world()); 
-		}]);
+			var fileName = url.filename();
+			items.unshift(['open a changeList browser', function(evt) {
+	                    var chgList = lively.Tools.SourceControl.changeListForFileNamed(fileName);
+			    new ChangeList(fileName, null, chgList).openIn(this.world()); 
+			}]);
 	    }
 	    return items; 
 	};
@@ -739,61 +622,59 @@ TwoPaneBrowser.subclass('FileBrowser', {
     },
 
     onMenuShowModificationTime: function(url, evt) {
-	// to be removed
-	var model = new SyntheticModel(["InspectedNode", "ModTime"]);
-	var res = new Resource({model: model, setContentDocument: "setInspectedNode" });
-	var query = new Query("/D:multistatus/D:response/D:propstat/D:prop/D:getlastmodified", 
-	    {model: model, getContextNode: "getInspectedNode", setResults: "setModTime"});
-	res.fetchProperties(model, true);
-	evt.hand.world().alert('result is ' + Exporter.stringifyArray(model.getModTime(), '\n'));
+		var webR = new WebResource(url).beAsync();
+		lively.bindings.connect(webR, 'contentDocument', evt.hand().world(), 'alert', {
+			converter: function(doc) {
+				var q = new Query("/D:multistatus/D:response/D:propstat/D:prop/D:getlastmodified"),
+					result = q.findAll(doc);
+				return Exporter.stringifyArray(result, '\n')
+			}});			
+		webR.getProperties();
     },
     
-    removeNode: function(url) {
-	var model = this.getModel();
-	if (!url.isLeaf()) {
-	    WorldMorph.current().alert("will not erase directory " + url);
-	    model.setLowerNodeDeletionConfirmation(false);
-	    return;
-	}
-	
-        WorldMorph.current().confirm("delete resource " + url, function(result) {
-	    if (result) {
-		var eraser = { 
-		    setRequestStatus: function(status) { 
-			if (status.isSuccess()) 
-			    model.setLowerNodeDeletionConfirmation(true);
-			NetRequestReporterTrait.setRequestStatus.call(this, status);
-		    }
-		};
-		new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(url);
-	    } else console.log("cancelled removal of " + url);
-	});
-    },
+	removeNode: function(url) {
+		var model = this.getModel();
+		if (!url.isLeaf()) {
+			WorldMorph.current().alert("will not erase directory " + url);
+			model.setLowerNodeDeletionConfirmation(false);
+			return;
+		}
+		WorldMorph.current().confirm("delete resource " + url, function(result) {
+			if (!result) { console.log("cancelled removal of " + url); return }
+			var eraser = { 
+				setRequestStatus: function(status) { 
+					if (status.isSuccess()) 
+						model.setLowerNodeDeletionConfirmation(true);
+					NetRequestReporterTrait.setRequestStatus.call(this, status);
+				}
+			};
+			new NetRequest({model: eraser, setStatus: "setRequestStatus"}).del(url);
+		});
+	},
 
 
-    retrieveParentNode: function(node) {
-	return node.getDirectory();
-    },
+	retrieveParentNode: function(node) {
+		return node.getDirectory();
+	},
 
-    nodesToNames: function(nodes, parent) {
-	var UPLINK = this.UPLINK;
-	// FIXME: this may depend too much on correct normalization, which we don't quite do.
-	return nodes.map(function(node) { return node.eq(parent) ?  UPLINK : node.filename()});
-    },
+	nodesToNames: function(nodes, parent) {
+		var UPLINK = this.UPLINK;
+		// FIXME: this may depend too much on correct normalization, which we don't quite do.
+		return nodes.map(function(node) { return node.eq(parent) ?  UPLINK : node.filename()});
+	},
 
-    isLeafNode: function(node) {
-	return node.isLeaf();
-    },
-    
-    deriveChildNode: function(parentNode, childName)  {
-	return parentNode.withFilename(childName);
-    },
+	isLeafNode: function(node) {
+		return node.isLeaf();
+	},
 
-    nodeEqual: function(n1, n2) {
-	return n1.eq(n2);
-    }
+	deriveChildNode: function(parentNode, childName)  {
+		return parentNode.withFilename(childName);
+	},
 
-	
+	nodeEqual: function(n1, n2) {
+		return n1.eq(n2);
+	},
+		
 });
 
 

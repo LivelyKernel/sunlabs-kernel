@@ -39,7 +39,7 @@ Object.subclass('lively.Text.CharacterInfo', {
 
 	toString: function() {
 		return this.width + "x" + this.height;
-	}
+	},
 
 });
 
@@ -78,21 +78,30 @@ Object.subclass('lively.Text.Font', {
 	},
 
 	getCharWidth: function(charString) {
-		var code = charString.charCodeAt(0);
-		if (!this.extents)
-			this.extents = this.computeExtents(this.family, this.size, this.style);
-		var w = this.extents[code] ? this.extents[code].width : 4;
-		if (isNaN(w)) {
+		var extent = this.getCharExtentFor(charString)
+		if (!extent || isNaN(extent.width)) {
 			console.warn('getCharWidth: no width for ' + charString);
 			return 4;  // don't crash
 		}
-		return w * 1;
+		return extent.width * 1;
 	},
 
 	getCharHeight: function(charString) {
+		var extent = this.getCharExtentFor(charString);
+		if (!extent || isNaN(extent.height)) {
+			console.warn('getCharHeight: no height for ' + charString);
+			return 12;
+		}
+		return extent.height * 1;
+	},
+
+	getCharExtentFor: function(charString) {
 		var code = charString.charCodeAt(0);
-		if (!this.extents) this.extents = this.computeExtents(this.family, this.size);
-		return this.extents[code] ? this.extents[code].height : 12;
+		if (!this.extents)
+			this.extents = this.computeExtents(this.family, this.size, this.style);
+		if (!this.extents[code])
+			this.extents[code] = this.computeExtentOnTheFlyUsingHTML(this.family, this.size, this.style, charString);
+		return this.extents[code];
 	},
 
 	applyTo: function(wrapper) {
@@ -143,31 +152,14 @@ Object.subclass('lively.Text.Font', {
 
 
 	computeExtentsUsingHTML: function (family, size, style) {
-		var extents = [];
-		var body = null;
-		var doc; // walk up the window chain to find the (X)HTML context
-		for (var win = window; win; win = win.parent) {
-			doc = win.document;
-			var bodies = doc.documentElement.getElementsByTagName('body');
-			if (bodies && bodies.length > 0) {
-				body = bodies[0];
-				break;
-			}
-		}
-		if (!body) return [];
+		var extents = [],
+			d = this.setupHTMLElementForFontMeasure(family, size, style);
 
-		var d = body.appendChild(XHTMLNS.create("div"));
-
-		d.style['letter-spacing'] = 0; // kerning
-		d.style.fontFamily = family;
-		d.style.fontSize   = size + "px";
-		if (style) d.style.fontWeight = style;
-
-		var xWidth = -1;
-		var xCode = 'x'.charCodeAt(0);
+		var xWidth = -1,
+			xCode = 'x'.charCodeAt(0);
 		for (var i = 33; i < 255; i++) {
 			var sub = d.appendChild(XHTMLNS.create("span"));
-			sub.appendChild(doc.createTextNode(String.fromCharCode(i)));
+			sub.appendChild(NodeFactory.createText(String.fromCharCode(i)));
 			extents[i] = new lively.Text.CharacterInfo(sub.offsetWidth,	 sub.offsetHeight);
 			if (i == xCode) xWidth = extents[i].width;
 		}
@@ -176,23 +168,41 @@ Object.subclass('lively.Text.Font', {
 			throw new Error('x Width is ' + xWidth);
 
 		if (d.offsetWidth == 0)
-			console.log("timing problems, expect messed up text for font %s", this);
+			console.warn("timing problems, expect messed up text for font %s", this);
 
 		// handle spaces
 		var sub = d.appendChild(XHTMLNS.create("span"));
-		sub.appendChild(doc.createTextNode('x x'));
-
+		sub.appendChild(NodeFactory.createText('x x'));
 		var spaceWidth = sub.offsetWidth - xWidth * 2;
-		console.log("font " + this + ': space width ' + spaceWidth + ' from ' + sub.offsetWidth + ' xWidth ' + xWidth);	   
 
 		// tjm: sanity check as Firefox seems to do this wrong with certain values
 		if (spaceWidth > 100) spaceWidth = 2 * xWidth / 3
 		extents[(' '.charCodeAt(0))] = new lively.Text.CharacterInfo(spaceWidth, sub.offsetHeight);
 
-		//d.removeChild(span);
-		body.removeChild(d);
+		NodeFactory.remove(d);
 		return extents;
 	},
+	computeExtentOnTheFlyUsingHTML: function(family, size, style, character) {
+		var elem = this.setupHTMLElementForFontMeasure(family, size, style),
+			sub = elem.appendChild(XHTMLNS.create("span"));
+		sub.appendChild(NodeFactory.createText(character));
+		var extent = new lively.Text.CharacterInfo(sub.offsetWidth, sub.offsetHeight);
+		NodeFactory.remove(elem);
+		return extent;
+	},
+	setupHTMLElementForFontMeasure: function(family, size, style) {
+		var body = Global.document.getElementsByTagName('body')[0];
+		if (!body) return null;
+		// setup the DOM element used for measuring
+		var d = body.appendChild(XHTMLNS.create("div"));
+		d.style['letter-spacing'] = 0; // kerning
+		d.style.fontFamily = family;
+		d.style.fontSize   = size + "px";
+		if (style) d.style.fontWeight = style;
+		return d;
+	},
+
+
 
 
 	computeExtentsUsingSVG: function(family, size) {
@@ -493,6 +503,8 @@ Object.subclass('lively.Text.TextLine', {
 	},
 
 	compose: function(compositionWidth, chunkStream) {
+		if (!Object.isString(this.textString)) return; 
+
 		// tag: newText
 		// compose a line of text, breaking it appropriately at compositionWidth
 		// nSpaceChunks is used for alignment in adjustAfterComposition
@@ -801,7 +813,7 @@ Morph.subclass('TextSelectionMorph', {
 
 	documentation: "Visual representation of the text selection",
 	style: {fill: Color.gray, borderWidth: 0, strokeOpacity: 0, borderRadius: 1},
-	cursorColor: Color.black,
+
 	isEpimorph: true,
 	
 	initialize: function($super) {
@@ -813,8 +825,8 @@ Morph.subclass('TextSelectionMorph', {
 	addRectangle: function(rect) {
 		var m = this.addMorph(Morph.makeRectangle(rect));
 		m.applyStyle(this.style);
-		if (this.isCursor) {
-			m.setFill(this.cursorColor)
+		if (this.isCursor && this.owner) {
+			m.setFill(this.owner.cursorColor)
 		}
 		m.ignoreEvents();
 	},
@@ -903,8 +915,16 @@ BoxMorph.subclass('TextMorph',
 	textColor: Color.black,
 	backgroundColor: Color.veryLightGray,
 	style: { borderWidth: 1, borderColor: Color.black},
+
+
+
+
 	padding: Rectangle.inset(6, 4),
-	autoAdjustPadding: true, // setFontSize adjusts padding
+	autoAdjustPadding: true,
+	suppressDropping: true,
+	cursorColor: Color.black,
+
+ // setFontSize adjusts padding
 	wrap: lively.Text.WrapStyle.Normal,
 
 	maxSafeSize: 20000, 
@@ -1016,14 +1036,14 @@ BoxMorph.subclass('TextMorph',
 
 },
 'testing', {
-	acceptsDropping: function() {
+	acceptsDropping: function($super) {
 		// using text morphs as containers feels extremly weired, especially when the fill 
 		// and bounds are not visible like in the wiki
 		// Is there a demo or other rules that needs that behavior? 
 		// rk: I find it often convenient to enable that behavior, e.g. when composing
 		// morphs for a class diagram. I think we should turn it on by default and provide
 		// an easy to reach menu option to disable it
-		return false
+		return $super()
 	},
 
 	showsSelectionWithoutFocus: Functions.False, // Overridden in, eg, Lists
@@ -1352,11 +1372,9 @@ BoxMorph.subclass('TextMorph',
 				importer.finishImport(this.world()); }],
 			["save as ...", function() { 
 				this.world().prompt("save as...", function(filename) {
-					if (!filename) return;
-					var req = new NetRequest({model: new NetRequestReporter(), setStatus: "setRequestStatus"});
-					req.put(URL.source.withFilename(filename), this.xml || this.textString);
-					}.bind(this));
-				}]];
+					if (filename) new WebResource(URL.source.withFilename(filename)).put(this.xml || this.textString);
+				}.bind(this));
+			}]];
 	},
 },
 'status message', {
@@ -1532,6 +1550,7 @@ BoxMorph.subclass('TextMorph',
 		if (this.world())
 			this.requestKeyboardFocus(this.world().firstHand());
 	},
+
 
 },
 'rich text' , {
@@ -2046,9 +2065,11 @@ BoxMorph.subclass('TextMorph',
 
 		function funcSignaturesOf(obj) {
 			var funcs = 'nodeType' in obj ? Functions.all(obj) : Functions.own(obj)
+			funcs = funcs.select(function(name) { return !Class.isClass(obj[name]) });
 			return funcs.collect(function(name) {
 				var source = obj[name].toString(),
-					params = source.match(/function\s*[a-zA-Z0-9_$]*\s*\(([^\)]*)\)/)[1] || '';
+					match = source.match(/function\s*[a-zA-Z0-9_$]*\s*\(([^\)]*)\)/),
+					params = (match && match[1]) || '';
 				return name + '(' + params + ')';
 			}).sort()
 		}
@@ -2113,6 +2134,7 @@ BoxMorph.subclass('TextMorph',
 		return this.tryBoundEval(s.str, s.offset, replaceSelection);
 	},
 
+
 	showError: function(e, offset) {
 		offset = offset || 0;
 		var msg = "" + e + "\n" + 
@@ -2120,8 +2142,7 @@ BoxMorph.subclass('TextMorph',
 			(e.sourceURL ? ("URL: " + (new URL(e.sourceURL).filename()) + "\n") : "");
 		if (e.stack) {
 			// make the stack fit into status window
-			var prefix = (new URL(Config.codeBase)).withRelativePartsResolved().toString()
-			msg += e.stack.replace(new RegExp(prefix, "g"),"");
+			msg += e.stack.replace(new RegExp(URL.codeBase.toString(), "g"),"");
 		}
 
 		var world = WorldMorph.current();
@@ -2179,12 +2200,16 @@ BoxMorph.subclass('TextMorph',
 		// FIXME -- these need to be included in editMenuItems
 		if (evt.isShiftDown()) {  // shifted commands here...
 			switch (key) {
-				case "I": { this.doInspect(true); return true; } // Inspect value of selection
-				case "B": { this.doBrowse(true); return true; } // Browse selected class
-				case "F": { this.doSearch(true); return true; } // Shift-Find alternative for w (search)
-				case "M": { this.doMuchMore(true); return true; } // Repeated replacement
-				case "P": { this.doListProtocol(); return true; } // Create a list of methods
-		};	};
+				case "I": { this.doInspect(true); evt.stop(); return true; } // Inspect value of selection
+				case "B": { this.doBrowse(true); evt.stop(); return true; } // Browse selected class
+				case "F": { this.doSearch(true); evt.stop(); return true; } // Shift-Find alternative for w (search)
+				case "M": { this.doMuchMore(true); evt.stop(); return true; } // Repeated replacement
+				case "P": { this.doListProtocol(); evt.stop(); return true; } // Create a list of methods
+				case "H": { this.highlightJavaScriptSyntax && this.highlightJavaScriptSyntax(); evt.stop(); return true; } // hightlight if available
+
+			};
+			return false;
+		};
 
 		if (key) key = key.toLowerCase();
 		switch (key) {
@@ -2368,7 +2393,7 @@ BoxMorph.subclass('TextMorph',
 'searching', {
 
 	searchForFind: function(str, start) {
-		this.requestKeyboardFocus(this.world().firstHand());
+		if (this.world()) this.requestKeyboardFocus(this.world().firstHand());
 		var i1 = this.textString.indexOf(str, start);
 		if (i1 < 0) i1 = this.textString.indexOf(str, 0); // wrap
 		if (i1 >= 0) this.setSelectionRange(i1, i1+str.length);
@@ -2469,9 +2494,13 @@ BoxMorph.subclass('TextMorph',
 			return match 
 		}
 
+		
 		var oldFirstLine = this.lines[lastLineNoOfA+1];	 // The first line that may change
 		// Note: do we need font at starting index??
-		var newLines = this.composeLines(oldFirstLine.startIndex, oldFirstLine.topLeft, compositionWidth, this.font, testEarlyEnd.bind(this));
+		var oldStartIndex = oldFirstLine ? oldFirstLine.startIndex : 0;
+		var oldTopLeft = oldFirstLine ? oldFirstLine.topLeft : pt(0,0);
+ 
+		var newLines = this.composeLines(oldStartIndex, oldTopLeft, compositionWidth, this.font, testEarlyEnd.bind(this));
 		for (var i = 0; i < newLines.length; i++) newLines[i].render(this.textContent);
 		if (test) console.log("Size of lines before = " + (lastLineNoOfA+1));
 		if (test) console.log("Size of new lines = " + newLines.length);
@@ -2615,7 +2644,9 @@ BoxMorph.subclass('TextMorph',
 	},
 
 	// DI: Should rename fitWidth to be composeLineWrap and fitHeight to be composeWordWrap
-	fitText: function() { 
+	fitText: function() {
+		if (!Object.isString(this.textString)) return;
+ 
 		if (this.wrap == lively.Text.WrapStyle.Normal) 
 			this.fitHeight();
 		else 
@@ -2895,8 +2926,9 @@ BoxMorph.subclass('TextMorph',
 	},
 
 	pvtPositionInString: function(lines, line, linePos) {
-		var pos = 0;
-		for (var i = 0; i < (line - 1); i++)
+		// line counts from 0
+		var pos = 0; 
+		for (var i = 0; i < line ; i++)
 			pos = pos + lines[i].length + 1
 		return pos + linePos
 	},

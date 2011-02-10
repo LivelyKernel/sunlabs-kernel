@@ -48,6 +48,11 @@ Object.subclass('AttributeConnection',
 	copy: function(copier) {
 		return AttributeConnection.fromLiteral(this.toLiteral(), copier);
 	},
+	fixInstanceAfterCopyingFromSite: function(name, ref, index) {
+		// alert("removed connection: "  + this)
+		this.disconnect()
+	},
+
 
 },
 'accessing', {
@@ -128,11 +133,13 @@ Object.subclass('AttributeConnection',
 		// - arguments is slow when it's items are accessed or it's converted using $A
 
 		if (this.isActive/*this.isRecursivelyActivated()*/) return;
-		this.isActive = true; // this.activate();
 		var connection = this, updater = this.getUpdater(), converter = this.getConverter(),
 			target = this.targetObj, propName = this.targetMethodName;
 		if (!target || !propName) {
-			console.error('Cannot update ' + this.toString(newValue) + ' because of no target or targetProp');
+			var msg = 	'Cannot update ' + this.toString(newValue) + ' because of no target (' + 
+					target + ') or targetProp (' + propName+') ';
+			console.error(msg);
+			// alert(msg);
 			return
 		}
 		var targetMethod = target[propName], callOrSetTarget = function(newValue) {
@@ -149,6 +156,7 @@ Object.subclass('AttributeConnection',
 
 		try {
 			// console.log(this.toString(newValue));
+			this.isActive = true;
 			return updater ?
 				updater.call(this, callOrSetTarget, newValue, oldValue) :
 				callOrSetTarget(newValue);		
@@ -156,6 +164,10 @@ Object.subclass('AttributeConnection',
 			dbgOn(Config.debugConnect);
 			console.warn('Error when trying to update ' + this + ' with value '
 				+ newValue + ':\n' + e + '\n' + e.stack);
+
+			if (WorldMorph && WorldMorph.current())
+				WorldMorph.current().logError(e);
+
 		} finally {
 			this.isActive = false;
 		}
@@ -349,7 +361,10 @@ Object.extend(AttributeConnection, {
 });
 
 Object.extend(lively.bindings, {
-	
+
+	documentation: 'connect parameters: source, sourceProp, target, targetProp, spec\n\
+spec can be: {removeAfterUpdate: Boolean, converter: Function, updater: Function}',
+
 	connect: function connect(sourceObj, attrName, targetObj, targetMethodName, specOrConverter) {
 		if (Object.isFunction(specOrConverter)) {
 			console.warn('Directly passing a converter function to connect() is deprecated! Use spec object instead!');
@@ -372,7 +387,7 @@ Object.extend(lively.bindings, {
 	disconnectAll: function(sourceObj) {
 		if (!sourceObj.attributeConnections) return;
 		while (sourceObj.attributeConnections.length > 0)
-			sourceObj.attributeConnections[0].disconnect()
+			sourceObj.attributeConnections[0].disconnect();
 	},
 	
 	signal: function(sourceObj, attrName, newVal) {
@@ -399,34 +414,6 @@ Object.extend(Global, {
 	disconnectAll: lively.bindings.disconnectAll,
 	signal: lively.bindings.signal,
 	updateAttributeConnection: lively.bindings.signal,
-});
-Morph.addMethods('plugs', {
-
-	plugTo: function(model, connectSpec) {
-		// experimental protocol
-		// This message preserves the model-view "plug" API of MVC's pluggable views,
-		// while using the "direct connect" form of change notification
-		// {dir: String, name: String, options: Object}
-		var view = this;
-
-		function parseStringSpec(stringSpec) {
-			var parsed = stringSpec.match(/(<?->?)(.*)/);
-			return {dir: parsed[1], name: parsed[2]};
-		};
-
-		Properties.forEachOwn(connectSpec, function (viewProp, spec) {
-			if (Object.isString(spec)) spec = parseStringSpec(spec);
-			var dir = spec.dir || '->',
-				options = spec.options || {};
-			if (dir == "->" || dir == "<->")
-				lively.bindings.connect(view, viewProp, model, spec.name, options)
-			if (dir == "<-" || dir == "<->")
-				lively.bindings.connect(model, spec.name, view, viewProp, options)
-		});
-
-		return this;
-    },
-
 });
 	
 }); // end of module

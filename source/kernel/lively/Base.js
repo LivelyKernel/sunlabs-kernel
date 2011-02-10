@@ -27,7 +27,7 @@
 // according to rationale_for_es3_1_static_object_methodsaug26.pdf on wiki.ecmascript.org
 // implementation uses __defineGetter__/__proto__ logic
 
-if (!Object.hasOwnProperty('defineProperty')) {
+if (!Object.hasOwnProperty('defineProperty') && !Object.prototype.hasOwnProperty('defineProperty')) {
 	Object.defineProperty = function(object, property, descriptor) {
 		if (typeof descriptor  !== 'object') throw new TypeError();
 		if (descriptor.value) {
@@ -42,7 +42,15 @@ if (!Object.hasOwnProperty('defineProperty')) {
 	};
 }
 
-if (!Object.hasOwnProperty('getOwnPropertyDescriptor')) {
+Object.defineProperties = function(object, descriptorSet) {
+	for (var name in descriptorSet) {
+		if (!descriptorSet.hasOwnProperty(name)) continue;
+		Object.defineProperty(object, name, descriptorSet[name]);
+	}
+	return object;
+}
+
+if (!Object.hasOwnProperty('getOwnPropertyDescriptor') && !Object.prototype.hasOwnProperty('getOwnPropertyDescriptor')) {
 	Object.defineProperties(Object, {
 		getOwnPropertyDescriptor: { 
 			value: function(object, name) {
@@ -62,7 +70,7 @@ if (!Object.hasOwnProperty('getOwnPropertyDescriptor')) {
 	});
 }
 
-if (!Object.hasOwnProperty('__lookupGetter__')) {
+if (!Object.hasOwnProperty('__lookupGetter__') && !Object.prototype.hasOwnProperty('__lookupGetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__lookupGetter__': {
 			enumerable: false,
@@ -80,7 +88,7 @@ if (!Object.hasOwnProperty('__lookupGetter__')) {
 	});
 }
 
-if (!Object.hasOwnProperty('__lookupSetter__')) {
+if (!Object.hasOwnProperty('__lookupSetter__') && !Object.prototype.hasOwnProperty('__lookupSetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__lookupSetter__': {
 			enumerable: false,
@@ -98,7 +106,7 @@ if (!Object.hasOwnProperty('__lookupSetter__')) {
 	});
 }
 
-if (!Object.hasOwnProperty('__defineGetter__')) {
+if (!Object.hasOwnProperty('__defineGetter__') && !Object.prototype.hasOwnProperty('__defineGetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__defineGetter__': {
 			enumerable: false,
@@ -110,7 +118,7 @@ if (!Object.hasOwnProperty('__defineGetter__')) {
 	});
 }
 
-if (!Object.hasOwnProperty('__defineSetter__')) {
+if (!Object.hasOwnProperty('__defineSetter__') && !Object.prototype.hasOwnProperty('__defineSetter__')) {
 	Object.defineProperties(Object.prototype, {
 		'__defineSetter__': {
 			enumerable: false,
@@ -120,14 +128,6 @@ if (!Object.hasOwnProperty('__defineSetter__')) {
 			}
 		}
 	});
-}
-
-Object.defineProperties = function(object, descriptorSet) {
-	for (var name in descriptorSet) {
-		if (!descriptorSet.hasOwnProperty(name)) continue;
-		Object.defineProperty(object, name, descriptorSet[name]);
-	}
-	return object;
 }
 
 Object.defineProperties(Object, {
@@ -210,12 +210,15 @@ Object.defineProperties(Function.prototype, {
 				while (length--) results[length - 1] = iterable[length];
 				return results;
 			}
-			// this is the prototype.js definition
+			// this is almost the prototype.js definition
 			if (arguments.length < 2 && arguments[0] === undefined) return this;
-			var __method = this, args = cdr(arguments), object = arguments[0];
-			return function bound() {
-				return __method.apply(object, args.concat($A(arguments)));
-			}
+			var __method = this, args = cdr(arguments), object = arguments[0],
+				wrappedFunc = function bound() {
+					return __method.apply(object, args.concat($A(arguments)));
+				}
+			wrappedFunc.isWrapper = true;
+			wrappedFunc.originalFunction = __method;
+			return wrappedFunc;
 		}
 	}
 });
@@ -382,7 +385,9 @@ function module(moduleName) {
 						code.apply(this, requiredModules);
 						module._isLoaded = true;
 					} catch(e) {
-						console.error('Error while loading ' + moduleName + ': ' + e);
+						var msg = 'Error while loading ' + moduleName + ': ' + e;
+						if (e.stack) msg = msg + e.stack;
+						console.error(msg);
 						dbgOn(true);
 					} finally {
 						module.deactivate();
@@ -405,7 +410,9 @@ function require(/*requiredModuleNameOrAnArray, anotherRequiredModuleName, ...*/
 	var getUniqueName = function() { return 'anonymous_module_' + require.counter },
 		args = $A(arguments);
 	require.counter !== undefined ? require.counter++ : require.counter = 0;
-	return module(getUniqueName()).beAnonymous().requires(Object.isArray(args[0]) ? args[0] : args);
+	var m = module(getUniqueName()).beAnonymous();
+	try { throw new Error() } catch(e) { m.defStack = e.stack } 
+	return m.requires(Object.isArray(args[0]) ? args[0] : args);
 };
 
 
@@ -584,6 +591,7 @@ Object.extend(Function.prototype, {
 		return Global.classes(true).select(function(ea) { return ea.isSubclassOf(klass) });
 	},
 	withAllSubclasses: function() { return [this].concat(this.allSubclasses()) },
+
 
 	directSubclasses: function() {
 		var klass = this;
@@ -807,7 +815,7 @@ var Class = {
 			}
 		}
 		cls.addMethods(spec);
-	}
+	},
 
 };
 
@@ -836,6 +844,7 @@ var Strings = {
 		}
 	
 		function appendFloat(value, string, precision) {
+			dbgOn(!value.toFixed);
 			if (precision > -1) return value.toFixed(precision);
 			else return value.toString();
 		}
@@ -914,6 +923,23 @@ var Strings = {
 		return result
 	},
 };
+var Numbers = {
+	random: function(min, max) {
+		// both min and max are included
+		min = min || 0;
+		max  = max || 100;
+		return Math.round(Math.random() * (max-min) + min)
+	},
+	humanReadableByteSize: function(n) {
+		function round(n) { return Math.round(n * 100) / 100 }
+		if (n < 1000) return String(round(n)) + 'B'
+		n = n / 1024;
+		if (n < 1000) return String(round(n)) + 'KB'
+		n = n / 1024;
+		return String(round(n)) + 'MB'
+	},
+
+}
 
 
 var Functions = {
@@ -1010,6 +1036,10 @@ var Properties = {
 		for (var name in obj) if (obj.hasOwnProperty(name)) values.push(obj[name]);
 		return values;
 	},
+	printObjectSize: function(obj) {
+		return Numbers.humanReadableByteSize(JSON.stringify(obj).length)
+	},
+
 
 };
 
@@ -1096,6 +1126,8 @@ Namespace.addMethods(
 			return url;
 		}
 	},
+	relativePath: function() { return new URL(this.uri()).relativePathFrom(URL.codeBase) },
+
 },
 'module dependencies', {
 	addDependendModule: function(depModule) {
@@ -1191,7 +1223,7 @@ Namespace.addMethods(
 		}
 		if (this.isLoading() && this.wasDefined && !this.hasPendingRequirements()) {
 			this.runOnloadCallbacks();
-			// time is not only the time needed for the Netrequest and code evaluation
+			// time is not only the time needed for the request and code evaluation
 			// but the complete time span from the creation of the module (when the module is first encountered)
 			// to evaluation the evaluation of its code, including load time of all requirements
 			var time = this.createTime ? new Date() - this.createTime : 'na';
@@ -1221,6 +1253,7 @@ Namespace.addMethods(
 	remove: function() {
 		var ownerNamespace = Class.namespaceFor(this.namespaceIdentifier),
 			ownName = Class.unqualifiedNameFor(this.namespaceIdentifier)
+		JSLoader.removeAllScriptsThatLinkTo(this.uri());
 		delete ownerNamespace[ownName];
 	},
 	removeScriptNode: function() {
@@ -1230,10 +1263,9 @@ Namespace.addMethods(
 	},
 },
 'debugging', {
-	toString: function() {
-			return 'namespace(' + this.namespaceIdentifier +
-				(this.isAnonymous() ? ' loaded by ' + this.sourceModuleName : '') + ')'
-	},
+	toString: function() { return 'module(' + this.namespaceIdentifier + ')' },
+	inspect: function() { this.toString() + ' defined at ' + this.defStack },
+
 });
 
 Object.extend(Namespace, {
@@ -1266,12 +1298,16 @@ Object.extend(Namespace, {
 		// return a string to include in bootstrap.js
 		var urls = this.topologicalSortLoadedModules().collect(function(ea) {
 			return new URL(ea.uri()).relativePathFrom(URL.codeBase)  });
-
-		var manual = ['lively/miniprototype.js', 'lively/JSON.js', 'lively/defaultconfig.js', 'lively/localconfig.js', 'lively/Base.js']
+		var manual = ['lively/miniprototype.js', 'lively/JSON.js', 'lively/defaultconfig.js', 'lively/localconfig.js', 'lively/Base.js'];
 
 		urls = manual.concat(urls);
+		return urls;
+	},
+	bootstrapModulesString: function() {
+		var urls = this.bootstrapModules();
 		return '[\'' + urls.join('\', \'') + '\']';
 	},
+
 });
 
 (function moveNamespaceClassToLivelyLang() {
@@ -1424,7 +1460,7 @@ Object.extend(Function.prototype, {
 			try {
 				return proceed.apply(this, args); 
 			} catch (er) {
-				if (WorldMorph) {
+				if (Global.WorldMorph && WorldMorph.current()) {
 					WorldMorph.current().logError(er)
 					throw er;
 				}
@@ -1557,10 +1593,16 @@ Object.extend(Array.prototype, {
 			function() { progressBar.setValue(1); whenDoneFunc && whenDoneFunc() },
 			function(nextFunc, item, idx) {
 				return function() {
-					progressBar.setValue((steps-idx) / steps);
-					if (labelFunc)
-						progressBar.setLabel(labelFunc(item, idx));
-					iterator(item, idx);
+					try {
+						progressBar.setValue((steps-idx) / steps);
+						if (labelFunc)
+							progressBar.setLabel(labelFunc(item, idx));
+						iterator(item, idx);
+					} catch(e) {
+						alert('ERROR')
+						alert(Strings.format('Error in forEachShowingProgress at %s (%s)\n%s\n%s',
+							idx, item, e, e.stack))
+					}
 					nextFunc.delay(0);
 				}
 			}
@@ -1595,449 +1637,7 @@ Object.extend(CharSet, {
 
 });
 	
-Object.subclass('Record', {
 
-	description: "abstract data structure that maps getters/setters onto DOM properties or plain JS objects",
-	definition: "none yet",
-	// Note: can act as a mixin, so no instance state!
-
-	initialize: function(rawNode, spec) {
-		this.rawNode = rawNode; // DOM or plain JS Object
-		Properties.forEachOwn(spec, function(key, value) { 
-			this["set" + key].call(this, value); 
-		}, this);
-	},
-	
-	newRelay: function(spec) {
-		return Relay.newInstance(spec, this);
-	},
-
-	addObserver: function(dep, optForwardingSpec) {
-		if (optForwardingSpec) {
-			// do forwarding
-			dep = Relay.newInstance(optForwardingSpec, dep);
-		}
-		// find all the "on"<Variable>"Update" methods of dep
-		for (var name in dep) {
-			var match = name.match(/on(.*)Update/);
-			if (match) {
-				var varname = match[1];
-				if (!this["set" + varname])
-					throw new Error("cannot observe nonexistent variable " + varname);
-				Record.addObserverTo(this, varname, dep);
-			}
-		}
-	},
-
-	// dep may be the relay or relay.delegate, can be called with dep, dep and fielName, or only with fielName
-	removeObserver: function(dep, fieldName) {
-		if (fieldName && !this[fieldName + '$observers']) {
-			console.log('Tried to remove non existing observer:' + fieldName + '$observers');
-			return;
-		};
-		if (fieldName && !dep) { // remove all abservers from this field
-			this[Record.observerListName(fieldName)] = null;
-			return;
-		};
-		var observerFields = fieldName ?
-			[Record.observerListName(fieldName)] :
-			Object.keys(this).select(function(ea) { return ea.endsWith('$observers') });
-		observerFields.forEach(function(ea) {
-			this[ea] = this[ea].reject(function(relay) { return relay === dep || relay.delegate === dep });
-		}, this);
-	},
-
-	addObserversFromSetters: function(reverseSpec, dep, optKickstartUpdates) {
-		var forwardSpec = {};
-		Properties.forEachOwn(reverseSpec, function each(key, value) {
-			if (Object.isString(value.valueOf())) {
-				if (!value.startsWith("+")) // if not write only, get updates
-					forwardSpec[value.startsWith("-") ? value.substring(1) : value] = "!" + key;
-			} else if (value.mode !== '+') {
-				var spec = forwardSpec[value.name] =  {};
-				spec.name = "!" + key;
-				// FIXME: Q&A the following
-				spec.from = value.from;
-				spec.to = value.to;
-			}
-		});
-		// FIXME: sometimes automatic update callbacks are not desired!
-		this.addObserver(dep, forwardSpec);
-		function callUpdate(self, key, value, from) {
-			var target = "on" + key + "Update";
-			var source = "get" + value;
-			// trigger updates
-			try {
-				var tmp = self[source].call(self);
-				dep[target].call(dep, from ? from(tmp) : tmp);
-			} catch (er) {
-				console.log("on kickstart update: " + er + " on " + dep + " " + target
-				+ " mapping to " + source + " " + er.stack);
-			}
-		}
-
-		if (!optKickstartUpdates) return;
-		Properties.forEachOwn(reverseSpec, function each(key, value) {
-			if (Object.isString(value.valueOf())) {
-				if (!value.startsWith("+")) {
-					if (value.startsWith("-")) value = value.substring(1);
-					callUpdate(this, key, value, value.from);
-				}
-			} else if (value.mode !== '+') {
-				callUpdate(this, key, value.name, value.from);
-			}
-		}, this);
-	},
-
-
-	toString: function() {
-		return "#<Record{" + String(JSON.serialize(this.definition)) + "}>";
-	},
-
-	create: function(bodySpec) { // called most likely on the prototype object
-		var klass = this.constructor.subclass.apply(this.constructor);
-		//console.log('got record type ' + this.constructor.name);
-		klass.addMethods(Record.extendRecordClass(bodySpec));
-		klass.prototype.definition = bodySpec;
-		return klass;
-	},
-	
-	// needed for adding fields for fabric
-	addField: function(fieldName, coercionSpec, forceSet) {
-		var spec = {}; spec[fieldName] = coercionSpec || {};
-		this.constructor.addMethods(new Record.extendRecordClass(spec));
-		this.definition[fieldName]= spec[fieldName];
-		if (!forceSet) return;
-		// does this do anything now?
-		this['set' + fieldName] = this['set' + fieldName].wrap(function(proceed, value, optSource, force) {
-			proceed(value, optSource, true);
-		})
-	}
-	
-});
-
-
-Record.subclass('PlainRecord', {
-	getRecordField: function(name) { return this.rawNode[name] },
-
-	setRecordField: function(name, value) { return this.rawNode[name] = value },
-
-	removeRecordField: function(name) { delete this.rawNode[name] }
-});
-
-Object.extend(Record, {
-	
-	newPlainInstance: function(spec) {
-		var argSpec = {};
-		var fieldSpec = {};
-		Properties.forEachOwn(spec, function (key, value) {
-			fieldSpec[key] = {};
-			argSpec[key] = value;
-		});
-		return this.newInstance(fieldSpec, argSpec, {});
-	},
-
-	newNodeInstance: function(spec) { // backed by a DOM node
-		var argSpec = {};
-		var fieldSpec = {};
-		Properties.forEachOwn(spec, function (key, value) {
-			fieldSpec[key] = {};
-			argSpec[key] = value;
-		});
-		return this.newInstance(fieldSpec, argSpec, NodeFactory.create("record"));
-	},
-
-	newInstance: function(fieldSpec, argSpec, optStore) {
-		if (arguments.length < 2) throw new Error("call with two or more arguments");
-		var storeClass;
-		if (!optStore) {
-			storeClass = lively.data.DOMNodeRecord; // FXIME forward reference
-			optStore = NodeFactory.create("record"); // FIXME flat JavaScript instead by default?
-		} else {
-			storeClass = optStore instanceof Global.Node ? lively.data.DOMNodeRecord : PlainRecord;
-		}
-
-		var Rec = storeClass.prototype.create(fieldSpec);
-		return new Rec(optStore, argSpec);
-	},
-
-	extendRecordClass: function(bodySpec) {
-		var def = {};
-		Properties.forEachOwn(bodySpec, function(name, value) {
-			Record.addAccessorMethods(def, name, value);
-		});
-		return def;
-	},
-
-	addAccessorMethods: function(def, fieldName, spec) {
-		dbgOn(fieldName.startsWith("set") || fieldName.startsWith("get")); // prolly a prob
-		if (spec.mode !== "-")
-			def["set" + fieldName] = this.newRecordSetter(spec.name || fieldName, spec.to, spec.byDefault);
-		if (spec.mode !== "+")
-			def["get" + fieldName] = this.newRecordGetter(spec.name || fieldName, spec.from, spec.byDefault);
-	},
-
-	
-	observerListName: function(name) { return name + "$observers"},
-
-	addObserverTo: function(rec, varname, dep) {
-		var deps = rec[Record.observerListName(varname)];
-		if (!deps) deps = rec[Record.observerListName(varname)] = [];
-		else if (deps.indexOf(dep) >= 0) return;
-		deps.push(dep);
-	},
-   
-	notifyObserversOf: function(rec, fieldName, coercedValue, optSource, oldValue, force) {
-		var deps = rec[Record.observerListName(fieldName)];
-		if (!force && (oldValue === coercedValue)) {
-			// console.log("--- notifyObserversOf stops here: " + rec + ", "+ fieldName + ", " + coercedValue);
-			return;
-		};
-		var updateName = "on" + fieldName + "Update";
-		if (!deps) return;
-		for (var i = 0; i < deps.length; i++) {
-			var dep = deps[i];
-			// shouldn't this be uncoerced value? ......
-			var method = dep[updateName];
-			// console.log('updating  ' + updateName + ' in ' + Object.keys(dep));
-			// "force" should not be propageted
-			method.call(dep, coercedValue, optSource || rec /*rk: why pass rec in ?*/);
-		}
-	},
-
-	newRecordSetter: function newRecordSetter(fieldName, to, byDefault) {
-		var name = fieldName;
-		return function recordSetter(value, optSource, optForce) {
-			// console.log("set " + value + ", " + optSource + ", " + force)
-			var coercedValue;
-			if (value === undefined) {
-				this.removeRecordField(name);
-			} else {
-				if (value == null && byDefault) value = byDefault;
-				coercedValue = to ? to(value) : value;
-				var oldValue = this.getRecordField(name);
-				this.setRecordField(name, coercedValue);
-			}
-			Record.notifyObserversOf(this, name, coercedValue, optSource, oldValue, optForce);
-			return coercedValue;
-		}
-	},
-	
-	newRecordGetter: function newRecordGetter(name, from, byDefault) {
-		return function recordGetter() {
-			if (this === this.constructor.prototype) // we are the prototype? not foolproof but works in LK
-				return byDefault; 
-			if (!this.rawNode)
-				throw new Error("no rawNode");
-			var value = this.getRecordField(name);
-			if (!value && byDefault) return byDefault;
-			else if (from) return from(value);
-			else return value;
-		}
-	},
-
-	createDependentObserver: function(target, computedProperty, baseProperties /*:Array*/) {
-		// create an observer that will trigger the observers of
-		// computedProperty whenever one of the baseProperties changes
-		// The returned observer has to be added to target (as in target.addObserver
-
-		var getterName = "get" + computedProperty;
-		if (!target[getterName])
-			throw new Error('unknown computedProperty ' + computedProperty);
-
-		function notifier(value, source, record) {
-			var newValue = record[getterName].call(record);
-			return Record.notifyObserversOf(record, computedProperty, newValue);
-		}
-		var observer = {};
-		baseProperties.forEach(function(prop) {
-			// FIXME check if target has field "get" + prop
-			observer["on" + prop + "Update"] = notifier;
-		});
-		return observer;
-	},
-
-});
-
-Object.subclass('Relay', {
-	documentation: "Property access forwarder factory",
-	initialize: function(delegate) {
-		// FIXME here a checker could verify this.prototype and check
-		// that the delegate really has all the methods
-		this.delegate = delegate; 
-	}
-});
-
-Object.extend(Relay, {
-
-	newRelaySetter: function newRelaySetter(targetName, optConv) {
-		return function setterRelay(/*...*/) {
-			if (!this.delegate)
-				new Error("delegate in relay not existing " + targetName);
-			var impl = this.delegate[targetName];
-			if (!impl)
-				throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName));
-			var args = arguments;
-			if (optConv) {
-				args = $A(arguments);
-				args.unshift(optConv(args.shift()));
-			}
-			return impl.apply(this.delegate, args);
-		}
-	},
-
-	newRelayGetter: function newRelayGetter(targetName, optConv) {
-		return function getterRelay(/*...*/) {
-			if (!this.delegate)
-				throw dbgOn(new Error("delegate in relay not existing " + targetName)); 
-			var impl = this.delegate[targetName];
-			if (!impl)
-				throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName)); 
-			var result = impl.apply(this.delegate, arguments);
-			return optConv ? optConv(result) : result;
-		}
-	},
-
-	newRelayUpdater: function newRelayUpdater(targetName, optConv) {
-		return function updateRelay(/*...*/) {
-			var impl = this.delegate[targetName];
-			if (!impl)
-				throw dbgOn(new Error("delegate " + this.delegate + " does not implement " + targetName)); 
-			return impl.apply(this.delegate, arguments);
-		}
-	},
-
-	handleStringSpec: function(def, key, value) {
-		dbgOn(value.startsWith("set") || value.startsWith("get")); // probably a mixup
-
-		if (value.startsWith("!")) {
-			// call an update method with the derived name
-			def["on" + key + "Update"] = Relay.newRelayUpdater("on" + value.substring(1) + "Update");
-			// see below
-			def["set" + key] = Relay.newRelayUpdater("on" + value.substring(1) + "Update");
-		} else if (value.startsWith("=")) {
-			// call exactly that method
-			def["on" + key + "Update"] = Relay.newRelayUpdater(value.substring(1));
-			// FIXME: e.g. closeHalo is a ButtonMorph,
-			// this.closeHalo.connectModel(Relay.newInstance({Value: "=onRemoveButtonPress"}, this)); should call
-			// this.onRemoveButtonPress()
-			// the method newDelegatorSetter --> setter() which is triggered from setValue() of the button would only look
-			// for the method setValue in def, but there is onyl onValueUpdate, so add also setValue ...
-			def["set" + key] = Relay.newRelayUpdater(value.substring(1));
-		} else {
-			if (!value.startsWith('-')) { // not read-only
-				var stripped = value.startsWith('+') ? value.substring(1) : value;
-				def["set" + key] = Relay.newRelaySetter("set" + stripped);
-			}
-			if (!value.startsWith('+')) { // not write-only
-				var stripped = value.startsWith('-') ? value.substring(1) : value;
-				def["get" + key] = Relay.newRelayGetter("get" + stripped);
-			}
-		}
-	},
-
-
-	handleDictSpec: function(def, key, spec) { // FIXME unused
-		var mode = spec.mode;
-		if (mode === "!") {
-			// call an update method with the derived name
-			def["on" + key + "Update"] = Relay.newRelayUpdater("on" + spec.name + "Update", spec.from);
-		} else if (mode === "=") {
-			// call exactly that method
-			def["on" + key + "Update"] = Relay.newRelayUpdater(spec.name, spec.from);
-		} else {
-			if (mode !== '-') { // not read-only
-				def["set" + key] = Relay.newRelaySetter("set" + spec.name, spec.to);
-			}
-			if (mode !== '+') { // not write-only
-				def["get" + key] = Relay.newRelayGetter("get" + spec.name, spec.from);
-			}
-		}
-	},
-
-	create: function(args) {
-		var klass = Relay.subclass();
-		var def = {
-			definition: Object.clone(args), // how the relay was constructed
-			copy: function(copier) {
-				var result =  Relay.create(this.definition);
-				copier.shallowCopyProperty("delegatee", result, this);
-				return result
-			},
-			toString: function() {
-				return "#<Relay{" + String(JSON.serialize(args)) + "}>";
-			}
-		};
-		Properties.forEachOwn(args, function(key, spec) { 
-			if (Object.isString(spec.valueOf()))
-				Relay.handleStringSpec(def, key, spec); 
-			else 
-			Relay.handleDictSpec(def, key, spec);
-		});
-
-		klass.addMethods(def);
-		return klass;
-	},
-
-	newInstance: function(spec, delegate) {
-		var Fwd = Relay.create(spec); // make a new class
-		return new Fwd(delegate); // now make a new instance
-	},
-	
-	// not sure if it belongs in Relay	  
-	newDelegationMixin: function(spec) {
-
-		function newDelegatorGetter (name, from, byDefault) {
-			var methodName = "get" + name;
-			return function getter() {
-				var m = this.formalModel;
-				if (!m)
-					return this.getModelValue(methodName, byDefault);
-				var method = m[methodName];
-				if (!method) return byDefault;
-				var result = method.call(m);
-				return (result === undefined) ? byDefault : (from ? from(result) : result);
-			}
-		}
-
-		function newDelegatorSetter(name, to) {
-			var methodName = "set" + name;
-			return function setter(value, force) {
-				var m = this.formalModel;
-				if (!m) 
-					return this.setModelValue(methodName, value);
-				var method = m[methodName];
-				// third arg is source, fourth arg forces relay to set value even if oldValue === value
-				return method && method.call(m, to ? to(value) : value, this, force);
-			}
-		}
-
-		var klass = Object.subclass();
-
-		if (spec instanceof Array) {
-			spec.forEach(function(name) {
-				if (!name.startsWith('-')) { // not read-only
-					var stripped = name.startsWith('+') ? name.substring(1) : name;
-					klass.prototype["set" + stripped] = newDelegatorSetter(stripped);
-				}
-				if (!name.startsWith('+')) { // not write-only
-					var stripped = name.startsWith('-') ? name.substring(1) : name;
-					klass.prototype["get" + stripped] = newDelegatorGetter(stripped);
-				}
-			});
-		} else {
-			Properties.forEachOwn(spec, function(name, desc) {
-				var mode = desc.mode;
-				if (mode !== "-")
-					klass.prototype["set" + name] = newDelegatorSetter(name, desc.to);
-				if (mode !== "+")
-					klass.prototype["get" + name] = newDelegatorGetter(name, desc.from, desc.byDefault);
-			});
-		}
-		return klass;
-	}
-
-});
 
 namespace('lively');
 Global.console && Global.console.log("loaded basic library");
@@ -2215,6 +1815,8 @@ Object.subclass("Rectangle", {
 	copy: function() { return new Rectangle(this.x, this.y, this.width, this.height);  },
 	maxX: function() { return this.x + this.width; },
 	maxY: function() { return this.y + this.height; },
+
+
 	withWidth: function(w) { return new Rectangle(this.x, this.y, w, this.height)},
 	withHeight: function(h) { return new Rectangle(this.x, this.y, this.width, h)},
 	withX: function(x) { return new Rectangle(x, this.y, this.width, this.height)},
@@ -2727,335 +2329,56 @@ Object.extend(Color, {
 
 Global.console && Global.console.log("Loaded platform-independent graphics primitives");
 
-namespace('lively.data');
-// FIXME the following does not really belong to Base should be somewhere else
-Record.subclass('lively.data.DOMRecord', {
-	description: "base class for records backed by a DOM Node",
-	noShallowCopyProperties: ['id', 'rawNode', '_livelyDataWrapperId_'],
-
-	initialize: function($super, store, argSpec) {
-		$super(store, argSpec);
-		this.setId(this.newId());
-		var def = this.rawNode.appendChild(NodeFactory.create("definition"));
-		def.appendChild(NodeFactory.createCDATA(String(JSON.serialize(this.definition))));
+Object.subclass('lively.Closure',
+// represents a function and its bound values
+'initializing', {
+	isLivelyClosure: true,
+	initialize: function(func, varMapping, source) {
+		this.originalFunc = func;
+		this.varMapping = varMapping || {};
+		this.source = source
 	},
+	setFuncSource: function(src) { this.source = src },
 
-	deserialize: function(importer, rawNode) {
-		this.rawNode = rawNode;
+},
+'accessing', {
+	getFuncSource: function() { return this.source || String(this.originalFunc) },
+	getFunc: function() { return this.originalFunc || this.recreateFunc() },
+	lookup: function(name) { return this.varMapping[name] },
+
+
+},
+'function creation', {
+	addClosureInformation: function(f) {
+		f.hasLivelyClosure = true;
+		f.livelyClosure = this;
+		return f;
 	},
-
-	getRecordField: function(name) { 
-		dbgOn(!this.rawNode || !this.rawNode.getAttributeNS);
-		var result = this.rawNode.getAttributeNS(null, name);
-		if (result === null) return undefined;
-		else if (result === "") return null;
-		if (result.startsWith("json:")) return Converter.fromJSONAttribute(result.substring("json:".length));
-		else return result;
-	},
-
-	setRecordField: function(name, value) {
-		if (value === undefined) {
-			throw new Error("use removeRecordField to remove " + name);
+	recreateFunc: function() { return this.recreateFuncFromSource(this.getFuncSource()) },
+	recreateFuncFromSource: function(funcSource) {
+		// what about objects that are copied by value, e.g. numbers?
+		// when those are modified after the originalFunc we captured varMapping then we will
+		// have divergent state
+		var closureVars = [], thisFound = false;
+		for (var name in this.varMapping) {
+			if (!this.varMapping.hasOwnProperty(name)) continue;
+			if (name == 'this') { thisFound = true; continue };
+			closureVars.push(name + '=this.varMapping["' + name + '"]');
 		}
-		if (value && Converter.needsJSONEncoding(value)) {
-			value = "json:" + Converter.toJSONAttribute(value);
-		}
-
-		this.rawNode.setAttributeNS(null, name, value || "");
-		return value;
-	},
-
-	removeRecordField: function(name) {
-		return this.rawNode.removeAttributeNS(null, name);
-	},
-
-	copyFrom: function(copier, other) {
-		// console.log("COPY DOM RECORD")
-		if (other.rawNode) this.rawNode = other.rawNode.cloneNode(true);
-		this.setId(this.newId());
-		copier.addMapping(other.id(), this);
-
-		copier.shallowCopyProperties(this, other);
-		
-		return this; 
+		var src = closureVars.length > 0 ? 'var ' + closureVars.join(',') + ';\n' : '';
+		src += '(' + funcSource + ')';
+		if (thisFound) src += '.bind(this.varMapping["this"])';
+		try {
+			var func = eval(src);
+			this.addClosureInformation(func);
+			return func;
+		} catch(e) { alert('Cannot create function ' + e); throw e };
 	},
 
 });
-
-lively.data.DOMRecord.subclass('lively.data.DOMNodeRecord', {
-	documentation: "uses nodes instead of attributes to store values",
-
-	getRecordField: function(name) { 
-		var fieldElement = this[name + "$Element"];
-		if (fieldElement) {
-			if (lively.data.Wrapper.isInstance(fieldElement)) {
-				return fieldElement; // wrappers are stored directly
-			};			
-			if (LivelyNS.getAttribute(fieldElement, "isNode")) return fieldElement.firstChild; // Replace with DocumentFragment
-			var value = fieldElement.textContent;
-			if (value) {
-			var family = LivelyNS.getAttribute(fieldElement, "family");
-			if (family) {
-				var klass = Class.forName(family);
-				if (klass) throw new Error('unknown type ' + family);
-				return klass.fromLiteral(JSON.unserialize(value, Converter.nodeDecodeFilter));
-				} else {
-					if (value == 'NaN') return NaN;
-					if (value == 'undefined') return undefined;
-					if (value == 'null') return null;
-					// jl: fixes a bug but wrapperAndNodeDecodeFilter is not clever enought... 
-					// so waiting for pending refactoring
-					// return JSON.unserialize(value, Converter.wrapperAndNodeDecodeFilter);
-					return JSON.unserialize(value);
-				}
-			}
-		} else {
-			// console.log('not found ' + name);
-			return undefined;
-		}
-	},
-	
-	setRecordField: function(name, value) {
-		if (value === undefined) {
-			throw new Error("use removeRecordField to remove " + name);
-		}
-		var propName = name + "$Element"; 
-		var fieldElement = this[propName];
-		if (fieldElement && fieldElement.parentElement === this.rawNode) {
-			this.rawNode.removeChild(fieldElement);
-		}
-		
-		if (lively.data.Wrapper.isInstance(value)) { 
-			this[propName] = value; // don't encode wrappers, handle serialization somewhere else 
-		} else {
-			fieldElement = Converter.encodeProperty(name, value);
-			if (fieldElement) this.rawNode.appendChild(fieldElement);
-			else console.log("failed to encode " + name + "= " + value);
-			this[propName] = fieldElement;
-		}
-		return value;
-		// console.log("created cdata " + fieldElement.textContent);
-	},
-	
-	removeRecordField: function(name) {
-		var fieldElement = this[name + "$Element"];
-		if (fieldElement) {
-			try { // FIXME ... argh!!!
-				this.rawNode.removeChild(fieldElement);
-			} catch(e) {
-				console.warn('Cannot remove record field' + name + ' of ' + this + ' because ' + e);
-			}
-			delete this.fieldElement;
-		}
-	},
-
-	
-
-	deserialize: function(importer, rawNode) {
-		this.rawNode = rawNode;
-	
-		var bodySpec = JSON.unserialize(rawNode.getElementsByTagName('definition')[0].firstChild.textContent);
-		this.constructor.addMethods(Record.extendRecordClass(bodySpec));
-		this.definition = bodySpec;
-	
-		$A(rawNode.getElementsByTagName("field")).forEach(function(child) {
-				// this[name + "$Element"] = child.getAttributeNS(null, "name");
-			this[child.getAttributeNS(null, "name") + "$Element"] = child;
-		}, this);
-	},
-
-	copyFrom: function($super, copier, other) {
-		$super(copier, other);
-		this.constructor.addMethods(Record.extendRecordClass(other.definition));
-		$A(this.rawNode.getElementsByTagName("field")).forEach(function(child) {
-			this[child.getAttributeNS(null, "name") + "$Element"] = child;
-		}, this);
-		return this; 
-	},
-
-	updateDefintionNode: function() {
-		var definitionNode = this.rawNode.getElementsByTagName("definition")[0];
-		definitionNode.removeChild(definitionNode.firstChild);
-		definitionNode.appendChild(NodeFactory.createCDATA(String(JSON.serialize(this.definition))));  
-	},
-	
-	addField: function($super, fieldName, coercionSpec, forceSet) {
-		$super(fieldName, coercionSpec, forceSet);
-		this.updateDefintionNode();
-	}
-	
-});
-
-// note: the following happens later
-//Class.addMixin(DOMRecord, lively.data.Wrapper.prototype);
-
-Record.subclass('lively.data.StyleRecord', {
-	description: "base class for records backed by a DOM Node",
-	getRecordField: function(name) { 
-		dbgOn(!this.rawNode || !this.rawNode.style);
-		var result = this.rawNode.style.getPropertyValue(name);
-
-		if (result === null) return undefined;
-		else if (result === "") return null;
-		else return result;
-	},
-
-	setRecordField: function(name, value) {
-		dbgOn(!this.rawNode || !this.rawNode.style);
-		if (value === undefined) {
-			throw new Error("use removeRecordField to remove " + name);
-		}
-		this.rawNode.style.setProperty(name, value || "", "");
-		return value;
-	},
-
-	removeRecordField: function(name) {
-		dbgOn(!this.rawNode || !this.rawNode.style);
-		return this.rawNode.style.removeProperty(name);
-	}
-
-});
-
-
-Object.subclass('lively.data.Bind', {
-	// unify with the record mechanism
-	
-	// note that Bind could specify which model to bind to, not just the default one
-	initialize: function(varName, kickstart, debugString) {
-		this.varName = varName;
-		this.kickstart = kickstart;
-		this.key = null;
-		this.debugString = debugString;
-		this["on" + varName + "Update"] = this.update;
-	},
-
-	update: function(value) {
-		if (Object.isNumber(this.key)) {
-			console.log('cannot notify owner of array ' + this.target + ' to update element ' + this.key);
-			return;
-		}
-		var method = this.target["set" + this.key];
-		if (!method) { console.warn('no method for binding ' + this.varName + " to " + this.key); return }
-		if (this.debugString) console.log('triggering update of ' + this.varName  + " to " + value 
-		+ " context " + this.debugString);
-		method.call(this.target, value);
-	},
-
-
-	get: function(model) {
-		if (!model) return undefined;
-		var method = model["get" + this.varName];
-		dbgOn(!method);
-		var result = method.call(model);
-		if (this.debugString) 
-			console.log('Bind to:' + this.varName  + " retrieved model value " + result	 
-		+ ' context '  + this.debugString);
-		return result;
-	},
-
-	toString: function() {
-		return "{Bind to: " + this.varName + "}";
-	},
-
-	hookup: function(target, model) {
-		this.target = target;
-		model.addObserver(this);
-		if (this.kickstart)
-			this.update(this.get(model)); // kickstart
-	}
-});
-
-Object.extend(lively.data.Bind, {
-	fromLiteral: function(literal) {
-		return new lively.data.Bind(literal.to, literal.kickstart || false, literal.debugString);
-	}	
-});
-
-
-
-Object.subclass('lively.data.Resolver', {
-	description: "resolves literals to full-blown objects",
-	storedClassKey: '$', // type info, missing in 
-	variableBindingKey: '$var',
-	defaultSearchPath: [Global],
-
-	link: function(literal, binders, key, variableBindings, optSearchPath, optModel) {
-		var constr;
-		var type = literal[this.storedClassKey];
-		if (type) {
-			var path = optSearchPath || this.defaultSearchPath;
-			for (var i = 0; i < path.length; i++)  {
-				constr = path[i][type];
-				if (constr) 
-					break;
-			}
-			//console.log('was looking for ' + type + ' in ' +	path + ' and found ' + constr);
-		} else if (literal.constructor !== Object) { 
-			// not of the form {foo: 1, bar: "baz"},  return it as is
-			return literal; 
-		}
-
-		var initializer = {}; 
-		var subBinders = [];
-		for (var name in literal) {
-			if (name === this.storedClassKey) continue;
-			if (name === this.variableBindingKey) continue;
-			if (!literal.hasOwnProperty(name)) continue;
-			var value = literal[name];
-			if (value === null || value === undefined)
-				initializer[name] = value;
-			else switch (typeof value) {
-				case "number":
-				case "string":
-				case "boolean":
-				initializer[name] = value;
-				break;
-				case "function":
-				break; // probably an error
-				case "object": {
-					if (value instanceof Array) {
-						var array = initializer[name] = [];
-						for (var i = 0; i < value.length; i++)	{
-							array.push((this.link(value[i], subBinders, i, variableBindings, optSearchPath, optModel)));
-						}
-					} else {
-						initializer[name] = this.link(value, subBinders, name, variableBindings, optSearchPath, optModel);
-					}
-					break;
-				}
-				default: 
-				throw new TypeError('unexpeced type of value ' + value);
-			}
-		}
-
-		var reified;
-		if (type) {
-			if (!constr) throw new Error('no class named ' + type);
-			if (!constr.fromLiteral) throw new Error('class ' + constr.name + ' does not support fromLiteral');
-			reified = constr.fromLiteral(initializer, optModel);
-			if (reified instanceof lively.data.Bind) {
-				reified.key = key;
-				binders.push(reified);
-				reified = reified.get(optModel);
-			} else {
-				subBinders.forEach(function(binder) {
-					binder.hookup(reified, optModel);
-				});
-			}
-
-		} else {
-			//console.log('reified is ' + (initializer && initializer.constructor) + " vs  " + literal);
-			reified = initializer;
-		}
-
-		if (literal[this.variableBindingKey]) {
-			var varName = literal[this.variableBindingKey];
-			//console.log('binding ' + varName + ' to ' + reified + " on " + variableBindings);
-			variableBindings[varName] = reified;
-		}
-
-		return reified;
-	}
+Object.extend(lively.Closure, {
+	fromFunction: function(func, varMapping) { return new this(func, varMapping || {}) },
+	fromSource: function(source, varMapping) { return new this(null, varMapping || {}, source) },
 });
 
 Global.ModelMigration = {

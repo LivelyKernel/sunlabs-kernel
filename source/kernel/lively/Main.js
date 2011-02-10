@@ -26,7 +26,7 @@
  * Main.js.  System startup and demo loading.
  */
 
-module('lively.Main').requires("lively.persistence.Serializer").toRun(function() {
+module('lively.Main').requires("lively.persistence.Serializer", "lively.ChangeSet").toRun(function() {
 
 Object.subclass('lively.Main.WorldDataAccessor',
 'initializing', {
@@ -43,12 +43,14 @@ Object.subclass('lively.Main.WorldDataAccessor',
 	getChangeSet: function() {  throw new Error('Subclass responsibility') },
 });
 Object.extend(lively.Main.WorldDataAccessor, {
-	forDocument: function(doc) {
-		var canvas = doc.getElementById('canvas'), changeSet;
+	forCanvas: function(canvas) {
+		var doc = canvas.ownerDocument, changeSet;
 
-		if (Config.createNewWorld) {
+		if (Config.isNewMorphic)
+			return new lively.Main.NewMorphicData(canvas);
+
+		if (Config.createNewWorld)
 			return new lively.Main.NewWorldData(canvas);
-		}
 
 		if (Config.useOfflineStorage) module("lively.Persistence").load(true);
 		var os = Global.OfflineStorage && new OfflineStorage();
@@ -60,6 +62,7 @@ Object.extend(lively.Main.WorldDataAccessor, {
 
 		var jsonNode = doc.getElementById(lively.persistence.Serializer.jsonWorldId);
 		if (jsonNode) {
+			Config.modulesBeforeWorldLoad.push('lively.persistence.ObjectExtensions');
 			changeSet = lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
 			return new lively.Main.JSONWorldData(canvas, jsonNode.textContent, changeSet);
 		}
@@ -72,9 +75,8 @@ Object.extend(lively.Main.WorldDataAccessor, {
 			return new lively.Main.XMLWorldData(canvas, worldNode, changeSet);
 		}
 
-		var realCanvas = doc.getElementById('lively.canvas');
-		if (realCanvas && realCanvas.tagName == 'canvas') {
-			return new lively.Main.NewWorldData(realCanvas);
+		if (canvas.tagName == 'canvas') {
+			return new lively.Main.NewWorldData(canvas);
 		}
 
 		throw new Error('Cannot access data to load world');
@@ -107,7 +109,9 @@ lively.Main.WorldDataAccessor.subclass('lively.Main.JSONWorldData',
 },
 'accessing and creation', {
 	modulesBeforeChanges: function($super) {
-		return $super().concat(lively.persistence.Serializer.sourceModulesIn(this.jso)).uniq();
+		var sourceModulesForObjectsInJson = lively.persistence.Serializer.sourceModulesIn(this.jso);
+		console.log('Found modules required for loading because serialized objects require them: ' + sourceModulesForObjectsInJson);
+		return $super().concat(sourceModulesForObjectsInJson).uniq();
 	},
 
 
@@ -123,14 +127,27 @@ lively.Main.WorldDataAccessor.subclass('lively.Main.NewWorldData',
 	getWorld: function() {
 		if (this.world) return world;
 		this.world = new WorldMorph(this.getCanvas());
-		lively.bindings.callWhenNotNull(
-			WorldMorph, 'currentWorld', new lively.Main.Examples(), 'populateWorldWithExamples');
 		return this.world;
 	},
-
 	getChangeSet: function() {
-		if (!this.changeSet)
-			this.changeSet = ChangeSet.fromWorld(this.getCanvas());
+		var doc = this.getCanvas().ownerDocument;
+		this.changeSet = lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
+		return this.changeSet;
+	},
+});
+lively.Main.WorldDataAccessor.subclass('lively.Main.NewMorphicData',
+'accessing and creation', {
+	getWorld: function() {
+		if (this.world) return this.world;
+		var bounds = new Rectangle(0,0, 1200, 850);
+		this.world = Config.skipAllExamples ?
+			lively.morphic.World.createOn(document.body) :
+			lively.morphic.Examples.createWorld(bounds, Color.gray.lighter().lighter());
+		return this.world;
+	},
+	getChangeSet: function() {
+		var doc = this.getCanvas().ownerDocument || this.getCanvas();
+		this.changeSet = lively.persistence.Serializer.deserializeChangeSetFromDocument(doc);
 		return this.changeSet;
 	},
 });
@@ -142,7 +159,7 @@ Object.subclass('lively.Main.Loader',
 	getCanvas: function() { return this.canvas },
 	getWorldData: function() {
 		if (!this.worldData)
-			this.worldData = lively.Main.WorldDataAccessor.forDocument(this.getCanvas().ownerDocument);
+			this.worldData = lively.Main.WorldDataAccessor.forCanvas(this.getCanvas());
 		return this.worldData;
 	},
 },
@@ -211,9 +228,9 @@ Object.subclass('lively.Main.Loader',
 
 	loadWorld: function() {
 		var self = this,
-			worldData = this.getWorldData(),
-			changes = !Config.skipChanges && worldData.getChangeSet();
+			worldData = this.getWorldData();
 		require(worldData.modulesBeforeChanges()).toRun(function() {
+			var changes = !Config.skipChanges && worldData.getChangeSet();
 			changes && changes.evaluateWorldRequirements();
 			require(worldData.modulesBeforeWorldLoad()).toRun(function() {
 				changes && changes.evaluateAllButInitializer();
@@ -224,7 +241,7 @@ Object.subclass('lively.Main.Loader',
 					changes && changes.evaluateInitializer();
 					self.onFinishLoading(world);
 				});
-			});			
+			});
 		});
 	},
 
@@ -233,7 +250,7 @@ Object.subclass('lively.Main.Loader',
 		world.hideHostMouseCursor();
 		if (Config.showWikiNavigator) this.showWikiNavigator();
 		this.browserSpecificFixes()
-		if (lively.bindings) lively.bindings.signal(this, 'finishLoading', world);
+		lively.bindings.signal(this, 'finishLoading', world);
 	},
 
 },
@@ -244,12 +261,14 @@ Object.subclass('lively.Main.Loader',
 	},
 	replaceWindowMorphIfNotExisiting: function() {
 		// This stub allows us to run without Widgets.js
-		if(!WindowMorph) { WindowMorph = function() {} }
+		if(!Global.WindowMorph) { WindowMorph = function() {} }
 	},
 });
 lively.Main.Loader.subclass('lively.Main.CanvasLoader',
 'preperation', {
 	prepareForLoading: function() {
+		// made optional for NewLively world
+		Event.prepareEventSystem && Event.prepareEventSystem(this.getCanvas());
 	},
 },
 'loading', {
@@ -433,25 +452,6 @@ Object.subclass('lively.Main.Examples', {
 		});
 	},
 
-	showSunLogo: function(world) {
-		// Sample icon morph with a fisheye effect 'on'
-		// maybe the icons should have a rectangle shaped images (unlike here)
-		// var icon = new ImageMorph(new Rectangle(30, 330, 80, 50), "http://logos.sun.com/images/SunSample.gif");
-		new NetImporter().loadElement("Definitions.svg", "SunLogo");
-		var icon = new ImageMorph(new Rectangle(60, 580, 100, 45), "#SunLogo", true);
-		icon.image.scaleBy(0.15);
-		icon.setFill(null); // no background
-		icon.toggleFisheye();
-		world.addMorph(icon);
-	},
-
-	showSun3DLogo: function(world) {
-		require('lively.Examples').toRun(function(unused, examplesModule) {
-			world.addFramedMorph(new examplesModule.Sun3DMorph(pt(200, 200)),
-			'Sun 3D Logo', pt(570, 100));
-		});
-	},
-
 	showWeather: function(world) {
 		require('lively.Examples').toRun(function() {
 			// Maybe the icons should have rectangular images (unlike here)
@@ -622,17 +622,15 @@ Object.subclass('lively.Main.Examples', {
 		// load from slideWorld
 		// Make a slide for "turning web programming upside down"
 		if (Config.loadSerializedSubworlds) {
-			var importer = new NetImporter();
-			importer.onWorldLoad = function(slideWorld, er) {
-				var link = world.addMorph(new LinkMorph(slideWorld, pt(60, 400)));
-				link.addLabel("Simple example morphs");
-			}
-			importer.loadMarkup(URL.source.withFilename("slide.xhtml"));
-
+			var webResource = new WebResource(URL.source.withFilename("slide.xhtml")),
+				doc = webResource.get().contentDocument,
+				slideWorld = new Importer().loadWorldContents(doc),
+				link = world.addMorph(new LinkMorph(slideWorld, pt(60, 400)));
+			link.addLabel("Simple example morphs");
 		} else {
 			var link = this.makeSlideWorld(world);
-			link.addLabel("Simple example morphs");
 			world.addMorph(link);
+			link.addLabel("Simple example morphs");			
 		}
 	},
 
@@ -661,12 +659,6 @@ Object.subclass('lively.Main.Examples', {
 				devWorld.myWorld.addMorph(widget);
 			});
 		};
-
-		if (Config.tryFasteroids) {
-			require('lively.Contributions').toRun(function() {
-				lively.Contributions.installFasteroids(world, new Rectangle(150, 100, 600, 400));
-			});
-		}
 
 		if (Config.showWebStore()) {
 			var store = new FileBrowser();
@@ -708,15 +700,6 @@ Object.subclass('lively.Main.Examples', {
 		}
 	},
 
-	showPhoneWorld: function(world) {
-		require('lively.phone').toRun(function() {
-			var phoneWorld = new LinkMorph(null, pt(60, 320));
-			world.addMorph(phoneWorld);
-			phoneWorld.addLabel("Telephone Demo");
-			Global.phoneDemo(phoneWorld.myWorld, pt(250,180), 150);
-		})
-	},
-
 	showFabrikWorld: function(world) {
 		require('lively.Fabrik').toRun(function() {
 			var fabrikWorld = new LinkMorph(null, pt(60, 330));
@@ -750,8 +733,6 @@ Object.subclass('lively.Main.Examples', {
 		if (Config.showClock) this.showClock(world)
 		if (Config.showEngine()) this.showEngine(world);
 		if (Config.showAsteroids()) this.showAsteroids(world);
-		if (false) this.showSunLogo(world); // Do not show the Sun logo; it's a registered trademark
-		if (false) this.showSun3DLogo(world); // Do not show the Sun logo;  it's a registered trademark
 		if (Config.showWeather() && Config.showNetworkExamples) this.showWeather(world);
 		if (Config.showStocks() && Config.showNetworkExamples) this.showStocks(world);
 
@@ -765,7 +746,6 @@ Object.subclass('lively.Main.Examples', {
 		if (Config.showInnerWorld) this.showInnerWorld(world);
 		if (Config.showSlideWorld) this.showSlideWorld(world);
 		if (Config.showDeveloperWorld) this.showDeveloperWorld(world);
-		if (Config.showPhoneWorld) this.showPhoneWorld(world);
 
 	    if (Config.showLivelyConsole) this.showLivelyConsole(world);
 
@@ -856,17 +836,15 @@ lively.Main.Examples.subclass('lively.Main.HTMLExamples', {
 		Config.showInnerWorld = false
 		Config.showSlideWorld = false
 		Config.showDeveloperWorld = false
-		Config.showPhoneWorld = false;
 		require('lively.Examples').toRun(function() { $super(world) });
 	},
 	
 });
 Object.extend(lively.Main, {
 	getLoader: function(canvas) {
-		// real canvas
-		if (canvas.tagName == 'canvas') return new lively.Main.CanvasLoader();
-		if (canvas.tagName == 'svg' && !Config.forceHTML) return new lively.Main.Loader();
-		if (canvas.tagName == 'div' || Config.forceHTML) return new lively.Main.HTMLLoader();
+		if (canvas.tagName.toUpperCase() == 'CANVAS' || Config.isNewMorphic) return new lively.Main.CanvasLoader();
+		if (canvas.tagName.toUpperCase() == 'SVG' && !Config.forceHTML) return new lively.Main.Loader();
+		if (canvas.tagName.toUpperCase() == 'DIV' || Config.forceHTML) return new lively.Main.HTMLLoader();
 		throw new Error('No loader for ' + canvas);
 	},
 });

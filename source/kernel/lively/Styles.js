@@ -146,6 +146,178 @@ BoxMorph.subclass('CrayonColorChooserMorph', {
 		// do nothing
 	},
 });
+Color.web = {
+	maroon: Color.rgb(128,0,0),
+	darkred: Color.rgb(139,0,0),
+	firebrick: Color.rgb(178,34,34),
+	brown: Color.rgb(165,42,42),
+	crimson: Color.rgb(220,20,60),
+	red: Color.rgb(255,0,0),
+	orangered: Color.rgb(255,69,0),
+	indianred: Color.rgb(205,92,92),
+	darksalmon: Color.rgb(233,150,122),
+	lightsalmon: Color.rgb(255,160,122),
+	coral: Color.rgb(255,127,80),
+	tomato: Color.rgb(253,99,71),
+	salmon: Color.rgb(250,128,114),
+	lightcoral: Color.rgb(240,128,128),
+	palevioletred: Color.rgb(219,112,147),
+	mediumvioletred: Color.rgb(199,21,133),
+	deeppink: Color.rgb(255,20,147),
+	fuchsia: Color.rgb(255,0,255),
+	magenta: Color.rgb(255,0,255),
+	hotpink: Color.rgb(255,105,180),
+	lightpink: Color.rgb(255,182,193),
+	pink: Color.rgb(255,192,203),
+	thistle: Color.rgb(216,191,216),
+	plum: Color.rgb(221,160,221),
+	violet: Color.rgb(238,130,238),
+	orchid: Color.rgb(218,112,214),
+	mediumorchid: Color.rgb(186,85,211),
+	darkorchid: Color.rgb(153,50,204),
+	darkviolet: Color.rgb(148,0,211),
+	purple: Color.rgb(128,0,128),
+	darkmagenta: Color.rgb(139,0,139),
+	indigo:	Color.rgb(75,0,130),
+	blueviolet: Color.rgb(138,43,226),
+	mediumpurple: Color.rgb(147,112,219),
+	mediumslateblue: Color.rgb(123,104,238),
+	slateblue: Color.rgb(106,90,205),
+	darkslateblue: Color.rgb(72,61,139),
+	midnightblue: Color.rgb(25,25,112),
+	navy: Color.rgb(0,0,128),
+	darkblue: Color.rgb(0,0,139),
+	mediumblue: Color.rgb(0,0,205),
+	blue: Color.rgb(0,0,255),
+	royalblue: Color.rgb(65,105,225),
+	cornflowerblue: Color.rgb(100,149,237),
+	steelblue: Color.rgb(70,130,180),
+	dodgerblue: Color.rgb(30,144,255),
+	deepskyblue: Color.rgb(0,191,255),
+	lightskyblue: Color.rgb(135,206,250),
+	skyblue: Color.rgb(135,206,235),
+	lightsteelblue: Color.rgb(176,196,222),
+	lightblue: Color.rgb(173,216,230),
+	powderblue: Color.rgb(176,224,230),
+	paleturquoise: Color.rgb(175,238,238),
+	mediumturquoise: Color.rgb(72,209,204),
+	lightseagreen: Color.rgb(32,178,170),
+	darkcyan: Color.rgb(0,139,139),
+	teal: Color.rgb(0,128,128),
+	cadetblue: Color.rgb(95,158,160),
+	darkturquoise: Color.rgb(0,206,209),
+	aqua: Color.rgb(0,255,255),
+	cyan: Color.rgb(0,255,255),
+	turquoise: Color.rgb(64,224,208),
+	aquamarine: Color.rgb(127,255,212),
+	mediumaquamarine: Color.rgb(102,205,170),
+	darkseagreen: Color.rgb(143,188,143),
+	mediumseagreen: Color.rgb(60,179,113),
+	seagreen: Color.rgb(46,139,87),
+	darkgreen: Color.rgb(0,100,0),
+	green: Color.rgb(0,128,0),
+	forestgreen: Color.rgb(34,139,34),
+	limegreen: Color.rgb(50,205,50),
+	springgreen: Color.rgb(0,255,127),
+	mediumspringgreen: Color.rgb(0,250,154),
+	palegreen: Color.rgb(152,251,152),
+	lightgreen: Color.rgb(144,238,144),
+	lime: Color.rgb(0,255,0),
+	chartreuse: Color.rgb(127,255,0),
+	lawngreen: Color.rgb(124,252,0),
+	greenyellow: Color.rgb(173,255,47),
+	yellowgreen: Color.rgb(154,205,50),
+	darkolivegreen: Color.rgb(85,107,47),
+	olivedrab: Color.rgb(107,142,35),
+	olive: Color.rgb(128,128,0),
+	darkkhaki: Color.rgb(189,183,107),
+	darkgoldenrod: Color.rgb(184,134,11),
+	goldenrod: Color.rgb(218,165,32),
+	gold: Color.rgb(255,215,0),
+	yellow: Color.rgb(255,255,0),
+	khaki: Color.rgb(240,230,140),
+	palegoldenrod: Color.rgb(238,232,170),
+	sandybrown: Color.rgb(244,164,96),
+	orange: Color.rgb(255,165,0),
+	darkorange: Color.rgb(255,140,0),
+	chocolate: Color.rgb(210,105,30),
+	saddlebrown: Color.rgb(139,69,19),
+	sienna: Color.rgb(160,82,45),
+	peru: Color.rgb(205,133,63),
+	burlywood: Color.rgb(222,184,135),
+	tan: Color.rgb(210,180,140),
+	wheat: Color.rgb(245,222,179),
+	navajowhite: Color.rgb(255,222,173),
+	moccasin: Color.rgb(255,228,181),
+	blanchedalmond: Color.rgb(255,255,205),
+	rosybrown: Color.rgb(188,143,143),
+	mistyrose: Color.rgb(255,228,225),
+	lavenderblush: Color.rgb(255,240,245),
+	lavender: Color.rgb(230,230,250),
+	ghostwhite: Color.rgb(248,248,255),
+	azure: Color.rgb(240,255,255),
+	lightcyan: Color.rgb(224,255,255),
+	aliceblue: Color.rgb(240,248,255),
+	mintcream: Color.rgb(245,255,250),
+	honeydew: Color.rgb(240,255,240),
+	lightgoldenrodyellow: Color.rgb(250,250,210),
+	lemonchiffon: Color.rgb(255,250,205),
+	beige: Color.rgb(245,245,220),
+	lightyellow: Color.rgb(255,255,224),
+	ivory: Color.rgb(255,240,240),
+	floralwhite: Color.rgb(255,250,240),
+	linen: Color.rgb(250,240,230),
+	oldlace: Color.rgb(253,245,230),
+	cornsilk: Color.rgb(255,248,220),
+	antiquewhite: Color.rgb(250,235,215),
+	bisque: Color.rgb(255,228,196),
+	peachpuff: Color.rgb(255,239,213),
+	papayawhip: Color.rgb(255,239,213),
+	seashell: Color.rgb(255,245,238),
+	snow: Color.rgb(255,250,250),
+	white: Color.rgb(255,255,255),
+	whitesmoke: Color.rgb(245,245,245),
+	gainsboro: Color.rgb(220,220,220),
+	lightgrey: Color.rgb(211,211,211),
+	silver: Color.rgb(192,192,192),
+	darkgray: Color.rgb(169,169,169),
+	gray: Color.rgb(128,128,128),
+	dimgray: Color.rgb(105,105,105),
+	lightslategray: Color.rgb(119,136,153),
+	slategray: Color.rgb(112,128,144),
+	darkslategray: Color.rgb(47,79,79),
+	black: Color.rgb(0,0,0)
+};
+Object.extend(Color, {
+	
+	webColorTableMorph: function() {
+		var colors = Properties.own(Color.web)
+		var h = 20
+		var y = 0;
+		var x = 0;
+		container = Morph.makeRectangle(0,0,600,480);
+		container.name = "WebColors"
+		container.setFill(Color.gray)
+		colors.each(function(name) {
+			var morph = new TextMorph(new Rectangle(x, y, 100,h), name)
+			morph.ignoreEvents()
+			y += h;
+			morph.setFill(Color.web[name])
+			container.addMorph(morph);
+			if (y > 460) {
+				y = 0;
+				x += 100;
+			}
+
+		})
+		return container
+	},
+		
+	showWebColorTable: function(){
+		this.webColorTableMorph().openInWorld()
+	}
+});
+
 
 Morph.addMethods({
 	getCustomStyle: function() {

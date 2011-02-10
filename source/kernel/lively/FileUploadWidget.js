@@ -1,7 +1,5 @@
 module("lively.FileUploadWidget").requires().toRun(function(){
 
-
-
 /*	Basic upload manager for single or multiple files (Safari 4 Compatible)
  *	adapted from Andrea Giammarchi (webreflection.blogspot.com) original version (under MIT)
  */
@@ -108,7 +106,8 @@ Object.subclass("FileUploadHelper", {
 });
 
 
-Morph.subclass('FileUploadMorph', {
+Morph.subclass('FileUploadMorph',
+'initializing', {
 	//suppressHandles: true,
 
 	initialize: function($super, bounds) {
@@ -145,15 +144,27 @@ Morph.subclass('FileUploadMorph', {
 
 		this.applyStyle({fill: Color.blue.darker(2).lighter(1), borderRadius: 10});
 
-
-		
-
-		
-
-
 		this.adjustForNewBounds();
 	},
-	
+},
+'opening', {
+	addOpenButtonForFiles: function(fileNames) {
+		if (this.openButton) this.openButton.remove()
+		this.fileNames = fileNames;
+		var btn = new ButtonMorph(new Rectangle(0,0, 100, 20), 'open as images');
+		this.openButton = btn;
+		connect(btn, 'fire', this, 'openImages')
+		this.addMorph(btn);
+		this.adjustForNewBounds();
+	},
+	openImages: function() {
+		if (!this.fileNames) return;
+		this.fileNames.forEach(function(ea) {
+			ImageMorph.forURL(ea).openInWorld(this.world().firstHand().getPosition())
+		}, this)
+	},
+},
+'layout', {	
 	adjustForNewBounds: function ($super) {
         $super();
         var newExtent = this.innerBounds().extent();
@@ -178,6 +189,9 @@ Morph.subclass('FileUploadMorph', {
 
 		var remainingHeight = newExtent.y - runningY - padding;
 		this.result.setBounds(new Rectangle(padding, runningY, innerWidth, remainingHeight))
+
+		if (this.openButton)
+			this.openButton.align(this.openButton.bounds().topCenter(), this.result.bounds().bottomCenter())
     },
 })
 
@@ -191,7 +205,7 @@ BoxMorph.subclass("FileUploadXenoMorph", {
 	},
 
 	setupForeignObject: function() {
-		var fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject') 
+		var fo = NodeFactory.create('foreignObject');
 		fo.setAttribute('width', '200'); 
 		fo.setAttribute('height', '50'); 
 		fo.setAttribute('x', '10'); 
@@ -221,8 +235,7 @@ BoxMorph.subclass("FileUploadXenoMorph", {
 		this.foRawNode.setAttribute("x", bounds.x)
 		this.foRawNode.setAttribute("y", bounds.y)
 		this.foRawNode.setAttribute("width", bounds.width)
-		this.foRawNode.setAttribute("height", bounds.height)
-		
+		this.foRawNode.setAttribute("height", bounds.height)		
 	},
 
 	onDeserialize: function() {
@@ -239,85 +252,73 @@ BoxMorph.subclass("FileUploadXenoMorph", {
 	},
 
 	startUpload: function(input) {
-		var self = this;
-		var size = function(bytes){	  // simple function to show a friendly size
+		var self = this,
+			upload = new FileUploadHelper(),
+			uploadMorph = this.owner,
+			resultText = uploadMorph.result,
+			prefix = this.owner.urlPrefix || '',
+			fileNames = $A(input.files).collect(function(item) { return prefix + item.name });
+
+		function size(bytes){	  // simple function to show a friendly size
 			var i = 0;
-			while(1023 < bytes){
-				bytes /= 1024;
-				++i;
-			};
+			while(1023 < bytes){ bytes /= 1024; ++i };
 			return	i ? bytes.toFixed(2) + ["", " Kb", " Mb", " Gb", " Tb"][i] : bytes + " bytes";
 		};
 
-		var upload = new FileUploadHelper()				
-		if (self.owner.urlPrefix) {		
-			upload.prefix = self.owner.urlPrefix;
-		
-			if (upload.prefix.endsWith("/")) {
-				var dir = new WebResource(URL.source.withFilename(upload.prefix));
-				if (!dir.exists()) {
-					console.log("create " + upload.prefix)
-					dir.create()
-				}
-				
-
+		// setup upload helper
+		upload.prefix = prefix;
+		if (prefix.endsWith("/")) {
+			var dir = new WebResource(URL.source.withFilename(prefix));
+			if (!dir.exists()) {
+				console.log("create " + upload.prefix)
+				dir.create()
 			}
-
-
 		}
-
 		upload.sendMultipleFiles({
-
 			// list of files to upload
 			files: input.files,
 
 			// clear the container 
-			onloadstart:function(){
-			},
+			onloadstart: function(){},
 
 			// do something during upload ...
-			onprogress:function(rpe){
-				self.owner.bar.setValue(rpe.loaded / rpe.total)
-				self.owner.result.setTextString([
+			onprogress: function(rpe) {
+				uploadMorph.bar.setValue(rpe.loaded / rpe.total)
+				resultText.setTextString([
 					"Uploading: " + this.file.fileName,
 					"Sent: " + size(rpe.loaded) + " of " + size(rpe.total),
-					"Total Sent: " + size(this.sent + rpe.loaded) + " of " + size(this.total)
-					].join("\n"));
-				},
+					"Total Sent: " + size(this.sent + rpe.loaded) + " of " + size(this.total)].join("\n"));
+			},
 
 			// fired when last file has been uploaded
-			onload:function(rpe, xhr){
-
-				var response =	upload.parseServerResponse(xhr.responseText);
+			onload: function(rpe, xhr) {
+				var response = upload.parseServerResponse(xhr.responseText);
 				console.log("response " + response + " source: " + xhr.responseText);
-				Global.areg = xhr.responseText;
-				if (response.message) {
-					self.owner.result.setTextString( self.owner.result.textString + 
-						" \nServer Response: "	+ response.message);
-				} 
+				if (response.message)
+					resultText.setTextString(resultText.textString + " \nServer Response: "	+ response.message);
+				uploadMorph.addOpenButtonForFiles(fileNames);
+
 				// enable the input again
 				input.removeAttribute("disabled");
 			},
 
 			// if something is wrong ... (from native instance or because of size)
-			onerror:function(){
-				self.owner.result.setTextString( "The file " + this.file.fileName + 
+			onerror: function() {
+				resultText.setTextString( "The file " + this.file.fileName + 
 				" is too big [" + size(this.file.fileSize) + "]");				   
 				// enable the input again
 				input.removeAttribute("disabled");
-			}
+			},
 		});
 	},
 
 	setupHTMLContent: function() {
-
 		var input = document.createElement("input");
 		input.setAttribute("type", "file");
 		input.setAttribute("multiple", "multiple"); 
 		//input.setAttribute("style", "left:0px; top:-10px; width:100px; height:20px;"); 
 
-		this.foRawNode.appendChild(input);
-	
+		this.foRawNode.appendChild(input);	
 	
 		var self = this;
 

@@ -26,7 +26,7 @@
 // Graphics primitives (SVG specific, browser-independent)
 // ===========================================================================
 
-module('lively.scene').requires().toRun(function() {
+module('lively.scene').requires('lively.OldBase').toRun(function() {
 
 Global.locateCanvas = function(optNode) { // dirty secret
 	// optNode can be rawNode or document or null
@@ -41,7 +41,7 @@ Global.locateCanvas = function(optNode) { // dirty secret
 	// find the first "svg" element with id "canvas"
 	var elements = optNode && optNode.getElementsByTagName("svg");
 	if (UserAgent.isIE) { // FIX for IE9+
-		if (elements && (elements.length == 0) && optNode)
+		if (elements && (elements.length == 0) && optNode && !(optNode instanceof Object))
 			elements = optNode.selectNodes('//*["svg"=name()]');
 	}
 	if (elements) {
@@ -130,14 +130,13 @@ Object.subclass('lively.data.Wrapper',
 	},
 
 	newId: (function() {
-		// this may be a Problem, after deserializing and when copy and pasting... 
+		// this may be a Problem, after deserializing and when copy and pasting...
+		if (Math.uuid) return function() { return Math.uuid() }; // so use (pseudo) uuids when available
 		var wrapperCounter = 0;
 		return function(optNewCounter) {
-			if (optNewCounter) {
-				wrapperCounter = optNewCounter;
-				return;
-			}
-			return Math.uuid ? Math.uuid() : ++wrapperCounter; // so use (pseudo) uuids when available
+			if (optNewCounter)
+				return wrapperCounter = optNewCounter;
+			return ++wrapperCounter;
 		}
 	})(),
 
@@ -979,17 +978,11 @@ lively.scene.Node.subclass('lively.scene.Shape', {
 	},
 
 
-	applyFunction: function(func,arg) { 
-		func.call(this, arg); 
-	},
+	applyFunction: function(func,arg) { func.call(this, arg) },
 
-	toPath: function() {
-		throw new Error('unimplemented');
-	},
+	toPath: function() { throw new Error('unimplemented') },
 
-	getOrigin: function() {
-		return this.bounds().topLeft();
-	}
+	getOrigin: function() { return this.bounds().topLeft() }
 });
 
 
@@ -1234,7 +1227,7 @@ Object.extend(this.Ellipse, {
 
 
 
-this.Shape.subclass('lively.scene.Polygon', {
+lively.scene.Shape.subclass('lively.scene.Polygon', {
 	documentation: "polygon",
 
 	hasElbowProtrusions: true,
@@ -1365,23 +1358,23 @@ this.Shape.subclass('lively.scene.Polygon', {
 		//  2N...(3N-1)  -- second control point for the (i-2N)-th line segment
 		// This encoding scheme is shared also by partPosition() and reshape()
 
-		var verts = this.vertices();
-		var locs = [];
-		for (var i = 0; i < verts.length; i++) { locs.push(i); };  // vertices
+		var verts = this.vertices(), locs = [];
+		for (var i = 0; i < verts.length; i++) locs.push(i);  // vertices
 
 		var nLines = verts.length-1;
 		// Some polygons have last point = first; some don't
-		if ((this instanceof lively.scene.Polygon) && !verts.first().eqPt(verts.last())) nLines = verts.length;
-		for (var i = 0; i < nLines; i++) { locs.push(-(i + 1)); };  // midpoints
+		if ((this instanceof lively.scene.Polygon) && !verts.first().eqPt(verts.last()))
+			nLines = verts.length;
+		for (var i = 0; i < nLines; i++) locs.push(-(i + 1)); // midpoints
 		return locs; 
 	},
 
 
 	// borrowed from http://local.wasp.uwa.edu.au/~pbourke/geometry/insidepoly/
 	containsPoint: function(p) {
-		var counter = 0;
-		var vertices = this.vertices();
-		var p1 = vertices[0];
+		var counter = 0,
+			vertices = this.vertices(),
+			p1 = vertices[0];
 		for (var i = 1; i <= vertices.length; i++) {
 			var p2 = vertices[i % vertices.length];
 			if (p.y > Math.min(p1.y, p2.y)) {
@@ -1397,12 +1390,7 @@ this.Shape.subclass('lively.scene.Polygon', {
 			}
 			p1 = p2;
 		}
-
-		if (counter % 2 == 0) {
-			return false;
-		} else {
-			return true;
-		}
+		return (counter % 2 == 0) ? false : true;
 	},
 
 	partPosition: function(partName) {
@@ -1411,9 +1399,12 @@ this.Shape.subclass('lively.scene.Polygon', {
 		var verts = this.vertices();
 		if (partName >= 0) return verts[partName];
 		// Case of midpoint of last segment when first vertex is not duplicated
-		if (-partName > (verts.length-1)) return verts[-partName - 1].midPt(verts[0]); 
-		return verts[-partName].midPt(verts[-partName - 1]); 
-	}
+		return -partName > (verts.length-1) ?
+			verts[-partName - 1].midPt(verts[0]) :
+			verts[-partName].midPt(verts[-partName - 1]);
+	},
+
+
 
 });
 
@@ -1513,7 +1504,8 @@ this.Line = { // sugar syntax
 // --------- Paths ----
 // --------------------
 // see http://www.w3.org/TR/SVG/paths.html
-Wrapper.subclass('lively.scene.PathElement', {
+lively.data.Wrapper.subclass('lively.scene.PathElement', {
+	isPathElement: true,
 	initialize: function(isAbsolute) {
 		this.isAbsolute = isAbsolute;
 	},
@@ -1618,13 +1610,11 @@ Object.extend(lively.scene.MoveTo, {
 		var codeExtractor = /([A-Za-z])\s?(-?[0-9]+(?:.[0-9]+)?|NaN),(-?[0-9]+(?:.[0-9]+)?|NaN)/;
 	},
 	dataLength: 2,
-	create: function(isAbsolute, arr) {
-		return new this(isAbsolute, arr[0], arr[1])
-	},
+	create: function(isAbsolute, arr) { return new this(isAbsolute, arr[0], arr[1]) },
 });
 
 
-this.PathElement.subclass('lively.scene.LineTo', {
+lively.scene.PathElement.subclass('lively.scene.LineTo', {
 	charCode: 'L',
 	initialize: function($super, isAbsolute, x, y) {
 		$super(isAbsolute);
@@ -1658,9 +1648,7 @@ Object.extend(lively.scene.LineTo, {
 		return new lively.scene.LineTo(literal.isAbsolute, literal.x || 0.0, literal.y || 0.0);
 	},
 	dataLength: 2,
-	create: function(isAbsolute, arr) {
-		return new this(isAbsolute, arr[0], arr[1])
-	},
+	create: function(isAbsolute, arr) { return new this(isAbsolute, arr[0], arr[1]) },
 });
 
 
@@ -1827,7 +1815,7 @@ Object.extend(lively.scene.QuadCurveTo, {
 }); 
 
 
-this.PathElement.subclass('lively.scene.BezierCurve2CtlTo', {
+lively.scene.PathElement.subclass('lively.scene.BezierCurve2CtlTo', {
 
 	charCode: 'C',
 
@@ -1856,7 +1844,7 @@ this.PathElement.subclass('lively.scene.BezierCurve2CtlTo', {
 		return this.realCharCode() + this.controlX1 + "," + this.controlY1 + " " + this.controlX2 + "," + this.controlY2 + " " + this.x + "," + this.y;
 	},
 	
-	translate:function(x, y, force) {
+	translate: function(x, y, force) {
 		if (!this.isAbsolute && !force) return;
 		this.x += x;
 		this.y += y;
@@ -2007,11 +1995,15 @@ Object.extend(lively.scene.ClosePath, {
 });
 
 
-this.Shape.subclass('lively.scene.Path', {
+lively.scene.Shape.subclass('lively.scene.Path',
+'documentation', {
 	documentation: "Generic Path with arbitrary Bezier curves",
-
+},
+'settings', {
 	hasElbowProtrusions: true,
-
+	showInsertionPoints: false,
+},
+'initalizing', {
 	initialize: function($super, elements, morph) {
 		this.rawNode = NodeFactory.create("path");
 		this.dontChangeShape = false;
@@ -2019,12 +2011,6 @@ this.Shape.subclass('lively.scene.Path', {
 		this.setElements(elements || []);
 		return this;
 	},
-	
-	deserialize: function($super, importer, rawNode) {
-		$super(importer, rawNode);
-		this.setElementsFromSVGData(rawNode.getAttributeNS(null, 'd'));
-	},
-
 	copyFrom: function($super, copier, other) {
 		$super(copier, other);		
 		this.setElements(other.elements);
@@ -2035,12 +2021,18 @@ this.Shape.subclass('lively.scene.Path', {
 		// 		this.cachedVertices = other.cachedVertices;
 		// 		return res;		
 	},
-	
+},
+'XML serialization', {
+	deserialize: function($super, importer, rawNode) {
+		$super(importer, rawNode);
+		this.setElementsFromSVGData(rawNode.getAttributeNS(null, 'd'));
+	},
+},
+'svg specific', {
 	setElementsFromSVGData: function(data) {
 		var elements = lively.scene.PathElement.parse(data);
 		this.setElements(elements);
-	},
-	
+	},	
 	createSVGDataFromElements: function() {
 		var attr = "";
 		for (var i = 0; i < this.elements.length; i++) {
@@ -2050,77 +2042,47 @@ this.Shape.subclass('lively.scene.Path', {
 		}
 		return attr
 	},
-
+},
+'accessing', {
 	setElements: function(elts) {
 		this.cachedVertices = null;
 		this.elements = elts;
 		this.rawNode.setAttributeNS(null, "d", this.createSVGDataFromElements());
 	},
+	getElements: function(elts) { return this.elements },
 
-	normalize: function(hintX, hintY) {
-		// when elements are translated and are not beginning
-		// in origin translate them so they do
-		var first = this.elements[0];
-		if (first.constructor != lively.scene.MoveTo) {
-			console.warn('cannot normalize path not beginning with MoveTo');
-			return;
-		}
-		var x = first.x * -1 + (hintX || 0);
-		var y = first.y * -1 + (hintY || 0);
-		var isFirst = true;
-		for (var i = 0; i < this.elements.length; i++) {
-			this.elements[i].translate(x, y, isFirst);
-			isFirst = false;
-		}
-		this.setElements(this.elements);
-	},
 	
 	setVertices: function(vertlist) {
-		if (this.dontChangeShape) return
-		// emit SVG path symbol based on point attributes
-		// p==point, i=array index
-		function map2svg(p,i) {
-			var code;
-			if (i==0 || p.type && p.type=="move") {
-				code = "M";
-			} else if (p.type && p.type=="line") {
-				code = "L";
-			} else if (p.type && p.type=="arc" && p.radius) {
-				code = "A" + (p.radius.x || p.radius) + "," +
-				(p.radius.y || p.radius) + " " + (p.angle || "0") +
-				" " + (p.mode || "0,1") + " ";
-			} else if (p.type && p.type=="curve" && p.control) {
-				// keep control points relative so translation works
-				code = "Q" + (p.x+p.control.x) + "," + (p.y+p.control.y) + " ";
-			} else {
-				code = "T";	 // default - bezier curve with implied control pts
+		if (this.dontChangeShape) return;
+		var elements = this.elements;
+		for (var i = 0; i < vertlist.length; i++) {
+			var elem = elements[i], p = vertlist[i];
+			if (elem) { elem.x = p.x; elem.y = p.y; continue }
+			if (p.isPathElement) { elements.push(p); continue } // FIXME use setElements instead?!
+			if (p instanceof Point) {
+				var klass = i == 0 ? lively.scene.MoveTo : lively.scene.LineTo;
+				elements.push(new klass(true, p.x, p.y));
+				continue;
 			}
-			return code + p.x + "," + p.y;
+			throw new Error('Cannot do setVertives with vertex ' + p)
 		}
-		var d = vertlist.map(map2svg).join('');
-		//console.log("d=" + d);
-		if (d.length > 0)
-			this.rawNode.setAttributeNS(null, "d", d);
+		this.setElements(elements);
 	},
-
 	setVerticesAndControls: function(verts, ctrls, closed) {
 		// Complete hack only so that we can play with editing.  
 		// May leaves garbage in DOM
 
 		// copied from Morph.makeCurve...
-		var g = lively.scene;
-		var cmds = [];
+		var g = lively.scene, cmds = [];
 		cmds.push(new g.MoveTo(true, verts[0].x,  verts[0].y));
-		for (var i=1; i<verts.length; i++) {
+		for (var i = 1; i < verts.length; i++) {
 			var el = ctrls[i] ?
 				new g.QuadCurveTo(true, verts[i].x, verts[i].y, ctrls[i].x, ctrls[i].y) :
-				new g.CurveTo(true, verts[i].x, verts[i].y);
+				new g.LineTo(true, verts[i].x, verts[i].y);
 			cmds.push(el);
 		}
 		this.setElements(cmds);
-	},
-
-	
+	},	
 	vertices: function() {
 		// [DI] Note this is a test only -- not all path elements will work with this
 		if (this.cachedVertices != null) return this.cachedVertices;
@@ -2135,33 +2097,24 @@ this.Shape.subclass('lively.scene.Path', {
 	controlPoints: function() {
 		// [DI] Note this is a test only -- no caching, not all path elements will work with this
 		var ctls = [];
-			this.elements.forEach(function(el) { 
-				var cs = el.controlPoints();  // cs = [vert] or [p1, vert] or [p1, p2, vert]
-				ctls.push(cs.slice(0,cs.length-1));   // this is cs.butLast, ie [] or [p1] or [p1, p2]
-				});
+		this.elements.forEach(function(el) { 
+			var cs = el.controlPoints();  // cs = [vert] or [p1, vert] or [p1, p2, vert]
+			ctls.push(cs.slice(0,cs.length-1));   // this is cs.butLast, ie [] or [p1] or [p1, p2]
+		});
 		return ctls;
 	},
-
-
-	containsPoint: function(p) {
-		var verts = this.vertices();
-		//if (UserAgent.webKitVersion >= 525)
-		return Rectangle.unionPts(verts).containsPoint(p);
-		//else return this.nativeContainsWorldPoint(p);
-	},
-
 	bounds: function() {
-		var u = Rectangle.unionPts(this.vertices());
-		// FIXME this is not correct (extruding arcs) but it's an approximation
-		return u;
+		// var bb = Rectangle.unionPts(this.vertices()); // not correct, only approx
+		var bb = Rectangle.ensure(this.rawNode.getBBox());
+		return bb;
 	},
 
 	setBounds: function(bounds) { 
-		console.log('setBounds unsupported on type ' + this.getType());
+		console.warn('setBounds unsupported on type ' + this.getType());
 	},
 
 	// poorman's traits :)
-	partNameNear: this.Polygon.prototype.partNameNear,
+	partNameNear: lively.scene.Polygon.prototype.partNameNear,
 	allPartNames: function() {
 		// Note: for reshaping of polygons and lines, the "partNames" are
 		//  integer codes with the following meaning...
@@ -2173,20 +2126,19 @@ this.Shape.subclass('lively.scene.Path', {
 		// This encoding scheme is shared also by partPosition() and reshape()
 
 		// Vertices...
-		var locs = [];
-		var verts = this.vertices();
-		for (var i = 0; i < verts.length; i++) { locs.push(i); };  // vertices
+		var locs = [], verts = this.vertices();
+		for (var i = 0; i < verts.length; i++) locs.push(i);  // vertices
 
 		// Midpoints (for insertion)
 		// Some polygons have last point = first; some don't
-		if (false) {  // Note: this wont work right for paths yet
+		if (this.showInsertionPoints) {  // Note: this wont work right for paths yet
 			var nLines = (verts.first().eqPt(verts.last())) ? verts.length-1 : verts.length;
-			for (var i = 0; i < nLines; i++) { locs.push(-(i + 1)); };  // midpoints
+			for (var i = 0; i < nLines; i++) locs.push(-(i + 1)); // midpoints
 		}
 
 		// Control points
-		var N = verts.length;
-		var ctls = this.controlPoints();
+		var N = verts.length,
+			ctls = this.controlPoints();
 		for (var i = 0; i < ctls.length; i++) { 
 			var cs = ctls[i];
 			if (cs.length > 0) locs.push(N + i);  // first control pt for curve elements
@@ -2198,13 +2150,14 @@ this.Shape.subclass('lively.scene.Path', {
 	partPosition: function(partName) {
 		// See the comment in allPartNames
 		// Here we decode the "partName" index to select a vertex, midpoint or control point
-		var verts = this.vertices();  var N = verts.length;
+		var verts = this.vertices(), N = verts.length;
 
 		// Midpoint of segment
 		if (partName < 0) {  
 			// Check for midpoint of last segment when first vertex is not duplicated
-			if (-partName > (verts.length-1)) return verts[-partName - 1].midPt(verts[0]); 
-			return verts[-partName].midPt(verts[-partName - 1]);
+			return -partName > (verts.length-1) ?
+				verts[-partName - 1].midPt(verts[0]) :
+				verts[-partName].midPt(verts[-partName - 1]);
 		}
 		// Normal vertex
 		if (partName < N) return verts[partName];
@@ -2215,30 +2168,53 @@ this.Shape.subclass('lively.scene.Path', {
 
 		// Second control point
 		if (partName < N*3) return ctls[partName - N*2][1];
-console.log("can't find partName = " + partName);
-console.log("verts = " + Object.inspect(verts));
-console.log("ctls = " + Object.inspect(ctls));
+console.warn("can't find partName = " + partName);
+console.warn("verts = " + Object.inspect(verts));
+console.warn("ctls = " + Object.inspect(ctls));
 	},
 
-
+},
+'testing', {
+	containsPoint: function(p) { return this.bounds().containsPoint(p) },
+},
+'normalizing', {
+	normalize: function(hintX, hintY) {
+		// when elements are translated and are not beginning
+		// in origin translate them so they do
+		var first = this.elements[0];
+		if (first.constructor != lively.scene.MoveTo) {
+			console.warn('cannot normalize path not beginning with MoveTo');
+			return;
+		}
+		var x = first.x * -1 + (hintX || 0),
+			y = first.y * -1 + (hintY || 0),
+			isFirst = true;
+		for (var i = 0; i < this.elements.length; i++) {
+			this.elements[i].translate(x, y, isFirst);
+			isFirst = false;
+		}
+		this.setElements(this.elements);
+	},
+},
+'updating', {
 	reshape: function(ix, newPoint, lastCall) {
 		// See the comment in allPartNames
 		// Here we decode the "partName" index to select a vertex, midpoint or control point
 		// and then replace that point with newPoint, and update the shape
 
 		// ix is an index into vertices
-		var verts = this.vertices();  // less verbose
-		var ctrls = this.controlPoints().map(function(elt) {return elt[0]; });
+		var verts = this.vertices(),  // less verbose
+			ctrls = this.controlPoints().map(function(elt) {return elt[0]; });
 		if (!ctrls[0]) ctrls[0] = ctrls[1];
 		if (ix < 0) { // negative means insert a vertex
-			return false;  // Inserting a vertex wont work yet without splicing in a controlpt as well
 			ix = -ix;
 			verts.splice(ix, 0, newPoint);
+			ctrls.splice(ix, 0, null) // inserting null as ctrlPt currently means that we get a LineTo
 			this.setVerticesAndControls(verts, ctrls);
 			return; // undefined result for insertion 
 		}
-		var N = verts.length;
-		var closed = verts[0].eqPt(verts[verts.length - 1]);
+		var N = verts.length,
+			closed = verts[0].eqPt(verts[verts.length - 1]);
 		if (ix >= N) {
 			// Edit a control point
 			ctrls[ix-N] = newPoint;
@@ -2254,8 +2230,8 @@ console.log("ctls = " + Object.inspect(ctls));
 			verts[ix] = newPoint;
 		}
 
-		var shouldMerge = false;
-		var howClose = 6;
+		var shouldMerge = false,
+			howClose = 6;
 		if (verts.length > 2) {
 			// if vertex being moved is close to an adjacent vertex, make handle show it (red)
 			// and if its the last call (mouse up), then merge this with the other vertex
@@ -2280,13 +2256,10 @@ console.log("ctls = " + Object.inspect(ctls));
 		this.setVerticesAndControls(verts, ctrls, closed); 
 		return shouldMerge;
 	},
-
 });
 
 Object.extend(lively.scene.Path, {
-	fromLiteral: function(literal) {
-		return new lively.scene.Path(literal.elements);
-	},
+	fromLiteral: function(literal) { return new lively.scene.Path(literal.elements) },
 });
 
 this.Shape.subclass('lively.scene.Group', {
@@ -2766,7 +2739,7 @@ Object.subclass('lively.scene.Similitude', {
 		// do good typechecking of SVGMatrix properties before passing
 		// them to native code.	 It's probably too late to figure out
 		// the cause, but at least we won't crash.
-		if (isNaN(value)) { throw dbgOn(new Error('not a number'));}
+		if (isNaN(value)) { throw dbgOn(new Error('not a number ' + value));}
 		return value;
 	},
 
@@ -3079,6 +3052,7 @@ Object.extend(lively.paint.Stop, {
 lively.data.Wrapper.subclass("lively.paint.Gradient",
 'initializing', {
 
+	isGradient: true,
 	dictionaryNode: null,
 
 	initialize: function($super) {
@@ -3157,6 +3131,8 @@ lively.data.Wrapper.subclass("lively.paint.Gradient",
 lively.paint.Gradient.subclass("lively.paint.LinearGradient",
 'initializing', {
 
+	isLinearGradient: true,
+
 	initialize: function($super, stopSpec, vector) {
 		this.vector = vector || lively.paint.LinearGradient.NorthSouth;
 		this.stops = stopSpec || [];
@@ -3202,15 +3178,15 @@ Object.extend(lively.paint.LinearGradient, {
 lively.paint.Gradient.subclass('lively.paint.RadialGradient',
 'initializing', {
 
+	isRadialGradient: true,
+
 	initialize: function($super, stopSpec, optF) {
 		this.stops = stopSpec;
 		this.f = optF;
 		$super();
 	},
 
-	createRawNode: function() {
-		return NodeFactory.create("radialGradient");
-	},
+	createRawNode: function() { return NodeFactory.create("radialGradient") },
 
 	initializeNode: function($super) {
 		$super();

@@ -1196,9 +1196,31 @@ var SVGLocatable = function() {};
 extend(SVGLocatable.prototype, {
   get nearestViewportElement() { TODO(); },
   get farthestViewportElement() { TODO(); },
-  getBBox: function() { TODO(); },
   getCTM: function() { TODO(); },
   getScreenCTM: function() { TODO(); },
+
+	getBBox: function() {
+		// a rect or something alike?
+		var x = this.getAttribute('x'),
+			y = this.getAttribute('y'),
+			width = this.getAttribute('width'),
+			height = this.getAttribute('height');
+		if (x !== undefined && y !== undefined && width !== undefined && height !== undefined)
+			return new Rectangle(x, y, width, height); // actually this is an SVGRect object
+
+		// a path?
+		var d = this.getAttribute('d');
+		if (d) {
+			// is there always a space between element parts?
+			var pointRegex = /[A-Za-z]?([0-9\.\-e]+,[0-9\.\-e]+)/,
+				points = d.split(' ').collect(function(ea) {
+					var match = ea.match(pointRegex);
+					return pt(match[1] || 0, match[2] || 0)
+				})
+			return Rectangle.unionPts(points)
+		}
+		throw new Error('Cannot compute getBBox of ' + this)
+	},
 
   getTransformToElement: function(element) {
     var matrix;
@@ -1254,7 +1276,7 @@ var SVGElement = function() { Element.call(this); };
 extend(SVGElement.prototype, Element.prototype);
 Element.factories['http://www.w3.org/2000/svg'] = SVGElement.factory = {};
 
-SVGElement.defineElement = function(name, parents) {
+SVGElement.defineElement = function defineElement(name, parents) {
   (parents = parents || []).unshift(this);
   var element = function() {
       parents.forEach(function(parent) { parent.call(this); }, this);
@@ -1478,7 +1500,14 @@ extend(SVGPathElement.prototype, {
 
      createSVGPathSegCurvetoQuadraticAbs: function(x, y, controlX, controlY) {
 	 return new SVGPathSegCurvetoQuadraticAbs(x, y, controlX, controlY);
-     }
+     },
+
+	getTotalLength: function() { return 0 },
+	getPointAtLength: function() {
+		var p = new SVGPoint()
+		p.x = 0; p.y = 0;
+		return p;
+	},
 
 });
 

@@ -921,6 +921,8 @@ lively.ide.CompleteFileFragmentNode.subclass('StBrowserFileNode', {
 		eval(code);
 		return true;
 	},
+
+	onSelect: function() { this.browser.currentModuleName = undefiend },
 })
 
 lively.ide.CategorizedClassFragmentNode.subclass('StBrowserClassNode', {

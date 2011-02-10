@@ -67,7 +67,7 @@ var JSLoader = {
 	XLINKNamespace: 'http:\/\/www.w3.org/1999/xlink',
 	LIVELYNamespace: 'http:\/\/www.experimentalstuff.com/Lively',
 
-	loadJs: function(url, onLoadCb, loadSync) {
+	loadJs: function(url, onLoadCb, loadSync, noCache, cacheQuery) {
 		if (this.scriptInDOM(url)) {
 			console.log('script ' + url + ' already loaded or loading');
 			return
@@ -76,11 +76,12 @@ var JSLoader = {
 
 		// adapt URL
 		var exactUrl = url;
-		if (exactUrl.indexOf('!svn') <= 0)
-			if (true || Config.disableScriptCaching)
-				exactUrl = (exactUrl.indexOf('?') == -1) ?
-					exactUrl + '?' + new Date().getTime() :
-					exactUrl + '&' + new Date().getTime();
+		if (Config.disableScriptCaching && (exactUrl.indexOf('!svn') <= 0) && !noCache) {
+			cacheQuery = cacheQuery || new Date().getTime();
+			exactUrl = (exactUrl.indexOf('?') == -1) ?
+				exactUrl + '?' +  cacheQuery :
+				exactUrl + '&' + cacheQuery;
+		}
 
 		// create and configure script tag
 		var parentNode = this.findParentScriptNode(),
@@ -95,9 +96,8 @@ var JSLoader = {
 			this.loadAsync(exactUrl, onLoadCb, script);
 	},
 	loadSync: function(url, onLoadCb, script) {
-		var source = new WebResource(url).beSync().get().content;
+		var source = this.getSync(url);
 		eval(source);
-
 		if (typeof onLoadCb === 'function') onLoadCb();
 	},
 	loadAsync: function(url, onLoadCb, script) {
@@ -113,7 +113,7 @@ var JSLoader = {
 	},
 
 
-	loadCombinedModules: function(combinedFileUrl, callback) {
+	loadCombinedModules: function(combinedFileUrl, callback, hash) {
 		// If several modules are combined in one file they can be loaded with this method.
 		// The method will ensure that all included modules are loaded and if they
 		// have required modules that are not included in the combined file also those will
@@ -122,32 +122,41 @@ var JSLoader = {
 		var originalLoader = this,
 			combinedLoader = {
 				expectToLoadModules: function(listOfRelativePaths) {
-					this.expectedModulePaths = listOfRelativePaths;
+					// urls like http://lively-kernel.org/repository/webwerkstatt/lively/Text.js
 					this.expectedModuleURLs = new Array(listOfRelativePaths.length);
 					for (var i = 0; i < listOfRelativePaths.length; i++)
 						this.expectedModuleURLs[i] = LivelyLoader.codeBase + listOfRelativePaths[i]
+
+					// modules like lively.Text
 					this.expectedModules = new Array(listOfRelativePaths.length);
 					for (var i = 0; i < listOfRelativePaths.length; i++) {
 						var moduleName = listOfRelativePaths[i].replace(/\//g, '.');
 						moduleName = moduleName.replace(/\.js$/g, '');
 						this.expectedModules[i] = moduleName;
 					}
+
+					// create script tags that are found when tested if a file is already loaded
+					this.expectedModuleURLs.forEach(function(url) {
+						var script = document.createElement('script')
+						script.setAttribute('id', url);
+						document.getElementsByTagName('head')[0].appendChild(script);
+					})
 				},
 				includedInCombinedFile: function(scriptUrl) {
 					return this.expectedModuleURLs && this.expectedModuleURLs.indexOf(scriptUrl) >= 0;
 				},
 				loadJs: function(url) {
-					console.log('loadJs: ' + url)
+					console.log('load file that is not in combined modules: ' + url)
 					if (!this.includedInCombinedFile(url)) originalLoader.loadJs(url);
 				},
 				scriptInDOM: function(url) {
-					console.log('scriptInDOM: ' + url)
 					return originalLoader.scriptInDOM(url) || this.includedInCombinedFile(url);
 				},
 			},
 			callCallback = function() {
 				Global.JSLoader = originalLoader;
 				// FIXME
+				// Filter out the modules already loaded
 				var realModules = combinedLoader.expectedModules
 					.select(function(ea) { return Class.forName(ea) !== undefined });
 				require(realModules).toRun(callback)
@@ -158,11 +167,8 @@ var JSLoader = {
 		// while loading the combined file we replace the loader
 		JSLoader = combinedLoader;
 
-		this.loadJs(combinedFileUrl, callCallback);
+		this.loadJs(combinedFileUrl, callCallback, null, hash);
 	},
-
-
-
 
 	loadAll: function(urls, cb) {
 		urls.reverse().reduce(function(loadPrevious, url) {
@@ -188,17 +194,18 @@ var JSLoader = {
 	
 	getScripts: function() { return document.getElementsByTagName('script') },
 
-	scriptInDOM: function(url) {
-		if (document.getElementById(url)) return true;
-		var scriptElements = this.getScripts();
-		for (var i = 0; i < scriptElements.length; i++)
-			if (this.scriptElementLinksTo(scriptElements[i], url)) return true;
-		return false;
+	scriptInDOM: function(url) { return this.scriptsThatLinkTo(url).length > 0 },
+
+	scriptsThatLinkTo: function(url) {
+		var scriptsFound = [],
+			allScripts = this.getScripts();
+		for (var i = 0; i < allScripts.length; i++)
+			if (this.scriptElementLinksTo(allScripts[i], url))
+				scriptsFound.push(allScripts[i]);
+		return scriptsFound;
 	},
 
-	removeQueries: function(url) {
-		return url.split('?')[0];
-	},
+	removeQueries: function(url) { return url.split('?')[0] },
 
 	resolveURLString: function(urlString) {
 		// FIXME duplicated from URL class in lively. Network
@@ -244,6 +251,19 @@ var JSLoader = {
 		return this.resolveURLString(this.currentDir() + urlString);
 	},
 
+	removeAllScriptsThatLinkTo: function(url) {
+		var scripts = this.scriptsThatLinkTo(url);
+		for (var i = 0; i < scripts.length; i++)
+			scripts[i].parentNode.removeChild(scripts[i]);
+	},
+	getSync: function(url) {
+		var req = new XMLHttpRequest()
+		req.open('GET', url, false/*sync*/)
+		req.send()
+		return req.responseText;
+	},
+
+
 	DEPRECATED$findParentScriptNode: function() {
 		// FIXME Assumption that first def node has scripts
 		var node = document.getElementsByTagName("defs")[0] || this.getScripts()[0].parentElement;
@@ -254,7 +274,6 @@ var JSLoader = {
 		if (!node) throw(dbgOn(new Error('Cannot load script, don\'t know where to append it')));
 		return node
 	},
-
 };
 
 var LivelyLoader = {
@@ -263,6 +282,9 @@ var LivelyLoader = {
 	// ------- generic load support ----------
 	//
 	codeBase: (function findCodeBase() {
+		if (window.Config && Config.codeBase !== undefined)
+			return Config.codeBase;
+
 		var bootstrapFileName = 'bootstrap.js',
 			scripts = JSLoader.getScripts(),
 			i = 0, node, urlFound;
@@ -303,12 +325,17 @@ var LivelyLoader = {
 	
 	bootstrap: function(thenDoFunc, isCanvas) {
 		this.createConfigObject();
+
+		if (Config.standAlone) { thenDoFunc(); return };
+
+		// FIXME somehow solve the canvas loading issue...
 		var url = document.URL,
 			optimizedLoading = !url.match('quickLoad=false') && !url.match('!svn') &&
 				url.match('webwerkstatt') && String(document.location).match('lively-kernel.org') && !isCanvas;
 		if (optimizedLoading) {
 			console.log('optimized loading enabled')
-			JSLoader.loadCombinedModules(this.codeBase + 'generated/combinedModules.js', thenDoFunc);
+			var hash = JSLoader.getSync(this.codeBase + 'generated/combinedModulesHash.txt')
+			JSLoader.loadCombinedModules(this.codeBase + 'generated/combinedModules.js', thenDoFunc, hash);
 			return
 		}
 		
@@ -319,44 +346,46 @@ var LivelyLoader = {
 			'lively/defaultconfig.js',
 			'lively/localconfig.js'],
 			function() {
-				var modules =  [
+				var modules1 =  [
 					'lively/Base.js',
+					'lively/DOMAbstraction.js',
+					'lively/OldBase.js',
 					'lively/scene.js',
-					'lively/Core.js',
+					'lively/Core.js'
+				];
+
+				var modules2 =  [
 					'lively/Network.js',
-					
-					"lively/Text.js",
-					"lively/Widgets.js",
-					"lively/Data.js",
-					"lively/Storage.js",
-					"lively/Tools.js",
-					"lively/ide.js"
+					'lively/Text.js',
+					'lively/Widgets.js',
+					'lively/Data.js',
+					'lively/Storage.js',
+					'lively/Tools.js',
+					'lively/ide.js'
 				];
 				if (isCanvas) {
-					modules.splice(1, 0, 'lively/EmuDom.js');
-					modules.push('lively/CanvasExpt.js');
-					var coreIdx = modules.indexOf('lively/Core.js')
-					JSLoader.resolveAndLoadAll(
-						codeBase,
-						modules.slice(0, coreIdx + 1),
-						function() {
-							LivelyLoader.executeCanvasChanges();
-							JSLoader.resolveAndLoadAll(codeBase, modules.slice(coreIdx + 1), thenDoFunc);
-						});
-				} else {
-					JSLoader.resolveAndLoadAll(codeBase, modules, thenDoFunc);
+					modules1.splice(1, 0, 'lively/EmuDom.js');
+					modules2.push('lively/CanvasExpt.js');
 				}
+
+				JSLoader.resolveAndLoadAll(codeBase,
+					modules1,
+					function() {
+						if (isCanvas) LivelyLoader.executeCanvasChanges();
+						JSLoader.resolveAndLoadAll(codeBase, modules2, thenDoFunc);
+					});
 			});
 	},
 
 	//
-	// ------- load SVG world ---------------
+	// ------- load world ---------------
 	//
 	loadMain: function(canvas) {
-		require('lively.Main').toRun(function() {
+		require('lively.bindings', 'lively.Main').toRun(function() {
 			var loader = lively.Main.getLoader(canvas);
 			lively.bindings.connect(loader, 'finishLoading', LoadingScreen, 'remove');
 			loader.systemStart(canvas);
+			LivelyLoader.loadUserConfig();
 		});
 	},
 
@@ -370,14 +399,16 @@ var LivelyLoader = {
 	},
 	findCanvas: function(doc) {
 		var canvas = doc.getElementById('canvas');
-		if (canvas && canvas.tagName === 'svg') return canvas;
+		if (canvas && canvas.tagName.toUpperCase() === 'SVG') return canvas;
 		canvas = doc.getElementById('canvas');
-		if (canvas && canvas.tagName === 'div') return canvas;
+		if (canvas && canvas.tagName.toUpperCase() === 'DIV') return canvas;
 		return null
 	},
 
 
-
+	//
+	// ------- Canvas specific ---------------
+	//
 	startCanvasWorld: function() {
 		var canvas = this.findRealCanvas(document);
 		if (!canvas) return false;
@@ -389,7 +420,7 @@ var LivelyLoader = {
 
 	findRealCanvas: function(doc) {
 		var canvas = doc.getElementById('lively.canvas');
-		if (!canvas || canvas.tagName !== 'canvas') return null;
+		if (!canvas || canvas.tagName.toUpperCase() !== 'CANVAS') return null;
 		return canvas
 	},
 	
@@ -452,6 +483,63 @@ var LivelyLoader = {
 			ensureInDictionary: function() { }
 		});		
 	},
+	startNewMorphicWorld: function() {
+		if (!window.Config || !Config.isNewMorphic) return false;
+		var self = this;
+		LoadingScreen.add();
+		this.bootstrapNewMorphicWorld(function() {
+			// FIXME
+			Config.modulesOnWorldLoad = [];
+			self.loadMain(document.body);
+		});
+		return true;
+	},
+	bootstrapNewMorphicWorld: function(thenDoFunc) {
+		this.createConfigObject();
+		if (Config.standAlone) { thenDoFunc(); return };
+
+		var codeBase = this.codeBase;		
+		JSLoader.resolveAndLoadAll(codeBase, [
+			'lively/JSON.js',
+			'lively/miniprototype.js',
+			'lively/defaultconfig.js',
+			'lively/localconfig.js',
+			'lively/Base.js'],
+			thenDoFunc);
+	},
+	startHeadless: function() {
+		if (!window.Config || !Config.headless) return false;
+		this.bootstrapHeadless(function() { console.log('Headless Lively loaded') });
+		return true;
+	},
+	bootstrapHeadless: function(thenDoFunc) {
+		this.createConfigObject();
+
+		if (Config.standAlone) { thenDoFunc(); return };
+
+		var moduleNames = Config.onlyLoad || [];
+		
+		var codeBase = this.codeBase;		
+		JSLoader.resolveAndLoadAll(codeBase, [
+			'lively/JSON.js',
+			'lively/miniprototype.js',
+			'lively/defaultconfig.js',
+			'lively/localconfig.js',
+			'lively/Base.js'].concat(moduleNames),
+			thenDoFunc);
+	},
+
+	loadUserConfig: function() {
+		if (!window.localStorage) {
+			console.warn('cannot load user config because cannot access localStorage!')
+			return;
+		}
+		var userName = localStorage.livelyUserName;
+		if (userName === undefined) return;
+		var moduleName = userName + ".config";
+		require(moduleName).toRun(function() { alertOK("loaded user config for " + userName) })
+	},
+
 };
 LoadingScreen = {
 	width: function() { return document.documentElement.clientWidth || 800 },
@@ -731,9 +819,11 @@ var EmbededLoader = {
 
 (function startWorld() {
 	window.addEventListener('DOMContentLoaded', function() {
-		if (EmbededLoader.embedLively()) return;
-		if (LivelyLoader.startCanvasWorld()) return;
-		if (LivelyLoader.startWorld()) return;
+		if (EmbededLoader.embedLively() ||
+			LivelyLoader.startCanvasWorld() ||
+			LivelyLoader.startWorld() ||
+			LivelyLoader.startNewMorphicWorld() ||
+			LivelyLoader.startHeadless()) return;
 		console.warn('couldn\'t strt Lively');
 	}, true);
 })();

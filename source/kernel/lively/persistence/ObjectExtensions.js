@@ -21,7 +21,7 @@
  * THE SOFTWARE.
  */
 
-module('lively.persistence.ObjectExtensions').requires('lively.ide', 'cop.Layers').toRun(function() {
+module('lively.persistence.ObjectExtensions').requires('lively.Core', 'lively.scene', 'lively.Widgets', 'lively.ide').toRun(function() {
 
 // morphic stuff
 Morph.addMethods('serialization', {
@@ -91,6 +91,15 @@ ClipMorph.addMethods('serialization', {
 		this.setupClipNode();
 	},
 });
+
+ImageMorph.addMethods('serialization', {
+	onrestore: function($super) {
+		$super()
+		if (this.image && this.image.rawNode)
+			this.addNonMorph(this.image.rawNode);
+	},
+});
+
 lively.paint.Gradient.addMethods('serialization', {
 	onrestore: function() {
 		this.initializeNode();
@@ -108,23 +117,7 @@ AttributeConnection.addMethods('serialization', {
 });
 lively.ide.SystemBrowser.addMethods('serialization', {
 	onrestore: function() {
-		// lively.ide.startSourceControl();
-
-		// this.initializeModelRelay(this.getModel());
-		// this.setupListPanes();
-		// this.setupSourceInput();
-		
 		if (this.panel) this.panel.onDeserialize.bind(this.panel).delay(0);
-		// (function() {
-		// 	var oldPanel = this.panel,
-		// 		newPanel = this.buildView(oldPanel.getExtent()),
-		// 		selection = oldPanel.getSelectionSpec(),
-		// 		window = oldPanel.owner;
-		// 	window.targetMorph = window.addMorph(newPanel);
-		// 	newPanel.setPosition(oldPanel.getPosition());
-		// 	oldPanel.remove();
-		// 	newPanel.resetSelection(selection, this);
-		// }).bind(this).delay(0);
 	},
 });
 lively.ide.LocalCodeBrowser.addMethods('serialization', {
@@ -134,85 +127,12 @@ lively.ide.LocalCodeBrowser.addMethods('serialization', {
 	initializeFromDeserializedWorld: function(world) {
 		this._rootNode = null;
 		this.changeSet = world.getChangeSet();
+		// FIXME
+		this.setPane1Content([])
+		this.setPane2Content([])
+		this.setPane3Content([])
 		this.start();
 	},
 });
-
-
-cop.create('SmartRefSerializationCompatibility')
-.refineClass(lively.data.Wrapper, {
-	getLengthTrait: function(name) {
-		return this[name] ? this[name] : lively.data.Length.parse(this.rawNode.getAttributeNS(null, name));
-	},
-	setTrait: function(name, value) {
-		this[name] = value;
-		return this.rawNode.setAttributeNS(null, name, String(value));
-	},
-	getTrait: function(name) {
-		return this[name] ? String(this[name]) : this.rawNode.getAttributeNS(null, name);
-	},
-})
-.refineClass(lively.scene.Rectangle, {
-	bounds: function() {
-		var x = this.x || this.rawNode.x.baseVal.value;
-		var y = this.y || this.rawNode.y.baseVal.value;
-		var width = this.width || this.rawNode.width.baseVal.value;
-		var height = this.height || this.rawNode.height.baseVal.value;
-		return new Rectangle(x, y, width, height);
-	},
-	containsPoint: function(p) {
-		var x = this.x || this.rawNode.x.baseVal.value;
-		var width = this.width || this.rawNode.width.baseVal.value;
-		if (!(x <= p.x && p.x <= x + width))
-			return false;
-		var y = this.y || this.rawNode.y.baseVal.value;
-		var height = this.height || this.rawNode.height.baseVal.value;
-		return y <= p.y && p.y <= y + height;
-	},
-});
-
-
-ImageMorph.addMethods('serialization', {
-	onrestore: function($super) {
-		$super()
-		if (this.image && this.image.rawNode)
-			this.addNonMorph(this.image.rawNode);
-	},
-})
-
-
-// lively.scene.Rectangle.addMethods('SmartRefSerialization',{
-	// rawNodeType: "rect",
-// })
-// lively.scene.Ellipse.addMethods('SmartRefSerialization',{
-	// rawNodeType: "ellipse",
-// })
-// lively.scene.Polygon.addMethods('SmartRefSerialization',{
-	// rawNodeType: "polygon",
-// })
-// lively.scene.Polyline.addMethods('SmartRefSerialization',{
-	// rawNodeType: "polyline",
-// })
-// lively.scene.Group.addMethods('SmartRefSerialization',{
-	// rawNodeType: "g",
-// })
-// lively.scene.Image.addMethods('SmartRefSerialization',{
-	// rawNodeType: "image", // FIXME
-// })
-// lively.scene.Clip.addMethods('SmartRefSerialization',{
-	// rawNodeType: "clipPath",
-// })
-// lively.scene.Text.addMethods('SmartRefSerialization',{
-	// rawNodeType: "text",
-// })
-// lively.paint.Stop.addMethods('SmartRefSerialization',{
-	// rawNodeType: "stop",
-// })
-// lively.paint.LinearGradient.addMethods('SmartRefSerialization',{
-	// rawNodeType: "linearGradient",
-// })
-// lively.paint.RadialGradient.addMethods('SmartRefSerialization',{
-	// rawNodeType: "radialGradient",
-// });
 
 }) // end of module

@@ -26,7 +26,7 @@
  * Data.js.  Data manipulation (mostly XML).
  */
 
-module('lively.Data').requires('lively.Network').toRun(function(thisModule) {
+module('lively.Data').requires('lively.Network', 'lively.OldModel', 'lively.Text').toRun(function(thisModule) {
 
 // FIX for IE9+
 if (typeof XPathResult == 'undefined') {
@@ -267,52 +267,51 @@ lively.data.Wrapper.subclass('FeedItem', {
 
 View.subclass('Feed', NetRequestReporterTrait, {
 
-    // FIXME: merge into Resource
+    // FIXME: merge into Network
     formals: ["-URL", "+FeedChannels"],
     channelQuery: new Query("/rss/channel"),
 
-    updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
-        var p = this.modelPlug;
-	if (!p) return;
-	switch (aspect) {
-	case p.getURL:
-	    this.onURLChange(this.getURL());
-	    break;
-	}
-    },
+	updateView: function(aspect, source) { // model vars: getURL, setFeedChannels
+		var p = this.modelPlug;
+		if (!p) return;
+		switch (aspect) {
+			case p.getURL:
+			this.onURLChange(this.getURL());
+			break;
+		}
+	},
 
-    onURLChange: function(newValue) {
-	this.request(newValue);
-    },
-    
-    deserialize: Functions.Empty,
+	onURLChange: function(newValue) { this.request(newValue) },
 
-    kickstart: function() {
-	if (this.formalModel) this.onURLChange(this.getURL());
-	else if (this.modelPlug) this.updateView(this.modelPlug.getURL, this);
-    },
-    
-    setRawFeedContents: function(responseXML) {
-	this.setFeedChannels(this.parseChannels(responseXML));
-    },
-    
-    request: function(url) {
-        var hourAgo = new Date((new Date()).getTime() - 1000*60*60);
-	var req = new NetRequest(Relay.newInstance({ ResponseXML: "+RawFeedContents", Status: "+RequestStatus"}, this));
-	req.setContentType('text/xml');
-	req.setRequestHeaders({ "If-Modified-Since": hourAgo.toString() });
-	console.log("feed requesting " + url);
-	req.get(url);
-    },
+	deserialize: Functions.Empty,
 
-    parseChannels: function(elt) {
-	var results = this.channelQuery.findAll(elt);
-        var channels = [];
-        for (var i = 0; i < results.length; i++) {
-	    channels.push(new FeedChannel(results[i]));
-        }
-	return channels;
-    }
+	kickstart: function() {
+		if (this.formalModel) this.onURLChange(this.getURL());
+		else if (this.modelPlug) this.updateView(this.modelPlug.getURL, this);
+	},
+
+	setRawFeedContents: function(responseXML) {
+		this.setFeedChannels(this.parseChannels(responseXML));
+	},
+
+	request: function(url) {
+		console.log("feed requesting " + url);
+		var hourAgo = new Date((new Date()).getTime() - 1000*60*60),
+			webR = new WebResource(url).beAsync();
+		webR.setRequestHeaders({"If-Modified-Since": hourAgo.toString()});
+		lively.bindings.connect(webR, 'contentDocument', this, 'setRawFeedContents')
+		lively.bindings.connect(webR, 'content', this, 'formatQuote');
+		lively.bindings.connect(webR, 'status', this, 'setRequestStatus');
+		webR.get(null, 'text/xml');
+	},
+
+	parseChannels: function(elt) {
+		var results = this.channelQuery.findAll(elt);
+		var channels = [];
+		for (var i = 0; i < results.length; i++)
+			channels.push(new FeedChannel(results[i]));
+		return channels;
+	},
 
 });
 

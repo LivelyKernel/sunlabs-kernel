@@ -21,7 +21,7 @@
  * THE SOFTWARE.
  */
 
-module('lively.persistence.Serializer').requires('lively.persistence.ObjectExtensions').toRun(function() {
+module('lively.persistence.Serializer').requires().toRun(function() {
 
 Object.subclass('ObjectGraphLinearizer',
 'settings', {
@@ -53,9 +53,7 @@ Object.subclass('ObjectGraphLinearizer',
 
 },
 'testing', {
-	isReference: function(obj) {
-		return obj && obj.__isSmartRef__
-	},
+	isReference: function(obj) { return obj && obj.__isSmartRef__ },
 	isValueObject: function(obj) {
 		if (obj == null) return true;
 		if (typeof obj !== 'object') return true;
@@ -119,7 +117,7 @@ Object.subclass('ObjectGraphLinearizer',
 'object registry -- serialization', {
 	register: function(obj) {
 		if (this.isValueObject(obj))
-			return obj
+			return obj;
 
 		if (Object.isArray(obj))
 			return obj.collect(function(item, idx) {
@@ -140,16 +138,16 @@ Object.subclass('ObjectGraphLinearizer',
 	addNewRegistryEntry: function(id, obj) {
 		// copyObjectAndRegisterReferences must be done AFTER setting the registry entry
 		// to allow reference cycles  
-		var entry = this.createRegistryEntry(obj, id);
+		var entry = this.createRegistryEntry(obj, null/*set registered obj later*/, id);
 		this.registry[id] = entry;
 		entry.registeredObject = this.copyObjectAndRegisterReferences(obj)
 		return entry
 	},
 
-	createRegistryEntry: function(obj, id) {
+	createRegistryEntry: function(realObject, registeredObject, id) {
 		return {
-			originalObject: obj,
-			registeredObject: null, // copy of original with replaced refs
+			originalObject: realObject || null,
+			registeredObject: registeredObject || null, // copy of original with replaced refs
 			recreatedObject: null, // new created object with patched refs
 			ref: {__isSmartRef__: true, id: id},
 		}
@@ -219,9 +217,10 @@ this.path.splice(this.path.length-1, 1); // remove last
 'serializing', {
 	serialize: function(obj) {
 		try {
-			var start = new Date();
-			var ref = this.register(obj);
-			var root = {id: ref.id, registry: this.registry};
+			var start = new Date(),
+				ref = this.register(obj),
+				simplifiedRegistry = this.simplifyRegistry(this.registry),
+				root = {id: ref.id, registry: simplifiedRegistry};
 			this.log('Serializing done in ' + (new Date() - start) + 'ms');
 		} catch (e) {
 			this.log('Cannot serialize ' + obj + ' because ' + e);
@@ -231,6 +230,13 @@ this.path.splice(this.path.length-1, 1); // remove last
 		}
 		return this.stringifyJSO(root);
 	},
+	simplifyRegistry: function(registry) {
+		var simplified = {isSimplifiedRegistry: true};
+		for (var id in registry)
+			simplified[id] = this.getRegisteredObjectFromId(id)
+		return simplified;
+	},
+
 	addIdToObject: function(obj) { return obj[this.idProperty] = this.newId() },
 	stringifyJSO: function(jso) {
 		var str = JSON.stringify(jso),
@@ -248,7 +254,7 @@ this.path.splice(this.path.length-1, 1); // remove last
 	deserializeJso: function(jsonObj) {
 		var start = new Date(),
 			id = jsonObj.id;
-		this.registry = jsonObj.registry;
+		this.registry = this.createRealRegistry(jsonObj.registry);
 		var result = this.recreateFromId(id);
 		this.letAllPlugins('deserializationDone');
 		this.log('Deserializing done in ' + (new Date() - start) + 'ms');
@@ -260,87 +266,23 @@ this.path.splice(this.path.length-1, 1); // remove last
 			converted = json.replace(regex, this.CDATAEnd);
 		return JSON.parse(converted);
 	},
+	createRealRegistry: function(registry) {
+		if (!registry.isSimplifiedRegistry) return registry;
+		var realRegistry = {};
+		for (var id in registry)
+			realRegistry[id] = this.createRegistryEntry(null, registry[id], id);
+		return realRegistry;
+	},
+
 
 },
 'debugging', {
-	serializedPropertiesOfId: function(id) {
-		return Properties.all(this.getRegisteredObjectFromId(id))
-	},
-	referencesOfId: function(id) {
-		var registeredObj = this.getRegisteredObjectFromId(id);
-		var result = []
-		Properties.forEachOwn(registeredObj, function(key, value) {
-			if (!value || !this.isReference(value)) return;
-			var refRegisteredObj = this.getRegisteredObjectFromId(value.id)
-			result.push(key + ':' + value.id + '(' + refRegisteredObj[ClassPlugin.prototype.classNameProperty] + ')');
-		}, this);
-		return result;
-	},
-	objectsThatReferenceId: function(wantedId) {
-		var result = [], serializer = this;
-		function searchIn(obj, id) {
-			Object.values(obj).forEach(function(ref) {
-				if (serializer.isReference(ref) && ref.id == wantedId) result.push(id);
-				if (Object.isArray(ref)) searchIn(ref, id);
-			})
-		}
-		Properties.all(this.registry).forEach(function(id) {
-			searchIn(this.getRegisteredObjectFromId(id), id);
-		}, this)
-		return result;
-	},
-
 	log: function(msg) {
-		WorldMorph.current() ?
+		Global.WorldMorph && WorldMorph.current() ?
 			WorldMorph.current().setStatusMessage(msg, Color.blue, 6) :
 			console.log(msg);
 	},
-	getPath: function() {
-		 return '["' + this.path.join('"]["') + '"]'
-	},
-	listObjectsOfWorld: function(url) {
-		var doc = new WebResource(url).get().contentDocument;
-		if (!doc) { alert('Could not get ' + url); return };
-		var worldMetaElement = doc.getElementById(lively.persistence.Serializer.jsonWorldId);
-		if (!worldMetaElement) { alert('Could not get json from ' + url); return };
-		var jso = this.parseJSON(worldMetaElement.textContent);
-
-		function humanReadableByteSize(n) {
-			function round(n) { return Math.round(n * 100) / 100 }
-			if (n < 1000) return String(round(n)) + 'bytes'
-			n = n / 1024;
-			if (n < 1000) return String(round(n)) + 'kb'
-			n = n / 1024;
-			return String(round(n)) + 'mb'
-		}
-
-		// aggregagator with output
-		var classes = {
-			toString: function() {
-				return 'classes:\n' + Properties.own(this)
-					.collect(function(prop) { return this[prop]  }, this)
-					.sortBy(function(tuple) { return tuple.bytes })
-					.collect(function(tuple) {
-						return Strings.format('%s: %s (%s - %s per obj)',
-							tuple.name, humanReadableByteSize(tuple.bytes), tuple.count,
-							humanReadableByteSize(tuple.bytes / tuple.count))
-
-					}, this)
-					.join('\n')
-			}
-		}
-	
-		Properties.forEachOwn(jso.registry, function(key, value) {
-			var className = value.registeredObject[ClassPlugin.prototype.classNameProperty] || 'plain object';
-			if (!classes[className]) classes[className] = {count: 0, bytes: 0, name: className};
-			classes[className].count++
-			classes[className].bytes += JSON.stringify(value.registeredObject).length;
-		});
-
-		WorldMorph.current().addTextWindow(classes.toString());
-	},
-
-
+	getPath: function() { return '["' + this.path.join('"]["') + '"]' },
 });
 
 Object.extend(ObjectGraphLinearizer, {
@@ -350,13 +292,29 @@ Object.extend(ObjectGraphLinearizer, {
 			new ClassPlugin(),
 			new LivelyWrapperPlugin(),
 			new OldModelFilter(),
-			new ScriptFilter(),
+			new DEPRECATEDScriptFilter(),
+			new ClosurePlugin(),
 			new LayerPlugin(),
 			new RegExpPlugin()
 		]);
 		return serializer;
 	},
+	forLivelyCopy: function() {
+		var serializer = this.forLively();
+		var p = new GenericFilter();
+		p.addFilter(function(obj, prop, value) { return value === WorldMorph.current() })
+		serializer.addPlugins([p]);
+		return serializer;
+	},
 
+	allRegisteredObjectsDo: function(registryObj, func, context) {
+		for (var id in registryObj) {
+			var registeredObject = registryObj[id];
+			if (!registryObj.isSimplifiedRegistry)
+				registeredObject = registeredObject.registeredObject;
+			func.call(context || Global, id, registeredObject)
+		}
+	},
 });
 
 Object.subclass('ObjectLinearizerPlugin',
@@ -433,11 +391,13 @@ ObjectLinearizerPlugin.subclass('ClassPlugin',
 'searching', {
 	sourceModulesIn: function(registryObj) {
 		var result = [];
-		Properties.forEachOwn(registryObj, function(key,value) {
-			if (!value.registeredObject) return;
-			var sourceModule = value.registeredObject[this.sourceModuleNameProperty];
-			if (sourceModule && !sourceModule.startsWith('Global.anonymous_'))
-				result.push(sourceModule);
+		ObjectGraphLinearizer.allRegisteredObjectsDo(registryObj, function(id, value) {
+			var sourceModule = value[this.sourceModuleNameProperty];
+			if (sourceModule && !sourceModule.startsWith('Global.anonymous_')) {
+				sourceModule.include('undefined') ?
+					console.error('Found strange SourceModule: ' + sourceModule) :
+					result.push(sourceModule);
+			}
 		}, this)
 		return result.uniq();
 	},
@@ -447,7 +407,8 @@ ObjectLinearizerPlugin.subclass('LayerPlugin',
 	withLayersPropName: 'withLayers',
 	withoutLayersPropName: 'withoutLayers'
 
-},'plugin interface', {
+},
+'plugin interface', {
 	additionallySerialize: function(original, persistentCopy) {
 		this.serializeLayerArray(original, persistentCopy, this.withLayersPropName)
 		this.serializeLayerArray(original, persistentCopy, this.withoutLayersPropName)
@@ -456,7 +417,8 @@ ObjectLinearizerPlugin.subclass('LayerPlugin',
 		this.deserializeLayerArray(obj, this.withLayersPropName)
 		this.deserializeLayerArray(obj, this.withoutLayersPropName)
 	},
-},'helper',{
+},
+'helper',{
 	serializeLayerArray: function(original, persistentCopy, propname) {
 		var layers = original[propname]
 		if (layers && layers.length > 0)
@@ -465,6 +427,7 @@ ObjectLinearizerPlugin.subclass('LayerPlugin',
 
 	deserializeLayerArray: function(obj, propname) {
 		var layers = obj[propname];
+module('cop.Layers').load(true); // FIXME
 		if (layers && layers.length > 0) {
 			obj[propname] = layers.collect(function(ea) {
 				return Object.isString(ea) ? cop.create(ea, true) : ea;
@@ -634,11 +597,16 @@ ObjectLinearizerPlugin.subclass('OldModelFilter',
 		if (!persistentCopy.isInstanceOfAnonymousClass) return null;
 		var instance;
 		function createInstance(ctor, ctorMethodName, argIfAny) {
-			var string = persistentCopy.definition;
+			var string = persistentCopy.definition, def;
 			string = string.replace(/[\\]/g, '')
 			string = string.replace(/"+\{/g, '{')
 			string = string.replace(/\}"+/g, '}')
-			var def = JSON.parse(string);
+			try {
+				def = JSON.parse(string);
+			} catch(e) {
+				console.error('Cannot correctly deserialize ' + ctor + '>>' + ctorMethodName + '\n' + e);
+				def = {};
+			}
 			return ctor[ctorMethodName](def, argIfAny)
 		}
 
@@ -659,7 +627,7 @@ ObjectLinearizerPlugin.subclass('OldModelFilter',
 });
 
 
-ObjectLinearizerPlugin.subclass('ScriptFilter',
+ObjectLinearizerPlugin.subclass('DEPRECATEDScriptFilter',
 'accessing', {
 	serializedScriptsProperty: '__serializedScripts__',
 	getSerializedScriptsFrom: function(obj) {
@@ -686,6 +654,41 @@ ObjectLinearizerPlugin.subclass('ScriptFilter',
 			Function.fromString(scriptSource).asScriptOf(obj, scriptName);
 		})
 		delete obj[this.serializedScriptsProperty];
+	},
+});
+ObjectLinearizerPlugin.subclass('ClosurePlugin',
+'accessing', {
+	serializedClosuresProperty: '__serializedLivelyClosures__',
+	getSerializedClosuresFrom: function(obj) {
+		if (!obj.hasOwnProperty(this.serializedClosuresProperty)) return null;
+		return obj[this.serializedClosuresProperty]
+	},
+},
+'plugin interface', {
+	serializeObj: function(closure) { // for serializing lively.Closures
+		if (!closure || !closure.isLivelyClosure) return;
+		if (closure.originalFunc)
+			closure.setFuncSource(closure.originalFunc.toString());
+		return closure;
+	},
+	additionallySerialize: function(original, persistentCopy) { // for serializing objects having lively.Closures
+		var closures = {}, found = false;
+		Functions.own(original).forEach(function(funcName) {
+			var func = original[funcName];
+			if (!func || !func.hasLivelyClosure) return;
+			found = true;
+			closures[funcName] = func.livelyClosure;
+		});
+		if (!found) return;
+		persistentCopy[this.serializedClosuresProperty] = this.getSerializer().register(closures);
+	},
+	afterDeserializeObj: function(obj) {
+		var closures = this.getSerializedClosuresFrom(obj);
+		if (!closures) return;
+		Properties.forEachOwn(closures, function(name, closure) {
+			obj[name] = closure.recreateFunc();
+		})
+		delete obj[this.serializedClosuresProperty];
 	},
 });
 ObjectLinearizerPlugin.subclass('GenericFilter',

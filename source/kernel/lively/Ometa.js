@@ -23,7 +23,7 @@
  */
 
 
-module('lively.Ometa').requires('ometa.ometa-base', 'ometa.lk-parser-extensions').toRun(function() {
+module('lively.Ometa').requires('lively.Network', 'lively.Text', 'ometa.ometa-base', 'ometa.lk-parser-extensions').toRun(function() {
                                            
 /*
     An Ometa Workspace like http://www.cs.ucla.edu/~awarth/ometa/.
@@ -33,7 +33,7 @@ Object.subclass('OMetaSupport');
 
 Object.extend(OMetaSupport, {
     
-	ometaGrammarDir: new URL(Config.codeBase),  
+	ometaGrammarDir: URL.codeBase,  
 
     fromFile: function(fileName) {
         var src = OMetaSupport.fileContent(fileName);

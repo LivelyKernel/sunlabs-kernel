@@ -64,7 +64,7 @@ BoxMorph.subclass('ButtonMorph',
 'initializing', {
     // A ButtonMorph is the simplest widget
     // It read and writes the boolean variable, this.model[this.propertyName]
-	initialize: function($super, initialBounds) {
+	initialize: function($super, initialBounds, optLabel) {
 		this.baseFill = null;
 		$super(initialBounds);
 		this.value = false; // for connect()
@@ -77,7 +77,7 @@ BoxMorph.subclass('ButtonMorph',
 		// Styling
 		this.applyLinkedStyles();
 		this.changeAppearanceFor(this.value);
-		return this;
+		if (optLabel) this.setLabel(optLabel);
 	},
 },
 'XML serialization', {
@@ -107,7 +107,7 @@ BoxMorph.subclass('ButtonMorph',
 	
 	setValue: function(bool) {
 		ModelMigration.set(this, 'Value', bool);
-		if (bool) updateAttributeConnection(this, 'fire');
+		if (bool || this.toggle) updateAttributeConnection(this, 'fire', bool);
 		this.value = bool;
 	},
 
@@ -356,10 +356,12 @@ ButtonMorph.subclass('ScriptableButtonMorph', {
 		// dialog.callback = function(input) { this.scriptSource = input }.bind(this);
 		// dialog.openIn(this, WorldMorph.current().positionForNewMorph(dialog));
 		// return dialog;
-		this.world().editPrompt(
+		var dialog = this.world().editPrompt(
 			'Edit script',
 			function(input) { this.scriptSource = input }.bind(this),
-			this.scriptSource)
+			this.scriptSource,
+			this);
+		dialog.textPane.innerMorph().highlightJavaScriptSyntax();
 	},
 	
 	editLabel: function() {
@@ -463,6 +465,7 @@ BoxMorph.subclass("ImageMorph",
 },
 'inline image', {
 	convertToBase64: function() {
+debugger
 	var urlString = this.getURL().toString();
 
 	type = urlString.substring(urlString.lastIndexOf('.') + 1, urlString.length)
@@ -480,6 +483,8 @@ BoxMorph.subclass("ImageMorph",
 		var encoded = btoa(fixedContent)
 		this.setURL('data:image/' + type + ';base64,' + encoded);
 	} else {
+		if (!urlString.startsWith('http'))
+			urlString = URL.source.getDirectory().withFilename(urlString).toString()
 		require('server.nodejs.WebInterface').toRun(function() { // FIXME
 			var encoded = this.encodeOnServer(urlString)
 			if (!encoded || encoded == '')
@@ -549,6 +554,12 @@ encodeOnServer: function(urlString) {
 	},
 
 
+});
+Object.extend(ImageMorph, {
+	forURL: function(url) {
+		// url can be relative
+		return new this(new Rectangle(0,0, 100, 100), url);
+	},
 });
 
 ButtonMorph.subclass("ImageButtonMorph", {
@@ -637,7 +648,28 @@ BoxMorph.subclass("ClipMorph", {
 	copyFrom: function($super, copier, other) {
 		$super(copier, other);
 		this.setupClipNode();
-	}
+	},
+	reshape: function($super, partName, newPoint, lastCall) {
+		$super(partName, newPoint, lastCall);
+		this.setBounds(this.bounds())
+	},
+});
+Morph.addMethods('clipping', {
+	wrapInClip: function() {
+		var prevClip = this.owner && this.owner.isClipMorph ? this.owner : null,
+			owner = prevClip ? prevClip.owner : this.owner,
+			pos = this.getPosition(),
+			bounds = this.shape.bounds();
+		if (prevClip) prevClip.remove();
+		var clip = new ClipMorph(bounds);
+		clip.addMorph(this);
+		owner.addMorph(clip);
+		this.setPosition(pt(0,0));
+		clip.setPosition(pos);
+		clip.applyStyle({suppressGrabbing: this.suppressGrabbing, suppressHandles: this.suppressHandles});
+		this.applyStyle({suppressHandles: true});
+		return clip
+	},
 });
 
    
@@ -1360,7 +1392,8 @@ BoxMorph.subclass("TextListMorph",
 	highlightItemsOnMove: false,
 
 	layoutManager: new VerticalLayout(), // singleton is OK
-}, 'initializing',{	
+},
+'initializing', {
 	initialize: function($super, initialBounds, itemList, optPadding, optTextStyle) {
 		// itemList is an array of strings
 		this.baseWidth = initialBounds.width;
@@ -1401,7 +1434,8 @@ BoxMorph.subclass("TextListMorph",
 		}
 		this.layoutChanged();
 	},
-}, 'mouse events',{	
+},
+'mouse events', {
 
 	handlesMouseDown: Functions.True,
 
@@ -1431,7 +1465,8 @@ BoxMorph.subclass("TextListMorph",
 		console.log("wheel event " + evt + "," + evt.wheelDelta() + " on " + this); // no break
 	},
 
-}, 'selection',{	
+},
+'selection',{	
 	highlightItem: function(evt, index, updateModel) {
 		if (index >= 0) {
 			this.selectLineAt(index, updateModel);
@@ -1442,7 +1477,8 @@ BoxMorph.subclass("TextListMorph",
 		return false;
 	},
 
-}, 'keyboard events',{	
+},
+'keyboard events',{	
     onKeyPress: Functions.Empty,
 
     onKeyDown: function(evt) {
@@ -1586,7 +1622,8 @@ BoxMorph.subclass("TextListMorph",
         return false;
     },
 
-}, 'update functions',{	
+},
+'update functions', {
 
 	onListUpdate: function(list) {
 		this.updateList(list);
@@ -1614,7 +1651,16 @@ BoxMorph.subclass("TextListMorph",
         } 
     },
 
-}, 'private ',{	
+},
+'accessing', {
+	getListStrings: function() {
+		// FIXME, better use itemList directly
+		return this.submorphs
+			.select(function(ea) { return ea instanceof TextMorph })
+			.collect(function(ea) { return ea.textString })
+	},
+},
+'private ',{	
     
 	getItemFontSize: function() {
 		if (this.textStyle &&	this.textStyle.fontSize) {
@@ -2638,8 +2684,6 @@ BoxMorph.subclass("SliderMorph", {
 
 	initialize: function($super, initialBounds, scaleIfAny) {
 		$super(initialBounds);
-
-
 		this.setValue(0);
 		this.setSliderExtent(0.1);
 		
@@ -2661,21 +2705,31 @@ BoxMorph.subclass("SliderMorph", {
 
  	onDeserialize: function() {
 		if (!this.slider) {
-				console.warn('no slider in %s, %s', this, this.textContent);
-		   return;
+			console.warn('no slider in %s, %s', this, this.textContent);
+			return;
 		}
 		this.setupMouseEventRelays()
 		// TODO: remove this workarounds by serializing observer relationsships
-		if (this.formalModel && this.formalModel.addObserver) {
+		if (this.formalModel && this.formalModel.addObserver)
 			this.formalModel.addObserver(this)
-		}	
 	},
 	
 	copyFrom: function($super, copier, other) {
 		$super(copier, other);
-		this.setupMouseEventRelays();
+		// this.slider seems still to point to the old slider button
+		this.slider = null;
+		lively.bindings.callWhenNotNull(this, 'slider', this, 'setupMouseEventRelays');
 		return this;
 	},
+	shadowCopy: function(hand) {
+		// implement shadowCopy because if shadowCopy uses normal copyFrom the mouseRelay will
+		// point to the slider still in the hand even after this is dropped
+		var copy = Morph.makeRectangle(this.bounds());
+		copy.applyStyle({fill: Color.black, fillOpacity: 0.3, strokeOpacity: 0.3, borderRadius: 8});
+		copy.owner = null;
+		return copy
+	},
+
 	
 	// BEGIN Accessors
 	// To get rid of the Records, we need our own accessors
@@ -2785,19 +2839,25 @@ BoxMorph.subclass("SliderMorph", {
 	sliderMoved: function(evt, slider) {
 		if (!evt.mouseButtonPressed) return;
 
+		// the hitpoint is the offset that make the slider move smooth	
+		if (!this.hitPoint) return; // we were not clicked on...
+
 		// Compute the value from a new mouse point, and emit it
-		var p = this.localize(evt.mousePoint).subPt(this.hitPoint || evt.mousePoint);//Sometimes this.hitPoint is undefined
-		var bnds = this.shape.bounds();
-		var ext = this.getSliderExtent(); 
+		var p = this.localize(evt.mousePoint).subPt(this.hitPoint),
+			bnds = this.shape.bounds(),
+			ext = this.getSliderExtent();
+
+		// correct for shape origin != pt(0,0)
+		p = p.subPt(bnds.topLeft());
 	
 		if (this.vertical()) { // more vertical...
-			var elevPix = Math.max(ext*bnds.height,this.mss); // thickness of elevator in pixels
-			var newValue = p.y / (bnds.height-elevPix); 
+			var elevPix = Math.max(ext*bnds.height,this.mss), // thickness of elevator in pixels
+				newValue = p.y / (bnds.height-elevPix); 
 		} else { // more horizontal...
-			var elevPix = Math.max(ext*bnds.width,this.mss); // thickness of elevator in pixels
-			var newValue = p.x / (bnds.width-elevPix); 
+			var elevPix = Math.max(ext*bnds.width,this.mss), // thickness of elevator in pixels
+				newValue =  p.x / (bnds.width-elevPix); 
 		}
-		
+
 		if (isNaN(newValue)) newValue = 0;
 		this.setScaledValue(this.clipValue(newValue));
 		this.adjustForNewBounds(); 
@@ -2895,7 +2955,7 @@ BoxMorph.subclass("SliderMorph", {
 BoxMorph.subclass('ScrollPane',
 'settings', {
 	description: "A scrolling container",
-	style: { borderWidth: 1, fill: null},
+	style: { borderWidth: 1, fill: null },
 	scrollBarWidth: 14,
 	openForDragAndDrop: false,
 },
@@ -3008,7 +3068,7 @@ BoxMorph.subclass('ScrollPane',
 		return bnds
 			.withWidth(bnds.width - (this.verticalScrollBar ? this.scrollBarWidth -2 : 0))
 			.withHeight(bnds.height - (this.horizontalScrollBar ? this.scrollBarWidth - 2 : 0))
-			.insetBy(1);
+			.insetByRect(this.padding || Rectangle.inset(1));
 	},
 
 	getVerticalScrollBar: function() {
@@ -3140,7 +3200,9 @@ BoxMorph.subclass('ScrollPane',
     },
     
     getModel: function() {
-        return this.innerMorph().getModel();
+		var  innerMorph = this.innerMorph();
+		if (!innerMorph) return undefined;
+        return innerMorph.getModel();
     },
 
     getModelPlug: function() {
@@ -3179,7 +3241,9 @@ BoxMorph.subclass('ScrollPane',
 		if (!this.clipMorph) return;
 		var bnds = this.innerBounds();    	
 		// FIXME:
-		var clipR = this.verticalScrollBar || this.horizontalScrollBar ? this.calcClipR() : bnds.insetBy(1);
+		var clipR = this.verticalScrollBar || this.horizontalScrollBar ?
+			this.calcClipR() : bnds.insetByRect(this.padding || Rectangle.inset(1));
+		this.clipMorph.setPosition(clipR.topLeft());
 		this.clipMorph.setExtent(clipR.extent());
 
 		this.innerMorph().setExtent(clipR.extent());
@@ -3367,55 +3431,68 @@ BoxMorph.subclass("ColorPickerMorph", {
 	}    
 });
 
-BoxMorph.subclass('XenoMorph', {
-
+BoxMorph.subclass('XenoMorph',
+'documentation', {
     documentation: "Contains a foreign object, most likely XHTML",
-    style: { borderWidth: 0, fill: Color.gray.lighter() },
-
+},
+'settings', {
+    style: { borderWidth: 1, borderColor: Color.black, fill: null },
+},
+'initializing', {
     initialize: function($super, bounds) { 
-        $super(bounds);
-        this.foRawNode = NodeFactory.createNS(Namespace.SVG, "foreignObject", 
-                             {x: bounds.x, y: bounds.y, 
-                              width: bounds.width,
-                              height: bounds.height });
+		$super(bounds);
+		this.foRawNode = this.createFoRawNode(bounds)
 
-        //this.foRawNode.appendChild(document.createTextNode("no content, load an URL"));
-		this.foRawNode.appendChild(NodeFactory.createNS(null, 'input', {type: 'text', name: '?', size: 20}));
-        this.addNonMorph(this.foRawNode);
-	
+		this.foRawNode.appendChild(this.defaultNode());
+		this.addNonMorph(this.foRawNode);
+
     },
-
+	createFoRawNode: function(bounds) {
+		return NodeFactory.create("foreignObject", {
+			x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height});
+	},
+	defaultNode: function() {
+		var body = XHTMLNS.create('body'),
+			div = XHTMLNS.create('div');
+		body.appendChild(div);
+		div.textContent = 'empty';
+		return body;
+	},
+},
+'updating', {
     onURLUpdate: function(url) {
 		if (!url) return;
-		var xeno = this;
-		function clearChildren(node) {
-		    while(node.firstChild) node.removeChild(node.firstChild);
-		}
-		var callback = Object.extend(new NetRequestReporter(), {
-		    setContent: function(doc) {
-				clearChildren(xeno.foRawNode);
-				xeno.foRawNode.appendChild(document.adoptNode(doc.documentElement));
-		    },
-		    setContentText: function(txt) {
-				clearChildren(xeno.foRawNode);
-				xeno.foRawNode.appendChild(document.createTextNode(txt));
-		    }
-		});
-        var req = new NetRequest({model: callback, setResponseXML: "setContent", setResponseText: "setContentText"});
-        req.setContentType("text/xml");
-        req.get(url);
+		alert('Loading url ' + url)
+		var webR = new WebResource(url);
+		lively.bindings.connect(webR, 'content', this, 'addText', {removeAfterUpdate: true});
+		// lively.bindings.connect(webR, 'contentDocument', this, 'addDocument', {removeAfterUpdate: true});
+		webR.get(null, 'text/xml');
     },
+},
+'content manipulation', {
+	clearNode: function(node) { while(node.firstChild) node.removeChild(node.firstChild) },
+	addText: function(string) {
+		var doc = new DOMParser().parseFromString(string, "text/xml");
+		this.addDocument(doc);
+	},
+	addDocument: function(doc) {
+		alert('adding document')
+		this.replaceNode(document.adoptNode(doc.documentElement || doc))
+	},
+	replaceNode: function(newNode) {
+		this.clearNode(this.foRawNode);
+		this.foRawNode.appendChild(newNode);
+		return newNode;
+	},
 
-    adjustForNewBounds: function($super) {
-        $super();
-        var bounds = this.shape.bounds();
-		// console.log("bounds " + bounds + " vs " + bounds.width + "," + bounds.height);
-        //this.foRawNode.setAttributeNS(null, "width", bounds.width);
-        //this.foRawNode.setAttributeNS(null, "height", bounds.height);
-		//this.foRawNode.width = bounds.width;
-		//this.foRawNode.height = bounds.height;
-    }
-
+},
+'layouting', {
+	adjustForNewBounds: function($super) {
+		$super();
+		var bounds = this.shape.bounds();
+		this.foRawNode.setAttributeNS(null, "width", bounds.width);
+		this.foRawNode.setAttributeNS(null, "height", bounds.height);
+	},
 });
 BoxMorph.subclass('BucketListMorph',
 'initialization', {
@@ -4206,29 +4283,27 @@ Widget.subclass('ConsoleWidget', {
 });
 
 
-Widget.subclass('XenoBrowserWidget', {
-    
+Widget.subclass('XenoBrowserWidget',
+'settings', {
     initialViewExtent: pt(800, 300),
-
-    initialize: function($super, filename) {
-	var url = filename ? URL.source.withFilename(filename) : null;
-	this.actualModel = Record.newPlainInstance({URL: url});
-	$super();
-    },
+},
+'initializing', {
+	initialize: function($super, filename) {
+		var url = filename ? URL.source.withFilename(filename) : null;
+		$super();
+	},
     
-    buildView: function(extent) {
-	var panel = PanelMorph.makePanedPanel(extent, [
-	    ['urlInput', TextMorph, new Rectangle(0, 0, 1, 0.1)],
-	    ['contentPane', newXenoPane, new Rectangle(0, 0.1, 1, 0.9)]
-	]);
-	var model = this.actualModel;
-	
-	panel.urlInput.beInputLine();
-	panel.urlInput.connectModel(model.newRelay({Text: { name: "URL", to: URL.create, from: String }}), true);
-	panel.contentPane.connectModel(model.newRelay({URL: "-URL"}), true);
-	
-	return panel;
-    }
+	buildView: function(extent) {
+		var panel = PanelMorph.makePanedPanel(extent, [
+			['urlInput', TextMorph, new Rectangle(0, 0, 1, 0.1)],
+			['contentPane', newXenoPane, new Rectangle(0, 0.1, 1, 0.9)]
+			]);
+
+		panel.urlInput.noEval = true;
+		lively.bindings.connect(panel.urlInput, 'savedTextString', this, 'url');
+		lively.bindings.connect(this, 'url', panel.contentPane.innerMorph(), 'onURLUpdate');
+		return panel;
+	}
 });
     
 
@@ -4782,6 +4857,19 @@ Morph.subclass('WindowMorph',
         this.targetMorph.setPosition(bnds.topLeft().addXY(0, titleHeight));
     },
 },
+'menu', {
+	morphMenu: function($super, evt) {
+		var menu = $super(evt), window = this, world = this.world();
+		if (menu)
+			menu.addItem([
+				"change title", function() {
+					if (!world) return;
+					world.prompt('new name', function(input) { window.setTitle(input) });	
+				}
+			]);
+		return menu;
+	},
+},
 'debugging', {
     toString: function($super) {
         var label = this.titleBar && this.titleBar.label;
@@ -4967,49 +5055,40 @@ Object.extend(PieMenuMorph, {
 })()
 
 Morph.subclass('ArrowHeadMorph', {
-     
-    initialize: function($super, lineWidth, lineColor, fill, length, width) {
-        $super(new lively.scene.Group());
-        
-        /* FIXME
-         * Morph abuse!
-		 * rk: Morph rape!! ;-)
-         */
-        this.setFillOpacity(0);
-        this.setStrokeOpacity(0);
+	style: {fillOpacity: 0, strokeOpacity: 0},
+	initialize: function($super, lineWidth, lineColor, fill, length, width) {
+		$super(new lively.scene.Group());
 
-        lineWidth = lineWidth || 1;
-        lineColor = lineColor || Color.black;
-        fill = fill || Color.black;
-        length = length || 16;
-        width = width || 12;
+		/* FIXME
+		* Morph abuse!
+		* rk: Morph rape!! ;-)
+		*/
+
+		var style = Object.extend(NodeStyle.connector);
+		if (lineWidth) style.borderWidth = lineWidth;
+		if (lineColor) style.borderColor = lineColor;
+		if (fill) style.fill = fill;
+		length = length || 16;
+		width = width || 12;
 
 		var offset = 0.2;
-        var verts = [pt(offset* length, 0), pt((-1.0 + offset)* length , 0.5* width), pt((-1 + offset) * length, -0.5 * width)];
-        var poly = new lively.scene.Polygon(verts);
-        // FIXME: positioning hack, remove the following
-        this.head = this.addMorph(new Morph(poly));
-        
-		this.head.applyStyle(NodeStyle.connector);
-		this.head.setFill(lineColor); // JL: style vs. explict color?        
-        this.head.setBorderColor(lineColor);
+			verts = [pt(offset* length, 0), pt((-1.0 + offset)* length , 0.5* width), pt((-1 + offset) * length, -0.5 * width)],
+			poly = new lively.scene.Polygon(verts);
+		// FIXME: positioning hack, remove the following
+		this.head = this.addMorph(new Morph(poly));
+		this.head.applyStyle(style);
 
-        this.setPosition(this.head.getPosition());
-        this.setExtent(this.head.getExtent());
-        this.ignoreEvents();
-        this.head.ignoreEvents();
-        
-        // this.head.setFillOpacity(0.7);
-        // this.head.setStrokeOpacity(0.7);
-        
-        return this;
-    },
+		this.setPosition(this.head.getPosition());
+		this.setExtent(this.head.getExtent());
+		this.ignoreEvents();
+		this.head.ignoreEvents();
+	},
     
     pointFromTo: function(from, to) {
         var dir = (to.subPt(from)).theta()
         this.setRotation(dir)
         this.setPosition(to);
-    }
+    },
 
 });
 
@@ -5470,16 +5549,16 @@ Widget.makeSlider = function(bounds, range) {
  *
  */ 
 // TODO: get rid of the magic and repetitive layout numbers....
-BoxMorph.subclass("PromptDialogMorph", {
-
+BoxMorph.subclass("PromptDialogMorph",
+'settings', {
     suppressHandles: true,
-
 	padding: new Rectangle(10,10,10,10),
-
 	connections: ['accepted', 'canceled', 'title'], // for documentation only
-	
+},
+'initializing', {
+
 	initialize: function($super, bounds) {
-		bounds = bounds || new Rectangle(0,0,500,400);
+		bounds = bounds || new Rectangle(0,0,800,400);
 		$super(bounds);
 
 		this.callback = null;
@@ -5496,14 +5575,13 @@ BoxMorph.subclass("PromptDialogMorph", {
 		connect(this, "title", this.label, 'setTextString');
 		this.label.padding = new Rectangle(0,10,0,0);
 		this.addMorph(this.label);
-		this.title = str;
-		
+		this.title = str;		
 	},
 	
 	addTextPane: function() {
 		this.textPane = newTextPane(new Rectangle(0,0,300,100), "");
 		this.textPane.applyStyle({fill: Color.white});
-		this.textPane.innerMorph().applyStyle({fill: null});
+		this.textPane.innerMorph().applyStyle({fill: null, fontFamily: 'Courier'});
 		this.textPane.innerMorph().owner.applyStyle({fill: null}); // clip
 		this.addMorph(this.textPane);
 	},
@@ -5529,20 +5607,18 @@ BoxMorph.subclass("PromptDialogMorph", {
 		this.addMorph(pane);
 		this.buttonPane = pane;    
 	},
-	
-	setText: function(aString) {
-		this.textPane.innerMorph().setTextString(aString);
-	},
+},
+'accessing', {	
+	setText: function(aString) { this.textPane.innerMorph().setTextString(aString) },
 
-	getText: function() {
-		return this.textPane.innerMorph().textString
-	},
+	getText: function() { return this.textPane.innerMorph().textString },
 
 	onAcceptButtonFire: function() {
 		this.callback && this.callback(this.getText());
 		updateAttributeConnection(this, 'accepted', this.getText())
 	},
-
+},
+'layouting', {
 	adjustForNewBounds: function ($super) {
 		var newExtent = this.innerBounds().extent();
 	
@@ -5556,43 +5632,28 @@ BoxMorph.subclass("PromptDialogMorph", {
 		// move Buttons 
 		var offset = this.shape.bounds().bottomRight().subPt(this.buttonPane.bounds().bottomRight())
 		this.buttonPane.moveBy(offset.subPt(pt(5,5)))
-
 	},
-	
+},
+'open and remove', {
 	openIn: function(world, loc) {
-		var useLightFrame = true;
-        var win = world.addFramedMorph(this, '', loc, useLightFrame);
-        this.textPane.innerMorph().requestKeyboardFocus(world.firstHand());
+		var useLightFrame = true,
+			win = world.addFramedMorph(this, '', loc, useLightFrame);
+		this.textPane.innerMorph().requestKeyboardFocus(world.firstHand());
 		win.adjustForNewBounds()
-        return win;
-    },
+		return win;
+	},
 
 	removeWithWindow: function() {
-		if (this.owner && (this.owner instanceof WindowMorph)) {
-			this.owner.remove()
-		} else {
-			this.remove()
-		}
+		this.owner && (this.owner instanceof WindowMorph) ? this.owner.remove() : this.remove();
 	},
 
 })
 
 // should these go to the tests?
-Morph.subclass("PromptDialogMorphExampleClientMorph", {
-
-	oncancel: function() {
-		console.log("oncancel")
-	},
-
-	onaccept: function(input ) {
-		console.log("onaccept " + input);
-	}
-})
-
 Object.extend(PromptDialogMorph, {
 	openExample: function() {
-		if($morph('testPromptDialog'))
-			$morph('testPromptDialog').remove();
+		// {PromptDialogMorph.openExample()}
+		if($morph('testPromptDialog')) $morph('testPromptDialog').remove();
 		var morph = new PromptDialogMorph();
 
 		//morph.openInWorld();
@@ -5600,14 +5661,17 @@ Object.extend(PromptDialogMorph, {
 		win.setExtent(pt(300,300))
 		win.name = 'testPromptDialog';
 
-		// we need objects that are persistent and implement the behavior
-		var client = new PromptDialogMorphExampleClientMorph(new lively.scene.Rectangle(0,0,1,1));
-		morph.addMorph(client); // store it somewhere		
+		var client = {
+			oncancel: function() { alert('canceled') }.asScript(),
+			onaccept: function(input) { alert('accepted ' + input) }.asScript()
+		}
+
+		morph.client = client// store it somewhere for serialization
 
 		connect(morph, 'canceled', client, 'oncancel');
 		connect(morph, 'accepted', client, 'onaccept');
-	}
-})
+	},
+});
 
 
 BoxMorph.subclass('HorizontalDivider', {
@@ -5694,6 +5758,7 @@ BoxMorph.subclass("StatusMessageContainer",
 	suppressHandles: true,
 	openForDragAndDrop: false,
 	layoutManager: new VerticalLayout(),
+	alignBounds: null,
 },
 'initializing', {
 
@@ -5705,13 +5770,18 @@ BoxMorph.subclass("StatusMessageContainer",
 		// Do not serialize it...
 		// (it can not be defined in the class, because we have to identify the nodes with it....)
 		this.ignoreWhenCopying = true; 
-		
+	
 	},
 
 	setupDismissAllButton: function(){
 		this.dismissAllButton = new ButtonMorph(new Rectangle(0,0,400,15)).setLabel("dismiss all");
 		this.dismissAllButton.applyStyle({fill: Color.lightGray, borderWidth: 0, strokeOpacity: 0})
 		connect(this.dismissAllButton, "fire", this, "dismissAll");
+	},
+},
+'accessing', {
+	getContainerBounds: function() {
+		return this.alignBounds || (this.world() && this.world().visibleBounds()) || new Rectangle(0,0,100,100);
 	},
 },
 'actions', {
@@ -5823,15 +5893,16 @@ BoxMorph.subclass("StatusMessageContainer",
 		if (delay)
 			statusMorph.removeAtTime = new Date().getTime() + (delay * 1000);
 
-		if (this.world()) {
-			this.align(this.bounds().topRight(), this.world().visibleBounds().topRight());
-			this.bringToFront();
-		}
+		this.alignToWorldBounds();
 		
 		this.startUpdate(); // actually not needed but to be sure....
 		
 		return statusMorph
-	}
+	},
+	alignToWorldBounds: function() {
+		this.align(this.bounds().topRight(), this.getContainerBounds().topRight());
+		this.bringToFront();
+	},
 })
 
 /*

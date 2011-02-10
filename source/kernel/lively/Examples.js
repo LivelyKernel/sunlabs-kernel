@@ -990,8 +990,6 @@ PanelMorph.subclass('lively.Examples.Sun3DMorph', {
 // Note: The code below has been translated from the original
 // Java implementation; it has nothing to do with morphic style
 // and should not be used as a model for a morphic application.
-// See "Fasteroids" is "Contributions.js" file for a sketch of
-// how it should be done.
 
 // FIXME: There are still problems with the coordinate space.
 // For instance, shooting is not as precise as in the original game.
@@ -2533,13 +2531,14 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
         image: "http://stockcharts.com/charts/historical/images/SPX1960t.png" }
     },
        
-    requestQuote: function(company, destVariable) {
-        console.log('requesting quote for ' + company);
-        var url = new URL("http://download.finance.yahoo.com/d/quotes.csv").withQuery({ s:company.toLowerCase(), f:'sl1d1t1c1ohgv', e: '.csv'});	
-	var req = new NetRequest({model: this, setStatus: "setRequestStatus", setResponseText: "formatQuote"});
-	req.setContentType("text/html");
-	req.get(url);
-    },
+	requestQuote: function(company, destVariable) {
+		console.log('requesting quote for ' + company);
+		var url = new URL("http://download.finance.yahoo.com/d/quotes.csv").withQuery({ s:company.toLowerCase(), f:'sl1d1t1c1ohgv', e: '.csv'});
+			webR = WebResource.create(url).beAsync();
+		lively.bindings.connect(webR, 'content', this, 'formatQuote');
+		lively.bindings.connect(webR, 'status', this, 'setRequestStatus');
+		webR.get(null, "text/html");
+	},
     
     buildView: function(extent, model) {
         var panel = new PanelMorph(extent).linkToStyles(['panel']);
@@ -4262,7 +4261,6 @@ ClipMorph.subclass("lively.Examples.canvascape.CanvasScapeMorph", {
 BoxMorph.subclass("EngineMorph", {
 
     documentation: "The Radial Engine demo",
-    angleStep: Math.PI/8,
     style: using(lively.paint).link({
 	fill: {$:"LinearGradient", stops: [{$:"Stop", offset: 0, color: Color.gray},
 					   {$:"Stop", offset: 1, color: Color.darkGray}],
@@ -4289,6 +4287,7 @@ BoxMorph.subclass("EngineMorph", {
     initialize: function($super, fullRect) {
         // A lively model by Dan Ingalls - 9/25/2007
         $super(fullRect);
+		this.angleStep = Math.PI/8;
 		this.applyLinkedStyles();
         this.makeLayout(1, false);
         this.setRunning(true);
