@@ -409,13 +409,13 @@ AsyncTestCase.subclass('Tests.TestFrameworkTests.AsyncTestCaseTest', {
     //   - asynchronous tests are run only when earlier tests
     //     (both sync adn async) are marked as done
 
-	runAll: function($super, statusUpdateFunc) {
+	runAll: function($super, statusUpdateFunc, whenDoneFunc) {
 		// yeah, it's ugly
 		Global.test1Called = false;
 		Global.test2AsyncCalled = false;
 		Global.test3Called = false;
 
-		$super(statusUpdateFunc);
+		$super(statusUpdateFunc, whenDoneFunc);
 	},
 
 	tearDown: function() {

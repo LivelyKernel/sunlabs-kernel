@@ -1,21 +1,21 @@
-module('Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'Tests.SerializationTests', 'lively.TabCompletion').toRun(function(thisModule, testModule, toolsModule, ideModule) {
+module('Tests.ToolsTests').requires('lively.TestFramework', 'lively.Tools', 'lively.ide', 'Tests.SerializationTests', 'lively.ide.AutoCompletion').toRun(function() {
 
-thisModule.createDummyNamespace = function() {
-    console.assert(!thisModule['testNS'], 'testNS already existing');
-    //creating 5 namespaces-    namespace('testNS.one', thisModule);    namespace('testNS.two', thisModule);
-    namespace('testNS.three.threeOne', thisModule);        
-    // create classes
-    Object.subclass(thisModule.namespaceIdentifier + '.testNS.Dummy', { method1: function() { 1 } });
-    Object.subclass(thisModule.namespaceIdentifier + '.testNS.one.Dummy');
-    Object.subclass(thisModule.namespaceIdentifier + '.testNS.three.threeOne.Dummy');
-    // create functions
-    thisModule.testNS.dummyFunc = function() { return 1 };
-    thisModule.testNS.three.threeOne.dummyFunc = function() { return 2 };
-};
+Object.extend(Tests.ToolsTests, {
+	createDummyNamespace: function() {
+		console.assert(!Tests.ToolsTests['testNS'], 'testNS already existing');
+		// creating 5 namespaces-    namespace('testNS.one', Tests.ToolsTests);    namespace('testNS.two', Tests.ToolsTests);
+		namespace('testNS.three.threeOne', Tests.ToolsTests);
+		// create classes
+		Object.subclass(Tests.ToolsTests.namespaceIdentifier + '.testNS.Dummy', { method1: function() { 1 } });
+		Object.subclass(Tests.ToolsTests.namespaceIdentifier + '.testNS.one.Dummy');
+		Object.subclass(Tests.ToolsTests.namespaceIdentifier + '.testNS.three.threeOne.Dummy');
+		// create functions
+		Tests.ToolsTests.testNS.dummyFunc = function() { return 1 };
+		Tests.ToolsTests.testNS.three.threeOne.dummyFunc = function() { return 2 };
+	},
+	removeDummyNamespace: function() { delete Tests.ToolsTests['testNS']  },
+});
 
-thisModule.removeDummyNamespace = function() {
-    delete thisModule['testNS'];
-};
 
 // Browser related tests
 TestCase.subclass('Tests.ToolsTests.SystemBrowserTests', {
@@ -26,10 +26,10 @@ TestCase.subclass('Tests.ToolsTests.SystemBrowserTests', {
 		browser.rootNode = function() { return root };
 		this.browser = browser;
 	},
-createBrowser: function() {
-	return new lively.ide.BasicBrowser();
-},
 
+	createBrowser: function() {
+		return new lively.ide.BasicBrowser();
+	},
 
 	mockNodeClass: lively.ide.BrowserNode.subclass('Tests.ToolsTests.MockNode', {
 			initialize: function($super, target, browser, c) { $super(target, browser); this.children = c || [] },
@@ -326,6 +326,17 @@ Foo.addMethods('catC',{\n\
 		this.assertEqual(browser.nodesInPane('Pane4').length, 3);	
 		this.assertIdentity(this.m1, browser.nodesInPane('Pane4')[0].target);
 	},
+	testBrowserKnowsCurrentModule: function() {
+		if (Global.Foo) Foo.remove();
+		this.buildTestSource();
+		this.browser.buildView()
+		this.browser.selectNodeNamed('dummySource.js');
+		this.browser.selectNodeNamed('Foo');
+		var n  = this.browser.selectedNode();
+		n.evalSource(n.sourceString());
+		this.assert(Global.Foo, 'Class Foo could not be evaled');
+		this.assertIdentity(Foo.sourceModule, module('dummySource'));
+	},
 
 
 
@@ -335,30 +346,30 @@ Foo.addMethods('catC',{\n\
 TestCase.subclass('Tests.ToolsTests.FileParserTest', {
 
     setUp: function() {
-        this.sut = new FileParser();
-        this.sut.verbose = false;
+	this.sut = new FileParser();
+	this.sut.verbose = false;
     },
     
     testParseClassDef: function() {
-        var source = "Object.subclass('Test', {});"
-        this.sut.parseFile('1', 0, source, null/*db*/, 'scan', null/*search_str*/)
-        this.assertEqual(this.sut.changeList.length, 1);
-        this.assertEqual(this.sut.changeList.first().name, 'Test');
-        this.assertEqual(this.sut.changeList.first().type, 'classDef');
+	var source = "Object.subclass('Test', {});"
+	this.sut.parseFile('1', 0, source, null/*db*/, 'scan', null/*search_str*/)
+	this.assertEqual(this.sut.changeList.length, 1);
+	this.assertEqual(this.sut.changeList.first().name, 'Test');
+	this.assertEqual(this.sut.changeList.first().type, 'classDef');
     },
     
     testScanModuleDef: function() {
-        var source = "module('bla.blupf').requires('blupf.bla').toRun({\nObject.subclass('Test', {\n});\n\n});"
-        this.sut.parseFile('2', 0, source, null/*db*/, 'scan', null/*search_str*/)
-        this.assertEqual(this.sut.changeList.length, 2);
-        this.assertEqual(this.sut.changeList[0].type, 'moduleDef');
+	var source = "module('bla.blupf').requires('blupf.bla').toRun({\nObject.subclass('Test', {\n});\n\n});"
+	this.sut.parseFile('2', 0, source, null/*db*/, 'scan', null/*search_str*/)
+	this.assertEqual(this.sut.changeList.length, 2);
+	this.assertEqual(this.sut.changeList[0].type, 'moduleDef');
     },
     
     testScanFunctionDef01: function() {
-        var source = "module('bla.blupf').requires('blupf.bla').toRun({\nfunction abc(a,b,c) {\n return 1+2;\n};\nObject.subclass('Test', {\n});\n\n});"
-        this.sut.parseFile('3', 0, source, null/*db*/, 'scan', null/*search_str*/)
-        this.assertEqual(this.sut.changeList.length, 3);
-        this.assertEqual(this.sut.changeList[1].type, 'functionDef');
+	var source = "module('bla.blupf').requires('blupf.bla').toRun({\nfunction abc(a,b,c) {\n return 1+2;\n};\nObject.subclass('Test', {\n});\n\n});"
+	this.sut.parseFile('3', 0, source, null/*db*/, 'scan', null/*search_str*/)
+	this.assertEqual(this.sut.changeList.length, 3);
+	this.assertEqual(this.sut.changeList[1].type, 'functionDef');
     },
     
     testScanFunctionDef02: function() {
@@ -420,12 +431,12 @@ TestCase.subclass('Tests.ToolsTests.JsParserTest', {
 	}
 });
 
-thisModule.JsParserTest.subclass('Tests.ToolsTests.JsParserTest1', {
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.JsParserTest1', {
     
     testParseClass: function() {    // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
-                  '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
-                  '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
+                  '\tsetUp: function() { Tests.ToolsTests.createDummyNamespace() },\n' +
+                  '\ttearDown: function() { Tests.ToolsTests.removeDummyNamespace() }\n' +
                   '})';
         this.sut.src = src;
         var descriptor = this.sut.parseClass();
@@ -480,9 +491,9 @@ testParseEmptyClass: function() {   // Object.subclass
     
     testParseClassAndMethods: function() {  // Object.subclass
         var src = 'Object.subclass(\'Dummy\', {\n' +
-                  '\tsetUp: function() { thisModule.createDummyNamespace() },\n' +
+                  '\tsetUp: function() { Tests.ToolsTests.createDummyNamespace() },\n' +
                   'formals: ["Pane1Content",\n\t\t"Pane1Selection"],\n' +
-                  '\ttearDown: function() { thisModule.removeDummyNamespace() }\n' +
+                  '\ttearDown: function() { Tests.ToolsTests.removeDummyNamespace() }\n' +
                   '})';
         this.sut.src = src;
         var descriptor = this.sut.parseClass();
@@ -599,12 +610,12 @@ testParseEmptyClass: function() {   // Object.subclass
     },
     
     testParseStaticFunctions: function() {  // Klass.method = function() {...};
-        var src = 'thisModule.ScriptEnvironment.open = function() {};'
+        var src = 'Tests.ToolsTests.ScriptEnvironment.open = function() {};'
         this.sut.src = src;
         var descriptor = this.sut.callOMeta('propertyDef');
         this.assert(descriptor, 'no descriptor');
         this.assertEqual(descriptor.name, 'open');
-        this.assertEqual(descriptor.className, 'thisModule.ScriptEnvironment');
+        this.assertEqual(descriptor.className, 'Tests.ToolsTests.ScriptEnvironment');
 		this.assert(descriptor.isStatic());
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
@@ -633,11 +644,11 @@ testParseEmptyClass: function() {   // Object.subclass
     },
     
     testParseClassExtension01: function() { // Object.extend(...);
-        var src = 'Object.extend(thisModule.ScriptEnvironment, { \nopen: function() {\n\t\t1+2\n\t}\n});';
+        var src = 'Object.extend(Tests.ToolsTests.ScriptEnvironment, { \nopen: function() {\n\t\t1+2\n\t}\n});';
         this.sut.src = src;
         var descriptor = this.sut.callOMeta('klassExtensionDef');
         this.assert(descriptor, 'no descriptor');
-        this.assert(descriptor.name.startsWith('thisModule.ScriptEnvironment'));
+        this.assert(descriptor.name.startsWith('Tests.ToolsTests.ScriptEnvironment'));
         this.assertEqual(descriptor.subElements().length, 1);
         this.assertIdentity(descriptor.startIndex, 0);
         this.assertIdentity(descriptor.stopIndex, src.lastIndexOf(';'));
@@ -870,7 +881,7 @@ main.logCompletion("main").delay(Config.mainDelay);\n\
     },
     
 testParseModuledef: function() {
-        var src = 'module(\'lively.TileScripting\').requires(\'lively.Helper\').toRun(function(thisModule) {\n\nMorph.addMethods({})\n});';
+        var src = 'module(\'lively.TileScripting\').requires(\'lively.Helper\').toRun(function(Tests.ToolsTests) {\n\nMorph.addMethods({})\n});';
         var result = this.sut.parseSource(src);
 
         this.assertEqual(result.length, 1);
@@ -881,7 +892,7 @@ testParseModuledef: function() {
     },
     
 	testParseModuleAndClass: function() {
-        var src = 'module(\'lively.xyz\').requires(\'abc.js\').toRun(function(thisModule) {\n\Object.subclass(\'Abcdef\', {\n}); // this is a comment\n});';
+        var src = 'module(\'lively.xyz\').requires(\'abc.js\').toRun(function(Tests.ToolsTests) {\n\Object.subclass(\'Abcdef\', {\n}); // this is a comment\n});';
         var result = this.sut.parseSource(src);
 
         this.assertEqual(result.length, 1);
@@ -890,7 +901,7 @@ testParseModuledef: function() {
     },
 
     testParseModuleAndUsingDef: function() { // /* ... */ || // ...
-        var src = 'module(\'lively.TileScripting\').requires(\'lively/Helper.js\').toRun(function(thisModule) {\n\
+        var src = 'module(\'lively.TileScripting\').requires(\'lively/Helper.js\').toRun(function(Tests.ToolsTests) {\n\
 using().run(function() {\nMorph.addMethods({})\n})\n});';
         var result = this.sut.parseSource(src);
         this.assertEqual(result.length, 1);
@@ -1167,7 +1178,7 @@ test03RecognizeCategoriesAsFileFragments: function() {
 
 });
 
-thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTest', {
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTest', {
 
 	documentation: 'For testing parsing of OMeta grammar definitions themselves',
 
@@ -1244,7 +1255,7 @@ thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTest', {
 
 });
 
-thisModule.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTestLKFile', {
+Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.OMetaParserTestLKFile', {
 	
 	shouldRun: false,
 	
@@ -1329,7 +1340,7 @@ Tests.ToolsTests.JsParserTest.subclass('Tests.ToolsTests.FileFragmentTest', {
 
 		this.setUpSource();
 	},
-setUpSource: function() {
+	setUpSource: function() {
 		/* creates:
 		moduleDef: foo.js (0-277 in foo.js, starting at line 1, 4 subElements)
 		klassDef: ClassA (55-123 in foo.js, starting at line 2, 1 subElements)
@@ -1348,8 +1359,7 @@ setUpSource: function() {
 			'ClassA.subclass(\'ClassB\', {\n\tm2: function(a) { 3 },\nm3: function(b) { 4 }\n});\n' +
 			'}); // end of module';
 		this.root = this.db.prepareForMockModule('foo.js', this.src);
-},
-
+	},
 
 	setUpAlternateSource: function() {
 	    var src = 'Object.subclass("Dummy1", {});\n'+
@@ -1617,6 +1627,17 @@ setUpSource: function() {
 		this.assertEqual(element.name, "m1", 'wrong name');
 
 	},
+	testGetSubElementAtIndex: function() {
+		this.setUpSource();
+
+		var element = this.root.getSubElementAtIndex(90, 5);
+
+		this.assert(element, 'no element found');
+
+		this.assertEqual(element.name, "m1", 'wrong name');
+
+	},
+
 	testGetOwnerNamePathRoot: function() {
 		this.setUpSource();
 
@@ -1655,20 +1676,13 @@ setUpSource: function() {
 
 		this.assertEqual(fileFragment.charsUpToLine(0), 0, "wrong... for 0")
 		this.assertEqual(fileFragment.charsUpToLine(5), 110, "wrong...")
-
-
-},
-
-
-
-
-
-
-
+	},
 
 });
 
 Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.FileFragmentNodeTests', {
+
+	shouldRun: false,
 
 	setUp: function($super) {
 		$super();
@@ -1678,10 +1692,10 @@ Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.FileFragmentNodeTes
 	testFragmentsOfNodesDiffer: function() {
 		/* just use updating via registered browsers, no need for hasCurrentSource
 		var class1Frag = this.fragmentNamed('ClassA');
-		var node1 = new ideModule.ClassFragmentNode(class1Frag, this.browser);
+		var node1 = new lively.ide.ClassFragmentNode(class1Frag, this.browser);
 		node1.sourceString(); // 'show' node1
 		var class2Frag = this.fragmentNamed('ClassB');
-		var node2 = new ideModule.ClassFragmentNode(class2Frag, this.browser);
+		var node2 = new lively.ide.ClassFragmentNode(class2Frag, this.browser);
 		node2.sourceString(); // 'show' node2
 		this.assert(node1.hasCurrentSource(), 'node1 hasCurrentSource');
 		this.assert(node2.hasCurrentSource(), 'node2 hasCurrentSource');
@@ -1689,10 +1703,11 @@ Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.FileFragmentNodeTes
 		this.assert(node1.hasCurrentSource(), 'node1 hasCurrentSource 2');
 		this.assert(!node2.hasCurrentSource(), 'node2 hasCurrentSource 2');
 		*/
-	}
+	},
 });
 
-TestCase.subclass('Tests.ToolsTests.ChangesTests', {
+TestCase.subclass('Tests.ToolsTests.ChangesTests',
+'running', {
 
 	setUp: function() {
 		this.parser = new AnotherCodeMarkupParser();
@@ -1702,49 +1717,50 @@ TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 	tearDown: function() {
 		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
 	},
+},
+'testing', {
 	testEquals: function() {
-		var c1 = DoitChange.create('1+2');
-		var c2 = DoitChange.create('1+2');
+		var c1 = DoitChange.create('1+2'),
+			c2 = DoitChange.create('1+2');
 		this.assert(c1.eq(c2), 'changes not equal');
 	},
 
-
 	testCreateProtoMethodChange: function() {
-		var xml = stringToXML('<proto name="m1"><![CDATA[function(color) { 1+ 2 }]]></proto>');
-		var change = this.parser.createChange(xml);
+		var xml = stringToXML('<proto name="m1"><![CDATA[function(color) { 1+ 2 }]]></proto>'),
+			change = this.parser.createChange(xml);
 		this.assert(change.isProtoChange);
 		this.assertEqual(change.getName(), 'm1');
 		this.assertEqual(change.getDefinition(), 'function(color) { 1+ 2 }');
 	},
 
 	testCreateClassChange: function() {
-		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
-		var change = this.parser.createChange(xml);
+		var xml = stringToXML('<class name="lively.Test" super="Object"></class>'),
+			change = this.parser.createChange(xml);
 		this.assert(change.isClassChange);
 		this.assertEqual(change.getName(), 'lively.Test');
 		this.assertEqual(change.getSuperclassName(), 'Object');
 	},
 
 	testCreateClassChangeWithSubElems: function() {
-		var xml = stringToXML('<class name="lively.Test" super="Object"><proto name="m1"><![CDATA[function() {xyz}]]></proto></class>');
-		var change = this.parser.createChange(xml);
-		var sub = change.getProtoChanges();
+		var xml = stringToXML('<class name="lively.Test" super="Object"><proto name="m1"><![CDATA[function() {xyz}]]></proto></class>'),
+			change = this.parser.createChange(xml),
+			sub = change.getProtoChanges();
 		this.assertEqual(sub.length, 1);
 		var pChange = sub.first();
 		this.assertEqual(pChange.getName(), 'm1');
 	},
 
 	testEvaluateMethodChangeWithNonExistingClass1: function() {
-		var xml = stringToXML('<proto name="m1"><![CDATA[function(color) { 1+ 2 }]]></proto>');
-		var change = this.parser.createChange(xml);
+		var xml = stringToXML('<proto name="m1"><![CDATA[function(color) { 1+ 2 }]]></proto>'),
+			change = this.parser.createChange(xml);
 		this.assert(change.evaluate, 'no eval func');
 		try { change.evaluate(); } catch(e) { return }
 		this.assert(false, 'could evaluate proto method without class');
 	},
 
 	testEvaluateMethodChangeWithNonExistingClass2: function() {
-		var xml = stringToXML('<class name="lively.Test" super="Object"><proto name="m1"><![CDATA[function() {xyz}]]></proto></class>');
-		var change = this.parser.createChange(xml).getProtoChanges().first();
+		var xml = stringToXML('<class name="lively.Test" super="Object"><proto name="m1"><![CDATA[function() {xyz}]]></proto></class>'),
+			change = this.parser.createChange(xml).getProtoChanges().first();
 		this.assert(change.evaluate, 'no eval func');
 		try { change.evaluate(); } catch(e) { return }
 		this.assert(false, 'could evaluate proto method without exisiting class in system');
@@ -1754,9 +1770,9 @@ TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 		var className = 'Tests.ToolsTests.DummyForChangeTests1';
 		this.cleanUpItems.push(className);
 		Object.subclass(className);
-		var xml = stringToXML('<class name="' + className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
-		var change = this.parser.createChange(xml).getProtoChanges().first();
-		var m = change.evaluate();
+		var xml = stringToXML('<class name="' + className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>'),
+			change = this.parser.createChange(xml).getProtoChanges().first(),
+			m = change.evaluate();
 		this.assert(m instanceof Function);
 		this.assert(Class.forName(className).functionNames().include('m1'), 'no function');
 	},
@@ -1764,19 +1780,19 @@ TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 	testEvaluateClassChange: function() {
 		var className = 'Tests.ToolsTests.DummyForChangeTests2';
 		this.cleanUpItems.push(className);
-		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
-		var change = this.parser.createChange(xml);
-		var klass = change.evaluate();
+		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>'),
+			change = this.parser.createChange(xml),
+			klass = change.evaluate();
 		this.assert(klass && Class.isClass(klass));
 		this.assert(klass.functionNames().include('m1'), 'no function');
 	},
 
-	testEvalauteClassChnageWithStaticElem: function() {
+	testEvalauteClassChangeWithStaticElem: function() {
 		var className = 'Tests.ToolsTests.DummyForChangeTests3';
 		this.cleanUpItems.push(className);
-		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto><static name="staticM1"><![CDATA[function(xyz) { 1+1 }]]></static></class>');
-		var change = this.parser.createChange(xml);
-		var klass = change.evaluate();
+		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto><static name="staticM1"><![CDATA[function(xyz) { 1+1 }]]></static></class>'),
+			change = this.parser.createChange(xml),
+			klass = change.evaluate();
 		this.assert(klass.functionNames().include('m1'), 'no proto function');
 		this.assert(klass['staticM1'] instanceof Function, 'no static function');
 	},
@@ -1789,38 +1805,38 @@ TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 
 	testDoit: function() {
 		var objName = 'Tests.ToolsTests.DummyObj';
-		this.assert(!Class.forName(objName), 'TestObj already exists');
 		this.cleanUpItems.push(objName);
-		var xml = stringToXML('<doit><![CDATA[' + objName + ' = {test: 1}; 1+2;]]></doit>');
-		var change = this.parser.createChange(xml);
+		var xml = stringToXML('<doit><![CDATA[' + objName + ' = {test: 1}; 1+2;]]></doit>'),
+			change = this.parser.createChange(xml);
+		this.assert(!Class.forName(objName), 'TestObj already exists');
 		this.assert(change.isDoitChange);
 		this.assertEqual(change.evaluate(), 3);
 		this.assert(Class.forName(objName), 'TestObj not created');
 	},
 
 	testCreateProtoChange: function() {
-		var name = 'test';
-		var src = 'function() { 1+ 2 }';
-		var className = 'lively.Dummy';
-		var change = ProtoChange.create(name, src, className);
+		var name = 'test',
+			src = 'function() { 1+ 2 }',
+			className = 'lively.Dummy',
+			change = ProtoChange.create(name, src, className);
 		this.assertEqual(change.getName(), name);
 		this.assertEqual(change.getDefinition(), src);
 		this.assertEqual(change.getClassName(), className);
 	},
 
 	testSetNewDoitDef: function() {
-		var oldSrc = '1+2+3';
-		var change = DoitChange.create(oldSrc);
+		var oldSrc = '1+2+3',
+			newSrc = '4+5+6',
+			change = DoitChange.create(oldSrc);
 		this.assertEqual(change.getDefinition(), oldSrc);
-		var newSrc = '4+5+6';
 		change.setDefinition(newSrc);
 		this.assertEqual(change.getDefinition(), newSrc);
 	},
 	testSetXMLElement: function() {
 		// ensure that ne is placed at the same pos as old
-		var classChange = ClassChange.create('TestClass', 'Object');
-		var proto1 = new ProtoChange.create('test1', '123');
-		var proto2 = new ProtoChange.create('test2', '456');
+		var classChange = ClassChange.create('TestClass', 'Object'),
+			proto1 = new ProtoChange.create('test1', '123'),
+			proto2 = new ProtoChange.create('test2', '456');
 		classChange.addSubElements([proto1, proto2]);
 		var proto3 = new ProtoChange.create('test3', '789');
 		proto1.setXMLElement(proto3.getXMLElement());
@@ -1834,28 +1850,55 @@ TestCase.subclass('Tests.ToolsTests.ChangesTests', {
 		this.assertEqual(change.getName(), 'myDoit');
 	},
 	testChangeHasCDATASection: function() {
-		var name = 'testChangeHasCDATASection_doit';
-		var source = '4+1';
-		var doit = DoitChange.create(source, name);
-		var element = doit.getXMLElement();
+		var name = 'testChangeHasCDATASection_doit',
+			source = '4+1',
+			doit = DoitChange.create(source, name),
+			element = doit.getXMLElement();
 		this.assertEqual(source, element.textContent);
 		this.assertEqual(1, element.childNodes.length);
 		this.assertEqual(element.CDATA_SECTION_NODE, element.childNodes[0].nodeType, 'node type');
 	},
+	testMethodChangeHasCategory: function() {
+		var xml = stringToXML('<proto name="m1"><![CDATA[function() { return 1 }]]></proto>'),
+			change = this.parser.createChange(xml);
+		this.assertEqual(change.getCategoryName(), 'default category');
+
+		xml = stringToXML('<static name="m2"><![CDATA[function() { }]]></proto>'),
+		change = this.parser.createChange(xml);
+		this.assertEqual(change.getCategoryName(), 'default category');
+
+		xml = stringToXML('<proto name="m3" category="foo"><![CDATA[function() { return 2 }]]></proto>'),
+		change = this.parser.createChange(xml);
+		this.assertEqual(change.getCategoryName(), 'foo');
+	},
+	testChangeOfMethodCategoryChangesClass: function() {
+		var source = 'Object.subclass("ClassA",\n"category x", {\n\tmethod: function() { return 1 },\n});',
+			classChange = Change.fromJS(source),
+			methodCatChange = classChange.getCategories()[0],
+			newDef = '"category x", {\n\tmethod: function() { return 2 },\n}';
+debugger
+		methodCatChange.setDefinition(newDef);
+		var newClassChange = methodCatChange.getClassChange();
+		this.assertEquals(1, newClassChange.subElements().length, 'subelements of class change are strange')
+		var methodChange = newClassChange.subElements()[0];
+		this.assert(/return 2/.test(methodChange.getDefinition()), 'def not changed');
+	},
+
+
 
 });
 
-Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.ChangesConversionTest', {
-
+Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.ChangesConversionTest',
+'running', {
 	setUp: function($super) {
 		$super();
 		this.jsParser = new JsParser();
 		this.changesParser = new AnotherCodeMarkupParser();
 	},
-
+},
+'testing', {
 	testConvertClassFFToChange: function() {
-		var frag = this.fragmentNamed('ClassA');
-		var change = frag.asChange();
+		var frag = this.fragmentNamed('ClassA'), change = frag.asChange();
 		this.assert(change.isClassChange, 'is not a class change');
 		this.assertEqual(change.subElements().length, 1, 'subelements?');
 		this.assert(change.subElements()[0].isProtoChange, 'subelements[0]?');
@@ -1869,34 +1912,39 @@ Tests.ToolsTests.FileFragmentTest.subclass('Tests.ToolsTests.ChangesConversionTe
 		this.assertEqual(result.getDefinition(), 'function(a) {\n\t\ta*15;\n\t\t2+3;\n\t}');
 	},
 	testPropertyFFToChange: function() {
-		var s = 'initialStyle: {borderWidth: 0, fillOpacity: .5, fill: Color.veryLightGray},';
-		var f = this.jsParser.parseNonFile(s);
-		var c = f.asChange();
+		var s = 'initialStyle: {borderWidth: 0, fillOpacity: .5, fill: Color.veryLightGray},',
+			c = Change.fromJS(s);
 		this.assertEqual(c.asJs(), s);
 	},
 
 	testProtoChangeAsJs: function() {
-		var protoC = ProtoChange.create('test', 'function(a,b) {\n 1+2}', 'Dummy');
-		var result = protoC.asJs();
+		var protoC = ProtoChange.create('test', 'function(a,b) {\n 1+2}', 'Dummy'),
+			result = protoC.asJs();
 		this.assertEqual(result, 'test: function(a,b) {\n 1+2},');
-		var convertedBack = this.jsParser.parseNonFile(result);
-
-		convertedBack.asChange();
+		var newChange = Change.fromJS(result);
+		// FIXME assert sth?
 	},
 	testClassChangeAsJs: function() {
-		var classC = ClassChange.create('TestClass', 'SuperTestClass');
-		var result = classC.asJs();
-		this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {});');
-		var protoC1 = ProtoChange.create('test1', 'function() {1}', 'TestClass');
-		var protoC2 = ProtoChange.create('test2', 'function() {2}', 'TestClass');
+		var classC = ClassChange.create('TestClass', 'SuperTestClass'),
+			result = classC.asJs();
+		this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\');');
+		var protoC1 = ProtoChange.create('test1', 'function() {1}', 'TestClass', 'foo'),
+			protoC2 = ProtoChange.create('test2', 'function() {2}', 'TestClass', 'foo');
 		classC.addSubElements([protoC1, protoC2]);
 		result = classC.asJs();
-		this.assertEqual(result, 'SuperTestClass.subclass(\'TestClass\', {\n\n' +
-		'test1: function() {1},\n\ntest2: function() {2},\n\n});');
-		var convertedBack = this.jsParser.parseNonFile(result);
-		var newChange = convertedBack.asChange();
+		var expected = "SuperTestClass.subclass(\'TestClass\',\n'foo', {\n" +
+			'\ttest1: function() {1},\n\ttest2: function() {2},\n});'
+		this.assertEqual(expected, result);
+		var newChange = Change.fromJS(result);
 		this.assertEqual(newChange.subElements().length, 2);
 	},
+	testClassWithCategoryAsJs: function() {
+		var source = 'Object.subclass(\'ClassA\',\n\'category x\', {\n\tmethod: function() { return 1 },\n});',
+			change = Change.fromJS(source);
+		this.assertMatches(['category x'], change.getCategories().invoke('getName'));
+		this.assertEquals(source, change.asJs());
+	},
+
 
 });
 
@@ -1914,7 +1962,8 @@ TestCase.subclass('Tests.ToolsTests.ModuleWrapperTest', {
 	
 });
 
-Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.ChangeSetTests', {
+Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.ChangeSetTests',
+'running', {
 
 	setUp: function($super) {
 		$super();
@@ -1926,7 +1975,8 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.Ch
 		$super();
 		this.cleanUpItems.forEach(function(ea) { Class.deleteObjectNamed(ea) });
 	},
-
+},
+'testing', {
 	testEquals: function() {
 		var cs1 = ChangeSet.fromWorld(this.worldMorph);
 		cs1.addChange(DoitChange.create('1+2'));
@@ -1935,8 +1985,8 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.Ch
 	},
 
 	testAddChangeSetToWorldPlusReconstruct: function() {
-		var world = this.worldMorph;
-		var cs = ChangeSet.fromWorld(world);
+		var world = this.worldMorph,
+			cs = ChangeSet.fromWorld(world);
 		this.assert(cs.xmlElement, 'no xmlElement');
 		this.assertIdentity(world.getDefsNode().getElementsByTagName('code')[0], cs.xmlElement);
 		var cs2 = ChangeSet.fromWorld(world);
@@ -1945,10 +1995,10 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.Ch
 	},
 
 	testAddChangesToChangeSet: function() {
-		var cs = ChangeSet.fromWorld(this.worldMorph);
-		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
-		var change = this.parser.createChange(xml);
-		var length = cs.subElements().length;
+		var cs = ChangeSet.fromWorld(this.worldMorph),
+			xml = stringToXML('<class name="lively.Test" super="Object"></class>'),
+			change = this.parser.createChange(xml),
+			length = cs.subElements().length;
 		cs.addChange(change);
 		var result = cs.subElements();
 		this.assertEqual(result.length, length+1);
@@ -1957,16 +2007,15 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.Ch
 	},
 
 	testAddedChangeSetGetsSerialized: function() {
-		var world = this.worldMorph;
-		var cs = ChangeSet.fromWorld(world);
-		// create change
-		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
-		var change = this.parser.createChange(xml);
+		var world = this.worldMorph,
+			cs = ChangeSet.fromWorld(world);
+			xml = stringToXML('<class name="lively.Test" super="Object"></class>'), // create change
+			change = this.parser.createChange(xml);
 		cs.addChange(change);
 		// serialize a bit
-		var doc = Exporter.shrinkWrapMorph(world);
-		var worldNode = doc.getElementById(world.id());
-		var codeNode = worldNode.getElementsByTagName('code')[0];
+		var doc = Exporter.shrinkWrapMorph(world),
+			worldNode = doc.getElementById(world.id()),
+			codeNode = worldNode.getElementsByTagName('code')[0];
 		this.assert(codeNode, 'node codeNode');
 		this.assert(codeNode.childNodes.length > 1);
 		var newChange = this.parser.createChange($A(codeNode.childNodes).last());
@@ -1975,17 +2024,15 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.Ch
 	},
 
 	testSerializeAndDeserializeChangeSet: function() {
-		var world = this.worldMorph;
-		var cs = ChangeSet.fromWorld(world);
-		// create change
-		var xml = stringToXML('<class name="lively.Test" super="Object"></class>');
-		var change = this.parser.createChange(xml);
+		var world = this.worldMorph,
+			cs = ChangeSet.fromWorld(world),
+			xml = stringToXML('<class name="lively.Test" super="Object"></class>'), // create change
+			change = this.parser.createChange(xml);
 		cs.addChange(change);
-		var length = cs.subElements().length;
-		// serialize a bit
-		var doc = Exporter.shrinkWrapMorph(world);
-		var newWorld = new Importer().loadWorldContents(doc);
-		var newCs = ChangeSet.fromWorld(newWorld);
+		var length = cs.subElements().length,
+			doc = Exporter.shrinkWrapMorph(world), // serialize a bit
+			newWorld = new Importer().loadWorldContents(doc),
+			newCs = ChangeSet.fromWorld(newWorld);
 		this.assertEqual(newCs.subElements().length, length);
 		this.assertEqual(newCs.subElements().last().getName(), change.getName());
 	},
@@ -1993,9 +2040,9 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass('Tests.ToolsTests.Ch
 	testEvalChangeSet: function() {
 		var className = 'Tests.ToolsTests.DummyForChangeTests4';
 		this.cleanUpItems.push(className);
-		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>');
-		var change = this.parser.createChange(xml);
-		var cs = ChangeSet.fromWorld(this.worldMorph);
+		var xml = stringToXML('<class name="'+ className +'" super="Object"><proto name="m1"><![CDATA[function() {1+2}]]></proto></class>'),
+			change = this.parser.createChange(xml),
+			cs = ChangeSet.fromWorld(this.worldMorph);
 		cs.addChange(change);
 		cs.evaluate();
 		var klass = Class.forName(className);
@@ -2078,14 +2125,13 @@ m.openInWorld();';
 	},
 	
 	testModuleNamesInNamespace: function() {
-		var sut = ChangeSet.fromWorld(this.worldMorph);
-		var list = sut.moduleNamesInNamespace('apps')
+		var sut = ChangeSet.fromWorld(this.worldMorph), list = sut.moduleNamesInNamespace('apps');
 		this.assert(list.length > 0, "nothing founds");
 	},
 
 	testAddAndRemoveWorldRequirement: function() {
-		var sut = ChangeSet.fromWorld(this.worldMorph);
-		var list = sut.getWorldRequirementsList().evaluate();
+		var sut = ChangeSet.fromWorld(this.worldMorph),
+			list = sut.getWorldRequirementsList().evaluate();
 		this.assertEqual(list.length, 0, "list is not empty") 
 
 		sut.addWorldRequirement('lively.TestFramework')
@@ -2095,11 +2141,9 @@ m.openInWorld();';
 		sut.removeWorldRequirement('lively.TestFramework')
 		list = sut.getWorldRequirementsList().evaluate();
 		this.assertEqual(list.length, 0, "remove failed") 
-
 	},
 	
 });
-TestCase.subclass('Tests.ToolsTests.FileVersionViewerTests', {});
 
 TestCase.subclass('Tests.ToolsTests.KeyboardTest', {
     
@@ -2127,57 +2171,59 @@ TestCase.subclass('Tests.ToolsTests.KeyboardTest', {
         keyWatcher.openInWorld();
         //keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
 		WorldMorph.current().hands.first().setKeyboardFocus(keyWatcher);
-    }
-})
+    },
+});
     
 TestCase.subclass('Tests.ToolsTests.MouseEventTest', {
-
+	shouldRun: false,
 	testMouseEvents: function() {
 		var mouseWatcher = Morph.makeRectangle(0,0,100,20);
 		mouseWatcher.setFill(Color.red);
 
-        mouseWatcher.takesMouseFocus = Functions.True;
+		mouseWatcher.takesMouseFocus = Functions.True;
 		mouseWatcher.handlesMouseDown = Functions.True;
-        mouseWatcher.onMouseDown = function(evt) {
-                console.log('CLICK');
-				console.log(evt.rawEvent.button)
-				if (evt.rawEvent.ctrlKey) console.log('Ctrl key pressed');
-				evt.stop();
-        }
+		mouseWatcher.onMouseDown = function(evt) {
+			console.log('CLICK');
+			console.log(evt.rawEvent.button)
+			if (evt.rawEvent.ctrlKey) console.log('Ctrl key pressed');
+			evt.stop();
+		}
 
-        mouseWatcher.openInWorld();
-        //keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
+		mouseWatcher.openInWorld();
+		// keyWatcher.requestKeyboardFocus(WorldMorph.current().hands.first());
 		WorldMorph.current().hands.first().setKeyboardFocus(mouseWatcher);
-    }
+	},
 });
 
 TestCase.subclass('Tests.ToolsTests.TabCompletionTest', {
 
 	testAllSymbols: function() {
-		this.assert(TabCompletion.allSymbols().length > 1000)
+		this.assert(lively.ide.AutoCompletion.TabCompletion.allSymbols().length > 1000)
 	},
 
 	testAllSymbolsAreUnique: function() {
-		var all = TabCompletion.allSymbols(true);
-		var uniq = all.clone().uniq();
+		var all = lively.ide.AutoCompletion.TabCompletion.allSymbols(true),
+			uniq = all.clone().uniq();
 		this.assertEqual(all.length, uniq.length, "not unique");
 	},
 	
 	testExtractLocalSymbols: function() {
-		var text = "abc abbc\nabbd\tabbe";
-		var all = TabCompletion.extractLocalSymbols(text)
+		var text = "abc abbc\nabbd\tabbe",
+			all = lively.ide.AutoCompletion.TabCompletion.extractLocalSymbols(text)
 		this.assert(all.length == 4, "wrong lenth")
-	}
+	},
 
 });
-TestCase.subclass('Tests.ToolsTests.TabCompletionLayerTest', {
 
+TestCase.subclass('Tests.ToolsTests.TabCompletionLayerTest',
+'helper', {
 	createText: function(string) {
 		var sut = new TextMorph(new Rectangle(0,0,100,100), string);
 		sut.setWithLayers([TabCompletionLayer]);
 		return sut
 	},
-
+},
+'testing', {
 	testTabCompletionChoicesForLastWord: function() {
 		var string = "\nfunc\nNextLine\n"
 		var sut = this.createText(string);
@@ -2191,12 +2237,13 @@ TestCase.subclass('Tests.ToolsTests.TabCompletionLayerTest', {
 		var sut = this.createText(string);
 		sut.setSelectionRange(string.indexOf("\nNextLine"), 0);
 		// this.assertEqual(sut.tabCompletionForLastWord("func", false), "function");
-	}
+	},
 });
-TestCase.subclass('Tests.ToolsTests.ChromeErrorStackParser',
+
+TestCase.subclass('Tests.ToolsTests.ChromeErrorStackParserTest',
 'tests', {
 	testParseErrorStackLine: function() {
-		var line = "    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/SyntaxHighlighting.js?1291814980471:347:20)"
+		var line = "    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/ide/SyntaxHighlighting.js?1291814980471:347:20)"
 
 		var errorParser = new lively.ide.ChromeErrorParser();
 		
@@ -2241,7 +2288,7 @@ TestCase.subclass('Tests.ToolsTests.ChromeErrorStackParser',
 			'    at TextMorph.boundEval (http://www.lively-kernel.org/repository/webwerkstatt/lively/Text.js?1291814979841:2293:36)\n' +
 			'    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/Text.js?1291814979841:2051:19)\n' +
 			'    at Namespace.proceed (http://www.lively-kernel.org/repository/webwerkstatt/cop/Layers.js?1291814980353:491:33)\n' +
-			'    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/SyntaxHighlighting.js?1291814980471:347:20)'
+			'    at TextMorph.<anonymous> (http://www.lively-kernel.org/repository/webwerkstatt/lively/ide/SyntaxHighlighting.js?1291814980471:347:20)'
 
 	},
 
@@ -2249,16 +2296,72 @@ TestCase.subclass('Tests.ToolsTests.ChromeErrorStackParser',
 		var w = new lively.ide.ErrorStackViewer();
 		w.setErrorStack(this.errorStackString())
 	},
-	testErrorStackViewerBuildView: function() {
-		var w = new lively.ide.ErrorStackViewer();
-		w.setErrorStack(this.errorStackString());
 
-		w.buildView();
-		this.assert(w.errorStackListMorph.itemList.length > 4, "list not set")
 
-		
+
+
+
+
+});
+TestCase.subclass('Tests.ToolsTests.CombinedModulesFileParserTest',
+'default category', {
+	setUp: function() {
+		this.sut = new lively.ide.CombinedModulesFileParser();
 	},
 
+	testLinesOfString: function() {
+		var s = "a\nb\nc";
+		var lines = this.sut.linesOfString(s);
+		this.assertEqual(lines.length, 3)
+	},
+	testCharPosOfLine: function() {
+		var s = "a\nb\nc";
+		var lines = this.sut.linesOfString(s);
+		
+		this.assertEqual(this.sut.charPosOfLine(lines, 0), 0 , "0,0")
+		this.assertEqual(this.sut.charPosOfLine(lines, 1), 2 , "1,0")
+		this.assertEqual(this.sut.charPosOfLine(lines, 2), 4 , "2,0")
+	},
+	testLineOfCharPos: function() {
+		var s = "a\nb\nc";
+		var lines = this.sut.linesOfString(s);
+		
+		this.assertEqual(this.sut.lineOfCharPos(lines, 0), 0 , "0,0")
+		this.assertEqual(this.sut.lineOfCharPos(lines, 2), 1 , "1,0")
+		this.assertEqual(this.sut.lineOfCharPos(lines, 4), 2 , "2,0")
+	},
+	testParseCombinedModulesString: function() {
+		var fileOffsets = this.sut.parseCombinedModulesString(this.sut.getCombinedModulesContent());
+		this.assert(fileOffsets.length > 0, 'no fileOffsets')
+	},
+	testModuleForCombinedLineRef: function() {
+
+		var result = this.sut.moduleForCombinedLineRef(this.sut.getCombinedModulesContent(), 16291);
+		
+		this.assert(result.file, 'no file')
+		this.assert(result.file, 'no offset')
+
+	},
+	testTransformFileLineAndCharPosReferenceSimple: function() {
+		var simple =  {file: "cop/Layers.js", line: 49, charPos: 33};
+		var simpleTrans = this.sut.transformFileLineAndCharPosReference(simple);
+		this.assertEqual(simple.file, simpleTrans.file, "normal modules did get transformed")
+		this.assertEqual(simple.line, simpleTrans.line, "normal modules did get transformed")
+	},
+	testTransformFileLineAndCharPosReferenceCombined: function() {
+		// TODOD should we generate the numbers from the real error? 
+		// try {
+		//     var o = {};
+		//     o.foo()
+		// } catch(error) {
+		//     LastError = error
+		// }
+ 
+		var obj =  {file: "generated/combinedModules.js", line: 16291, charPos: 3};
+		var objTrans = this.sut.transformFileLineAndCharPosReference(obj);
+		this.assert(obj.file != objTrans.file, "object did not get transformed")
+		this.assert(obj.line != objTrans.line, "object line did not get transformed")
+	},
 
 
 });

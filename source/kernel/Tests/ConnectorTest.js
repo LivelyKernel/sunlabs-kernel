@@ -8,9 +8,19 @@ TestCase.subclass("Tests.ConnectorTest.NodeMorphLayeredMorphTest", {
 
 	testConnectLineMorph: function() {
 		var line = "LineMock";
+		this.morph.attributeConnections = undefined
 		this.morph.connectLineMorph(line);
-		this.assert(this.morph.connectorMorphs.include(line));
+		// this.assert(this.morph.connectorMorphs.include(line));
+		this.assertEqual(this.morph.attributeConnections.length, 1, 'no binding')
 	},
+	testDisconnectLineMorph: function() {
+		var line = "LineMock";
+		this.morph.attributeConnections = undefined
+		this.morph.connectLineMorph(line);
+		this.morph.deconnectLineMorph(line);
+		this.assertEqual(this.morph.attributeConnections.length, 0, 'binding did not get removed')
+	},
+
 	
 });
 
@@ -38,8 +48,8 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorNodeInteractionTest", {
 		this.assert(container.m1 !== containerCopy.m1, " m1 did not copy")
 		this.assert(container.c !== containerCopy.c, " c did not copy")
 		this.assert(container.c.startMorph !== containerCopy.c.startMorph, " startMorph did not copy")
-		this.assert(container.m1.connectorMorphs !== containerCopy.m1.connectorMorphs, " connectorMorphs array did not copy")		
-		this.assert(container.m1.connectorMorphs[0] !== containerCopy.m1.connectorMorphs[0], " connectorMorphs[0] did not copy")		
+		// this.assert(container.m1.connectorMorphs !== containerCopy.m1.connectorMorphs, " connectorMorphs array did not copy")		
+		this.assert(container.m1.getConnectorMorphs()[0] !== containerCopy.m1.getConnectorMorphs()[0], " connectorMorphs[0] did not copy")		
 		
 		this.assert(containerCopy.c.startMorph === containerCopy.m1, " startMorph did not copy")		
 		this.assert(containerCopy.c.endMorph === containerCopy.m2, " endMorph did not copy")
@@ -61,12 +71,28 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorNodeInteractionTest", {
 		this.assert(m1 !== m1C, " m1 did not copy")
 		this.assert(c !== cC, " c did not copy")
 		this.assert(c.startMorph !== cC.startMorph, " startMorph did not copy")
-		this.assert(m1.connectorMorphs !== m1C.connectorMorphs, " connectorMorphs array did not copy")		
-		this.assert(m1.connectorMorphs[0] !== m1C.connectorMorphs[0], " connectorMorphs[0] did not copy")		
+		// this.assert(m1.connectorMorphs !== m1C.connectorMorphs, " connectorMorphs array did not copy")		
+		this.assert(m1.getConnectorMorphs()[0] !== m1C.getConnectorMorphs()[0], " connectorMorphs[0] did not copy")		
 		
 		this.assert(cC.startMorph === m1C, " startMorph did not copy")		
 		this.assert(cC.endMorph === m2C, " endMorph did not copy")
 	},
+	testRemoveConnector: function() {
+
+		var m1 = Morph.makeRectangle(new Rectangle(0,0,50,50));
+		var m2 = Morph.makeRectangle(new Rectangle(100,100,50,50));		
+		var c = Morph.makeConnector(pt(0,0), pt(1,1));
+		c.connectMorphs(m1, m2);
+		
+		this.assertEqual(m1.attributeConnections.length, 1, "no bindings in m1")
+		this.assertEqual(m2.attributeConnections.length, 1, "no bindings in m2")
+
+		c.remove();
+
+		this.assertEqual(m1.attributeConnections.length, 0, "bindings still in m1")
+		this.assertEqual(m2.attributeConnections.length, 0, "bindings still in m2")
+	},
+
 
 });
 
@@ -74,11 +100,10 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
 	setUp: function() {
 		var pos = pt(0,0);
 		var pos2 = pt(200,0);
-		this.line = Morph.makeLine([pos, pos2], 1, Color.black);
+		this.line = Morph.makeConnector(pos, pos2);
 		this.sut = this.line.makeHandle(pos2, 1, newFakeMouseEvent(pos2));
 		this.line.addMorph(this.sut);
 		this.line.setPosition(pt(100,100));
-		this.line.setWithLayers([ConnectorMorphLayer]);
 
 		var world = Morph.makeRectangle(rect(pt(0,0),pt(500,500)));
 		world.world = function(){return this};
@@ -125,8 +150,8 @@ TestCase.subclass("Tests.ConnectorTest.ConnectorMorphLayerHandleTest", {
 		this.assertEqual(this.line.endMorph.getWithLayers().length, 1, 
 			"morph is not in connection layers");
 
-		this.assert(this.line.endMorph.connectorMorphs.include(this.line), 
-			"line not in connector morphs");
+		this.assert(this.line.endMorph.getConnectorMorphs().include(this.line), 
+		 	"line not in connector morphs");
 
 		// this.assertEqualState(this.line.getGlobalEndPos(), this.endPoint, "wrong end point ");
 	},

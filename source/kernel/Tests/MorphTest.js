@@ -28,6 +28,52 @@ TestCase.subclass('Tests.MorphTest.MorphTest', {
 		this.assertIdentity(this.m1.getOwnerWidget(), w, "m1")
 		this.assertIdentity(this.m2.getOwnerWidget(), w, "m2")
 	},
+	testWrapInClip: function() {
+		this.assert(this.m2.isContainedIn(this.m1));
+		var bounds = this.m2.shape.bounds(),
+			clip = this.m2.wrapInClip();
+		this.assertEqual(bounds,  clip.bounds());
+		this.assertEqual(this.m1, clip.owner);
+		this.assertEqual(this.m2, clip.submorphs[0]);
+		var clip2 = this.m2.wrapInClip();
+		this.assertEqual(bounds,  clip.bounds());
+	},
+
+});
+MorphTestCase.subclass('Tests.MorphTest.TickingScriptTest',
+'testing', {
+	test01WhenScriptIsStoppedItIsReallyRemoved: function() {
+		var m = this.openMorph(Morph.makeRectangle(0,0, 50, 50));
+		this.assertEquals(0, m.submorphs.length, 'submorphs not empty before');
+m.startStepping(20, 'rotateBy', 0.1)
+m.stopStepping()
+		this.assert(!m.activeScripts || m.activeScripts.length == 0, 'activeScripts not empty');
+		this.assertEquals(0, m.submorphs.length, 'submorphs not empty after topping');
+	},
+});
+MorphTestCase.subclass('Tests.MorphTest.SliderTest',
+'testing', {
+	test01ShapeOffsetKeepsSliderWorking: function() {
+		var slider = this.openMorph(new SliderMorph(new Rectangle(0,0, 100, 40)));
+
+		this.assertEquals(0, slider.value);
+
+		// reshape so that topLeft is negative
+		slider.reshape('topLeft', pt(-50,0))
+		slider.reshape('topRight', pt(50,0))
+
+		this.assertEquals(pt(-50.5, -0.5), slider.bounds().topLeft());
+
+		slider.valueScale = 1
+		slider.requestKeyboardFocus(slider.world().firstHand())
+		slider.hitPoint = pt(0,0)
+		slider.sliderMoved({
+			mouseButtonPressed: true, 
+			mousePoint: pt(-6,10) // actually pt(0,09) but knobble of the slider is considered in calculation
+		}, slider.slider)
+
+		this.assertEquals(0.5, slider.value);
+	},
 });
 
 TestCase.subclass('Tests.MorphTest.TextListMorphTest', {
@@ -316,7 +362,6 @@ MorphTestCase.subclass('Tests.MorphTest.TextMorphTest', {
 		this.assertIdentity(textMorph.padding, padding, "padding changed after setFontSize")
 	},
 
-
 	testSetTestFontSizeDoesChangePaddingIfRequested: function() {
 		var textMorph = new TextMorph(new Rectangle(0,0,100,100), "Hello");
 		textMorph.autoAdjustPadding = true;
@@ -330,6 +375,17 @@ MorphTestCase.subclass('Tests.MorphTest.TextMorphTest', {
 		textMorph.setFontSize(13);
 		this.assert(textMorph.padding !== padding, "padding did not changed after setFontSize")
 	},
+	testPvtPositionInString: function() {
+		var s = "a\nb\nc\nd\n";
+		var sut = new TextMorph(new Rectangle(0,0, 100,100),s);
+		var lines = s.split(/[\n\r]/)
+		this.assertEqual(sut.pvtPositionInString(lines, 0, 0), 0, "Line 1 pos 0")
+		this.assertEqual(sut.pvtPositionInString(lines, 0, 1), 1, "Line 1 pos 1")
+		this.assertEqual(sut.pvtPositionInString(lines, 1, 0), 2, "Line 1 pos 1")
+		this.assertEqual(sut.pvtPositionInString(lines, 2, 0), 4, "Line 1 pos 1")
+
+	},
+
 	
 });
 
@@ -836,28 +892,45 @@ TestCase.subclass('Tests.MorphTest.ClipMorphTest',
 TestCase.subclass('Tests.MorphTest.GeometryChangedEventTest',
 'tests', {
 	testGeometryChangedFiredOnMove: function() {
-
 		var obj1 = Morph.makeRectangle(0,0,100,100),
 			obj2 = {wasHere: function() {this.geometryChangedFired = true}};
-
 		connect(obj1, 'geometryChanged', obj2, 'wasHere')
 		obj1.moveBy(pt(10,10));
-
 		this.assert(obj2.geometryChangedFired, "geometryChanged not fired")
 	},
 	testGeometryChangedFiredOnParent: function() {
-
-		var 
-			parent = Morph.makeRectangle(0,0,100,100)
+		var parent = Morph.makeRectangle(0,0,100,100),
 			obj1 = Morph.makeRectangle(10,10,50,50),
 			obj2 = {wasHere: function() {this.geometryChangedFired = true}};
 		parent.addMorph(obj1);
-
 		connect(obj1, 'geometryChanged', obj2, 'wasHere')
 		parent.moveBy(pt(10,10));
-
 		this.assert(obj2.geometryChangedFired, "geometryChanged not fired")
 	},
+});
+MorphTestCase.subclass('Tests.MorphTest.PathMorphTest',
+'tests', {
+	testGetLength: function() {
+		var morph = new PathMorph([pt(0,0), pt(10,20), pt(50,50)]),
+			expected = pt(0,0).dist(pt(10,20)) + pt(10,20).dist(pt(50,50));
+		this.assertEqual(expected.toFixed(3), morph.getLength().toFixed(3));
+	},
+	testGetPointFromRelativeLength: function() {
+		var morph = new PathMorph([pt(0,0), pt(10,10), pt(50,50)]),
+			result = morph.getRelativePoint(0.5),
+			expected = pt(25, 25);
+		this.assertEqual(expected, result);
+	},
 
+});
+MorphTestCase.subclass('Tests.MorphTest.ScriptTest',
+'tests', {
+	testScriptCanAccessSuper: function() {
+		var morph = Morph.makeRectangle(new Rectangle(0,0,100,100)),
+			name = 'SomeMorph';
+		morph.addScript(function setName(name) { $super(name) });
+		morph.setName(name)
+		this.assert(name, morph.getName());
+	},
 });
 }) // end of module

@@ -165,9 +165,9 @@ lively.data.Wrapper.subclass('DummyCopierObject', {
 		
 		copier.smartCopyProperty("child", this, other);	
 		copier.smartCopyProperty("children", this, other);
-		
+	debugger	
 		copier.copyProperties(this, other);
-		
+
 		return this;
 	},
 });	
@@ -303,7 +303,7 @@ testLookupOrCopy: function() {
 		var model  =  Record.newNodeInstance({FooBar: ""}),
 			morph = new TextMorph(new Rectangle(0, 0, 0, 0));
 		morph.connectModel(model.newRelay({Text: "FooBar"}));
-
+debugger
 		var copier = new Copier(),
 			modelCopy = model.copy(copier),
 			morphCopy = morph.copy(copier);

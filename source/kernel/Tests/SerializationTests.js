@@ -103,7 +103,7 @@ TestCase.subclass('Tests.SerializationTests.SerializationBaseTestCase',
 		this.morphs = [];
 		
 		this.bounds = rect(pt(10,10), pt(100,100));
-		this.parentMorph =	Morph.makeRectangle(0,0, 300, 300);
+		this.parentMorph = Morph.makeRectangle(0,0, 300, 300);
 	},
 	
 	tearDown: function($super) {
@@ -867,7 +867,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass("Tests.Serialization
 		var script = (function foo(i) { return this.n += i }).asScriptOf(obj);
 		this.assertEquals(3, obj.foo(1));
 		// isSerializable is the "API"
-		this.assert(script.isSerializable, 'not serializable');
+		this.assert(script.hasLivelyClosure, 'not serializable');
 	},
 
 	testAddScript: function() {
@@ -889,7 +889,7 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass("Tests.Serialization
 	testScriptIsSerializable: function() {
 		var m = Morph.makeRectangle(0,0,10,10);
 		m.addScript(function foo() { this.fooWasHere  = true})
-		this.assert(m.foo.isSerializable , "foo is not serializable")
+		this.assert(m.foo.hasLivelyClosure , "foo is not serializable")
 	},
 
 	testFunctionToLiteral: function() {
@@ -920,19 +920,12 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass("Tests.Serialization
 	},
 
 	testSerializeScripts: function() {
-		var m = Morph.makeRectangle(0,0,10,10);
-		var script = m.addScript(function foo() { this.fooWasHere  = true }),
-			expectedSource = Strings.format('{"source":"%s"}', script.toString());
-		var doc = Exporter.shrinkWrapMorph(m);
-		var node = doc.getElementById(m.id());
-
-		field = $A(node.childNodes).detect(function(ea){return ea.getAttribute('name') == 'foo'})
-
-		Exporter.stringify(node)
-	
-		this.assert(field, 'no field node');
-		this.assertEqual(field.textContent, expectedSource);
-		this.assertEqual(field.getAttribute('family'), 'Function', 'no family (class)');		
+		var m = Morph.makeRectangle(0,0,10,10),
+			script = m.addScript(function foo() { this.fooWasHere  = true }),
+			m2 = lively.persistence.Serializer.deserialize(lively.persistence.Serializer.serialize(m));
+		this.assert(m2.foo, 'deserialized has no script')
+		m2.foo();
+		this.assert(m2.fooWasHere, 'deserialized script not working');
 	},
 
 	testDeserializeScripts: function() {
@@ -957,11 +950,8 @@ Tests.SerializationTests.SerializationBaseTestCase.subclass("Tests.Serialization
 	testDuplicateMorphWithScript: function() {
 		var m = Morph.makeRectangle(0,0,10,10);
 		m.addScript(function foo() { this.fooWasHere  = true})
-
 		var d = m.duplicate();
-
 		this.assert(d.foo, "foo did not get duplicated")
-
 	},
 })
 

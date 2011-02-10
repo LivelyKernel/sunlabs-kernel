@@ -313,6 +313,19 @@ TestCase.subclass('Tests.BindingsTest.ConnectionTest', {
 		this.assertEqual(3, r, 'result not correct');
 		this.assertEqual(3, obj2.x, 'connected attribute not set correctly');
 	},
+	test28TargetAndPropNameMissingKeepsConnectionIntact: function() {
+		var obj1 = {x: null}, obj2 = {x: null},
+			c = connect(obj1, 'x', obj2, 'x');
+		this.assert(!c.isActive, 'conenction is active 1')
+		obj1.x = 3;
+		this.assertEqual(3, obj2.x, 'connected attribute not set correctly');
+		this.assert(!c.isActive, 'conenction is active 2')
+		c.targetObj = null;
+		obj1.x = 7;
+		this.assertEqual(3, obj2.x, 'connected attribute updated although target not set');
+		this.assert(!c.isActive, 'conenction is active 3')
+	},
+
 
 
 
