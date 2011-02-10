@@ -40,7 +40,7 @@ Object.extend(Global, {
 			console.warn(msg); 
 		 });
     console.log('Module load check done. ' + modules.length + ' modules loaded.');
-}).delay(9);
+}).delay(10);
 
 console.log('loaded Core.js');
 

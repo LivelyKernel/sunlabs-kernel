@@ -67,7 +67,7 @@ var JSLoader = {
 	XLINKNamespace: 'http:\/\/www.w3.org/1999/xlink',
 	LIVELYNamespace: 'http:\/\/www.experimentalstuff.com/Lively',
 
-	loadJs: function(url, onLoadCb, loadSync, noCache, cacheQuery) {
+	loadJs: function(url, onLoadCb, loadSync, okToUseCache, cacheQuery) {
 		if (this.scriptInDOM(url)) {
 			console.log('script ' + url + ' already loaded or loading');
 			return
@@ -76,12 +76,8 @@ var JSLoader = {
 
 		// adapt URL
 		var exactUrl = url;
-		if (Config.disableScriptCaching && (exactUrl.indexOf('!svn') <= 0) && !noCache) {
-			cacheQuery = cacheQuery || new Date().getTime();
-			exactUrl = (exactUrl.indexOf('?') == -1) ?
-				exactUrl + '?' +  cacheQuery :
-				exactUrl + '&' + cacheQuery;
-		}
+		if ((exactUrl.indexOf('!svn') <= 0) && !okToUseCache)
+			exactUrl = this.makeUncached(exactUrl, cacheQuery);
 
 		// create and configure script tag
 		var parentNode = this.findParentScriptNode(),
@@ -167,7 +163,7 @@ var JSLoader = {
 		// while loading the combined file we replace the loader
 		JSLoader = combinedLoader;
 
-		this.loadJs(combinedFileUrl, callCallback, null, hash);
+		this.loadJs(combinedFileUrl, callCallback, undefined, undefined, hash);
 	},
 
 	loadAll: function(urls, cb) {
@@ -250,14 +246,20 @@ var JSLoader = {
 			return this.resolveURLString(urlString);
 		return this.resolveURLString(this.currentDir() + urlString);
 	},
+	makeUncached: function(urlString, cacheQuery) {
+		cacheQuery = cacheQuery || new Date().getTime();
+		return urlString + (urlString.indexOf('?') == -1 ? '?' : '&') + cacheQuery;
+	},
+
 
 	removeAllScriptsThatLinkTo: function(url) {
 		var scripts = this.scriptsThatLinkTo(url);
 		for (var i = 0; i < scripts.length; i++)
 			scripts[i].parentNode.removeChild(scripts[i]);
 	},
-	getSync: function(url) {
+	getSync: function(url, forceUncached) {
 		var req = new XMLHttpRequest()
+		if (forceUncached) url = this.makeUncached(url)
 		req.open('GET', url, false/*sync*/)
 		req.send()
 		return req.responseText;
@@ -335,7 +337,7 @@ var LivelyLoader = {
 				String(document.location).match('lively-kernel.org') && !isCanvas;
 		if (optimizedLoading) {
 			console.log('optimized loading enabled')
-			var hash = JSLoader.getSync(this.codeBase + 'generated/combinedModulesHash.txt')
+			var hash = JSLoader.getSync(this.codeBase + 'generated/combinedModulesHash.txt', true/*uncached*/)
 			JSLoader.loadCombinedModules(this.codeBase + 'generated/combinedModules.js', thenDoFunc, hash);
 			return
 		}

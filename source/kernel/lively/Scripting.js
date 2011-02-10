@@ -545,6 +545,15 @@ BoxMorph.subclass('lively.Scripting.PartsBin',
 		this.loadAll();
 	},
 });
+Object.extend(lively.Scripting.PartsBin, {
+	loadPartFromURL: function(url) {
+		var targetJSON = new WebResource(url).forceUncached().get().content;
+		var serializer = ObjectGraphLinearizer.forLively();
+		serializer.log = function(){}; // be silent
+		var	partMorph = serializer.deserializeJso(JSON.unserialize(targetJSON));
+		return partMorph
+	},
+});
 BoxMorph.subclass('lively.Scripting.PartPinItem',
 'default category', {
 	defaultExtent: pt(100,100),
@@ -588,15 +597,11 @@ BoxMorph.subclass('lively.Scripting.PartPinItem',
 
 	handlesMouseDown: function (evt) {return true},
 	onMouseMove: function(evt) {return true},
-	onMouseDown: function(evt) {
-		var targetJSON = new WebResource(this.getTargetURL()).forceUncached().get().content;
-		var serializer = ObjectGraphLinearizer.forLively();
-		serializer.log = function(){}; // be silent
-		var	partMorph = serializer.deserializeJso(JSON.unserialize(targetJSON));
-		partMorph.name = this.makeUpPartName()
-	
-		evt.hand.addMorph(partMorph)
-		partMorph.setPosition(pt(0,0))
+	onMouseDown: function(evt) {	
+		var partMorph = lively.Scripting.PartsBin.loadPartFromURL(this.getTargetURL());
+		evt.hand.addMorph(partMorph);
+		partMorph.name = this.makeUpPartName();
+		partMorph.setPosition(pt(0,0));
 		return true;
 	},
 	morphMenu: function($super, evt) {
