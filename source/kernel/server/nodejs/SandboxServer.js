@@ -28,14 +28,14 @@ Object.subclass('Sandbox', {
 
 	setupContext: function() {
 		var ctxt = {require: require, Object: Object, process: process, Script: Script};
-		ctxt.Global = ctxt
+		ctxt.Global = global
 		Script.runInNewContext('sys = require("sys"); require("./miniprototype"); require("./Base")', ctxt);
 		return ctxt;
 	},
 
 	eval: function(src) {
-		var result = Script.runInNewContext(src, this.evalContext);
-		// var result = Script.runInThisContext(src);
+		// var result = Script.runInNewContext(src, this.evalContext);
+		var result = Script.runInThisContext(src);
 		if (Object.isFunction(result)) result = result.toString();
 		return result;
 	},

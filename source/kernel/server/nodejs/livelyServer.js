@@ -16,7 +16,11 @@ Object.subclass('AbstractHandler', {
 	},
 	
 	listen: function() {
-		this.listenOn(this.port);
+		try {
+			this.listenOn(this.port);
+		} catch(e) {
+			sys.puts('Cannot listen on server ' + this.constructor.type + ' because ' + e + '\n' + e.stack);
+		}
 	},
 
 	listenOn: function(port) {

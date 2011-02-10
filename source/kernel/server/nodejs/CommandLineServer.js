@@ -9,6 +9,19 @@ livelyServer.AbstractHandler.subclass('CommandLineServer',
 'initializing', {
 	port: 8086,
 },
+'private', {
+	runInShell: function(command, options, callback) {
+		var setOutput = function(err, stdout, stderr) {
+			var result = {
+				errorCode: err,
+				stdout: stdout,
+				stderr: stderr,
+			};
+			callback && callback(result)
+		}
+		return exec(command, options, setOutput);
+	},
+},
 'interface', {
 	runCommand: function(request, response, content) {
 
@@ -21,19 +34,12 @@ livelyServer.AbstractHandler.subclass('CommandLineServer',
 			return;
 		}
 
-		var callback = function(err, stdout, stderr) {
-			var result = {
-				errorCode: err,
-				stdout: stdout,
-				stderr: stderr,
-			};
+		return this.runInShell(command, {cwd: path}, function(result) {
 			response.writeHead(200, {'Content-Type': 'text/plain'});
 			response.end(JSON.stringify(result));
-		}
-
-		return exec(command, {cwd: path}, callback);
+		})
 
 	},
 });
 
-new CommandLineServer().listen();
+try { new CommandLineServer().listen() } catch(e) { console.log('CommandLineServer cannot listen because\n' + e) }

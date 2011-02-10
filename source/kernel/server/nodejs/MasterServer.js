@@ -39,22 +39,26 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 		
 	initialize: function($super) {
 		$super()
-		this.serverProcesses = serverProcesses;
+		this.servers = serverProcesses;
 	},
 },
 'interface', {
 
 	runningServersEnd: function(request, response) {
 		var result = []
-		for (var name in this.serverProcesses)
-			result.push({serverName: name, pid: this.getProcess(name).pid, isRunning: this.isRunning(name)});
-			
+		for (var name in this.servers)
+			result.push({
+				serverName: name,
+				pid: this.getProcess(name).pid,
+				isRunning: this.isRunning(name),
+				restart: this.shouldRestart(name)
+			});
 		response.writeHead(200, {'Content-Type': 'text/plain'});
 		response.end(JSON.stringify(result));
 	},
 	
 	stopAllEnd: function(request, response) {
-		for (var name in this.serverProcesses)
+		for (var name in this.servers)
 			this.stopServer(name);
 		response.writeHead(200, {'Content-Type': 'text/plain'});
 		response.end('stopped all');
@@ -121,7 +125,9 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 },
 'private', {
 	
-	getProcess: function(serverName) { return this.serverProcesses[serverName] },
+	getProcess: function(serverName) { return this.servers[serverName] && this.servers[serverName].process },
+	shouldRestart: function(serverName) { return this.servers[serverName] && this.servers[serverName].restart },
+
 	
 	isRunning: function(serverName) {
 		sys.puts('checking if ' + serverName + ' is running')
@@ -132,12 +138,13 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 	stopServer: function(serverName) {
 		sys.puts('Stopping ' + serverName);
 		try {
+			if (this.servers[serverName]) this.servers[serverName].restart = false;
 			var process = this.getProcess(serverName);
 			process && process.kill(9);
 		} catch(e) {
 			sys.puts('Cannot stop ' + serverName + ' because ' + e)
 		}
-		// delete this.serverProcesses[serverName];
+		// delete this.servers[serverName];
 	},
 	
 	startServer: function(serverName, path, shouldRestartWhenClosed, timeLastStarted) {
@@ -148,19 +155,19 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 				sys.puts(serverName + ' stopped');
 			    sys.print('stdout: ' + stdout);
 			    sys.print('stderr: ' + stderr);
-			    if (error !== null) console.log('exec error: ' + error);
-			
-			
-				if (shouldRestartWhenClosed) {
+			    if (error !== null) sys.puts('exec error: ' + error);
+
+				if (error !== null && self.shouldRestart(serverName)) {
 					if (timeLastStarted) { // ensure no looping
 						var startedBeforeMS = new Date() - timeLastStarted;
 						if (startedBeforeMS < 300) return // ms
 					}
+					sys.puts('automatically restarting ' + serverName + ' its error code was ' + error)
 					self.startServer(serverName, path, shouldRestartWhenClosed, new Date());
 				}
 			});
 		sys.puts('Starting ' + serverName + ' pid: ' + process.pid)
-		this.serverProcesses[serverName] = process
+		this.servers[serverName] = {process: process, restart: shouldRestartWhenClosed};
 		return process;
 	},
 	
@@ -170,8 +177,7 @@ livelyServer.AbstractHandler.subclass('MasterServerHandler',
 			function (error, stdout, stderr) {
 			    sys.print('stdout: ' + stdout);
 			    sys.print('stderr: ' + stderr);
-			    if (error !== null) console.log('exec error: ' + error);
-			
+			    if (error !== null) sys.puts('exec error: ' + error);
 				thenDo && thenDo()
 			});
 	},

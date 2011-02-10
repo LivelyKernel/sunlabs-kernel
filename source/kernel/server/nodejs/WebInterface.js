@@ -177,13 +177,71 @@ Object.subclass('CommandLineServerInterface',
 	runCommand: function(command, optPath) {
 		console.log('Running on server:\n' + command);
 		var webR = new WebResource(this.serverURL.withFilename('runCommand'));
-		connect(webR, 'content', this, 'result', {converter:
-			function(input) { try { return JSON.parse(input) } catch(e) { return '' } }});
+		connect(webR, 'content', this, 'result', {updater:
+			function($upd, input, oldinput) { 
+				// this is really not nice, I expect somthing like this as a connection point
+				// without it I get 3 updates
+				if (this.getSourceObj().status && this.getSourceObj().status.isSuccess() && (input != oldinput) ) {
+					var result;
+					try { 
+						result = JSON.parse(input);
+					} catch(e) {}
+					$upd(result);
+				}}});
 		if (this.isSync) { webR.beSync() } else { webR.beAsync() };
 		webR.post(JSON.stringify({command: command, path: optPath}));
 		return this
 	},
 
+});
+Object.subclass('TestServerInterface',
+'intializing', {
+	initialize: function() {
+		this.serverURL = new URL('http://lively-kernel.org/nodejs/TestServer/')
+	},
+},
+'helper', {
+	createWebResource: function(methodName, beSync) {
+		var webR = new WebResource(this.serverURL.withFilename(methodName));
+		if (beSync) { webR.beSync() } else { webR.beAsync() };
+		return webR;
+	},
+},
+'interface', {
+	uploadTestResult: function(jso) {
+		// jso should be: {resultString: String, dateAndTime: Date, noOfTests: Number, noOfFailures: Number}
+		return this.createWebResource('setTestResult', true).post(JSON.stringify(jso)).status;
+	},
+
+	getTestResults: function(resultString) {
+		return this.createWebResource('getResults', true).get().content;
+	},
+	startTesting: function() {
+		this.createWebResource('triggerTestLoop').get()
+	},
+	loadWorlds: function(worlds) {
+		// worlds --> relative paths to xhtmls
+		var webR = this.createWebResource('loadWorldsAndMakeScreenshots'),
+			json = {
+				screenShotDir: '/home/robert/web/testScreensForLoadingAllWorlds/',
+				codeBase: 'http://lively-kernel.org/repository/webwerkstatt/',
+				worldsToLoad: worlds,
+			}
+		webR.post(JSON.stringify(json))
+	},
+
+
+
+
+
+
+
+
+
+});
+Object.subclass('LoadingServerInterface',
+'interface', {
+	m1: function() {},
 });
 
 Object.subclass('NodeJSMasterServer',
@@ -199,9 +257,14 @@ Object.subclass('NodeJSMasterServer',
 	masterServerURLString: function() { return 'http://www.lively-kernel.org/nodejs/MasterServer/' },
 	servers: [
 		// {serverName: 'simpleChat', path: '.....'},
-		{serverName: 'SandboxServer', path: '/home/robert/SandboxServer/', shouldRestart: true},
-		{serverName: 'LaTeXServer', path: '/home/robert/LaTeXServer/', shouldRestart: true},
-		{serverName: 'CommandLineServer', path: '/home/robert/nodejsServers/', shouldRestart: true},
+		{serverName: 'SandboxServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: true},
+		{serverName: 'LaTeXServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: true},
+		{serverName: 'CommandLineServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: true},
+		{serverName: 'OAuthServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: true},
+		{serverName: 'TestServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: false},
+		{serverName: 'EventTrackerServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: true},
+		{serverName: 'LoadingServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: true},
+		{serverName: 'CodeSearchServer', path: '/home/nodejs/svn/nodejs/', shouldRestart: true},
 	],
 
 	getServerSpec: function(serverName) {
@@ -222,7 +285,7 @@ Object.subclass('NodeJSMasterServer',
 		var spec = this.getServerSpec(serverName);
 		if (spec) return this.ensureRunning(spec);
 	},
-	allRunningServer: function() {
+	allRunningServers: function() {
 		return this.createWebResource('runningServers').get().content
 	},
 	stopServer: function(serverName) {
@@ -310,7 +373,7 @@ new %s().listen();", serverName, port, serverName);
 Object.extend(ServerCreator, {
 	create: function(serverName, port) {
 		// this creates new source code and server settings for a nodejs server
-		// ServerCreator.create('CommandLineServer', 8086)
+		// ServerCreator.create('CodeSearchServer', 8092)
 		new ServerCreator().createServer(serverName, port);
 	},
 });
@@ -319,18 +382,12 @@ Object.extend(ServerCreator, {
 // FIXME move tests to somewhere else
 // ------------------------
 TestCase.subclass('NodeJSSandboxServerTest',
-
 'running', {
-
 	setUp: function() {
 		this.sut = new NodeJSSandboxServer();
 	},
-
-	
 },
-
 'testing', {
-
 	test01EvalOnServer: function() {
 		var src = '1 + 2';
 		var result = this.sut.evalOnServerAndWait(src);
@@ -348,8 +405,6 @@ TestCase.subclass('NodeJSSandboxServerTest',
 		var result = this.sut.evalOnServerAndWait('throw new Error()');
 		this.assert(result, 'at least something should be shown');
 	},
-
-
 });
 
 TestCase.subclass('ServerCreatorTest',
