@@ -533,14 +533,15 @@ var LivelyLoader = {
 	},
 
 	loadUserConfig: function() {
+		if (!Config.loadUserConfig) return;
 		if (!window.localStorage) {
 			console.warn('cannot load user config because cannot access localStorage!')
 			return;
 		}
 		var userName = localStorage.livelyUserName;
-		if (userName === undefined) return;
-		var moduleName = userName + ".config";
-		require(moduleName).toRun(function() { alertOK("loaded user config for " + userName) })
+		if (!userName || userName === "undefined") return;
+		var fileName = LivelyLoader.codeBase + userName + "/config.js";
+		JSLoader.loadJs(fileName);
 	},
 
 };
@@ -738,7 +739,7 @@ var EmbededLoader = {
 	
 	embedAndLoadWorld: function(worldURL, targetElement) {
 		console.log('Fetching ' + worldURL);
-		var doc = new WebResource(worldURL).getDocument();
+		var doc = new WebResource(worldURL).get().contentDocument;
 		this.convertCDATASections(doc.documentElement);
 		var canvas = document.importNode(doc.getElementById('canvas'), true);
 		$A(canvas.getElementsByTagName('script')).forEach(function(e) {	e.parentElement.removeChild(e) });
