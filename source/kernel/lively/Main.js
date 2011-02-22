@@ -653,7 +653,7 @@ Object.subclass('lively.Main.Examples', {
 				ChangeSet.fromFile(URL.codeBase.withFilename('Pen.lkml').toString()).evaluate();
 				var textmorphClass = Config.showTestText ? TestTextMorph : TextMorph,
 					widget = new textmorphClass(pt(50,30).extent(pt(250,50)), Pen.script);
-				widget.align(widget.bounds().bottomRight(), world.bounds().topRight().addPt(pt(-150,100)));
+				widget.align(widget.bounds().bottomRight(), world.visibleBounds().topRight().addPt(pt(-150,100)));
 				if (Config.showHilbertFun)
 					Pen.hilbertFun(devWorld.myWorld, widget.bounds().bottomLeft().addXY(180,80));
 				devWorld.myWorld.addMorph(widget);
