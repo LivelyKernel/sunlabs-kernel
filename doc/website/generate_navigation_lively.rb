@@ -15,7 +15,7 @@ fullmenu = [
 #       ["projects/webwerkstatt/index.html", "WebWerkstatt"],
   ]],
   ["list/index.html", "Mailing list"],
-  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki"],
+#  ["http://www.lively-kernel.org/repository/lively-wiki/index.xhtml",       "Wiki"],
   ["license/index.html", "License"],
   ["imprint/index.html",      "Imprint"],
 ]
@@ -52,7 +52,7 @@ def generate_footer(root)
   return  "<!-- -=-=-=-=-=-=-=-=-=-= FOOTER -=-=-=-=-=-=-=-=-=-= -->
   <div class=\"copyright\">
     <p> 
-      &copy; 2006-2010 
+      &copy; 2006-2011 
       <a class=\"plain\" href=\"http://www.hpi.uni-potsdam.de/swa\" rel=\"external\">HPI Software Architecture Group</a> 
       <a class=\"plain\" href=\"http://validator.w3.org/check/referer\" rel=\"external\">&nbsp;&nbsp;&nbsp;&nbsp;</a> 
     </p>
