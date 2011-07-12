@@ -12,7 +12,26 @@
   <script type="text/javascript" src="./scripts/external.js" ></script>
   <script type="text/javascript" src="./scripts/decodemail.js" ></script>
 <!-- END AUTO GENERATED HEADER -->
-
+  <style>
+  .overlay
+  {
+     background-color: rgba(0,0,0,0.7);
+     position: fixed; top: 0; left: 0;
+     width: 100%; height: 100%;
+     z-index: 10;
+  }
+  .overlay>.important
+  {
+    width: 800px;
+    position: relative;
+    top: 40%;
+    opacity: 1;
+    background-color: white;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  </style>
+  <script type="text/javascript" src="./scripts/browserCompatibility.js" ></script>
 </head>
 <body>
 
@@ -62,19 +81,37 @@
 </div>
 
 <p>
-	<a class="plain imagelink" href="http://www.lively-kernel.org/repository/lively-wiki/Fabrik.xhtml">
-		<img src="./media/fabrik_weather_200x200.png" alt="fabrik weather " />
+  <a class="plain imagelink" href="javascript:showBrowserWarningAndFollowLink('http://lively-kernel.org/repository/webwerkstatt/webwerkstatt.xhtml')">
+		<img src="./media/webwerkstatt.png" alt="webwerkstatt" />
 	</a>
-	<a class="plai imagelink" href="http://www.lively-kernel.org/repository/lively-wiki/index.xhtml" >
-		<img src="./media/wiki_viz_200x200.png" alt="wiki viz" />
+  <!-- <a class="plain imagelink" href="http://lively-kernel.org/repository/webwerkstatt/webwerkstatt.xhtml">
+    <img src="./media/webwerkstatt.png" alt="webwerkstatt" />
+  </a> -->
+	<a class="plain imagelink" href="javascript:showBrowserWarningAndFollowLink('http://lively-kernel.org/repository/webwerkstatt/sandbox/sandbox.xhtml')">
+		<img src="./media/sandbox.png" alt="sandbox" />
 	</a>
-	<a class="plai imagelink" href="http://www.lively-kernel.org/repository/lively-kernel/trunk/source/kernel/index.xhtml" >
-		<img src="./media/lively_example_demo_200x200.png" alt="examples" />
-	</a>	
-	<a class="plain imagelink" href="http://www.lively-kernel.org/repository/lively-wiki/Engine.xhtml">
-		<img src="./media/lively_engine_text_200x200.png" alt="lively engine text" />
+	<a class="plai imagelink" href="javascript:showBrowserWarningAndFollowLink('http://lively-kernel.org/repository/webwerkstatt/demos/LivelyWikiPresentation.xhtml')" >
+		<img src="./media/wiki_viz_200x200.png" alt="lively wiki" />
+	</a>
+	<a class="plai imagelink" href="javascript:showBrowserWarningAndFollowLink('http://www.lively-kernel.org/repository/lively-kernel/trunk/source/kernel/index.xhtml')" >
+		<img src="./media/lively_example_demo_200x200.png" alt="Lively1" />
 	</a>
 </p>
+
+<!-- <p>
+  <a class="plain imagelink" href="http://www.lively-kernel.org/repository/lively-wiki/Fabrik.xhtml">
+    <img src="./media/fabrik_weather_200x200.png" alt="fabrik weather " />
+  </a>
+  <a class="plai imagelink" href="http://www.lively-kernel.org/repository/lively-wiki/index.xhtml" >
+    <img src="./media/wiki_viz_200x200.png" alt="wiki viz" />
+  </a>
+  <a class="plai imagelink" href="http://www.lively-kernel.org/repository/lively-kernel/trunk/source/kernel/index.xhtml" >
+    <img src="./media/lively_example_demo_200x200.png" alt="examples" />
+  </a>  
+  <a class="plain imagelink" href="http://www.lively-kernel.org/repository/lively-wiki/Engine.xhtml">
+    <img src="./media/lively_engine_text_200x200.png" alt="lively engine text" />
+  </a>
+</p> -->
 
 <p> We call it Lively for the following reasons: </p>
 
@@ -82,7 +119,7 @@
 
 <p><span class="colored">It can change itself and create new content. </span>  The Lively Kernel includes a basic graphics editor that allows it to alter and create new graphical content, and also an integrated development environment (IDE) that allows it to alter and create new applications.  It comes with a library of graphical and computational components, and these, as well as the kernel, can be altered and extended on the fly. </p>
 
-<p><span class="colored">It can save new artifacts, even clone itself, onto new web pages. </span> The kernel includes WebDAV support for browsing and extending remote file systems, and thus has the ability to save its objects and "worlds" (applications) as new active web pages. </p>
+<p><span class="colored">It can save new artifacts, even clone itself, onto new web pages. </span> The kernel includes WebDAV support for browsing and extending remote file systems, and thus has the ability to save its objects and "worlds" (applications) as new active web pages and into a cloud-based repository. </p>
 
 <!--
 <h1> Welcome! </h1>
