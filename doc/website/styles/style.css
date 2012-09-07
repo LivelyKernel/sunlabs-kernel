@@ -4,33 +4,33 @@ ul.no-bullet { list-style: none; }
 
 ul.publist li { margin-top: 0.5em; }
 
-div.navigation { 
+div.navigation {
 	float: left;
-	position: relative; 
-	top: 99px; 
+	position: relative;
+	top: 99px;
 	width: 130px;
 	min-height: 400px;
 	margin-left: -170px;
 	padding-top: 10px;
 	padding-bottom: 20px;
 	padding-left: 20px;
-	color:transparent; 
+	color:transparent;
 	background: #D0D0D0; }
 
-div.navigation div { 
+div.navigation div {
 	margin-top: 0.15em; }
 
 
-div.navigation > div.home { 
+div.navigation > div.home {
   	margin-bottom: 0.4em; }
 
-div.submenu div { 
+div.submenu div {
 	margin-left: 15px;
 	font-size: small; }
 
 a.plain { text-decoration: none; }
 
-a.current { 
+a.current {
 	font-weight: bold; }
 
 a:link {
@@ -49,7 +49,7 @@ a:hover {
 	color: white;
 	background: rgb(64, 64, 64);; }
 
-/* ⇗ from http://www.alanwood.net/unicode/arrows.html */ 
+/* ⇗ from http://www.alanwood.net/unicode/arrows.html */
 a[rel='external']:after {
 	content: "\21D7";
 	font-weight: bold;
@@ -67,8 +67,8 @@ img.logoimage1 {
   width: 90px; }
 
 div.logo1 {
-	position: absolute; 
-	top: -100px; 
+	position: absolute;
+	top: -100px;
 	left: 35px; }
 
 div.logo2 {
@@ -82,12 +82,12 @@ div.logo1 a:hover, div.logo2 a:hover {
 	background: transparent;}
 
 body {
-	width: 750px; /* width of main body */ 
+	width: 750px; /* width of main body */
 	font-family: Arial, sans-serif;
 	font-size: medium;
 	color: rgb(64, 64, 64);;
 	background-color: white;
-	margin-top: 20px; /* whitespace on top */ 
+	margin-top: 20px; /* whitespace on top */
 	margin-left: auto;
 	margin-right: auto;
 	padding-left: 170px; }
@@ -180,11 +180,11 @@ a.imagelink img {
 }
 
 a.imagelink {
-  background: transparent; 
+  background: transparent;
 }
 
 a.imagelink:hover{
-  background: transparent; 
+  background: transparent;
 }
 
 table.examples td {
@@ -192,3 +192,12 @@ table.examples td {
   padding: 10px;
 }
 
+.tabheader {
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.tabheader:hover {
+	color: white;
+	background: rgb(64, 64, 64);
+}
