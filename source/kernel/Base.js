@@ -21,6 +21,16 @@
  * THE SOFTWARE.
  */
 
+(function fixChrome_getTransformToElement_removal() {
+		// for more info see
+		// https://lists.w3.org/Archives/Public/www-svg/2015Aug/att-0009/SVGWG-F2F-minutes-20150824.html#item02
+		// https://github.com/huei90/snap.svg.zpd/issues/57
+		// delete SVGElement.prototype.getTransformToElement
+		SVGElement.prototype.getTransformToElement = SVGElement.prototype.getTransformToElement || function(elem) {
+				// return elem.getScreenCTM().inverse().multiply(this.getScreenCTM());
+				return elem.getCTM().inverse().multiply(this.getCTM());
+		};
+})();
 
  (function() {
 // ES 3.1 proposed static functions
