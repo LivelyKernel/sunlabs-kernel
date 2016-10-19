@@ -269,7 +269,7 @@ function populateWorldWithExamples(world) {
             if (Config.showRSSReader() && Config.showNetworkExamples) {
                 require('Examples.js').toRun(function() {
                     console.log('initializing RSS reader');
-                    new FeedWidget("http://news.cnet.com/2547-1_3-0-5.xml").openIn(lm1.myWorld, pt(725, 120));
+                    var rssWidget = new FeedWidget("http://zdnet.com/blog/rss.xml").openIn(lm1.myWorld, pt(725, 120));
                 });
             }
 	    
@@ -327,14 +327,24 @@ function populateWorldWithExamples(world) {
                 this.addMorph(widget);
             } 
             if (Config.showBitmap) { 
-		var width = 800;
-		var height = 500;
-		var url = "http://maps.google.com/mapdata?"+
-		    "Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200000&Point.iconid=15&"+
-		    "Point=e&Point=b&Point.latitude_e6=61500000&Point.longitude_e6=-3191200600&Point.iconid=16&"+
-		    "Point=e&latitude_e6=61500000&longitude_e6=-3191200000&zm=8000&w=" +
-		    width + "&h=" + height + "&cc=US&min_priority=2";
-		this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
+		var width = 425;
+		var height = 350;
+
+
+var g = NodeFactory.create("g", {})
+g.innerHTML = `<foreignObject width="${width}" height="${height}">
+  <body xmlns="http://www.w3.org/1999/xhtml">
+    <iframe width="${2*width}" height="${2*height}" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="http://www.openstreetmap.org/export/embed.html?bbox=-122.44412899017335%2C37.76114777332217%2C-122.36001491546632%2C37.803918106204456&amp;layer=mapnik" style="border: 1px solid black"></iframe>
+  </body>
+</foreignObject>`
+
+var m = new BoxMorph(new Rectangle(140, 140, width, height))
+m.addNonMorph(g);
+
+		// this.addMorphBack(new WindowMorph(m, "YCR"));
+		this.addMorphBack(m);
+
+		// this.addMorphBack(new WindowMorph(new ImageMorph(new Rectangle(50, 10, width, height), url), 'Tampere'));
             }
 	    
             if (Config.showSquiggle())
