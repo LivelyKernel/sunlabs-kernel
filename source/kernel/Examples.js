@@ -2508,11 +2508,11 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
     config: {
     "DOW JONES": { 
         ticker: 'DJX:.DJI', 
-        image: "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167" },
+        image: "http://bigcharts.marketwatch.com/quickchart/quickchart.asp?symb=djia" },
         // image: "http://newsimg.bbc.co.uk/media/images/42214000/jpg/_42214402_dowtwo.jpg" },
     "NASDAQ": { 
         ticker: 'NASDAQ:.IXIC',
-        image: "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167" },
+        image: "http://bigcharts.marketwatch.com/kaavio.Webhost/charts/gqplus/fpNASDAQ-big.gqplus?rand=2040170894" },
         // image: "http://content.nasdaq.com/graphs/HOMEIXIC.gif?89649" },
     "NYSE": { 
         ticker: 'NYSE:NYA.X',
@@ -2546,14 +2546,14 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
         
         // Dow Jones chart
         var image = new ImageMorph(new Rectangle(160, 10, 175, 160), 
-	    "http://bigcharts.marketwatch.com/charts/gqplus/fpDJIA-narrow.gqplus?167");
+	    "http://bigcharts.marketwatch.com/kaavio.Webhost/charts/gqplus/fpDJIA-big.gqplus?rand=1334398868");
         panel.leftChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
 
         // NASDAQ chart
         image = new ImageMorph(new Rectangle(360, 10, 175, 160), 
-			       "http://bigcharts.marketwatch.com/charts/gqplus/fpNASDAQ-narrow.gqplus?167");
+			       "http://bigcharts.marketwatch.com/kaavio.Webhost/charts/gqplus/fpNASDAQ-big.gqplus?rand=2040170894");
         panel.rightChartImage = image;
         m = panel.addMorph(image);
         m.setFill(Color.white);
@@ -2575,9 +2575,9 @@ Widget.subclass('StockWidget', NetRequestReporterTrait, {
 	m.connectModel({model: model, getText: "getQuote"});
 	
         // Company selector for stock quotes
-        m = panel.addMorph(new TextListMorph(new Rectangle(20, 340, 120, 40), ["JAVA", "NOK", "GOOG", "QQQQ"]));
+        m = panel.addMorph(new TextListMorph(new Rectangle(20, 340, 120, 40), ["SAP", "TSLA", "NOK", "GOOG", "QQQQ"]));
         m.connectModel({model: model, getSelection: "getCompany", setSelection: "setCompany"});
-	m.setModelValue("setSelection", "JAVA");
+	m.setModelValue("setSelection", "SAP");
 
 	
 	// FIXME: problematic for serialization
