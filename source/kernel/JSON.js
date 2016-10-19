@@ -110,8 +110,9 @@ Date.prototype.toJSON = function () {
             f(this.getUTCSeconds())   + 'Z');
 };
 
-
-JSON = (function () {
+(function(global) {
+    
+var JSON = (function () {
 
     function defaultFilter(baseObj, key) {
         var result;
@@ -300,3 +301,8 @@ JSON = (function () {
         }
     };
 })();
+
+if (!global.JSON) global.JSON = JSON;
+else for (var key in JSON) global.JSON[key] = JSON[key];
+
+})(window);
