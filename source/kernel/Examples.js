@@ -2344,26 +2344,26 @@ Widget.subclass('WeatherWidget', NetRequestReporterTrait, {
     },
 
     onLocaleUpdate: function(item) {
-	var citycode = null;
+        var citycode = null;
         // initialize UI update
         switch (item) {
         case "San Francisco, California":
-            citycode = "6568"; // "USCA0050"  6568 -- San Francisco International (SFO)
+            citycode = "5391959"; // "USCA0050"  6568 -- San Francisco International (SFO)
             break;
         case "Tampere, Finland":
-            citycode = "4974"; // "FIXX0031"  or 4974
+            citycode = "6296563"; // "FIXX0031"  or 4974
             break;
         case "London, United Kingdom":
-            citycode = "4583"; // "UKXX0318"  or 4583 
+            citycode = "2643741"; // "UKXX0318"  or 4583 
             break;
         case "Berlin, Germany":
-            citycode = "0050"; // 0050 -- Code for Potsdam???
+            citycode = "2950159"; // 0050 -- Code for Potsdam???
             break;
         }
-	if (citycode) {
-	    var url = new URL("http://feeds.bbc.co.uk/weather/feeds/rss/obs/world/" + citycode + ".xml");
-	    this.feed.request(url);
-	}
+    	if (citycode) {
+    	    var url = new URL("http://open.live.bbc.co.uk/weather/feeds/en/" + citycode + "/observations.rss");
+    	    this.feed.request(url);
+    	}
     },
 
     
