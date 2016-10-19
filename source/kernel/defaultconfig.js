@@ -200,8 +200,8 @@ Config.spinningStar = true;
 Config.showHilbertFun = true;
 Config.showPenScript = true;
 Config.showTester = true;
-Config.showBitmap = false;
-Config.showMap = !Config.skipMostExamples;
+Config.showBitmap = true;
+Config.showMap = false;
 Config.showSampleMorphs = true;
 Config.showTextSamples = true;
 // Config.random is used as the ID for the messenger morph for each user
