@@ -49,8 +49,9 @@ var UserAgent = (function() {
     return {
         // Newer versions of WebKit implement proper SVGTransform API,
         // with potentially better performance. Scratch that, let's make it more predictable:
+	// rk 2016-10-24: svg shadows don't seem to be working anymore, disable them
         usableTransformAPI: (webKitVersion < 0), //webKitVersion >= 525,
-        usableDropShadow: webKitVersion >= 525,
+        usableDropShadow: false,
         canExtendBrowserObjects: !isRhino, // Error, document
         usableOwnerSVGElement: !isRhino && !isMozilla,
 
