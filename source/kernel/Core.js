@@ -455,7 +455,7 @@ var Event = (function() {
     var tmp = Event; // note we're rebinding the name Event to point to a different class 
 
     var capitalizer = { mouseup: 'MouseUp', mousedown: 'MouseDown', mousemove: 'MouseMove', 
-	mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel',
+	mouseover: 'MouseOver', mouseout: 'MouseOut', mousewheel: 'MouseWheel', wheel: 'MouseWheel',
 	keydown: 'KeyDown', keypress: 'KeyPress', keyup: 'KeyUp' };
 
 
@@ -612,7 +612,7 @@ var Event = (function() {
 
     });
 
-    var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel"];
+    var basicMouseEvents =  ["mousedown", "mouseup", "mousemove", "mousewheel", "wheel"];
     var extendedMouseEvents = [ "mouseover", "mouseout"];
     var mouseEvents = basicMouseEvents.concat(extendedMouseEvents);
 
